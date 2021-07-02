@@ -53,7 +53,8 @@ class Inspire(commands.Cog):
             "I know this won’t be easy, but I also know you’ve got what it takes to get through it.",
             "Hope you’re doing awesome!",
             "Keep on keeping on!",
-            "Sending you good thoughts—and hoping you believe in yourself just as much as I believe in you."
+            "Sending you good thoughts—and hoping you believe in yourself just as much as I believe in you.",
+            "I know you can do this!"
         ]
 
         if any(w in msg for w in sad_words):
