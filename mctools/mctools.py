@@ -21,10 +21,10 @@ class MCTools(commands.Cog):
         self.bot = bot
         self.session = aiohttp.ClientSession()
         self.config = Config.get_conf(self, identifier=61564189)
-        default_global = {
+        default_guild = {
             "address": []
         }
-        self.config.register_global(**default_global)
+        self.config.register_global(**default_guild)
 
 
     def cog_unload(self):
