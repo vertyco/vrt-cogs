@@ -3,14 +3,13 @@ from redbot.core.utils.chat_formatting import box
 import aiohttp
 import discord
 
-
 class XTools(commands.Cog):
     """
     Xbox API Tools, inspiration from flare's ApiTools :)
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -31,10 +30,14 @@ class XTools(commands.Cog):
         async with self.session.get(f'https://xbl.io/api/v2/friends/search?gt={gtag}',
                                     headers={"X-Authorization": "8cgooossows0880s00kks48wcosw4c04ksk"}) as resp:
             # make request using that session and define its output as a 'resp'
-            data = await resp.json()
-            status = resp.status
-            remaining = resp.headers['X-RateLimit-Remaining']
-            ratelimit = resp.headers['X-RateLimit-Limit']
+            try:
+                data = await resp.json()
+                status = resp.status
+                remaining = resp.headers['X-RateLimit-Remaining']
+                ratelimit = resp.headers['X-RateLimit-Limit']
+            except ContentTypeError:
+                ctx.send("The API failed to pull the data for some reason. Please try again.")
+
         return data, status, remaining, ratelimit
         # return the api stuff for use in the command
 
