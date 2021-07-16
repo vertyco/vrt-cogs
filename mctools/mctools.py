@@ -24,7 +24,7 @@ class MCTools(commands.Cog):
         default_guild = {
             "address": []
         }
-        self.config.register_global(**default_guild)
+        self.config.register_guild(**default_guild)
 
 
     def cog_unload(self):
@@ -78,4 +78,3 @@ class MCTools(commands.Cog):
         """Add an MC Bedrock server. format is IP:PORT"""
         await self.config.guild(ctx.guild).address.set(address)
         await ctx.send("Your server has been set!")
-
