@@ -6,7 +6,7 @@ import discord
 
 class MCTools(commands.Cog):
     """
-    Simple minecraft status cog for bedrock servers.
+    Simple status cog for Minecraft bedrock servers.
     """
 
     __author__ = "Vertyco"
