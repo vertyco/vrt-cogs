@@ -48,7 +48,7 @@ class ArkTools(commands.Cog):
         self.config.register_guild(**default_guild)
 
         """Windows might need this?"""
-        # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     def cog_unload(self):
         self.getchat.cancel()
