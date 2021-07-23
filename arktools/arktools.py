@@ -2,7 +2,6 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify
 from discord.ext import tasks
 import discord
-import emoji
 import unicodedata
 import rcon
 import asyncio
