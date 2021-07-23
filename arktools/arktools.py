@@ -358,8 +358,9 @@ class ArkTools(commands.Cog):
                             print(f"Task list full{len(asyncio.all_tasks())}, skipping iteration")
                             return
                         await asyncio.wait_for(tasks, timeout=2)
-                    except asyncio.CancelledError as e:
-                        return print(f"task timeout: {e}")
+                    except asyncio.TimeoutError as e:
+                        print(f"task timeout: {e}")
+                        await asyncio.sleep(5)
 
     # Rcon function for getchat loop, parses the response to send to designated discord channels.
     async def getchatrcon(self, guild, cluster, server):
