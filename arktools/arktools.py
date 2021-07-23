@@ -60,33 +60,33 @@ class ArkTools(commands.Cog):
     @commands.group(name="arktools")
     @commands.guildowner()
     async def _setarktools(self, ctx: commands.Context):
-        """Ark Tools base command"""
+        """Ark Tools base command."""
         pass
 
     @_setarktools.group(name="permissions")
     @commands.guildowner()
     async def _permissions(self, ctx: commands.Context):
-        """Permission specific role settings for rcon commands"""
+        """Permission specific role settings for rcon commands."""
         pass
 
     @_setarktools.group(name="server")
     @commands.guildowner()
     async def _serversettings(self, ctx: commands.Context):
-        """Server setup"""
+        """Server setup."""
         pass
 
 
     # PERMISSIONS COMMANDS
     @_permissions.command(name="setfullaccessrole")
     async def _setfullaccessrole(self, ctx: commands.Context, role: discord.Role):
-        """Set a role you want to have full RCON access for"""
+        """Set a role you want to have full RCON access for."""
         await self.config.guild(ctx.guild).fullaccessrole.set(role.id)
         await ctx.send(f"Full rcon access role has been set to {role}")
 
 
     @_permissions.command(name="addmodrole")
     async def _addmodrole(self, ctx: commands.Context, *, role: discord.Role):
-        """Add a role to allow limited command access for"""
+        """Add a role to allow limited command access for."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
             if role.id in modroles:
                 await ctx.send("That role already exists.")
@@ -96,7 +96,7 @@ class ArkTools(commands.Cog):
 
     @_permissions.command(name="delmodrole")
     async def _delmodrole(self, ctx: commands.Context, role: discord.Role):
-        """Delete a mod role. use `[p]setarktools permissions view` to view current mod roles"""
+        """Delete a mod role. use `[p]setarktools permissions view` to view current mod roles."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
             if role.id in modroles:
                 modroles.remove(role.id)
@@ -107,6 +107,7 @@ class ArkTools(commands.Cog):
 
     @_permissions.command(name="addmodcommand")
     async def _addmodcommand(self, ctx: commands.Context, *, modcommand: str):
+        """Add allowable commands for the mods to use."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
             if modcommand in modcommands:
                 await ctx.send("That command already exists!")
@@ -116,6 +117,7 @@ class ArkTools(commands.Cog):
 
     @_permissions.command(name="delmodcommand")
     async def _delmodcommand(self, ctx: commands.Context, modcommand: str):
+        """Delete an allowed mod command."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
             if modcommand in modcommands:
                 modcommands.remove(modcommand)
@@ -132,6 +134,7 @@ class ArkTools(commands.Cog):
                           leavechannel: discord.TextChannel,
                           adminlogchannel: discord.TextChannel,
                           globalchatchannle: discord.TextChannel):
+        """Add a cluster with specified log channels."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername in clusters.keys():
                 await ctx.send("Cluster already exists")
@@ -147,6 +150,7 @@ class ArkTools(commands.Cog):
 
     @_serversettings.command(name="delcluster")
     async def _delcluster(self, ctx: commands.Context, clustername: str):
+        """Delete a cluster."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername not in clusters.keys():
                 await ctx.send("Cluster name not found")
@@ -158,6 +162,7 @@ class ArkTools(commands.Cog):
     @_serversettings.command(name="addserver")
     async def _addserver(self, ctx: commands.Context, clustername: str, servername: str, ip: str,
                          port: int, password: str, channel: discord.TextChannel):
+        """Add a server."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername in clusters.keys():
                 if servername in clusters[clustername]["servers"].keys():
@@ -176,6 +181,7 @@ class ArkTools(commands.Cog):
 
     @_serversettings.command(name="delserver")
     async def _delserver(self, ctx: commands.Context, clustername: str, servername: str):
+        """Remove a server."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             server = clusters[clustername]["servers"]
             if servername in server.keys():
@@ -188,7 +194,7 @@ class ArkTools(commands.Cog):
     # VIEW SETTINGS
     @_permissions.command(name="view")
     async def _viewperms(self, ctx: commands.Context):
-        """View current permission settings"""
+        """View current permission settings."""
 
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
@@ -204,7 +210,7 @@ class ArkTools(commands.Cog):
 
     @_serversettings.command(name="view")
     async def _viewsettings(self, ctx: commands.Context):
-        """View current server settings"""
+        """View current server settings."""
         settings = await self.config.guild(ctx.guild).all()
         serversettings = ""
         for pv in settings["clusters"]:
@@ -409,20 +415,6 @@ class ArkTools(commands.Cog):
         print("Getting crosschat loop ready.")
         await self.bot.wait_until_red_ready()
 
-    # for refreshing the task loop list (if needed)
-    # @tasks.loop(seconds=60)
-    # async def taskrefresh(self):
-    #     print("Current task count: ", len(asyncio.Task.all_tasks()))
-    #     print("Tasks that are active: ", len(asyncio.all_tasks()))
-    #     # self.getchat.cancel()
-    #     print("Task list refreshed")
-    #     await asyncio.sleep(5)
-    #     # self.getchat.start()
-    # @taskrefresh.before_loop
-    # async def before_taskrefresh(self):
-    #     print("Getting task refresher ready.")
-    #     await self.bot.wait_until_red_ready()
-
     # Message listener to send chat to designated servers
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
@@ -502,19 +494,3 @@ class ArkTools(commands.Cog):
 
         # channel = message.channel.id
         # await message.channel.send(channel)
-
-
-
-#task loop example
-    # @tasks.loop(seconds=5.0)
-    # async def crosschat(self):
-    #     guild = self.bot.get_guild(625757527765811240)
-    #     channel = guild.get_channel(770891102601084928)
-    #     await channel.send("testing")
-    #
-    # @crosschat.before_loop
-    # async def before_crosschat(self):
-    #     guild = self.bot.get_guild(625757527765811240)
-    #     test = guild.get_channel(770891102601084928)
-    #     await test.send("waiting...")
-    #     await self.bot.wait_until_red_ready()
