@@ -28,6 +28,8 @@ class ArkTools(commands.Cog):
         self.bot = bot
         self.getchat.start()
         self.serverstatus.start()
+        # self.playerlog.start()
+        self.playerlist = {}
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         default_guild = {
             "statuschannel": None,
@@ -58,6 +60,7 @@ class ArkTools(commands.Cog):
     def cog_unload(self):
         self.serverstatus.cancel()
         self.taskrefresh.cancel()
+        # self.playerlog.cancel()
 
 
 
@@ -330,7 +333,7 @@ class ArkTools(commands.Cog):
 
 
     # Crosschat loop logic
-    @tasks.loop(seconds=4, reconnect=True)
+    @tasks.loop(seconds=5, reconnect=True)
     async def getchat(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -415,10 +418,10 @@ class ArkTools(commands.Cog):
             await globalchat.send(f"{chatchannel.mention}: {msg}")
             await chatchannel.send(msg)
 
-
     # Just waits till bot is ready to do the chat loop
     @getchat.before_loop
     async def before_getchat(self):
+        await asyncio.sleep(2)
         print("Getting crosschat loop ready.")
         await self.bot.wait_until_red_ready()
 
@@ -482,7 +485,10 @@ class ArkTools(commands.Cog):
                     map.append(settings["clusters"][cluster]["servers"][server])
         return chatchannels, map
 
-    @tasks.loop(seconds=120, reconnect=True)
+
+    # Pulls player list every 4 minutes
+    # Shows and maintains a server status channel
+    @tasks.loop(seconds=240, reconnect=True)
     async def serverstatus(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -493,12 +499,13 @@ class ArkTools(commands.Cog):
             if not settings:
                 continue
             statusmsg = ""
-            clustercount = 0
+            totalcount = 0
             for cluster in settings["clusters"]:
+                clustercount = 0
                 if not settings["clusters"]:
                     continue
                 statusmsg += \
-                    f"**{cluster.upper()}** - `{clustercount}` {'player' if clustercount == 1 else 'players'} total\n"
+                    f"**{cluster.upper()}**\n"
                 for server in settings["clusters"][cluster]["servers"]:
 
                     channel = guild.get_channel(int(settings["clusters"][cluster]["servers"][server]["chatchannel"]))
@@ -511,11 +518,13 @@ class ArkTools(commands.Cog):
                     if playercount == None:
                         statusmsg += f"{channel.mention}: Offline..\n"
                         continue
-
                     playercount = len(playercount)
                     clustercount += playercount
-
+                    totalcount += playercount
                     statusmsg += f"{channel.mention}: {playercount} {'player' if playercount == 1 else 'players'}\n"
+
+                statusmsg += \
+                    f"`{clustercount}` {'player' if clustercount == 1 else 'players'} in cluster\n"
 
             messagedata = await self.config.guild(guild).statusmessage()
             channeldata = await self.config.guild(guild).statuschannel()
@@ -532,9 +541,10 @@ class ArkTools(commands.Cog):
                 description=statusmsg
             )
 
+            embed.add_field(name="Total Players", value=f"`{totalcount}`")
             destinationchannel = guild.get_channel(channeldata)
-
             msgtoedit = None
+
             if messagedata:
                 try:
                     msgtoedit = await destinationchannel.fetch_message(messagedata)
@@ -547,7 +557,7 @@ class ArkTools(commands.Cog):
                 await self.config.guild(guild).statusmessage.set(message.id)
             if msgtoedit:
                 await msgtoedit.edit(embed=embed)
-        await asyncio.sleep(1)
+        await asyncio.sleep(30)
 
     @serverstatus.before_loop
     async def before_serverstatus(self):
@@ -578,8 +588,64 @@ class ArkTools(commands.Cog):
             print(f"Playerlist task timeout")
             return await asyncio.sleep(5)
 
-
-
+    # Logs join/leave for players in their designated channels
+    # @tasks.loop(seconds=30)
+    # async def playerlog(self):
+    #     while self.bot.is_ready:
+    #         data = await self.config.all_guilds()
+    #         for guildID in data:
+    #             guild = self.bot.get_guild(int(guildID))
+    #             if not guild:
+    #                 continue
+    #             settings = await self.config.guild(guild).all()
+    #             if not settings:
+    #                 continue
+    #
+    #             for cluster in settings["clusters"]:
+    #                 if not settings["clusters"][cluster]:
+    #                     continue
+    #                 # Set join/leave channel object and then get discord channel mention for them
+    #                 joinchannel = settings["clusters"][cluster]["joinchannel"]
+    #                 joinchannel = guild.get_channel(int(joinchannel))
+    #                 leavechannel = settings["clusters"][cluster]["leavechannel"]
+    #                 leavechannel = guild.get_channel(int(leavechannel))
+    #
+    #                 for server in settings["clusters"][cluster]["servers"]:
+    #                     channel = guild.get_channel(int(settings["clusters"][cluster]["servers"][server]['chatchannel']))
+    #
+    #                     playerlist = await self.getplayers(settings["clusters"][cluster]["servers"][server])
+    #                     if not playerlist:
+    #                         continue
+    #
+    #                     if channel not in self.playerlist:
+    #                         self.playerlist[channel] = playerlist
+    #
+    #                     player_left = await self.checkplayerleft(channel, playerlist)
+    #                     if player_left:
+    #                         for player in player_left:
+    #                             servername = settings["clusters"][cluster]["servers"][server]["name"]
+    #                             await leavechannel.send(f":red_circle: `{player[0]}, {player[1]}` left the **{servername}** server.")
+    #                             await asyncio.sleep(1)
+    #
+    #                     player_joined = await self.checkplayerjoin(channel, playerlist)
+    #                     if player_joined:
+    #                         for player in player_joined:
+    #                             servername = settings["clusters"][cluster]["servers"][server]["name"]
+    #                             await joinchannel.send(f":green_circle: `{player[0]}, {player[1]}` joined the **{servername}** server.")
+    #                             await asyncio.sleep(1)
+    #                     self.playerlist[channel] = playerlist
+    #         await asyncio.sleep(30)
+    # @playerlog.before_loop
+    # async def before_playerlog(self):
+    #     await asyncio.sleep(4)
+    #     print("Getting player log loop ready.")
+    #     await self.bot.wait_until_red_ready()
+    #
+    # async def checkplayerleft(self, channel, playerlist):
+    #     return [player for player in self.playerlist[channel] if player not in playerlist]
+    #
+    # async def checkplayerjoin(self, channel, playerlist):
+    #     return [player for player in playerlist if player not in self.playerlist[channel]]
 
 
 
