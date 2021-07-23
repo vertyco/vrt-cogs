@@ -2,10 +2,14 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify
 from discord.ext import tasks
 import discord
+import datetime
+import pytz
 import unicodedata
 import rcon
 import asyncio
+import os
 import json
+import re
 
 
 class ArkTools(commands.Cog):
@@ -23,9 +27,11 @@ class ArkTools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.getchat.start()
-        #self.taskrefresh.start()
+        self.serverstatus.start()
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         default_guild = {
+            "statuschannel": None,
+            "statusmessage": None,
             "clusters": {},
             "servers": {},
             "servername": {},
@@ -50,8 +56,8 @@ class ArkTools(commands.Cog):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     def cog_unload(self):
-        self.getchat.cancel()
-        #self.taskrefresh.cancel()
+        self.serverstatus.cancel()
+        self.taskrefresh.cancel()
 
 
 
@@ -190,8 +196,13 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send(f"{servername} server not found.")
 
+    @_serversettings.command(name="setstatuschannel")
+    async def _setstatuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
+        """Set a channel for a server status embed."""
+        await self.config.guild(ctx.guild).statuschannel.set(channel.id)
+        await ctx.send(f"Status channel has been set to {channel.mention}")
 
-    # VIEW SETTINGS
+    # VIEW SETTINGSs
     @_permissions.command(name="view")
     async def _viewperms(self, ctx: commands.Context):
         """View current permission settings."""
@@ -319,7 +330,7 @@ class ArkTools(commands.Cog):
 
 
     # Crosschat loop logic
-    @tasks.loop(seconds=3)
+    @tasks.loop(seconds=4, reconnect=True)
     async def getchat(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -343,37 +354,26 @@ class ArkTools(commands.Cog):
                     if not channel:
                         return
 
-                    """Loop option #1 using discord.ext.tasks"""
-                    # await self.getchatrcon(guild,
-                    #                        guildsettings[cluster]["servers"][server]["cluster"],
-                    #                        guildsettings[cluster]["servers"][server]
-                    #                        )
+                    """Loop option #1 using discord.ext.tasks(no timeout)"""
+                    # await self.getchatrcon(guildsettings[cluster]["servers"][server])
 
                     """Loop option #2 using asyncio task loop"""
                     chattask = []
                     chattask.append(self.getchatrcon(guild,
-                                                  guildsettings[cluster]["servers"][server]["cluster"],
-                                                  guildsettings[cluster]["servers"][server]
-                                                  ))
-
+                                                     guildsettings[cluster]["servers"][server]["cluster"],
+                                                     guildsettings[cluster]["servers"][server]
+                                                     ))
+                    tasks = asyncio.gather(*chattask, return_exceptions=True)
                     # Gathers the getchat tasks with a timeout
                     try:
-                        tasks = asyncio.gather(*chattask)
-                        if len(asyncio.all_tasks()) > 60:
-                            print(f"Task list full{len(asyncio.all_tasks())}, skipping iteration")
-                            return
-                        await asyncio.wait_for(tasks, timeout=2)
-                    except asyncio.TimeoutError as e:
-                        print(f"task timeout: {e}")
-                        await asyncio.sleep(5)
+                        await asyncio.wait_for(tasks, timeout=3)
+                    except (asyncio.CancelledError, OSError):
+                        print(f"Gather task timeout")
+                        await asyncio.sleep(15)
+                #print(len(asyncio.all_tasks()))
 
-    # Rcon function for getchat loop, parses the response to send to designated discord channels.
+    # RCON function for getchat loop, sends result to messagehandler function
     async def getchatrcon(self, guild, cluster, server):
-        guildsettings = await self.config.guild(guild).clusters()
-        adminlogchannel = guild.get_channel(int(guildsettings[cluster]["adminlogchannel"]))
-        globalchat = guild.get_channel(int(server["globalchat"]))
-        chatchannel = guild.get_channel(int(server["chatchannel"]))
-
         try:
             res = await rcon.asyncio.rcon(
                 command="getchat",
@@ -381,13 +381,19 @@ class ArkTools(commands.Cog):
                 port=server['port'],
                 passwd=server['password']
             )
-        except OSError as e:
-            if e.osrror == 121:
-                return await asyncio.sleep(30)
-            if e.osrror == 10038:
-                return await asyncio.sleep(60)
+            await self.messagehandler(guild, cluster, server, res)
+        except (asyncio.CancelledError, OSError):
+            print(f"RCON task timeout, purging active chat tasks.")
+            for task in asyncio.all_tasks(chattask):
+                task.cancel()
+            await asyncio.sleep(5)
 
-
+    # Handles messages returned from getchatrcon function.
+    async def messagehandler(self, guild, cluster, server, res):
+        guildsettings = await self.config.guild(guild).clusters()
+        adminlogchannel = guild.get_channel(int(guildsettings[cluster]["adminlogchannel"]))
+        globalchat = guild.get_channel(int(server["globalchat"]))
+        chatchannel = guild.get_channel(int(server["chatchannel"]))
         if "Server received, But no response!!" in res:
             return
         msgs = res.split("\n")
@@ -395,7 +401,8 @@ class ArkTools(commands.Cog):
         for msg in msgs:
             if msg.startswith("AdminCmd:"):
                 adminmsg = msg
-                await adminlogchannel.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
+                await adminlogchannel.send(
+                    f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
             if "): " not in msg:
                 continue
             if "tribe" and ", ID" in msg.lower():
@@ -475,20 +482,110 @@ class ArkTools(commands.Cog):
                     map.append(settings["clusters"][cluster]["servers"][server])
         return chatchannels, map
 
+    @tasks.loop(seconds=120, reconnect=True)
+    async def serverstatus(self):
+        data = await self.config.all_guilds()
+        for guildID in data:
+            guild = self.bot.get_guild(int(guildID))
+            if not guild:
+                continue
+            settings = await self.config.guild(guild).all()
+            if not settings:
+                continue
+            statusmsg = ""
+            clustercount = 0
+            for cluster in settings["clusters"]:
+                if not settings["clusters"]:
+                    continue
+                statusmsg += \
+                    f"**{cluster.upper()}** - `{clustercount}` {'player' if clustercount == 1 else 'players'} total\n"
+                for server in settings["clusters"][cluster]["servers"]:
+
+                    channel = guild.get_channel(int(settings["clusters"][cluster]["servers"][server]["chatchannel"]))
+                    if not channel:
+                        continue
+                    playercount = await self.getplayers(settings["clusters"][cluster]["servers"][server])
+                    if playercount == []:
+                        statusmsg += f"{channel.mention}: 0 Players\n"
+                        continue
+                    if playercount == None:
+                        statusmsg += f"{channel.mention}: Offline..\n"
+                        continue
+
+                    playercount = len(playercount)
+                    clustercount += playercount
+
+                    statusmsg += f"{channel.mention}: {playercount} {'player' if playercount == 1 else 'players'}\n"
+
+            messagedata = await self.config.guild(guild).statusmessage()
+            channeldata = await self.config.guild(guild).statuschannel()
+            if not channeldata:
+                continue
+            if not statusmsg:
+                continue
+
+            eastern = pytz.timezone('US/Eastern')
+            time = datetime.datetime.now(eastern)
+            embed = discord.Embed(
+                timestamp=time,
+                title="Server Status",
+                description=statusmsg
+            )
+
+            destinationchannel = guild.get_channel(channeldata)
+
+            msgtoedit = None
+            if messagedata:
+                try:
+                    msgtoedit = await destinationchannel.fetch_message(messagedata)
+                except discord.NotFound:
+                    print(f"Arktools Status message not found. Creating new message.")
+
+            if not msgtoedit:
+                await self.config.guild(guild).statusmessage.set(None)
+                message = await destinationchannel.send(embed=embed)
+                await self.config.guild(guild).statusmessage.set(message.id)
+            if msgtoedit:
+                await msgtoedit.edit(embed=embed)
+        await asyncio.sleep(1)
+
+    @serverstatus.before_loop
+    async def before_serverstatus(self):
+        await asyncio.sleep(3)
+        print("Getting status channel loop ready.")
+        await self.bot.wait_until_red_ready()
+
+    async def getplayers(self, server):
+        try:
+            res = await self.getplayersrcon(server)
+        except (asyncio.CancelledError, OSError):
+            print(f"Playerlist task timeout")
+
+        regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
+        playerlist = re.findall(regex, res)
+        return playerlist
+
+    async def getplayersrcon(self, server):
+        try:
+            res = await rcon.asyncio.rcon(
+                command="listplayers",
+                host=server['ip'],
+                port=server['port'],
+                passwd=server['password']
+            )
+            return res
+        except (asyncio.CancelledError, OSError):
+            print(f"Playerlist task timeout")
+            return await asyncio.sleep(5)
+
+
+
 
 
 
     # @commands.command(name="test")
     # async def mytestcom(self, ctx):
-    #     serverlist = []
-    #     settings = await self.config.guild(ctx.guild).all()
-    #     for cluster in settings["clusters"]:
-    #         globalchat = settings["clusters"][cluster]["globalchatchannel"]
-    #         for server in settings["clusters"][cluster]["servers"]:
-    #             settings["clusters"][cluster]["servers"][server]["cluster"] = cluster
-    #             settings["clusters"][cluster]["servers"][server]["globalchat"] = globalchat
-    #             serverlist.append(settings["clusters"][cluster]["servers"][server])
-    #     await ctx.send(serverlist)
+
 
 
 
