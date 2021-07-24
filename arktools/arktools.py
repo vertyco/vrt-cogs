@@ -334,7 +334,7 @@ class ArkTools(commands.Cog):
 
 
     # Crosschat loop logic
-    @tasks.loop(seconds=3, reconnect=True)
+    @tasks.loop(seconds=4, reconnect=True)
     async def getchat(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -360,15 +360,15 @@ class ArkTools(commands.Cog):
 
                     """Loop option #1 using discord.ext.tasks(no timeout)"""
                     try:
-                        print(f"awaiting {server} chat")
                         await self.getchatrcon(guild,
                                                guildsettings[cluster]["servers"][server]["cluster"],
                                                guildsettings[cluster]["servers"][server]
                                                )
+                        await asyncio.sleep(0.2)
                     except Exception as e:
                         print(f"Getchat task error: {e}")
 
-                    """Loop option #2 using asyncio task loop"""
+                    """Loop option #2 using asyncio task loops(ehh network and WinError 10038 issues)"""
                     # chattask = []
                     # chattask.append(self.getchatrcon(guild,
                     #                                  guildsettings[cluster]["servers"][server]["cluster"],
@@ -396,7 +396,7 @@ class ArkTools(commands.Cog):
             await self.messagehandler(guild, cluster, server, res)
         except (asyncio.CancelledError, OSError):
             await asyncio.sleep(5)
-            # print(f"RCON task timeout, purging active chat tasks.")
+            print(f"RCON task timeout")
             # for task in asyncio.all_tasks(chattask):
             #     task.cancel()
 
@@ -430,7 +430,7 @@ class ArkTools(commands.Cog):
     # Just waits till bot is ready to do the chat loop
     @getchat.before_loop
     async def before_getchat(self):
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)
         print("Getting crosschat loop ready.")
         await self.bot.wait_until_red_ready()
 
@@ -495,9 +495,9 @@ class ArkTools(commands.Cog):
         return chatchannels, map
 
 
-    # Pulls player list every 10 minutes
+    # Pulls player list every 5 minutes
     # Shows and maintains a server status channel
-    @tasks.loop(seconds=600, reconnect=True)
+    @tasks.loop(seconds=300, reconnect=True)
     async def serverstatus(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -521,7 +521,7 @@ class ArkTools(commands.Cog):
                     if not channel:
                         continue
                     playercount = await self.getplayers(settings["clusters"][cluster]["servers"][server])
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.3)
                     if playercount == []:
                         statusmsg += f"{channel.mention}: 0 Players\n"
                         continue
@@ -543,6 +543,7 @@ class ArkTools(commands.Cog):
             if not statusmsg:
                 continue
 
+            thumbnail = guild.icon_url
             eastern = pytz.timezone('US/Eastern')
             time = datetime.datetime.now(eastern)
             embed = discord.Embed(
@@ -550,8 +551,8 @@ class ArkTools(commands.Cog):
                 title="Server Status",
                 description=statusmsg
             )
-
             embed.add_field(name="Total Players", value=f"`{totalcount}`")
+            embed.set_thumbnail(url=thumbnail)
             destinationchannel = guild.get_channel(channeldata)
             msgtoedit = None
 
@@ -567,7 +568,7 @@ class ArkTools(commands.Cog):
                 await self.config.guild(guild).statusmessage.set(message.id)
             if msgtoedit:
                 await msgtoedit.edit(embed=embed)
-        await asyncio.sleep(30)
+        await asyncio.sleep(5)
 
     @serverstatus.before_loop
     async def before_serverstatus(self):
@@ -584,7 +585,7 @@ class ArkTools(commands.Cog):
         except (asyncio.CancelledError, OSError):
             print(f"Playerlist task timeout")
         finally:
-            await asyncio.sleep(20)
+            await asyncio.sleep(5)
 
     async def getplayersrcon(self, server):
         try:
@@ -661,10 +662,10 @@ class ArkTools(commands.Cog):
 
 
 
-    # @commands.command(name="test")
-    # async def mytestcom(self, ctx):
-    #     osname = os.name
-    #     await ctx.send(os.name)
+    @commands.command(name="test")
+    async def mytestcom(self, ctx):
+        img = ctx.guild.icon_url
+        await ctx.send(img)
 
 
 
