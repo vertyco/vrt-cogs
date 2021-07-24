@@ -54,12 +54,13 @@ class ArkTools(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
-        """Windows might need this?"""
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        """Windows event loop selector"""
+        if os.name == 'nt':
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     def cog_unload(self):
+        self.getchat.cancel()
         self.serverstatus.cancel()
-        self.taskrefresh.cancel()
         # self.playerlog.cancel()
 
 
@@ -333,7 +334,7 @@ class ArkTools(commands.Cog):
 
 
     # Crosschat loop logic
-    @tasks.loop(seconds=5, reconnect=True)
+    @tasks.loop(seconds=3, reconnect=True)
     async def getchat(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -358,25 +359,33 @@ class ArkTools(commands.Cog):
                         return
 
                     """Loop option #1 using discord.ext.tasks(no timeout)"""
-                    # await self.getchatrcon(guildsettings[cluster]["servers"][server])
+                    try:
+                        print(f"awaiting {server} chat")
+                        await self.getchatrcon(guild,
+                                               guildsettings[cluster]["servers"][server]["cluster"],
+                                               guildsettings[cluster]["servers"][server]
+                                               )
+                    except Exception as e:
+                        print(f"Getchat task error: {e}")
 
                     """Loop option #2 using asyncio task loop"""
-                    chattask = []
-                    chattask.append(self.getchatrcon(guild,
-                                                     guildsettings[cluster]["servers"][server]["cluster"],
-                                                     guildsettings[cluster]["servers"][server]
-                                                     ))
-                    tasks = asyncio.gather(*chattask, return_exceptions=True)
-                    # Gathers the getchat tasks with a timeout
-                    try:
-                        await asyncio.wait_for(tasks, timeout=3)
-                    except (asyncio.CancelledError, OSError):
-                        print(f"Gather task timeout")
-                        await asyncio.sleep(15)
-                #print(len(asyncio.all_tasks()))
+                    # chattask = []
+                    # chattask.append(self.getchatrcon(guild,
+                    #                                  guildsettings[cluster]["servers"][server]["cluster"],
+                    #                                  guildsettings[cluster]["servers"][server]
+                    #                                  ))
+                    # tasks = asyncio.gather(*chattask, return_exceptions=True)
+                    # # Gathers the getchat tasks with a timeout
+                    # try:
+                    #     await asyncio.wait_for(tasks, timeout=4)
+                    # except (asyncio.CancelledError, OSError):
+                    #     print(f"Gather task timeout")
+                    # finally:
+                    #     await asyncio.sleep(15)
 
     # RCON function for getchat loop, sends result to messagehandler function
     async def getchatrcon(self, guild, cluster, server):
+
         try:
             res = await rcon.asyncio.rcon(
                 command="getchat",
@@ -386,10 +395,10 @@ class ArkTools(commands.Cog):
             )
             await self.messagehandler(guild, cluster, server, res)
         except (asyncio.CancelledError, OSError):
-            print(f"RCON task timeout, purging active chat tasks.")
-            for task in asyncio.all_tasks(chattask):
-                task.cancel()
             await asyncio.sleep(5)
+            # print(f"RCON task timeout, purging active chat tasks.")
+            # for task in asyncio.all_tasks(chattask):
+            #     task.cancel()
 
     # Handles messages returned from getchatrcon function.
     async def messagehandler(self, guild, cluster, server, res):
@@ -486,9 +495,9 @@ class ArkTools(commands.Cog):
         return chatchannels, map
 
 
-    # Pulls player list every 4 minutes
+    # Pulls player list every 10 minutes
     # Shows and maintains a server status channel
-    @tasks.loop(seconds=240, reconnect=True)
+    @tasks.loop(seconds=600, reconnect=True)
     async def serverstatus(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -512,6 +521,7 @@ class ArkTools(commands.Cog):
                     if not channel:
                         continue
                     playercount = await self.getplayers(settings["clusters"][cluster]["servers"][server])
+                    await asyncio.sleep(0.5)
                     if playercount == []:
                         statusmsg += f"{channel.mention}: 0 Players\n"
                         continue
@@ -568,12 +578,13 @@ class ArkTools(commands.Cog):
     async def getplayers(self, server):
         try:
             res = await self.getplayersrcon(server)
+            regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
+            playerlist = re.findall(regex, res)
+            return playerlist
         except (asyncio.CancelledError, OSError):
             print(f"Playerlist task timeout")
-
-        regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
-        playerlist = re.findall(regex, res)
-        return playerlist
+        finally:
+            await asyncio.sleep(20)
 
     async def getplayersrcon(self, server):
         try:
@@ -586,7 +597,8 @@ class ArkTools(commands.Cog):
             return res
         except (asyncio.CancelledError, OSError):
             print(f"Playerlist task timeout")
-            return await asyncio.sleep(5)
+        finally:
+            await asyncio.sleep(5)
 
     # Logs join/leave for players in their designated channels
     # @tasks.loop(seconds=30)
@@ -651,6 +663,8 @@ class ArkTools(commands.Cog):
 
     # @commands.command(name="test")
     # async def mytestcom(self, ctx):
+    #     osname = os.name
+    #     await ctx.send(os.name)
 
 
 
