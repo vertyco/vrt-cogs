@@ -14,7 +14,7 @@ import re
 
 class ArkTools(commands.Cog):
     """
-    Tools for Ark
+    RCON tools and crosschat for Ark: Survival Evolved!
     """
 
     __author__ = "Vertyco"
