@@ -414,23 +414,23 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
 
-                    try:
-                        res = await self.bot.loop.run_in_executor(None, lambda: self.rconloop("getchat", server))
-                        await self.bot.loop.run_in_executor(None, lambda: self.messagehandler(guild, server, res))
-                    except Exception as e:
-                        print(f"Main loop failure: {e}")
+                    await self.executor(guild, server)
 
-    async def rconloop(self, command, server):
-        try:
+    async def executor(self, guild, server):
+        async def rcon():
             res = await rcon.asyncio.rcon(
-                command=command,
+                command="getchat",
                 host=server['ip'],
                 port=server['port'],
                 passwd=server['password']
             )
             return res
+        try:
+            res = await self.bot.loop.run_in_executor(None, rcon)
+            await self.messagehandler(guild, server, res)
         except Exception as e:
-            print(f"RCON loop failure: {e}")
+            print(f"Executor failure: {e}")
+
 
     async def messagehandler(self, guild, server, res):
         adminlog = guild.get_channel(server["adminlogchannel"])
