@@ -60,11 +60,16 @@ class ArkTools(commands.Cog):
         # Loops
         self.initialize = bot.loop.create_task(self.initialize())
         self.taskdata = []
-        self.executor.start()
+        self.chat_executor.start()
+        self.playerlist_executor.start()
+
+        # Lists
+        self.playerlist = {}
 
     def cog_unload(self):
         self.initialize.cancel()
-        self.executor.cancel()
+        self.chat_executor.cancel()
+        self.playerlist_executor.cancel()
 
 
 
@@ -351,10 +356,8 @@ class ArkTools(commands.Cog):
             for mention in message.role_mentions:
                 message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
 
-        # Check if message was sent in global chat channel.
         clusterchannels, allservers = await self.globalchannelchecker(message.channel)
 
-        # Check if message was sent in a map channel.
         chatchannels, map = await self.mapchannelchecker(message.channel)
 
         if message.channel.id in clusterchannels:
@@ -411,7 +414,11 @@ class ArkTools(commands.Cog):
                     continue
                 globalchatchannel = guildsettings[cluster]["globalchatchannel"]
                 adminlogchannel = guildsettings[cluster]["adminlogchannel"]
+                joinchannel = guildsettings[cluster]["joinchannel"]
+                leavechannel = guildsettings[cluster]["leavechannel"]
                 for server in guildsettings[cluster]["servers"]:
+                    guildsettings[cluster]["servers"][server]["joinchannel"] = joinchannel
+                    guildsettings[cluster]["servers"][server]["leavechannel"] = leavechannel
                     guildsettings[cluster]["servers"][server]["adminlogchannel"] = adminlogchannel
                     guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
@@ -420,31 +427,83 @@ class ArkTools(commands.Cog):
         print("Ark config initialized.")
 
     # Executes all loops
-    @tasks.loop(seconds=4)
-    async def executor(self):
+    @tasks.loop(seconds=5)
+    async def chat_executor(self):
         for data in self.taskdata:
             guild = data[0]
             server = data[1]
-            await self.process_handler(guild, server)
+            await self.process_handler(guild, server, "getchat")
+
+    @chat_executor.before_loop
+    async def before_chat_executor(self):
+        await asyncio.sleep(4)
+        await self.bot.wait_until_red_ready()
+        print("Chat executor is ready.")
+
+    @tasks.loop(seconds=30)
+    async def playerlist_executor(self):
+        for data in self.taskdata:
+            guild = self.bot.get_guild(data[0])
+            server = data[1]
+            channel = server["chatchannel"]
+            joinlog = guild.get_channel(server["joinchannel"])
+            leavelog = guild.get_channel(server["leavechannel"])
+            mapname = server["name"].capitalize()
+            clustername = server["cluster"].upper()
+
+            newplayerlist = await self.process_handler(guild, server, "listplayers")
+
+            if channel not in self.playerlist:
+                self.playerlist[channel] = newplayerlist
+
+            playerjoin = self.checkplayerjoin(channel, newplayerlist)
+            if playerjoin:
+                await joinlog.send(f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
+
+            playerleft = self.checkplayerleave(channel, newplayerlist)
+            if playerleft:
+                await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
+
+            self.playerlist[channel] = newplayerlist
+
+    def checkplayerjoin(self, channel, playerlist):
+        for player in playerlist:
+            if player not in self.playerlist[channel]:
+                print(f"player join: {player}")
+                return player
+
+    def checkplayerleave(self, channel, playerlist):
+        for player in self.playerlist[channel]:
+            if player not in playerlist:
+                print(f"player leave: {player}")
+                return player
+
+
+    @playerlist_executor.before_loop
+    async def before_playerlist_executor(self):
+        await asyncio.sleep(4)
+        await self.bot.wait_until_red_ready()
+        print("Playerlist executor is ready.")
+
 
     # Runs synchronous rcon commands in another thread to not block heartbeat
-    async def process_handler(self, guild, server):
+    async def process_handler(self, guild, server, command):
         def rcon():
             with Client(server['ip'], server['port'], passwd=server['password']) as client:
-                res = client.run("getchat")
+                res = client.run(command)
                 return res
 
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
-            await self.messagehandler(guild, server, res)
+            if command == "getchat":
+                await self.messagehandler(guild, server, res)
+            if command == "listplayers":
+                regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
+                playerlist = re.findall(regex, res)
+                return playerlist
 
-    @executor.before_loop
-    async def before_executor(self):
-        await asyncio.sleep(4)
-        await self.bot.wait_until_red_ready()
-        print("Executor is ready.")
 
-
+    # Sends messages to their designated channels from the in-game chat
     async def messagehandler(self, guild, server, res):
         guild = self.bot.get_guild(int(guild))
         adminlog = guild.get_channel(server["adminlogchannel"])
