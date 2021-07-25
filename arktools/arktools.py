@@ -304,7 +304,7 @@ class ArkTools(commands.Cog):
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
-        # sending off to the task loop
+        # sending manual commands off to the task loop
         try:
             tasks = []
             for server in serverlist:
