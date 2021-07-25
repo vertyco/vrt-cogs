@@ -51,17 +51,19 @@ class ArkTools(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
-        self.chat_fromserver.start()
 
-        self.rcontasks = []
-        self.playerlist = {}
-
-        """Windows event loop selector"""
+        # Event loop selector
         if os.name == 'nt':
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+        # Loops
+        self.initialize = bot.loop.create_task(self.initialize())
+        self.taskdata = []
+        self.executor.start()
+
     def cog_unload(self):
-        self.chat_fromserver.cancel()
+        self.initialize.cancel()
+        self.executor.cancel()
 
 
 
@@ -392,12 +394,10 @@ class ArkTools(commands.Cog):
                     map.append(settings["clusters"][cluster]["servers"][server])
         return chatchannels, map
 
-    # Crosschat loop logic
-    @tasks.loop(seconds=8, reconnect=True)
-    async def chat_fromserver(self):
+    async def initialize(self):
         config = await self.config.all_guilds()
         for guildID in config:
-            guild = self.bot.get_guild(guildID)
+            guild = self.bot.get_guild(int(guildID))
             if not guild:
                 continue
             guildsettings = await self.config.guild(guild).clusters()
@@ -413,10 +413,16 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
+                    self.taskdata.append([guild.id, server])
 
-                    await self.executor(guild, server)
+    @tasks.loop(seconds=8)
+    async def executor(self):
+        for data in self.taskdata:
+            guild = data[0]
+            server = data[1]
+            await self.process_handler(guild, server)
 
-    async def executor(self, guild, server):
+    async def process_handler(self, guild, server):
         async def rcon():
             res = await rcon.asyncio.rcon(
                 command="getchat",
@@ -425,19 +431,30 @@ class ArkTools(commands.Cog):
                 passwd=server['password']
             )
             return res
-        try:
-            res = await self.bot.loop.run_in_executor(None, rcon)
+
+        # def connect():
+        #     res = asyncio.new_event_loop().run_until_complete(rcon())
+        #     return res
+        #
+        # task = functools.partial(connect)
+        res = await self.bot.loop.run_in_executor(None, rcon)
+        if res:
             await self.messagehandler(guild, server, res)
-        except Exception as e:
-            print(f"Executor failure: {e}")
+
+    @executor.before_loop
+    async def before_executor(self):
+        await asyncio.sleep(4)
+        await self.bot.wait_until_red_ready()
+        print("Crosschat loop is ready.")
 
 
     async def messagehandler(self, guild, server, res):
+        guild = self.bot.get_guild(int(guild))
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
-        if "Server received, But no response!!" in res:
-            return
+        # if "Server received, But no response!!" in res:
+        #     return
         msgs = res.split("\n")
         messages = []
         for msg in msgs:
@@ -457,31 +474,8 @@ class ArkTools(commands.Cog):
             await asyncio.sleep(0.1)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
 
-    @chat_fromserver.before_loop
-    async def before_chat_fromserver(self):
-        await self.bot.wait_until_red_ready()
-        print("Crosschat loop is ready.")
-
-
-
     @commands.command(name="test")
     async def mytestcom(self, ctx):
-        config = await self.config.all_guilds()
-        for guildID in config:
-            guild = self.bot.get_guild(guildID)
-            if not guild:
-                continue
-            guildsettings = await self.config.guild(guild).clusters()
-            if not guildsettings:
-                continue
-            for cluster in guildsettings:
-                globalchatchannel = guildsettings[cluster]["globalchatchannel"]
-                for server in guildsettings[cluster]["servers"]:
-                    guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
-                    guildsettings[cluster]["servers"][server]["cluster"] = cluster
-
-
-
-                    await ctx.send(guildsettings[cluster]["servers"][server])
-
+        for data in self.taskdata:
+            await ctx.send(data)
 
