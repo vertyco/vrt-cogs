@@ -1,6 +1,7 @@
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify
 from discord.ext import tasks
+from rcon import Client
 import functools
 import discord
 import datetime
@@ -361,6 +362,7 @@ class ArkTools(commands.Cog):
         if message.channel.id in chatchannels:
             await self.chat_toserver_rcon(map, message)
 
+    # Send chat to server(converts any unicode discord names)
     async def chat_toserver_rcon(self, server, message):
         for data in server:
             normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
@@ -370,7 +372,7 @@ class ArkTools(commands.Cog):
                 port=data['port'],
                 passwd=data['password']
             )
-
+    # Returns all channels and servers related to the message
     async def globalchannelchecker(self, channel):
         settings = await self.config.guild(channel.guild).all()
         clusterchannels = []
@@ -383,6 +385,7 @@ class ArkTools(commands.Cog):
                     allservers.append(settings["clusters"][cluster]["servers"][server])
         return clusterchannels, allservers
 
+    # Returns the channel and server related to the message
     async def mapchannelchecker(self, channel):
         settings = await self.config.guild(channel.guild).all()
         chatchannels = []
@@ -414,29 +417,23 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.taskdata.append([guild.id, server])
+        print("Ark config initialized.")
 
-    @tasks.loop(seconds=8)
+    # Executes all loops
+    @tasks.loop(seconds=4)
     async def executor(self):
         for data in self.taskdata:
             guild = data[0]
             server = data[1]
             await self.process_handler(guild, server)
 
+    # Runs synchronous rcon commands in another thread to not block heartbeat
     async def process_handler(self, guild, server):
-        async def rcon():
-            res = await rcon.asyncio.rcon(
-                command="getchat",
-                host=server['ip'],
-                port=server['port'],
-                passwd=server['password']
-            )
-            return res
+        def rcon():
+            with Client(server['ip'], server['port'], passwd=server['password']) as client:
+                res = client.run("getchat")
+                return res
 
-        # def connect():
-        #     res = asyncio.new_event_loop().run_until_complete(rcon())
-        #     return res
-        #
-        # task = functools.partial(connect)
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
             await self.messagehandler(guild, server, res)
@@ -445,7 +442,7 @@ class ArkTools(commands.Cog):
     async def before_executor(self):
         await asyncio.sleep(4)
         await self.bot.wait_until_red_ready()
-        print("Crosschat loop is ready.")
+        print("Executor is ready.")
 
 
     async def messagehandler(self, guild, server, res):
