@@ -589,14 +589,14 @@ class ArkTools(commands.Cog):
     # Runs synchronous rcon commands in another thread to not block heartbeat
     async def process_handler(self, guild, server, command):
         def rcon():
-            with Client(server['ip'], server['port'], passwd=server['password']) as client:
-                res = client.run(command)
-                return res
+            try:
+                with Client(server['ip'], server['port'], passwd=server['password']) as client:
+                    res = client.run(command)
+                    return res
+            except Exception as e:
+                print(f"Rcon task failed: {e}")
 
-        try:
-            res = await self.bot.loop.run_in_executor(None, rcon)
-        except Exception as e:
-            print(f"Rcon task failed: {e}")
+        res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
             if command == "getchat":
                 await self.message_handler(guild, server, res)
@@ -608,13 +608,12 @@ class ArkTools(commands.Cog):
 
     # Sends messages to their designated channels from the in-game chat
     async def message_handler(self, guild, server, res):
+        if "Server received, But no response!!" in res:
+            return
         guild = self.bot.get_guild(int(guild))
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
-
-        if "Server received, But no response!!" in res:
-            return
         msgs = res.split("\n")
         messages = []
         settings = await self.config.guild(guild).all()
