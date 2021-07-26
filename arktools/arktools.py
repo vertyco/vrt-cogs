@@ -353,7 +353,6 @@ class ArkTools(commands.Cog):
 
     # RCON manual command logic
     async def manual_rcon(self, ctx, serverlist, command):
-        await ctx.send(command)
         map = serverlist['name'].capitalize()
         cluster = serverlist['cluster'].upper()
         res = await rcon.asyncio.rcon(
@@ -368,6 +367,33 @@ class ArkTools(commands.Cog):
                            f"{box(res, lang='python')}")
         else:
             await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
+
+    # Cache the config into the task data on cog load
+    async def initialize(self):
+        config = await self.config.all_guilds()
+        for guildID in config:
+            guild = self.bot.get_guild(int(guildID))
+            if not guild:
+                continue
+            guildsettings = await self.config.guild(guild).clusters()
+            if not guildsettings:
+                continue
+            for cluster in guildsettings:
+                if not guildsettings[cluster]:
+                    continue
+                globalchatchannel = guildsettings[cluster]["globalchatchannel"]
+                adminlogchannel = guildsettings[cluster]["adminlogchannel"]
+                joinchannel = guildsettings[cluster]["joinchannel"]
+                leavechannel = guildsettings[cluster]["leavechannel"]
+                for server in guildsettings[cluster]["servers"]:
+                    guildsettings[cluster]["servers"][server]["joinchannel"] = joinchannel
+                    guildsettings[cluster]["servers"][server]["leavechannel"] = leavechannel
+                    guildsettings[cluster]["servers"][server]["adminlogchannel"] = adminlogchannel
+                    guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
+                    guildsettings[cluster]["servers"][server]["cluster"] = cluster
+                    server = guildsettings[cluster]["servers"][server]
+                    self.taskdata.append([guild.id, server])
+        print("ArkTools config initialized.")
 
     # Message listener to send chat to designated servers
     @commands.Cog.listener("on_message")
@@ -430,35 +456,8 @@ class ArkTools(commands.Cog):
                     map.append(settings["clusters"][cluster]["servers"][server])
         return chatchannels, map
 
-    # Cache the config into the task data on cog load
-    async def initialize(self):
-        config = await self.config.all_guilds()
-        for guildID in config:
-            guild = self.bot.get_guild(int(guildID))
-            if not guild:
-                continue
-            guildsettings = await self.config.guild(guild).clusters()
-            if not guildsettings:
-                continue
-            for cluster in guildsettings:
-                if not guildsettings[cluster]:
-                    continue
-                globalchatchannel = guildsettings[cluster]["globalchatchannel"]
-                adminlogchannel = guildsettings[cluster]["adminlogchannel"]
-                joinchannel = guildsettings[cluster]["joinchannel"]
-                leavechannel = guildsettings[cluster]["leavechannel"]
-                for server in guildsettings[cluster]["servers"]:
-                    guildsettings[cluster]["servers"][server]["joinchannel"] = joinchannel
-                    guildsettings[cluster]["servers"][server]["leavechannel"] = leavechannel
-                    guildsettings[cluster]["servers"][server]["adminlogchannel"] = adminlogchannel
-                    guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
-                    guildsettings[cluster]["servers"][server]["cluster"] = cluster
-                    server = guildsettings[cluster]["servers"][server]
-                    self.taskdata.append([guild.id, server])
-        print("ArkTools config initialized.")
-
     # Executes all loops
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=6)
     async def chat_executor(self):
         for data in self.taskdata:
             guild = data[0]
@@ -528,6 +527,8 @@ class ArkTools(commands.Cog):
                         continue
 
                     # Get cached player count
+                    if not self.playerlist:
+                        return
                     playercount = self.playerlist[channelid]
 
                     if playercount == []:
@@ -592,7 +593,10 @@ class ArkTools(commands.Cog):
                 res = client.run(command)
                 return res
 
-        res = await self.bot.loop.run_in_executor(None, rcon)
+        try:
+            res = await self.bot.loop.run_in_executor(None, rcon)
+        except Exception as e:
+            print(f"Rcon task failed: {e}")
         if res:
             if command == "getchat":
                 await self.message_handler(guild, server, res)
@@ -641,13 +645,12 @@ class ArkTools(commands.Cog):
     @chat_executor.before_loop
     async def before_chat_executor(self):
         await self.initialize()
-        await asyncio.sleep(3)
         await self.bot.wait_until_red_ready()
         print("Chat executor is ready.")
 
     @playerlist_executor.before_loop
     async def before_playerlist_executor(self):
-        await asyncio.sleep(4)
+        await asyncio.sleep(1)
         await self.bot.wait_until_red_ready()
         print("Playerlist executor is ready.")
 
