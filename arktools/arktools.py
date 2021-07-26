@@ -57,19 +57,22 @@ class ArkTools(commands.Cog):
         if os.name == 'nt':
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-        # Loops
-        self.initialize = bot.loop.create_task(self.initialize())
+        # Cache
         self.taskdata = []
+
+        # Loops
         self.chat_executor.start()
         self.playerlist_executor.start()
+        self.status_channel.start()
+
 
         # Lists
         self.playerlist = {}
 
     def cog_unload(self):
-        self.initialize.cancel()
         self.chat_executor.cancel()
         self.playerlist_executor.cancel()
+        self.status_channel.cancel()
 
 
 
@@ -337,7 +340,9 @@ class ArkTools(commands.Cog):
                            f"{box(res, lang='python')}")
 
         else:
-            await ctx.send(box(res, lang="python"))
+            map = serverlist['name'].capitalize()
+            cluster = serverlist['cluster'].upper()
+            await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
 
     # Message listener to send chat to designated servers
     @commands.Cog.listener("on_message")
@@ -400,6 +405,7 @@ class ArkTools(commands.Cog):
                     map.append(settings["clusters"][cluster]["servers"][server])
         return chatchannels, map
 
+    # Cache the config into the task data on cog load
     async def initialize(self):
         config = await self.config.all_guilds()
         for guildID in config:
@@ -424,7 +430,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.taskdata.append([guild.id, server])
-        print("Ark config initialized.")
+        print("ArkTools config initialized.")
 
     # Executes all loops
     @tasks.loop(seconds=5)
@@ -433,12 +439,6 @@ class ArkTools(commands.Cog):
             guild = data[0]
             server = data[1]
             await self.process_handler(guild, server, "getchat")
-
-    @chat_executor.before_loop
-    async def before_chat_executor(self):
-        await asyncio.sleep(4)
-        await self.bot.wait_until_red_ready()
-        print("Chat executor is ready.")
 
     @tasks.loop(seconds=30)
     async def playerlist_executor(self):
@@ -450,7 +450,6 @@ class ArkTools(commands.Cog):
             leavelog = guild.get_channel(server["leavechannel"])
             mapname = server["name"].capitalize()
             clustername = server["cluster"].upper()
-
             newplayerlist = await self.process_handler(guild, server, "listplayers")
 
             if channel not in self.playerlist:
@@ -469,21 +468,94 @@ class ArkTools(commands.Cog):
     def checkplayerjoin(self, channel, playerlist):
         for player in playerlist:
             if player not in self.playerlist[channel]:
-                print(f"player join: {player}")
                 return player
 
     def checkplayerleave(self, channel, playerlist):
         for player in self.playerlist[channel]:
             if player not in playerlist:
-                print(f"player leave: {player}")
                 return player
 
+    # Maintains an embed of all active servers and player counts
+    @tasks.loop(seconds=60)
+    async def status_channel(self):
+        data = await self.config.all_guilds()
+        for guildID in data:
+            guild = self.bot.get_guild(int(guildID))
+            if not guild:
+                continue
+            settings = await self.config.guild(guild).all()
+            if not settings:
+                continue
+            status = ""
+            totalplayers = 0
+            for cluster in settings["clusters"]:
+                clustertotal = 0
+                clustername = cluster.upper()
+                if not settings["clusters"]:
+                    continue
+                status += f"**{clustername}**\n"
+                for server in settings["clusters"][cluster]["servers"]:
+                    channel = guild.get_channel(settings["clusters"][cluster]["servers"][server]["chatchannel"])
+                    channelid = settings["clusters"][cluster]["servers"][server]["chatchannel"]
+                    if not channel:
+                        continue
 
-    @playerlist_executor.before_loop
-    async def before_playerlist_executor(self):
-        await asyncio.sleep(4)
-        await self.bot.wait_until_red_ready()
-        print("Playerlist executor is ready.")
+                    # Get cached player count
+                    playercount = self.playerlist[channelid]
+
+                    if playercount == []:
+                        status += f"{channel.mention}: 0 Players\n"
+                        continue
+                    if playercount == None:
+                        status += f"{channell.mention}: Offline...\n"
+                        continue
+
+                    playercount = len(playercount)
+                    clustertotal += playercount
+                    totalplayers += playercount
+                    if playercount == 1:
+                        status += f"{channel.mention}: {playercount} player\n"
+                    else:
+                        status += f"{channel.mention}: {playercount} players\n"
+
+                if clustertotal == 1:
+                    status += f"`{clustertotal}` player in the cluster\n"
+                else:
+                    status += f"`{clustertotal}` players in the cluster\n"
+
+            messagedata = await self.config.guild(guild).statusmessage()
+            channeldata = await self.config.guild(guild).statuschannel()
+            if not channeldata:
+                continue
+            if not messagedata:
+                continue
+
+            # Embed setup
+            thumbnail = guild.icon_url
+            eastern = pytz.timezone('US/Eastern')
+            time = datetime.datetime.now(eastern)
+            embed = discord.Embed(
+                timestamp=time,
+                title="Server Status",
+                description=status
+            )
+            embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+            embed.set_thumbnail(url=thumbnail)
+            destinationchannel = guild.get_channel(channeldata)
+            msgtoedit = None
+
+            if messagedata:
+                try:
+                    msgtoedit = await destinationchannel.fetch_message(messagedata)
+                except discord.NotFound:
+                    print(f"ArkTools Status message not found. Creating new message.")
+
+            if not msgtoedit:
+                await self.config.guild(guild).statusmessage.set(None)
+                message = await destinationchannel.send(embed=embed)
+                await self.config.guild(guild).statusmessage.set(message.id)
+            if msgtoedit:
+                await msgtoedit.edit(embed=embed)
 
 
     # Runs synchronous rcon commands in another thread to not block heartbeat
@@ -496,7 +568,7 @@ class ArkTools(commands.Cog):
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
             if command == "getchat":
-                await self.messagehandler(guild, server, res)
+                await self.message_handler(guild, server, res)
             if command == "listplayers":
                 regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
                 playerlist = re.findall(regex, res)
@@ -504,13 +576,13 @@ class ArkTools(commands.Cog):
 
 
     # Sends messages to their designated channels from the in-game chat
-    async def messagehandler(self, guild, server, res):
+    async def message_handler(self, guild, server, res):
         guild = self.bot.get_guild(int(guild))
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
-        # if "Server received, But no response!!" in res:
-        #     return
+        if "Server received, But no response!!" in res:
+            return
         msgs = res.split("\n")
         messages = []
         for msg in msgs:
@@ -522,16 +594,41 @@ class ArkTools(commands.Cog):
             if "tribe" and ", ID" in msg.lower():
                 continue
             else:
-                if 'Server received, But no response!!' not in msg:
-                    if not msg.startswith('SERVER:'):
-                        messages.append(msg)
+                if not msg.startswith('SERVER:'):
+                    messages.append(msg)
         for msg in messages:
             await chatchannel.send(msg)
             await asyncio.sleep(0.1)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
 
+    @chat_executor.before_loop
+    async def before_chat_executor(self):
+        await self.initialize()
+        await asyncio.sleep(3)
+        await self.bot.wait_until_red_ready()
+        print("Chat executor is ready.")
+
+    @playerlist_executor.before_loop
+    async def before_playerlist_executor(self):
+        await asyncio.sleep(4)
+        await self.bot.wait_until_red_ready()
+        print("Playerlist executor is ready.")
+
+    @status_channel.before_loop
+    async def before_status_channel(self):
+        await asyncio.sleep(5)
+        await self.bot.wait_until_red_ready()
+        print("Status channel monitor running.")
+
     @commands.command(name="test")
     async def mytestcom(self, ctx):
-        for data in self.taskdata:
-            await ctx.send(data)
+        data = await self.config.all_guilds()
+        for guildID in data:
+            guild = self.bot.get_guild(int(guildID))
+            if not guild:
+                continue
+            playerlist = self.playerlist
+            for channel in playerlist:
+                print(len(playerlist[channel]))
+
 
