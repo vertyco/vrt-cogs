@@ -20,4 +20,4 @@ Various tools for Xbox using xbl.io API.
 Super simple status cog for Minecraft Bedrock servers.
 ```
 
-**Note:** tests is just random scratch py files i've made while testing/making cogs.
+**Note:** "tests" is just a folder with a bunch of random scratch py files i've made while testing/making cogs.
