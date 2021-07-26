@@ -54,8 +54,8 @@ class ArkTools(commands.Cog):
 
 
         # Event loop selector
-        if os.name == 'nt':
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        # if os.name == 'nt':
+        #     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
         # Cache
         self.taskdata = []
@@ -64,7 +64,6 @@ class ArkTools(commands.Cog):
         self.chat_executor.start()
         self.playerlist_executor.start()
         self.status_channel.start()
-
 
         # Lists
         self.playerlist = {}
@@ -527,8 +526,6 @@ class ArkTools(commands.Cog):
                         continue
 
                     # Get cached player count
-                    if not self.playerlist:
-                        return
                     playercount = self.playerlist[channelid]
 
                     if playercount == []:
@@ -589,12 +586,9 @@ class ArkTools(commands.Cog):
     # Runs synchronous rcon commands in another thread to not block heartbeat
     async def process_handler(self, guild, server, command):
         def rcon():
-            try:
-                with Client(server['ip'], server['port'], passwd=server['password']) as client:
-                    result = client.run(command)
-                    return result
-            except Exception as e:
-                print(f"Rcon task failed: {e}")
+            with Client(server['ip'], server['port'], passwd=server['password']) as client:
+                result = client.run(command)
+                return result
 
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
@@ -643,24 +637,24 @@ class ArkTools(commands.Cog):
 
     @chat_executor.before_loop
     async def before_chat_executor(self):
-        await self.initialize()
         await self.bot.wait_until_red_ready()
+        await self.initialize()
         print("Chat executor is ready.")
 
     @playerlist_executor.before_loop
     async def before_playerlist_executor(self):
-        await asyncio.sleep(1)
         await self.bot.wait_until_red_ready()
         print("Playerlist executor is ready.")
 
     @status_channel.before_loop
     async def before_status_channel(self):
-        await asyncio.sleep(5)
         await self.bot.wait_until_red_ready()
-        print("Status channel monitor running.")
+        await asyncio.sleep(15)
+        print("Status channel monitor is ready.")
 
-    # @commands.command(name="test")
-    # async def mytestcom(self, ctx):
+    @commands.command(name="test")
+    async def mytestcom(self, ctx):
+        await ctx.send(self.playerlist)
 
 
 
