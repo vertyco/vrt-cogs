@@ -503,7 +503,6 @@ class ArkTools(commands.Cog):
     # Maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
     async def status_channel(self):
-        await asyncio.sleep(3)
         data = await self.config.all_guilds()
         for guildID in data:
             guild = self.bot.get_guild(int(guildID))
@@ -522,17 +521,13 @@ class ArkTools(commands.Cog):
                 status += f"**{clustername}**\n"
                 for server in settings["clusters"][cluster]["servers"]:
                     channel = guild.get_channel(settings["clusters"][cluster]["servers"][server]["chatchannel"])
-                    channelid = int(settings["clusters"][cluster]["servers"][server]["chatchannel"])
+                    channelid = settings["clusters"][cluster]["servers"][server]["chatchannel"]
                     if not channel:
                         continue
                     if not channelid:
                         continue
 
                     # Get cached player count
-                    if self.playerlist == {}:
-                        return
-                    if channelid not in self.playerlist[channelid]:
-                        return
                     playercount = self.playerlist[channelid]
 
                     if playercount == []:
