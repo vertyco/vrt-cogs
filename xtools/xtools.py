@@ -1,4 +1,4 @@
-from redbot.core import commands
+from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
 import aiohttp
 import discord
@@ -19,32 +19,51 @@ class XTools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession()
-        # init session
+        self.config = Config.get_conf(self, 117117, force_registration=True)
+        default_guild = {"apikey": None}
+        self.config.register_guild(**default_guild)
+
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
-        # close session on unload
 
-    async def get_gamertag(self, gtag):
+    async def get_gamertag(self, command, gtag):
         # define what happens when the 'xprofile' command is run
-        async with self.session.get(f'https://xbl.io/api/v2/friends/search?gt={gtag}',
-                                    headers={"X-Authorization": "8cgooossows0880s00kks48wcosw4c04ksk"}) as resp:
-            # make request using that session and define its output as a 'resp'
-            try:
-                data = await resp.json()
-                status = resp.status
-                remaining = resp.headers['X-RateLimit-Remaining']
-                ratelimit = resp.headers['X-RateLimit-Limit']
-            except ContentTypeError:
-                ctx.send("The API failed to pull the data for some reason. Please try again.")
+        config = await self.config.all_guilds()
+        for guildID in config:
+            guild = self.bot.get_guild(int(guildID))
+            if not guild:
+                continue
+            settings = await self.config.guild(guild).all()
+            apikey = settings["apikey"]
+            async with self.session.get(f'{command}{gtag}',
+                                        headers={"X-Authorization": apikey}) as resp:
+                # make request using that session and define its output as a 'resp'
+                try:
+                    data = await resp.json()
+                    status = resp.status
+                    remaining = resp.headers['X-RateLimit-Remaining']
+                    ratelimit = resp.headers['X-RateLimit-Limit']
+                except ContentTypeError:
+                    ctx.send("The API failed to pull the data for some reason. Please try again.")
 
-        return data, status, remaining, ratelimit
-        # return the api stuff for use in the command
+                return data, status, remaining, ratelimit
+                # return the api stuff for use in the command
+
+    @commands.command(name="setapikey", alias="xtools")
+    async def setkey(self, ctx, key: str):
+        """
+        Set an api key so you can view your info.
+        To get an api key, visit https://xbl.io/
+        """
+        await self.config.guild(ctx.guild).apikey.set(str(key))
+        await ctx.send(f"API key has been set!")
 
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
-        # define gamertag here defined as 'gtag'
-        data, status, remaining, ratelimit = await self.get_gamertag(gtag)
+        """Type your gamertag in and pull your profile info"""
+        command = "https://xbl.io/api/v2/friends/search?gt="
+        data, status, remaining, ratelimit = await self.get_gamertag(command, gtag)
         try:
             for user in data["profileUsers"]:
                 xuid = (f"**XUID:** {user['id']}")
