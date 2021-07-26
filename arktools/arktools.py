@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.177"
+    __version__ = "1.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -591,8 +591,8 @@ class ArkTools(commands.Cog):
         def rcon():
             try:
                 with Client(server['ip'], server['port'], passwd=server['password']) as client:
-                    res = client.run(command)
-                    return res
+                    result = client.run(command)
+                    return result
             except Exception as e:
                 print(f"Rcon task failed: {e}")
 
@@ -635,7 +635,7 @@ class ArkTools(commands.Cog):
                     regname = re.findall(reg, msg)
                     for name in regname:
                         await self.process_handler(guild, server, f'renameplayer "{names.lower()}" {name}')
-                        await chatchannel.send(f"A blacklisted player name `{names}` has been renamed to `{name}`.")
+                        await chatchannel.send(f"A player named `{names}` has been renamed to `{name}`.")
         for msg in messages:
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
