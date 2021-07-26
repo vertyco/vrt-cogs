@@ -635,7 +635,6 @@ class ArkTools(commands.Cog):
                         await chatchannel.send(f"A blacklisted player name `{names}` has been renamed to `{name}`.")
         for msg in messages:
             await chatchannel.send(msg)
-            await asyncio.sleep(0.1)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
 
 
