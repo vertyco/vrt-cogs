@@ -78,7 +78,6 @@ class ArkTools(commands.Cog):
 
     # GROUPS
     @commands.group(name="arktools")
-    @commands.guildowner()
     async def _setarktools(self, ctx: commands.Context):
         """Ark Tools base command."""
         pass
@@ -279,18 +278,20 @@ class ArkTools(commands.Cog):
     async def rcon(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
         """Perform an RCON command."""
         settings = await self.config.guild(ctx.guild).all()
-
         # Check whether user has perms
         userallowed = False
         for role in ctx.author.roles:
-            if str(role.id) in settings['modroles']:
+            if role.id == settings['fullaccessrole']:
                 userallowed = True
-            elif str(role.id) in settings['modroles']:
-                modcmds = settings['modcommands'].values()
-                if command.lower() in [x.lower() for x in modcmds]:
-                    userallowed = True
-        if not userallowed and not ctx.guild.owner == ctx.author:
-            return await ctx.send("You do not have the required permissions to run that command.")
+            for modrole in settings['modroles']:
+                if role.id == modrole:
+                    modcmds = settings['modcommands']
+                    for cmd in modcmds:
+                        if command.lower() == cmd:
+                            userallowed = True
+        if not userallowed:
+            if ctx.guild.owner != ctx.author:
+                return await ctx.send("You do not have the required permissions to run that command.")
 
         # data setup logic to send commands to task loop
         serverlist = []
@@ -299,8 +300,10 @@ class ArkTools(commands.Cog):
                 return await ctx.send("Cluster name not found.")
             if servername == "all":
                 for server in settings["clusters"][clustername]["servers"]:
+                    settings["clusters"][clustername]["servers"][server]["cluster"] = clustername
                     serverlist.append(settings["clusters"][clustername]["servers"][server])
             if servername != "all":
+                settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername
                 if servername not in settings["clusters"][clustername]["servers"]:
                     return await ctx.send("Server name not found.")
                 serverlist.append(settings["clusters"][clustername]["servers"][servername])
@@ -311,6 +314,7 @@ class ArkTools(commands.Cog):
                         settings["clusters"][cluster]["servers"][server]["cluster"] = cluster
                         serverlist.append(settings["clusters"][cluster]["servers"][server])
                 if servername != "all":
+                    settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster
                     if servername not in settings["clusters"][cluster]["servers"]:
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][cluster]["servers"][servername])
@@ -319,7 +323,7 @@ class ArkTools(commands.Cog):
         try:
             tasks = []
             for server in serverlist:
-                tasks.append(self.manual_rcon(server, command, ctx))
+                tasks.append(self.manual_rcon(ctx, server, command))
             await asyncio.gather(*tasks)
         except WindowsError as e:
             if e.winerror == 121:
@@ -327,21 +331,21 @@ class ArkTools(commands.Cog):
         await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
     # RCON manual command logic
-    async def manual_rcon(self, serverlist, command, ctx):
+    async def manual_rcon(self, ctx, serverlist, command):
+        await ctx.send(command)
+        map = serverlist['name'].capitalize()
+        cluster = serverlist['cluster'].upper()
         res = await rcon.asyncio.rcon(
-        command=command,
-        host=serverlist['ip'],
-        port=serverlist['port'],
-        passwd=serverlist['password']
+            command=command,
+            host=serverlist['ip'],
+            port=serverlist['port'],
+            passwd=serverlist['password']
         )
         res = res.rstrip()
         if command.lower() == "listplayers":
-            await ctx.send(f"**{serverlist['name'].capitalize()} {serverlist['cluster'].upper()}**\n"
+            await ctx.send(f"**{map} {cluster}**\n"
                            f"{box(res, lang='python')}")
-
         else:
-            map = serverlist['name'].capitalize()
-            cluster = serverlist['cluster'].upper()
             await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
 
     # Message listener to send chat to designated servers
@@ -496,8 +500,10 @@ class ArkTools(commands.Cog):
                 status += f"**{clustername}**\n"
                 for server in settings["clusters"][cluster]["servers"]:
                     channel = guild.get_channel(settings["clusters"][cluster]["servers"][server]["chatchannel"])
-                    channelid = settings["clusters"][cluster]["servers"][server]["chatchannel"]
+                    channelid = int(settings["clusters"][cluster]["servers"][server]["chatchannel"])
                     if not channel:
+                        continue
+                    if not channelid:
                         continue
 
                     # Get cached player count
@@ -616,7 +622,7 @@ class ArkTools(commands.Cog):
 
     @status_channel.before_loop
     async def before_status_channel(self):
-        await asyncio.sleep(5)
+        await asyncio.sleep(8)
         await self.bot.wait_until_red_ready()
         print("Status channel monitor running.")
 
