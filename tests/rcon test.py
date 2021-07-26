@@ -1,3 +1,4 @@
+from rcon import Client
 import rcon
 import asyncio
 
@@ -63,27 +64,31 @@ settings = {"clusters": {
       }
 
 
-async def main():
-    command = "listplayers"
-    for cluster in settings["clusters"]:
-        for server in settings["clusters"][cluster]["servers"]:
-            for k, v in settings["clusters"][cluster]["servers"][server].items():
-                if k == "ip":
-                    ip = str(v)
-                if k == "port":
-                    prt = int(v)
-                if k == "password":
-                    pw = str(v)
-                    res = await rcon.asyncio.rcon(
-                        command=command,
-                        host=ip,
-                        port=prt,
-                        passwd=pw
-                    )
-                    print(res)
 
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-asyncio.run(main())
+
+
+
+# async def main():
+#     command = "listplayers"
+#     for cluster in settings["clusters"]:
+#         for server in settings["clusters"][cluster]["servers"]:
+#             for k, v in settings["clusters"][cluster]["servers"][server].items():
+#                 if k == "ip":
+#                     ip = str(v)
+#                 if k == "port":
+#                     prt = int(v)
+#                 if k == "password":
+#                     pw = str(v)
+#                     res = await rcon.asyncio.rcon(
+#                         command=command,
+#                         host=ip,
+#                         port=prt,
+#                         passwd=pw
+#                     )
+#                     print(res)
+#
+# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+# asyncio.run(main())
 
 
 
