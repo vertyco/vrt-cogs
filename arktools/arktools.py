@@ -98,7 +98,7 @@ class ArkTools(commands.Cog):
     # PERMISSIONS COMMANDS
     @_permissions.command(name="setfullaccessrole")
     async def _setfullaccessrole(self, ctx: commands.Context, role: discord.Role):
-        """Set a role you want to have full RCON access for."""
+        """Set a full RCON access role."""
         await self.config.guild(ctx.guild).fullaccessrole.set(role.id)
         await ctx.send(f"Full rcon access role has been set to {role}")
 
@@ -115,7 +115,7 @@ class ArkTools(commands.Cog):
 
     @_permissions.command(name="delmodrole")
     async def _delmodrole(self, ctx: commands.Context, role: discord.Role):
-        """Delete a mod role. use `[p]setarktools permissions view` to view current mod roles."""
+        """Delete a mod role."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
             if role.id in modroles:
                 modroles.remove(role.id)
@@ -125,7 +125,7 @@ class ArkTools(commands.Cog):
 
     @_permissions.command(name="addbadname")
     async def _addbadname(self, ctx: commands.Context, *, badname: str):
-        """Add a blacklisted name."""
+        """Blacklisted a player name."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
             if badname in badnames:
                 await ctx.send("That name already exists.")
@@ -135,7 +135,7 @@ class ArkTools(commands.Cog):
 
     @_permissions.command(name="delbadname")
     async def _delbadname(self, ctx: commands.Context, badname: str):
-        """Delete an allowed mod command."""
+        """Delete a blacklisted name."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
             if badname in badnames:
                 badnames.remove(badname)
@@ -659,15 +659,9 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         print("Status channel monitor running.")
 
-    @commands.command(name="test")
-    async def mytestcom(self, ctx):
-        data = await self.config.all_guilds()
-        for guildID in data:
-            guild = self.bot.get_guild(int(guildID))
-            settings = await self.config.guild(guild).all()
-            badnames = settings["badnames"]
-            for names in badnames:
-                await ctx.send(names)
+    # @commands.command(name="test")
+    # async def mytestcom(self, ctx):
+
 
 
 
