@@ -1,9 +1,14 @@
 # vrt-cogs
-Random cogs for Red
-Learning as i go!
+Various utility/fun cogs for Red
 
-**Inspire:** get inpsirational messages, replies to certain sad words with positive encouragements.
+**ArkTools**
+Connect to your ark servers chat seamlessly between in-game and discord, includes many utility features for managing your server.
 
-**XTools:** uses xbl.io to pull gamertag information for xbox
+**Inspire**
+get inpsirational messages, replies to certain sad words with positive encouragements.
 
-**MCTools:** Work In Progress
+**XTools**
+Various tools for Xbox using xbl.io API. (You will need to register for a key to use this cog. "its free though")
+
+**MCTools**
+Super simple status cog for Minecraft Bedrock servers.
