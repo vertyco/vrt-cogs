@@ -1,13 +1,12 @@
-from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core import commands, Config
 from discord.ext import tasks
 from rcon import Client
-import functools
+import rcon
 import discord
 import datetime
 import pytz
 import unicodedata
-import rcon
 import asyncio
 import os
 import json
@@ -41,6 +40,7 @@ class ArkTools(commands.Cog):
             "chatchannel": {},
             "modroles": [],
             "modcommands": [],
+            "badnames": [],
             "fullaccessrole": None,
             "tribelogchannels": {},
             "apikeys": {},
@@ -122,6 +122,26 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"{role} role has been removed.")
             else:
                 await ctx.send("That role isn't in the list.")
+
+    @_permissions.command(name="addbadname")
+    async def _addbadname(self, ctx: commands.Context, *, badname: str):
+        """Add a blacklisted name."""
+        async with self.config.guild(ctx.guild).badnames() as badnames:
+            if badname in badnames:
+                await ctx.send("That name already exists.")
+            else:
+                badnames.append(badname)
+                await ctx.send(f"**{badname}** has been added to the blacklist.")
+
+    @_permissions.command(name="delbadname")
+    async def _delbadname(self, ctx: commands.Context, badname: str):
+        """Delete an allowed mod command."""
+        async with self.config.guild(ctx.guild).badnames() as badnames:
+            if badname in badnames:
+                badnames.remove(badname)
+                await ctx.send(f"{badname} has been removed from the blacklist.")
+            else:
+                await ctx.send("That name doesnt exist")
 
 
     @_permissions.command(name="addmodcommand")
@@ -219,16 +239,17 @@ class ArkTools(commands.Cog):
     @_permissions.command(name="view")
     async def _viewperms(self, ctx: commands.Context):
         """View current permission settings."""
-
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
+        statuschannel = ctx.guild.get_channel(settings['statuschannel'])
         embed = discord.Embed(
             title=f"Permission Settings",
             color=color,
             description=f"**Full Access Role:** {settings['fullaccessrole']}\n"
                         f"**Mod Roles:** {settings['modroles']}\n"
                         f"**Mod Commands:** {settings['modcommands']}\n"
-                        f"**Status Channel:** 'Work in progress'"
+                        f"**Blacklisted Names:** {settings['badnames']}\n"
+                        f"**Status Channel:** {statuschannel.mention}"
         )
         return await ctx.send(embed=embed)
 
@@ -482,6 +503,7 @@ class ArkTools(commands.Cog):
     # Maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
     async def status_channel(self):
+        await asyncio.sleep(3)
         data = await self.config.all_guilds()
         for guildID in data:
             guild = self.bot.get_guild(int(guildID))
@@ -507,6 +529,10 @@ class ArkTools(commands.Cog):
                         continue
 
                     # Get cached player count
+                    if self.playerlist == {}:
+                        return
+                    if channelid not in self.playerlist[channelid]:
+                        return
                     playercount = self.playerlist[channelid]
 
                     if playercount == []:
@@ -587,10 +613,13 @@ class ArkTools(commands.Cog):
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
+
         if "Server received, But no response!!" in res:
             return
         msgs = res.split("\n")
         messages = []
+        settings = await self.config.guild(guild).all()
+        badnames = settings["badnames"]
         for msg in msgs:
             if msg.startswith("AdminCmd:"):
                 adminmsg = msg
@@ -602,10 +631,18 @@ class ArkTools(commands.Cog):
             else:
                 if not msg.startswith('SERVER:'):
                     messages.append(msg)
+            for names in badnames:
+                if f"({names.lower()}): " in msg.lower():
+                    reg = r"(.+)\s\("
+                    regname = re.findall(reg, msg)
+                    for name in regname:
+                        await self.process_handler(guild, server, f'renameplayer "{names.lower()}" {name}')
+                        await chatchannel.send(f"A blacklisted player name `{names}` has been renamed to `{name}`.")
         for msg in messages:
             await chatchannel.send(msg)
             await asyncio.sleep(0.1)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
+
 
     @chat_executor.before_loop
     async def before_chat_executor(self):
@@ -622,7 +659,7 @@ class ArkTools(commands.Cog):
 
     @status_channel.before_loop
     async def before_status_channel(self):
-        await asyncio.sleep(8)
+        await asyncio.sleep(5)
         await self.bot.wait_until_red_ready()
         print("Status channel monitor running.")
 
@@ -631,10 +668,10 @@ class ArkTools(commands.Cog):
         data = await self.config.all_guilds()
         for guildID in data:
             guild = self.bot.get_guild(int(guildID))
-            if not guild:
-                continue
-            playerlist = self.playerlist
-            for channel in playerlist:
-                print(len(playerlist[channel]))
+            settings = await self.config.guild(guild).all()
+            badnames = settings["badnames"]
+            for names in badnames:
+                await ctx.send(names)
+
 
 
