@@ -17,16 +17,15 @@ class Inspire(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def get_quote(self):
-        r = requests.get("https://zenquotes.io/api/random")
-        json_data = json.loads(r.text)
-        quote = json_data[0]['q'] + " - " + json_data[0]['a']
-        return quote
-
     @commands.command()
     async def inspire(self, ctx):
-        quote = self.bot.loop.run_in_executor(None, get_quote)
-        await ctx.send(quote)
+        def get_quote():
+            r = requests.get("https://zenquotes.io/api/random")
+            json_data = json.loads(r.text)
+            quote = json_data[0]['q'] + " - " + json_data[0]['a']
+            return quote
+        q = self.bot.loop.run_in_executor(None, get_quote)
+        await ctx.send(q)
 
     @commands.Cog.listener("on_message")
     async def _message_listener(self, message: discord.Message):
