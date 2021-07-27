@@ -677,7 +677,7 @@ class ArkTools(commands.Cog):
 
     @commands.command(name="test2")
     async def mytestcom2(self, ctx):
-        await self.initialize()
+        await self.status_channel()
 
     @commands.command(name="test3")
     async def mytestcom3(self, ctx):
@@ -686,9 +686,8 @@ class ArkTools(commands.Cog):
             guild = self.bot.get_guild(int(guildID))
             if not guild:
                 continue
-            guildsettings = await self.config.guild(guild).clusters()
-            await ctx.send(config)
-            await ctx.send(guildsettings)
+            for p in pagify(config):
+                await ctx.send(p)
 
 
 
