@@ -670,13 +670,77 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(30)
         print("Status channel monitor is ready.")
 
-    # @commands.command(name="test")
-    # async def mytestcom(self, ctx):
-    #     await ctx.send(self.playerlist)
-    #
-    # @commands.command(name="test2")
-    # async def mytestcom2(self, ctx):
-    #     await self.status_channel()
+    @commands.command(name="test")
+    async def mytestcom(self, ctx):
+        await ctx.send(self.playerlist)
+
+    @commands.command(name="test2")
+    async def mytestcom2(self, ctx):
+        data = await self.config.all_guilds()
+        for guildID in data:
+            guild = self.bot.get_guild(int(guildID))
+            if not guild:
+                continue
+            settings = await self.config.guild(guild).all()
+            if not settings:
+                continue
+            status = ""
+            totalplayers = 0
+            for cluster in settings["clusters"]:
+                clustertotal = 0
+                clustername = cluster.upper()
+                if not settings["clusters"]:
+                    continue
+                status += f"**{clustername}**\n"
+                for server in settings["clusters"][cluster]["servers"]:
+                    channel = settings["clusters"][cluster]["servers"][server]["chatchannel"]
+                    if not channel:
+                        continue
+
+                    # Get cached player count
+                    playercount = self.playerlist[channel]
+
+                    if not playercount:
+                        status += f"{guild.get_channel(channel).mention}: 0 Players\n"
+                        continue
+                    if playercount is None:
+                        status += f"{guild.get_channel(channel).mention}: Offline...\n"
+                        continue
+
+                    playercount = len(playercount)
+                    clustertotal += playercount
+                    totalplayers += playercount
+                    if playercount == 1:
+                        status += f"{guild.get_channel(channel).mention}: {playercount} player\n"
+                    else:
+                        status += f"{guild.get_channel(channel).mention}: {playercount} players\n"
+
+                if clustertotal == 1:
+                    status += f"`{clustertotal}` player in the cluster\n"
+                else:
+                    status += f"`{clustertotal}` players in the cluster\n"
+
+            messagedata = await self.config.guild(guild).statusmessage()
+            channeldata = await self.config.guild(guild).statuschannel()
+            if not channeldata:
+                continue
+            if not messagedata:
+                continue
+
+            # Embed setup
+            thumbnail = guild.icon_url
+            eastern = pytz.timezone('US/Eastern')
+            time = datetime.datetime.now(eastern)
+            embed = discord.Embed(
+                timestamp=time,
+                title="Server Status",
+                description=status
+            )
+            embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+            embed.set_thumbnail(url=thumbnail)
+
+
+            await ctx.send(embed=embed)
 
     @commands.command(name="test3")
     async def mytestcom3(self, ctx):
