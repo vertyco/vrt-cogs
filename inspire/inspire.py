@@ -1,5 +1,5 @@
 from redbot.core import commands, checks
-import requests
+import aiohttp
 import json
 import random
 import discord
@@ -16,16 +16,22 @@ class Inspire(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.session = aiohttp.ClientSession()
+
+    async def get_quote(self):
+        async with self.session.get('https://zenquotes.io/api/random') as resp:
+            data = await resp.json(content_type=None)
+            quote = data[0]['q'] + " - " + data[0]['a']
+            return quote
+
+
+
+
 
     @commands.command()
     async def inspire(self, ctx):
-        def get_quote():
-            r = requests.get("https://zenquotes.io/api/random")
-            json_data = json.loads(r.text)
-            quote = json_data[0]['q'] + " - " + json_data[0]['a']
-            return quote
-        q = self.bot.loop.run_in_executor(None, get_quote)
-        await ctx.send(q)
+        quote = await self.get_quote()
+        await ctx.send(quote)
 
     @commands.Cog.listener("on_message")
     async def _message_listener(self, message: discord.Message):
