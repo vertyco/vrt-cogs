@@ -726,6 +726,8 @@ class ArkTools(commands.Cog):
                 if not messagedata:
                     continue
 
+                await ctx.send(status)
+
                 # Embed setup
                 thumbnail = guild.icon_url
                 eastern = pytz.timezone('US/Eastern')
