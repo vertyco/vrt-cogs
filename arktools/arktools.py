@@ -699,6 +699,7 @@ class ArkTools(commands.Cog):
                 status += f"**{clustername}**\n"
                 for server in settings["clusters"][cluster]["servers"]:
                     channel = settings["clusters"][cluster]["servers"][server]["chatchannel"]
+                    servername = settings['clusters'][cluster]['servers'][server]['name']
                     if not channel:
                         continue
 
@@ -706,19 +707,19 @@ class ArkTools(commands.Cog):
                     playercount = self.playerlist[channel]
 
                     if not playercount:
-                        status += f"{guild.get_channel(channel).mention}: 0 Players\n"
+                        status += f"{servername}: 0 Players\n"
                         continue
                     if playercount is None:
-                        status += f"{guild.get_channel(channel).mention}: Offline...\n"
+                        status += f"{servername}: Offline...\n"
                         continue
 
                     playercount = len(playercount)
                     clustertotal += playercount
                     totalplayers += playercount
                     if playercount == 1:
-                        status += f"{guild.get_channel(channel).mention}: {playercount} player\n"
+                        status += f"{servername}: {playercount} player\n"
                     else:
-                        status += f"{guild.get_channel(channel).mention}: {playercount} players\n"
+                        status += f"{servername}: {playercount} players\n"
 
                 if clustertotal == 1:
                     status += f"`{clustertotal}` player in the cluster\n"
