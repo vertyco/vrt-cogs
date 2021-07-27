@@ -3,9 +3,9 @@
     "author": [
         "Vertyco"
     ],
-    "description": "Get Xbox player data using xbox API",
+    "description": "Xbox tools for getting player data (WIP)",
     "disabled" : false,
-    "end_user_data_statement" : "This cog uses the xbl.io API",
+    "end_user_data_statement" : "This cog uses the xbl.io API and does not persistently store data about users.",
     "hidden": false,
     "install_msg": "Thank you for installing! Use `[p]help XTools` for more info.",
     "min_bot_version" : "3.4.0",
