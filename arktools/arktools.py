@@ -17,7 +17,7 @@ class ArkTools(commands.Cog):
     RCON tools and crosschat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -715,7 +715,6 @@ class ArkTools(commands.Cog):
                         status += f"{servername}: {playercount} player\n"
                     else:
                         status += f"{servername}: {playercount} players\n"
-
 
             # Embed setup
             thumbnail = guild.icon_url
