@@ -350,6 +350,7 @@ class ArkTools(commands.Cog):
             if e.winerror == 121:
                 clustername = server['cluster']
                 await ctx.send(f"The **{server['name']}** **{clustername}** server has timed out and is probably down.")
+                return
         await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
     # RCON manual command logic
