@@ -257,6 +257,7 @@ class ArkTools(commands.Cog):
         serversettings = ""
         if not settings["clusters"]:
             await ctx.send("No servers have been added yet.")
+            return
         for pv in settings["clusters"]:
             serversettings += f"**{pv.upper()} Cluster**\n"
             for k, v in settings["clusters"][pv].items():
