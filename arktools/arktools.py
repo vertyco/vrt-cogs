@@ -17,7 +17,7 @@ class ArkTools(commands.Cog):
     RCON tools and crosschat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -348,7 +348,8 @@ class ArkTools(commands.Cog):
             await asyncio.gather(*tasks)
         except WindowsError as e:
             if e.winerror == 121:
-                await ctx.send(f"The **{server['name']}** **{cluster} server has timed out and is probably down.")
+                clustername = server['cluster']
+                await ctx.send(f"The **{server['name']}** **{clustername}** server has timed out and is probably down.")
         await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
     # RCON manual command logic
@@ -392,6 +393,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
+                    self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
         print("ArkTools config initialized.")
 
@@ -476,8 +478,9 @@ class ArkTools(commands.Cog):
             clustername = server["cluster"].upper()
             newplayerlist = await self.process_handler(guild, server, "listplayers")
 
-            if channel not in self.playerlist:
+            if newplayerlist is None:
                 self.playerlist[channel] = newplayerlist
+                continue
 
             playerjoin = self.checkplayerjoin(channel, newplayerlist)
             if playerjoin:
@@ -519,30 +522,27 @@ class ArkTools(commands.Cog):
                     continue
                 status += f"**{clustername}**\n"
                 for server in settings["clusters"][cluster]["servers"]:
-                    channel = guild.get_channel(settings["clusters"][cluster]["servers"][server]["chatchannel"])
-                    channelid = settings["clusters"][cluster]["servers"][server]["chatchannel"]
+                    channel = settings["clusters"][cluster]["servers"][server]["chatchannel"]
                     if not channel:
-                        continue
-                    if not channelid:
                         continue
 
                     # Get cached player count
-                    playercount = self.playerlist[channelid]
+                    playercount = self.playerlist[channel]
 
                     if playercount == []:
-                        status += f"{channel.mention}: 0 Players\n"
+                        status += f"{guild.get_channel(channel).mention}: 0 Players\n"
                         continue
                     if playercount == None:
-                        status += f"{channell.mention}: Offline...\n"
+                        status += f"{guild.get_channel(channel).mention}: Offline...\n"
                         continue
 
                     playercount = len(playercount)
                     clustertotal += playercount
                     totalplayers += playercount
                     if playercount == 1:
-                        status += f"{channel.mention}: {playercount} player\n"
+                        status += f"{guild.get_channel(channel).mention}: {playercount} player\n"
                     else:
-                        status += f"{channel.mention}: {playercount} players\n"
+                        status += f"{guild.get_channel(channel).mention}: {playercount} players\n"
 
                 if clustertotal == 1:
                     status += f"`{clustertotal}` player in the cluster\n"
@@ -587,9 +587,13 @@ class ArkTools(commands.Cog):
     # Runs synchronous rcon commands in another thread to not block heartbeat
     async def process_handler(self, guild, server, command):
         def rcon():
-            with Client(server['ip'], server['port'], passwd=server['password']) as client:
-                result = client.run(command)
-                return result
+            try:
+                with Client(server['ip'], server['port'], passwd=server['password']) as client:
+                    result = client.run(command)
+                    return result
+            except WindowsError as e:
+                if e.winerror == 121:
+                    return None
 
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
@@ -599,6 +603,7 @@ class ArkTools(commands.Cog):
                 regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
                 playerlist = re.findall(regex, res)
                 return playerlist
+
 
 
     # Sends messages to their designated channels from the in-game chat
@@ -650,12 +655,16 @@ class ArkTools(commands.Cog):
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(15)
+        await self.playerlist_executor()
         print("Status channel monitor is ready.")
 
-    # @commands.command(name="test")
-    # async def mytestcom(self, ctx):
-    #     await ctx.send(self.playerlist)
+    @commands.command(name="test")
+    async def mytestcom(self, ctx):
+        await ctx.send(self.playerlist)
+
+    @commands.command(name="test2")
+    async def mytestcom2(self, ctx):
+        await self.initialize()
 
 
 
