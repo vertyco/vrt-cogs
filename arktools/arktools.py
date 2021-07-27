@@ -686,7 +686,8 @@ class ArkTools(commands.Cog):
             guild = self.bot.get_guild(int(guildID))
             if not guild:
                 continue
-            for p in pagify(config):
+            settings = await self.config.guild(guild).all()
+            for p in pagify(settings):
                 await ctx.send(p)
 
 
