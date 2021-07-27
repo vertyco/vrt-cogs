@@ -720,13 +720,6 @@ class ArkTools(commands.Cog):
                         status += f"{servername}: {playercount} players\n"
                     await ctx.send(status)
 
-                messagedata = await self.config.guild(guild).statusmessage()
-                channeldata = await self.config.guild(guild).statuschannel()
-                if not channeldata:
-                    continue
-                if not messagedata:
-                    continue
-
                 await ctx.send(status)
 
                 # Embed setup
