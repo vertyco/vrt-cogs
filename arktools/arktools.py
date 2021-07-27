@@ -667,27 +667,27 @@ class ArkTools(commands.Cog):
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await self.playerlist_executor()
+        await asyncio.sleep(30)
         print("Status channel monitor is ready.")
 
-    @commands.command(name="test")
-    async def mytestcom(self, ctx):
-        await ctx.send(self.playerlist)
-
-    @commands.command(name="test2")
-    async def mytestcom2(self, ctx):
-        await self.status_channel()
-
-    @commands.command(name="test3")
-    async def mytestcom3(self, ctx):
-        config = await self.config.all_guilds()
-        for guildID in config:
-            guild = self.bot.get_guild(int(guildID))
-            if not guild:
-                continue
-            settings = await self.config.guild(guild).all()
-            for p in pagify(settings):
-                await ctx.send(p)
+    # @commands.command(name="test")
+    # async def mytestcom(self, ctx):
+    #     await ctx.send(self.playerlist)
+    #
+    # @commands.command(name="test2")
+    # async def mytestcom2(self, ctx):
+    #     await self.status_channel()
+    #
+    # @commands.command(name="test3")
+    # async def mytestcom3(self, ctx):
+    #     config = await self.config.all_guilds()
+    #     for guildID in config:
+    #         guild = self.bot.get_guild(int(guildID))
+    #         if not guild:
+    #             continue
+    #         settings = await self.config.guild(guild).clusters()
+    #         for cluster in settings:
+    #             await ctx.send(cluster)
 
 
 
