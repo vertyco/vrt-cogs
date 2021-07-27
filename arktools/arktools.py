@@ -284,14 +284,13 @@ class ArkTools(commands.Cog):
                     if k == "chatchannel":
                         serversettings += f"**Channel:** {ctx.guild.get_channel(v).mention}\n"
                 serversettings += "\n"
-        serversettings = pagify(serversettings)
-        color = discord.Color.dark_purple()
-        embed = discord.Embed(
-            title=f"**Server Settings**",
-            color=color,
-            description=f"{serversettings}"
-        )
-        await ctx.send(embed=embed)
+            color = discord.Color.dark_purple()
+            embed = discord.Embed(
+                title=f"**Server Settings**",
+                color=color,
+                description=f"{serversettings}"
+            )
+            await ctx.send(embed=embed)
 
 
     #####################################################################RCON
