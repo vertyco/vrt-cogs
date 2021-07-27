@@ -287,7 +287,6 @@ class ArkTools(commands.Cog):
         for p in pagify(serversettings):
             color = discord.Color.dark_purple()
             embed = discord.Embed(
-                title=f"**Server Settings**",
                 color=color,
                 description=f"{p}"
             )
