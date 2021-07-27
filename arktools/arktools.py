@@ -699,13 +699,11 @@ class ArkTools(commands.Cog):
                 for server in settings["clusters"][cluster]["servers"]:
                     channel = settings["clusters"][cluster]["servers"][server]["chatchannel"]
                     servername = settings['clusters'][cluster]['servers'][server]['name']
-                    await ctx.send(servername)
                     if not channel:
                         continue
 
                     # Get cached player count
                     playercount = self.playerlist[channel]
-                    await ctx.send(playercount)
 
                     if not playercount:
                         status += f"{servername}: 0 Players\n"
@@ -720,6 +718,7 @@ class ArkTools(commands.Cog):
                         status += f"{servername}: {playercount} player\n"
                     else:
                         status += f"{servername}: {playercount} players\n"
+                    await ctx.send(status)
 
                 messagedata = await self.config.guild(guild).statusmessage()
                 channeldata = await self.config.guild(guild).statuschannel()
