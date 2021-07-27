@@ -715,7 +715,6 @@ class ArkTools(commands.Cog):
                         status += f"{servername}: {playercount} player\n"
                     else:
                         status += f"{servername}: {playercount} players\n"
-                    await ctx.send(status)
 
 
             # Embed setup
