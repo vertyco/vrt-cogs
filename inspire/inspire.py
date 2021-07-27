@@ -21,11 +21,11 @@ class Inspire(commands.Cog):
         r = requests.get("https://zenquotes.io/api/random")
         json_data = json.loads(r.text)
         quote = json_data[0]['q'] + " - " + json_data[0]['a']
-        return(quote)
+        return quote
 
     @commands.command()
     async def inspire(self, ctx):
-        quote = self.get_quote()
+        quote = self.bot.loop.run_in_executor(None, get_quote)
         await ctx.send(quote)
 
     @commands.Cog.listener("on_message")
