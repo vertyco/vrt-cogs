@@ -671,11 +671,14 @@ class ArkTools(commands.Cog):
         print("Status channel monitor is ready.")
 
     @commands.command(name="test")
+    @commands.guildowner()
     async def mytestcom(self, ctx):
         await ctx.send(self.playerlist)
 
     @commands.command(name="test2")
+    @commands.guildowner()
     async def mytestcom2(self, ctx):
+        await ctx.send("sending")
         data = await self.config.all_guilds()
         for guildID in data:
             guild = self.bot.get_guild(int(guildID))
@@ -686,6 +689,7 @@ class ArkTools(commands.Cog):
                 continue
 
             for cluster in settings["clusters"]:
+                await ctx.send(settings['clusters'][cluster])
                 status = ""
                 totalplayers = 0
                 clustertotal = 0
@@ -744,6 +748,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(embed=embed)
 
     @commands.command(name="test3")
+    @commands.guildowner()
     async def mytestcom3(self, ctx):
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
