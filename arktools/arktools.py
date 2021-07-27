@@ -691,7 +691,6 @@ class ArkTools(commands.Cog):
             for cluster in settings["clusters"]:
                 await ctx.send(settings['clusters'][cluster])
                 status = ""
-                totalplayers = 0
                 clustertotal = 0
                 clustername = cluster.upper()
                 if not settings["clusters"]:
@@ -715,16 +714,10 @@ class ArkTools(commands.Cog):
 
                     playercount = len(playercount)
                     clustertotal += playercount
-                    totalplayers += playercount
                     if playercount == 1:
                         status += f"{servername}: {playercount} player\n"
                     else:
                         status += f"{servername}: {playercount} players\n"
-
-                if clustertotal == 1:
-                    status += f"`{clustertotal}` player in the cluster\n"
-                else:
-                    status += f"`{clustertotal}` players in the cluster\n"
 
                 messagedata = await self.config.guild(guild).statusmessage()
                 channeldata = await self.config.guild(guild).statuschannel()
@@ -742,7 +735,6 @@ class ArkTools(commands.Cog):
                     title="Server Status",
                     description=status
                 )
-                embed.add_field(name="Total Players", value=f"`{totalplayers}`")
                 embed.set_thumbnail(url=thumbnail)
 
 
