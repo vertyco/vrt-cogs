@@ -567,8 +567,6 @@ class ArkTools(commands.Cog):
             channeldata = await self.config.guild(guild).statuschannel()
             if not channeldata:
                 continue
-            if not messagedata:
-                continue
 
             # Embed setup
             thumbnail = guild.icon_url
