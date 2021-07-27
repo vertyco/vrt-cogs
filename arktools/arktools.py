@@ -232,7 +232,8 @@ class ArkTools(commands.Cog):
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
         statuschannel = ctx.guild.get_channel(settings['statuschannel'])
-        statuschannel = statuschannel.mention
+        if settings['statuschannel']:
+            statuschannel = statuschannel.mention
         if not settings['statuschannel']:
             statuschannel = "Not Set"
         try:
