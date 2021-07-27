@@ -677,17 +677,22 @@ class ArkTools(commands.Cog):
     # @commands.command(name="test2")
     # async def mytestcom2(self, ctx):
     #     await self.status_channel()
-    #
-    # @commands.command(name="test3")
-    # async def mytestcom3(self, ctx):
-    #     config = await self.config.all_guilds()
-    #     for guildID in config:
-    #         guild = self.bot.get_guild(int(guildID))
-    #         if not guild:
-    #             continue
-    #         settings = await self.config.guild(guild).clusters()
-    #         for cluster in settings:
-    #             await ctx.send(cluster)
+
+    @commands.command(name="test3")
+    async def mytestcom3(self, ctx):
+        settings = await self.config.guild(ctx.guild).all()
+        color = discord.Color.dark_purple()
+        statuschannel = ctx.guild.get_channel(settings['statuschannel'])
+
+        try:
+            embed = discord.Embed(
+                title=f"test",
+                color=color,
+                description=f"**msgid:** {settings['statusmessage']}\n"
+            )
+            return await ctx.send(embed=embed)
+        except Exception:
+            await ctx.send(f"Setup permissions first.")
 
 
 
