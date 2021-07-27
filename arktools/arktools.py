@@ -686,10 +686,9 @@ class ArkTools(commands.Cog):
             if not settings:
                 continue
 
+            status = ""
+            clustertotal = 0
             for cluster in settings["clusters"]:
-                await ctx.send(settings['clusters'][cluster])
-                status = ""
-                clustertotal = 0
                 clustername = cluster.upper()
                 if not settings["clusters"]:
                     continue
@@ -718,20 +717,19 @@ class ArkTools(commands.Cog):
                         status += f"{servername}: {playercount} players\n"
                     await ctx.send(status)
 
-                await ctx.send(status)
 
-                # Embed setup
-                thumbnail = guild.icon_url
-                eastern = pytz.timezone('US/Eastern')
-                time = datetime.datetime.now(eastern)
-                for p in pagify(status):
-                    embed = discord.Embed(
-                        timestamp=time,
-                        title="Server Status",
-                        description=p
-                    )
-                    embed.set_thumbnail(url=thumbnail)
-                    await ctx.send(embed=embed)
+            # Embed setup
+            thumbnail = guild.icon_url
+            eastern = pytz.timezone('US/Eastern')
+            time = datetime.datetime.now(eastern)
+            for p in pagify(status):
+                embed = discord.Embed(
+                    timestamp=time,
+                    title="Server Status",
+                    description=p
+                )
+                embed.set_thumbnail(url=thumbnail)
+                await ctx.send(embed=embed)
 
     @commands.command(name="test3")
     @commands.guildowner()
