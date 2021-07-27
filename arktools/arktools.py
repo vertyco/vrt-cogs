@@ -682,8 +682,6 @@ class ArkTools(commands.Cog):
     async def mytestcom3(self, ctx):
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
-        statuschannel = ctx.guild.get_channel(settings['statuschannel'])
-
         try:
             embed = discord.Embed(
                 title=f"test",
