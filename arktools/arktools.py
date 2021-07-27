@@ -232,16 +232,22 @@ class ArkTools(commands.Cog):
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
         statuschannel = ctx.guild.get_channel(settings['statuschannel'])
-        embed = discord.Embed(
-            title=f"Permission Settings",
-            color=color,
-            description=f"**Full Access Role:** {settings['fullaccessrole']}\n"
-                        f"**Mod Roles:** {settings['modroles']}\n"
-                        f"**Mod Commands:** {settings['modcommands']}\n"
-                        f"**Blacklisted Names:** {settings['badnames']}\n"
-                        f"**Status Channel:** {statuschannel.mention}"
-        )
-        return await ctx.send(embed=embed)
+        statuschannel = statuschannel.mention
+        if not settings['statuschannel']:
+            statuschannel = "Not Set"
+        try:
+            embed = discord.Embed(
+                title=f"Permission Settings",
+                color=color,
+                description=f"**Full Access Role:** {settings['fullaccessrole']}\n"
+                            f"**Mod Roles:** {settings['modroles']}\n"
+                            f"**Mod Commands:** {settings['modcommands']}\n"
+                            f"**Blacklisted Names:** {settings['badnames']}\n"
+                            f"**Status Channel:** {statuschannel}"
+            )
+            return await ctx.send(embed=embed)
+        except Exception:
+            await ctx.send(f"Setup permissions first.")
 
     @_serversettings.command(name="view")
     async def _viewsettings(self, ctx: commands.Context):
