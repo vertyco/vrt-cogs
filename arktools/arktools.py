@@ -577,7 +577,7 @@ class ArkTools(commands.Cog):
             embed = discord.Embed(
                 timestamp=time,
                 title="Server Status",
-                description=p
+                description=status
             )
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
             embed.set_thumbnail(url=thumbnail)
