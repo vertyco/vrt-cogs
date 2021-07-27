@@ -684,9 +684,10 @@ class ArkTools(commands.Cog):
             settings = await self.config.guild(guild).all()
             if not settings:
                 continue
-            status = ""
-            totalplayers = 0
+
             for cluster in settings["clusters"]:
+                status = ""
+                totalplayers = 0
                 clustertotal = 0
                 clustername = cluster.upper()
                 if not settings["clusters"]:
@@ -720,27 +721,27 @@ class ArkTools(commands.Cog):
                 else:
                     status += f"`{clustertotal}` players in the cluster\n"
 
-            messagedata = await self.config.guild(guild).statusmessage()
-            channeldata = await self.config.guild(guild).statuschannel()
-            if not channeldata:
-                continue
-            if not messagedata:
-                continue
+                messagedata = await self.config.guild(guild).statusmessage()
+                channeldata = await self.config.guild(guild).statuschannel()
+                if not channeldata:
+                    continue
+                if not messagedata:
+                    continue
 
-            # Embed setup
-            thumbnail = guild.icon_url
-            eastern = pytz.timezone('US/Eastern')
-            time = datetime.datetime.now(eastern)
-            embed = discord.Embed(
-                timestamp=time,
-                title="Server Status",
-                description=status
-            )
-            embed.add_field(name="Total Players", value=f"`{totalplayers}`")
-            embed.set_thumbnail(url=thumbnail)
+                # Embed setup
+                thumbnail = guild.icon_url
+                eastern = pytz.timezone('US/Eastern')
+                time = datetime.datetime.now(eastern)
+                embed = discord.Embed(
+                    timestamp=time,
+                    title="Server Status",
+                    description=status
+                )
+                embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+                embed.set_thumbnail(url=thumbnail)
 
 
-            await ctx.send(embed=embed)
+                await ctx.send(embed=embed)
 
     @commands.command(name="test3")
     async def mytestcom3(self, ctx):
