@@ -3,8 +3,9 @@ Various utility/fun cogs for Red
 
 **ArkTools**
 ```
-Connect to your ark servers chat seamlessly between in-game and discord,
-includes many utility features for managing your server.
+Connect to your ark servers and chat seamlessly between in-game and discord,
+includes many utility features for managing your server including a status channel, 
+join/leave logs, blacklisting player names and admin command logging.
 ```
 **Inspire**
 ```
