@@ -12,12 +12,10 @@ import os
 import json
 import re
 
-
 class ArkTools(commands.Cog):
     """
     RCON tools and crosschat for Ark: Survival Evolved!
     """
-
     __author__ = "Vertyco"
     __version__ = "1.0.0"
 
@@ -52,21 +50,14 @@ class ArkTools(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
-
-        # Event loop selector
-        # if os.name == 'nt':
-        #     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
         # Cache
         self.taskdata = []
+        self.playerlist = {}
 
         # Loops
         self.chat_executor.start()
         self.playerlist_executor.start()
         self.status_channel.start()
-
-        # Lists
-        self.playerlist = {}
 
     def cog_unload(self):
         self.chat_executor.cancel()
@@ -652,9 +643,9 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(15)
         print("Status channel monitor is ready.")
 
-    @commands.command(name="test")
-    async def mytestcom(self, ctx):
-        await ctx.send(self.playerlist)
+    # @commands.command(name="test")
+    # async def mytestcom(self, ctx):
+    #     await ctx.send(self.playerlist)
 
 
 
