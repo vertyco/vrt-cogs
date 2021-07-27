@@ -529,10 +529,10 @@ class ArkTools(commands.Cog):
                     # Get cached player count
                     playercount = self.playerlist[channel]
 
-                    if playercount == []:
+                    if not playercount:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
                         continue
-                    if playercount == None:
+                    if playercount is None:
                         status += f"{guild.get_channel(channel).mention}: Offline...\n"
                         continue
 
@@ -560,28 +560,29 @@ class ArkTools(commands.Cog):
             thumbnail = guild.icon_url
             eastern = pytz.timezone('US/Eastern')
             time = datetime.datetime.now(eastern)
-            embed = discord.Embed(
-                timestamp=time,
-                title="Server Status",
-                description=status
-            )
-            embed.add_field(name="Total Players", value=f"`{totalplayers}`")
-            embed.set_thumbnail(url=thumbnail)
-            destinationchannel = guild.get_channel(channeldata)
-            msgtoedit = None
+            for p in pagify(status):
+                embed = discord.Embed(
+                    timestamp=time,
+                    title="Server Status",
+                    description=p
+                )
+                embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+                embed.set_thumbnail(url=thumbnail)
+                destinationchannel = guild.get_channel(channeldata)
+                msgtoedit = None
 
-            if messagedata:
-                try:
-                    msgtoedit = await destinationchannel.fetch_message(messagedata)
-                except discord.NotFound:
-                    print(f"ArkTools Status message not found. Creating new message.")
+                if messagedata:
+                    try:
+                        msgtoedit = await destinationchannel.fetch_message(messagedata)
+                    except discord.NotFound:
+                        print(f"ArkTools Status message not found. Creating new message.")
 
-            if not msgtoedit:
-                await self.config.guild(guild).statusmessage.set(None)
-                message = await destinationchannel.send(embed=embed)
-                await self.config.guild(guild).statusmessage.set(message.id)
-            if msgtoedit:
-                await msgtoedit.edit(embed=embed)
+                if not msgtoedit:
+                    await self.config.guild(guild).statusmessage.set(None)
+                    message = await destinationchannel.send(embed=embed)
+                    await self.config.guild(guild).statusmessage.set(message.id)
+                if msgtoedit:
+                    await msgtoedit.edit(embed=embed)
 
 
     # Runs synchronous rcon commands in another thread to not block heartbeat
