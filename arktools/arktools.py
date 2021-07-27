@@ -574,29 +574,28 @@ class ArkTools(commands.Cog):
             thumbnail = guild.icon_url
             eastern = pytz.timezone('US/Eastern')
             time = datetime.datetime.now(eastern)
-            for p in pagify(status):
-                embed = discord.Embed(
-                    timestamp=time,
-                    title="Server Status",
-                    description=p
-                )
-                embed.add_field(name="Total Players", value=f"`{totalplayers}`")
-                embed.set_thumbnail(url=thumbnail)
-                destinationchannel = guild.get_channel(channeldata)
-                msgtoedit = None
+            embed = discord.Embed(
+                timestamp=time,
+                title="Server Status",
+                description=p
+            )
+            embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+            embed.set_thumbnail(url=thumbnail)
+            destinationchannel = guild.get_channel(channeldata)
+            msgtoedit = None
 
-                if messagedata:
-                    try:
-                        msgtoedit = await destinationchannel.fetch_message(messagedata)
-                    except discord.NotFound:
-                        print(f"ArkTools Status message not found. Creating new message.")
+            if messagedata:
+                try:
+                    msgtoedit = await destinationchannel.fetch_message(messagedata)
+                except discord.NotFound:
+                    print(f"ArkTools Status message not found. Creating new message.")
 
-                if not msgtoedit:
-                    await self.config.guild(guild).statusmessage.set(None)
-                    message = await destinationchannel.send(embed=embed)
-                    await self.config.guild(guild).statusmessage.set(message.id)
-                if msgtoedit:
-                    await msgtoedit.edit(embed=embed)
+            if not msgtoedit:
+                await self.config.guild(guild).statusmessage.set(None)
+                message = await destinationchannel.send(embed=embed)
+                await self.config.guild(guild).statusmessage.set(message.id)
+            if msgtoedit:
+                await msgtoedit.edit(embed=embed)
 
 
     # Runs synchronous rcon commands in another thread to not block heartbeat
