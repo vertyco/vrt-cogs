@@ -87,6 +87,7 @@ class ArkTools(commands.Cog):
 
     # PERMISSIONS COMMANDS
     @_permissions.command(name="setfullaccessrole")
+    @commands.guildowner()
     async def _setfullaccessrole(self, ctx: commands.Context, role: discord.Role):
         """Set a full RCON access role."""
         await self.config.guild(ctx.guild).fullaccessrole.set(role.id)
@@ -94,6 +95,7 @@ class ArkTools(commands.Cog):
 
 
     @_permissions.command(name="addmodrole")
+    @commands.guildowner()
     async def _addmodrole(self, ctx: commands.Context, *, role: discord.Role):
         """Add a role to allow limited command access for."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
@@ -104,6 +106,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The **{role}** role has been added.")
 
     @_permissions.command(name="delmodrole")
+    @commands.guildowner()
     async def _delmodrole(self, ctx: commands.Context, role: discord.Role):
         """Delete a mod role."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
@@ -114,6 +117,7 @@ class ArkTools(commands.Cog):
                 await ctx.send("That role isn't in the list.")
 
     @_permissions.command(name="addbadname")
+    @commands.guildowner()
     async def _addbadname(self, ctx: commands.Context, *, badname: str):
         """Blacklisted a player name."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
@@ -124,6 +128,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"**{badname}** has been added to the blacklist.")
 
     @_permissions.command(name="delbadname")
+    @commands.guildowner()
     async def _delbadname(self, ctx: commands.Context, badname: str):
         """Delete a blacklisted name."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
@@ -135,6 +140,7 @@ class ArkTools(commands.Cog):
 
 
     @_permissions.command(name="addmodcommand")
+    @commands.guildowner()
     async def _addmodcommand(self, ctx: commands.Context, *, modcommand: str):
         """Add allowable commands for the mods to use."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
@@ -145,6 +151,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The command **{modcommand}** has been added to the list.")
 
     @_permissions.command(name="delmodcommand")
+    @commands.guildowner()
     async def _delmodcommand(self, ctx: commands.Context, modcommand: str):
         """Delete an allowed mod command."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
@@ -157,6 +164,7 @@ class ArkTools(commands.Cog):
 
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
+    @commands.guildowner()
     async def _addcluster(self, ctx: commands.Context,
                           clustername: str,
                           joinchannel: discord.TextChannel,
@@ -178,6 +186,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"**{clustername}** has been added to the list of clusters.")
 
     @_serversettings.command(name="delcluster")
+    @commands.guildowner()
     async def _delcluster(self, ctx: commands.Context, clustername: str):
         """Delete a cluster."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
@@ -189,6 +198,7 @@ class ArkTools(commands.Cog):
 
 
     @_serversettings.command(name="addserver")
+    @commands.guildowner()
     async def _addserver(self, ctx: commands.Context, clustername: str, servername: str, ip: str,
                          port: int, password: str, channel: discord.TextChannel):
         """Add a server."""
@@ -209,6 +219,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The cluster {clustername} does not exist!")
 
     @_serversettings.command(name="delserver")
+    @commands.guildowner()
     async def _delserver(self, ctx: commands.Context, clustername: str, servername: str):
         """Remove a server."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
@@ -220,6 +231,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"{servername} server not found.")
 
     @_serversettings.command(name="setstatuschannel")
+    @commands.guildowner()
     async def _setstatuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set a channel for a server status embed."""
         await self.config.guild(ctx.guild).statuschannel.set(channel.id)
@@ -227,6 +239,7 @@ class ArkTools(commands.Cog):
 
     # VIEW SETTINGSs
     @_permissions.command(name="view")
+    @commands.guildowner()
     async def _viewperms(self, ctx: commands.Context):
         """View current permission settings."""
         settings = await self.config.guild(ctx.guild).all()
@@ -251,6 +264,7 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Setup permissions first.")
 
     @_serversettings.command(name="view")
+    @commands.guildowner()
     async def _viewsettings(self, ctx: commands.Context):
         """View current server settings."""
         settings = await self.config.guild(ctx.guild).all()
@@ -605,8 +619,6 @@ class ArkTools(commands.Cog):
                 playerlist = re.findall(regex, res)
                 return playerlist
 
-
-
     # Sends messages to their designated channels from the in-game chat
     async def message_handler(self, guild, server, res):
         if "Server received, But no response!!" in res:
@@ -666,6 +678,17 @@ class ArkTools(commands.Cog):
     @commands.command(name="test2")
     async def mytestcom2(self, ctx):
         await self.initialize()
+
+    @commands.command(name="test3")
+    async def mytestcom3(self, ctx):
+        config = await self.config.all_guilds()
+        for guildID in config:
+            guild = self.bot.get_guild(int(guildID))
+            if not guild:
+                continue
+            guildsettings = await self.config.guild(guild).clusters()
+            await ctx.send(config)
+            await ctx.send(guildsettings)
 
 
 
