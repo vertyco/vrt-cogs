@@ -730,15 +730,14 @@ class ArkTools(commands.Cog):
                 thumbnail = guild.icon_url
                 eastern = pytz.timezone('US/Eastern')
                 time = datetime.datetime.now(eastern)
-                embed = discord.Embed(
-                    timestamp=time,
-                    title="Server Status",
-                    description=status
-                )
-                embed.set_thumbnail(url=thumbnail)
-
-
-                await ctx.send(embed=embed)
+                for p in pagify(status):
+                    embed = discord.Embed(
+                        timestamp=time,
+                        title="Server Status",
+                        description=p
+                    )
+                    embed.set_thumbnail(url=thumbnail)
+                    await ctx.send(embed=embed)
 
     @commands.command(name="test3")
     @commands.guildowner()
