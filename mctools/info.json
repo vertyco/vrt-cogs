@@ -3,9 +3,9 @@
     "author": [
         "Vertyco"
     ],
-    "description": "MC server stats",
+    "description": "Simple Minecraft server stats cog for Bedrock servers",
     "disabled" : false,
-    "end_user_data_statement" : "This cog uses the api.mcsrvstat.us API",
+    "end_user_data_statement" : "This cog uses the api.mcsrvstat.us API and does not persistently store data about users.",
     "hidden": false,
     "install_msg": "Thank you for installing!",
     "min_bot_version" : "3.4.0",
