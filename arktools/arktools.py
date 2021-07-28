@@ -669,9 +669,7 @@ class ArkTools(commands.Cog):
                 for server in allservers:
                     mapname = server['name']
                     if mapname != sourcename:
-                        if f"{server['name'].lower()}" in msg.lower():
-                            continue
-                        await self.process_handler(guild, server, f"serverchat {mapname.capitalize()}: {msg}")
+                        await self.process_handler(guild, server, f"serverchat {sourcename.capitalize()}: {msg}")
 
     @chat_executor.before_loop
     async def before_chat_executor(self):
