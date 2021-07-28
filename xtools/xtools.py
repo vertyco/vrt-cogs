@@ -62,43 +62,46 @@ class XTools(commands.Cog):
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Type your gamertag in and pull your profile info"""
-        if self.config.guild(ctx.guild).apikey() is None:
-            await ctx.send(f"Please set a valid API key with `{ctx.clean_prefix}setkey`")
+        data = await self.config.guild(ctx.guild).all()
+        if data["apikey"] is None:
+            await ctx.send(f"You need to set a valid API key with `{ctx.clean_prefix}setapikey`"
+                           f" before you can use that command.")
             await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
             return
 
-        command = "https://xbl.io/api/v2/friends/search?gt="
-        data, status, remaining, ratelimit = await self.get_gamertag(command, gtag)
-        try:
-            for user in data["profileUsers"]:
-                xuid = (f"**XUID:** {user['id']}")
-                for setting in user["settings"]:
-                    if setting["id"] == "Gamerscore":
-                        gs = (f"**Gamerscore:** {setting['value']}")
-                    if setting["id"] == "AccountTier":
-                        tier = (f"**AccountTier:** {setting['value']}")
-                    if setting["id"] == "XboxOneRep":
-                        rep = (f"**Reputation:** {setting['value']}")
-                    if setting["id"] == "GameDisplayPicRaw":
-                        pfp = (setting['value'])
-                    if setting["id"] == "Bio":
-                        bio = (setting['value'])
-        except KeyError:
-            return await ctx.send("Invalid Gamertag, please try again.")
-            # command calls the thing and does the stuff
+        async with ctx.typing():
+            command = "https://xbl.io/api/v2/friends/search?gt="
+            data, status, remaining, ratelimit = await self.get_gamertag(command, gtag)
+            try:
+                for user in data["profileUsers"]:
+                    xuid = (f"**XUID:** {user['id']}")
+                    for setting in user["settings"]:
+                        if setting["id"] == "Gamerscore":
+                            gs = (f"**Gamerscore:** {setting['value']}")
+                        if setting["id"] == "AccountTier":
+                            tier = (f"**AccountTier:** {setting['value']}")
+                        if setting["id"] == "XboxOneRep":
+                            rep = (f"**Reputation:** {setting['value']}")
+                        if setting["id"] == "GameDisplayPicRaw":
+                            pfp = (setting['value'])
+                        if setting["id"] == "Bio":
+                            bio = (setting['value'])
+            except KeyError:
+                return await ctx.send("Invalid Gamertag, please try again.")
+                # command calls the thing and does the stuff
 
-        color = discord.Color.dark_purple() if status == 200 else discord.Color.dark_red()
-        stat = "Good" if status == 200 else "Failed"
-        embed = discord.Embed(
-            title=f"**{gtag}**'s Profile",
-            color=color,
-            description=str(f"{xuid}\n{gs}\n{tier}\n{rep}"),
-        )
-        embed.set_image(url=pfp)
-        embed.add_field(name="Bio", value=box(bio))
-        embed.add_field(name="API Status",
-                        value=f"API: {stat}\nRateLimit: {ratelimit}/hour\nRemaining: {remaining}",
-                        inline=False
-                        )
-        await ctx.send(embed=embed)
+            color = discord.Color.dark_purple() if status == 200 else discord.Color.dark_red()
+            stat = "Good" if status == 200 else "Failed"
+            embed = discord.Embed(
+                title=f"**{gtag}**'s Profile",
+                color=color,
+                description=str(f"{xuid}\n{gs}\n{tier}\n{rep}"),
+            )
+            embed.set_image(url=pfp)
+            embed.add_field(name="Bio", value=box(bio))
+            embed.add_field(name="API Status",
+                            value=f"API: {stat}\nRateLimit: {ratelimit}/hour\nRemaining: {remaining}",
+                            inline=False
+                            )
+            await ctx.send(embed=embed)
         # output shows the info in an embed code block box
