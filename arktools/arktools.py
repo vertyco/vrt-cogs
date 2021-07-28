@@ -690,9 +690,9 @@ class ArkTools(commands.Cog):
 
     @commands.command(name="test")
     @commands.guildowner()
-    async def mytestcom(self, ctx):
-        data = await self.config.guild(ctx.guild).servertoserverchat()
-        await ctx.send(data)
+    async def mytestcom(self, ctx, message: discord.Message):
+        normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
+        await ctx.send(normalizedname)
 
     @commands.command(name="test2")
     @commands.guildowner()
