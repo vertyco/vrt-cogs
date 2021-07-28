@@ -375,7 +375,6 @@ class ArkTools(commands.Cog):
             if e.winerror == 121:
                 clustername = server['cluster']
                 await ctx.send(f"The **{server['name']}** **{clustername}** server has timed out and is probably down.")
-                return
         await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
     # RCON manual command logic
@@ -691,6 +690,7 @@ class ArkTools(commands.Cog):
     @commands.command(name="checkname")
     async def _checkname(self, ctx):
         """Check your discord name to see if it works with this cogs unicode filter"""
+        """If they are the same, then you're good to go"""
         normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
         await ctx.send(f"Normalized name: {normalizedname}")
         await ctx.send(f"Regular name: {ctx.message.author.name}")
