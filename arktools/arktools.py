@@ -689,7 +689,6 @@ class ArkTools(commands.Cog):
         print("Status channel monitor is ready.")
 
     @commands.command(name="test")
-    @commands.guildowner()
     async def mytestcom(self, ctx, message: discord.Message):
         normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
         await ctx.send(f"Normalized name: {normalizedname}")
