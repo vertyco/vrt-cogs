@@ -17,7 +17,7 @@ class ArkTools(commands.Cog):
     RCON tools and crosschat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.2"
+    __version__ = "1.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -669,6 +669,8 @@ class ArkTools(commands.Cog):
                 for server in allservers:
                     mapname = server['name']
                     if mapname != sourcename:
+                        if f"{server['name'].lower()}" in msg.lower():
+                            continue
                         await self.process_handler(guild, server, f"serverchat {mapname.capitalize()}: {msg}")
 
     @chat_executor.before_loop
