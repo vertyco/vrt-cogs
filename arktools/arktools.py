@@ -29,6 +29,7 @@ class ArkTools(commands.Cog):
         default_guild = {
             "statuschannel": None,
             "statusmessage": None,
+            "servertoserverchat": False,
             "clusters": {},
             "servers": {},
             "servername": {},
@@ -236,6 +237,17 @@ class ArkTools(commands.Cog):
         """Set a channel for a server status embed."""
         await self.config.guild(ctx.guild).statuschannel.set(channel.id)
         await ctx.send(f"Status channel has been set to {channel.mention}")
+
+    @_serversettings.command(name="toggle")
+    @commands.guildowner()
+    async def _servertoservertoggle(self, ctx: commands.Context):
+        """Toggle server to server chat so maps can talk to eachother"""
+        if await self.config.guild(ctx.guild).servertoserverchat() is False:
+            await self.config.guild(ctx.guild).servertoserverchat.set(True)
+            return await ctx.send(f"Server to server chat has been **Enabled**.")
+        if await self.config.guild(ctx.guild).servertoserverchat() is True:
+            await self.config.guild(ctx.guild).servertoserverchat.set(False)
+            return await ctx.send(f"Server to server chat has been **Disabled**.")
 
     # VIEW SETTINGSs
     @_permissions.command(name="view")
@@ -456,6 +468,8 @@ class ArkTools(commands.Cog):
             if settings["clusters"][cluster]["globalchatchannel"] == channel.id:
                 clusterchannels.append(settings["clusters"][cluster]["globalchatchannel"])
                 for server in settings["clusters"][cluster]["servers"]:
+                    globalchat = settings["clusters"][cluster]["globalchatchannel"]
+                    settings["clusters"][cluster]["servers"][server]["globalchatchannel"] = globalchat
                     clusterchannels.append(settings["clusters"][cluster]["servers"][server]["chatchannel"])
                     allservers.append(settings["clusters"][cluster]["servers"][server])
         return clusterchannels, allservers
@@ -476,7 +490,7 @@ class ArkTools(commands.Cog):
     @tasks.loop(seconds=6)
     async def chat_executor(self):
         for data in self.taskdata:
-            guild = data[0]
+            guild = self.bot.get_guild(data[0])
             server = data[1]
             await self.process_handler(guild, server, "getchat")
 
@@ -609,9 +623,9 @@ class ArkTools(commands.Cog):
 
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
-            if command == "getchat":
+            if "getchat" in command:
                 await self.message_handler(guild, server, res)
-            if command == "listplayers":
+            if "listplayers" in command:
                 regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
                 playerlist = re.findall(regex, res)
                 return playerlist
@@ -620,10 +634,10 @@ class ArkTools(commands.Cog):
     async def message_handler(self, guild, server, res):
         if "Server received, But no response!!" in res:
             return
-        guild = self.bot.get_guild(int(guild))
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
+        sourcename = server["name"]
         msgs = res.split("\n")
         messages = []
         settings = await self.config.guild(guild).all()
@@ -649,7 +663,13 @@ class ArkTools(commands.Cog):
         for msg in messages:
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
-
+            if await self.config.guild(guild).servertoserverchat() is True:
+                channel = guild.get_channel(server["globalchatchannel"])
+                clusterchannels, allservers = await self.globalchannelchecker(channel)
+                for server in allservers:
+                    mapname = server['name']
+                    if mapname != sourcename:
+                        await self.process_handler(guild, server, f"serverchat {mapname.capitalize()}: {msg}")
 
     @chat_executor.before_loop
     async def before_chat_executor(self):
@@ -671,7 +691,8 @@ class ArkTools(commands.Cog):
     @commands.command(name="test")
     @commands.guildowner()
     async def mytestcom(self, ctx):
-        await ctx.send(self.playerlist)
+        data = await self.config.guild(ctx.guild).servertoserverchat()
+        await ctx.send(data)
 
     @commands.command(name="test2")
     @commands.guildowner()
