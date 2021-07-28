@@ -690,10 +690,13 @@ class ArkTools(commands.Cog):
     @commands.command(name="checkname")
     async def _checkname(self, ctx):
         """Check your discord name to see if it works with this cogs unicode filter"""
-        """If they are the same, then you're good to go"""
-        normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
-        await ctx.send(f"Normalized name: {normalizedname}")
-        await ctx.send(f"Regular name: {ctx.message.author.name}")
+        """If there are no errors then you're good to go"""
+        try:
+            normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
+            await ctx.send(f"Filtered name: {normalizedname}")
+            await ctx.send(f"Unfiltered name: {ctx.message.author.name}")
+        except Exception as e:
+            await ctx.send(f"Unicode filter failed: {e}")
 
     @commands.command(name="test")
     @commands.guildowner()
