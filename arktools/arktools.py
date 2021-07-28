@@ -688,6 +688,13 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(30)
         print("Status channel monitor is ready.")
 
+    @commands.command(name="checkname")
+    async def mytestcom(self, ctx, message: discord.Message):
+        """Check your discord name to see if it works with this cogs unicode filter"""
+        normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
+        await ctx.send(f"Normalized name: {normalizedname}")
+        await ctx.send(f"Regular name: {message.author.name}")
+
     @commands.command(name="test")
     async def mytestcom(self, ctx, message: discord.Message):
         normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
