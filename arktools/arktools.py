@@ -696,7 +696,7 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Filtered name: {normalizedname}")
             await ctx.send(f"Unfiltered name: {ctx.message.author.name}")
         except Exception as e:
-            await ctx.send(f"Unicode filter failed: {e}")
+            await ctx.send(f"Unicode filter error: {e}")
 
     @commands.command(name="test")
     @commands.guildowner()
