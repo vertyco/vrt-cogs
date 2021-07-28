@@ -1,6 +1,5 @@
 # vrt-cogs
-Various utility/fun cogs for Red.
-My repo is already starting to revolve around various Xbox or game server related cogs, some of which will make extensive use of API's to pull data for the players.
+Various utility/fun cogs for Red V3.
 
 | Cog | Status | Description |
 |---|:---:|---|
