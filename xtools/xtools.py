@@ -62,10 +62,10 @@ class XTools(commands.Cog):
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Type your gamertag in and pull your profile info"""
-
         if self.config.guild(ctx.guild).apikey() is None:
             await ctx.send(f"Please set a valid API key with `{ctx.clean_prefix}setkey`")
             await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
+            return
 
         command = "https://xbl.io/api/v2/friends/search?gt="
         data, status, remaining, ratelimit = await self.get_gamertag(command, gtag)
