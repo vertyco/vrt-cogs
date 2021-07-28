@@ -21,7 +21,7 @@ If you havent loaded the Downloader cog already, go ahead and do that first with
 # Credits
 - Obi-Wan3 for holding my hand through a lot of my issues and questions i've had while learning python, and providing me with the insight to find things by myself.
 - The Red community as a whole for having dope cogs that I can creep on and see how they make stuff work.
-- The coding channel for having lots of helpful cog creators!
+- The Red discord coding channel for having lots of helpful cog creators!
 
 # Contact
 For support with my cogs, feel free to ping me in #support_othercogs in the [Red Cog Support](https://discord.gg/GET4DVk) server.
