@@ -9,7 +9,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.6"
+    __version__ = "0.0.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
