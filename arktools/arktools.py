@@ -689,11 +689,11 @@ class ArkTools(commands.Cog):
         print("Status channel monitor is ready.")
 
     @commands.command(name="checkname")
-    async def checkname(self, ctx, message: discord.Message):
+    async def checkname(self, ctx):
         """Check your discord name to see if it works with this cogs unicode filter"""
-        normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
+        normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
         await ctx.send(f"Normalized name: {normalizedname}")
-        await ctx.send(f"Regular name: {message.author.name}")
+        await ctx.send(f"Regular name: {ctx.message.author.name}")
 
     @commands.command(name="test")
     @commands.guildowner()
