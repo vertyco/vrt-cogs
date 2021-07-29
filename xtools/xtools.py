@@ -58,6 +58,8 @@ class XTools(commands.Cog):
         await ctx.send(f"API key has been set!")
 
     # Pulls profile data and formats for an embed
+    # Purposely left out the 'real name' and 'location' data for privacy reasons,
+    # Since some people have their profile info public and may not know it
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Type your gamertag in and pull your profile info"""
