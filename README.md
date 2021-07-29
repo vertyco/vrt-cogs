@@ -31,5 +31,5 @@ If you have any suggestions, or found any bugs, please let me know or [open an i
 
 If you would like to contribute, please talk to me on Discord first about your ideas before opening a PR.
 
-# Feature Requests & Bounties
-I am always open to any ideas or suggestions for new cogs/features, however I may not take any paid bounties for quite a while as I am still relatively new to python and the coding world in general.
+# Feature Requests
+I am open to any ideas or suggestions for new cogs/features!
