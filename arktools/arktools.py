@@ -12,12 +12,13 @@ import os
 import json
 import re
 
+
 class ArkTools(commands.Cog):
     """
-    RCON tools and crosschat for Ark: Survival Evolved!
+    RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.3"
+    __version__ = "1.1.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -51,7 +52,7 @@ class ArkTools(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
-        # Cache
+        # Cache on cog load
         self.taskdata = []
         self.playerlist = {}
 
@@ -64,8 +65,6 @@ class ArkTools(commands.Cog):
         self.chat_executor.cancel()
         self.playerlist_executor.cancel()
         self.status_channel.cancel()
-
-
 
     # GROUPS
     @commands.group(name="arktools")
@@ -85,18 +84,14 @@ class ArkTools(commands.Cog):
         """Server setup."""
         pass
 
-
     # PERMISSIONS COMMANDS
     @_permissions.command(name="setfullaccessrole")
-    @commands.guildowner()
     async def _setfullaccessrole(self, ctx: commands.Context, role: discord.Role):
         """Set a full RCON access role."""
         await self.config.guild(ctx.guild).fullaccessrole.set(role.id)
         await ctx.send(f"Full rcon access role has been set to {role}")
 
-
     @_permissions.command(name="addmodrole")
-    @commands.guildowner()
     async def _addmodrole(self, ctx: commands.Context, *, role: discord.Role):
         """Add a role to allow limited command access for."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
@@ -107,7 +102,6 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The **{role}** role has been added.")
 
     @_permissions.command(name="delmodrole")
-    @commands.guildowner()
     async def _delmodrole(self, ctx: commands.Context, role: discord.Role):
         """Delete a mod role."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
@@ -118,7 +112,6 @@ class ArkTools(commands.Cog):
                 await ctx.send("That role isn't in the list.")
 
     @_permissions.command(name="addbadname")
-    @commands.guildowner()
     async def _addbadname(self, ctx: commands.Context, *, badname: str):
         """Blacklisted a player name."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
@@ -129,7 +122,6 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"**{badname}** has been added to the blacklist.")
 
     @_permissions.command(name="delbadname")
-    @commands.guildowner()
     async def _delbadname(self, ctx: commands.Context, badname: str):
         """Delete a blacklisted name."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
@@ -139,9 +131,7 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send("That name doesnt exist")
 
-
     @_permissions.command(name="addmodcommand")
-    @commands.guildowner()
     async def _addmodcommand(self, ctx: commands.Context, *, modcommand: str):
         """Add allowable commands for the mods to use."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
@@ -152,7 +142,6 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The command **{modcommand}** has been added to the list.")
 
     @_permissions.command(name="delmodcommand")
-    @commands.guildowner()
     async def _delmodcommand(self, ctx: commands.Context, modcommand: str):
         """Delete an allowed mod command."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
@@ -162,10 +151,8 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send("That command doesnt exist")
 
-
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
-    @commands.guildowner()
     async def _addcluster(self, ctx: commands.Context,
                           clustername: str,
                           joinchannel: discord.TextChannel,
@@ -187,7 +174,6 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"**{clustername}** has been added to the list of clusters.")
 
     @_serversettings.command(name="delcluster")
-    @commands.guildowner()
     async def _delcluster(self, ctx: commands.Context, clustername: str):
         """Delete a cluster."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
@@ -197,9 +183,7 @@ class ArkTools(commands.Cog):
                 del clusters[clustername]
                 await ctx.send(f"{clustername} cluster has been deleted")
 
-
     @_serversettings.command(name="addserver")
-    @commands.guildowner()
     async def _addserver(self, ctx: commands.Context, clustername: str, servername: str, ip: str,
                          port: int, password: str, channel: discord.TextChannel):
         """Add a server."""
@@ -220,7 +204,6 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The cluster {clustername} does not exist!")
 
     @_serversettings.command(name="delserver")
-    @commands.guildowner()
     async def _delserver(self, ctx: commands.Context, clustername: str, servername: str):
         """Remove a server."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
@@ -232,14 +215,12 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"{servername} server not found.")
 
     @_serversettings.command(name="setstatuschannel")
-    @commands.guildowner()
     async def _setstatuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set a channel for a server status embed."""
         await self.config.guild(ctx.guild).statuschannel.set(channel.id)
         await ctx.send(f"Status channel has been set to {channel.mention}")
 
     @_serversettings.command(name="toggle")
-    @commands.guildowner()
     async def _servertoservertoggle(self, ctx: commands.Context):
         """Toggle server to server chat so maps can talk to eachother"""
         if await self.config.guild(ctx.guild).servertoserverchat() is False:
@@ -251,7 +232,6 @@ class ArkTools(commands.Cog):
 
     # VIEW SETTINGSs
     @_permissions.command(name="view")
-    @commands.guildowner()
     async def _viewperms(self, ctx: commands.Context):
         """View current permission settings."""
         settings = await self.config.guild(ctx.guild).all()
@@ -276,7 +256,6 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Setup permissions first.")
 
     @_serversettings.command(name="view")
-    @commands.guildowner()
     async def _viewsettings(self, ctx: commands.Context):
         """View current server settings."""
         settings = await self.config.guild(ctx.guild).all()
@@ -318,7 +297,6 @@ class ArkTools(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-
     #####################################################################RCON
     @_setarktools.command(name="rcon")
     async def rcon(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
@@ -339,7 +317,7 @@ class ArkTools(commands.Cog):
             if ctx.guild.owner != ctx.author:
                 return await ctx.send("You do not have the required permissions to run that command.")
 
-        # data setup logic to send commands to task loop
+        # pull data to send with commands to task loop
         serverlist = []
         if clustername != "all":
             if clustername not in settings["clusters"]:
@@ -365,7 +343,7 @@ class ArkTools(commands.Cog):
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
-        # sending manual commands off to the task loop
+        # sending manual commands off to a task loop
         try:
             tasks = []
             for server in serverlist:
@@ -374,10 +352,11 @@ class ArkTools(commands.Cog):
         except WindowsError as e:
             if e.winerror == 121:
                 clustername = server['cluster']
-                await ctx.send(f"The **{server['name']}** **{clustername}** server has timed out and is probably down.")
+                servername = server['name']
+                await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
         await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
-    # RCON manual command logic
+    # RCON manual command
     async def manual_rcon(self, ctx, serverlist, command):
         map = serverlist['name'].capitalize()
         cluster = serverlist['cluster'].upper()
@@ -394,7 +373,7 @@ class ArkTools(commands.Cog):
         else:
             await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
 
-    # Cache the config into the task data on cog load
+    # Cache the config on cog load, each map gets the cluster data appended to it to make functions easier to use.
     async def initialize(self):
         config = await self.config.all_guilds()
         for guildID in config:
@@ -430,8 +409,8 @@ class ArkTools(commands.Cog):
         if message.mentions:
             for mention in message.mentions:
                 message.content = message.content.replace(f"<@!{mention.id}>",
-                                                          "@"+str(mention.name)).replace(f"<@{mention.id}>",
-                                                                                         "@"+str(mention.name))
+                                                          "@" + str(mention.name)).replace(f"<@{mention.id}>",
+                                                                                           "@" + str(mention.name))
         if message.channel_mentions:
             for mention in message.channel_mentions:
                 message.content = message.content.replace(f"<#{mention.id}>", f"#{mention.name}")
@@ -448,7 +427,7 @@ class ArkTools(commands.Cog):
         if message.channel.id in chatchannels:
             await self.chat_toserver_rcon(map, message)
 
-    # Send chat to server(converts any unicode discord names)
+    # Send chat to server(converts any unicode discord names to normal characters before hand)
     async def chat_toserver_rcon(self, server, message):
         for data in server:
             normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
@@ -458,6 +437,7 @@ class ArkTools(commands.Cog):
                 port=data['port'],
                 passwd=data['password']
             )
+
     # Returns all channels and servers related to the message
     async def globalchannelchecker(self, channel):
         settings = await self.config.guild(channel.guild).all()
@@ -485,7 +465,7 @@ class ArkTools(commands.Cog):
                     map.append(settings["clusters"][cluster]["servers"][server])
         return chatchannels, map
 
-    # Executes all loops
+    # Initiates the GetChat loop
     @tasks.loop(seconds=6)
     async def chat_executor(self):
         for data in self.taskdata:
@@ -493,6 +473,7 @@ class ArkTools(commands.Cog):
             server = data[1]
             await self.process_handler(guild, server, "getchat")
 
+    # Initiates the ListPlayers loop for both join/leave logs and status message to use
     @tasks.loop(seconds=30)
     async def playerlist_executor(self):
         for data in self.taskdata:
@@ -529,7 +510,7 @@ class ArkTools(commands.Cog):
             if player not in playerlist:
                 return player
 
-    # Maintains an embed of all active servers and player counts
+    # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
     async def status_channel(self):
         data = await self.config.all_guilds()
@@ -583,7 +564,7 @@ class ArkTools(commands.Cog):
 
             # Embed setup
             thumbnail = guild.icon_url
-            eastern = pytz.timezone('US/Eastern')
+            eastern = pytz.timezone('US/Eastern')  # Might make this configurable in the future
             time = datetime.datetime.now(eastern)
             embed = discord.Embed(
                 timestamp=time,
@@ -608,8 +589,8 @@ class ArkTools(commands.Cog):
             if msgtoedit:
                 await msgtoedit.edit(embed=embed)
 
-
-    # Runs synchronous rcon commands in another thread to not block heartbeat
+    # Runs all task loop rcon commands synchronously in another thread
+    # Having it run synchronous and in another thread solves the network buffer issue and keeps traffic manageable
     async def process_handler(self, guild, server, command):
         def rcon():
             try:
@@ -662,7 +643,7 @@ class ArkTools(commands.Cog):
         for msg in messages:
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
-            if await self.config.guild(guild).servertoserverchat() is True:
+            if await self.config.guild(guild).servertoserverchat() is True:  # So maps can talk to each other if toggled
                 channel = guild.get_channel(server["globalchatchannel"])
                 clusterchannels, allservers = await self.globalchannelchecker(channel)
                 for server in allservers:
@@ -670,26 +651,30 @@ class ArkTools(commands.Cog):
                     if mapname != sourcename:
                         await self.process_handler(guild, server, f"serverchat {sourcename.capitalize()}: {msg}")
 
+    # Initialize the config before the chat loop starts
     @chat_executor.before_loop
     async def before_chat_executor(self):
         await self.bot.wait_until_red_ready()
         await self.initialize()
         print("Chat executor is ready.")
 
+    # Nothing special before playerlist executor
     @playerlist_executor.before_loop
     async def before_playerlist_executor(self):
         await self.bot.wait_until_red_ready()
         print("Playerlist executor is ready.")
 
+    # Sleep before starting so playerlist executor has time to gather the player list
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(30)
         print("Status channel monitor is ready.")
 
+    # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
     @commands.command(name="checkname")
     async def _checkname(self, ctx):
-        """Check your discord name to see if it works with this cogs unicode filter"""
+        """Check your discord name to see if it works with this cogs crosscaht unicode  filter"""
         """If there are no errors then you're good to go"""
         try:
             normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
@@ -698,84 +683,7 @@ class ArkTools(commands.Cog):
         except Exception as e:
             await ctx.send(f"Unicode filter error: {e}")
 
-    @commands.command(name="test")
-    @commands.guildowner()
-    async def mytestcom(self, ctx, message: discord.Message):
-        normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
-        await ctx.send(f"Normalized name: {normalizedname}")
-        await ctx.send(f"Regular name: {message.author.name}")
-
-    @commands.command(name="test2")
-    @commands.guildowner()
-    async def mytestcom2(self, ctx):
-        await ctx.send("sending")
-        data = await self.config.all_guilds()
-        for guildID in data:
-            guild = self.bot.get_guild(int(guildID))
-            if not guild:
-                continue
-            settings = await self.config.guild(guild).all()
-            if not settings:
-                continue
-
-            status = ""
-            clustertotal = 0
-            for cluster in settings["clusters"]:
-                clustername = cluster.upper()
-                if not settings["clusters"]:
-                    continue
-                status += f"**{clustername}**\n"
-                for server in settings["clusters"][cluster]["servers"]:
-                    channel = settings["clusters"][cluster]["servers"][server]["chatchannel"]
-                    servername = settings['clusters'][cluster]['servers'][server]['name']
-                    if not channel:
-                        continue
-
-                    # Get cached player count
-                    playercount = self.playerlist[channel]
-
-                    if not playercount:
-                        status += f"{servername}: 0 Players\n"
-                        continue
-                    if playercount is None:
-                        status += f"{servername}: Offline...\n"
-                        continue
-
-                    playercount = len(playercount)
-                    clustertotal += playercount
-                    if playercount == 1:
-                        status += f"{servername}: {playercount} player\n"
-                    else:
-                        status += f"{servername}: {playercount} players\n"
-
-            # Embed setup
-            thumbnail = guild.icon_url
-            eastern = pytz.timezone('US/Eastern')
-            time = datetime.datetime.now(eastern)
-            for p in pagify(status):
-                embed = discord.Embed(
-                    timestamp=time,
-                    title="Server Status",
-                    description=p
-                )
-                embed.set_thumbnail(url=thumbnail)
-                await ctx.send(embed=embed)
-
-    @commands.command(name="test3")
-    @commands.guildowner()
-    async def mytestcom3(self, ctx):
-        settings = await self.config.guild(ctx.guild).all()
-        color = discord.Color.dark_purple()
-        try:
-            embed = discord.Embed(
-                title=f"test",
-                color=color,
-                description=f"**msgid:** {settings['statusmessage']}\n"
-            )
-            return await ctx.send(embed=embed)
-        except Exception:
-            await ctx.send(f"Setup permissions first.")
-
-
-
-
+    # Testing commands used for.. well. testing..
+    # @commands.command(name="test")
+    # @commands.guildowner()
+    # async def mytestcom(self, ctx, message: discord.Message):
