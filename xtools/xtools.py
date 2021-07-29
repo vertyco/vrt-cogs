@@ -9,7 +9,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.9"
+    __version__ = "0.0.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -28,7 +28,6 @@ class XTools(commands.Cog):
         self.bot.loop.create_task(self.session.close())
 
     async def get_gamertag(self, command, gtag):
-        # define what happens when the 'xprofile' command is run
         config = await self.config.all_guilds()
         for guildID in config:
             guild = self.bot.get_guild(int(guildID))
@@ -38,18 +37,17 @@ class XTools(commands.Cog):
             apikey = settings["apikey"]
             async with self.session.get(f'{command}{gtag}',
                                         headers={"X-Authorization": apikey}) as resp:
-                # make request using that session and define its output as a 'resp'
                 try:
                     data = await resp.json()
                     status = resp.status
                     remaining = resp.headers['X-RateLimit-Remaining']
                     ratelimit = resp.headers['X-RateLimit-Limit']
                 except ContentTypeError:
-                    ctx.send("The API failed to pull the data for some reason. Please try again.")
+                    ctx.send("The API failed to pull the data. Please try again.")
 
                 return data, status, remaining, ratelimit
-                # return the api stuff for use in the command
 
+    # Per guild API key since theyre free and easy to obtain with a rate limit of 500/hour for free version
     @commands.command(name="setapikey", alias="xtools")
     async def setkey(self, ctx, key: str):
         """
@@ -59,6 +57,7 @@ class XTools(commands.Cog):
         await self.config.guild(ctx.guild).apikey.set(str(key))
         await ctx.send(f"API key has been set!")
 
+    # Pulls profile data and formats for an embed
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Type your gamertag in and pull your profile info"""
@@ -104,4 +103,3 @@ class XTools(commands.Cog):
                             inline=False
                             )
             await ctx.send(embed=embed)
-        # output shows the info in an embed code block box
