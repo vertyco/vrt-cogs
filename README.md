@@ -1,6 +1,8 @@
 # vrt-cogs
 Various utility/fun cogs for Red V3.
 
+I am relatively new to Python and coding in general, and enjoy working with API's and utility cogs for game servers. I plan on focusing in a niche of server management cogs but am keeping an open mind about any ideas that might interest me.
+
 | Cog | Status | Description |
 |---|:---:|---|
 | ArkTools | ✓ | <details><summary>Connect to your ark servers and chat seamlessly between in-game and discord.</summary> This cog includes many utility features for overseeing your server including a status channel, join/leave logs, auto-renaming blacklisting player names, and admin command logging.</details> |
