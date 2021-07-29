@@ -161,6 +161,7 @@ class ArkTools(commands.Cog):
                           adminlogchannel: discord.TextChannel,
                           globalchatchannel: discord.TextChannel):
         """Add a cluster with specified log channels."""
+        """Include desired join, leave, admin log, and global chat channel."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername in clusters.keys():
                 await ctx.send("Cluster already exists")
@@ -218,6 +219,7 @@ class ArkTools(commands.Cog):
     @_serversettings.command(name="setstatuschannel")
     async def _setstatuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set a channel for a server status embed."""
+        """This embed will be created if not exists, and updated every 60 seconds."""
         await self.config.guild(ctx.guild).statuschannel.set(channel.id)
         await ctx.send(f"Status channel has been set to {channel.mention}")
 
@@ -264,6 +266,10 @@ class ArkTools(commands.Cog):
         if not settings["clusters"]:
             await ctx.send("No servers have been added yet.")
             return
+        if await self.config.guild(ctx.guild).servertoserverchat() is True:
+            serversettings += f"Map-to-Map Chat: **Enabled**"
+        if await self.config.guild(ctx.guild).servertoserverchat() is False:
+            serversettings += f"Map-to-Map Chat: **Enabled**"
         for pv in settings["clusters"]:
             serversettings += f"**{pv.upper()} Cluster**\n"
             for k, v in settings["clusters"][pv].items():
@@ -298,7 +304,7 @@ class ArkTools(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    #####################################################################RCON
+    # Manual RCON commands
     @_setarktools.command(name="rcon")
     async def rcon(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
         """Perform an RCON command."""
@@ -318,7 +324,7 @@ class ArkTools(commands.Cog):
             if ctx.guild.owner != ctx.author:
                 return await ctx.send("You do not have the required permissions to run that command.")
 
-        # pull data to send with commands to task loop
+        # pull data to send with command to task loop depending on what user designated
         serverlist = []
         if clustername != "all":
             if clustername not in settings["clusters"]:
@@ -344,7 +350,7 @@ class ArkTools(commands.Cog):
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
-        # sending manual commands off to a task loop
+        # sending manual commands off to an async task loop
         try:
             tasks = []
             for server in serverlist:
@@ -357,7 +363,7 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
         await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
-    # RCON manual command
+    # RCON function for manual commands
     async def manual_rcon(self, ctx, serverlist, command):
         map = serverlist['name'].capitalize()
         cluster = serverlist['cluster'].upper()
@@ -374,7 +380,7 @@ class ArkTools(commands.Cog):
         else:
             await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
 
-    # Cache the config on cog load, each map gets the cluster data appended to it to make functions easier to use.
+    # Cache the config on cog load for the task loops to use
     async def initialize(self):
         config = await self.config.all_guilds()
         for guildID in config:
@@ -402,7 +408,7 @@ class ArkTools(commands.Cog):
                     self.taskdata.append([guild.id, server])
         print("ArkTools config initialized.")
 
-    # Message listener to send chat to designated servers
+    # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
         if message.author.bot:
@@ -501,11 +507,13 @@ class ArkTools(commands.Cog):
 
             self.playerlist[channel] = newplayerlist
 
+    # For the Discord join log
     def checkplayerjoin(self, channel, playerlist):
         for player in playerlist:
             if player not in self.playerlist[channel]:
                 return player
 
+    # For the Discord leave log
     def checkplayerleave(self, channel, playerlist):
         for player in self.playerlist[channel]:
             if player not in playerlist:
@@ -535,7 +543,7 @@ class ArkTools(commands.Cog):
                     if not channel:
                         continue
 
-                    # Get cached player count
+                    # Get cached player count data
                     playercount = self.playerlist[channel]
 
                     if not playercount:
@@ -590,8 +598,8 @@ class ArkTools(commands.Cog):
             if msgtoedit:
                 await msgtoedit.edit(embed=embed)
 
-    # Runs all task loop rcon commands synchronously in another thread
-    # Having it run synchronous and in another thread solves the network buffer issue and keeps traffic manageable
+    # Executes all task loop RCON commands synchronously in another thread
+    # Synchronous reasoning is for easing network buffer and keeps network traffic manageable
     async def process_handler(self, guild, server, command):
         def rcon():
             try:
@@ -613,7 +621,7 @@ class ArkTools(commands.Cog):
 
     # Sends messages to their designated channels from the in-game chat
     async def message_handler(self, guild, server, res):
-        if "Server received, But no response!!" in res:
+        if "Server received, But no response!!" in res:  # Common response from an Online server with no new messages
             return
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
