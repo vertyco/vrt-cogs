@@ -3,13 +3,14 @@ from redbot.core.utils.chat_formatting import box
 import aiohttp
 import discord
 
+
 class XTools(commands.Cog):
     """
     Xbox API Tools, inspiration from flare's ApiTools :)
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.10"
+    __version__ = "0.1.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -19,43 +20,22 @@ class XTools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession()
-        self.config = Config.get_conf(self, 117117, force_registration=True)
-        default_guild = {"apikey": None}
-        self.config.register_guild(**default_guild)
-
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
-    async def get_gamertag(self, command, gtag):
-        config = await self.config.all_guilds()
-        for guildID in config:
-            guild = self.bot.get_guild(int(guildID))
-            if not guild:
-                continue
-            settings = await self.config.guild(guild).all()
-            apikey = settings["apikey"]
-            async with self.session.get(f'{command}{gtag}',
-                                        headers={"X-Authorization": apikey}) as resp:
-                try:
-                    data = await resp.json()
-                    status = resp.status
-                    remaining = resp.headers['X-RateLimit-Remaining']
-                    ratelimit = resp.headers['X-RateLimit-Limit']
-                except ContentTypeError:
-                    ctx.send("The API failed to pull the data. Please try again.")
+    async def get_gamertag(self, ctx, apikey, command, gtag):
+        async with self.session.get(f'{command}{gtag}',
+                                    headers={"X-Authorization": apikey}) as resp:
+            try:
+                data = await resp.json()
+                status = resp.status
+                remaining = resp.headers['X-RateLimit-Remaining']
+                ratelimit = resp.headers['X-RateLimit-Limit']
+            except ContentTypeError:
+                ctx.send("The API failed to pull the data. Please try again.")
 
-                return data, status, remaining, ratelimit
-
-    # Per guild API key since theyre free and easy to obtain with a rate limit of 500/hour for free version
-    @commands.command(name="setapikey", alias="xtools")
-    async def setkey(self, ctx, key: str):
-        """
-        Set an api key so you can view your info.
-        To get an api key, visit https://xbl.io/
-        """
-        await self.config.guild(ctx.guild).apikey.set(str(key))
-        await ctx.send(f"API key has been set!")
+            return data, status, remaining, ratelimit
 
     # Pulls profile data and formats for an embed
     # Purposely left out the 'real name' and 'location' data for privacy reasons,
@@ -63,16 +43,16 @@ class XTools(commands.Cog):
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Type your gamertag in and pull your profile info"""
-        data = await self.config.guild(ctx.guild).all()
-        if data["apikey"] is None:
-            await ctx.send(f"You need to set a valid API key with `{ctx.clean_prefix}setapikey`"
-                           f" before you can use that command.")
+        xtools_api = await self.bot.get_shared_api_tokens("xtools")
+        if xtools_api.get("api_key") is None:
+            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
+                           f" before you can use this command.")
             await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
             return
 
         async with ctx.typing():
             command = "https://xbl.io/api/v2/friends/search?gt="
-            data, status, remaining, ratelimit = await self.get_gamertag(command, gtag)
+            data, status, remaining, ratelimit = await self.get_gamertag(ctx, xtools_api["api_key"], command, gtag)
             try:
                 for user in data["profileUsers"]:
                     xuid = (f"**XUID:** {user['id']}")

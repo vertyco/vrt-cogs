@@ -5,7 +5,7 @@
     ],
     "description": "Xbox tools for getting player data (WIP more features to come)",
     "disabled" : false,
-    "end_user_data_statement" : "This cog uses the xbl.io API and does not persistently store data about users.\n**Note:**\nThis cog will NOT pull xbox profile's 'real name' or 'location data' just gamerscore, pfp, xuid and bio ect...\nThis cog will store your API key for your xbl.io account in it's config, thus whoever is bot owner will have that data. Only use this cog if you trust the BotOwner.",
+    "end_user_data_statement" : "This cog uses the xbl.io API and does not persistently store data about users.\n**Note:**\nThis cog will NOT pull xbox profile's 'real name' or 'location data' just gamerscore, pfp, xuid and bio ect..",
     "hidden": false,
     "install_msg": "Thank you for installing! Use `[p]help XTools` for more info.",
     "min_bot_version" : "3.4.0",
