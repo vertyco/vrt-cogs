@@ -3,7 +3,7 @@ Various utility/fun cogs for Red V3.
 
 | Cog | Status | Description |
 |---|:---:|---|
-| ArkTools | ✓ | <details><summary>Connect to your ark servers and chat seamlessly between in-game and discord.</summary> This cog includes many utility features for overseeing your server including a status channel, join/leave logs, blacklisting player names, and admin command logging.</details> |
+| ArkTools | ✓ | <details><summary>Connect to your ark servers and chat seamlessly between in-game and discord.</summary> This cog includes many utility features for overseeing your server including a status channel, join/leave logs, auto-renaming blacklisting player names, and admin command logging.</details> |
 | Inspire | ✓ | <details><summary>Get inpsirational messages.</summary> Super simple cog that replies to certain sad words with positive encouragements using zenquotes.io API. Note: this cog was my very first project just to get the feel for Red so it's not very big and there arent any plans of expanding it at the moment.</details>|
 | MCTools | ✓ | <details><summary>Super simple status cog for Minecraft Bedrock servers.</summary> Only for **Bedrock** dedicated servers since there is already one that supports Java.</details> |
 | XTools | ✓ | <details><summary>Get your Xbox profile info in a clean embed.</summary> Various other tools for Xbox using xbl.io API coming soon.  (You will need to register for a key to use this cog. "its free though")</details> |
