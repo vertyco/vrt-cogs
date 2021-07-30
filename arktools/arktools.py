@@ -171,6 +171,7 @@ class ArkTools(commands.Cog):
                     "leavechannel": leavechannel.id,
                     "adminlogchannel": adminlogchannel.id,
                     "globalchatchannel": globalchatchannel.id,
+                    "servertoserver": False,
                     "servers": {}
                 }
                 await ctx.send(f"**{clustername}** has been added to the list of clusters.")
@@ -224,13 +225,14 @@ class ArkTools(commands.Cog):
         await ctx.send(f"Status channel has been set to {channel.mention}")
 
     @_serversettings.command(name="toggle")
-    async def _servertoservertoggle(self, ctx: commands.Context):
+    async def _servertoservertoggle(self, ctx: commands.Context, clustername):
         """Toggle server to server chat so maps can talk to eachother"""
-        if await self.config.guild(ctx.guild).servertoserverchat() is False:
-            await self.config.guild(ctx.guild).servertoserverchat.set(True)
+        data = await self.config.guild(ctx.guild).clusters()
+        if await data[clustername]["servertoserver"] is False:
+            data[clustername]["servertoserver"] = True
             return await ctx.send(f"Server to server chat has been **Enabled**.")
-        if await self.config.guild(ctx.guild).servertoserverchat() is True:
-            await self.config.guild(ctx.guild).servertoserverchat.set(False)
+        if await data[clustername]["servertoserver"] is True:
+            data[clustername]["servertoserver"] = False
             return await ctx.send(f"Server to server chat has been **Disabled**.")
 
     # VIEW SETTINGSs
@@ -326,27 +328,29 @@ class ArkTools(commands.Cog):
 
         # pull data to send with command to task loop depending on what user designated
         serverlist = []
-        if clustername.lower() != "all".lower():
-            if clustername.lower() not in settings["clusters"].lower():
+        clustername = clustername.lower()
+        servername = servername.lower()
+        if clustername != "all":
+            if not settings["clusters"][clustername]:
                 return await ctx.send("Cluster name not found.")
-            if servername.lower() == "all".lower():
+            if servername == "all":
                 for server in settings["clusters"][clustername]["servers"]:
-                    settings["clusters"][clustername]["servers"][server]["cluster"] = clustername.lower()
+                    settings["clusters"][clustername]["servers"][server]["cluster"] = clustername
                     serverlist.append(settings["clusters"][clustername]["servers"][server])
-            if servername.lower() != "all".lower():
-                settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername.lower()
-                if servername.lower() not in settings["clusters"][clustername]["servers"].lower():
+            if servername != "all":
+                settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername
+                if not settings["clusters"][clustername]["servers"][servername]:
                     return await ctx.send("Server name not found.")
                 serverlist.append(settings["clusters"][clustername]["servers"][servername])
-        if clustername.lower() == "all".lower():
+        if clustername == "all":
             for cluster in settings["clusters"]:
-                if servername.lower() == "all".lower():
+                if servername == "all":
                     for server in settings["clusters"][cluster]["servers"]:
                         settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
                         serverlist.append(settings["clusters"][cluster]["servers"][server])
-                if servername.lower() != "all".lower():
+                if servername != "all":
                     settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
-                    if servername.lower() not in settings["clusters"][cluster]["servers"].lower():
+                    if not settings["clusters"][cluster]["servers"][servername]:
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
