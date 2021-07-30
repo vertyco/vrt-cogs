@@ -262,16 +262,16 @@ class ArkTools(commands.Cog):
     async def _viewsettings(self, ctx: commands.Context):
         """View current server settings."""
         settings = await self.config.guild(ctx.guild).all()
-        serversettings = ""
         if not settings["clusters"]:
             await ctx.send("No servers have been added yet.")
             return
-        if await self.config.guild(ctx.guild).servertoserverchat() is True:
-            serversettings += f"Map-to-Map Chat: **Enabled**"
-        if await self.config.guild(ctx.guild).servertoserverchat() is False:
-            serversettings += f"Map-to-Map Chat: **Enabled**"
         for pv in settings["clusters"]:
+            serversettings = ""
             serversettings += f"**{pv.upper()} Cluster**\n"
+            if await self.config.guild(ctx.guild).servertoserverchat() is True:
+                serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
+            if await self.config.guild(ctx.guild).servertoserverchat() is False:
+                serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
             for k, v in settings["clusters"][pv].items():
                 if k == "globalchatchannel":
                     serversettings += f"`GlobalChat:` {ctx.guild.get_channel(v).mention}\n"
@@ -296,13 +296,13 @@ class ArkTools(commands.Cog):
                     if k == "chatchannel":
                         serversettings += f"**Channel:** {ctx.guild.get_channel(v).mention}\n"
                 serversettings += "\n"
-        for p in pagify(serversettings):
-            color = discord.Color.dark_purple()
-            embed = discord.Embed(
-                color=color,
-                description=f"{p}"
-            )
-            await ctx.send(embed=embed)
+            for p in pagify(serversettings):
+                color = discord.Color.dark_purple()
+                embed = discord.Embed(
+                    color=color,
+                    description=f"{p}"
+                )
+                await ctx.send(embed=embed)
 
     # Manual RCON commands
     @_setarktools.command(name="rcon")
