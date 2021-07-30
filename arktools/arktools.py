@@ -402,10 +402,6 @@ class ArkTools(commands.Cog):
             for cluster in guildsettings:
                 if not guildsettings[cluster]:
                     continue
-                if "servertoserver" not in guildsettings[cluster].keys():
-                    async with self.config.guild(ctx.guild).clusters() as clusters:
-                        clusters[cluster]["servertoserver"] = False
-                        continue
                 guildsettings[cluster]["servertoserver"] = False
                 globalchatchannel = guildsettings[cluster]["globalchatchannel"]
                 adminlogchannel = guildsettings[cluster]["adminlogchannel"]
@@ -421,7 +417,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.playerlist[server["chatchannel"]] = []
-                    self.taskdata.append([guild.id, server])
+
         print("ArkTools config initialized.")
 
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
