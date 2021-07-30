@@ -427,7 +427,7 @@ class ArkTools(commands.Cog):
         for data in serverlist:
             server = data[1]
             if int(message.channel.id) != int(server["chatchannel"]):
-                continue
+                return
         if message.author.bot:
             return
         if message.mentions:
