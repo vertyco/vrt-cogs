@@ -326,59 +326,59 @@ class ArkTools(commands.Cog):
 
         # pull data to send with command to task loop depending on what user designated
         serverlist = []
-        if clustername != "all":
-            if clustername not in settings["clusters"]:
+        if clustername.lower() != "all".lower():
+            if clustername.lower() not in settings["clusters"].lower():
                 return await ctx.send("Cluster name not found.")
-            if servername == "all":
+            if servername.lower() == "all".lower():
                 for server in settings["clusters"][clustername]["servers"]:
-                    settings["clusters"][clustername]["servers"][server]["cluster"] = clustername
+                    settings["clusters"][clustername]["servers"][server]["cluster"] = clustername.lower()
                     serverlist.append(settings["clusters"][clustername]["servers"][server])
-            if servername != "all":
-                settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername
-                if servername not in settings["clusters"][clustername]["servers"]:
+            if servername.lower() != "all".lower():
+                settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername.lower()
+                if servername.lower() not in settings["clusters"][clustername]["servers"].lower():
                     return await ctx.send("Server name not found.")
                 serverlist.append(settings["clusters"][clustername]["servers"][servername])
-        if clustername == "all":
+        if clustername.lower() == "all".lower():
             for cluster in settings["clusters"]:
-                if servername == "all":
+                if servername.lower() == "all".lower():
                     for server in settings["clusters"][cluster]["servers"]:
-                        settings["clusters"][cluster]["servers"][server]["cluster"] = cluster
+                        settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
                         serverlist.append(settings["clusters"][cluster]["servers"][server])
-                if servername != "all":
-                    settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster
-                    if servername not in settings["clusters"][cluster]["servers"]:
+                if servername.lower() != "all".lower():
+                    settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
+                    if servername.lower() not in settings["clusters"][cluster]["servers"].lower():
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
         # sending manual commands off to an async task loop
-        try:
-            tasks = []
-            for server in serverlist:
-                tasks.append(self.manual_rcon(ctx, server, command))
-            await asyncio.gather(*tasks)
-        except WindowsError as e:
-            if e.winerror == 121:
-                clustername = server['cluster']
-                servername = server['name']
-                await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
+        tasks = []
+        for server in serverlist:
+            tasks.append(self.manual_rcon(ctx, server, command))
+        await asyncio.gather(*tasks)
         await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
     # RCON function for manual commands
     async def manual_rcon(self, ctx, serverlist, command):
-        map = serverlist['name'].capitalize()
-        cluster = serverlist['cluster'].upper()
-        res = await rcon.asyncio.rcon(
-            command=command,
-            host=serverlist['ip'],
-            port=serverlist['port'],
-            passwd=serverlist['password']
-        )
-        res = res.rstrip()
-        if command.lower() == "listplayers":
-            await ctx.send(f"**{map} {cluster}**\n"
-                           f"{box(res, lang='python')}")
-        else:
-            await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
+        try:
+            map = serverlist['name'].capitalize()
+            cluster = serverlist['cluster'].upper()
+            res = await rcon.asyncio.rcon(
+                command=command,
+                host=serverlist['ip'],
+                port=serverlist['port'],
+                passwd=serverlist['password']
+            )
+            res = res.rstrip()
+            if command.lower() == "listplayers":
+                await ctx.send(f"**{map} {cluster}**\n"
+                               f"{box(res, lang='python')}")
+            else:
+                await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
+        except WindowsError as e:
+            if e.winerror == 121:
+                clustername = serverlist['cluster']
+                servername = serverlist['name']
+                await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
 
     # Cache the config on cog load for the task loops to use
     async def initialize(self):
