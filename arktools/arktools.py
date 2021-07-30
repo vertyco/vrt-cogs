@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.11"
+    __version__ = "1.2.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -423,12 +423,12 @@ class ArkTools(commands.Cog):
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
-        serverlist = self.taskdata
-        for data in serverlist:
+        for data in self.taskdata:
             server = data[1]
-            if message.channel.id != server["chatchannel"]:
-                if message.channel.id != server["globalchatchannel"]:
-                    return
+            if server["chatchannel"] and server["globalchatchannel"] != message.channel.id:
+                continue
+            else:
+                break
         if message.author.bot:
             return
         if message.mentions:
