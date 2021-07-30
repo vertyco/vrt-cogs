@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.4"
+    __version__ = "1.2.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -166,7 +166,7 @@ class ArkTools(commands.Cog):
             if clustername in clusters.keys():
                 await ctx.send("Cluster already exists")
             else:
-                clusters[clustername] = {
+                clusters[clustername.lower()] = {
                     "joinchannel": joinchannel.id,
                     "leavechannel": leavechannel.id,
                     "adminlogchannel": adminlogchannel.id,
@@ -197,7 +197,7 @@ class ArkTools(commands.Cog):
                 if servername not in clusters[clustername]["servers"].keys():
                     await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
             clusters[clustername]["servers"][servername] = {
-                "name": servername,
+                "name": servername.lower(),
                 "ip": ip,
                 "port": port,
                 "password": password,
@@ -227,13 +227,16 @@ class ArkTools(commands.Cog):
     @_serversettings.command(name="toggle")
     async def _servertoservertoggle(self, ctx: commands.Context, clustername):
         """Toggle server to server chat so maps can talk to eachother"""
-        data = await self.config.guild(ctx.guild).clusters()
-        if await data[clustername]["servertoserver"] is False:
-            data[clustername]["servertoserver"] = True
-            return await ctx.send(f"Server to server chat has been **Enabled**.")
-        if await data[clustername]["servertoserver"] is True:
-            data[clustername]["servertoserver"] = False
-            return await ctx.send(f"Server to server chat has been **Disabled**.")
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if "servertoserver" not in clusters[clustername].keys():
+                clusters[clustername]["servertoserver"] = False
+                return await ctx.send(f"Server to server chat for {clustername.upper()} has been initialized as **Disabled**.")
+            if clusters[clustername]["servertoserver"] is False:
+                clusters[clustername]["servertoserver"] = True
+                return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Enabled**.")
+            if clusters[clustername]["servertoserver"] is True:
+                clusters[clustername]["servertoserver"] = False
+                return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Disabled**.")
 
     # VIEW SETTINGSs
     @_permissions.command(name="view")
@@ -263,18 +266,24 @@ class ArkTools(commands.Cog):
     @_serversettings.command(name="view")
     async def _viewsettings(self, ctx: commands.Context):
         """View current server settings."""
+
         settings = await self.config.guild(ctx.guild).all()
         if not settings["clusters"]:
             await ctx.send("No servers have been added yet.")
             return
-        for pv in settings["clusters"]:
+        for cname in settings["clusters"]:
             serversettings = ""
-            serversettings += f"**{pv.upper()} Cluster**\n"
-            if await self.config.guild(ctx.guild).servertoserverchat() is True:
+            serversettings += f"**{cname.upper()} Cluster**\n"
+            print(settings["clusters"][cname].keys())
+            if "servertoserver" not in settings["clusters"][cname].keys():
+                async with self.config.guild(ctx.guild).clusters() as clusters:
+                    clusters[clustername]["servertoserver"] = False
+
+            if settings["clusters"][cname]["servertoserver"] is True:
                 serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
-            if await self.config.guild(ctx.guild).servertoserverchat() is False:
-                serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
-            for k, v in settings["clusters"][pv].items():
+            if settings["clusters"][cname]["servertoserver"] is False:
+                serversettings += f"`Map-to-Map Chat:` **Disabled**\n"
+            for k, v in settings["clusters"][cname].items():
                 if k == "globalchatchannel":
                     serversettings += f"`GlobalChat:` {ctx.guild.get_channel(v).mention}\n"
                 if k == "adminlogchannel":
@@ -285,8 +294,8 @@ class ArkTools(commands.Cog):
                     serversettings += f"`LeaveChannel:` {ctx.guild.get_channel(v).mention}\n"
                 else:
                     continue
-            for server in settings["clusters"][pv]["servers"]:
-                for k, v in settings["clusters"][pv]["servers"][server].items():
+            for server in settings["clusters"][cname]["servers"]:
+                for k, v in settings["clusters"][cname]["servers"][server].items():
                     if k == "name":
                         serversettings += f"**Map:** `{v.capitalize()}`\n"
                     if k != "chatchannel":
@@ -398,15 +407,18 @@ class ArkTools(commands.Cog):
             for cluster in guildsettings:
                 if not guildsettings[cluster]:
                     continue
+                guildsettings[cluster]["servertoserver"] = False
                 globalchatchannel = guildsettings[cluster]["globalchatchannel"]
                 adminlogchannel = guildsettings[cluster]["adminlogchannel"]
                 joinchannel = guildsettings[cluster]["joinchannel"]
                 leavechannel = guildsettings[cluster]["leavechannel"]
+                servertoserver = guildsettings[cluster]["servertoserver"]
                 for server in guildsettings[cluster]["servers"]:
                     guildsettings[cluster]["servers"][server]["joinchannel"] = joinchannel
                     guildsettings[cluster]["servers"][server]["leavechannel"] = leavechannel
                     guildsettings[cluster]["servers"][server]["adminlogchannel"] = adminlogchannel
                     guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
+                    guildsettings[cluster]["servers"][server]["servertoserver"] = servertoserver
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.playerlist[server["chatchannel"]] = []
@@ -657,7 +669,7 @@ class ArkTools(commands.Cog):
         for msg in messages:
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
-            if await self.config.guild(guild).servertoserverchat() is True:  # So maps can talk to each other if toggled
+            if server["servertoserver"] is True:  # So maps can talk to each other if toggled
                 channel = guild.get_channel(server["globalchatchannel"])
                 clusterchannels, allservers = await self.globalchannelchecker(channel)
                 for server in allservers:
