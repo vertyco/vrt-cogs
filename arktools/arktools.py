@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.8"
+    __version__ = "1.2.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -416,7 +416,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.playerlist[server["chatchannel"]] = []
-                    self.taskdata.append(server)
+                    self.taskdata.append([guild.id, server])
 
         print("ArkTools config initialized.")
 
@@ -706,5 +706,6 @@ class ArkTools(commands.Cog):
 
     # Testing commands used for.. well. testing..
     # @commands.command(name="test")
-    # @commands.guildowner()
-    # async def mytestcom(self, ctx, message: discord.Message):
+    # @commands.is_owner()
+    # async def mytestcom(self, ctx):
+    #     data = await self.config.guild(ctx.guild).clusters()
