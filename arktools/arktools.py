@@ -329,7 +329,7 @@ class ArkTools(commands.Cog):
                 if role.id == modrole:
                     modcmds = settings['modcommands']
                     for cmd in modcmds:
-                        if command.lower() == cmd:
+                        if str(cmd.lower()) in command.lower():
                             userallowed = True
         if not userallowed:
             if ctx.guild.owner != ctx.author:
