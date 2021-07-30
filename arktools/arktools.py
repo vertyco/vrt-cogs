@@ -275,10 +275,6 @@ class ArkTools(commands.Cog):
             serversettings = ""
             serversettings += f"**{cname.upper()} Cluster**\n"
             print(settings["clusters"][cname].keys())
-            if "servertoserver" not in settings["clusters"][cname].keys():
-                async with self.config.guild(ctx.guild).clusters() as clusters:
-                    clusters[cname]["servertoserver"] = False
-
             if settings["clusters"][cname]["servertoserver"] is True:
                 serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
             if settings["clusters"][cname]["servertoserver"] is False:
@@ -422,6 +418,9 @@ class ArkTools(commands.Cog):
                     server = guildsettings[cluster]["servers"][server]
                     self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
+                if "servertoserver" not in guildsettings[cluster].keys():
+                    async with self.config.guild(ctx.guild).clusters() as clusters:
+                        clusters[cluster]["servertoserver"] = False
         print("ArkTools config initialized.")
 
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
