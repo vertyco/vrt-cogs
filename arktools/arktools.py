@@ -426,8 +426,9 @@ class ArkTools(commands.Cog):
         serverlist = self.taskdata
         for data in serverlist:
             server = data[1]
-            if message.channel.id != server["chatchannel"] or server["globalchatchannel"]:
-                return
+            if message.channel.id != server["chatchannel"]:
+                if message.channel.id != server["globalchatchannel"]:
+                    return
         if message.author.bot:
             return
         if message.mentions:
