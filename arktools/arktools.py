@@ -274,7 +274,6 @@ class ArkTools(commands.Cog):
         for cname in settings["clusters"]:
             serversettings = ""
             serversettings += f"**{cname.upper()} Cluster**\n"
-            print(settings["clusters"][cname].keys())
             if settings["clusters"][cname]["servertoserver"] is True:
                 serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
             if settings["clusters"][cname]["servertoserver"] is False:
@@ -417,6 +416,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.playerlist[server["chatchannel"]] = []
+                    self.taskdata.append(server)
 
         print("ArkTools config initialized.")
 
