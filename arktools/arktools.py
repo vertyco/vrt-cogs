@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.5"
+    __version__ = "1.2.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -277,7 +277,7 @@ class ArkTools(commands.Cog):
             print(settings["clusters"][cname].keys())
             if "servertoserver" not in settings["clusters"][cname].keys():
                 async with self.config.guild(ctx.guild).clusters() as clusters:
-                    clusters[clustername]["servertoserver"] = False
+                    clusters[cname]["servertoserver"] = False
 
             if settings["clusters"][cname]["servertoserver"] is True:
                 serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
