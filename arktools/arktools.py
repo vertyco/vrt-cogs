@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.10"
+    __version__ = "1.2.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -426,7 +426,7 @@ class ArkTools(commands.Cog):
         serverlist = self.taskdata
         for data in serverlist:
             server = data[1]
-            if int(message.channel.id) != int(server["chatchannel"]):
+            if message.channel.id != server["chatchannel"] or server["globalchatchannel"]:
                 return
         if message.author.bot:
             return
