@@ -428,7 +428,7 @@ class ArkTools(commands.Cog):
             server = data[1]
             channels.append(server["globalchatchannel"])
             channels.append(server["chatchannel"])
-        If message.channel.id not in channels:
+        if message.channel.id not in channels:
             return
         if message.author.bot:
             return
