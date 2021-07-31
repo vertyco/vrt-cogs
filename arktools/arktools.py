@@ -671,7 +671,7 @@ class ArkTools(commands.Cog):
         for msg in messages:
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
-            if server["servertoserver"] is True:  # So maps can talk to each other if toggled
+            if server["servertoserver"] == True:  # So maps can talk to each other if toggled
                 channel = guild.get_channel(server["globalchatchannel"])
                 clusterchannels, allservers = await self.globalchannelchecker(channel)
                 for server in allservers:
