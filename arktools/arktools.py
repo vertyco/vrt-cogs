@@ -425,10 +425,10 @@ class ArkTools(commands.Cog):
     async def chat_toserver(self, message: discord.Message):
         for data in self.taskdata:
             server = data[1]
-            if server["chatchannel"] and server["globalchatchannel"] != message.channel.id:
-                continue
+            if server["chatchannel"] or server["globalchatchannel"] == message.channel.id:
+                Break
             else:
-                break
+                Return
         if message.author.bot:
             return
         if message.mentions:
