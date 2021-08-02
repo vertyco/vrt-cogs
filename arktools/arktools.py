@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.12"
+    __version__ = "1.2.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -406,13 +406,11 @@ class ArkTools(commands.Cog):
                 adminlogchannel = guildsettings[cluster]["adminlogchannel"]
                 joinchannel = guildsettings[cluster]["joinchannel"]
                 leavechannel = guildsettings[cluster]["leavechannel"]
-                servertoserver = guildsettings[cluster]["servertoserver"]
                 for server in guildsettings[cluster]["servers"]:
                     guildsettings[cluster]["servers"][server]["joinchannel"] = joinchannel
                     guildsettings[cluster]["servers"][server]["leavechannel"] = leavechannel
                     guildsettings[cluster]["servers"][server]["adminlogchannel"] = adminlogchannel
                     guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
-                    guildsettings[cluster]["servers"][server]["servertoserver"] = servertoserver
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.playerlist[server["chatchannel"]] = []
@@ -670,12 +668,12 @@ class ArkTools(commands.Cog):
         for msg in messages:
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
-            if server["servertoserver"] is True:  # So maps can talk to each other if toggled
-                channel = guild.get_channel(server["globalchatchannel"])
-                clusterchannels, allservers = await self.globalchannelchecker(channel)
-                for server in allservers:
-                    mapname = server['name']
+            clustername = server["cluster"]
+            if settings["clusters"][clustername]["servertoserver"] is True:  # So maps can talk to each other if toggled
+                for server in settings["clusters"][clustername]["servers"]:
+                    mapname = settings["clusters"][clustername]["servers"][server]["name"]
                     if mapname != sourcename:
+                        server = settings["clusters"][clustername]["servers"][server]
                         await self.process_handler(guild, server, f"serverchat {sourcename.capitalize()}: {msg}")
 
     # Initialize the config before the chat loop starts
