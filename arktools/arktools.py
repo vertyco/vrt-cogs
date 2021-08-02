@@ -421,12 +421,13 @@ class ArkTools(commands.Cog):
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
+        channels = []
         for data in self.taskdata:
             server = data[1]
-            if server["chatchannel"] and server["globalchatchannel"] != message.channel.id:
-                continue
-            else:
-                break
+            channels.append(server["globalchatchannel"])
+            channels.append(server["chatchannel"])
+        if message.channel.id not in channels:
+            return
         if message.author.bot:
             return
         if message.mentions:
