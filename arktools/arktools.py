@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.18"
+    __version__ = "1.2.19"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
