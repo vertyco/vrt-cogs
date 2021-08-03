@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.17"
+    __version__ = "1.2.18"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -557,7 +557,7 @@ class ArkTools(commands.Cog):
                 return player
 
     # Creates and maintains an embed of all active servers and player counts
-    @tasks.loop(seconds=61)
+    @tasks.loop(seconds=60)
     async def status_channel(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -585,17 +585,19 @@ class ArkTools(commands.Cog):
 
                     if playercount == []:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
+                        self.alerts[channel] = 0
                         continue
                     if playercount is None:
                         count = self.alerts[channel]
-                        status += f"{guild.get_channel(channel).mention}: Offline...\n"
+                        status += f"{guild.get_channel(channel).mention}: Offline for {count} Minutes.\n"
                         alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
-                        if count < 1:
-                            await alertmsg.send(f"@here The **{server}** server is offline!!! \n"
-                                                f"This alert wont show for this map again until the cog is reloaded.")
+                        pingrole = guild.get_role(settings['fullaccessrole'])
+                        if count == 0:
+                            await alertmsg.send(f"{pingrole.mention}, The **{server}** server has gone offline!!!")
                             self.alerts[channel] += 1
                             continue
-                        if count >= 1:
+                        else:
+                            self.alerts[channel] += 1
                             continue
 
                     playercount = len(playercount)
@@ -737,9 +739,3 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Unfiltered name: {ctx.message.author.name}")
         except Exception as e:
             await ctx.send(f"Unicode filter error: {e}")
-
-    # Testing commands used for.. well. testing..
-    # @commands.command(name="test")
-    # @commands.is_owner()
-    # async def mytestcom(self, ctx):
-    #     data = await self.config.guild(ctx.guild).clusters()
