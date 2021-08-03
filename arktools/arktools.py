@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.15"
+    __version__ = "1.2.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -630,8 +630,9 @@ class ArkTools(commands.Cog):
     async def process_handler(self, guild, server, command):
         def rcon():
             try:
-                with Client(server['ip'], server['port'], passwd=server['password']) as client:
+                with Client(server['ip'], server['port'], passwd=server['password'], timeout=1) as client:
                     result = client.run(command)
+                    print(f"FROM {server['name']}: {result}")
                     return result
             except WindowsError as e:
                 if e.winerror == 121:
