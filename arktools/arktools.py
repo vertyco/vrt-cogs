@@ -650,7 +650,7 @@ class ArkTools(commands.Cog):
     async def process_handler(self, guild, server, command):
         def rcon():
             try:
-                with Client(server['ip'], server['port'], passwd=server['password'], timeout=1) as client:
+                with Client(server['ip'], server['port'], passwd=server['password'], timeout=3) as client:
                     result = client.run(command)
                     return result
             except WindowsError as e:
