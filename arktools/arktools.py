@@ -13,13 +13,12 @@ import json
 import re
 
 
-
 class ArkTools(commands.Cog):
     """
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.19"
+    __version__ = "1.2.20"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -54,6 +53,7 @@ class ArkTools(commands.Cog):
         self.config.register_guild(**default_guild)
 
         # Cache on cog load
+        self.servercount = 0
         self.taskdata = []
         self.alerts = {}
         self.playerlist = {}
@@ -204,6 +204,7 @@ class ArkTools(commands.Cog):
                 "password": password,
                 "chatchannel": channel.id
             }
+            await self.initialize()
             if clustername not in clusters.keys():
                 await ctx.send(f"The cluster {clustername} does not exist!")
 
@@ -215,6 +216,7 @@ class ArkTools(commands.Cog):
             if servername in server.keys():
                 del clusters[clustername]["servers"][servername]
                 await ctx.send(f"{servername} server has been removed from {clustername}")
+                await self.initialize()
             else:
                 await ctx.send(f"{servername} server not found.")
 
@@ -231,7 +233,8 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if "servertoserver" not in clusters[clustername].keys():
                 clusters[clustername]["servertoserver"] = False
-                return await ctx.send(f"Server to server chat for {clustername.upper()} has been initialized as **Disabled**.")
+                return await ctx.send(
+                    f"Server to server chat for {clustername.upper()} has been initialized as **Disabled**.")
             if clusters[clustername]["servertoserver"] is False:
                 clusters[clustername]["servertoserver"] = True
                 return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Enabled**.")
@@ -429,6 +432,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
+                    self.servercount += 1
                     self.alerts[server["chatchannel"]] = 0
                     self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
@@ -536,7 +540,8 @@ class ArkTools(commands.Cog):
             else:
                 playerjoin = self.checkplayerjoin(channel, newplayerlist)
                 if playerjoin:
-                    await joinlog.send(f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
+                    await joinlog.send(
+                        f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
 
                 playerleft = self.checkplayerleave(channel, newplayerlist)
                 if playerleft:
@@ -648,9 +653,11 @@ class ArkTools(commands.Cog):
     # Executes all task loop RCON commands synchronously in another thread
     # Synchronous reasoning is for easing network buffer and keeps network traffic manageable
     async def process_handler(self, guild, server, command):
+        count = self.servercount
+        dynamictimeout = count * 0.4
         def rcon():
             try:
-                with Client(server['ip'], server['port'], passwd=server['password'], timeout=3) as client:
+                with Client(server['ip'], server['port'], passwd=server['password'], timeout=dynamictimeout) as client:
                     result = client.run(command)
                     return result
             except WindowsError as e:
@@ -701,7 +708,7 @@ class ArkTools(commands.Cog):
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
             clustername = server["cluster"]
-            if settings["clusters"][clustername]["servertoserver"] is True:  # So maps can talk to each other if toggled
+            if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
                 for server in settings["clusters"][clustername]["servers"]:
                     mapname = settings["clusters"][clustername]["servers"][server]["name"]
                     if mapname != sourcename:
