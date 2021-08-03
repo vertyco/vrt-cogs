@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.16"
+    __version__ = "1.2.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -361,10 +361,25 @@ class ArkTools(commands.Cog):
 
         # sending manual commands off to an async task loop
         tasks = []
-        for server in serverlist:
-            tasks.append(self.manual_rcon(ctx, server, command))
+        if command.lower() == "doexit":
+            await ctx.send(f"Saving and rebooting...")
+            for server in serverlist:
+                mapchannel = ctx.guild.get_channel(server["chatchannel"])
+                await self.process_handler(ctx.guild, server, "saveworld")
+                await asyncio.sleep(1)
+                for i in range(10, 0, -1):
+                    await mapchannel.send(f"Reboot in {i}")
+                    await self.process_handler(ctx.guild, server, f"serverchat Reboot in {i}")
+                    await asyncio.sleep(1)
+                await self.process_handler(ctx.guild, server, "doexit")
+        if command.lower() != "doexit":
+            for server in serverlist:
+                tasks.append(self.manual_rcon(ctx, server, command))
         await asyncio.gather(*tasks)
-        await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
+        if command.lower() == "doexit":
+            await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
+        if command.lower() != "doexit":
+            await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
     # RCON function for manual commands
     async def manual_rcon(self, ctx, serverlist, command):
@@ -515,16 +530,19 @@ class ArkTools(commands.Cog):
             if newplayerlist is None:
                 self.playerlist[channel] = newplayerlist
                 continue
+            if newplayerlist == []:
+                self.playerlist[channel] = newplayerlist
+                continue
+            else:
+                playerjoin = self.checkplayerjoin(channel, newplayerlist)
+                if playerjoin:
+                    await joinlog.send(f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
 
-            playerjoin = self.checkplayerjoin(channel, newplayerlist)
-            if playerjoin:
-                await joinlog.send(f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
+                playerleft = self.checkplayerleave(channel, newplayerlist)
+                if playerleft:
+                    await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
 
-            playerleft = self.checkplayerleave(channel, newplayerlist)
-            if playerleft:
-                await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
-
-            self.playerlist[channel] = newplayerlist
+                self.playerlist[channel] = newplayerlist
 
     # For the Discord join log
     def checkplayerjoin(self, channel, playerlist):
@@ -539,7 +557,7 @@ class ArkTools(commands.Cog):
                 return player
 
     # Creates and maintains an embed of all active servers and player counts
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=61)
     async def status_channel(self):
         data = await self.config.all_guilds()
         for guildID in data:
@@ -632,7 +650,6 @@ class ArkTools(commands.Cog):
             try:
                 with Client(server['ip'], server['port'], passwd=server['password'], timeout=1) as client:
                     result = client.run(command)
-                    print(f"FROM {server['name']}: {result}")
                     return result
             except WindowsError as e:
                 if e.winerror == 121:
@@ -672,11 +689,12 @@ class ArkTools(commands.Cog):
                     messages.append(msg)
             for names in badnames:
                 if f"({names.lower()}): " in msg.lower():
-                    reg = r"(.+)\s\("
-                    regname = re.findall(reg, msg)
-                    for name in regname:
-                        await self.process_handler(guild, server, f'renameplayer "{names.lower()}" {name}')
-                        await chatchannel.send(f"A player named `{names}` has been renamed to `{name}`.")
+                    if not msg.startswith('SERVER:'):
+                        reg = r"(.+)\s\("
+                        regname = re.findall(reg, msg)
+                        for name in regname:
+                            await self.process_handler(guild, server, f'renameplayer "{names.lower()}" {name}')
+                            await chatchannel.send(f"A player named `{names}` has been renamed to `{name}`.")
         for msg in messages:
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
