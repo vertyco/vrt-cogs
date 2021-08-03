@@ -511,7 +511,7 @@ class ArkTools(commands.Cog):
         return chatchannels, map
 
     # Initiates the GetChat loop
-    @tasks.loop(seconds=6)
+    @tasks.loop(seconds=5)
     async def chat_executor(self):
         for data in self.taskdata:
             guild = self.bot.get_guild(data[0])
@@ -654,7 +654,8 @@ class ArkTools(commands.Cog):
     # Synchronous reasoning is for easing network buffer and keeps network traffic manageable
     async def process_handler(self, guild, server, command):
         count = self.servercount
-        dynamictimeout = count * 0.4
+        dynamictimeout = count * 0.2 + 1
+
         def rcon():
             try:
                 with Client(server['ip'], server['port'], passwd=server['password'], timeout=dynamictimeout) as client:
