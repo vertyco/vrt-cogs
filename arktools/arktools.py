@@ -19,7 +19,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.14"
+    __version__ = "1.2.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -55,6 +55,7 @@ class ArkTools(commands.Cog):
 
         # Cache on cog load
         self.taskdata = []
+        self.alerts = {}
         self.playerlist = {}
 
         # Loops
@@ -413,6 +414,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
+                    self.alerts[server["chatchannel"]] = 0
                     self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
 
@@ -563,12 +565,20 @@ class ArkTools(commands.Cog):
                     # Get cached player count data
                     playercount = self.playerlist[channel]
 
-                    if not playercount:
+                    if playercount == []:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
                         continue
                     if playercount is None:
+                        count = self.alerts[channel]
                         status += f"{guild.get_channel(channel).mention}: Offline...\n"
-                        continue
+                        alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
+                        if count < 1:
+                            await alertmsg.send(f"@here The **{server}** server is offline!!! \n"
+                                                f"This alert wont show for this map again until the cog is reloaded.")
+                            self.alerts[channel] += 1
+                            continue
+                        if count >= 1:
+                            continue
 
                     playercount = len(playercount)
                     clustertotal += playercount
@@ -625,7 +635,7 @@ class ArkTools(commands.Cog):
                     return result
             except WindowsError as e:
                 if e.winerror == 121:
-                    return res
+                    return None
 
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
