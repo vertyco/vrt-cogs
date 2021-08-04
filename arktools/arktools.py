@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.20"
+    __version__ = "1.2.21"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -511,7 +511,7 @@ class ArkTools(commands.Cog):
         return chatchannels, map
 
     # Initiates the GetChat loop
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=4)
     async def chat_executor(self):
         for data in self.taskdata:
             guild = self.bot.get_guild(data[0])
@@ -710,11 +710,10 @@ class ArkTools(commands.Cog):
             await globalchat.send(f"{chatchannel.mention}: {msg}")
             clustername = server["cluster"]
             if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
-                for server in settings["clusters"][clustername]["servers"]:
-                    mapname = settings["clusters"][clustername]["servers"][server]["name"]
-                    if mapname != sourcename:
-                        server = settings["clusters"][clustername]["servers"][server]
-                        await self.process_handler(guild, server, f"serverchat {sourcename.capitalize()}: {msg}")
+                for data in self.taskdata:
+                    map = data[1]
+                    if map["name"] != sourcename:
+                        await self.process_handler(guild, map, f"serverchat {sourcename.capitalize()}: {msg}")
 
     # Initialize the config before the chat loop starts
     @chat_executor.before_loop
