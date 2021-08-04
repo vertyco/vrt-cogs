@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.22"
+    __version__ = "1.2.23"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -534,7 +534,7 @@ class ArkTools(commands.Cog):
             if newplayerlist is None:
                 self.playerlist[channel] = newplayerlist
                 continue
-            if newplayerlist == []:
+            if self.playerlist[channel] is None:
                 self.playerlist[channel] = newplayerlist
                 continue
             else:
@@ -542,7 +542,6 @@ class ArkTools(commands.Cog):
                 if playerjoin:
                     await joinlog.send(
                         f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
-
                 playerleft = self.checkplayerleave(channel, newplayerlist)
                 if playerleft:
                     await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
@@ -550,15 +549,19 @@ class ArkTools(commands.Cog):
                 self.playerlist[channel] = newplayerlist
 
     # For the Discord join log
-    def checkplayerjoin(self, channel, playerlist):
-        for player in playerlist:
+    def checkplayerjoin(self, channel, newplayerlist):
+        for player in newplayerlist:
             if player not in self.playerlist[channel]:
                 return player
 
     # For the Discord leave log
-    def checkplayerleave(self, channel, playerlist):
+    def checkplayerleave(self, channel, newplayerlist):
+        if newplayerlist is None:
+            return
         for player in self.playerlist[channel]:
-            if player not in playerlist:
+            if newplayerlist is []:
+                return player
+            if player not in newplayerlist:
                 return player
 
     # Creates and maintains an embed of all active servers and player counts
@@ -588,13 +591,14 @@ class ArkTools(commands.Cog):
                     # Get cached player count data
                     playercount = self.playerlist[channel]
 
-                    if playercount == []:
-                        status += f"{guild.get_channel(channel).mention}: 0 Players\n"
-                        self.alerts[channel] = 0
-                        continue
                     if playercount is None:
                         count = self.alerts[channel]
-                        status += f"{guild.get_channel(channel).mention}: Offline for {count} Minutes.\n"
+                        inc = "Minutes."
+                        if count >= 60:
+                            count = count / 60
+                            inc = "Hours."
+
+                        status += f"{guild.get_channel(channel).mention}: Offline for {count} {inc}\n"
                         alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
                         pingrole = guild.get_role(settings['fullaccessrole'])
                         if count == 0:
@@ -604,6 +608,11 @@ class ArkTools(commands.Cog):
                         else:
                             self.alerts[channel] += 1
                             continue
+
+                    if playercount is []:
+                        status += f"{guild.get_channel(channel).mention}: 0 Players\n"
+                        self.alerts[channel] = 0
+                        continue
 
                     playercount = len(playercount)
                     clustertotal += playercount
@@ -732,7 +741,7 @@ class ArkTools(commands.Cog):
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(30)
+        await asyncio.sleep(15)
         print("Status channel monitor is ready.")
 
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
