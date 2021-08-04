@@ -11,7 +11,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.11"
+    __version__ = "0.3.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -27,11 +27,6 @@ class XTools(commands.Cog):
 
     async def get_req(self, ctx, command):
         xtools_api = await self.bot.get_shared_api_tokens("xtools")
-        if xtools_api.get("api_key") is None:
-            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
-                           f" before you can use this command.")
-            await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
-            return
 
         async with self.session.get(f'{command}', headers={"X-Authorization": xtools_api["api_key"]}) as resp:
             try:
@@ -50,6 +45,12 @@ class XTools(commands.Cog):
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Type your gamertag in and pull your profile info"""
+        xtools_api = await self.bot.get_shared_api_tokens("xtools")
+        if xtools_api.get("api_key") is None:
+            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
+                           f" before you can use this command.")
+            await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
+            return
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
             data, status, remaining, ratelimit = await self.get_req(ctx, gtrequest)
@@ -89,6 +90,12 @@ class XTools(commands.Cog):
     @commands.command()
     async def getfriends(self, ctx, *, gtag):
         """Pull friends lists of Gamertags"""
+        xtools_api = await self.bot.get_shared_api_tokens("xtools")
+        if xtools_api.get("api_key") is None:
+            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
+                           f" before you can use this command.")
+            await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
+            return
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
             data, status, remaining, ratelimit = await self.get_req(ctx, gtrequest)
