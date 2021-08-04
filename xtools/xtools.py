@@ -2,15 +2,16 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
 import aiohttp
 import discord
+import asyncio
 
 
 class XTools(commands.Cog):
     """
-    Xbox API Tools, inspiration from flare's ApiTools :)
+    Tools for Xbox
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.10"
+    __version__ = "0.3.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -24,9 +25,15 @@ class XTools(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
-    async def get_gamertag(self, ctx, apikey, command, gtag):
-        async with self.session.get(f'{command}{gtag}',
-                                    headers={"X-Authorization": apikey}) as resp:
+    async def get_req(self, ctx, command):
+        xtools_api = await self.bot.get_shared_api_tokens("xtools")
+        if xtools_api.get("api_key") is None:
+            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
+                           f" before you can use this command.")
+            await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
+            return
+
+        async with self.session.get(f'{command}', headers={"X-Authorization": xtools_api["api_key"]}) as resp:
             try:
                 data = await resp.json()
                 status = resp.status
@@ -43,26 +50,19 @@ class XTools(commands.Cog):
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Type your gamertag in and pull your profile info"""
-        xtools_api = await self.bot.get_shared_api_tokens("xtools")
-        if xtools_api.get("api_key") is None:
-            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
-                           f" before you can use this command.")
-            await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
-            return
-
         async with ctx.typing():
-            command = "https://xbl.io/api/v2/friends/search?gt="
-            data, status, remaining, ratelimit = await self.get_gamertag(ctx, xtools_api["api_key"], command, gtag)
+            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
+            data, status, remaining, ratelimit = await self.get_req(ctx, gtrequest)
             try:
                 for user in data["profileUsers"]:
-                    xuid = (f"**XUID:** {user['id']}")
+                    xuid = f"**XUID:** {user['id']}"
                     for setting in user["settings"]:
                         if setting["id"] == "Gamerscore":
-                            gs = (f"**Gamerscore:** {setting['value']}")
+                            gs = f"**Gamerscore:** {setting['value']}"
                         if setting["id"] == "AccountTier":
-                            tier = (f"**AccountTier:** {setting['value']}")
+                            tier = f"**AccountTier:** {setting['value']}"
                         if setting["id"] == "XboxOneRep":
-                            rep = (f"**Reputation:** {setting['value']}")
+                            rep = f"**Reputation:** {setting['value']}"
                         if setting["id"] == "GameDisplayPicRaw":
                             pfp = (setting['value'])
                         if setting["id"] == "Bio":
@@ -71,7 +71,7 @@ class XTools(commands.Cog):
                 return await ctx.send("Invalid Gamertag, please try again.")
                 # command calls the thing and does the stuff
 
-            color = discord.Color.dark_purple() if status == 200 else discord.Color.dark_red()
+            color = discord.Color.green() if status == 200 else discord.Color.dark_red()
             stat = "Good" if status == 200 else "Failed"
             embed = discord.Embed(
                 title=f"**{gtag}**'s Profile",
@@ -85,3 +85,90 @@ class XTools(commands.Cog):
                             inline=False
                             )
             await ctx.send(embed=embed)
+
+    @commands.command()
+    async def getfriends(self, ctx, *, gtag):
+        """Pull friends lists of Gamertags"""
+        async with ctx.typing():
+            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
+            data, status, remaining, ratelimit = await self.get_req(ctx, gtrequest)
+            try:
+                for user in data["profileUsers"]:
+                    xuid = user['id']
+            except KeyError:
+                return await ctx.send("Invalid Gamertag, please try again.")
+            friendsrequest = f"https://xbl.io/api/v2/friends?xuid={xuid}"
+            data, status, remaining, ratelimit = await self.get_req(ctx, friendsrequest)
+
+            pages = 0
+            for friend in data["people"]:
+                if friend:
+                    pages += 1
+            await self.pagify_friends(ctx, data["people"], pages)
+
+    async def pagify_friends(self, ctx, content, pages):
+        cur_page = 1
+        embed = discord.Embed(
+            title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
+            color=discord.Color.green(),
+            description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
+                            f"**Status:** {content[cur_page - 1]['presenceState']}\n"
+                            f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
+                            f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
+                            f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n"),
+        )
+        embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
+        embed.set_footer(text=f"Page {cur_page}/{pages}")
+        message = await ctx.send(embed=embed)
+
+        await message.add_reaction("◀️")
+        await message.add_reaction("▶️")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+                # waiting for a reaction to be added - times out after x seconds
+
+                if str(reaction.emoji) == "▶️" and cur_page != pages:
+                    cur_page += 1
+                    embed = discord.Embed(
+                        title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
+                        color=discord.Color.green(),
+                        description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
+                                        f"**Status:** {content[cur_page - 1]['presenceState']}\n"
+                                        f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
+                                        f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
+                                        f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n"),
+                    )
+                    embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                    cur_page -= 1
+                    embed = discord.Embed(
+                        title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
+                        color=discord.Color.green(),
+                        description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
+                                        f"**Status:** {content[cur_page - 1]['presenceState']}\n"
+                                        f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
+                                        f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
+                                        f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n"),
+                    )
+                    embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                else:
+                    await message.remove_reaction(reaction, user)
+                    # removes reactions if the user tries to go forward on the last page or
+                    # backwards on the first page
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+                return
+
