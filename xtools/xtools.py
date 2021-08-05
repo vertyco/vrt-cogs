@@ -95,7 +95,7 @@ class XTools(commands.Cog):
             if "lastSeen" in data or "devices" in data:
                 print(data.keys())
                 print("In the loop for some reason")
-                time_regex = r'(\d{4})-(\d\d)-(\d\d)...:(\d\d:\d\d)'
+                time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
                 timestamp = re.findall(time_regex, raw_time)
                 timestamp = timestamp[0]
                 timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]}"
@@ -110,7 +110,7 @@ class XTools(commands.Cog):
             embed.set_image(url=pfp)
             if "lastSeen" in data or "devices" in data:
                 embed.add_field(name="Last Seen",
-                                value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp}",
+                                value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp} UTC",
                                 inline=False
                                 )
             if bio != "":
