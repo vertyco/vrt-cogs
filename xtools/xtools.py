@@ -80,12 +80,19 @@ class XTools(commands.Cog):
 
             if "lastSeen" in data:
                 device = data['lastSeen']['deviceType']
+                if device == "Scarlet":
+                    device = "Xbox Series S"
+                if device == "WindowsOneCore":
+                    device = "Windows"
                 game = data['lastSeen']['titleName']
                 raw_time = data['lastSeen']['timestamp']
             if "devices" in data:
                 gamelist = ""
                 device = data["devices"][0]["type"]
-                print(data["devices"][0]["titles"][0])
+                if device == "Scarlet":
+                    device = "Xbox Series S"
+                if device == "WindowsOneCore":
+                    device = "Windows"
                 for game in data["devices"][0]["titles"]:
                     game = game["name"]
                     gamelist += f"\n{game}"
