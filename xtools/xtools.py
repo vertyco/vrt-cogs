@@ -12,7 +12,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.3.14"
+    __version__ = "1.3.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -163,10 +163,13 @@ class XTools(commands.Cog):
         message = await ctx.send(embed=embed)
 
         await message.add_reaction("◀️")
+        await message.add_reaction("❌")
         await message.add_reaction("▶️")
 
+
+
         def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "❌", "▶️"]
 
         while True:
             try:
@@ -204,6 +207,10 @@ class XTools(commands.Cog):
                     embed.set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "❌":
+                    await message.clear_reactions()
+                    return
 
                 else:
                     await message.remove_reaction(reaction, user)
