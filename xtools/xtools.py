@@ -80,7 +80,7 @@ class XTools(commands.Cog):
 
             if "lastSeen" in data:
                 device = data['lastSeen']['deviceType']
-                if device == "Scarlet":
+                if device == "Scarlett":
                     device = "Xbox Series S"
                 if device == "WindowsOneCore":
                     device = "Windows"
@@ -89,7 +89,7 @@ class XTools(commands.Cog):
             if "devices" in data:
                 gamelist = ""
                 device = data["devices"][0]["type"]
-                if device == "Scarlet":
+                if device == "Scarlett":
                     device = "Xbox Series S"
                 if device == "WindowsOneCore":
                     device = "Windows"
