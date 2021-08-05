@@ -3,6 +3,7 @@ from redbot.core.utils.chat_formatting import box
 import aiohttp
 import discord
 import asyncio
+import re
 
 
 class XTools(commands.Cog):
@@ -11,7 +12,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.12"
+    __version__ = "1.3.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -53,9 +54,10 @@ class XTools(commands.Cog):
             return
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
-            data, status, remaining, ratelimit = await self.get_req(ctx, gtrequest)
+            data, _, _, _ = await self.get_req(ctx, gtrequest)
             try:
                 for user in data["profileUsers"]:
+                    xbox_id = user['id']
                     xuid = f"**XUID:** {user['id']}"
                     for setting in user["settings"]:
                         if setting["id"] == "Gamerscore":
@@ -71,16 +73,46 @@ class XTools(commands.Cog):
             except KeyError:
                 return await ctx.send("Invalid Gamertag, please try again.")
                 # command calls the thing and does the stuff
+            presence = f"https://xbl.io/api/v2/{xbox_id}/presence"
+            data, status, remaining, ratelimit = await self.get_req(ctx, presence)
+            data = data[0]
+            state = f"{data['state']}"
+
+            print(data)
+
+            if "lastSeen" in data:
+                device = data['lastSeen']['deviceType']
+                game = data['lastSeen']['titleName']
+                raw_time = data['lastSeen']['timestamp']
+            if "devices" in data:
+                gamelist = ""
+                device = data["devices"][0]["type"]
+                print(data["devices"][0]["titles"][0])
+                for game in data["devices"][0]["titles"]:
+                    game = game["name"]
+                    gamelist += f"\n{game}"
+                game = gamelist
+                raw_time = data["devices"][0]["titles"][0]["lastModified"]
+
+            time_regex = r'(\d{4})-(\d\d)-(\d\d)...:(\d\d:\d\d)'
+            timestamp = re.findall(time_regex, raw_time)
+            timestamp = timestamp[0]
+            print(timestamp)
+            timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]}"
 
             color = discord.Color.green() if status == 200 else discord.Color.dark_red()
             stat = "Good" if status == 200 else "Failed"
             embed = discord.Embed(
-                title=f"**{gtag}**'s Profile",
+                title=f"**{gtag}**'s Profile ({state})",
                 color=color,
-                description=str(f"{xuid}\n{gs}\n{tier}\n{rep}"),
+                description=str(f"{gs}\n{tier}\n{rep}\n{xuid}"),
             )
             embed.set_image(url=pfp)
-            embed.add_field(name="Bio", value=box(bio))
+            embed.add_field(name="Last Seen", value=f"**Device:** {device}\n**Game:** {game}\n**Time:** {timestamp}",
+                            inline=False
+                            )
+            if bio is not "":
+                embed.add_field(name="Bio", value=box(bio))
             embed.add_field(name="API Status",
                             value=f"API: {stat}\nRateLimit: {ratelimit}/hour\nRemaining: {remaining}",
                             inline=False
