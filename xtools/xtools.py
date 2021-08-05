@@ -110,7 +110,7 @@ class XTools(commands.Cog):
             embed.set_image(url=pfp)
             if "lastSeen" in data or "devices" in data:
                 embed.add_field(name="Last Seen",
-                                value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp} UTC",
+                                value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp} GMT",
                                 inline=False
                                 )
             if bio != "":
