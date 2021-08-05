@@ -100,8 +100,6 @@ class XTools(commands.Cog):
                 raw_time = data["devices"][0]["titles"][0]["lastModified"]
 
             if "lastSeen" in data or "devices" in data:
-                print(data.keys())
-                print("In the loop for some reason")
                 time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
                 timestamp = re.findall(time_regex, raw_time)
                 timestamp = timestamp[0]
