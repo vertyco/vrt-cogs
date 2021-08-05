@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.23"
+    __version__ = "1.2.24"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -472,12 +472,18 @@ class ArkTools(commands.Cog):
         if message.channel.id in chatchannels:
             await self.chat_toserver_rcon(map, message)
 
-    # Send chat to server(converts any unicode discord names to normal characters before hand)
+    # Send chat to server(filters any unicode characters or custom discord emojis before hand)
     async def chat_toserver_rcon(self, server, message):
         for data in server:
+
+            message = re.sub(r'https?:\/\/[^\s]+', '', message.content)
+            message = re.sub(r'<:\w*:\d*>', '', message)
+            message = re.sub(r'<a:\w*:\d*>', '', message)
+            message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
             normalizedname = unicodedata.normalize('NFKD', message.author.name).encode('ascii', 'ignore').decode()
+
             await rcon.asyncio.rcon(
-                command=f"serverchat {normalizedname}: {message.content}",
+                command=f"serverchat {normalizedname}: {message}",
                 host=data['ip'],
                 port=data['port'],
                 passwd=data['password']
