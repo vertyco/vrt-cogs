@@ -12,7 +12,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.3.13"
+    __version__ = "1.3.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -78,8 +78,6 @@ class XTools(commands.Cog):
             data = data[0]
             state = f"{data['state']}"
 
-            print(data)
-
             if "lastSeen" in data:
                 device = data['lastSeen']['deviceType']
                 game = data['lastSeen']['titleName']
@@ -94,11 +92,13 @@ class XTools(commands.Cog):
                 game = gamelist
                 raw_time = data["devices"][0]["titles"][0]["lastModified"]
 
-            time_regex = r'(\d{4})-(\d\d)-(\d\d)...:(\d\d:\d\d)'
-            timestamp = re.findall(time_regex, raw_time)
-            timestamp = timestamp[0]
-            print(timestamp)
-            timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]}"
+            if "lastSeen" in data or "devices" in data:
+                print(data.keys())
+                print("In the loop for some reason")
+                time_regex = r'(\d{4})-(\d\d)-(\d\d)...:(\d\d:\d\d)'
+                timestamp = re.findall(time_regex, raw_time)
+                timestamp = timestamp[0]
+                timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]}"
 
             color = discord.Color.green() if status == 200 else discord.Color.dark_red()
             stat = "Good" if status == 200 else "Failed"
@@ -108,10 +108,12 @@ class XTools(commands.Cog):
                 description=str(f"{gs}\n{tier}\n{rep}\n{xuid}"),
             )
             embed.set_image(url=pfp)
-            embed.add_field(name="Last Seen", value=f"**Device:** {device}\n**Game:** {game}\n**Time:** {timestamp}",
-                            inline=False
-                            )
-            if bio is not "":
+            if "lastSeen" in data or "devices" in data:
+                embed.add_field(name="Last Seen",
+                                value=f"**Device:** {device}\n**Game:** {game}\n**Time:** {timestamp}",
+                                inline=False
+                                )
+            if bio != "":
                 embed.add_field(name="Bio", value=box(bio))
             embed.add_field(name="API Status",
                             value=f"API: {stat}\nRateLimit: {ratelimit}/hour\nRemaining: {remaining}",
@@ -210,4 +212,3 @@ class XTools(commands.Cog):
             except asyncio.TimeoutError:
                 await message.clear_reactions()
                 return
-
