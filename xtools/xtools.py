@@ -45,7 +45,7 @@ class XTools(commands.Cog):
     # Since some people have their profile info public and may not know it
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
-        """Type your gamertag in and pull your profile info"""
+        """Pull your profile info from Xbox"""
         xtools_api = await self.bot.get_shared_api_tokens("xtools")
         if xtools_api.get("api_key") is None:
             await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
@@ -130,7 +130,7 @@ class XTools(commands.Cog):
 
     @commands.command()
     async def getfriends(self, ctx, *, gtag):
-        """Pull friends lists of Gamertags"""
+        """Pull a Gamertag's friends list"""
         xtools_api = await self.bot.get_shared_api_tokens("xtools")
         if xtools_api.get("api_key") is None:
             await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xtools api_key,<key>`"
