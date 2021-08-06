@@ -386,26 +386,28 @@ class ArkTools(commands.Cog):
 
     # RCON function for manual commands
     async def manual_rcon(self, ctx, serverlist, command):
-        try:
-            map = serverlist['name'].capitalize()
-            cluster = serverlist['cluster'].upper()
-            res = await rcon.asyncio.rcon(
-                command=command,
-                host=serverlist['ip'],
-                port=serverlist['port'],
-                passwd=serverlist['password']
-            )
-            res = res.rstrip()
-            if command.lower() == "listplayers":
-                await ctx.send(f"**{map} {cluster}**\n"
-                               f"{box(res, lang='python')}")
-            else:
-                await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
-        except WindowsError as e:
-            if e.winerror == 121:
-                clustername = serverlist['cluster']
-                servername = serverlist['name']
-                await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
+        async with ctx.typing():
+            try:
+                map = serverlist['name'].capitalize()
+                cluster = serverlist['cluster'].upper()
+                res = await rcon.asyncio.rcon(
+                    command=command,
+                    host=serverlist['ip'],
+                    port=serverlist['port'],
+                    passwd=serverlist['password']
+                )
+                res = res.rstrip()
+                if command.lower() == "listplayers":
+                    await ctx.send(f"**{map} {cluster}**\n"
+                                   f"{box(res, lang='python')}")
+                else:
+                    await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
+            except WindowsError as e:
+                if e.winerror == 121:
+                    clustername = serverlist['cluster']
+                    servername = serverlist['name']
+                    await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
+                    return
 
     # Cache the config on cog load for the task loops to use
     async def initialize(self):
