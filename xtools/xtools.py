@@ -114,10 +114,10 @@ class XTools(commands.Cog):
     # Purposely left out the 'real name' and 'location' data for privacy reasons,
     # Since some people have their profile info public and may not know it
     @commands.command()
-    async def xprofile(self, ctx, *, gtag):
+    async def xprofile(self, ctx, *, gamertag):
         """Pull your profile info from Xbox"""
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
+            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
                 data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
             except TypeError:
@@ -179,7 +179,7 @@ class XTools(commands.Cog):
             color = discord.Color.green() if status == 200 else discord.Color.dark_red()
             stat = "Good" if status == 200 else "Failed"
             embed = discord.Embed(
-                title=f"**{gtag}**'s Profile ({state})",
+                title=f"**{gamertag}**'s Profile ({state})",
                 color=color,
                 description=str(f"{gs}\n{tier}\n{rep}\n{xuid}"),
             )
@@ -199,10 +199,10 @@ class XTools(commands.Cog):
 
     # Get friends list of a gamertag in an interactive menu
     @commands.command()
-    async def getfriends(self, ctx, *, gtag):
+    async def getfriends(self, ctx, *, gamertag):
         """Pull a Gamertag's friends list"""
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
+            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
                 data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
             except TypeError:
@@ -219,7 +219,7 @@ class XTools(commands.Cog):
                 return
 
             if not data:
-                return await ctx.send(f"{gtag} has their friends list set to private :confused:")
+                return await ctx.send(f"{gamertag} has their friends list set to private :confused:")
             pages = 0
             for friend in data["people"]:
                 if friend:
@@ -228,7 +228,7 @@ class XTools(commands.Cog):
 
     async def pagify_friends(self, ctx, content, pages):
         if pages == 0:
-            return await ctx.send(f"OOF, looks like {gtag} has no friends :smiling_face_with_tear:")
+            return await ctx.send(f"OOF, looks like {gamertag} has no friends :smiling_face_with_tear:")
         cur_page = 1
         embed = discord.Embed(
             title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
@@ -334,10 +334,10 @@ class XTools(commands.Cog):
                 return
 
     @commands.command()
-    async def getscreenshots(self, ctx, *, gtag):
+    async def getscreenshots(self, ctx, *, gamertag):
         """Pull up your screenshot gallery"""
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
+            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
                 data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
             except TypeError:
@@ -356,18 +356,18 @@ class XTools(commands.Cog):
             for screenshot in data:
                 if screenshot:
                     pages += 1
-            await self.pagify_screenshots(ctx, data, pages, gtag)
+            await self.pagify_screenshots(ctx, data, pages, gamertag)
 
-    async def pagify_screenshots(self, ctx, content, pages, gtag):
+    async def pagify_screenshots(self, ctx, content, pages, gamertag):
         if pages == 0:
-            return await ctx.send(f"No screenshots have been found for {gtag}")
+            return await ctx.send(f"No screenshots have been found for {gamertag}")
         cur_page = 1
         time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
         timestamp = timestamp[0]
         timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
         embed = discord.Embed(
-            title=f"{gtag}'s Screenshots",
+            title=f"{gamertag}'s Screenshots",
             color=discord.Color.green(),
             description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
                             f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
@@ -401,7 +401,7 @@ class XTools(commands.Cog):
                     timestamp = timestamp[0]
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
-                        title=f"{gtag}'s Screenshots",
+                        title=f"{gamertag}'s Screenshots",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
@@ -421,7 +421,7 @@ class XTools(commands.Cog):
                     timestamp = timestamp[0]
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
-                        title=f"{gtag}'s Screenshots",
+                        title=f"{gamertag}'s Screenshots",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
@@ -441,7 +441,7 @@ class XTools(commands.Cog):
                     timestamp = timestamp[0]
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
-                        title=f"{gtag}'s Screenshots",
+                        title=f"{gamertag}'s Screenshots",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
@@ -461,7 +461,7 @@ class XTools(commands.Cog):
                     timestamp = timestamp[0]
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
-                        title=f"{gtag}'s Screenshots",
+                        title=f"{gamertag}'s Screenshots",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
@@ -487,10 +487,10 @@ class XTools(commands.Cog):
 
 
     @commands.command()
-    async def getgameclips(self, ctx, *, gtag):
+    async def getgameclips(self, ctx, *, gamertag):
         """Pull up your recorded game clips"""
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
+            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
                 data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
             except TypeError:
@@ -510,11 +510,11 @@ class XTools(commands.Cog):
             for screenshot in data:
                 if screenshot:
                     pages += 1
-            await self.pagify_gameclips(ctx, data, pages, gtag)
+            await self.pagify_gameclips(ctx, data, pages, gamertag)
 
-    async def pagify_gameclips(self, ctx, content, pages, gtag):
+    async def pagify_gameclips(self, ctx, content, pages, gamertag):
         if pages == 0:
-            return await ctx.send(f"No game clips have been found for {gtag}")
+            return await ctx.send(f"No game clips have been found for {gamertag}")
         cur_page = 1
         time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         timestamp = re.findall(time_regex, content[cur_page - 1]["dateRecorded"])
@@ -523,7 +523,7 @@ class XTools(commands.Cog):
         duration = content[cur_page - 1]['durationInSeconds']
         min, sec = divmod(duration, 60)
         embed = discord.Embed(
-            title=f"{gtag}'s Game Clips",
+            title=f"{gamertag}'s Game Clips",
             color=discord.Color.green(),
             description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
                             f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
@@ -562,7 +562,7 @@ class XTools(commands.Cog):
                     duration = content[cur_page - 1]['durationInSeconds']
                     min, sec = divmod(duration, 60)
                     embed = discord.Embed(
-                        title=f"{gtag}'s Game Clips",
+                        title=f"{gamertag}'s Game Clips",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
@@ -587,7 +587,7 @@ class XTools(commands.Cog):
                     duration = content[cur_page - 1]['durationInSeconds']
                     min, sec = divmod(duration, 60)
                     embed = discord.Embed(
-                        title=f"{gtag}'s Game Clips",
+                        title=f"{gamertag}'s Game Clips",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
@@ -612,7 +612,7 @@ class XTools(commands.Cog):
                     duration = content[cur_page - 1]['durationInSeconds']
                     min, sec = divmod(duration, 60)
                     embed = discord.Embed(
-                        title=f"{gtag}'s Game Clips",
+                        title=f"{gamertag}'s Game Clips",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
@@ -637,7 +637,7 @@ class XTools(commands.Cog):
                     duration = content[cur_page - 1]['durationInSeconds']
                     min, sec = divmod(duration, 60)
                     embed = discord.Embed(
-                        title=f"{gtag}'s Game Clips",
+                        title=f"{gamertag}'s Game Clips",
                         color=discord.Color.green(),
                         description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
                                         f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
