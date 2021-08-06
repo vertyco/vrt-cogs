@@ -219,7 +219,7 @@ class XTools(commands.Cog):
                 return
 
             if not data:
-                return await ctx.send(f"Something went wrong getting friends for {gtag} :confused:")
+                return await ctx.send(f"{gtag} has their friends list set to private :confused:")
             pages = 0
             for friend in data["people"]:
                 if friend:
