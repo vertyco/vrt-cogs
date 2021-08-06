@@ -351,8 +351,9 @@ class XTools(commands.Cog):
                     pages += 1
             await self.pagify_screenshots(ctx, data, pages, gtag)
 
-
     async def pagify_screenshots(self, ctx, content, pages, gtag):
+        if pages == 0:
+            return await ctx.send(f"No game clips have been found for {gtag}")
         cur_page = 1
         time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
@@ -505,6 +506,8 @@ class XTools(commands.Cog):
             await self.pagify_gameclips(ctx, data, pages, gtag)
 
     async def pagify_gameclips(self, ctx, content, pages, gtag):
+        if pages == 0:
+            return await ctx.send(f"No game clips have been found for {gtag}")
         cur_page = 1
         time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         timestamp = re.findall(time_regex, content[cur_page - 1]["dateRecorded"])
