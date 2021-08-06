@@ -606,6 +606,7 @@ class ArkTools(commands.Cog):
                         if count >= 60:
                             count = count / 60
                             inc = "Hours."
+                            count = str(round(count, 2))
 
                         status += f"{guild.get_channel(channel).mention}: Offline for {count} {inc}\n"
                         alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
