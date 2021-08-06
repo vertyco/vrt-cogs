@@ -57,7 +57,7 @@ class XTools(commands.Cog):
 
         async with self.session.get(f'{command}', headers={"X-Authorization": xblio_api["api_key"]}) as resp:
             try:
-                data = await resp.json()
+                data = await resp.json(content_type=None)
                 status = resp.status
                 remaining = resp.headers['X-RateLimit-Remaining']
                 ratelimit = resp.headers['X-RateLimit-Limit']
@@ -101,7 +101,7 @@ class XTools(commands.Cog):
 
         async with self.session.get(f'{command}', headers={"X-Auth": xapi_api["api_key"]}) as resp:
             try:
-                data = await resp.json()
+                data = await resp.json(content_type=None)
                 status = resp.status
                 remaining = resp.headers['X-RateLimit-Remaining']
                 ratelimit = resp.headers['X-RateLimit-Limit']
@@ -204,7 +204,7 @@ class XTools(commands.Cog):
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
             try:
-                data, status, remaining, ratelimit = await self.get_req_xblio(ctx, gtrequest)
+                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
             except TypeError:
                 return
             try:
@@ -213,8 +213,13 @@ class XTools(commands.Cog):
             except KeyError:
                 return await ctx.send("Invalid Gamertag, please try again.")
             friendsrequest = f"https://xbl.io/api/v2/friends?xuid={xuid}"
-            data, status, remaining, ratelimit = await self.get_req_xblio(ctx, friendsrequest)
+            try:
+                data, status, remaining, ratelimit = await self.get_req_xblio(ctx, friendsrequest)
+            except TypeError:
+                return
 
+            if not data:
+                return await ctx.send(f"Something went wrong getting friends for {gtag} :confused:")
             pages = 0
             for friend in data["people"]:
                 if friend:
