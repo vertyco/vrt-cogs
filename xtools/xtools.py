@@ -222,6 +222,8 @@ class XTools(commands.Cog):
             await self.pagify_friends(ctx, data["people"], pages)
 
     async def pagify_friends(self, ctx, content, pages):
+        if pages == 0:
+            return await ctx.send(f"OOF, looks like {gtag} has no friends :smiling_face_with_tear:")
         cur_page = 1
         embed = discord.Embed(
             title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
@@ -353,7 +355,7 @@ class XTools(commands.Cog):
 
     async def pagify_screenshots(self, ctx, content, pages, gtag):
         if pages == 0:
-            return await ctx.send(f"No game clips have been found for {gtag}")
+            return await ctx.send(f"No screenshots have been found for {gtag}")
         cur_page = 1
         time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
