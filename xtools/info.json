@@ -3,17 +3,17 @@
     "author": [
         "Vertyco"
     ],
-    "description": "Xbox tools for getting player data (WIP more features to come)",
+    "description": "Get a Gamertag's profile, friends, screenshots, and game clips",
     "disabled" : false,
-    "end_user_data_statement" : "This cog uses the xbl.io API and does not persistently store data about users.\n**Note:**\nThis cog will NOT pull xbox profile's 'real name' or 'location data' just gamerscore, pfp, xuid and bio ect..",
+    "end_user_data_statement" : "This cog uses the xbl.io and xapi.us API, it does not persistently store data about users.",
     "hidden": false,
-    "install_msg": "Thank you for installing! Use `[p]help XTools` for more info.",
+    "install_msg": "Thank you for installing! Use `[p]help XTools` for more a list of commands you can use.",
     "min_bot_version" : "3.4.0",
     "min_python_version" : [3, 8, 1],
-    "permissions" : ["embed_links"],
+    "permissions" : ["read_messages","send_messages","embed_links", "add_reactions"],
     "required_cogs" : {},
     "requirements" : [],
-    "short": "Get gamertag info.",
+    "short": "Get Xbox Gamertag info.",
     "tags" : ["fun", "tools", "utility"],
     "type": "COG"
 }

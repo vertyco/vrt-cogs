@@ -13,7 +13,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.4.17"
+    __version__ = "1.4.18"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -115,7 +115,7 @@ class XTools(commands.Cog):
     # Since some people have their profile info public and may not know it
     @commands.command()
     async def xprofile(self, ctx, *, gamertag):
-        """Pull your profile info from Xbox"""
+        """Get a Gamertag's profile info"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
@@ -200,7 +200,7 @@ class XTools(commands.Cog):
     # Get friends list of a gamertag in an interactive menu
     @commands.command()
     async def getfriends(self, ctx, *, gamertag):
-        """Pull a Gamertag's friends list"""
+        """Get a Gamertag's friends list"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
@@ -335,7 +335,7 @@ class XTools(commands.Cog):
 
     @commands.command()
     async def getscreenshots(self, ctx, *, gamertag):
-        """Pull up your screenshot gallery"""
+        """Get a Gamertag's screenshot gallery"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
@@ -488,7 +488,7 @@ class XTools(commands.Cog):
 
     @commands.command()
     async def getgameclips(self, ctx, *, gamertag):
-        """Pull up your recorded game clips"""
+        """Get a Gamertag's recorded game clips"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
