@@ -9,11 +9,11 @@ import re
 
 class XTools(commands.Cog):
     """
-    Tools for Xbox
+    Cool Tools for Xbox
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.4.16"
+    __version__ = "1.4.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -31,6 +31,29 @@ class XTools(commands.Cog):
     # Requests for xbl.io
     async def get_req_xblio(self, ctx, command):
         xblio_api = await self.bot.get_shared_api_tokens("xbl.io")
+        if xblio_api.get("api_key") is None:
+            instructions = discord.Embed(
+                title="XBL.IO API key not set",
+                description="Before you can use this cog, you must complete the following steps:",
+                color=await ctx.embed_color()
+            )
+            instructions.add_field(
+                name="1. Sign in with your Microsoft account",
+                value="Visit https://xbl.io/ and login with your account by clicking `Login with Xbox Live`."
+                      "If you don't have an account go ahead and create one.",
+                inline=False
+            )
+            instructions.add_field(
+                name="2. Get your API key",
+                value="After signing in, on your profile page there will be an area named `API Keys`, click `Create+`.",
+                inline=False
+            )
+            instructions.add_field(
+                name="3. Set your API key on your bot",
+                value=f"Use `{ctx.clean_prefix}set api xbl.io api_key,<key>` to set the API key you created.",
+                inline=False
+            )
+            return await ctx.send(embed=instructions)
 
         async with self.session.get(f'{command}', headers={"X-Authorization": xblio_api["api_key"]}) as resp:
             try:
@@ -46,6 +69,35 @@ class XTools(commands.Cog):
     # Requests for xapi.us
     async def get_req_xapi(self, ctx, command):
         xapi_api = await self.bot.get_shared_api_tokens("xapi.us")
+        if xapi_api.get("api_key") is None:
+            instructions = discord.Embed(
+                title="XAPI.US API key not set",
+                description="Before you can use this command(which uses both xbl.io and xapi.us),"
+                            " you must complete the following steps:",
+                color=await ctx.embed_color()
+            )
+            instructions.add_field(
+                name="1. Create your Xapi acccount",
+                value="Visit https://xapi.us/ and create a free account by clicking `Sign in`.",
+                inline=False
+            )
+            instructions.add_field(
+                name="2. Sign in with your Microsoft account",
+                value="After verifying your email and signing in, you will go to your profile page and click:"
+                      "`Sign into Xbox LIVE`.",
+                inline=False
+            )
+            instructions.add_field(
+                name="3. Get your API key from your profile page",
+                value="After signing in with your Microsoft account, Your key should be ready to use.",
+                inline=False
+            )
+            instructions.add_field(
+                name="4. Set your API key on your bot",
+                value=f"Use `{ctx.clean_prefix}set api xapi.us api_key,<key>` to set the API key you created.",
+                inline=False
+            )
+            return await ctx.send(embed=instructions)
 
         async with self.session.get(f'{command}', headers={"X-Auth": xapi_api["api_key"]}) as resp:
             try:
@@ -64,15 +116,12 @@ class XTools(commands.Cog):
     @commands.command()
     async def xprofile(self, ctx, *, gtag):
         """Pull your profile info from Xbox"""
-        xblio_api = await self.bot.get_shared_api_tokens("xbl.io")
-        if xblio_api.get("api_key") is None:
-            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xbl.io api_key,<key>`"
-                           f" before you can use this command.")
-            await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
-            return
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
-            data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
+            try:
+                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
+            except TypeError:
+                return
             try:
                 for user in data["profileUsers"]:
                     xbox_id = user['id']
@@ -152,15 +201,12 @@ class XTools(commands.Cog):
     @commands.command()
     async def getfriends(self, ctx, *, gtag):
         """Pull a Gamertag's friends list"""
-        xblio_api = await self.bot.get_shared_api_tokens("xbl.io")
-        if xblio_api.get("api_key") is None:
-            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xbl.io api_key,<key>`"
-                           f" before you can use this command.")
-            await ctx.send("To obtain a key, visit https://xbl.io/ and register your microsoft account.")
-            return
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
-            data, status, remaining, ratelimit = await self.get_req_xblio(ctx, gtrequest)
+            try:
+                data, status, remaining, ratelimit = await self.get_req_xblio(ctx, gtrequest)
+            except TypeError:
+                return
             try:
                 for user in data["profileUsers"]:
                     xuid = user['id']
@@ -283,28 +329,28 @@ class XTools(commands.Cog):
     @commands.command()
     async def getscreenshots(self, ctx, *, gtag):
         """Pull up your screenshot gallery"""
-        xapi_api = await self.bot.get_shared_api_tokens("xapi.us")
-        if xapi_api.get("api_key") is None:
-            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xapi.us api_key,<key>`"
-                           f" before you can use this command.")
-            await ctx.send("To obtain a key, visit https://xapi.us/ and register your microsoft account.")
-            return
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
-            data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
+            try:
+                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
+            except TypeError:
+                return
             try:
                 for user in data["profileUsers"]:
                     xuid = user['id']
             except KeyError:
                 return await ctx.send("Invalid Gamertag, please try again.")
             screenshotrequest = f"https://xapi.us/v2/{xuid}/alternative-screenshots"
-            data, status, remaining, ratelimit = await self.get_req_xapi(ctx, screenshotrequest)
-
+            try:
+                data, status, remaining, ratelimit = await self.get_req_xapi(ctx, screenshotrequest)
+            except TypeError:
+                return
             pages = 0
             for screenshot in data:
                 if screenshot:
                     pages += 1
             await self.pagify_screenshots(ctx, data, pages, gtag)
+
 
     async def pagify_screenshots(self, ctx, content, pages, gtag):
         cur_page = 1
@@ -435,22 +481,22 @@ class XTools(commands.Cog):
     @commands.command()
     async def getgameclips(self, ctx, *, gtag):
         """Pull up your recorded game clips"""
-        xapi_api = await self.bot.get_shared_api_tokens("xapi.us")
-        if xapi_api.get("api_key") is None:
-            await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xapi.us api_key,<key>`"
-                           f" before you can use this command.")
-            await ctx.send("To obtain a key, visit https://xapi.us/ and register your microsoft account.")
-            return
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gtag}"
-            data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
+            try:
+                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
+            except TypeError:
+                return
             try:
                 for user in data["profileUsers"]:
                     xuid = user['id']
             except KeyError:
                 return await ctx.send("Invalid Gamertag, please try again.")
             gameclipsrequest = f"https://xapi.us/v2/{xuid}/alternative-game-clips"
-            data, status, remaining, ratelimit = await self.get_req_xapi(ctx, gameclipsrequest)
+            try:
+                data, status, remaining, ratelimit = await self.get_req_xapi(ctx, gameclipsrequest)
+            except TypeError:
+                return
 
             pages = 0
             for screenshot in data:
