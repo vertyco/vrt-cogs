@@ -13,7 +13,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.4.15"
+    __version__ = "1.4.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -431,9 +431,10 @@ class XTools(commands.Cog):
                 await message.clear_reactions()
                 return
 
+
     @commands.command()
     async def getgameclips(self, ctx, *, gtag):
-        """Pull up your screenshot gallery"""
+        """Pull up your recorded game clips"""
         xapi_api = await self.bot.get_shared_api_tokens("xapi.us")
         if xapi_api.get("api_key") is None:
             await ctx.send(f"This cog needs a valid API key with `{ctx.clean_prefix}set api xapi.us api_key,<key>`"
