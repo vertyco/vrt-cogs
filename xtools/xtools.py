@@ -13,7 +13,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.5.18"
+    __version__ = "1.5.19"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -891,7 +891,10 @@ class XTools(commands.Cog):
         time_played = content3["statlistscollection"][0]["stats"][0]["value"]
         days, minutes = divmod(time_played, 1440)
         hours, minutes = divmod(minutes, 60)
-        stats = content3["groups"][0]["statlistscollection"][0]["stats"]
+        if content3["groups"][0]["statlistscollection"]:
+            stats = content3["groups"][0]["statlistscollection"][0]["stats"]
+        if not content3["groups"][0]["statlistscollection"]:
+            stats = []
 
         # Dynamic variables
         cur_page2 = 1
