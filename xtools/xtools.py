@@ -664,7 +664,7 @@ class XTools(commands.Cog):
 
     @commands.command()
     async def getachievements(self, ctx, *, gamertag):
-        """Get a Gamertag's Overall Achievements & view individual achievements"""
+        """Get and view a Gamertag's achievements"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
@@ -851,15 +851,18 @@ class XTools(commands.Cog):
                     if pages2 != 0:
                         await self.pagify_achievements(ctx,
                                                        message,
-                                                       reaction,
-                                                       user,
                                                        content,
                                                        pages,
+                                                       pages2,
                                                        cur_page,
                                                        data2,
                                                        gamertag)
                     if pages2 == 0:
+                        await message.remove_reaction(reaction, user)
                         await ctx.send(f"No Achievements found for {content['titles'][cur_page - 1]['name']}")
+                    if pages2 == 0 and content['titles'][cur_page - 1]['devices'][0] == "Xbox360":
+                        await message.remove_reaction(reaction, user)
+                        await ctx.send(f"Cant get achievements for an Xbox360 game.")
 
                 elif str(reaction.emoji) == "❌":
                     await message.clear_reactions()
@@ -878,10 +881,9 @@ class XTools(commands.Cog):
     async def pagify_achievements(self,
                                   ctx,
                                   message,
-                                  reaction,
-                                  user,
                                   content,
                                   pages,
+                                  pages2,
                                   cur_page,
                                   content2,
                                   gamertag):
@@ -902,12 +904,10 @@ class XTools(commands.Cog):
             embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
         if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
             embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-        embed.set_footer(text=f"Page {cur_page2}/{pages}")
+        embed.set_footer(text=f"Page {cur_page2}/{pages2}")
         await message.edit(embed=embed)
-        await message.remove_reaction(reaction, user)
-        await asyncio.sleep(1)
         await message.clear_reaction("⬆")
-        await asyncio.sleep(3)
+        await asyncio.sleep(2)
         await message.add_reaction("⬇")
 
         def check(reaction, user):
@@ -917,7 +917,7 @@ class XTools(commands.Cog):
             try:
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
 
-                if str(reaction.emoji) == "⏩" and cur_page2 + 10 <= pages:
+                if str(reaction.emoji) == "⏩" and cur_page2 + 10 <= pages2:
                     cur_page2 += 10
                     time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
                     timestamp = re.findall(time_regex,
@@ -936,11 +936,11 @@ class XTools(commands.Cog):
                         embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
-                elif str(reaction.emoji) == "▶️" and cur_page2 != pages:
+                elif str(reaction.emoji) == "▶️" and cur_page2 != pages2:
                     cur_page2 += 1
                     time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
                     timestamp = re.findall(time_regex,
@@ -959,7 +959,7 @@ class XTools(commands.Cog):
                         embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
@@ -982,7 +982,7 @@ class XTools(commands.Cog):
                         embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
@@ -1005,7 +1005,7 @@ class XTools(commands.Cog):
                         embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
@@ -1014,7 +1014,10 @@ class XTools(commands.Cog):
                     await self.pagify_overall_achievements(ctx, content, pages, cur_page, gamertag)
 
                 elif str(reaction.emoji) == "❌":
-                    await message.clear_reactions()
+                    try:
+                        await message.clear_reactions()
+                    except discord.NotFound:
+                        pass
                     return
 
                 else:
