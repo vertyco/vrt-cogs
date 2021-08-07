@@ -27,7 +27,6 @@ class XTools(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
-
     # Requests for xbl.io
     async def get_req_xblio(self, ctx, command):
         xblio_api = await self.bot.get_shared_api_tokens("xbl.io")
@@ -385,7 +384,6 @@ class XTools(commands.Cog):
         await message.add_reaction("▶️")
         await message.add_reaction("⏩")
 
-
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
 
@@ -485,7 +483,6 @@ class XTools(commands.Cog):
                 await message.clear_reactions()
                 return
 
-
     @commands.command()
     async def getgameclips(self, ctx, *, gamertag):
         """Get a Gamertag's recorded game clips"""
@@ -543,7 +540,6 @@ class XTools(commands.Cog):
         await message.add_reaction("❌")
         await message.add_reaction("▶️")
         await message.add_reaction("⏩")
-
 
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
@@ -663,8 +659,8 @@ class XTools(commands.Cog):
                 return await message.clear_reactions()
 
     @commands.command()
-    async def getachievements(self, ctx, *, gamertag):
-        """Get and view a Gamertag's achievements"""
+    async def xgames(self, ctx, *, gamertag):
+        """Get and view a Gamertag's games/achievements"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             try:
@@ -691,7 +687,7 @@ class XTools(commands.Cog):
 
     async def pagify_overall_achievements(self, ctx, content, pages, cur_page, gamertag):
         if pages == 0:
-            return await ctx.send(f"No achievements have been found for {gamertag}")
+            return await ctx.send(f"No games have been found for {gamertag}")
         time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         timestamp = re.findall(time_regex, content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
         timestamp = timestamp[0]
@@ -699,7 +695,7 @@ class XTools(commands.Cog):
         gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
              f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
         embed = discord.Embed(
-            title=f"{gamertag}'s Achievements",
+            title=f"{gamertag}'s Games",
             color=discord.Color.green(),
             description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
                             f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
@@ -740,7 +736,7 @@ class XTools(commands.Cog):
                     gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
                          f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
                     embed = discord.Embed(
-                        title=f"{gamertag}'s Achievements",
+                        title=f"{gamertag}'s Games",
                         color=discord.Color.green(),
                         description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
                                         f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
@@ -792,7 +788,7 @@ class XTools(commands.Cog):
                     gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
                          f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
                     embed = discord.Embed(
-                        title=f"{gamertag}'s Achievements",
+                        title=f"{gamertag}'s Games",
                         color=discord.Color.green(),
                         description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
                                         f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
@@ -818,7 +814,7 @@ class XTools(commands.Cog):
                     gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
                          f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
                     embed = discord.Embed(
-                        title=f"{gamertag}'s Achievements",
+                        title=f"{gamertag}'s Games",
                         color=discord.Color.green(),
                         description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
                                         f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
@@ -838,9 +834,11 @@ class XTools(commands.Cog):
                     xuid = content["xuid"]
                     titleid = content["titles"][cur_page - 1]["titleId"]
                     achievement_request = f"https://xbl.io/api/v2/achievements/player/{xuid}/title/{titleid}"
+                    stats_request = f"https://xapi.us/v2/{xuid}/game-stats/{titleid}"
                     async with ctx.typing():
                         try:
                             data2, _, _, _ = await self.get_req_xblio(ctx, achievement_request)
+                            data3, _, _, _ = await self.get_req_xapi(ctx, stats_request)
                         except TypeError:
                             return
 
@@ -856,11 +854,12 @@ class XTools(commands.Cog):
                                                        pages2,
                                                        cur_page,
                                                        data2,
+                                                       data3,
                                                        gamertag)
                     if pages2 == 0:
                         await message.remove_reaction(reaction, user)
                         await ctx.send(f"No Achievements found for {content['titles'][cur_page - 1]['name']}")
-                    if pages2 == 0 and content['titles'][cur_page - 1]['devices'][0] == "Xbox360":
+                    if content['titles'][cur_page - 1]['devices'][0] == "Xbox360":
                         await message.remove_reaction(reaction, user)
                         await ctx.send(f"Cant get achievements for an Xbox360 game.")
 
@@ -886,7 +885,15 @@ class XTools(commands.Cog):
                                   pages2,
                                   cur_page,
                                   content2,
+                                  content3,
                                   gamertag):
+        # Static Variables for this page
+        time_played = content3["statlistscollection"][0]["stats"][0]["value"]
+        days, minutes = divmod(time_played, 1440)
+        hours, minutes = divmod(minutes, 60)
+        stats = content3["groups"][0]["statlistscollection"][0]["stats"]
+
+        # Dynamic variables
         cur_page2 = 1
         time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         timestamp = re.findall(time_regex, content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
@@ -894,17 +901,30 @@ class XTools(commands.Cog):
         timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
         embed = discord.Embed(
             title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-            color=discord.Color.green(),
-            description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
-                            f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                            f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                            f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+            color=discord.Color.green()
         )
+        status = False
         if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-            embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+            status = True
+            completed = f"Completed on: {timestamp}\n"
+        for items in stats:
+            if "value" in items:
+                if items["groupproperties"]["DisplayFormat"] == "Percentage":
+                    item = f"{int(items['value'])}%"
+                else:
+                    item = items['value']
+                embed.add_field(name=items["properties"]["DisplayName"], value=item)
+        embed.add_field(name="Achievement Details",
+                        value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                  f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                  f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                  f"{completed if status is True else ''}"
+                                  f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
+                        inline=False
+                        )
         if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
             embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-        embed.set_footer(text=f"Page {cur_page2}/{pages2}")
+        embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
         await message.edit(embed=embed)
         await message.clear_reaction("⬆")
         await asyncio.sleep(2)
@@ -926,17 +946,30 @@ class XTools(commands.Cog):
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
                         title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                        color=discord.Color.green()
                     )
+                    status = False
                     if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                        status = True
+                        completed = f"Completed on: {timestamp}\n"
+                    for items in stats:
+                        if "value" in items:
+                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
+                                item = f"{int(items['value'])}%"
+                            else:
+                                item = items['value']
+                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
+                    embed.add_field(name="Achievement Details",
+                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                              f"{completed if status is True else ''}"
+                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
+                                    inline=False
+                                    )
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
@@ -949,17 +982,30 @@ class XTools(commands.Cog):
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
                         title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                        color=discord.Color.green()
                     )
+                    status = False
                     if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                        status = True
+                        completed = f"Completed on: {timestamp}\n"
+                    for items in stats:
+                        if "value" in items:
+                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
+                                item = f"{int(items['value'])}%"
+                            else:
+                                item = items['value']
+                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
+                    embed.add_field(name="Achievement Details",
+                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                              f"{completed if status is True else ''}"
+                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
+                                    inline=False
+                                    )
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
@@ -972,17 +1018,30 @@ class XTools(commands.Cog):
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
                         title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                        color=discord.Color.green()
                     )
+                    status = False
                     if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                        status = True
+                        completed = f"Completed on: {timestamp}\n"
+                    for items in stats:
+                        if "value" in items:
+                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
+                                item = f"{int(items['value'])}%"
+                            else:
+                                item = items['value']
+                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
+                    embed.add_field(name="Achievement Details",
+                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                              f"{completed if status is True else ''}"
+                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
+                                    inline=False
+                                    )
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
@@ -995,17 +1054,30 @@ class XTools(commands.Cog):
                     timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
                     embed = discord.Embed(
                         title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                        color=discord.Color.green()
                     )
+                    status = False
                     if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                        status = True
+                        completed = f"Completed on: {timestamp}\n"
+                    for items in stats:
+                        if "value" in items:
+                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
+                                item = f"{int(items['value'])}%"
+                            else:
+                                item = items['value']
+                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
+                    embed.add_field(name="Achievement Details",
+                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                              f"{completed if status is True else ''}"
+                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
+                                    inline=False
+                                    )
                     if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
                         embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2}")
+                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
