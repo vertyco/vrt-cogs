@@ -13,7 +13,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.4.18"
+    __version__ = "1.5.18"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -507,8 +507,8 @@ class XTools(commands.Cog):
                 return
 
             pages = 0
-            for screenshot in data:
-                if screenshot:
+            for gameclip in data:
+                if gameclip:
                     pages += 1
             await self.pagify_gameclips(ctx, data, pages, gamertag)
 
@@ -654,6 +654,214 @@ class XTools(commands.Cog):
                     await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "❌":
+                    return await message.clear_reactions()
+
+                else:
+                    await message.remove_reaction(reaction, user)
+
+            except asyncio.TimeoutError:
+                return await message.clear_reactions()
+
+    @commands.command()
+    async def getachievements(self, ctx, *, gamertag):
+        """Get a Gamertag's Overall Achievements & view individual achievements"""
+        async with ctx.typing():
+            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+            try:
+                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
+            except TypeError:
+                return
+            try:
+                for user in data["profileUsers"]:
+                    xuid = user['id']
+            except KeyError:
+                return await ctx.send("Invalid Gamertag, please try again.")
+            overall_achievementrequest = f"https://xbl.io/api/v2/achievements/player/{xuid}"
+            try:
+                data, _, _, _ = await self.get_req_xblio(ctx, overall_achievementrequest)
+            except TypeError:
+                return
+
+        pages = 0
+        cur_page = 1
+        for game in data["titles"]:
+            if game:
+                pages += 1
+        await self.pagify_overall_achievements(ctx, data, pages, cur_page, gamertag)
+
+    async def pagify_overall_achievements(self, ctx, content, pages, cur_page, gamertag):
+        if pages == 0:
+            return await ctx.send(f"No achievements have been found for {gamertag}")
+        time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+        timestamp = re.findall(time_regex, content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
+        timestamp = timestamp[0]
+        timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+        gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
+             f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
+        embed = discord.Embed(
+            title=f"{gamertag}'s Achievements",
+            color=discord.Color.green(),
+            description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
+                            f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
+                            f"**Achievements Earned:** "
+                            f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
+                            f"**Gamerscore:** {gs}\n"
+                            f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
+                            f"**Last Played:** {timestamp}\n")
+        )
+        if content['titles'][cur_page - 1]['displayImage'] is not None:
+            embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
+        embed.set_footer(text=f"Page {cur_page}/{pages}")
+        message = await ctx.send(embed=embed)
+
+        await message.add_reaction("⏪")
+        await message.add_reaction("◀️")
+        await message.add_reaction("❌")
+        await message.add_reaction("▶️")
+        await message.add_reaction("⏩")
+        await message.add_reaction("⏩")
+        await message.add_reaction("⬆")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬆"]
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+                # waiting for a reaction to be added - times out after x seconds
+
+                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
+                    cur_page += 10
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
+                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s Achievements",
+                        color=discord.Color.green(),
+                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
+                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
+                                        f"**Achievements Earned:** "
+                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
+                                        f"**Gamerscore:** {gs}\n"
+                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
+                                        f"**Last Played:** {timestamp}\n")
+                    )
+                    if content['titles'][cur_page - 1]['displayImage'] is not None:
+                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "▶️" and cur_page != pages:
+                    cur_page += 1
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
+                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s Achievements",
+                        color=discord.Color.green(),
+                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
+                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
+                                        f"**Achievements Earned:** "
+                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
+                                        f"**Gamerscore:** {gs}\n"
+                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
+                                        f"**Last Played:** {timestamp}\n")
+                    )
+                    if content['titles'][cur_page - 1]['displayImage'] is not None:
+                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                    cur_page -= 1
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
+                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s Achievements",
+                        color=discord.Color.green(),
+                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
+                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
+                                        f"**Achievements Earned:** "
+                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
+                                        f"**Gamerscore:** {gs}\n"
+                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
+                                        f"**Last Played:** {timestamp}\n")
+                    )
+                    if content['titles'][cur_page - 1]['displayImage'] is not None:
+                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
+                    cur_page -= 10
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
+                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s Achievements",
+                        color=discord.Color.green(),
+                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
+                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
+                                        f"**Achievements Earned:** "
+                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
+                                        f"**Gamerscore:** {gs}\n"
+                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
+                                        f"**Last Played:** {timestamp}\n")
+                    )
+                    if content['titles'][cur_page - 1]['displayImage'] is not None:
+                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "⬆":
+                    xuid = content["xuid"]
+                    titleid = content["titles"][cur_page - 1]["titleId"]
+                    achievement_request = f"https://xbl.io/api/v2/achievements/player/{xuid}/title/{titleid}"
+                    async with ctx.typing():
+                        try:
+                            data2, _, _, _ = await self.get_req_xblio(ctx, achievement_request)
+                        except TypeError:
+                            return
+
+                    pages2 = 0
+                    for achievement in data2["achievements"]:
+                        if achievement:
+                            pages2 += 1
+                    if pages2 != 0:
+                        await self.pagify_achievements(ctx,
+                                                       message,
+                                                       reaction,
+                                                       user,
+                                                       content,
+                                                       pages,
+                                                       cur_page,
+                                                       data2,
+                                                       gamertag)
+                    if pages2 == 0:
+                        await ctx.send(f"No Achievements found for {content['titles'][cur_page - 1]['name']}")
+
+                elif str(reaction.emoji) == "❌":
                     await message.clear_reactions()
                     return
 
@@ -661,6 +869,159 @@ class XTools(commands.Cog):
                     await message.remove_reaction(reaction, user)
 
             except asyncio.TimeoutError:
-                await message.clear_reactions()
-                return
+                try:
+                    await message.clear_reactions()
+                    return
+                except discord.NotFound:
+                    pass
 
+    async def pagify_achievements(self,
+                                  ctx,
+                                  message,
+                                  reaction,
+                                  user,
+                                  content,
+                                  pages,
+                                  cur_page,
+                                  content2,
+                                  gamertag):
+        cur_page2 = 1
+        time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+        timestamp = re.findall(time_regex, content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
+        timestamp = timestamp[0]
+        timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+        embed = discord.Embed(
+            title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
+            color=discord.Color.green(),
+            description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
+                            f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                            f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                            f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+        )
+        if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
+            embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+        if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
+            embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
+        embed.set_footer(text=f"Page {cur_page2}/{pages}")
+        await message.edit(embed=embed)
+        await message.remove_reaction(reaction, user)
+        await asyncio.sleep(1)
+        await message.clear_reaction("⬆")
+        await asyncio.sleep(3)
+        await message.add_reaction("⬇")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬇"]
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+
+                if str(reaction.emoji) == "⏩" and cur_page2 + 10 <= pages:
+                    cur_page2 += 10
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
+                        color=discord.Color.green(),
+                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                    )
+                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
+                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
+                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
+                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "▶️" and cur_page2 != pages:
+                    cur_page2 += 1
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
+                        color=discord.Color.green(),
+                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                    )
+                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
+                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
+                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
+                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "◀️" and cur_page2 > 1:
+                    cur_page2 -= 1
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
+                        color=discord.Color.green(),
+                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                    )
+                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
+                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
+                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
+                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "⏪" and cur_page2 - 10 >= 1:
+                    cur_page2 -= 10
+                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+                    timestamp = re.findall(time_regex,
+                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
+                    timestamp = timestamp[0]
+                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
+                    embed = discord.Embed(
+                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
+                        color=discord.Color.green(),
+                        description=str(f"**Name:** {content2['achievements'][cur_page2 - 1]['name']}\n"
+                                        f"**Description:** {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
+                                        f"**Status:** {content2['achievements'][cur_page2 - 1]['progressState']}\n"
+                                        f"**Gamerscore:** {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}")
+                    )
+                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
+                        embed.add_field(name="Date Completed", value=f"{timestamp}", inline=False)
+                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
+                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
+                    embed.set_footer(text=f"Page {cur_page2}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "⬇":
+                    await message.delete()
+                    await self.pagify_overall_achievements(ctx, content, pages, cur_page, gamertag)
+
+                elif str(reaction.emoji) == "❌":
+                    await message.clear_reactions()
+                    return
+
+                else:
+                    await message.remove_reaction(reaction, user)
+
+            except asyncio.TimeoutError:
+                try:
+                    return await message.clear_reactions()
+                except discord.NotFound:
+                    pass
