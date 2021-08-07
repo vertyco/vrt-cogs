@@ -198,7 +198,7 @@ class XTools(commands.Cog):
 
     # Get friends list of a gamertag in an interactive menu
     @commands.command()
-    async def getfriends(self, ctx, *, gamertag):
+    async def xfriends(self, ctx, *, gamertag):
         """Get a Gamertag's friends list"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
@@ -333,7 +333,7 @@ class XTools(commands.Cog):
                 return
 
     @commands.command()
-    async def getscreenshots(self, ctx, *, gamertag):
+    async def xscreenshots(self, ctx, *, gamertag):
         """Get a Gamertag's screenshot gallery"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
@@ -484,7 +484,7 @@ class XTools(commands.Cog):
                 return
 
     @commands.command()
-    async def getgameclips(self, ctx, *, gamertag):
+    async def xclips(self, ctx, *, gamertag):
         """Get a Gamertag's recorded game clips"""
         async with ctx.typing():
             gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
