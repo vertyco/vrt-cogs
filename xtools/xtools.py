@@ -669,7 +669,10 @@ class XTools(commands.Cog):
                 return
             try:
                 for user in data["profileUsers"]:
-                    xuid = user['id']
+                    if user:
+                        xuid = user['id']
+                    else:
+                        return await ctx.send("Please try again")
             except KeyError:
                 return await ctx.send("Invalid Gamertag, please try again.")
             overall_achievementrequest = f"https://xbl.io/api/v2/achievements/player/{xuid}"
@@ -680,9 +683,18 @@ class XTools(commands.Cog):
 
         pages = 0
         cur_page = 1
+        titles = []
         for game in data["titles"]:
             if game:
+                if "Win32" not in game['devices']:
+                    titles.append(game)
+                    continue
                 pages += 1
+        data = {
+            "xuid": xuid,
+            "titles": titles
+        }
+        print(data)
         await self.pagify_overall_achievements(ctx, data, pages, cur_page, gamertag)
 
     async def pagify_overall_achievements(self, ctx, content, pages, cur_page, gamertag):
@@ -1098,7 +1110,7 @@ class XTools(commands.Cog):
                 else:
                     await message.remove_reaction(reaction, user)
 
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError or discord.NotFound:
                 try:
                     return await message.clear_reactions()
                 except discord.NotFound:
