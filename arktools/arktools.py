@@ -600,8 +600,8 @@ class ArkTools(commands.Cog):
                     # Get cached player count data
                     playercount = self.playerlist[channel]
 
+                    count = self.alerts[channel]
                     if playercount is None:
-                        count = self.alerts[channel]
                         inc = "Minutes."
                         if count >= 60:
                             count = count / 60
@@ -621,7 +621,8 @@ class ArkTools(commands.Cog):
 
                     if playercount is []:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
-                        self.alerts[channel] = 0
+                        if count > 0:
+                            self.alerts[channel] = 0
                         continue
 
                     playercount = len(playercount)
