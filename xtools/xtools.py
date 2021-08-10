@@ -15,7 +15,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -285,8 +285,10 @@ class XTools(commands.Cog):
             if data['a']['achievements'][cur_page - 1]['progressState'] == "Achieved":
                 status = True
                 completed = f"Completed on: {timestamp}\n"
+            old_page = data["cur_page"]
+            title = data['old_data']['titles'][old_page - 1]['name']
             embed = discord.Embed(
-                title=f"{gamertag}'s achievements for {data['old_data']['titles'][cur_page - 1]['name']}",
+                title=f"{gamertag}'s achievements for {title}",
                 color=discord.Color.green())
 
             for items in stats:
