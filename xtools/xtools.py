@@ -1,10 +1,12 @@
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box
-from math import remainder
 import aiohttp
 import discord
 import asyncio
 import re
+import json
+
+from redbot.core import commands, Config
+from redbot.core.utils.chat_formatting import box
+from math import remainder
 
 
 class XTools(commands.Cog):
@@ -13,7 +15,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.5.19"
+    __version__ = "2.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -23,11 +25,14 @@ class XTools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession()
+        self.config = Config.get_conf(self, 117117117117, force_registration=True)
+        default_guild = {"users": {}}
+        self.config.register_guild(**default_guild)
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
-    # Requests for xbl.io
+    # Master API Requests function for xbl.io
     async def get_req_xblio(self, ctx, command):
         xblio_api = await self.bot.get_shared_api_tokens("xbl.io")
         if xblio_api.get("api_key") is None:
@@ -54,18 +59,14 @@ class XTools(commands.Cog):
             )
             return await ctx.send(embed=instructions)
 
-        async with self.session.get(f'{command}', headers={"X-Authorization": xblio_api["api_key"]}) as resp:
-            try:
-                data = await resp.json(content_type=None)
-                status = resp.status
-                remaining = resp.headers['X-RateLimit-Remaining']
-                ratelimit = resp.headers['X-RateLimit-Limit']
-            except aiohttp.ContentTypeError:
-                ctx.send("The API failed to pull the data. Please try again.")
-
+        async with self.session.get(command, headers={"X-Authorization": xblio_api["api_key"]}) as resp:
+            data = await resp.json(content_type=None)
+            status = resp.status
+            remaining = resp.headers['X-RateLimit-Remaining']
+            ratelimit = resp.headers['X-RateLimit-Limit']
             return data, status, remaining, ratelimit
 
-    # Requests for xapi.us
+    # Master API Requests function for xapi.us
     async def get_req_xapi(self, ctx, command):
         xapi_api = await self.bot.get_shared_api_tokens("xapi.us")
         if xapi_api.get("api_key") is None:
@@ -98,1020 +99,454 @@ class XTools(commands.Cog):
             )
             return await ctx.send(embed=instructions)
 
-        async with self.session.get(f'{command}', headers={"X-Auth": xapi_api["api_key"]}) as resp:
+        async with self.session.get(command, headers={"X-Auth": xapi_api["api_key"]}) as resp:
             try:
-                data = await resp.json(content_type=None)
+                data = await resp.json()
                 status = resp.status
                 remaining = resp.headers['X-RateLimit-Remaining']
                 ratelimit = resp.headers['X-RateLimit-Limit']
             except aiohttp.ContentTypeError:
                 ctx.send("The API failed to pull the data. Please try again.")
-
             return data, status, remaining, ratelimit
 
-    # Pulls profile data and formats for an embed
-    # Purposely left out the 'real name' and 'location' data for privacy reasons,
-    # Since some people have their profile info public and may not know it
-    @commands.command()
-    async def xprofile(self, ctx, *, gamertag):
-        """Get a Gamertag's profile info"""
+    # Helper function for getting xuid
+    async def get_xuid(self, ctx, gamertag):
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+            if gamertag is not None:
+                gamertag_req = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+                data, _, _, _ = await self.get_req_xblio(ctx, gamertag_req)
+                try:
+                    xuid, xuid_str, gs, tier, rep, pfp, bio = await self.profile_format(data)
+                except KeyError:
+                    embed = discord.Embed(title=":warning:Error:warning:",
+                                          color=discord.Color.dark_red(),
+                                          description="Gamertag is invalid or does not exist.")
+                    return await ctx.send(embed=embed)
+            else:
+                data = await self.config.guild(ctx.guild).users()
+                if data:
+                    for user in data:
+                        if int(user) == int(ctx.author.id):
+                            gamertag = data[user][0]
+                            gt_request = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+                            data, _, _, _ = await self.get_req_xblio(ctx, gt_request)
+                            xuid, xuid_str, gs, tier, rep, pfp, bio = await self.profile_format(data)
+                        else:
+                            embed = discord.Embed(description=f"You havent set a Gamertag for yourself yet!**")
+                            return await ctx.send(embed=embed)
+        return xuid, xuid_str, gs, tier, rep, pfp, bio, gamertag
+
+
+    # Helper function for formatting xbox timestamps
+    async def time_format(self, timestamp_raw):
+        regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
+        if timestamp_raw:
+            list = re.findall(regex, timestamp_raw)
+            parts = list[0]
+            timestamp_formatted = f"{parts[1]}-{parts[2]}-{parts[0]} at {parts[3]} GMT"
+            return timestamp_formatted
+
+    # Helper function for formatting profile data
+    async def profile_format(self, data):
+        xuid, xuid_str, gs, tier, rep, pfp, bio = None, None, None, None, None, None, None
+        for user in data["profileUsers"]:
+            xuid = user['id']
+            xuid_str = f"**XUID:** {user['id']}"
+            for setting in user["settings"]:
+                if setting["id"] == "Gamerscore":
+                    gsformat = "{:,}".format(int(setting['value']))
+                    gs = f"**Gamerscore:** {gsformat}"
+                if setting["id"] == "AccountTier":
+                    tier = f"**AccountTier:** {setting['value']}"
+                if setting["id"] == "XboxOneRep":
+                    rep = f"**Reputation:** {setting['value']}"
+                if setting["id"] == "GameDisplayPicRaw":
+                    pfp = (setting['value'])
+                if setting["id"] == "Bio":
+                    bio = (setting['value'])
+        return xuid, xuid_str, gs, tier, rep, pfp, bio
+
+    # Helper function for formatting presence data
+    async def presence_format(self, data):
+        state = f"{data['state']}"
+        if "lastSeen" in data:
+            game = data['lastSeen']['titleName']
+            device = data['lastSeen']['deviceType']
+            raw_time = data['lastSeen']['timestamp']
+        elif "devices" in data:
+            device = data["devices"][0]["type"]
+            raw_time = data["devices"][0]["titles"][0]["lastModified"]
+            gamelist = ""
+            for game in data["devices"][0]["titles"]:
+                game = game["name"]
+                gamelist += f"\n{game}"
+            game = gamelist
+        else:
+            game = None
+            device = None
+            raw_time = None
+
+        if device == "Durango":
+            device = "1st Gen XboxOne"
+        if device == "Scarlett":
+            device = "Xbox Series S"
+        if device == "WindowsOneCore":
+            device = "Windows"
+
+        return state, device, game, raw_time
+
+    # Embed helper function for reaction menu
+    async def embed_handler(self, cur_page, pages, gamertag, data, type):
+        if type == "friends":
+            gsformat = "{:,}".format(int(data[cur_page - 1]['gamerScore']))
+            status = data[cur_page - 1]['presenceState']
+            activity = data[cur_page - 1]['presenceText']
+            embed = discord.Embed(
+                title=f"**{gamertag}**'s Profile",
+                color=discord.Color.green(),
+                description=str(f"**XIUD:** {data[cur_page - 1]['xuid']}\n"
+                                f"**Status:** {status}\n"
+                                f"**Activity:** {activity if status == 'Online' else None}\n"
+                                f"**Gamerscore:** {gsformat}\n"
+                                f"**Player Rep:** {data[cur_page - 1]['xboxOneRep']}\n")
+            )
+            embed.set_image(url=data[cur_page - 1]["displayPicRaw"])
+            embed.set_footer(text=f"Page {cur_page}/{pages}")
+            return embed
+        if type == "screenshots":
+            timestamp = await self.time_format(data[cur_page - 1]["date"])
+            embed = discord.Embed(
+                title=f"{gamertag}'s Screenshots",
+                color=discord.Color.green(),
+                description=str(f"**Name:** {data[cur_page - 1]['screenshotName']}\n"
+                                f"**Caption:** {data[cur_page - 1]['shortDescription']}\n"
+                                f"**Views:** {data[cur_page - 1]['viewCount']}\n"
+                                f"**Game:** {data[cur_page - 1]['itemText']}\n"
+                                f"**Date Taken:** {timestamp}")
+            )
+            embed.set_image(url=data[cur_page - 1]["itemImage"])
+            embed.set_footer(text=f"Page {cur_page}/{pages}")
+            return embed
+        if type == "clips":
+            timestamp = await self.time_format(data[cur_page - 1]["dateRecorded"])
+            duration = data[cur_page - 1]['durationInSeconds']
+            min, sec = divmod(duration, 60)
+            embed = discord.Embed(
+                title=f"{gamertag}'s Game Clips",
+                color=discord.Color.green(),
+                description=str(f"**Name:** {data[cur_page - 1]['clipName']}\n"
+                                f"**Caption:** {data[cur_page - 1]['clipCaption']}\n"
+                                f"**Views:** {data[cur_page - 1]['viewCount']}\n"
+                                f"**Game:** {data[cur_page - 1]['contentTitle']}\n"
+                                f"**Date Taken:** {timestamp}\n"
+                                f"**Duration:** {min}:{sec}\n\n"
+                                f"[CLICK HERE TO WATCH]({data[cur_page - 1]['downloadUri']})\n\n")
+            )
+            embed.set_image(url=data[cur_page - 1]["clipThumbnail"])
+            embed.set_thumbnail(url=data[cur_page - 1]["contentImageUri"])
+            embed.set_footer(text=f"Page {cur_page}/{pages}")
+            return embed
+        if type == "games":
+            timestamp = await self.time_format(data["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
+            gs = data['titles'][cur_page - 1]['achievement']['currentGamerscore']
+            totalgs = data['titles'][cur_page - 1]['achievement']['totalGamerscore']
+            embed = discord.Embed(
+                title=f"{gamertag}'s Games",
+                color=discord.Color.green(),
+                description=str(f"**Game:** {data['titles'][cur_page - 1]['name']}\n"
+                                f"**Platform:** {data['titles'][cur_page - 1]['devices'][0]}\n"
+                                f"**Achievements Earned:** "
+                                f"{data['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
+                                f"**Gamerscore:** {gs}/{totalgs}\n"
+                                f"**Progress:** {data['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
+                                f"**Last Played:** {timestamp}\n")
+            )
+            if data['titles'][cur_page - 1]['displayImage'] is not None:
+                embed.set_thumbnail(url=data['titles'][cur_page - 1]['displayImage'])
+            embed.set_footer(text=f"Page {cur_page}/{pages}")
+            return embed
+        if type == "achievements":
+            stats = []
+            status = False
+            completed = False
+            days, hours, minutes = 0, 0, 0
+            if not data["a"]["achievements"]:
+                embed = discord.Embed(title="No Achievements",
+                                      color=discord.Color.green(),
+                                      description=f"This game has no achievements for it.")
+                return embed
+            if data["s"]["statlistscollection"]:
+                time_played = data["s"]["statlistscollection"][0]["stats"][0]["value"]
+                days, minutes = divmod(time_played, 1440)
+                hours, minutes = divmod(minutes, 60)
+            if data["s"]["groups"][0]["statlistscollection"]:
+                stats = data["s"]["groups"][0]["statlistscollection"][0]["stats"]
+
+            time = data["a"]["achievements"][cur_page - 1]["progression"]["timeUnlocked"]
+            timestamp = await self.time_format(time)
+            if data['a']['achievements'][cur_page - 1]['progressState'] == "Achieved":
+                status = True
+                completed = f"Completed on: {timestamp}\n"
+            embed = discord.Embed(
+                title=f"{gamertag}'s achievements for {data['old_data']['titles'][cur_page - 1]['name']}",
+                color=discord.Color.green())
+
+            for items in stats:
+                if "value" in items:
+                    if items["groupproperties"]["DisplayFormat"] == "Percentage":
+                        item = f"{int(items['value'])}%"
+                    else:
+                        item = items['value']
+                    embed.add_field(name=items["properties"]["DisplayName"], value=item)
+            embed.add_field(name="Achievement Details",
+                            value=box(f"Name: {data['a']['achievements'][cur_page - 1]['name']}\n"
+                                      f"Description: {data['a']['achievements'][cur_page - 1]['lockedDescription']}\n"
+                                      f"Status: {data['a']['achievements'][cur_page - 1]['progressState']}\n"
+                                      f"{completed if status is True else ''}"
+                                      f"Gamerscore: {data['a']['achievements'][cur_page - 1]['rewards'][0]['value']}"),
+                            inline=False)
+            if data['a']['achievements'][cur_page - 1]['mediaAssets'][0]['url'] is not None:
+                embed.set_image(url=data['a']['achievements'][cur_page - 1]['mediaAssets'][0]['url'])
+            embed.set_footer(text=f"Page {cur_page}/{pages} | Time Played: {days}d {hours}h {minutes}m")
+            return embed
+
+    # Reaction menu logic for all commands
+    async def basic_menu(self, ctx, gamertag, xuid, data, pages, type, cur_page=None):
+        if type == "friends":
+            if pages == 0:
+                embed = discord.Embed(title="Friend List Empty",
+                                      description=f"Looks like **{gamertag}** has no friends. :smiling_face_with_tear:")
+                return await ctx.send(embed=embed)
+
+        if not cur_page:
+            cur_page = 1
+        embed = await self.embed_handler(cur_page, pages, gamertag, data, type)
+        message = await ctx.send(embed=embed)
+
+        await message.add_reaction("⏪")
+        await message.add_reaction("◀️")
+        await message.add_reaction("❌")
+        await message.add_reaction("▶️")
+        await message.add_reaction("⏩")
+        if type == "games":
+            await message.add_reaction("⬆")
+        if type == "achievements":
+            await message.add_reaction("⬇")
+
+        def check(reaction, user):
+            if type == "games":
+                return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬆"]
+            elif type == "achievements":
+                return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬇"]
+            else:
+                return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
+
+        while True:
             try:
-                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
-            except TypeError:
-                return
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+
+                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
+                    cur_page += 10
+                    embed = await self.embed_handler(cur_page, pages, gamertag, data, type)
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "▶️" and cur_page != pages:
+                    cur_page += 1
+                    embed = await self.embed_handler(cur_page, pages, gamertag, data, type)
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
+                    cur_page -= 10
+                    embed = await self.embed_handler(cur_page, pages, gamertag, data, type)
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                    cur_page -= 1
+                    embed = await self.embed_handler(cur_page, pages, gamertag, data, type)
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "❌":
+                    await message.clear_reactions()
+                    return await ctx.send(embed=discord.Embed(description="Menu closed."))
+
+                elif type == "games":
+                    if str(reaction.emoji) == "⬆":
+                        cached_data = data
+                        cached_cur_page = cur_page
+                        titleid = data["titles"][cur_page - 1]["titleId"]
+                        achievement_req = f"https://xbl.io/api/v2/achievements/player/{xuid}/title/{titleid}"
+                        stats_req = f"https://xapi.us/v2/{xuid}/game-stats/{titleid}"
+                        async with ctx.typing():
+                            achievements, _, _, _ = await self.get_req_xblio(ctx, achievement_req)
+                            stats, _, _, _ = await self.get_req_xapi(ctx, stats_req)
+                            data = {
+                                "old_data": cached_data,
+                                "cur_page": cached_cur_page,
+                                "a": achievements,
+                                "s": stats,
+                            }
+                            await message.delete()
+                        pages = len(data["a"]["achievements"])
+                        return await self.basic_menu(ctx, gamertag, xuid, data, pages, "achievements")
+
+                elif type == "achievements":
+                    if str(reaction.emoji) == "⬇":
+                        await message.delete()
+                        cur_page = data["cur_page"]
+                        data = data["old_data"]
+                        await self.basic_menu(ctx, gamertag, xuid, data, pages, "games", cur_page)
+
+                else:
+                    await message.remove_reaction(reaction, user)
+
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+                return await ctx.send(embed=discord.Embed(description="Menu timed out."))
+
+    @commands.group()
+    async def xtools(self, ctx):
+        """XTools base command"""
+        pass
+
+    @xtools.command()
+    async def setgt(self, ctx, *, gamertag):
+        """Set your Gamertag to use commands without entering it"""
+        async with ctx.typing():
+            gamertag_req = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+            data, _, _, _ = await self.get_req_xblio(ctx, gamertag_req)
             try:
                 for user in data["profileUsers"]:
-                    xbox_id = user['id']
-                    xuid = f"**XUID:** {user['id']}"
-                    for setting in user["settings"]:
-                        if setting["id"] == "Gamerscore":
-                            gs = f"**Gamerscore:** {setting['value']}"
-                        if setting["id"] == "AccountTier":
-                            tier = f"**AccountTier:** {setting['value']}"
-                        if setting["id"] == "XboxOneRep":
-                            rep = f"**Reputation:** {setting['value']}"
-                        if setting["id"] == "GameDisplayPicRaw":
-                            pfp = (setting['value'])
-                        if setting["id"] == "Bio":
-                            bio = (setting['value'])
+                    xuid = user['id']
             except KeyError:
-                return await ctx.send("Invalid Gamertag, please try again.")
-                # command calls the thing and does the stuff
-            presence = f"https://xbl.io/api/v2/{xbox_id}/presence"
-            data, status, remaining, ratelimit = await self.get_req_xblio(ctx, presence)
+                embed = discord.Embed(title="Error",
+                                      color=discord.Color.dark_red(),
+                                      description="Gamertag is invalid or does not exist.")
+                return await ctx.send(embed=embed)
+        async with self.config.guild(ctx.guild).users() as user:
+            user[ctx.author.id] = [gamertag, xuid]
+            embed = discord.Embed(title="Success",
+                                  color=discord.Color.green(),
+                                  description=f"Gamertag set to `{gamertag}`")
+            return await ctx.send(embed=embed)
+
+    @xtools.command()
+    async def status(self, ctx, member: discord.Member = None):
+        """Check the Gamertag you have registered"""
+        member = ctx.author if member is None else member
+        data = await self.config.guild(ctx.guild).users()
+        if data:
+            for user in data:
+                if int(user) == int(member.id):
+                    embed = discord.Embed(description=f"**GT:** `{data[user][0]}`\n**XUID:** `{data[user][1]}`")
+                    await ctx.send(embed=embed)
+                else:
+                    embed = discord.Embed(description=f"No Gamertag set for **{member.name}!**")
+                    return await ctx.send(embed=embed)
+
+    @xtools.command()
+    async def profile(self, ctx, *, gamertag=None):
+        """Get your profile information"""
+        async with ctx.typing():
+            xuid, xuid_str, gs, tier, rep, pfp, bio, gamertag = await self.get_xuid(ctx, gamertag)
+
+            presence_req = f"https://xbl.io/api/v2/{xuid}/presence"
+            data, status, remaining, ratelimit = await self.get_req_xblio(ctx, presence_req)
             data = data[0]
-            state = f"{data['state']}"
-
-            if "lastSeen" in data:
-                device = data['lastSeen']['deviceType']
-                if device == "Durango":
-                    device = "1st Gen XboxOne"
-                if device == "Scarlett":
-                    device = "Xbox Series S"
-                if device == "WindowsOneCore":
-                    device = "Windows"
-                game = data['lastSeen']['titleName']
-                raw_time = data['lastSeen']['timestamp']
-            if "devices" in data:
-                gamelist = ""
-                device = data["devices"][0]["type"]
-                if device == "Durango":
-                    device = "1st Gen XboxOne"
-                if device == "Scarlett":
-                    device = "Xbox Series S"
-                if device == "WindowsOneCore":
-                    device = "Windows"
-                for game in data["devices"][0]["titles"]:
-                    game = game["name"]
-                    gamelist += f"\n{game}"
-                game = gamelist
-                raw_time = data["devices"][0]["titles"][0]["lastModified"]
-
-            if "lastSeen" in data or "devices" in data:
-                time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                timestamp = re.findall(time_regex, raw_time)
-                timestamp = timestamp[0]
-                timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]}"
+            state, device, game, raw_time = await self.presence_format(data)
+            timestamp = await self.time_format(raw_time)
 
             color = discord.Color.green() if status == 200 else discord.Color.dark_red()
             stat = "Good" if status == 200 else "Failed"
+
             embed = discord.Embed(
                 title=f"**{gamertag}**'s Profile ({state})",
                 color=color,
-                description=str(f"{gs}\n{tier}\n{rep}\n{xuid}"),
-            )
+                description=f"{gs}\n{tier}\n{rep}\n{xuid_str}")
             embed.set_image(url=pfp)
             if "lastSeen" in data or "devices" in data:
                 embed.add_field(name="Last Seen",
-                                value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp} GMT",
-                                inline=False
-                                )
+                                value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp}",
+                                inline=False)
             if bio != "":
                 embed.add_field(name="Bio", value=box(bio))
             embed.add_field(name="API Status",
                             value=f"API: {stat}\nRateLimit: {ratelimit}/hour\nRemaining: {remaining}",
-                            inline=False
-                            )
-            await ctx.send(embed=embed)
+                            inline=False)
+            return await ctx.send(embed=embed)
 
-    # Get friends list of a gamertag in an interactive menu
-    @commands.command()
-    async def xfriends(self, ctx, *, gamertag):
-        """Get a Gamertag's friends list"""
+    @xtools.command()
+    async def friends(self, ctx, *, gamertag=None):
+        """Get yours or a Gamertag's friends list"""
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
-            try:
-                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
-            except TypeError:
-                return
-            try:
-                for user in data["profileUsers"]:
-                    xuid = user['id']
-            except KeyError:
-                return await ctx.send("Invalid Gamertag, please try again.")
-            friendsrequest = f"https://xbl.io/api/v2/friends?xuid={xuid}"
-            try:
-                data, status, remaining, ratelimit = await self.get_req_xblio(ctx, friendsrequest)
-            except TypeError:
-                return
+            xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
+            friends_req = f"https://xbl.io/api/v2/friends?xuid={xuid}"
+            data, _, _, _ = await self.get_req_xblio(ctx, friends_req)
 
-            if not data:
-                return await ctx.send(f"{gamertag} has their friends list set to private :confused:")
-            pages = 0
-            for friend in data["people"]:
-                if friend:
-                    pages += 1
-            await self.pagify_friends(ctx, data["people"], pages)
+        if data:
+            pages = len(data["people"])
+            return await self.basic_menu(ctx, gamertag, xuid, data["people"], pages, "friends")
+        else:
+            embed = discord.Embed(title="Friend List Unavailable",
+                                  description=f"**{gamertag}** might have their profile set to private.")
+            return await ctx.send(embed=embed)
 
-    async def pagify_friends(self, ctx, content, pages):
-        if pages == 0:
-            return await ctx.send(f"OOF, looks like {gamertag} has no friends :smiling_face_with_tear:")
-        cur_page = 1
-        embed = discord.Embed(
-            title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
-            color=discord.Color.green(),
-            description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
-                            f"**Status:** {content[cur_page - 1]['presenceState']}\n"
-                            f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
-                            f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
-                            f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n")
-        )
-        embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
-        embed.set_footer(text=f"Page {cur_page}/{pages}")
-        message = await ctx.send(embed=embed)
-
-        await message.add_reaction("⏪")
-        await message.add_reaction("◀️")
-        await message.add_reaction("❌")
-        await message.add_reaction("▶️")
-        await message.add_reaction("⏩")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-                # waiting for a reaction to be added - times out after x seconds
-
-                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
-                    cur_page += 10
-                    embed = discord.Embed(
-                        title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
-                        color=discord.Color.green(),
-                        description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
-                                        f"**Status:** {content[cur_page - 1]['presenceState']}\n"
-                                        f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
-                                        f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
-                                        f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n"),
-                    )
-                    embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "▶️" and cur_page != pages:
-                    cur_page += 1
-                    embed = discord.Embed(
-                        title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
-                        color=discord.Color.green(),
-                        description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
-                                        f"**Status:** {content[cur_page - 1]['presenceState']}\n"
-                                        f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
-                                        f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
-                                        f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n"),
-                    )
-                    embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
-                    cur_page -= 10
-                    embed = discord.Embed(
-                        title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
-                        color=discord.Color.green(),
-                        description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
-                                        f"**Status:** {content[cur_page - 1]['presenceState']}\n"
-                                        f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
-                                        f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
-                                        f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n"),
-                    )
-                    embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
-                    cur_page -= 1
-                    embed = discord.Embed(
-                        title=f"**{content[cur_page - 1]['displayName']}**'s Profile",
-                        color=discord.Color.green(),
-                        description=str(f"**XIUD:** {content[cur_page - 1]['xuid']}\n"
-                                        f"**Status:** {content[cur_page - 1]['presenceState']}\n"
-                                        f"**Activity:** {content[cur_page - 1]['presenceText']}\n"
-                                        f"**Gamerscore:** {content[cur_page - 1]['gamerScore']}\n"
-                                        f"**Player Rep:** {content[cur_page - 1]['xboxOneRep']}\n"),
-                    )
-                    embed.set_image(url=content[cur_page - 1]["displayPicRaw"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "❌":
-                    await message.clear_reactions()
-                    return
-
-                else:
-                    await message.remove_reaction(reaction, user)
-                    # removes reactions if the user tries to go forward on the last page or
-                    # backwards on the first page
-            except asyncio.TimeoutError:
-                await message.clear_reactions()
-                return
-
-    @commands.command()
-    async def xscreenshots(self, ctx, *, gamertag):
-        """Get a Gamertag's screenshot gallery"""
+    @xtools.command()
+    async def screenshots(self, ctx, *, gamertag=None):
+        """Get a yours or a Gamertag's screenshot gallery"""
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
-            try:
-                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
-            except TypeError:
-                return
-            try:
-                for user in data["profileUsers"]:
-                    xuid = user['id']
-            except KeyError:
-                return await ctx.send("Invalid Gamertag, please try again.")
-            screenshotrequest = f"https://xapi.us/v2/{xuid}/alternative-screenshots"
-            try:
-                data, status, remaining, ratelimit = await self.get_req_xapi(ctx, screenshotrequest)
-            except TypeError:
-                return
-            pages = 0
-            for screenshot in data:
-                if screenshot:
-                    pages += 1
-            await self.pagify_screenshots(ctx, data, pages, gamertag)
+            xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
+            screenshot_req = f"https://xapi.us/v2/{xuid}/alternative-screenshots"
+            data, _, _, _ = await self.get_req_xapi(ctx, screenshot_req)
 
-    async def pagify_screenshots(self, ctx, content, pages, gamertag):
-        if pages == 0:
-            return await ctx.send(f"No screenshots have been found for {gamertag}")
-        cur_page = 1
-        time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-        timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
-        timestamp = timestamp[0]
-        timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-        embed = discord.Embed(
-            title=f"{gamertag}'s Screenshots",
-            color=discord.Color.green(),
-            description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
-                            f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
-                            f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                            f"**Game:** {content[cur_page - 1]['itemText']}\n"
-                            f"**Date Taken:** {timestamp}")
-        )
-        embed.set_image(url=content[cur_page - 1]["itemImage"])
-        embed.set_footer(text=f"Page {cur_page}/{pages}")
-        message = await ctx.send(embed=embed)
+        if data:
+            pages = len(data)
+            return await self.basic_menu(ctx, gamertag, xuid, data, pages, "screenshots")
+        else:
+            embed = discord.Embed(title="No Screenshots",
+                                  description=f"**{gamertag}** has no screenshots available.")
+            return await ctx.send(embed=embed)
 
-        await message.add_reaction("⏪")
-        await message.add_reaction("◀️")
-        await message.add_reaction("❌")
-        await message.add_reaction("▶️")
-        await message.add_reaction("⏩")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-                # waiting for a reaction to be added - times out after x seconds
-
-                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
-                    cur_page += 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Screenshots",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['itemText']}\n"
-                                        f"**Date Taken:** {timestamp}")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["itemImage"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "▶️" and cur_page != pages:
-                    cur_page += 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Screenshots",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['itemText']}\n"
-                                        f"**Date Taken:** {timestamp}")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["itemImage"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
-                    cur_page -= 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Screenshots",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['itemText']}\n"
-                                        f"**Date Taken:** {timestamp}")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["itemImage"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
-                    cur_page -= 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["date"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Screenshots",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['screenshotName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['shortDescription']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['itemText']}\n"
-                                        f"**Date Taken:** {timestamp}")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["itemImage"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "❌":
-                    await message.clear_reactions()
-                    return
-
-                else:
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                await message.clear_reactions()
-                return
-
-    @commands.command()
-    async def xclips(self, ctx, *, gamertag):
-        """Get a Gamertag's recorded game clips"""
+    @xtools.command()
+    async def clips(self, ctx, *, gamertag=None):
+        """Get yours or a Gamertag's recorded game clips"""
+        xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
         async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
-            try:
-                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
-            except TypeError:
-                return
-            try:
-                for user in data["profileUsers"]:
-                    xuid = user['id']
-            except KeyError:
-                return await ctx.send("Invalid Gamertag, please try again.")
-            gameclipsrequest = f"https://xapi.us/v2/{xuid}/alternative-game-clips"
-            try:
-                data, status, remaining, ratelimit = await self.get_req_xapi(ctx, gameclipsrequest)
-            except TypeError:
-                return
+            gameclip_req = f"https://xapi.us/v2/{xuid}/alternative-game-clips"
+            data, _, _, _ = await self.get_req_xapi(ctx, gameclip_req)
 
-            pages = 0
-            for gameclip in data:
-                if gameclip:
-                    pages += 1
-            await self.pagify_gameclips(ctx, data, pages, gamertag)
+        if data:
+            pages = len(data)
+            return await self.basic_menu(ctx, gamertag, xuid, data, pages, "clips")
+        else:
+            embed = discord.Embed(title="No Clips",
+                                  description=f"**{gamertag}** has no clips available.")
+            return await ctx.send(embed=embed)
 
-    async def pagify_gameclips(self, ctx, content, pages, gamertag):
-        if pages == 0:
-            return await ctx.send(f"No game clips have been found for {gamertag}")
-        cur_page = 1
-        time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-        timestamp = re.findall(time_regex, content[cur_page - 1]["dateRecorded"])
-        timestamp = timestamp[0]
-        timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-        duration = content[cur_page - 1]['durationInSeconds']
-        min, sec = divmod(duration, 60)
-        embed = discord.Embed(
-            title=f"{gamertag}'s Game Clips",
-            color=discord.Color.green(),
-            description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
-                            f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
-                            f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                            f"**Game:** {content[cur_page - 1]['contentTitle']}\n"
-                            f"**Date Taken:** {timestamp}\n"
-                            f"**Duration:** {min}:{sec}\n\n"
-                            f"[CLICK HERE TO WATCH]({content[cur_page - 1]['downloadUri']})\n\n")
-        )
-        embed.set_image(url=content[cur_page - 1]["clipThumbnail"])
-        embed.set_thumbnail(url=content[cur_page - 1]["contentImageUri"])
-        embed.set_footer(text=f"Page {cur_page}/{pages}")
-        message = await ctx.send(embed=embed)
+    @xtools.command()
+    async def games(self, ctx, *, gamertag=None):
+        """View details about games you or a Gamertag have played"""
+        xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
+        game_req = f"https://xbl.io/api/v2/achievements/player/{xuid}"
+        data, _, _, _ = await self.get_req_xblio(ctx, game_req)
 
-        await message.add_reaction("⏪")
-        await message.add_reaction("◀️")
-        await message.add_reaction("❌")
-        await message.add_reaction("▶️")
-        await message.add_reaction("⏩")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-                # waiting for a reaction to be added - times out after x seconds
-
-                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
-                    cur_page += 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["dateRecorded"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    duration = content[cur_page - 1]['durationInSeconds']
-                    min, sec = divmod(duration, 60)
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Game Clips",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['contentTitle']}\n"
-                                        f"**Date Recorded:** {timestamp}\n"
-                                        f"**Duration:** {min}:{sec}\n\n"
-                                        f"[CLICK HERE TO WATCH]({content[cur_page - 1]['downloadUri']})\n\n")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["clipThumbnail"])
-                    embed.set_thumbnail(url=content[cur_page - 1]["contentImageUri"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "▶️" and cur_page != pages:
-                    cur_page += 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["dateRecorded"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    duration = content[cur_page - 1]['durationInSeconds']
-                    min, sec = divmod(duration, 60)
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Game Clips",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['contentTitle']}\n"
-                                        f"**Date Recorded:** {timestamp}\n"
-                                        f"**Duration:** {min}:{sec}\n\n"
-                                        f"[CLICK HERE TO WATCH]({content[cur_page - 1]['downloadUri']})\n\n")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["clipThumbnail"])
-                    embed.set_thumbnail(url=content[cur_page - 1]["contentImageUri"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
-                    cur_page -= 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["dateRecorded"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    duration = content[cur_page - 1]['durationInSeconds']
-                    min, sec = divmod(duration, 60)
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Game Clips",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['contentTitle']}\n"
-                                        f"**Date Recorded:** {timestamp}\n"
-                                        f"**Duration:** {min}:{sec}\n\n"
-                                        f"[CLICK HERE TO WATCH]({content[cur_page - 1]['downloadUri']})\n\n")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["clipThumbnail"])
-                    embed.set_thumbnail(url=content[cur_page - 1]["contentImageUri"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
-                    cur_page -= 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex, content[cur_page - 1]["dateRecorded"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    duration = content[cur_page - 1]['durationInSeconds']
-                    min, sec = divmod(duration, 60)
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Game Clips",
-                        color=discord.Color.green(),
-                        description=str(f"**Name:** {content[cur_page - 1]['clipName']}\n"
-                                        f"**Caption:** {content[cur_page - 1]['clipCaption']}\n"
-                                        f"**Views:** {content[cur_page - 1]['viewCount']}\n"
-                                        f"**Game:** {content[cur_page - 1]['contentTitle']}\n"
-                                        f"**Date Recorded:** {timestamp}\n"
-                                        f"**Duration:** {min}:{sec}\n\n"
-                                        f"[CLICK HERE TO WATCH]({content[cur_page - 1]['downloadUri']})\n\n")
-                    )
-                    embed.set_image(url=content[cur_page - 1]["clipThumbnail"])
-                    embed.set_thumbnail(url=content[cur_page - 1]["contentImageUri"])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "❌":
-                    return await message.clear_reactions()
-
-                else:
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                return await message.clear_reactions()
-
-    @commands.command()
-    async def xgames(self, ctx, *, gamertag):
-        """Get and view a Gamertag's games/achievements"""
-        async with ctx.typing():
-            gtrequest = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
-            try:
-                data, _, _, _ = await self.get_req_xblio(ctx, gtrequest)
-            except TypeError:
-                return
-            try:
-                for user in data["profileUsers"]:
-                    if user:
-                        xuid = user['id']
-                    else:
-                        return await ctx.send("Please try again")
-            except KeyError:
-                return await ctx.send("Invalid Gamertag, please try again.")
-            overall_achievementrequest = f"https://xbl.io/api/v2/achievements/player/{xuid}"
-            try:
-                data, _, _, _ = await self.get_req_xblio(ctx, overall_achievementrequest)
-            except TypeError:
-                return
-
-        pages = 0
-        cur_page = 1
         titles = []
-        for game in data["titles"]:
-            if game:
-                if "Win32" not in game['devices']:
+        if data:
+            for game in data["titles"]:
+                if "Win32" not in game["devices"]:
                     titles.append(game)
                     continue
-                pages += 1
-        data = {
-            "xuid": xuid,
-            "titles": titles
-        }
-        print(data)
-        await self.pagify_overall_achievements(ctx, data, pages, cur_page, gamertag)
+            pages = len(titles)
+            data = {
+                "xuid": xuid,
+                "titles": titles
+            }
+            await self.basic_menu(ctx, gamertag, xuid, data, pages, "games")
+        else:
+            embed = discord.Embed(title="No Games",
+                                  description=f"**{gamertag}** has no games available.")
+            return await ctx.send(embed=embed)
 
-    async def pagify_overall_achievements(self, ctx, content, pages, cur_page, gamertag):
-        if pages == 0:
-            return await ctx.send(f"No games have been found for {gamertag}")
-        time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-        timestamp = re.findall(time_regex, content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
-        timestamp = timestamp[0]
-        timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-        gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
-             f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
-        embed = discord.Embed(
-            title=f"{gamertag}'s Games",
-            color=discord.Color.green(),
-            description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
-                            f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
-                            f"**Achievements Earned:** "
-                            f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
-                            f"**Gamerscore:** {gs}\n"
-                            f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
-                            f"**Last Played:** {timestamp}\n")
-        )
-        if content['titles'][cur_page - 1]['displayImage'] is not None:
-            embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
-        embed.set_footer(text=f"Page {cur_page}/{pages}")
-        message = await ctx.send(embed=embed)
-
-        await message.add_reaction("⏪")
-        await message.add_reaction("◀️")
-        await message.add_reaction("❌")
-        await message.add_reaction("▶️")
-        await message.add_reaction("⏩")
-        await message.add_reaction("⏩")
-        await message.add_reaction("⬆")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬆"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-                # waiting for a reaction to be added - times out after x seconds
-
-                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
-                    cur_page += 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
-                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Games",
-                        color=discord.Color.green(),
-                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
-                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
-                                        f"**Achievements Earned:** "
-                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
-                                        f"**Gamerscore:** {gs}\n"
-                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
-                                        f"**Last Played:** {timestamp}\n")
-                    )
-                    if content['titles'][cur_page - 1]['displayImage'] is not None:
-                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "▶️" and cur_page != pages:
-                    cur_page += 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
-                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Achievements",
-                        color=discord.Color.green(),
-                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
-                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
-                                        f"**Achievements Earned:** "
-                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
-                                        f"**Gamerscore:** {gs}\n"
-                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
-                                        f"**Last Played:** {timestamp}\n")
-                    )
-                    if content['titles'][cur_page - 1]['displayImage'] is not None:
-                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
-                    cur_page -= 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
-                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Games",
-                        color=discord.Color.green(),
-                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
-                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
-                                        f"**Achievements Earned:** "
-                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
-                                        f"**Gamerscore:** {gs}\n"
-                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
-                                        f"**Last Played:** {timestamp}\n")
-                    )
-                    if content['titles'][cur_page - 1]['displayImage'] is not None:
-                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
-                    cur_page -= 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content["titles"][cur_page - 1]["titleHistory"]["lastTimePlayed"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    gs = f"{content['titles'][cur_page - 1]['achievement']['currentGamerscore']}/" \
-                         f"{content['titles'][cur_page - 1]['achievement']['totalGamerscore']}"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s Games",
-                        color=discord.Color.green(),
-                        description=str(f"**Game:** {content['titles'][cur_page - 1]['name']}\n"
-                                        f"**Platform:** {content['titles'][cur_page - 1]['devices'][0]}\n"
-                                        f"**Achievements Earned:** "
-                                        f"{content['titles'][cur_page - 1]['achievement']['currentAchievements']}\n"
-                                        f"**Gamerscore:** {gs}\n"
-                                        f"**Progress:** {content['titles'][cur_page - 1]['achievement']['progressPercentage']}%\n"
-                                        f"**Last Played:** {timestamp}\n")
-                    )
-                    if content['titles'][cur_page - 1]['displayImage'] is not None:
-                        embed.set_thumbnail(url=content['titles'][cur_page - 1]['displayImage'])
-                    embed.set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⬆":
-                    xuid = content["xuid"]
-                    titleid = content["titles"][cur_page - 1]["titleId"]
-                    achievement_request = f"https://xbl.io/api/v2/achievements/player/{xuid}/title/{titleid}"
-                    stats_request = f"https://xapi.us/v2/{xuid}/game-stats/{titleid}"
-                    async with ctx.typing():
-                        try:
-                            data2, _, _, _ = await self.get_req_xblio(ctx, achievement_request)
-                            data3, _, _, _ = await self.get_req_xapi(ctx, stats_request)
-                        except TypeError:
-                            return
-
-                    pages2 = 0
-                    for achievement in data2["achievements"]:
-                        if achievement:
-                            pages2 += 1
-                    if pages2 != 0:
-                        await self.pagify_achievements(ctx,
-                                                       message,
-                                                       content,
-                                                       pages,
-                                                       pages2,
-                                                       cur_page,
-                                                       data2,
-                                                       data3,
-                                                       gamertag)
-                    if pages2 == 0:
-                        await message.remove_reaction(reaction, user)
-                        await ctx.send(f"No Achievements found for {content['titles'][cur_page - 1]['name']}")
-                    if content['titles'][cur_page - 1]['devices'][0] == "Xbox360":
-                        await message.remove_reaction(reaction, user)
-                        await ctx.send(f"Cant get achievements for an Xbox360 game.")
-
-                elif str(reaction.emoji) == "❌":
-                    await message.clear_reactions()
-                    return
-
-                else:
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                try:
-                    await message.clear_reactions()
-                    return
-                except discord.NotFound:
-                    pass
-
-    async def pagify_achievements(self,
-                                  ctx,
-                                  message,
-                                  content,
-                                  pages,
-                                  pages2,
-                                  cur_page,
-                                  content2,
-                                  content3,
-                                  gamertag):
-        # Static Variables for this page
-        time_played = content3["statlistscollection"][0]["stats"][0]["value"]
-        days, minutes = divmod(time_played, 1440)
-        hours, minutes = divmod(minutes, 60)
-        if content3["groups"][0]["statlistscollection"]:
-            stats = content3["groups"][0]["statlistscollection"][0]["stats"]
-        if not content3["groups"][0]["statlistscollection"]:
-            stats = []
-
-        # Dynamic variables
-        cur_page2 = 1
-        time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-        timestamp = re.findall(time_regex, content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
-        timestamp = timestamp[0]
-        timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-        embed = discord.Embed(
-            title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-            color=discord.Color.green()
-        )
-        status = False
-        if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-            status = True
-            completed = f"Completed on: {timestamp}\n"
-        for items in stats:
-            if "value" in items:
-                if items["groupproperties"]["DisplayFormat"] == "Percentage":
-                    item = f"{int(items['value'])}%"
-                else:
-                    item = items['value']
-                embed.add_field(name=items["properties"]["DisplayName"], value=item)
-        embed.add_field(name="Achievement Details",
-                        value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                  f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                  f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                  f"{completed if status is True else ''}"
-                                  f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
-                        inline=False
-                        )
-        if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
-            embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-        embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
-        await message.edit(embed=embed)
-        await message.clear_reaction("⬆")
-        await asyncio.sleep(2)
-        await message.add_reaction("⬇")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬇"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-
-                if str(reaction.emoji) == "⏩" and cur_page2 + 10 <= pages2:
-                    cur_page2 += 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green()
-                    )
-                    status = False
-                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        status = True
-                        completed = f"Completed on: {timestamp}\n"
-                    for items in stats:
-                        if "value" in items:
-                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
-                                item = f"{int(items['value'])}%"
-                            else:
-                                item = items['value']
-                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
-                    embed.add_field(name="Achievement Details",
-                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                              f"{completed if status is True else ''}"
-                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
-                                    inline=False
-                                    )
-                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
-                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "▶️" and cur_page2 != pages2:
-                    cur_page2 += 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green()
-                    )
-                    status = False
-                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        status = True
-                        completed = f"Completed on: {timestamp}\n"
-                    for items in stats:
-                        if "value" in items:
-                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
-                                item = f"{int(items['value'])}%"
-                            else:
-                                item = items['value']
-                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
-                    embed.add_field(name="Achievement Details",
-                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                              f"{completed if status is True else ''}"
-                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
-                                    inline=False
-                                    )
-                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
-                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page2 > 1:
-                    cur_page2 -= 1
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green()
-                    )
-                    status = False
-                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        status = True
-                        completed = f"Completed on: {timestamp}\n"
-                    for items in stats:
-                        if "value" in items:
-                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
-                                item = f"{int(items['value'])}%"
-                            else:
-                                item = items['value']
-                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
-                    embed.add_field(name="Achievement Details",
-                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                              f"{completed if status is True else ''}"
-                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
-                                    inline=False
-                                    )
-                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
-                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⏪" and cur_page2 - 10 >= 1:
-                    cur_page2 -= 10
-                    time_regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
-                    timestamp = re.findall(time_regex,
-                                           content2["achievements"][cur_page2 - 1]["progression"]["timeUnlocked"])
-                    timestamp = timestamp[0]
-                    timestamp = f"{timestamp[1]}-{timestamp[2]}-{timestamp[0]} at {timestamp[3]} GMT"
-                    embed = discord.Embed(
-                        title=f"{gamertag}'s achievements for {content['titles'][cur_page - 1]['name']}",
-                        color=discord.Color.green()
-                    )
-                    status = False
-                    if content2['achievements'][cur_page2 - 1]['progressState'] == "Achieved":
-                        status = True
-                        completed = f"Completed on: {timestamp}\n"
-                    for items in stats:
-                        if "value" in items:
-                            if items["groupproperties"]["DisplayFormat"] == "Percentage":
-                                item = f"{int(items['value'])}%"
-                            else:
-                                item = items['value']
-                            embed.add_field(name=items["properties"]["DisplayName"], value=item)
-                    embed.add_field(name="Achievement Details",
-                                    value=box(f"Name: {content2['achievements'][cur_page2 - 1]['name']}\n"
-                                              f"Description: {content2['achievements'][cur_page2 - 1]['lockedDescription']}\n"
-                                              f"Status: {content2['achievements'][cur_page2 - 1]['progressState']}\n"
-                                              f"{completed if status is True else ''}"
-                                              f"Gamerscore: {content2['achievements'][cur_page2 - 1]['rewards'][0]['value']}"),
-                                    inline=False
-                                    )
-                    if content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'] is not None:
-                        embed.set_image(url=content2['achievements'][cur_page2 - 1]['mediaAssets'][0]['url'])
-                    embed.set_footer(text=f"Page {cur_page2}/{pages2} | Time Played: {days}d {hours}h {minutes}m")
-                    await message.edit(embed=embed)
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⬇":
-                    await message.delete()
-                    await self.pagify_overall_achievements(ctx, content, pages, cur_page, gamertag)
-
-                elif str(reaction.emoji) == "❌":
-                    try:
-                        await message.clear_reactions()
-                    except discord.NotFound:
-                        pass
-                    return
-
-                else:
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError or discord.NotFound:
-                try:
-                    return await message.clear_reactions()
-                except discord.NotFound:
-                    pass
