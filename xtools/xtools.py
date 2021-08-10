@@ -15,7 +15,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.1"
+    __version__ = "2.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -503,10 +503,10 @@ class XTools(commands.Cog):
             if "NoneType" in str(e):
                 embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
                 return await ctx.send(embed=embed)
-
+            else:
+                return print(f"ERROR: {e}")
         friends_req = f"https://xbl.io/api/v2/friends?xuid={xuid}"
         data, _, _, _ = await self.get_req_xblio(ctx, friends_req)
-
         if data:
             pages = len(data["people"])
             return await self.basic_menu(ctx, gamertag, xuid, data["people"], pages, "friends")
@@ -524,6 +524,8 @@ class XTools(commands.Cog):
             if "NoneType" in str(e):
                 embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
                 return await ctx.send(embed=embed)
+            else:
+                return print(f"ERROR: {e}")
         screenshot_req = f"https://xapi.us/v2/{xuid}/alternative-screenshots"
         data, _, _, _ = await self.get_req_xapi(ctx, screenshot_req)
 
@@ -544,6 +546,8 @@ class XTools(commands.Cog):
             if "NoneType" in str(e):
                 embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
                 return await ctx.send(embed=embed)
+            else:
+                return print(f"ERROR: {e}")
         gameclip_req = f"https://xapi.us/v2/{xuid}/alternative-game-clips"
         data, _, _, _ = await self.get_req_xapi(ctx, gameclip_req)
 
@@ -564,9 +568,10 @@ class XTools(commands.Cog):
             if "NoneType" in str(e):
                 embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
                 return await ctx.send(embed=embed)
+            else:
+                return print(f"ERROR: {e}")
         game_req = f"https://xbl.io/api/v2/achievements/player/{xuid}"
         data, _, _, _ = await self.get_req_xblio(ctx, game_req)
-
         titles = []
         if data:
             for game in data["titles"]:
