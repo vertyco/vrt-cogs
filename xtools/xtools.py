@@ -109,33 +109,31 @@ class XTools(commands.Cog):
                 ctx.send("The API failed to pull the data. Please try again.")
             return data, status, remaining, ratelimit
 
-    # Helper function for getting xuid
+    # Helper function for trying to get xuid
     async def get_xuid(self, ctx, gamertag):
-        async with ctx.typing():
-            if gamertag is not None:
-                gamertag_req = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+        if gamertag is not None:
+            gamertag_req = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+            async with ctx.typing():
                 data, _, _, _ = await self.get_req_xblio(ctx, gamertag_req)
-                try:
-                    xuid, xuid_str, gs, tier, rep, pfp, bio = await self.profile_format(data)
-                except KeyError:
-                    embed = discord.Embed(title=":warning:Error:warning:",
-                                          color=discord.Color.dark_red(),
-                                          description="Gamertag is invalid or does not exist.")
-                    return await ctx.send(embed=embed)
-            else:
-                data = await self.config.guild(ctx.guild).users()
-                if data:
-                    for user in data:
-                        if int(user) == int(ctx.author.id):
-                            gamertag = data[user][0]
-                            gt_request = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+            try:
+                xuid, xuid_str, gs, tier, rep, pfp, bio = await self.profile_format(data)
+                return xuid, xuid_str, gs, tier, rep, pfp, bio, gamertag
+            except KeyError:
+                embed = discord.Embed(title=":warning:Error:warning:",
+                                      color=discord.Color.dark_red(),
+                                      description="Gamertag is invalid or does not exist.")
+                return await ctx.send(embed=embed)
+        else:
+            data = await self.config.guild(ctx.guild).users()
+            if data:
+                for user in data:
+                    if int(user) == int(ctx.author.id):
+                        gamertag = data[user][0]
+                        gt_request = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
+                        async with ctx.typing():
                             data, _, _, _ = await self.get_req_xblio(ctx, gt_request)
-                            xuid, xuid_str, gs, tier, rep, pfp, bio = await self.profile_format(data)
-                        else:
-                            embed = discord.Embed(description=f"You havent set a Gamertag for yourself yet!**")
-                            return await ctx.send(embed=embed)
-        return xuid, xuid_str, gs, tier, rep, pfp, bio, gamertag
-
+                        xuid, xuid_str, gs, tier, rep, pfp, bio = await self.profile_format(data)
+                        return xuid, xuid_str, gs, tier, rep, pfp, bio, gamertag
 
     # Helper function for formatting xbox timestamps
     async def time_format(self, timestamp_raw):
@@ -444,47 +442,63 @@ class XTools(commands.Cog):
                     embed = discord.Embed(description=f"**GT:** `{data[user][0]}`\n**XUID:** `{data[user][1]}`")
                     await ctx.send(embed=embed)
                 else:
-                    embed = discord.Embed(description=f"No Gamertag set for **{member.name}!**")
+                    embed = discord.Embed(description=f"No Gamertag set for **{member.name}**!\n"
+                                                      f"Set a Gamertag with `{ctx.clean.prefix}xtools setgt <Gamertag>`")
                     return await ctx.send(embed=embed)
+        else:
+            embed = discord.Embed(description=f"No Gamertag set for **{member.name}**!\n"
+                                              f"Set a Gamertag with `{ctx.prefix}xtools setgt <Gamertag>`")
+            return await ctx.send(embed=embed)
 
     @xtools.command()
     async def profile(self, ctx, *, gamertag=None):
         """Get your profile information"""
-        async with ctx.typing():
+        try:
             xuid, xuid_str, gs, tier, rep, pfp, bio, gamertag = await self.get_xuid(ctx, gamertag)
+        except Exception as e:
+            if "NoneType" in str(e):
+                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                return await ctx.send(embed=embed)
+            else:
+                print(f"ERROR: {e}")
+                return
 
-            presence_req = f"https://xbl.io/api/v2/{xuid}/presence"
-            data, status, remaining, ratelimit = await self.get_req_xblio(ctx, presence_req)
-            data = data[0]
-            state, device, game, raw_time = await self.presence_format(data)
-            timestamp = await self.time_format(raw_time)
+        presence_req = f"https://xbl.io/api/v2/{xuid}/presence"
+        data, status, remaining, ratelimit = await self.get_req_xblio(ctx, presence_req)
+        data = data[0]
+        state, device, game, raw_time = await self.presence_format(data)
+        timestamp = await self.time_format(raw_time)
+        color = discord.Color.green() if status == 200 else discord.Color.dark_red()
+        stat = "Good" if status == 200 else "Failed"
 
-            color = discord.Color.green() if status == 200 else discord.Color.dark_red()
-            stat = "Good" if status == 200 else "Failed"
-
-            embed = discord.Embed(
-                title=f"**{gamertag}**'s Profile ({state})",
-                color=color,
-                description=f"{gs}\n{tier}\n{rep}\n{xuid_str}")
-            embed.set_image(url=pfp)
-            if "lastSeen" in data or "devices" in data:
-                embed.add_field(name="Last Seen",
-                                value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp}",
-                                inline=False)
-            if bio != "":
-                embed.add_field(name="Bio", value=box(bio))
-            embed.add_field(name="API Status",
-                            value=f"API: {stat}\nRateLimit: {ratelimit}/hour\nRemaining: {remaining}",
+        embed = discord.Embed(
+            title=f"**{gamertag}**'s Profile ({state})",
+            color=color,
+            description=f"{gs}\n{tier}\n{rep}\n{xuid_str}")
+        embed.set_image(url=pfp)
+        if "lastSeen" in data or "devices" in data:
+            embed.add_field(name="Last Seen",
+                            value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp}",
                             inline=False)
-            return await ctx.send(embed=embed)
+        if bio != "":
+            embed.add_field(name="Bio", value=box(bio))
+        embed.add_field(name="API Status",
+                        value=f"API: {stat}\nRateLimit: {ratelimit}/hour\nRemaining: {remaining}",
+                        inline=False)
+        return await ctx.send(embed=embed)
 
     @xtools.command()
     async def friends(self, ctx, *, gamertag=None):
         """Get yours or a Gamertag's friends list"""
-        async with ctx.typing():
+        try:
             xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
-            friends_req = f"https://xbl.io/api/v2/friends?xuid={xuid}"
-            data, _, _, _ = await self.get_req_xblio(ctx, friends_req)
+        except Exception as e:
+            if "NoneType" in str(e):
+                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                return await ctx.send(embed=embed)
+
+        friends_req = f"https://xbl.io/api/v2/friends?xuid={xuid}"
+        data, _, _, _ = await self.get_req_xblio(ctx, friends_req)
 
         if data:
             pages = len(data["people"])
@@ -497,10 +511,14 @@ class XTools(commands.Cog):
     @xtools.command()
     async def screenshots(self, ctx, *, gamertag=None):
         """Get a yours or a Gamertag's screenshot gallery"""
-        async with ctx.typing():
+        try:
             xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
-            screenshot_req = f"https://xapi.us/v2/{xuid}/alternative-screenshots"
-            data, _, _, _ = await self.get_req_xapi(ctx, screenshot_req)
+        except Exception as e:
+            if "NoneType" in str(e):
+                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                return await ctx.send(embed=embed)
+        screenshot_req = f"https://xapi.us/v2/{xuid}/alternative-screenshots"
+        data, _, _, _ = await self.get_req_xapi(ctx, screenshot_req)
 
         if data:
             pages = len(data)
@@ -513,10 +531,14 @@ class XTools(commands.Cog):
     @xtools.command()
     async def clips(self, ctx, *, gamertag=None):
         """Get yours or a Gamertag's recorded game clips"""
-        xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
-        async with ctx.typing():
-            gameclip_req = f"https://xapi.us/v2/{xuid}/alternative-game-clips"
-            data, _, _, _ = await self.get_req_xapi(ctx, gameclip_req)
+        try:
+            xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
+        except Exception as e:
+            if "NoneType" in str(e):
+                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                return await ctx.send(embed=embed)
+        gameclip_req = f"https://xapi.us/v2/{xuid}/alternative-game-clips"
+        data, _, _, _ = await self.get_req_xapi(ctx, gameclip_req)
 
         if data:
             pages = len(data)
@@ -529,7 +551,12 @@ class XTools(commands.Cog):
     @xtools.command()
     async def games(self, ctx, *, gamertag=None):
         """View details about games you or a Gamertag have played"""
-        xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
+        try:
+            xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
+        except Exception as e:
+            if "NoneType" in str(e):
+                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                return await ctx.send(embed=embed)
         game_req = f"https://xbl.io/api/v2/achievements/player/{xuid}"
         data, _, _, _ = await self.get_req_xblio(ctx, game_req)
 
