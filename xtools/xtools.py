@@ -267,7 +267,14 @@ class XTools(commands.Cog):
             stats = []
             status = False
             completed = False
+            old_page = data["cur_page"]
+            title = data['old_data']['titles'][old_page - 1]['name']
             days, hours, minutes = 0, 0, 0
+            if data["old_data"]["titles"][old_page - 1]['devices'][0] == "Xbox360":
+                embed = discord.Embed(title="Xbox 360 Game",
+                                      color=discord.Color.green(),
+                                      description=f"Can't pull achievements for 360 games.")
+                return embed
             if not data["a"]["achievements"]:
                 embed = discord.Embed(title="No Achievements",
                                       color=discord.Color.green(),
@@ -285,8 +292,6 @@ class XTools(commands.Cog):
             if data['a']['achievements'][cur_page - 1]['progressState'] == "Achieved":
                 status = True
                 completed = f"Completed on: {timestamp}\n"
-            old_page = data["cur_page"]
-            title = data['old_data']['titles'][old_page - 1]['name']
             embed = discord.Embed(
                 title=f"{gamertag}'s achievements for {title}",
                 color=discord.Color.green())
