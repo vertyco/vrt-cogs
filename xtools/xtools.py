@@ -15,7 +15,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.2"
+    __version__ = "2.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -464,7 +464,8 @@ class XTools(commands.Cog):
             xuid, xuid_str, gs, tier, rep, pfp, bio, gamertag = await self.get_xuid(ctx, gamertag)
         except Exception as e:
             if "NoneType" in str(e):
-                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
+                                                  f"Set a Gamertag with `{ctx.prefix}xtools setgt <Gamertag>`")
                 return await ctx.send(embed=embed)
             else:
                 print(f"ERROR: {e}")
@@ -501,7 +502,8 @@ class XTools(commands.Cog):
             xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
         except Exception as e:
             if "NoneType" in str(e):
-                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
+                                                  f"Set a Gamertag with `{ctx.prefix}xtools setgt <Gamertag>`")
                 return await ctx.send(embed=embed)
             else:
                 return print(f"ERROR: {e}")
@@ -522,7 +524,8 @@ class XTools(commands.Cog):
             xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
         except Exception as e:
             if "NoneType" in str(e):
-                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
+                                                  f"Set a Gamertag with `{ctx.prefix}xtools setgt <Gamertag>`")
                 return await ctx.send(embed=embed)
             else:
                 return print(f"ERROR: {e}")
@@ -544,7 +547,8 @@ class XTools(commands.Cog):
             xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
         except Exception as e:
             if "NoneType" in str(e):
-                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
+                                                  f"Set a Gamertag with `{ctx.prefix}xtools setgt <Gamertag>`")
                 return await ctx.send(embed=embed)
             else:
                 return print(f"ERROR: {e}")
@@ -566,7 +570,8 @@ class XTools(commands.Cog):
             xuid, _, _, _, _, _, _, gamertag = await self.get_xuid(ctx, gamertag)
         except Exception as e:
             if "NoneType" in str(e):
-                embed = discord.Embed(description=f"You haven't set a Gamertag for yourself yet!")
+                embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
+                                                  f"Set a Gamertag with `{ctx.prefix}xtools setgt <Gamertag>`")
                 return await ctx.send(embed=embed)
             else:
                 return print(f"ERROR: {e}")
