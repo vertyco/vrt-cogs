@@ -855,7 +855,7 @@ class ArkTools(commands.Cog):
                 await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
             if "): " not in msg:
                 continue
-            if "tribe" and ", id" in msg.lower():
+            if "Tribe" and ", ID" in msg:
                 await adminlog.send(msg)
                 await self.tribelog_formatter(guild, server, msg)
             else:
