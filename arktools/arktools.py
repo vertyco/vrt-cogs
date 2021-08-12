@@ -916,13 +916,14 @@ class ArkTools(commands.Cog):
     # Handles sending off tribe logs to their designated channels
     async def tribe_handler(self, guild, tribe_id, embed):
         settings = await self.config.guild(guild).all()
-        if "masterlog" in settings:
+        if "masterlog" in settings.keys():
             masterlog = guild.get_channel(settings["masterlog"])
             await masterlog.send(embed=embed)
-        if "tribes" in settings:
-            if tribe_id in settings["tribes"]:
-                tribechannel = guild.get_channel(settings["tribes"][tribe_id]["channel"])
-                await tribechannel.send(embed=embed)
+        if "tribes" in settings.keys():
+            for tribes in settings["tribes"]:
+                if tribe_id == tribes:
+                    tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
+                    await tribechannel.send(embed=embed)
 
     # Initialize the config before the chat loop starts
     @chat_executor.before_loop
