@@ -857,7 +857,6 @@ class ArkTools(commands.Cog):
                 continue
             if "tribe" and ", id" in msg.lower():
                 await self.tribelog_formatter(guild, server, msg)
-                continue
             else:
                 if not msg.startswith('SERVER:'):
                     messages.append(msg)
