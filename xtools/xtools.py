@@ -272,12 +272,12 @@ class XTools(commands.Cog):
             days, hours, minutes = 0, 0, 0
             if data["old_data"]["titles"][old_page - 1]['devices'][0] == "Xbox360":
                 embed = discord.Embed(title="Xbox 360 Game",
-                                      color=discord.Color.random(),
+                                      color=discord.Color.dark_red(),
                                       description=f"Can't pull achievements for 360 games.")
                 return embed
             if not data["a"]["achievements"]:
                 embed = discord.Embed(title="No Achievements",
-                                      color=discord.Color.random(),
+                                      color=discord.Color.dark_red(),
                                       description=f"This game has no achievements for it.")
                 return embed
             if data["s"]["statlistscollection"]:
@@ -381,6 +381,7 @@ class XTools(commands.Cog):
                 elif type == "games":
                     if str(reaction.emoji) == "⬆":
                         cached_data = data
+                        cached_pages = pages
                         cached_cur_page = cur_page
                         titleid = data["titles"][cur_page - 1]["titleId"]
                         achievement_req = f"https://xbl.io/api/v2/achievements/player/{xuid}/title/{titleid}"
@@ -391,6 +392,7 @@ class XTools(commands.Cog):
                             data = {
                                 "old_data": cached_data,
                                 "cur_page": cached_cur_page,
+                                "pages": cached_pages,
                                 "a": achievements,
                                 "s": stats,
                             }
@@ -400,8 +402,12 @@ class XTools(commands.Cog):
 
                 elif type == "achievements":
                     if str(reaction.emoji) == "⬇":
-                        await message.delete()
+                        try:
+                            await message.delete()
+                        except discord.NotFound:
+                            pass
                         cur_page = data["cur_page"]
+                        pages = data["pages"]
                         data = data["old_data"]
                         await self.basic_menu(ctx, gamertag, xuid, data, pages, "games", cur_page)
 
@@ -588,7 +594,7 @@ class XTools(commands.Cog):
                 "xuid": xuid,
                 "titles": titles
             }
-            await self.basic_menu(ctx, gamertag, xuid, data, pages, "games")
+            return await self.basic_menu(ctx, gamertag, xuid, data, pages, "games")
         else:
             embed = discord.Embed(title="No Games",
                                   description=f"**{gamertag}** has no games available.")
