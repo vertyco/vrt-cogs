@@ -620,11 +620,15 @@ class ArkTools(commands.Cog):
         message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
         normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
         for data in server:
-            await rcon.asyncio.rcon(
-                command=f"serverchat {normalizedname}: {message}",
-                host=data['ip'],
-                port=data['port'],
-                passwd=data['password'])
+            try:
+                await rcon.asyncio.rcon(
+                    command=f"serverchat {normalizedname}: {message}",
+                    host=data['ip'],
+                    port=data['port'],
+                    passwd=data['password'])
+            except Exception as e:
+                print(f"TO SERVER ERROR: {e}")
+                passe
 
     # Returns all channels and servers related to the message
     async def globalchannelchecker(self, channel):
@@ -904,7 +908,7 @@ class ArkTools(commands.Cog):
             color=color,
             description=f"{action}"
         )
-        embed.set_footer(text=f"Time: {time} | Tribe ID: {tribe_id}")
+        embed.set_footer(text=f"{time} | Tribe ID: {tribe_id}")
         await self.tribe_handler(guild, tribe_id, embed)
 
     # Handles sending off tribe logs to their designated channels
@@ -948,4 +952,4 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Filtered name: {normalizedname}")
             await ctx.send(f"Unfiltered name: {ctx.message.author.name}")
         except Exception as e:
-            await ctx.send(f"Unicode filter error: {e}")
+            await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")

@@ -201,7 +201,7 @@ class XTools(commands.Cog):
             activity = data[cur_page - 1]['presenceText']
             embed = discord.Embed(
                 title=f"**{gamertag}**'s Profile",
-                color=discord.Color.green(),
+                color=discord.Color.random(),
                 description=str(f"**XIUD:** {data[cur_page - 1]['xuid']}\n"
                                 f"**Status:** {status}\n"
                                 f"**Activity:** {activity if status == 'Online' else None}\n"
@@ -215,7 +215,7 @@ class XTools(commands.Cog):
             timestamp = await self.time_format(data[cur_page - 1]["date"])
             embed = discord.Embed(
                 title=f"{gamertag}'s Screenshots",
-                color=discord.Color.green(),
+                color=discord.Color.random(),
                 description=str(f"**Name:** {data[cur_page - 1]['screenshotName']}\n"
                                 f"**Caption:** {data[cur_page - 1]['shortDescription']}\n"
                                 f"**Views:** {data[cur_page - 1]['viewCount']}\n"
@@ -231,7 +231,7 @@ class XTools(commands.Cog):
             min, sec = divmod(duration, 60)
             embed = discord.Embed(
                 title=f"{gamertag}'s Game Clips",
-                color=discord.Color.green(),
+                color=discord.Color.random(),
                 description=str(f"**Name:** {data[cur_page - 1]['clipName']}\n"
                                 f"**Caption:** {data[cur_page - 1]['clipCaption']}\n"
                                 f"**Views:** {data[cur_page - 1]['viewCount']}\n"
@@ -250,7 +250,7 @@ class XTools(commands.Cog):
             totalgs = data['titles'][cur_page - 1]['achievement']['totalGamerscore']
             embed = discord.Embed(
                 title=f"{gamertag}'s Games",
-                color=discord.Color.green(),
+                color=discord.Color.random(),
                 description=str(f"**Game:** {data['titles'][cur_page - 1]['name']}\n"
                                 f"**Platform:** {data['titles'][cur_page - 1]['devices'][0]}\n"
                                 f"**Achievements Earned:** "
@@ -272,12 +272,12 @@ class XTools(commands.Cog):
             days, hours, minutes = 0, 0, 0
             if data["old_data"]["titles"][old_page - 1]['devices'][0] == "Xbox360":
                 embed = discord.Embed(title="Xbox 360 Game",
-                                      color=discord.Color.green(),
+                                      color=discord.Color.random(),
                                       description=f"Can't pull achievements for 360 games.")
                 return embed
             if not data["a"]["achievements"]:
                 embed = discord.Embed(title="No Achievements",
-                                      color=discord.Color.green(),
+                                      color=discord.Color.random(),
                                       description=f"This game has no achievements for it.")
                 return embed
             if data["s"]["statlistscollection"]:
@@ -294,7 +294,7 @@ class XTools(commands.Cog):
                 completed = f"Completed on: {timestamp}\n"
             embed = discord.Embed(
                 title=f"{gamertag}'s achievements for {title}",
-                color=discord.Color.green())
+                color=discord.Color.random())
 
             for items in stats:
                 if "value" in items:
