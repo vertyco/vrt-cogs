@@ -618,7 +618,7 @@ class ArkTools(commands.Cog):
     async def chat_toserver_rcon(self, server, message):
         author = message.author.name
         for data in server:
-
+            print(data)
             message = re.sub(r'https?:\/\/[^\s]+', '', message.content)
             message = re.sub(r'<:\w*:\d*>', '', message)
             message = re.sub(r'<a:\w*:\d*>', '', message)
@@ -629,7 +629,6 @@ class ArkTools(commands.Cog):
                 host=data['ip'],
                 port=data['port'],
                 passwd=data['password'])
-            await asyncio.sleep(0.2)
 
     # Returns all channels and servers related to the message
     async def globalchannelchecker(self, channel):
