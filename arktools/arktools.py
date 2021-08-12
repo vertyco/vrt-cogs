@@ -905,7 +905,7 @@ class ArkTools(commands.Cog):
         else:
             color = discord.Color.purple()
         embed = discord.Embed(
-            title=f"{name} on {server['name'].capitalize()} {server['cluster'].capitalize()}",
+            title=f"{server['cluster'].upper()} {server['name'].capitalize()}: {name}",
             color=color,
             description=f"{action}"
         )
