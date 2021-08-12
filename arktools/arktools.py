@@ -285,7 +285,6 @@ class ArkTools(commands.Cog):
     async def _viewtribe(self, ctx):
         """View your tribe(if you've been granted ownership of one"""
         async with self.config.guild(ctx.guild).tribes() as tribes:
-            print(tribes)
             if tribes != {}:
                 for tribe in tribes:
                     if ctx.author.id == tribes[tribe]["owner"] or ctx.author.id in tribes[tribe]["allowed"]:
@@ -295,12 +294,10 @@ class ArkTools(commands.Cog):
                             description=f"Tribe ID: {tribe}\nOwner: {owner}"
                         )
                         members = ""
-                        print(tribes[tribe]["allowed"])
                         for member in tribes[tribe]["allowed"]:
                             members += f"{ctx.guild.get_member(member).mention}\n"
                         if members == "":
                             members = "None Added"
-                        print(members)
                         embed.add_field(
                             name=f"Tribe Members",
                             value=f"{members}"
