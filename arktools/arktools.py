@@ -619,7 +619,7 @@ class ArkTools(commands.Cog):
         author = message.author.name
         for data in server:
             print(data)
-            message = re.sub(r'https?:\/\/[^\s]+', '', message.content)
+            message = re.sub(r'https?:\/\/[^\s]+', '', message)
             message = re.sub(r'<:\w*:\d*>', '', message)
             message = re.sub(r'<a:\w*:\d*>', '', message)
             message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
