@@ -619,10 +619,15 @@ class ArkTools(commands.Cog):
         author = message.author.name
         for data in server:
             print(data)
-            message = re.sub(r'https?:\/\/[^\s]+', '', message)
-            message = re.sub(r'<:\w*:\d*>', '', message)
-            message = re.sub(r'<a:\w*:\d*>', '', message)
-            message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
+            try:
+                message = re.sub(r'https?:\/\/[^\s]+', '', message.content)
+                message = re.sub(r'<:\w*:\d*>', '', message)
+                message = re.sub(r'<a:\w*:\d*>', '', message)
+                message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
+            except Exception as e:
+                if "AttributeError" in e:
+                    message = message.content
+
             normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
             await rcon.asyncio.rcon(
                 command=f"serverchat {normalizedname}: {message}",
