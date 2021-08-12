@@ -616,7 +616,6 @@ class ArkTools(commands.Cog):
 
     # Send chat to server(filters any unicode characters or custom discord emojis before hand)
     async def chat_toserver_rcon(self, server, message):
-        print(message.content)
         author = message.author.name
         message = re.sub(r'https?:\/\/[^\s]+', '', message.content)
         message = re.sub(r'<:\w*:\d*>', '', message)
