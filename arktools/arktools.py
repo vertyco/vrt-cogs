@@ -610,20 +610,20 @@ class ArkTools(commands.Cog):
         chatchannels, map = await self.mapchannelchecker(message.channel)
 
         if message.channel.id in clusterchannels:
-            await self.chat_toserver_rcon(allservers, message.content)
+            await self.chat_toserver_rcon(allservers, message)
         if message.channel.id in chatchannels:
-            await self.chat_toserver_rcon(map, message.content)
+            await self.chat_toserver_rcon(map, message)
 
     # Send chat to server(filters any unicode characters or custom discord emojis before hand)
     async def chat_toserver_rcon(self, server, message):
-        print(message)
+        print(message.content)
         author = message.author.name
+        message = re.sub(r'https?:\/\/[^\s]+', '', message)
+        message = re.sub(r'<:\w*:\d*>', '', message)
+        message = re.sub(r'<a:\w*:\d*>', '', message)
+        message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
+        normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
         for data in server:
-            message = re.sub(r'https?:\/\/[^\s]+', '', message)
-            message = re.sub(r'<:\w*:\d*>', '', message)
-            message = re.sub(r'<a:\w*:\d*>', '', message)
-            message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
-            normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
             await rcon.asyncio.rcon(
                 command=f"serverchat {normalizedname}: {message}",
                 host=data['ip'],
