@@ -788,6 +788,7 @@ class ArkTools(commands.Cog):
             embed = discord.Embed(
                 timestamp=time,
                 title="Server Status",
+                color=discord.Color.random(),
                 description=status
             )
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
