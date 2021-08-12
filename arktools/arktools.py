@@ -423,7 +423,7 @@ class ArkTools(commands.Cog):
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
         masterlog = settings["masterlog"] if "masterlog" in settings else None
-        masterlog = ctx.guild.get_channel(masterlog) if not None else "Not Set"
+        masterlog = ctx.guild.get_channel(masterlog).mention if not None else "Not Set"
         tribes = settings["tribes"] if "tribes" in settings else None
         embed = discord.Embed(
             title="Tribe Settings Overview",
