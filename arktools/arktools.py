@@ -610,16 +610,16 @@ class ArkTools(commands.Cog):
         chatchannels, map = await self.mapchannelchecker(message.channel)
 
         if message.channel.id in clusterchannels:
-            await self.chat_toserver_rcon(allservers, message)
+            await self.chat_toserver_rcon(allservers, message.content)
         if message.channel.id in chatchannels:
-            await self.chat_toserver_rcon(map, message)
+            await self.chat_toserver_rcon(map, message.content)
 
     # Send chat to server(filters any unicode characters or custom discord emojis before hand)
     async def chat_toserver_rcon(self, server, message):
         print(message)
         author = message.author.name
         for data in server:
-            message = re.sub(r'https?:\/\/[^\s]+', '', message.content)
+            message = re.sub(r'https?:\/\/[^\s]+', '', message)
             message = re.sub(r'<:\w*:\d*>', '', message)
             message = re.sub(r'<a:\w*:\d*>', '', message)
             message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
