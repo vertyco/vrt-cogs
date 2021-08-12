@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.24"
+    __version__ = "1.3.24"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -30,7 +30,9 @@ class ArkTools(commands.Cog):
         default_guild = {
             "statuschannel": None,
             "statusmessage": None,
+            "masterlog": None,
             "servertoserverchat": False,
+            "tribes": {},
             "clusters": {},
             "servers": {},
             "servername": {},
@@ -84,6 +86,11 @@ class ArkTools(commands.Cog):
     @commands.guildowner()
     async def _serversettings(self, ctx: commands.Context):
         """Server setup."""
+        pass
+
+    @_setarktools.group(name="tribe")
+    async def _tribesettings(self, ctx: commands.Context):
+        """Tribe commands."""
         pass
 
     # PERMISSIONS COMMANDS
@@ -242,6 +249,104 @@ class ArkTools(commands.Cog):
                 clusters[clustername]["servertoserver"] = False
                 return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Disabled**.")
 
+    # TRIBE COMMANDS
+    @_tribesettings.command(name="setmasterlog")
+    async def _setmasterlog(self, ctx, channel: discord.TextChannel):
+        """Set global channel for all unassigned tribe logs."""
+        await self.config.guild(ctx.guild).masterlog.set(channel.id)
+        await ctx.send(f"Master tribe log channel has been set to {channel.mention}")
+
+    @_tribesettings.command(name="addtribe")
+    async def _addtribe(self, ctx, tribe_id, owner: discord.Member, channel: discord.TextChannel):
+        """Add a tribe to be managed by it's owner."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribe_id in tribes.keys():
+                await ctx.send("Tribe ID already exists!")
+            else:
+                tribes[tribe_id] = {
+                    "owner": owner.id,
+                    "channel": channel.id,
+                    "allowed": []
+                }
+                await channel.set_permissions(owner, read_messages=True)
+                await ctx.send(f"Tribe ID `{tribe_id}` has been set for {owner.mention} in {channel.mention}.")
+
+    @_tribesettings.command(name="deltribe")
+    async def _deltribe(self, ctx, tribe_id):
+        """Delete a tribe."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribe_id in tribes.keys():
+                await ctx.send(f"Tribe with ID: {tribe_id} has been deleted")
+                del tribes[tribe_id]
+            else:
+                await ctx.send("Tribe ID doesn't exist!")
+
+    @_tribesettings.command(name="mytribe")
+    async def _viewtribe(self, ctx):
+        """View your tribe(if you've been granted ownership of one"""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            print(tribes)
+            if tribes != {}:
+                for tribe in tribes:
+                    if ctx.author.id == tribes[tribe]["owner"] or ctx.author.id in tribes[tribe]["allowed"]:
+                        owner = ctx.guild.get_member(tribes[tribe]['owner']).mention
+                        embed = discord.Embed(
+                            title=f"{ctx.author.name}'s Tribe",
+                            description=f"Tribe ID: {tribe}\nOwner: {owner}"
+                        )
+                        members = ""
+                        print(tribes[tribe]["allowed"])
+                        for member in tribes[tribe]["allowed"]:
+                            members += f"{ctx.guild.get_member(member).mention}\n"
+                        if members == "":
+                            members = "None Added"
+                        print(members)
+                        embed.add_field(
+                            name=f"Tribe Members",
+                            value=f"{members}"
+                        )
+                    else:
+                        await ctx.send("You don't have access any tribes.")
+                    await ctx.send(embed=embed)
+            else:
+                await ctx.send(f"There are no tribes set for this server.")
+
+    @_tribesettings.command(name="add")
+    async def _addmember(self, ctx, member: discord.Member):
+        """Add a member to your tribe logs."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribes:
+                for tribe in tribes:
+                    if ctx.author.id == tribes[tribe]["owner"]:
+                        tribes[tribe]["allowed"].append(member.id)
+                        channel = ctx.guild.get_channel(tribes[tribe]["channel"])
+                        await channel.set_permissions(member, read_messages=True)
+                        await ctx.send(f"{member.mention} has been added to the tribe logs")
+                    else:
+                        await ctx.send(f"You arent set as owner of any tribes to add people on.")
+            else:
+                await ctx.send("No tribe data available")
+
+    @_tribesettings.command(name="remove")
+    async def _removemember(self, ctx, member: discord.Member):
+        """Remove a member from your tribe logs"""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribes:
+                for tribe in tribes:
+                    if ctx.author.id == tribes[tribe]["owner"]:
+                        memberlist = tribes[tribe]["allowed"]
+                        if member.id in memberlist:
+                            memberlist.remove(member.id)
+                            channel = ctx.guild.get_channel(tribes[tribe]["channel"])
+                            await channel.set_permissions(member, read_messages=False)
+                            await ctx.send(f"{member.mention} has been remove from tribe log access.")
+                        else:
+                            await ctx.send("Member does not exist in tribe log access.")
+                    else:
+                        await ctx.send("You do not have ownership of any tribes")
+            else:
+                await ctx.send("No tribe data available")
+
     # VIEW SETTINGSs
     @_permissions.command(name="view")
     async def _viewperms(self, ctx: commands.Context):
@@ -313,6 +418,41 @@ class ArkTools(commands.Cog):
                     description=f"{p}"
                 )
                 await ctx.send(embed=embed)
+
+    @_tribesettings.command(name="view")
+    @commands.guildowner()
+    async def _viewtribesettings(self, ctx):
+        """Overview of all tribes and settings"""
+        settings = await self.config.guild(ctx.guild).all()
+        color = discord.Color.dark_purple()
+        masterlog = settings["masterlog"] if "masterlog" in settings else None
+        masterlog = ctx.guild.get_channel(masterlog) if not None else "Not Set"
+        tribes = settings["tribes"] if "tribes" in settings else None
+        embed = discord.Embed(
+            title="Tribe Settings Overview",
+            color=color,
+            description=f"**Master Tribe Log Channel**: {masterlog}"
+        )
+        if tribes is not None:
+            for tribe in tribes:
+                channel = ctx.guild.get_channel(tribes[tribe]["channel"])
+                if channel is not None:
+                    channel = channel.mention
+                else:
+                    channel = "Channel has been deleted :("
+                owner = ctx.guild.get_member(tribes[tribe]["owner"])
+                if not tribes[tribe]["allowed"]:
+                    allowedmembers = "None Set"
+                else:
+                    allowedmembers = ""
+                    for member in tribes[tribe]["allowed"]:
+                        allowedmembers += f"{ctx.guild.get_member(member).mention}\n"
+                embed.add_field(
+                    name=f"Tribe: {tribe}",
+                    value=f"Owner: {owner.mention}\nChannel: {channel}\nAllowed Members: {allowedmembers}"
+                )
+        await ctx.send(embed=embed)
+
 
     # Manual RCON commands
     @_setarktools.command(name="rcon")
@@ -484,13 +624,12 @@ class ArkTools(commands.Cog):
             message = re.sub(r'<a:\w*:\d*>', '', message)
             message = unicodedata.normalize('NFKD', message).encode('ascii', 'ignore').decode()
             normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
-
             await rcon.asyncio.rcon(
                 command=f"serverchat {normalizedname}: {message}",
                 host=data['ip'],
                 port=data['port'],
-                passwd=data['password']
-            )
+                passwd=data['password'])
+            await asyncio.sleep(0.2)
 
     # Returns all channels and servers related to the message
     async def globalchannelchecker(self, channel):
@@ -672,13 +811,17 @@ class ArkTools(commands.Cog):
 
     # Executes all task loop RCON commands synchronously in another thread
     # Synchronous reasoning is for easing network buffer and keeps network traffic manageable
-    async def process_handler(self, guild, server, command):
-        count = self.servercount
-        dynamictimeout = count * 0.2 + 1
+    async def process_handler(self, guild, server, command,):
+        if command == "getchat":
+            timeout = 1
+        elif command == "listplayers":
+            timeout = 10
+        else:
+            timeout = 3
 
         def rcon():
             try:
-                with Client(server['ip'], server['port'], passwd=server['password'], timeout=dynamictimeout) as client:
+                with Client(server['ip'], server['port'], passwd=server['password'], timeout=timeout) as client:
                     result = client.run(command)
                     return result
             except WindowsError as e:
@@ -712,7 +855,8 @@ class ArkTools(commands.Cog):
                 await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
             if "): " not in msg:
                 continue
-            if "tribe" and ", ID" in msg.lower():
+            if "tribe" and ", id" in msg.lower():
+                await self.tribelog_formatter(guild, server, msg)
                 continue
             else:
                 if not msg.startswith('SERVER:'):
@@ -734,6 +878,51 @@ class ArkTools(commands.Cog):
                     map = data[1]
                     if map["cluster"] == server["cluster"] and map["name"] != sourcename:
                         await self.process_handler(guild, map, f"serverchat {sourcename.capitalize()}: {msg}")
+
+    # Handles tribe log formatting
+    async def tribelog_formatter(self, guild, server, msg):
+        regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
+        tribe = re.findall(regex, msg)
+        name = tribe[0][0]
+        tribe_id = tribe[0][1]
+        time = tribe[0][2]
+        action = tribe[0][3]
+        if "was killed" in action.lower():
+            color = discord.Color.dark_red()
+        elif "tribe killed" in action.lower():
+            color = discord.Color.magenta()
+        elif "demolished" in action.lower():
+            color = discord.Color.gold()
+        elif "tamed" in action.lower():
+            color = discord.Color.green()
+        elif "froze" in action.lower():
+            color = discord.Color.light_grey()
+        elif "starved" in action.lower():
+            color = discord.Color.orange()
+        elif "claimed" in action.lower():
+            color = discord.Color.teal()
+        elif "unclaimed" in action.lower():
+            color = discord.Color.blue()
+        else:
+            color = discord.Color.purple()
+        embed = discord.Embed(
+            title=f"{name} on {server['name'].capitalize()} {server['cluster'].capitalize()}",
+            color=color,
+            description=f"{action}"
+        )
+        embed.set_footer(text=f"Time: {time} | Tribe ID: {tribe_id}")
+        await self.tribe_handler(guild, tribe_id, embed)
+
+    # Handles sending off tribe logs to their designated channels
+    async def tribe_handler(self, guild, tribe_id, embed):
+        settings = await self.config.guild(guild).all()
+        if "masterlog" in settings:
+            masterlog = guild.get_channel(settings["masterlog"])
+            await masterlog.send(embed=embed)
+        if "tribes" in settings:
+            if tribe_id in settings["tribes"]:
+                tribechannel = guild.get_channel(settings["tribes"][tribe_id]["channel"])
+                await tribechannel.send(embed=embed)
 
     # Initialize the config before the chat loop starts
     @chat_executor.before_loop
