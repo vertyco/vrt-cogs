@@ -956,3 +956,10 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Unfiltered name: {ctx.message.author.name}")
         except Exception as e:
             await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")
+
+    @commands.command(name="test")
+    @commands.guildowner()
+    async def _getconf(self, ctx):
+        settings = await self.config.guild(ctx.guild).all()
+        embed = discord.Embed(description=f"{settings}")
+        await ctx.send(embed=embed)
