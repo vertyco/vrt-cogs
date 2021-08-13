@@ -471,7 +471,7 @@ class ArkTools(commands.Cog):
             if ctx.guild.owner != ctx.author:
                 return await ctx.send("You do not have the required permissions to run that command.")
 
-        # pull data to send with command to task loop depending on what user designated
+        # Pull data to send with command to task loop depending on what user designated
         serverlist = []
         clustername = clustername.lower()
         servername = servername.lower()
@@ -499,26 +499,25 @@ class ArkTools(commands.Cog):
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
-        # sending manual commands off to an async task loop
+        # Sending manual commands off to the task loop
         tasks = []
         if command.lower() == "doexit":
-            await ctx.send(f"Saving and rebooting...")
-            for server in serverlist:
-                mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                await self.process_handler(ctx.guild, server, "saveworld")
-                await asyncio.sleep(1)
-                for i in range(10, 0, -1):
+            for i in range(10, 0, -1):
+                for server in serverlist:
+                    mapchannel = ctx.guild.get_channel(server["chatchannel"])
                     await mapchannel.send(f"Reboot in {i}")
-                    await self.process_handler(ctx.guild, server, f"serverchat Reboot in {i}")
-                    await asyncio.sleep(1)
-                await self.process_handler(ctx.guild, server, "doexit")
-        if command.lower() != "doexit":
+                    tasks.append(self.manual_rcon(ctx, server, f"serverchat Reboot in {i}"))
+                await asyncio.gather(*tasks)
+                await asyncio.sleep(1)
+            for server in serverlist:
+                tasks.append(self.manual_rcon(ctx, server, "doexit"))
+        else:
             for server in serverlist:
                 tasks.append(self.manual_rcon(ctx, server, command))
         await asyncio.gather(*tasks)
         if command.lower() == "doexit":
             await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
-        if command.lower() != "doexit":
+        else:
             await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
 
     # RCON function for manual commands
@@ -576,7 +575,7 @@ class ArkTools(commands.Cog):
                     self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
 
-        print("ArkTools config initialized.")
+        print("ArkTools config initialized.")  # If this doesnt print then something is fucky...
 
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
