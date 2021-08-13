@@ -961,5 +961,6 @@ class ArkTools(commands.Cog):
     @commands.guildowner()
     async def _getconf(self, ctx):
         settings = await self.config.guild(ctx.guild).all()
-        embed = discord.Embed(description=f"{settings}")
-        await ctx.send(embed=embed)
+        for p in pagify(settings):
+            embed = discord.Embed(description=f"{p}")
+            await ctx.send(embed=embed)
