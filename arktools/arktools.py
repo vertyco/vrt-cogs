@@ -592,15 +592,13 @@ class ArkTools(commands.Cog):
             return
         if message.mentions:
             for mention in message.mentions:
-                message.content = message.content.replace(f"<@!{mention.id}>",
-                                                          "@" + str(mention.name)).replace(f"<@{mention.id}>",
-                                                                                           "@" + str(mention.name))
+                message.content = message.content.replace(f"<@!{mention.id}>", f"{mention.name}")
         if message.channel_mentions:
             for mention in message.channel_mentions:
-                message.content = message.content.replace(f"<#{mention.id}>", f"#{mention.name}")
+                message.content = message.content.replace(f"<#{mention.id}>", f"{mention.name}")
         if message.role_mentions:
             for mention in message.role_mentions:
-                message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
+                message.content = message.content.replace(f"<@&{mention.id}>", f"{mention.name}")
 
         clusterchannels, allservers = await self.globalchannelchecker(message.channel)
 
@@ -627,8 +625,8 @@ class ArkTools(commands.Cog):
                     port=data['port'],
                     passwd=data['password'])
             except Exception as e:
-                print(f"TO SERVER ERROR: {e}")
-                passe
+                print(f"TO_SERVER ERROR: {e}")
+                continue
 
     # Returns all channels and servers related to the message
     async def globalchannelchecker(self, channel):
@@ -810,7 +808,7 @@ class ArkTools(commands.Cog):
                 await msgtoedit.edit(embed=embed)
 
     # Executes all task loop RCON commands synchronously in another thread
-    # Synchronous reasoning is for easing network buffer and keeps network traffic manageable
+    # Process is synchronous for easing network buffer and keeping network traffic manageable
     async def process_handler(self, guild, server, command,):
         if command == "getchat":
             timeout = 1
@@ -879,7 +877,7 @@ class ArkTools(commands.Cog):
                         if map["cluster"] == server["cluster"] and map["name"] != sourcename:
                             await self.process_handler(guild, map, f"serverchat {sourcename.capitalize()}: {msg}")
 
-    # Handles tribe log formatting
+    # Handles tribe log formatting/itemizing
     async def tribelog_formatter(self, guild, server, msg):
         regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
         tribe = re.findall(regex, msg)
@@ -946,14 +944,14 @@ class ArkTools(commands.Cog):
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(15)
+        await asyncio.sleep(15) # Gives playerlist executor time to gather player count
         print("Status channel monitor is ready.")
 
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
     @commands.command(name="checkname")
     async def _checkname(self, ctx):
-        """Check your discord name to see if it works with this cogs crosscaht unicode  filter"""
-        """If there are no errors then you're good to go"""
+        """Check your discord name to see if it works with this cogs crosscaht unicode  filter."""
+        """If there are no errors then you're good to go."""
         try:
             normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
             await ctx.send(f"Filtered name: {normalizedname}")
@@ -961,9 +959,11 @@ class ArkTools(commands.Cog):
         except Exception as e:
             await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")
 
+    # For debug purposes or just wanting to see your raw config easily
     @commands.command(name="test")
     @commands.guildowner()
     async def _getconf(self, ctx):
+        """Pull your raw config and send to discord as a .txt file."""
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
         with open("config.txt", "w") as file:
