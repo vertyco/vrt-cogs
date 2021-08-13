@@ -517,12 +517,12 @@ class ArkTools(commands.Cog):
             await asyncio.sleep(5)
             for server in serverlist:
                 tasks.append(self.manual_rcon(ctx, server, "doexit"))
+            await asyncio.gather(*tasks)
 
         else:
             for server in serverlist:
                 tasks.append(self.manual_rcon(ctx, server, command))
-
-        await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks)
 
         if command.lower() == "doexit":
             await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
