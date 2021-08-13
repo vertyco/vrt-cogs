@@ -542,10 +542,6 @@ class ArkTools(commands.Cog):
                 if command.lower() == "listplayers":
                     await ctx.send(f"**{map} {cluster}**\n"
                                    f"{box(res, lang='python')}")
-                elif command.lower() == "doexit":
-                    return
-                elif "serverchat" in command.lower():
-                    return
                 else:
                     await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
             except WindowsError as e:
