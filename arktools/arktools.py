@@ -867,8 +867,9 @@ class ArkTools(commands.Cog):
                             await self.process_handler(guild, server, f'renameplayer "{names.lower()}" {name}')
                             await chatchannel.send(f"A player named `{names}` has been renamed to `{name}`.")
         for msg in messages:
-            if msg:
-                print(msg)
+            if msg == ' ':
+                continue
+            else:
                 await chatchannel.send(msg)
                 await globalchat.send(f"{chatchannel.mention}: {msg}")
                 clustername = server["cluster"]
