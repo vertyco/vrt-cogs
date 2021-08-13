@@ -961,6 +961,7 @@ class ArkTools(commands.Cog):
     @commands.guildowner()
     async def _getconf(self, ctx):
         settings = await self.config.guild(ctx.guild).all()
+        settings = json.dumps(settings)
         with open("config.txt", "w") as file:
             file.write(settings)
         with open("config.txt", "rb") as file:
