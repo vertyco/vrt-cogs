@@ -855,14 +855,12 @@ class ArkTools(commands.Cog):
                 await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
             elif "Tribe" and ", ID" in msg:
                 await self.tribelog_formatter(guild, server, msg)
-            # elif "): " not in msg:
-            #     continue
+            elif msg.startswith('SERVER:'):
+                continue
             else:
-                if not msg.startswith('SERVER:'):
-                    messages.append(msg)
-            for names in badnames:
-                if f"({names.lower()}): " in msg.lower():
-                    if not msg.startswith('SERVER:'):
+                messages.append(msg)
+                for names in badnames:
+                    if f"({names.lower()}): " in msg.lower():
                         reg = r"(.+)\s\("
                         regname = re.findall(reg, msg)
                         for name in regname:
