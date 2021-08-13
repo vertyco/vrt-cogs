@@ -502,17 +502,20 @@ class ArkTools(commands.Cog):
         # Sending manual commands off to the task loop
         tasks = []
         if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
+            await ctx.send("Beginning reboot countdown...")
             for i in range(10, 0, -1):
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
                     await mapchannel.send(f"Reboot in {i}")
                     await self.process_handler(ctx.guild, server, f"serverchat Reboot in {i}")
                 await asyncio.sleep(1)
+            await ctx.send("Saving maps...")
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                await mapchannel.send(f"Saving world...")
+                await mapchannel.send(f"Saving map...")
                 await self.process_handler(ctx.guild, server, "saveworld")
             await asyncio.sleep(5)
+            await ctx.send("Running DoExit...")
             for server in serverlist:
                 await self.process_handler(ctx.guild, server, "doexit")
 
