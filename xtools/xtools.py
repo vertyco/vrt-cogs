@@ -3,10 +3,10 @@ import discord
 import asyncio
 import re
 import json
+import xmltojson
 
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
-from math import remainder
 
 
 class XTools(commands.Cog):
@@ -15,7 +15,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.3"
+    __version__ = "2.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -108,6 +108,14 @@ class XTools(commands.Cog):
             except aiohttp.ContentTypeError:
                 ctx.send("The API failed to pull the data. Please try again.")
             return data, status, remaining, ratelimit
+
+    # Get Microsoft services status and convert html response to json cause eww html
+    async def microsoft_services_status(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://xnotify.xboxlive.com/servicestatusv6/US/en-US") as resp:
+                data = xmltojson.parse(await resp.text())  # Parse the HTML response to JSON
+                data = json.loads(data)  # Convert the JSON to Python
+                return data
 
     # Helper function for trying to get xuid
     async def get_xuid(self, ctx, gamertag):
@@ -277,7 +285,7 @@ class XTools(commands.Cog):
                 return embed
             if not data["a"]["achievements"]:
                 embed = discord.Embed(title="No Achievements",
-                                      color=discord.Color.dark_red(),
+                                      color=discord.Color.dark_red (),
                                       description=f"This game has no achievements for it.")
                 return embed
             if data["s"]["statlistscollection"]:
@@ -445,7 +453,7 @@ class XTools(commands.Cog):
             return await ctx.send(embed=embed)
 
     @xtools.command()
-    async def status(self, ctx, member: discord.Member = None):
+    async def mygt(self, ctx, member: discord.Member = None):
         """Check the Gamertag you have registered"""
         member = ctx.author if member is None else member
         data = await self.config.guild(ctx.guild).users()
@@ -484,12 +492,12 @@ class XTools(commands.Cog):
         timestamp = await self.time_format(raw_time)
         color = discord.Color.green() if status == 200 else discord.Color.dark_red()
         stat = "Good" if status == 200 else "Failed"
-
+        author = f"**{gamertag}**'s Profile ({state})"
         embed = discord.Embed(
-            title=f"**{gamertag}**'s Profile ({state})",
             color=color,
             description=f"{gs}\n{tier}\n{rep}\n{xuid_str}")
-        embed.set_image(url=pfp)
+        embed.set_author(author, icon_url=pfp)
+        embed.set_thumbnail(pfp)
         if "lastSeen" in data or "devices" in data:
             embed.add_field(name="Last Seen",
                             value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp}",
@@ -599,4 +607,50 @@ class XTools(commands.Cog):
             embed = discord.Embed(title="No Games",
                                   description=f"**{gamertag}** has no games available.")
             return await ctx.send(embed=embed)
+
+    @xtools.command()
+    async def status(self, ctx):
+        data = await self.microsoft_services_status()
+        embed = await self.status_embed_builder(ctx, data)
+        await ctx.send(embed=embed)
+
+    # Builds the embed for xbox status response data
+    async def status_embed_builder(self, ctx, data):
+        overall_status = data["ServiceStatus"]["Status"]["Overall"]["State"]
+        overall_id = data["ServiceStatus"]["Status"]["Overall"]["Id"]
+        last_updated = data["ServiceStatus"]["Status"]["Overall"]["LastUpdated"]
+        last_updated = await self.time_format(last_updated)
+        if overall_status == "Impacted":
+            embed = discord.Embed(
+                title="⚠ Microsoft Status Alert ⚠",
+                color=discord.Color.orange(),
+                description="Microsoft is experiencing technical problems with the following services:"
+            )
+            embed.set_footer(text=f"Last Updated: {last_updated}")
+            for service in data["ServiceStatus"]["CoreServices"]["Category"]:
+                service_status = service["Status"]["Name"]
+                if service_status == "Impacted":
+                    service_id = service["Id"]
+                    service_name = service["Name"]
+                    status_id = service["Status"]["Id"]
+                    actions = ''
+                    for scenario in service["Scenarios"]["Scenario"]:
+                        if scenario["Status"]["Name"] == "Impacted":
+                            scenario_id = scenario["Status"]["Id"]
+                            action = scenario["Name"]
+                            timestamp = scenario["Incidents"]["Incident"]["Begin"]
+                            timestamp = await self.time_format(timestamp)
+                            message = scenario["Incidents"]["Incident"]["Stage"]["Message"]
+                            level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
+                            actions += f"`{action}` - `{level_of_impact} impact`\n"
+                    embed.add_field(name=f"{service_name}",
+                                    value=actions,
+                                    inline=False)
+        else:
+            embed = discord.Embed(description="✅ All Microsoft services are up and running!")
+        return embed
+
+
+
+
 
