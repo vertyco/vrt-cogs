@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.24"
+    __version__ = "1.3.25"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -883,6 +883,8 @@ class ArkTools(commands.Cog):
     async def tribelog_formatter(self, guild, server, msg):
         regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
         tribe = re.findall(regex, msg)
+        if not tribe:
+            return
         name = tribe[0][0]
         tribe_id = tribe[0][1]
         time = tribe[0][2]
@@ -893,6 +895,8 @@ class ArkTools(commands.Cog):
             color = discord.Color.magenta()
         elif "demolished" in action.lower():
             color = discord.Color.gold()
+        elif "destroyed" in action.lower():
+            color = discord.Color.red()
         elif "tamed" in action.lower():
             color = discord.Color.green()
         elif "froze" in action.lower():
@@ -908,7 +912,7 @@ class ArkTools(commands.Cog):
         embed = discord.Embed(
             title=f"{server['cluster'].upper()} {server['name'].capitalize()}: {name}",
             color=color,
-            description=f"{action}"
+            description=f"{box(action)}"
         )
         embed.set_footer(text=f"{time} | Tribe ID: {tribe_id}")
         await self.tribe_handler(guild, tribe_id, embed)
