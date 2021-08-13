@@ -501,7 +501,7 @@ class ArkTools(commands.Cog):
 
         # Sending manual commands off to the task loop
         tasks = []
-        if command.lower() == "doexit":
+        if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
             for i in range(10, 0, -1):
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
@@ -510,11 +510,20 @@ class ArkTools(commands.Cog):
                 await asyncio.gather(*tasks)
                 await asyncio.sleep(1)
             for server in serverlist:
+                mapchannel = ctx.guild.get_channel(server["chatchannel"])
+                await mapchannel.send(f"Saving world...")
+                tasks.append(self.manual_rcon(ctx, server, "saveworld"))
+            await asyncio.gather(*tasks)
+            await asyncio.sleep(5)
+            for server in serverlist:
                 tasks.append(self.manual_rcon(ctx, server, "doexit"))
+
         else:
             for server in serverlist:
                 tasks.append(self.manual_rcon(ctx, server, command))
+
         await asyncio.gather(*tasks)
+
         if command.lower() == "doexit":
             await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
         else:
