@@ -12,7 +12,7 @@
     "min_python_version" : [3, 8, 1],
     "permissions" : ["read_messages","send_messages","embed_links", "add_reactions"],
     "required_cogs" : {},
-    "requirements" : [],
+    "requirements" : ["xmltojson>=0.2.0", "utils>=1.0.1"],
     "short": "Get Xbox Gamertag info.",
     "tags" : ["fun", "tools", "utility"],
     "type": "COG"
