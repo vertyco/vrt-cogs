@@ -501,23 +501,27 @@ class ArkTools(commands.Cog):
 
         # Sending manual commands off to the task loop
         tasks = []
+        countdown = []
+        saveworld = []
+        doexit = []
         if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
             for i in range(10, 0, -1):
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
                     await mapchannel.send(f"Reboot in {i}")
-                    tasks.append(self.manual_rcon(ctx, server, f"serverchat Reboot in {i}"))
-                await asyncio.gather(*tasks)
+                    countdown.append(self.manual_rcon(ctx, server, f"serverchat Reboot in {i}"))
+                await asyncio.gather(*countdown)
                 await asyncio.sleep(1)
+
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
                 await mapchannel.send(f"Saving world...")
-                tasks.append(self.manual_rcon(ctx, server, "saveworld"))
-            await asyncio.gather(*tasks)
+                saveworld.append(self.manual_rcon(ctx, server, "saveworld"))
+            await asyncio.gather(*saveworld)
             await asyncio.sleep(5)
             for server in serverlist:
-                tasks.append(self.manual_rcon(ctx, server, "doexit"))
-            await asyncio.gather(*tasks)
+                doexit.append(self.manual_rcon(ctx, server, "doexit"))
+            await asyncio.gather(*doexit)
 
         else:
             for server in serverlist:
@@ -545,6 +549,8 @@ class ArkTools(commands.Cog):
                 if command.lower() == "listplayers":
                     await ctx.send(f"**{map} {cluster}**\n"
                                    f"{box(res, lang='python')}")
+                elif command.lower() == "doexit":
+                    return
                 else:
                     await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
             except WindowsError as e:
