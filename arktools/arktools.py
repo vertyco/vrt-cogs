@@ -867,14 +867,15 @@ class ArkTools(commands.Cog):
                             await self.process_handler(guild, server, f'renameplayer "{names.lower()}" {name}')
                             await chatchannel.send(f"A player named `{names}` has been renamed to `{name}`.")
         for msg in messages:
-            await chatchannel.send(msg)
-            await globalchat.send(f"{chatchannel.mention}: {msg}")
-            clustername = server["cluster"]
-            if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
-                for data in self.taskdata:
-                    map = data[1]
-                    if map["cluster"] == server["cluster"] and map["name"] != sourcename:
-                        await self.process_handler(guild, map, f"serverchat {sourcename.capitalize()}: {msg}")
+            if msg:
+                await chatchannel.send(msg)
+                await globalchat.send(f"{chatchannel.mention}: {msg}")
+                clustername = server["cluster"]
+                if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
+                    for data in self.taskdata:
+                        map = data[1]
+                        if map["cluster"] == server["cluster"] and map["name"] != sourcename:
+                            await self.process_handler(guild, map, f"serverchat {sourcename.capitalize()}: {msg}")
 
     # Handles tribe log formatting
     async def tribelog_formatter(self, guild, server, msg):
