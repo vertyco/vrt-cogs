@@ -853,11 +853,10 @@ class ArkTools(commands.Cog):
             if msg.startswith("AdminCmd:"):
                 adminmsg = msg
                 await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
-            if "Tribe" and ", ID" in msg:
+            elif "Tribe" and ", ID" in msg:
                 await self.tribelog_formatter(guild, server, msg)
-                continue
-            if "): " not in msg:
-                continue
+            # elif "): " not in msg:
+            #     continue
             else:
                 if not msg.startswith('SERVER:'):
                     messages.append(msg)
@@ -956,3 +955,9 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Unfiltered name: {ctx.message.author.name}")
         except Exception as e:
             await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")
+
+    @commands.command(name="test")
+    async def _getconf(self, ctx):
+        settings = await self.config.guild(ctx.guild).all()
+        embed = discord.Embed(description=f"{settings}")
+        await ctx.send(embed=embed)
