@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.25"
+    __version__ = "1.3.26"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -592,13 +592,13 @@ class ArkTools(commands.Cog):
             return
         if message.mentions:
             for mention in message.mentions:
-                message.content = message.content.replace(f"<@!{mention.id}>", f"{mention.name}")
+                message.content = message.content.replace(f"<@!{mention.id}>", f"@{mention.name}")
         if message.channel_mentions:
             for mention in message.channel_mentions:
-                message.content = message.content.replace(f"<#{mention.id}>", f"{mention.name}")
+                message.content = message.content.replace(f"<#{mention.id}>", f"#{mention.name}")
         if message.role_mentions:
             for mention in message.role_mentions:
-                message.content = message.content.replace(f"<@&{mention.id}>", f"{mention.name}")
+                message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
 
         clusterchannels, allservers = await self.globalchannelchecker(message.channel)
 
