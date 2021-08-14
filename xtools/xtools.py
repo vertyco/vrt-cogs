@@ -497,7 +497,7 @@ class XTools(commands.Cog):
             title=title,
             color=color,
             description=f"{gs}\n{tier}\n{rep}\n{xuid_str}")
-        embed.set_thumbnail(pfp)
+        embed.set_thumbnail(url=pfp)
         if "lastSeen" in data or "devices" in data:
             embed.add_field(name="Last Seen",
                             value=f"**Device:** {device}\n**Activity:** {game}\n**Time:** {timestamp}",
