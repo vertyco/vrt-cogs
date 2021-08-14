@@ -492,11 +492,11 @@ class XTools(commands.Cog):
         timestamp = await self.time_format(raw_time)
         color = discord.Color.green() if status == 200 else discord.Color.dark_red()
         stat = "Good" if status == 200 else "Failed"
-        author = f"**{gamertag}**'s Profile ({state})"
+        title = f"**{gamertag}**'s Profile ({state})"
         embed = discord.Embed(
+            title=title,
             color=color,
             description=f"{gs}\n{tier}\n{rep}\n{xuid_str}")
-        embed.set_author(author, icon_url=pfp)
         embed.set_thumbnail(pfp)
         if "lastSeen" in data or "devices" in data:
             embed.add_field(name="Last Seen",
