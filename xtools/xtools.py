@@ -106,7 +106,7 @@ class XTools(commands.Cog):
                 remaining = resp.headers['X-RateLimit-Remaining']
                 ratelimit = resp.headers['X-RateLimit-Limit']
             except aiohttp.ContentTypeError:
-                ctx.send("The API failed to pull the data. Please try again.")
+                await ctx.send("The API failed to pull the data. Please try again.")
             return data, status, remaining, ratelimit
 
     # Get Microsoft services status and convert html response to json cause eww html
