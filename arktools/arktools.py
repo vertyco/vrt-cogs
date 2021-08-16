@@ -754,9 +754,11 @@ class ArkTools(commands.Cog):
 
                         status += f"{guild.get_channel(channel).mention}: Offline for {count} {inc}\n"
                         alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
+                        mentions = discord.AllowedMentions(roles=True)
                         pingrole = guild.get_role(settings['fullaccessrole'])
                         if count == 0:
-                            await alertmsg.send(f"{pingrole.mention}, The **{server}** server has gone offline!!!")
+                            await alertmsg.send(f"{pingrole.mention}, The **{server}** server has gone offline!!!",
+                                                allowed_mentions=mentions)
                             self.alerts[channel] += 1
                             continue
                         else:
