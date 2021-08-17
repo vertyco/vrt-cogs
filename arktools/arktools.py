@@ -980,7 +980,7 @@ class ArkTools(commands.Cog):
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
     @commands.command(name="checkname")
     async def _checkname(self, ctx):
-        """Check your discord name to see if it works with this cogs crosscaht unicode  filter."""
+        """Make sure your name works with the filter."""
         """If there are no errors then you're good to go."""
         try:
             normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
