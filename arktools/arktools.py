@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.27"
+    __version__ = "1.3.28"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -886,7 +886,7 @@ class ArkTools(commands.Cog):
                 if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
                     for data in self.taskdata:
                         map = data[1]
-                        if map["cluster"] == server["cluster"] and map["name"] != sourcename:
+                        if map["cluster"] is server["cluster"] and map["name"] is not sourcename:
                             await self.process_handler(guild, map, f"serverchat {sourcename.capitalize()}: {msg}")
 
     # Handles tribe log formatting/itemizing
