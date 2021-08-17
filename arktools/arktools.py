@@ -937,6 +937,24 @@ class ArkTools(commands.Cog):
                     tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
                     await tribechannel.send(embed=embed)
 
+    # Refresh all task loops
+    @tasks.loop(seconds=3600)
+    async def loop_refresher(self):
+        self.chat_executor.cancel()
+        self.playerlist_executor.cancel()
+        self.status_channel.cancel()
+        await asyncio.sleep(5)
+        self.chat_executor.start()
+        self.playerlist_executor.start()
+        self.status_channel.start()
+
+    # Initialize the config before the chat loop starts
+    @loop_refresher.before_loop
+    async def before_loop_refresher(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(3600)
+        print("Task loops have been refreshed.")
+
     # Initialize the config before the chat loop starts
     @chat_executor.before_loop
     async def before_chat_executor(self):
@@ -980,3 +998,16 @@ class ArkTools(commands.Cog):
             file.write(settings)
         with open("config.txt", "rb") as file:
             await ctx.send(file=discord.File(file, "config.txt"))
+
+    @commands.command(name="refresh")
+    @commands.guildowner()
+    async def _refresh(self, ctx):
+        """Refresh the task loops"""
+        self.chat_executor.cancel()
+        self.playerlist_executor.cancel()
+        self.status_channel.cancel()
+        await asyncio.sleep(5)
+        self.chat_executor.start()
+        self.playerlist_executor.start()
+        self.status_channel.start()
+        await ctx.send("Task loops refreshed")
