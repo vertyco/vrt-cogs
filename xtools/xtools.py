@@ -306,11 +306,12 @@ class XTools(commands.Cog):
 
             for items in stats:
                 if "value" in items:
-                    if items["groupproperties"]["DisplayFormat"] == "Percentage":
-                        item = f"{int(items['value'])}%"
-                    else:
-                        item = items['value']
-                    embed.add_field(name=items["properties"]["DisplayName"], value=item)
+                    if "DisplayFormat" in items["groupproperties"]:
+                        if items["groupproperties"]["DisplayFormat"] == "Percentage":
+                            item = f"{int(items['value'])}%"
+                        else:
+                            item = items['value']
+                        embed.add_field(name=items["properties"]["DisplayName"], value=item)
             embed.add_field(name="Achievement Details",
                             value=box(f"Name: {data['a']['achievements'][cur_page - 1]['name']}\n"
                                       f"Description: {data['a']['achievements'][cur_page - 1]['lockedDescription']}\n"
@@ -642,10 +643,26 @@ class XTools(commands.Cog):
                             timestamp = await self.time_format(timestamp)
                             message = scenario["Incidents"]["Incident"]["Stage"]["Message"]
                             level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
-                            actions += f"`{action}` - `{level_of_impact} impact`\n"
+                            actions += f"`{action}`-`{timestamp}`-`{level_of_impact} impact`\n"
                     embed.add_field(name=f"{service_name}",
                                     value=actions,
                                     inline=False)
+            for title in data["ServiceStatus"]["Titles"]["Category"]:
+                title_name = title["Name"]
+                status = title["Status"]["Name"]
+                if status == "Impacted":
+                    actions = ''
+                    for scenario in title["Scenarios"]["Scenario"]:
+                        if scenario["Status"]["Name"] == "Impacted":
+                            scenario_name = scenario["Name"]
+                            level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
+                            timestamp = scenario["Incidents"]["Incident"]["Begin"]
+                            timestamp = await self.time_format(timestamp)
+                            actions += f"`{scenario_name}`-`{timestamp}`-`{level_of_impact} impact`"
+                    embed.add_field(name=f"{title_name}",
+                                    value=actions,
+                                    inline=False)
+
         else:
             embed = discord.Embed(description="✅ All Microsoft services are up and running!")
         return embed
