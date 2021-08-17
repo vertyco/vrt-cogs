@@ -61,11 +61,13 @@ class ArkTools(commands.Cog):
         self.playerlist = {}
 
         # Loops
+        self.loop_refresher.start()
         self.chat_executor.start()
         self.playerlist_executor.start()
         self.status_channel.start()
 
     def cog_unload(self):
+        self.loop_refresher.cancel()
         self.chat_executor.cancel()
         self.playerlist_executor.cancel()
         self.status_channel.cancel()
