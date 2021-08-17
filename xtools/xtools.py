@@ -304,7 +304,6 @@ class XTools(commands.Cog):
                 title=f"{gamertag}'s achievements for {title}",
                 color=discord.Color.random())
 
-
             for items in stats:
                 if "value" in items:
                     if "DisplayFormat" in items["groupproperties"]:
@@ -312,7 +311,9 @@ class XTools(commands.Cog):
                             item = f"{int(items['value'])}%"
                         else:
                             item = items['value']
-                        embed.add_field(name=items["properties"]["DisplayName"], value=item)
+                    else:
+                        item = items['value']
+                    embed.add_field(name=items["properties"]["DisplayName"], value=item)
             embed.add_field(name="Achievement Details",
                             value=box(f"Name: {data['a']['achievements'][cur_page - 1]['name']}\n"
                                       f"Description: {data['a']['achievements'][cur_page - 1]['lockedDescription']}\n"
@@ -425,7 +426,10 @@ class XTools(commands.Cog):
                     await message.remove_reaction(reaction, user)
 
             except asyncio.TimeoutError:
-                await message.clear_reactions()
+                try:
+                    await message.clear_reactions()
+                except discord.NotFound:
+                    pass
                 return await ctx.send(embed=discord.Embed(description="Menu timed out."))
 
     @commands.group()
