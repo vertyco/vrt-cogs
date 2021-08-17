@@ -304,6 +304,7 @@ class XTools(commands.Cog):
                 title=f"{gamertag}'s achievements for {title}",
                 color=discord.Color.random())
 
+
             for items in stats:
                 if "value" in items:
                     if "DisplayFormat" in items["groupproperties"]:
