@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.26"
+    __version__ = "1.3.27"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -990,7 +990,7 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")
 
     # For debug purposes or just wanting to see your raw config easily
-    @commands.command(name="test")
+    @commands.command(name="getconf")
     @commands.guildowner()
     async def _getconf(self, ctx):
         """Pull your raw config and send to discord as a .txt file."""
