@@ -15,7 +15,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.2.4"
+    __version__ = "2.2.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -519,6 +519,7 @@ class XTools(commands.Cog):
         pass
 
     @xtools.command()
+    @commands.guild_only()
     async def setgt(self, ctx, *, gamertag):
         """Set your Gamertag to use commands without entering it"""
         async with ctx.typing():
@@ -540,6 +541,7 @@ class XTools(commands.Cog):
             return await ctx.send(embed=embed)
 
     @xtools.command()
+    @commands.guild_only()
     async def mygt(self, ctx, member: discord.Member = None):
         """Check the Gamertag you have registered"""
         member = ctx.author if member is None else member
