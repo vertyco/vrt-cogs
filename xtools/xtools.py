@@ -15,7 +15,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.1.4"
+    __version__ = "2.2.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -207,8 +207,9 @@ class XTools(commands.Cog):
             gsformat = "{:,}".format(int(data[cur_page - 1]['gamerScore']))
             status = data[cur_page - 1]['presenceState']
             activity = data[cur_page - 1]['presenceText']
+            playername = data[cur_page - 1]["displayName"]
             embed = discord.Embed(
-                title=f"**{gamertag}**'s Profile",
+                title=f"**{playername}**'s Profile",
                 color=discord.Color.random(),
                 description=str(f"**XIUD:** {data[cur_page - 1]['xuid']}\n"
                                 f"**Status:** {status}\n"
@@ -346,14 +347,19 @@ class XTools(commands.Cog):
         await message.add_reaction("⏩")
         if type == "games":
             await message.add_reaction("⬆")
+            await message.add_reaction("🔍")
         if type == "achievements":
             await message.add_reaction("⬇")
+        if type == "friends":
+            await message.add_reaction("🔍")
 
         def check(reaction, user):
             if type == "games":
-                return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬆"]
+                return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬆", "🔍"]
             elif type == "achievements":
                 return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "⬇"]
+            elif type == "friends":
+                return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩", "🔍"]
             else:
                 return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
 
@@ -410,6 +416,14 @@ class XTools(commands.Cog):
                             await message.delete()
                         pages = len(data["a"]["achievements"])
                         return await self.basic_menu(ctx, gamertag, xuid, data, pages, "achievements")
+                    elif str(reaction.emoji) == "🔍":
+                        await message.delete()
+                        return await self.search(ctx, gamertag, xuid, data, pages, "games")
+
+                elif type == "friends":
+                    if str(reaction.emoji) == "🔍":
+                        await message.delete()
+                        return await self.search(ctx, gamertag, xuid, data, pages, "friends")
 
                 elif type == "achievements":
                     if str(reaction.emoji) == "⬇":
@@ -431,6 +445,73 @@ class XTools(commands.Cog):
                 except discord.NotFound:
                     pass
                 return await ctx.send(embed=discord.Embed(description="Menu timed out."))
+
+    # Search function
+    async def search(self, ctx, gamertag, xuid, data, pages, type):
+        if type == "friends":
+            variable = "Gamertag"
+            var = "friends"
+        elif type == "games":
+            variable = "game"
+            var = "game"
+        else:
+            variable = None
+            var = None
+        embed = discord.Embed(
+            description=f"Type a {variable} you want to search for in {gamertag}'s {var} list."
+        )
+        msg = await ctx.send(embed=embed)
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            reply = await self.bot.wait_for("message", timeout=30, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        notfound = discord.Embed(
+            description=f"No {type} found with the name `{reply.content}`😕"
+        )
+
+        if type == "friends":
+            pages = 0
+            friends = []
+            for friend in data:
+                if friend:
+                    name = friend["displayName"]
+                    if reply.content.lower() in name.lower():
+                        pages += 1
+                        friends.append(friend)
+            if pages == 0:
+                return await ctx.send(embed=notfound)
+            elif pages > 1:
+                await ctx.send(f"Found {pages} friends with `{reply.content}` in their name.")
+
+            return await self.basic_menu(ctx, gamertag, xuid, friends, pages, type)
+
+        if type == "games":
+            pages = 0
+            games = []
+            print(data)
+            for game in data["titles"]:
+                if game:
+                    name = game["name"]
+                    if reply.content.lower() in name.lower():
+                        pages += 1
+                        games.append(game)
+            if pages == 0:
+                return await ctx.send(embed=notfound)
+            elif pages > 1:
+                await ctx.send(f"Found {pages} games with `{reply.content}` in their name.")
+
+            data = {
+                "xuid": xuid,
+                "titles": games
+            }
+
+            return await self.basic_menu(ctx, gamertag, xuid, data, pages, type)
+
 
     @commands.group()
     async def xtools(self, ctx):
