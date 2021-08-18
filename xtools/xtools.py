@@ -746,7 +746,7 @@ class XTools(commands.Cog):
                             level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
                             timestamp = scenario["Incidents"]["Incident"]["Begin"]
                             timestamp = await self.time_format(timestamp)
-                            actions += f"`{scenario_name}`-`{timestamp}`-`{level_of_impact} impact`"
+                            actions += f"`{scenario_name}`-`{timestamp}`-`{level_of_impact} impact`\n"
                     embed.add_field(name=f"{title_name}",
                                     value=actions,
                                     inline=False)
