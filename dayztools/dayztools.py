@@ -107,7 +107,6 @@ class DayZTools(commands.Cog):
                         "ntoken": ntoken
                     }
             await self.server_status(guild)
-            return service_data
 
     # Maintains an embed of server info
     async def server_status(self, guild):
