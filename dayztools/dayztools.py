@@ -107,6 +107,7 @@ class DayZTools(commands.Cog):
                         "ntoken": ntoken
                     }
             await self.server_status(guild)
+            return service_data
 
     # Maintains an embed of server info
     async def server_status(self, guild):
@@ -390,6 +391,7 @@ class DayZTools(commands.Cog):
             async with ctx.typing():
                 await self.config.guild(ctx.guild).ntoken.set(nitrado_token)
                 data = await self.server_cache(ctx)
+                print(data)
                 if data["status"] == "error":
                     message = data["message"]
                     color = discord.Color.red()
