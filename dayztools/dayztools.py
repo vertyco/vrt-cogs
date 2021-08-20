@@ -50,7 +50,7 @@ class DayZTools(commands.Cog):
 
     # Cache server data every 60 seconds
     @tasks.loop(seconds=60)
-    async def server_cache(self):
+    async def server_cache(self, ctx=None):
         data = await self.config.all_guilds()
         for guild_id in data:
             guild = self.bot.get_guild(int(guild_id))
@@ -59,23 +59,25 @@ class DayZTools(commands.Cog):
             settings = await self.config.guild(guild).all()
             if not settings:
                 continue
-            if "ntoken" not in settings:
+            if not settings["ntoken"]:
                 continue
             ntoken = settings["ntoken"]
             header = {"Authorization": f"Bearer {ntoken}"}
             services_req = "https://api.nitrado.net/services"
             # Make get request to services with token header
             async with self.session.get(services_req, headers=header) as service:
-                data = await service.json()
+                service_data = await service.json()
+                if service_data["status"] == "error":
+                    return service_data
                 # Save service ID
-                service_id = data["data"]["services"][0]["id"]
+                service_id = service_data["data"]["services"][0]["id"]
                 info_req = f"https://api.nitrado.net/services/{service_id}:id/gameservers"
                 # Make another request to get game server info with id
                 async with self.session.get(info_req, headers=header) as info:
-                    data = await info.json()
+                    info_data = await info.json()
                     # save username, user id, ip, port, query_port, memory_mb, game_raw(dayzxb or dayzps), game_human,
                     # last update, version, player_current, Player_max
-                    server = data["data"]["gameserver"]
+                    server = info_data["data"]["gameserver"]
                     if "version" in server["query"]:
                         version = server["query"]["version"]
                     else:
@@ -105,6 +107,7 @@ class DayZTools(commands.Cog):
                         "ntoken": ntoken
                     }
             await self.server_status(guild)
+            return service_data
 
     # Maintains an embed of server info
     async def server_status(self, guild):
@@ -170,7 +173,10 @@ class DayZTools(commands.Cog):
         for guild_id in data:
             guild = self.bot.get_guild(int(guild_id))
             settings = await self.config.guild(guild).all()
-            server = self.servercache[guild_id]
+            if guild_id in self.servercache:
+                server = self.servercache[guild_id]
+            else:
+                continue
             user = server["user"]
             sid = server["service_id"]
             ntoken = server["ntoken"]
@@ -384,13 +390,22 @@ class DayZTools(commands.Cog):
         else:
             async with ctx.typing():
                 await self.config.guild(ctx.guild).ntoken.set(nitrado_token)
-                await self.server_cache()
-                try:
-                    await ctx.message.delete()
-                except discord.NotFound:
-                    print("COULD NOT DELETE MESSAGE")
-                color = discord.Color.green()
-                await ctx.send(embed=discord.Embed(description=f"✅ Your token has been set!", color=color))
+                data = await self.server_cache(ctx)
+                if data["status"] == "error":
+                    message = data["message"]
+                    color = discord.Color.red()
+                    try:
+                        await ctx.message.delete()
+                    except discord.NotFound:
+                        print("COULD NOT DELETE MESSAGE")
+                    return await ctx.send(embed=discord.Embed(description=f"❌ {message}", color=color))
+                else:
+                    try:
+                        await ctx.message.delete()
+                    except discord.NotFound:
+                        print("COULD NOT DELETE MESSAGE")
+                    color = discord.Color.green()
+                    await ctx.send(embed=discord.Embed(description=f"✅ Your token has been set!", color=color))
 
     @dayz_tools.command()
     async def setstatuschannel(self, ctx, channel: discord.TextChannel):
@@ -429,13 +444,22 @@ class DayZTools(commands.Cog):
     async def view(self, ctx):
         """View current cog settings"""
         settings = await self.config.guild(ctx.guild).all()
-        killfeed = ctx.guild.get_channel(settings["killfeed"])
-        playerlog = ctx.guild.get_channel(settings["playerlog"])
-        statuschannel = ctx.guild.get_channel(settings["statuschannel"])
+        if settings["killfeed"]:
+            killfeed = ctx.guild.get_channel(settings["killfeed"]).mentiion
+        else:
+            killfeed = "Not Set"
+        if settings["playerlog"]:
+            playerlog = ctx.guild.get_channel(settings["playerlog"]).mention
+        else:
+            playerlog = "Not Set"
+        if settings["statuschannel"]:
+            statuschannel = ctx.guild.get_channel(settings["statuschannel"]).mention
+        else:
+            statuschannel = "Not Set"
         embed = discord.Embed(
             title="Cog settings",
-            description=f"**KillFeed Channel:** {killfeed.mention}\n"
-                        f"**Playerlog Channel:** {playerlog.mention}\n"
-                        f"**Status Channel:** {statuschannel.mention}\n"
+            description=f"**KillFeed Channel:** {killfeed}\n"
+                        f"**Playerlog Channel:** {playerlog}\n"
+                        f"**Status Channel:** {statuschannel}\n"
         )
         await ctx.send(embed=embed)
