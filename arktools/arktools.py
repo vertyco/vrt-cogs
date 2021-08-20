@@ -867,6 +867,7 @@ class ArkTools(commands.Cog):
                 await self.tribelog_formatter(guild, server, msg)
             elif msg.startswith('SERVER:'):
                 continue
+
             else:
                 messages.append(msg)
                 for names in badnames:
@@ -879,7 +880,17 @@ class ArkTools(commands.Cog):
         for msg in messages:
             if msg == ' ':
                 continue
+
             else:
+                if "discord" in msg.lower():
+                    try:
+                        link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
+                        await self.process_handler(guild, server, f"serverchat {link}")
+                    except Exception:
+                        if discord.HTTPException:
+                            print("INVITE CREATION FAILED")
+                        elif discord.NotFound:
+                            print("INVALID CHANNEL FOR INVITE CREATION")
                 await chatchannel.send(msg)
                 await globalchat.send(f"{chatchannel.mention}: {msg}")
                 clustername = server["cluster"]
