@@ -222,7 +222,6 @@ class DayZTools(commands.Cog):
             return
         else:
             for line in klogs:
-                print(line)
                 if not line:
                     continue
                 timestamp = str(re.search(r'(..:..:..)', line).group(1))
@@ -330,14 +329,12 @@ class DayZTools(commands.Cog):
                 if player[2] == "connected":
                     p = self.checkplayers(guild, player)
                     if p:
-                        print(player)
                         await plog.send(f":green_circle: `{p[1]}` has connected to the server. - `{p[0]}`")
                         await asyncio.sleep(2)
 
                 elif player[2] == "disconnected":
                     p = self.checkplayers(guild, player)
                     if p:
-                        print(player)
                         await plog.send(f":red_circle: `{p[1]}` has left the server. - `{p[0]}`")
                         await asyncio.sleep(2)
 
@@ -388,7 +385,6 @@ class DayZTools(commands.Cog):
             async with ctx.typing():
                 await self.config.guild(ctx.guild).ntoken.set(nitrado_token)
                 data = await self.server_cache(ctx)
-                print(data)
                 if data["status"] == "error":
                     message = data["message"]
                     color = discord.Color.red()
