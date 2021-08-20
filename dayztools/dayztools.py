@@ -417,8 +417,7 @@ class DayZTools(commands.Cog):
     @dayz_tools.command()
     @commands.guildowner()
     async def dzcache(self, ctx):
-        """Get the bot's cached server info from nitrado"""
-        """Useful for testing/debugging sometimes"""
+        """Get the bot's raw cached server info from nitrado"""
         guild = ctx.guild.id
         server = self.servercache[guild]
         msg = json.dumps(server, indent=4, sort_keys=True)[:2030]
@@ -428,7 +427,7 @@ class DayZTools(commands.Cog):
     @dayz_tools.command()
     @commands.guildowner()
     async def view(self, ctx):
-        """View cog settings"""
+        """View current cog settings"""
         settings = await self.config.guild(ctx.guild).all()
         killfeed = ctx.guild.get_channel(settings["killfeed"])
         playerlog = ctx.guild.get_channel(settings["playerlog"])
