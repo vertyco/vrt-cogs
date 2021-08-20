@@ -414,10 +414,29 @@ class DayZTools(commands.Cog):
         await ctx.send(embed=discord.Embed(description=f"✅ KillFeed has been set!", color=color))
 
     # For testing or visual purposes
-    @commands.command()
+    @dayz_tools.command()
     @commands.guildowner()
     async def dzcache(self, ctx):
+        """Get the bot's cached server info from nitrado"""
+        """Useful for testing/debugging sometimes"""
         guild = ctx.guild.id
         server = self.servercache[guild]
         msg = json.dumps(server, indent=4, sort_keys=True)[:2030]
         await ctx.send(box(f"{msg}", lang="json"))
+
+    # For testing or visual purposes
+    @dayz_tools.command()
+    @commands.guildowner()
+    async def view(self, ctx):
+        """View cog settings"""
+        settings = await self.config.guild(ctx.guild).all()
+        killfeed = ctx.guild.get_channel(settings["killfeed"])
+        playerlog = ctx.guild.get_channel(settings["playerlog"])
+        statuschannel = ctx.guild.get_channel(settings["statuschannel"])
+        embed = discord.Embed(
+            title="Cog settings",
+            description=f"**KillFeed Channel:** {killfeed.mention}\n"
+                        f"**Playerlog Channel:** {playerlog.mention}\n"
+                        f"**Status Channel:** {statuschannel.mention}\n"
+        )
+        await ctx.send(embed=embed)
