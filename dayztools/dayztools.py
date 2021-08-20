@@ -348,7 +348,7 @@ class DayZTools(commands.Cog):
             return player
 
     # GROUPS
-    @commands.group(name="dayztools")
+    @commands.group(name="dayztools", aliases=["dzt", "dz"])
     async def dayz_tools(self, ctx):
         """DayZ Tools base command"""
         pass
