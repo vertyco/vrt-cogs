@@ -347,10 +347,6 @@ class DayZTools(commands.Cog):
         if player not in self.playerlist[guild.id]:
             return player
 
-
-    # Handles kill feed
-
-
     # GROUPS
     @commands.group(name="dayztools")
     async def dayz_tools(self, ctx):
@@ -359,6 +355,7 @@ class DayZTools(commands.Cog):
 
     # Save nitrado token
     @dayz_tools.command()
+    @commands.guildowner()
     async def tokenset(self, ctx, nitrado_token=None):
         """Set your Nitrado token"""
         if nitrado_token is None:
@@ -409,6 +406,7 @@ class DayZTools(commands.Cog):
                     await ctx.send(embed=discord.Embed(description=f"✅ Your token has been set!", color=color))
 
     @dayz_tools.command()
+    @commands.guildowner()
     async def setstatuschannel(self, ctx, channel: discord.TextChannel):
         """Set a channel for server status to be shown."""
         await self.config.guild(ctx.guild).statuschannel.set(channel.id)
@@ -416,6 +414,7 @@ class DayZTools(commands.Cog):
         await ctx.send(embed=discord.Embed(description=f"✅ Status channel has been set!", color=color))
 
     @dayz_tools.command()
+    @commands.guildowner()
     async def setplayerlog(self, ctx, channel: discord.TextChannel):
         """Set a channel for player joins/leaves to be logged."""
         await self.config.guild(ctx.guild).playerlog.set(channel.id)
@@ -423,6 +422,7 @@ class DayZTools(commands.Cog):
         await ctx.send(embed=discord.Embed(description=f"✅ Playerlog has been set!", color=color))
 
     @dayz_tools.command()
+    @commands.guildowner()
     async def setkillfeed(self, ctx, channel: discord.TextChannel):
         """Set a channel for the KillFeed to be logged."""
         await self.config.guild(ctx.guild).killfeed.set(channel.id)
