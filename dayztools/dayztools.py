@@ -99,6 +99,8 @@ class DayZTools(commands.Cog):
                         "memory": server["memory_mb"],
                         "game_raw": server["game"],
                         "game_name": server["game_human"],
+                        "status": server["status"],
+                        "location": server["location"],
                         "version": version,
                         "last_update": server["game_specific"]["last_update"],
                         "players": players,
@@ -112,15 +114,14 @@ class DayZTools(commands.Cog):
     # Maintains an embed of server info
     async def server_status(self, guild):
         server = self.servercache[guild.id]
-        ip = server["ip"]
-        port = server["port"]
-        query = server["query"]
         memory = server["memory"]
         game_name = server["game_name"]
         version = server["version"]
         last_update = server["last_update"]
         players = server["players"]
         playermax = server["playermax"]
+        status = server["status"]
+        location = server["location"]
 
         channeldata = await self.config.guild(guild).statuschannel()
         messagedata = await self.config.guild(guild).statusmessage()
@@ -136,15 +137,14 @@ class DayZTools(commands.Cog):
         )
         embed.set_thumbnail(url=guild.icon_url)
         embed.add_field(
-            name="Connection Info",
-            value=f"IP: `{ip}`\nGame Port: `{port}`\nQuery Port: `{query}`",
-            inline=False
-        )
-        embed.add_field(
             name="Server Info",
-            value=f"Current Version: `{version}`\nLast Updated: `{last_update}`\nMemory: `{memory} MB`",
+            value=f"Server Status: `{status}`\n"
+                  f"Current Version: `{version}`\n"
+                  f"Last Updated: `{last_update}`\n"
+                  f"Location: `{location}`\n"
+                  f"Memory: `{memory} MB`",
             inline=False
-        )
+            )
         channel = guild.get_channel(channeldata)
 
         msgtoedit = None
@@ -445,6 +445,10 @@ class DayZTools(commands.Cog):
     async def view(self, ctx):
         """View current cog settings"""
         settings = await self.config.guild(ctx.guild).all()
+        if settings["ntoken"]:
+            ntoken = "Set!"
+        else:
+            ntoken = "Not Set"
         if settings["killfeed"]:
             killfeed = ctx.guild.get_channel(settings["killfeed"]).mentiion
         else:
@@ -459,7 +463,8 @@ class DayZTools(commands.Cog):
             statuschannel = "Not Set"
         embed = discord.Embed(
             title="Cog settings",
-            description=f"**KillFeed Channel:** {killfeed}\n"
+            description=f"**Nitrado Token:** {ntoken}\n"
+                        f"**KillFeed Channel:** {killfeed}\n"
                         f"**Playerlog Channel:** {playerlog}\n"
                         f"**Status Channel:** {statuschannel}\n"
         )
