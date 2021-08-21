@@ -240,7 +240,7 @@ class DayZTools(commands.Cog):
                 elif "hit by explosion" in line:
                     k = self.checkfeed(guild, line)
                     if k:
-                        explosion = str(re.search('n \((.+?)\)$', line).group(1))
+                        explosion = str(re.search(r'n \((.+?)\)$', line).group(1))
                         embed = discord.Embed(
                             title=f"💀 Exploded | {timestamp}",
                             description=f"**{victim}** died from explosion ({explosion})",
