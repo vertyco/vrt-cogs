@@ -921,11 +921,11 @@ class ArkTools(commands.Cog):
         elif "tamed" in action.lower():
             color = discord.Color.green()
         elif "froze" in action.lower():
-            color = discord.Color.dark_magenta()
+            color = discord.Color.magenta()
         elif "starved" in action.lower():
             color = discord.Color.dark_grey()
         elif "claimed" in action.lower():
-            color = discord.Color.magenta()
+            color = discord.Color.dark_green()
         elif "unclaimed" in action.lower():
             color = discord.Color.blue()
         else:
