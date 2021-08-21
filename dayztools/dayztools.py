@@ -165,7 +165,7 @@ class DayZTools(commands.Cog):
     @server_cache.before_loop
     async def before_server_cache(self):
         await self.bot.wait_until_red_ready()
-        print(f"DayZ server caching ready...")
+        print(f"DayZ server cache ready...")
 
     @tasks.loop(seconds=40)
     async def server_logs(self):
@@ -217,7 +217,6 @@ class DayZTools(commands.Cog):
         klog = guild.get_channel(settings["killfeed"])
         klogs = newkillfeed.split("\n")
         if guild.id not in self.killfeed:
-            print("NO GUILD ID for KillFeed")
             self.killfeed[guild.id] = newkillfeed
             return
         else:
@@ -321,7 +320,6 @@ class DayZTools(commands.Cog):
         regex = r'(..:..:..).+"(.+)".+(\bconnected|disconnected)'
         newplayerlist = re.findall(regex, newplayerlist)
         if guild.id not in self.playerlist:
-            print("NO GUILD ID for PlayerList")
             self.playerlist[guild.id] = newplayerlist
             return
         else:
@@ -391,13 +389,13 @@ class DayZTools(commands.Cog):
                     try:
                         await ctx.message.delete()
                     except discord.NotFound:
-                        print("COULD NOT DELETE MESSAGE")
+                        print("Couldnt find message to delete")
                     return await ctx.send(embed=discord.Embed(description=f"❌ {message}", color=color))
                 else:
                     try:
                         await ctx.message.delete()
                     except discord.NotFound:
-                        print("COULD NOT DELETE MESSAGE")
+                        print("Couldnt find message to delete")
                     color = discord.Color.green()
                     await ctx.send(embed=discord.Embed(description=f"✅ Your token has been set!", color=color))
 
