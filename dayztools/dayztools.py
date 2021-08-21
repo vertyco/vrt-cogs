@@ -446,7 +446,7 @@ class DayZTools(commands.Cog):
         else:
             ntoken = "Not Set"
         if settings["killfeed"]:
-            killfeed = ctx.guild.get_channel(settings["killfeed"]).mentiion
+            killfeed = ctx.guild.get_channel(settings["killfeed"]).mention
         else:
             killfeed = "Not Set"
         if settings["playerlog"]:
