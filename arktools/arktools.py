@@ -18,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.28"
+    __version__ = "1.3.29"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -50,7 +50,9 @@ class ArkTools(commands.Cog):
             "joinchannel": {},
             "leavechannel": {},
             "adminlogchannel": {},
-            "globalchatchannel": {}
+            "globalchatchannel": {},
+            "players": {"kills": 0, "deaths": 0},
+
         }
         self.config.register_guild(**default_guild)
 
@@ -758,8 +760,9 @@ class ArkTools(commands.Cog):
                         alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
                         mentions = discord.AllowedMentions(roles=True)
                         pingrole = guild.get_role(settings['fullaccessrole'])
-                        if count == 0:
-                            await alertmsg.send(f"{pingrole.mention}, The **{server}** server has gone offline!!!",
+                        if count == 5:
+                            await alertmsg.send(f"{pingrole.mention}, "
+                                                f"The **{server}** server has been offline for 5 minutes now!!!",
                                                 allowed_mentions=mentions)
                             self.alerts[channel] += 1
                             continue
@@ -985,7 +988,7 @@ class ArkTools(commands.Cog):
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(15) # Gives playerlist executor time to gather player count
+        await asyncio.sleep(15)  # Gives playerlist executor time to gather player count
         print("Status channel monitor is ready.")
 
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
@@ -1016,11 +1019,12 @@ class ArkTools(commands.Cog):
     @commands.guildowner()
     async def _refresh(self, ctx):
         """Refresh the task loops"""
-        self.chat_executor.cancel()
-        self.playerlist_executor.cancel()
-        self.status_channel.cancel()
-        await asyncio.sleep(5)
-        self.chat_executor.start()
-        self.playerlist_executor.start()
-        self.status_channel.start()
-        await ctx.send("Task loops refreshed")
+        async with ctx.typing():
+            self.chat_executor.cancel()
+            self.playerlist_executor.cancel()
+            self.status_channel.cancel()
+            await asyncio.sleep(5)
+            self.chat_executor.start()
+            self.playerlist_executor.start()
+            self.status_channel.start()
+            return await ctx.send("Task loops refreshed")
