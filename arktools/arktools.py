@@ -916,17 +916,17 @@ class ArkTools(commands.Cog):
         if "was killed" in action.lower():
             color = discord.Color.dark_red()
         elif "tribe killed" in action.lower():
-            color = discord.Color.teal()
+            color = discord.Color.orange()
         elif "demolished" in action.lower():
             color = discord.Color.dark_orange()
         elif "destroyed" in action.lower():
-            color = discord.Color.orange()
+            color = discord.Color.darker_grey()
         elif "tamed" in action.lower():
             color = discord.Color.green()
         elif "froze" in action.lower():
             color = discord.Color.magenta()
         elif "starved" in action.lower():
-            color = discord.Color.dark_grey()
+            color = discord.Color.dark_magenta()
         elif "claimed" in action.lower():
             color = discord.Color.dark_green()
         elif "unclaimed" in action.lower():
