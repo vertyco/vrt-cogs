@@ -8,7 +8,6 @@ import datetime
 import pytz
 import unicodedata
 import asyncio
-import os
 import json
 import re
 
@@ -18,7 +17,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.29"
+    __version__ = "1.3.30"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -51,7 +50,7 @@ class ArkTools(commands.Cog):
             "leavechannel": {},
             "adminlogchannel": {},
             "globalchatchannel": {},
-            "players": {"kills": 0, "deaths": 0},
+            "players": {"playtime": 0},
 
         }
         self.config.register_guild(**default_guild)
@@ -1016,9 +1015,21 @@ class ArkTools(commands.Cog):
             await ctx.send(file=discord.File(file, "config.txt"))
 
     @commands.command(name="refresh")
-    @commands.guildowner()
     async def _refresh(self, ctx):
         """Refresh the task loops"""
+        settings = await self.config.guild(ctx.guild).all()
+        # Check whether user has perms
+        userallowed = False
+        for role in ctx.author.roles:
+            if role.id == settings['fullaccessrole']:
+                userallowed = True
+            for modrole in settings['modroles']:
+                if role.id == modrole:
+                    userallowed = True
+
+        if not userallowed:
+            if ctx.guild.owner != ctx.author:
+                return await ctx.send("You do not have the required permissions to run that command.")
         async with ctx.typing():
             self.chat_executor.cancel()
             self.playerlist_executor.cancel()
