@@ -17,7 +17,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.30"
+    __version__ = "1.4.30"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -50,7 +50,7 @@ class ArkTools(commands.Cog):
             "leavechannel": {},
             "adminlogchannel": {},
             "globalchatchannel": {},
-            "players": {"playtime": 0},
+            "playerstats": {},
 
         }
         self.config.register_guild(**default_guild)
@@ -60,6 +60,7 @@ class ArkTools(commands.Cog):
         self.taskdata = []
         self.alerts = {}
         self.playerlist = {}
+        self.time = ""
 
         # Loops
         self.loop_refresher.start()
@@ -347,6 +348,93 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send("No tribe data available")
 
+    # PLAYER STAT COMMANDS
+    @_setarktools.command(name="leaderboard")
+    async def _leaderboard(self, ctx):
+        """View player leaderboard for playtime"""
+        stats = await self.config.guild(ctx.guild).playerstats()
+        leaderboard = {}
+        global_time = 0
+
+        for player in stats:
+            time = stats[player]["playtime"]["total"]
+            # lastseen = stats[player]["lastseen"]
+            leaderboard[player] = time
+            # leaderboard[player]["lastseen"] = json.dumps(lastseen, default=str)
+            global_time = global_time + time
+        globaldays, globalhours, globalminutes = await self.time_formatter(global_time)
+        # print(leaderboard)
+
+        embed = discord.Embed(
+            title="Playtime Leaderboard",
+            description=f"Global Cumulative Playtime: `{globaldays}d {globalhours}h {globalminutes}m`\n\n"
+                        f"**Top 10 Players by Playtime**",
+            color=discord.Color.random()
+        )
+
+        sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+
+        if len(sorted_players) >= 10:
+            for i in range(0, 10, 1):
+                playername = sorted_players[i][0]
+                maps = ""
+                for map in stats[playername]["playtime"]:
+                    if map != "total":
+                        time = stats[playername]["playtime"][map]
+                        days, hours, minutes = await self.time_formatter(time)
+                        maps += f"{map}: `{days}d {hours}h {minutes}m`\n"
+                time_played = sorted_players[i][1]
+                days, hours, minutes = await self.time_formatter(time_played)
+                timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen'])
+                embed.add_field(
+                    name=f"{i + 1}: {playername}",
+                    value=f"Total: `{days}d {hours}h {minutes}m`\n"
+                          f"{maps}"
+                          f"Last Seen: {timestamp.strftime('%m/%d/%Y at %H:%M:%S')}",
+                    inline=True
+                )
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send(embed=discord.Embed(description="Not enough players to establish a leaderboard."))
+
+    @_setarktools.command(name="playtime")
+    async def _playtime(self, ctx, *, gamertag):
+        """View playtime for a Gamertag"""
+        stats = await self.config.guild(ctx.guild).playerstats()
+        for player in stats:
+            if player.lower() == gamertag.lower():
+                maps = ""
+                time = stats[player]["playtime"]["total"]
+                days, hours, minutes = await self.time_formatter(time)
+                embed = discord.Embed(
+                    title=f"Playerstats for {player}",
+                    description=f"Total Time Played: `{days}d {hours}h {minutes}m`"
+                )
+                for map in stats[player]["playtime"]:
+                    if map != "total":
+                        raw_time = stats[player]["playtime"][map]
+                        days, hours, minutes = await self.time_formatter(raw_time)
+                        embed.add_field(
+                            name=f"{map}",
+                            value=f"`{days}d {hours}h {minutes}m`"
+                        )
+                await ctx.send(embed=embed)
+
+    @_setarktools.command(name="resetlb")
+    @commands.guildowner()
+    async def _resetlb(self, ctx: commands.Context):
+        """Reset all player stats."""
+        async with self.config.guild(ctx.guild).all() as config:
+            del config["playerstats"]
+            await ctx.send(embed=discord.Embed(description="Player Stats have been reset."))
+
+    # Time Converter
+    async def time_formatter(self, time_played):
+        minutes, seconds = divmod(time_played, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        return days, hours, minutes
+
     # VIEW SETTINGSs
     @_permissions.command(name="view")
     async def _viewperms(self, ctx: commands.Context):
@@ -586,7 +674,8 @@ class ArkTools(commands.Cog):
                     self.alerts[server["chatchannel"]] = 0
                     self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
-
+        time = datetime.datetime.utcnow()
+        self.time = time.isoformat()
         print("ArkTools config initialized.")  # If this doesnt print then something is fucky...
 
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
@@ -687,6 +776,35 @@ class ArkTools(commands.Cog):
             clustername = server["cluster"].upper()
             newplayerlist = await self.process_handler(guild, server, "listplayers")
 
+            async with self.config.guild(guild).playerstats() as stats:  # Player stats
+                for player in newplayerlist:
+                    lb_mapname = f"{mapname} {clustername}"
+                    if player[0] not in stats:
+                        stats[player[0]] = {"playtime": {"total": 0}}
+                    if "lastseen" not in stats[player[0]]:
+                        timestamp = datetime.datetime.utcnow()
+                        stats[player[0]]["lastseen"] = timestamp.isoformat()
+                    if lb_mapname not in str(stats[player[0]]["playtime"]):
+                        stats[player[0]]["playtime"][lb_mapname] = 0
+                        continue
+
+                    else:
+                        current_playtime = stats[player[0]]["playtime"][lb_mapname]
+                        total_playtime = stats[player[0]]["playtime"]["total"]
+
+                        current_time = datetime.datetime.utcnow()
+                        last_time = datetime.datetime.fromisoformat(str(self.time))
+                        timedifference = current_time - last_time
+
+                        new_playtime = int(current_playtime) + int(timedifference.seconds)
+                        new_total = int(total_playtime) + int(timedifference.seconds)
+
+                        print(f"{player}: +{timedifference.seconds}\nNew Time: {new_total}\nOld Time: {total_playtime}")
+
+                        stats[player[0]]["playtime"][lb_mapname] = new_playtime
+                        stats[player[0]]["playtime"]["total"] = new_total
+                        stats[player[0]]["lastseen"] = current_time.isoformat()
+
             if newplayerlist is None:
                 self.playerlist[channel] = newplayerlist
                 continue
@@ -703,6 +821,8 @@ class ArkTools(commands.Cog):
                     await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
 
                 self.playerlist[channel] = newplayerlist
+        current_time = datetime.datetime.utcnow()
+        self.time = current_time.isoformat()
 
     # For the Discord join log
     def checkplayerjoin(self, channel, newplayerlist):
