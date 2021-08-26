@@ -407,7 +407,8 @@ class ArkTools(commands.Cog):
                 days, hours, minutes = await self.time_formatter(time)
                 embed = discord.Embed(
                     title=f"Playerstats for {player}",
-                    description=f"Total Time Played: `{days}d {hours}h {minutes}m`"
+                    description=f"Total Time Played: `{days}d {hours}h {minutes}m`",
+                    color=discord.Color.random()
                 )
                 for map in stats[player]["playtime"]:
                     if map != "total":
