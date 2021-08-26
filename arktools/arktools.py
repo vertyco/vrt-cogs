@@ -351,7 +351,7 @@ class ArkTools(commands.Cog):
     # PLAYER STAT COMMANDS
     @_setarktools.command(name="leaderboard")
     async def _leaderboard(self, ctx):
-        """View player leaderboard for playtime"""
+        """View time played leaderboard"""
         stats = await self.config.guild(ctx.guild).playerstats()
         leaderboard = {}
         global_time = 0
@@ -395,7 +395,7 @@ class ArkTools(commands.Cog):
                 )
             await ctx.send(embed=embed)
         else:
-            await ctx.send(embed=discord.Embed(description="Not enough players to establish a leaderboard."))
+            await ctx.send(embed=discord.Embed(description="Not enough player data to establish a leaderboard."))
 
     @_setarktools.command(name="playtime")
     async def _playtime(self, ctx, *, gamertag):
@@ -403,7 +403,6 @@ class ArkTools(commands.Cog):
         stats = await self.config.guild(ctx.guild).playerstats()
         for player in stats:
             if player.lower() == gamertag.lower():
-                maps = ""
                 time = stats[player]["playtime"]["total"]
                 days, hours, minutes = await self.time_formatter(time)
                 embed = discord.Embed(
@@ -419,6 +418,7 @@ class ArkTools(commands.Cog):
                             value=f"`{days}d {hours}h {minutes}m`"
                         )
                 await ctx.send(embed=embed)
+            await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
 
     @_setarktools.command(name="resetlb")
     @commands.guildowner()
