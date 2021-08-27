@@ -17,7 +17,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.31"
+    __version__ = "1.4.32"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -356,14 +356,12 @@ class ArkTools(commands.Cog):
         leaderboard = {}
         global_time = 0
 
+        # Global cumulative time
         for player in stats:
             time = stats[player]["playtime"]["total"]
-            # lastseen = stats[player]["lastseen"]
             leaderboard[player] = time
-            # leaderboard[player]["lastseen"] = json.dumps(lastseen, default=str)
             global_time = global_time + time
         globaldays, globalhours, globalminutes = await self.time_formatter(global_time)
-        # print(leaderboard)
 
         embed = discord.Embed(
             title="Playtime Leaderboard",
@@ -781,6 +779,8 @@ class ArkTools(commands.Cog):
 
             async with self.config.guild(guild).playerstats() as stats:  # Player stats
                 if newplayerlist:
+                    current_time = datetime.datetime.utcnow()
+                    last_time = datetime.datetime.fromisoformat(str(self.time))
                     for player in newplayerlist:
                         lb_mapname = f"{mapname} {clustername}"
                         if player[0] not in stats:
@@ -796,9 +796,9 @@ class ArkTools(commands.Cog):
                             current_playtime = stats[player[0]]["playtime"][lb_mapname]
                             total_playtime = stats[player[0]]["playtime"]["total"]
 
-                            current_time = datetime.datetime.utcnow()
-                            last_time = datetime.datetime.fromisoformat(str(self.time))
                             timedifference = current_time - last_time
+                            if int(timedifference.seconds) > 30:
+                                continue  # Cause somethings probably fishy if it's greater than 30
 
                             new_playtime = int(current_playtime) + int(timedifference.seconds)
                             new_total = int(total_playtime) + int(timedifference.seconds)
@@ -807,37 +807,29 @@ class ArkTools(commands.Cog):
                             stats[player[0]]["playtime"]["total"] = new_total
                             stats[player[0]]["lastseen"] = current_time.isoformat()
 
-            if newplayerlist is None:
-                self.playerlist[channel] = newplayerlist
-                continue
-            if self.playerlist[channel] is None:
-                self.playerlist[channel] = newplayerlist
-                continue
-            else:
-                playerjoin = self.checkplayerjoin(channel, newplayerlist)
-                if playerjoin:
-                    await joinlog.send(
-                        f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
-                playerleft = self.checkplayerleave(channel, newplayerlist)
-                if playerleft:
-                    await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
+            playerjoin = self.checkplayerjoin(channel, newplayerlist)
+            if playerjoin:
+                await joinlog.send(
+                    f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
+            playerleft = self.checkplayerleave(channel, newplayerlist)
+            if playerleft:
+                await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
 
-                self.playerlist[channel] = newplayerlist
+            self.playerlist[channel] = newplayerlist
         current_time = datetime.datetime.utcnow()
         self.time = current_time.isoformat()
 
     # For the Discord join log
     def checkplayerjoin(self, channel, newplayerlist):
-        for player in newplayerlist:
-            if player not in self.playerlist[channel]:
-                return player
+        if newplayerlist:
+            for player in newplayerlist:
+                if player not in self.playerlist[channel]:
+                    return player
 
     # For the Discord leave log
     def checkplayerleave(self, channel, newplayerlist):
-        if newplayerlist is None:
-            return
         for player in self.playerlist[channel]:
-            if newplayerlist is []:
+            if newplayerlist is None:
                 return player
             if player not in newplayerlist:
                 return player
