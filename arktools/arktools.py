@@ -1141,7 +1141,7 @@ class ArkTools(commands.Cog):
     @commands.command(name="restore")
     @commands.guildowner()
     async def _restore(self, ctx):
-        """Upload backup file to restore config."""
+        """Upload a backup file to restore config."""
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
