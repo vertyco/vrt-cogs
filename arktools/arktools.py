@@ -1002,7 +1002,7 @@ class ArkTools(commands.Cog):
             elif msg is None:
                 continue
             else:
-                if "discord" in msg.lower():
+                if "discord" in msg.lower() or "discordia" in msg.lower():
                     try:
                         link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
                         await self.process_handler(guild, server, f"serverchat {link}")
