@@ -2,6 +2,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config
 from discord.ext import tasks
 from rcon import Client
+import aiohttp
 import rcon
 import discord
 import datetime
@@ -17,7 +18,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.32"
+    __version__ = "1.4.33"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -25,6 +26,7 @@ class ArkTools(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.session = aiohttp.ClientSession()
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         default_guild = {
             "statuschannel": None,
@@ -1113,7 +1115,7 @@ class ArkTools(commands.Cog):
         print("Status channel monitor is ready.")
 
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
-    @commands.command(name="checkname")
+    @_setarktools.command(name="checkname")
     async def _checkname(self, ctx):
         """Make sure your name works with the filter."""
         """If there are no errors then you're good to go."""
@@ -1125,16 +1127,30 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")
 
     # For debug purposes or just wanting to see your raw config easily
-    @commands.command(name="getconf")
+    @commands.command(name="backup")
     @commands.guildowner()
-    async def _getconf(self, ctx):
-        """Pull your raw config and send to discord as a .txt file."""
+    async def _backup(self, ctx):
+        """Create backup of entire config to send to Discord."""
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
-        with open("config.txt", "w") as file:
+        with open("settings.json", "w") as file:
             file.write(settings)
-        with open("config.txt", "rb") as file:
-            await ctx.send(file=discord.File(file, "config.txt"))
+        with open("settings.json", "rb") as file:
+            await ctx.send(file=discord.File(file, "settings.json"))
+
+    @commands.command(name="restore")
+    @commands.guildowner()
+    async def _restore(self, ctx):
+        """Upload your backup file with the command to restore your config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.guild(ctx.guild).set(config)
+            return await ctx.send("Config restored from attachment!")
+        else:
+            return await ctx.send("Attach your `settings.json` file to your message when using this command.")
 
     @commands.command(name="refresh")
     async def _refresh(self, ctx):
