@@ -802,7 +802,7 @@ class ArkTools(commands.Cog):
                         new_playtime = int(current_playtime) + int(timedifference.seconds)
                         new_total = int(total_playtime) + int(timedifference.seconds)
 
-                        print(f"{player}: +{timedifference.seconds}\nNew Time: {new_total}\nOld Time: {total_playtime}")
+                        # print(f"{player}: +{timedifference.seconds}\nNew Time: {new_total}\nOld Time: {total_playtime}")
 
                         stats[player[0]]["playtime"][lb_mapname] = new_playtime
                         stats[player[0]]["playtime"]["total"] = new_total
