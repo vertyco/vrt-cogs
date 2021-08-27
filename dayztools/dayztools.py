@@ -190,10 +190,11 @@ class DayZTools(commands.Cog):
             log_req = f"https://api.nitrado.net/services/{sid}:id/gameservers/file_server/download?file=/games/{user}/noftp/{logpath}"
             async with self.session.get(log_req, headers=header) as geturl:
                 data = await geturl.json()
-                url = data["data"]["token"]["url"]
-                async with self.session.get(url, headers=header) as logs:
-                    logs_raw = await logs.text()
-                    await self.log_handler(logs_raw, guild, settings)
+                if "data" in data:
+                    url = data["data"]["token"]["url"]
+                    async with self.session.get(url, headers=header) as logs:
+                        logs_raw = await logs.text()
+                        await self.log_handler(logs_raw, guild, settings)
 
     @server_logs.before_loop
     async def before_server_logs(self):
