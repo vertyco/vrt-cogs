@@ -309,6 +309,8 @@ class DayZTools(commands.Cog):
                         )
                         await klog.send(embed=embed)
                         await asyncio.sleep(2)
+                else:
+                    continue
 
             self.killfeed[guild.id] = newkillfeed
 
