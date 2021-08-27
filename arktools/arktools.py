@@ -786,12 +786,10 @@ class ArkTools(commands.Cog):
                     for player in newplayerlist:
                         lb_mapname = f"{mapname} {clustername}"
                         if player[0] not in stats:
-                            print(f"Making stats for {player[0]}")
                             stats[player[0]] = {"playtime": {"total": 0}}
                             timestamp = datetime.datetime.utcnow()
                             stats[player[0]]["lastseen"] = timestamp.isoformat()
                         if lb_mapname not in stats[player[0]]["playtime"]:
-                            print(f"Adding {lb_mapname} for {player[0]}")
                             stats[player[0]]["playtime"][lb_mapname] = 0
                             continue
 
