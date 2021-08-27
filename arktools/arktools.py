@@ -999,7 +999,10 @@ class ArkTools(commands.Cog):
         for msg in messages:
             if msg == ' ':
                 continue
-
+            elif msg == '':
+                continue
+            elif msg is None:
+                continue
             else:
                 if "discord" in msg.lower():
                     try:
