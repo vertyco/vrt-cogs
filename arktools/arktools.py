@@ -390,7 +390,7 @@ class ArkTools(commands.Cog):
                     name=f"{i + 1}: {playername}",
                     value=f"Total: `{days}d {hours}h {minutes}m`\n"
                           f"{maps}"
-                          f"Last Seen: {timestamp.strftime('%m/%d/%Y at %H:%M:%S')}",
+                          f"Last Seen: `{timestamp.strftime('%m/%d/%Y at %H:%M:%S')}`",
                     inline=True
                 )
             await ctx.send(embed=embed)
@@ -1130,18 +1130,18 @@ class ArkTools(commands.Cog):
     @commands.command(name="backup")
     @commands.guildowner()
     async def _backup(self, ctx):
-        """Create backup of entire config to send to Discord."""
+        """Create backup of config and send to Discord."""
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
-        with open("settings.json", "w") as file:
+        with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
-        with open("settings.json", "rb") as file:
-            await ctx.send(file=discord.File(file, "settings.json"))
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}.json"))
 
     @commands.command(name="restore")
     @commands.guildowner()
     async def _restore(self, ctx):
-        """Upload your backup file with the command to restore your config."""
+        """Upload backup file to restore config."""
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
