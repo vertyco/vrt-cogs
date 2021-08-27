@@ -420,7 +420,7 @@ class ArkTools(commands.Cog):
                         )
                 return await ctx.send(embed=embed)
             else:
-                break
+                continue
         await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
 
     @_setarktools.command(name="resetlb")
