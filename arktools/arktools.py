@@ -1019,7 +1019,10 @@ class ArkTools(commands.Cog):
 
     # Handles tribe log formatting/itemizing
     async def tribelog_formatter(self, guild, server, msg):
-        regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
+        if "froze" in msg:
+            regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): (.+)\)'
+        else:
+            regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
         tribe = re.findall(regex, msg)
         if not tribe:
             return
@@ -1028,23 +1031,27 @@ class ArkTools(commands.Cog):
         time = tribe[0][2]
         action = tribe[0][3]
         if "was killed" in action.lower():
-            color = discord.Color.dark_red()
+            color = discord.Color.from_rgb(255, 13, 0)  # bright red
         elif "tribe killed" in action.lower():
-            color = discord.Color.orange()
-        elif "demolished" in action.lower():
-            color = discord.Color.dark_orange()
-        elif "destroyed" in action.lower():
-            color = discord.Color.darker_grey()
-        elif "tamed" in action.lower():
-            color = discord.Color.green()
-        elif "froze" in action.lower():
-            color = discord.Color.magenta()
+            color = discord.Color.from_rgb(246, 255, 0)  # gold
         elif "starved" in action.lower():
-            color = discord.Color.dark_magenta()
+            color = discord.Color.from_rgb(140, 7, 0)  # dark red
+        elif "demolished" in action.lower():
+            color = discord.Color.from_rgb(133, 86, 5)  # brown
+        elif "destroyed" in action.lower():
+            color = discord.Color.from_rgb(115, 114, 112)  # grey
+        elif "tamed" in action.lower():
+            color = discord.Color.from_rgb(0, 242, 117)  # lime
+        elif "froze" in action.lower():
+            color = discord.Color.from_rgb(0, 242, 117)  # cyan
         elif "claimed" in action.lower():
-            color = discord.Color.dark_green()
+            color = discord.Color.from_rgb(255, 0, 225)  # pink
         elif "unclaimed" in action.lower():
-            color = discord.Color.blue()
+            color = discord.Color.from_rgb(102, 0, 90)  # dark purple
+        elif "uploaded" in action.lower():
+            color = discord.Color.from_rgb(255, 255, 255)  # white
+        elif "downloaded" in action.lower():
+            color = discord.Color.from_rgb(2, 2, 117)  # dark blue
         else:
             color = discord.Color.purple()
         embed = discord.Embed(
