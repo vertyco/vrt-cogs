@@ -15,7 +15,6 @@ class MCTools(commands.Cog):
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
         return f"{helpcmd}\nCog Version: {self.__version__}\nAuthor: {self.__author__}"
-        # formatted for when you type [p]help Xbox
 
     def __init__(self, bot):
         self.bot = bot
