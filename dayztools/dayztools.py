@@ -259,7 +259,7 @@ class DayZTools(commands.Cog):
                             distance = round(float(re.search(r'from ([0-9.]+) meters', line).group(1)), 2)
                         except AttributeError as e:
                             distance = 0.0
-                        print("Distance of killer failed to calculate")
+                            print("Distance of killer failed to calculate")
 
                         embed = discord.Embed(
                             title=f"💀 PvP Kill | {timestamp}",
