@@ -1043,7 +1043,7 @@ class ArkTools(commands.Cog):
         elif "tamed" in action.lower():
             color = discord.Color.from_rgb(0, 242, 117)  # lime
         elif "froze" in action.lower():
-            color = discord.Color.from_rgb(0, 242, 117)  # cyan
+            color = discord.Color.from_rgb(0, 247, 255)  # cyan
         elif "claimed" in action.lower():
             color = discord.Color.from_rgb(255, 0, 225)  # pink
         elif "unclaimed" in action.lower():
