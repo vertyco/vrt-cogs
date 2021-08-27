@@ -1148,7 +1148,7 @@ class ArkTools(commands.Cog):
                 async with session.get(attachment_url) as resp:
                     config = await resp.json()
             await self.config.guild(ctx.guild).set(config)
-            return await ctx.send("Config restored from attachment!")
+            return await ctx.send("Config restored from backup file!")
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
