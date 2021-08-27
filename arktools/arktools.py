@@ -17,7 +17,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.30"
+    __version__ = "1.4.31"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -780,33 +780,32 @@ class ArkTools(commands.Cog):
             newplayerlist = await self.process_handler(guild, server, "listplayers")
 
             async with self.config.guild(guild).playerstats() as stats:  # Player stats
-                for player in newplayerlist:
-                    lb_mapname = f"{mapname} {clustername}"
-                    if player[0] not in stats:
-                        stats[player[0]] = {"playtime": {"total": 0}}
-                    if "lastseen" not in stats[player[0]]:
-                        timestamp = datetime.datetime.utcnow()
-                        stats[player[0]]["lastseen"] = timestamp.isoformat()
-                    if lb_mapname not in str(stats[player[0]]["playtime"]):
-                        stats[player[0]]["playtime"][lb_mapname] = 0
-                        continue
+                if newplayerlist:
+                    for player in newplayerlist:
+                        lb_mapname = f"{mapname} {clustername}"
+                        if player[0] not in stats:
+                            stats[player[0]] = {"playtime": {"total": 0}}
+                        if "lastseen" not in stats[player[0]]:
+                            timestamp = datetime.datetime.utcnow()
+                            stats[player[0]]["lastseen"] = timestamp.isoformat()
+                        if lb_mapname not in str(stats[player[0]]["playtime"]):
+                            stats[player[0]]["playtime"][lb_mapname] = 0
+                            continue
 
-                    else:
-                        current_playtime = stats[player[0]]["playtime"][lb_mapname]
-                        total_playtime = stats[player[0]]["playtime"]["total"]
+                        else:
+                            current_playtime = stats[player[0]]["playtime"][lb_mapname]
+                            total_playtime = stats[player[0]]["playtime"]["total"]
 
-                        current_time = datetime.datetime.utcnow()
-                        last_time = datetime.datetime.fromisoformat(str(self.time))
-                        timedifference = current_time - last_time
+                            current_time = datetime.datetime.utcnow()
+                            last_time = datetime.datetime.fromisoformat(str(self.time))
+                            timedifference = current_time - last_time
 
-                        new_playtime = int(current_playtime) + int(timedifference.seconds)
-                        new_total = int(total_playtime) + int(timedifference.seconds)
+                            new_playtime = int(current_playtime) + int(timedifference.seconds)
+                            new_total = int(total_playtime) + int(timedifference.seconds)
 
-                        # print(f"{player}: +{timedifference.seconds}\nNew Time: {new_total}\nOld Time: {total_playtime}")
-
-                        stats[player[0]]["playtime"][lb_mapname] = new_playtime
-                        stats[player[0]]["playtime"]["total"] = new_total
-                        stats[player[0]]["lastseen"] = current_time.isoformat()
+                            stats[player[0]]["playtime"][lb_mapname] = new_playtime
+                            stats[player[0]]["playtime"]["total"] = new_total
+                            stats[player[0]]["lastseen"] = current_time.isoformat()
 
             if newplayerlist is None:
                 self.playerlist[channel] = newplayerlist
