@@ -14,7 +14,7 @@ class DayZTools(commands.Cog):
     Tools for DayZ!
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -135,12 +135,13 @@ class DayZTools(commands.Cog):
             color=discord.Color.random(),
             description=f"**Players:** `{players}/{playermax}`"
         )
+        time = datetime.datetime.fromisoformat(last_update)
         embed.set_thumbnail(url=guild.icon_url)
         embed.add_field(
             name="Server Info",
             value=f"Server Status: `{status}`\n"
                   f"Current Version: `{version}`\n"
-                  f"Last Updated: `{last_update}`\n"
+                  f"Last Updated: `{time.strftime('%m/%d/%Y at %H:%M:%S')}`\n"
                   f"Location: `{location}`\n"
                   f"Memory: `{memory} MB`",
             inline=False
