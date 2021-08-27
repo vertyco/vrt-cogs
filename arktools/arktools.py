@@ -1150,7 +1150,7 @@ class ArkTools(commands.Cog):
             await self.config.guild(ctx.guild).set(config)
             return await ctx.send("Config restored from attachment!")
         else:
-            return await ctx.send("Attach your `settings.json` file to your message when using this command.")
+            return await ctx.send("Attach your backup file to the message when using this command.")
 
     @commands.command(name="refresh")
     async def _refresh(self, ctx):
