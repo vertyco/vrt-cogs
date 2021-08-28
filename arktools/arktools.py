@@ -404,10 +404,12 @@ class ArkTools(commands.Cog):
         for player in stats:
             if player.lower() == gamertag.lower():
                 time = stats[player]["playtime"]["total"]
+                lastseen = datetime.datetime.fromisoformat(stats[player]["lastseen"])
                 days, hours, minutes = await self.time_formatter(time)
                 embed = discord.Embed(
                     title=f"Playerstats for {player}",
-                    description=f"Total Time Played: `{days}d {hours}h {minutes}m`",
+                    description=f"Total Time Played: `{days}d {hours}h {minutes}m`\n"
+                                f"Last Seen: {lastseen.strftime('%m/%d/%Y at %H:%M:%S')}",
                     color=discord.Color.random()
                 )
                 for map in stats[player]["playtime"]:
