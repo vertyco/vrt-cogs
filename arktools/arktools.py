@@ -385,7 +385,7 @@ class ArkTools(commands.Cog):
                         maps += f"{map}: `{days}d {hours}h {minutes}m`\n"
                 time_played = sorted_players[i][1]
                 days, hours, minutes = await self.time_formatter(time_played)
-                timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen'])
+                timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen']["time"])
                 embed.add_field(
                     name=f"{i + 1}: {playername}",
                     value=f"Total: `{days}d {hours}h {minutes}m`\n"
@@ -404,12 +404,13 @@ class ArkTools(commands.Cog):
         for player in stats:
             if player.lower() == gamertag.lower():
                 time = stats[player]["playtime"]["total"]
-                lastseen = datetime.datetime.fromisoformat(stats[player]["lastseen"])
+                lastseen = datetime.datetime.fromisoformat(stats[player]["lastseen"]["time"])
+                lastmap = stats[player]["lastseen"]["map"]
                 days, hours, minutes = await self.time_formatter(time)
                 embed = discord.Embed(
                     title=f"Playerstats for {player}",
                     description=f"Total Time Played: `{days}d {hours}h {minutes}m`\n"
-                                f"Last Seen: {lastseen.strftime('%m/%d/%Y at %H:%M:%S')}",
+                                f"Last Seen: `{lastseen.strftime('%m/%d/%Y at %H:%M:%S')}` on `{lastmap}`",
                     color=discord.Color.random()
                 )
                 for map in stats[player]["playtime"]:
@@ -761,7 +762,7 @@ class ArkTools(commands.Cog):
         return chatchannels, map
 
     # Initiates the GetChat loop
-    @tasks.loop(seconds=4)
+    @tasks.loop(seconds=5)
     async def chat_executor(self):
         for data in self.taskdata:
             guild = self.bot.get_guild(data[0])
@@ -769,7 +770,7 @@ class ArkTools(commands.Cog):
             await self.process_handler(guild, server, "getchat")
 
     # Initiates the ListPlayers loop for both join/leave logs and status message to use
-    @tasks.loop(seconds=30)
+    @tasks.loop(seconds=60)
     async def playerlist_executor(self):
         for data in self.taskdata:
             guild = self.bot.get_guild(data[0])
@@ -800,7 +801,7 @@ class ArkTools(commands.Cog):
                             total_playtime = stats[player[0]]["playtime"]["total"]
 
                             timedifference = current_time - last_time
-                            if int(timedifference.seconds) > 30:
+                            if int(timedifference.seconds) > 60:
                                 continue  # Cause somethings probably fishy if it's greater than 30
 
                             new_playtime = int(current_playtime) + int(timedifference.seconds)
@@ -809,6 +810,11 @@ class ArkTools(commands.Cog):
                             stats[player[0]]["playtime"][lb_mapname] = new_playtime
                             stats[player[0]]["playtime"]["total"] = new_total
                             stats[player[0]]["lastseen"] = current_time.isoformat()
+                            stats[player[0]]["lastseen"] = {
+                                "time": current_time.isoformat(),
+                                "map": lb_mapname
+                                }
+                            print(f"{timedifference.seconds} added to {player[0]} on {lb_mapname}")
 
             playerjoin = self.checkplayerjoin(channel, newplayerlist)
             if playerjoin:
@@ -831,11 +837,12 @@ class ArkTools(commands.Cog):
 
     # For the Discord leave log
     def checkplayerleave(self, channel, newplayerlist):
-        for player in self.playerlist[channel]:
-            if newplayerlist is None:
-                return player
-            if player not in newplayerlist:
-                return player
+        if self.playerlist[channel] is not None:
+            for player in self.playerlist[channel]:
+                if newplayerlist is None:
+                    return player
+                if player not in newplayerlist:
+                    return player
 
     # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
