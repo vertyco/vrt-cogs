@@ -105,26 +105,25 @@ class Fluent(commands.Cog):
         for channel_id in channels:
             if int(message.channel.id) == int(channel_id):
                 print("channel match!")
+                author = message.author
                 lang1 = channels[channel_id]["lang1"]
                 lang2 = channels[channel_id]["lang2"]
                 channel = message.channel
-                source = await self._detector(message.content)
-                print(f"SOURCE: {source}")
-                author = message.author
-                if source is None:
+                trans = await self._translator(message.content, lang1)
+                print(f"SOURCE: {trans}")
+                if trans is None:
                     return await channel.send(embed=discord.Embed(description=f"❌ API seems to be down at the moment."))
-                elif source == lang1:
-                    print(f"Detected: Lang1")
-                    await message.delete()
-                    new_msg = await self._translator(message.content, lang2)
-                    return await channel.send(f"{author.name}: {message.content}\n"
-                                              f"Translation: `{new_msg.text}`")
-                elif source == lang2:
+                elif trans.src == lang2:
                     print(f"Detected: Lang2")
-                    new_msg = await self._translator(message.content, lang1)
                     await message.delete()
-                    return await channel.send(f"{author.name}: {message.content}\n"
-                                              f"Translation: `{new_msg.text}`")
+                    return await channel.send(f"`{author.name}: '{message.content}'`\n"
+                                              f"**{trans.text}**")
+                elif trans.src == lang1:
+                    print(f"Detected: Lang2")
+                    trans = await self._translator(message.content, lang2)
+                    await message.delete()
+                    return await channel.send(f"`{author.name}: '{message.content}'`\n"
+                                              f"**{trans.text}**")
                 else:
                     return
 
