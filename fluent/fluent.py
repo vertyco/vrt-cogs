@@ -110,16 +110,21 @@ class Fluent(commands.Cog):
                 channel = message.channel
                 source = await self._detector(message.content)
                 print(f"SOURCE: {source}")
+                author = message.author
                 if source is None:
                     return await channel.send(embed=discord.Embed(description=f"❌ API seems to be down at the moment."))
                 elif source == lang1:
                     print(f"Detected: Lang1")
+                    await message.delete()
                     new_msg = await self._translator(message.content, lang2)
-                    return await channel.send(new_msg.text)
+                    return await channel.send(f"{author.name}: {message.content}\n"
+                                              f"Translation: `{new_msg.text}`")
                 elif source == lang2:
                     print(f"Detected: Lang2")
                     new_msg = await self._translator(message.content, lang1)
-                    return await channel.send(new_msg.text)
+                    await message.delete()
+                    return await channel.send(f"{author.name}: {message.content}\n"
+                                              f"Translation: `{new_msg.text}`")
                 else:
                     return
 
