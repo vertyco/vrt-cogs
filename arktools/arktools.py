@@ -920,8 +920,9 @@ class ArkTools(commands.Cog):
                             url = "https://xbl.io/api/v2/conversations"
                             payload = {"xuid": str(xuid), "message": welcome}
                             apikey = settings["clusters"][clustername.lower()]["servers"][mapname.lower()]["api"]
-                            print(f"Sending DM to {player[0]} XUID: {player[1]}")
+                            print(f"Sending DM to {player[0]}, XUID: {player[1]}")
                             status = await self.apipost(url, payload, apikey)
+                            print(f"Status: {status}")
                             if status == 200:
                                 print("New Player DM Successful")
                             else:
