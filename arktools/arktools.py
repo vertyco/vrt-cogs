@@ -1,16 +1,20 @@
-from redbot.core.utils.chat_formatting import box, pagify
-from redbot.core import commands, Config
-from discord.ext import tasks
-from rcon import Client
 import aiohttp
-import rcon
 import discord
 import datetime
 import pytz
-import unicodedata
 import asyncio
 import json
 import re
+
+
+from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core import commands, Config
+from discord.ext import tasks
+
+
+import rcon
+from rcon import Client
+import unicodedata
 
 
 class ArkTools(commands.Cog):
@@ -18,7 +22,7 @@ class ArkTools(commands.Cog):
     RCON tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.5.33"
+    __version__ = "1.5.34"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -34,26 +38,14 @@ class ArkTools(commands.Cog):
             "statusmessage": None,
             "masterlog": None,
             "servertoserverchat": False,
-            "tribes": {},
+            "crosschattoggle": False,
+            "fullaccessrole": None,
             "clusters": {},
-            "servers": {},
-            "servername": {},
-            "ip": {},
-            "port": {},
-            "password": {},
-            "chatchannel": {},
             "modroles": [],
             "modcommands": [],
             "badnames": [],
-            "fullaccessrole": None,
-            "tribelogchannels": {},
-            "crosschattoggle": False,
-            "joinchannel": {},
-            "leavechannel": {},
-            "adminlogchannel": {},
-            "globalchatchannel": {},
+            "tribes": {},
             "playerstats": {},
-
         }
         self.config.register_guild(**default_guild)
 
@@ -176,7 +168,7 @@ class ArkTools(commands.Cog):
                 await ctx.send("That command doesnt exist")
 
     # API KEY SETTINGS
-    @_api.command(name="addapikey")
+    @_api.command(name="addkey")
     async def _addkey(self, ctx, clustername, servername, gamertag, apikey):
         """
         Add an API key for AutoFriend system.
@@ -196,7 +188,7 @@ class ArkTools(commands.Cog):
                                 pass
                             return await ctx.send(embed=embed)
 
-    @_api.command(name="delapikey")
+    @_api.command(name="delkey")
     async def _delkey(self, ctx, clustername, servername):
         """
         Delete an API key from AutoFriend system.
@@ -219,11 +211,12 @@ class ArkTools(commands.Cog):
         Set a welcome message to be used instead of the default.
         When the bot detects a new gamertag that isnt in the database, it sends it a welcome DM with
         an invite to the server.
+
+
         Variables that can be used in the welcome message are:
         {discord} - Discord name
         {gamertag} - Persons gamertag
         {link} - Discord link
-
         Put "Default" in welcome string to revert to default message.
         """
         params = {
@@ -508,9 +501,12 @@ class ArkTools(commands.Cog):
     @commands.guildowner()
     async def _resetlb(self, ctx: commands.Context):
         """Reset all player stats."""
-        async with self.config.guild(ctx.guild).all() as config:
-            del config["playerstats"]
-            await ctx.send(embed=discord.Embed(description="Player Stats have been reset."))
+        async with self.config.guild(ctx.guild).playerstats() as stats:
+            async with ctx.typing():
+                for gamertag in stats:
+                    for key in stats[gamertag]["playtime"]:
+                        stats[gamertag]["playtime"][key] = 0
+                await ctx.send(embed=discord.Embed(description="Player Stats have been reset."))
 
     # Time Converter
     async def time_formatter(self, time_played):
@@ -582,6 +578,16 @@ class ArkTools(commands.Cog):
                                 serversettings += f"**{k.upper()}:** `{v}`\n"
                     if k == "chatchannel":
                         serversettings += f"**Channel:** {ctx.guild.get_channel(v).mention}\n"
+                if "api" in settings["clusters"][cname]["servers"][server]:
+                    async with ctx.typing():
+                        apikey = settings["clusters"][cname]["servers"][server]["api"]
+                        getfriends = "https://xbl.io/api/v2/friends"
+                        data, status = await self.apicall(getfriends, apikey)
+                        if data:
+                            pages = len(data["people"])
+                        else:
+                            pages = "None"
+                        serversettings += f"**Friend Count:** `{pages}`\n"
                 serversettings += "\n"
             for p in pagify(serversettings):
                 color = discord.Color.dark_purple()
@@ -890,68 +896,6 @@ class ArkTools(commands.Cog):
             clustername = server["cluster"].upper()
             newplayerlist = await self.process_handler(guild, server, "listplayers")
 
-            async with self.config.guild(guild).playerstats() as stats:  # Player stats
-                if newplayerlist:
-                    current_time = datetime.datetime.utcnow()
-                    last_time = datetime.datetime.fromisoformat(str(self.time))
-                    for player in newplayerlist:
-                        lb_mapname = f"{mapname} {clustername}"
-                        if player[0] not in stats:
-                            print(f"New Player: {player[0]}")
-                            stats[player[0]] = {"playtime": {"total": 0}}
-                            stats[player[0]]["xuid"] = player[1]
-                            timestamp = datetime.datetime.utcnow()
-                            stats[player[0]]["lastseen"] = timestamp.isoformat()
-                            xuid = player[1]
-                            link = await dchannel.create_invite(unique=False, reason="New Player")
-                            if settings["welcomemsg"]:
-                                params = {
-                                    "discord": guild.name,
-                                    "gamertag": player[0],
-                                    "link": link
-                                }
-                                welcome_raw = settings["welcomemsg"]
-                                welcome = welcome_raw.format(**params)
-                            else:
-                                welcome = f"Welcome to {guild.name}!\nThis is an automated message:\n" \
-                                          f"You appear to be a new player, " \
-                                          f"here is an invite to the Discord server:\n\n{link}"
-
-                            url = "https://xbl.io/api/v2/conversations"
-                            payload = {"xuid": str(xuid), "message": welcome}
-                            apikey = settings["clusters"][clustername.lower()]["servers"][mapname.lower()]["api"]
-                            print(f"Sending DM to {player[0]}, XUID: {player[1]}")
-                            status = await self.apipost(url, payload, apikey)
-                            print(f"Status: {status}")
-                            if status == 200:
-                                print("New Player DM Successful")
-                            else:
-                                print("New Player DM Unuccessful")
-
-                        if lb_mapname not in stats[player[0]]["playtime"]:
-                            stats[player[0]]["playtime"][lb_mapname] = 0
-                            continue
-
-                        else:
-                            current_playtime = stats[player[0]]["playtime"][lb_mapname]
-                            total_playtime = stats[player[0]]["playtime"]["total"]
-
-                            timedifference = current_time - last_time
-                            if int(timedifference.seconds) > 60:
-                                continue  # Cause somethings probably fishy if it's greater than 60
-
-                            new_playtime = int(current_playtime) + int(timedifference.seconds) - 1
-                            new_total = int(total_playtime) + int(timedifference.seconds) - 1
-
-                            stats[player[0]]["playtime"][lb_mapname] = new_playtime
-                            stats[player[0]]["playtime"]["total"] = new_total
-                            stats[player[0]]["lastseen"] = current_time.isoformat()
-                            stats[player[0]]["lastseen"] = {
-                                "time": current_time.isoformat(),
-                                "map": lb_mapname
-                            }
-                            # print(f"{timedifference.seconds} added to {player[0]} on {lb_mapname}")
-
             playerjoin = self.checkplayerjoin(channel, newplayerlist)
             if playerjoin:
                 await joinlog.send(
@@ -961,6 +905,65 @@ class ArkTools(commands.Cog):
                 await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
 
             self.playerlist[channel] = newplayerlist
+            async with self.config.guild(guild).playerstats() as stats:  # Player stats
+                if newplayerlist:
+                    current_time = datetime.datetime.utcnow()
+                    last_time = datetime.datetime.fromisoformat(str(self.time))
+                    for player in self.playerlist[channel]:
+                        lb_mapname = f"{mapname} {clustername}"
+                        if player[0] not in stats:  # New Player Setup
+                            print(f"New Player: {player[0]}")
+                            stats[player[0]] = {"playtime": {"total": 0}}
+                            stats[player[0]]["xuid"] = player[1]
+                            timestamp = datetime.datetime.utcnow()
+                            stats[player[0]]["lastseen"] = timestamp.isoformat()
+                            if "api" in settings["clusters"][clustername.lower()]["servers"][mapname.lower()]:
+                                link = await dchannel.create_invite(unique=False, reason="New Player")
+                                if settings["welcomemsg"]:
+                                    params = {
+                                        "discord": guild.name,
+                                        "gamertag": player[0],
+                                        "link": link
+                                    }
+                                    welcome_raw = settings["welcomemsg"]
+                                    welcome = welcome_raw.format(**params)
+                                else:
+                                    welcome = f"Welcome to {guild.name}!\nThis is an automated message:\n" \
+                                              f"You appear to be a new player, " \
+                                              f"here is an invite to the Discord server:\n\n{link}"
+                                xuid = player[1]
+                                url = "https://xbl.io/api/v2/conversations"
+                                payload = {"xuid": str(xuid), "message": welcome}
+                                apikey = settings["clusters"][clustername.lower()]["servers"][mapname.lower()]["api"]
+                                await asyncio.sleep(1)
+                                print(f"Sending DM to XUID: {player[1]}")
+                                status = await self.apipost(url, payload, apikey)
+                                print(f"Status: {status}")
+                                if status == 200:
+                                    print("New Player DM Successful")
+                                else:
+                                    print("New Player DM Unuccessful")
+
+                        if lb_mapname not in stats[player[0]]["playtime"]:
+                            stats[player[0]]["playtime"][lb_mapname] = 0
+                            continue
+
+                        else:
+                            current_playtime = stats[player[0]]["playtime"][lb_mapname]
+                            total_playtime = stats[player[0]]["playtime"]["total"]
+                            timedifference = current_time - last_time
+                            if int(timedifference.seconds) > 60:
+                                continue
+                            new_playtime = int(current_playtime) + int(timedifference.seconds) - 3
+                            new_total = int(total_playtime) + int(timedifference.seconds) - 3
+                            stats[player[0]]["playtime"][lb_mapname] = new_playtime
+                            stats[player[0]]["playtime"]["total"] = new_total
+                            stats[player[0]]["lastseen"] = current_time.isoformat()
+                            stats[player[0]]["lastseen"] = {
+                                "time": current_time.isoformat(),
+                                "map": lb_mapname
+                            }
+                            # print(f"{timedifference.seconds} added to {player[0]} on {lb_mapname}")
         current_time = datetime.datetime.utcnow()
         self.time = current_time.isoformat()
 
@@ -979,6 +982,10 @@ class ArkTools(commands.Cog):
                     return player
                 if player not in newplayerlist:
                     return player
+
+    # Initiates the ListPlayers loop for both join/leave logs and status message to use
+    # @tasks.loop(hours=2)
+    # async def player_maintenance(self):
 
     # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
@@ -1227,11 +1234,9 @@ class ArkTools(commands.Cog):
     async def loop_refresher(self):
         self.chat_executor.cancel()
         self.playerlist_executor.cancel()
-        self.status_channel.cancel()
         await asyncio.sleep(5)
         self.chat_executor.start()
         self.playerlist_executor.start()
-        self.status_channel.start()
 
     # Initialize the config before the chat loop starts
     @loop_refresher.before_loop
@@ -1263,8 +1268,10 @@ class ArkTools(commands.Cog):
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
     @_setarktools.command(name="checkname")
     async def _checkname(self, ctx):
-        """Make sure your name works with the filter."""
-        """If there are no errors then you're good to go."""
+        """
+        View what your name looks like In-game.
+        If your name looks fine and there are no errors then you're good to go.
+        """
         try:
             normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
             await ctx.send(f"Filtered name: {normalizedname}")
@@ -1323,15 +1330,3 @@ class ArkTools(commands.Cog):
             self.playerlist_executor.start()
             self.status_channel.start()
             return await ctx.send("Task loops refreshed")
-
-    @commands.command(name="test")
-    @commands.guildowner()
-    async def _test(self, ctx):
-        apikey = "wcgwso0kcsk0cgk4kgkwkgoogc0ow80c0sc"
-        welcome = f"Welcome to VERTYCO!\nThis is an automated message:\n" \
-                  f"You appear to be a new player," \
-                  f"here is an invite to the Discord server:\n linkldsjafla"
-        payload = {"xuid": "2533274922942310", "message": welcome}
-        url = "https://xbl.io/api/v2/conversations"
-        status = await self.apipost(url, payload, apikey)
-        await ctx.send(status)
