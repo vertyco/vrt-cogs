@@ -104,6 +104,7 @@ class Fluent(commands.Cog):
         channels = await self.config.guild(message.guild).channels()
         for channel_id in channels:
             if int(message.channel.id) == int(channel_id):
+                mentions = discord.AllowedMentions.all()
                 print("channel match!")
                 author = message.author
                 lang1 = channels[channel_id]["lang1"]
@@ -116,14 +117,14 @@ class Fluent(commands.Cog):
                 elif trans.src == lang2:
                     print(f"Detected: Lang2")
                     await message.delete()
-                    return await channel.send(f"`{author.name}: '{message.content}'`\n"
-                                              f"**{trans.text}**")
+                    return await channel.send(f"`{author.name}: {message.content}`\n"
+                                              f"**{trans.text}**", allowed_mentions=mentions)
                 elif trans.src == lang1:
                     print(f"Detected: Lang2")
                     trans = await self._translator(message.content, lang2)
                     await message.delete()
-                    return await channel.send(f"`{author.name}: '{message.content}'`\n"
-                                              f"**{trans.text}**")
+                    return await channel.send(f"`{author.name}:` {message.content}\n"
+                                              f"**{trans.text}**", allowed_mentions=mentions)
                 else:
                     return
 
