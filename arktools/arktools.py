@@ -280,7 +280,7 @@ class ArkTools(commands.Cog):
         This command requires api keys to be set for the servers
         """
         embed = discord.Embed(
-            description=f"**Type your gamertag in chat**"
+            description=f"**Type your Gamertag in chat.**"
         )
         msg = await ctx.send(embed=embed)
 
@@ -337,7 +337,8 @@ class ArkTools(commands.Cog):
 
         if reply.content.lower() == "no":
             return await msg.edit(embed=discord.Embed(description="Menu closed"))
-        if reply.content.lower() == "yes":
+        rep = reply.content.lower()
+        if rep == "yes" or rep == "sure" or rep == "si" or rep == "yeah" or rep == "ya":
             try:
                 await reply.delete()
             except discord.NotFound:
