@@ -279,6 +279,16 @@ class ArkTools(commands.Cog):
 
         This command requires api keys to be set for the servers
         """
+        clusters = await self.config.guild(ctx.guild).clusters()
+        for cname in clusters:
+            for sname in clusters[cname]["servers"]:
+                if "api" in sname:
+                    break
+            else:
+                embed = discord.Embed(
+                    description=f"❌ API key has not been set!."
+                )
+                return await ctx.send(embed=embed)
         embed = discord.Embed(
             description=f"**Type your Gamertag in chat.**"
         )
@@ -434,7 +444,6 @@ class ArkTools(commands.Cog):
                                                                               "exactly as it's displayed"))
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
-
 
     # Pull nearest api key
     async def pullkey(self, settings):
