@@ -362,7 +362,7 @@ class ArkTools(commands.Cog):
                                         f"{options}"
                         )
                         embed.set_footer(text="Type your reply below")
-                        msg = await msg.edit(embed=embed)
+                        await msg.edit(embed=embed)
 
                         def check(message: discord.Message):
                             return message.author == ctx.author and message.channel == ctx.channel
@@ -394,10 +394,7 @@ class ArkTools(commands.Cog):
                                             except discord.NotFound:
                                                 pass
                                             await msg.edit(embed=embed)
-            if playerl == '':
-                embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
-                                                  f"Set a Gamertag with `{ctx.prefix}arktools register <Gamertag>`")
-                return await ctx.send(embed=embed)
+
 
 
 
