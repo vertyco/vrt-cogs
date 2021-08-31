@@ -271,19 +271,20 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Welcome message set as:\n{to_send}")
 
     @_setarktools.command(name="register")
-    async def setgt(self, ctx):
+    async def _register(self, ctx):
         """
         (CROSSPLAY ONLY)Set your Gamertag
 
         This command requires api keys to be set for the servers
         """
+        apipresent = False
         clusters = await self.config.guild(ctx.guild).clusters()
-        apipresent = ""
         for cname in clusters:
             for sname in clusters[cname]["servers"]:
                 if "api" in clusters[cname]["servers"][sname]:
-                    apipresent += "Detected\n"
-        if apipresent == "":
+                    apipresent = True
+                    break
+        if not apipresent:
             embed = discord.Embed(
                 description=f"❌ API key has not been set!."
             )
@@ -322,8 +323,6 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).playerstats() as stats:
             current_time = datetime.datetime.utcnow()
             if gamertag not in stats:
-                stats[gamertag] = {}
-            if "playtime" not in stats[gamertag]:
                 stats[gamertag] = {"playtime": {"total": 0}}
             stats[gamertag]["xuid"] = xuid
             stats[gamertag]["lastseen"] = {
@@ -336,114 +335,24 @@ class ArkTools(commands.Cog):
                                   description=f"✅ Gamertag set to `{gamertag}`\n"
                                               f"XUID: `{xuid}`\n\n"
                                               f"**Would you like to add yourself to a gamertag as well?**")
+            embed.set_footer(text="Reply with 'yes' to go to the next step.")
             await msg.edit(embed=embed)
-
-        def check(message: discord.Message):
-            return message.author == ctx.author and message.channel == ctx.channel
 
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
         rep = reply.content.lower()
-        if rep == "yes" or rep == "sure" or rep == "si" or rep == "yeah" or rep == "ya" or rep == "yea" or "y" in rep:
+        if "y" in rep:
             try:
                 await reply.delete()
             except discord.NotFound:
                 pass
-            settings = await self.config.guild(ctx.guild).playerstats()
-            playerl = ''
-            for player in settings:
-                if "discord" in settings[player]:
-                    if settings[player]["discord"] == ctx.author.id:
-                        playerl += f"settings[player]\n"
-                        clusters = await self.config.guild(ctx.guild).clusters()
-                        options = "**Gamertag** - `Map-Cluster`\n"
-                        for clustername in clusters:
-                            for servername in clusters[clustername]["servers"]:
-                                if "api" in clusters[clustername]["servers"][servername]:
-                                    gametag = str(clusters[clustername]["servers"][servername]['gamertag'])
-                                    cname = clustername.upper()
-                                    sname = servername.capitalize()
-                                    options += f"**{gametag.capitalize()}** - `{sname} {cname}`\n"
-                        options += f"**All** - `Adds All Servers`\n"
-                        embed = discord.Embed(
-                            title=f"Add Yourself as a Friend",
-                            description=f"**Type the Gamertag that corresponds with the map you want.**\n\n"
-                                        f"{options}"
-                        )
-                        embed.set_footer(text="Type your reply below")
-                        await msg.edit(embed=embed)
-
-                        def check(message: discord.Message):
-                            return message.author == ctx.author and message.channel == ctx.channel
-
-                        try:
-                            reply = await self.bot.wait_for("message", timeout=60, check=check)
-                        except asyncio.TimeoutError:
-                            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-                        if reply.content.lower() == "all":
-                            try:
-                                await reply.delete()
-                            except discord.NotFound:
-                                pass
-                            async with ctx.typing():
-                                for clustername in clusters:
-                                    for servername in clusters[clustername]["servers"]:
-                                        gt = clusters[clustername]["servers"][servername]["gamertag"]
-                                        apikey = clusters[clustername]["servers"][servername]["api"]
-                                        xuid = settings[player]["xuid"]
-                                        command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                        data, status = await self.apicall(command, apikey)
-                                        if status == 200:
-                                            embed = discord.Embed(title="Success",
-                                                                  color=discord.Color.green(),
-                                                                  description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
-                                                                              f"You should now be able to join from the Gamertag's"
-                                                                              f" profile page.")
-                                        else:
-                                            embed = discord.Embed(title="Unsuccessful",
-                                                                  color=discord.Color.green(),
-                                                                  description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-
-                                        await msg.edit(embed=embed)
-                            embed = discord.Embed(title="Finished",
-                                                  color=discord.Color.green(),
-                                                  description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
-                                                              f"You should now be able to join from the Gamertag's"
-                                                              f" profile page.")
-                            await msg.edit(embed=embed)
-                        elif reply.content.lower() in options.lower():
-                            async with ctx.typing():
-                                for clustername in clusters:
-                                    for servername in clusters[clustername]["servers"]:
-                                        gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
-                                        if reply.content.lower() == gt:
-                                            apikey = clusters[clustername]["servers"][servername]["api"]
-                                            xuid = settings[player]["xuid"]
-                                            command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                            data, status = await self.apicall(command, apikey)
-                                            if status == 200:
-                                                embed = discord.Embed(title="Success",
-                                                                      color=discord.Color.green(),
-                                                                      description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
-                                                                                  f"You should now be able to join from the Gamertag's"
-                                                                                  f"profile page.")
-                                            else:
-                                                embed = discord.Embed(title="Unsuccessful",
-                                                                      color=discord.Color.green(),
-                                                                      description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                                            try:
-                                                await reply.delete()
-                                            except discord.NotFound:
-                                                pass
-                                            await msg.edit(embed=embed)
-                        else:
-                            return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
-                                                                                  "Make sure to type the Gamertag "
-                                                                                  "exactly as it's displayed"))
+            return await self._addme(ctx)
+        elif "n" in rep:
+            return await msg.edit(embed=discord.Embed(description="Menu closed."))
         else:
-            return await msg.edit(embed=discord.Embed(description="Menu canceled"))
+            return await msg.edit(embed=discord.Embed(description="Invalid response. Menu closed."))
 
     # Pull nearest api key
     async def pullkey(self, settings):
@@ -460,102 +369,103 @@ class ArkTools(commands.Cog):
 
         This command requires api keys to be set for the servers
         """
-        settings = await self.config.guild(ctx.guild).playerstats()
-        playerl = ''
-        for player in settings:
-            if "discord" in settings[player]:
-                if settings[player]["discord"] == ctx.author.id:
-                    playerl += f"settings[player]\n"
-                    clusters = await self.config.guild(ctx.guild).clusters()
-                    options = "**Gamertag** - `Map-Cluster`\n"
-                    for clustername in clusters:
-                        for servername in clusters[clustername]["servers"]:
-                            if "api" in clusters[clustername]["servers"][servername]:
-                                gametag = str(clusters[clustername]["servers"][servername]['gamertag'])
-                                cname = clustername.upper()
-                                sname = servername.capitalize()
-                                options += f"**{gametag.capitalize()}** - `{sname} {cname}`\n"
-                    options += f"**All** - `Adds All Servers`\n"
-                    embed = discord.Embed(
-                        title=f"Add Yourself as a Friend",
-                        description=f"**Type the Gamertag that corresponds with the map you want.**\n\n"
-                                    f"{options}"
-                    )
-                    embed.set_footer(text="Type your reply below")
-                    msg = await ctx.send(embed=embed)
+        registered = False
+        xuid = None
+        command = f"https://xbl.io/api/v2/friends/add/{xuid}"
+        settings = await self.config.guild(ctx.guild).all()
+        for player in settings["playerstats"]:
+            if "discord" in settings["playerstats"][player]:
+                if settings["playerstats"][player]["discord"] == ctx.author.id:
+                    registered = True
+                    xuid = settings["playerstats"][player]["xuid"]
+        if not registered:
+            embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.mention}**!\n"
+                                              f"Set a Gamertag with `{ctx.prefix}arktools register`")
+            return await ctx.send(embed=embed)
+        else:
+            options = "**Gamertag** - `Map/Cluster`\n"
+            for clustername in settings["clusters"]:
+                for servername in settings["clusters"][clustername]["servers"]:
+                    if "api" in settings["clusters"][clustername]["servers"][servername]:
+                        gametag = str(settings["clusters"][clustername]["servers"][servername]['gamertag'])
+                        cname = clustername.upper()
+                        sname = servername.capitalize()
+                        options += f"**{gametag.capitalize()}** - `{sname} {cname}`\n"
+            options += f"**All** - `Adds All Servers`\n"
+            embed = discord.Embed(
+                title=f"Add Yourself as a Friend",
+                description=f"**Type the Gamertag that corresponds with the map you want.**\n\n"
+                            f"{options}"
+            )
+            embed.set_footer(text="Type your reply below")
+            msg = await ctx.send(embed=embed)
 
-                    def check(message: discord.Message):
-                        return message.author == ctx.author and message.channel == ctx.channel
+            def check(message: discord.Message):
+                return message.author == ctx.author and message.channel == ctx.channel
 
+            try:
+                reply = await self.bot.wait_for("message", timeout=60, check=check)
+            except asyncio.TimeoutError:
+                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+            if reply.content.lower() == "all":
+                async with ctx.typing():
+                    for clustername in settings["clusters"]:
+                        for servername in settings["clusters"][clustername]["servers"]:
+                            gt = settings["clusters"][clustername]["servers"][servername]["gamertag"]
+                            apikey = settings["clusters"][clustername]["servers"][servername]["api"]
+                            data, status = await self.apicall(command, apikey)
+                            if status == 200:
+                                embed2 = discord.Embed(title="Success",
+                                                       color=discord.Color.green(),
+                                                       description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                   f"You should now be able to join from the Gamertag's"
+                                                                   f" profile page.")
+                            else:
+                                embed2 = discord.Embed(title="Unsuccessful",
+                                                       color=discord.Color.green(),
+                                                       description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+
+                            await msg.edit(embed=embed2)
+                    embed = discord.Embed(title="Finished",
+                                          color=discord.Color.green(),
+                                          description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
+                                                      f"You should now be able to join from the Gamertag's"
+                                                      f" profile page.")
                     try:
-                        reply = await self.bot.wait_for("message", timeout=60, check=check)
-                    except asyncio.TimeoutError:
-                        return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-                    if reply.content.lower() == "all":
-                        try:
-                            await reply.delete()
-                        except discord.NotFound:
-                            pass
-                        async with ctx.typing():
-                            for clustername in clusters:
-                                for servername in clusters[clustername]["servers"]:
-                                    gt = clusters[clustername]["servers"][servername]["gamertag"]
-                                    apikey = clusters[clustername]["servers"][servername]["api"]
-                                    xuid = settings[player]["xuid"]
-                                    command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                    data, status = await self.apicall(command, apikey)
-                                    if status == 200:
-                                        embed2 = discord.Embed(title="Success",
-                                                               color=discord.Color.green(),
-                                                               description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
-                                                                           f"You should now be able to join from the Gamertag's"
-                                                                           f" profile page.")
-                                    else:
-                                        embed2 = discord.Embed(title="Unsuccessful",
-                                                               color=discord.Color.green(),
-                                                               description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-
-                                    await msg.edit(embed=embed2)
-                        embed = discord.Embed(title="Finished",
-                                              color=discord.Color.green(),
-                                              description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
-                                                          f"You should now be able to join from the Gamertag's"
-                                                          f" profile page.")
-                        await msg.edit(embed=embed)
-                    elif reply.content.lower() in options.lower():
-                        async with ctx.typing():
-                            for clustername in clusters:
-                                for servername in clusters[clustername]["servers"]:
-                                    gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
-                                    if reply.content.lower() == gt:
-                                        apikey = clusters[clustername]["servers"][servername]["api"]
-                                        xuid = settings[player]["xuid"]
-                                        command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                        data, status = await self.apicall(command, apikey)
-                                        try:
-                                            await reply.delete()
-                                        except discord.NotFound:
-                                            pass
-                                        if status == 200:
-                                            embed = discord.Embed(title="Success",
-                                                                  color=discord.Color.green(),
-                                                                  description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
-                                                                              f"You should now be able to join from the Gamertag's"
-                                                                              f" profile page.")
-                                        else:
-                                            embed = discord.Embed(title="Unsuccessful",
-                                                                  color=discord.Color.green(),
-                                                                  description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                                        await msg.edit(embed=embed)
-                    else:
+                        await reply.delete()
+                    except discord.NotFound:
+                        pass
+                    return await msg.edit(embed=embed)
+            else:
+                valid = False
+                async with ctx.typing():
+                    for clustername in settings["clusters"]:
+                        for servername in settings["clusters"][clustername]["servers"]:
+                            gt = settings["clusters"][clustername]["servers"][servername]["gamertag"].lower()
+                            if reply.content.lower() == gt:
+                                valid = True
+                                apikey = settings["clusters"][clustername]["servers"][servername]["api"]
+                                data, status = await self.apicall(command, apikey)
+                                if status == 200:
+                                    embed = discord.Embed(title="Success",
+                                                          color=discord.Color.green(),
+                                                          description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                      f"You should now be able to join from the Gamertag's"
+                                                                      f" profile page.")
+                                else:
+                                    embed = discord.Embed(title="Unsuccessful",
+                                                          color=discord.Color.green(),
+                                                          description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                                try:
+                                    await reply.delete()
+                                except discord.NotFound:
+                                    pass
+                                await msg.edit(embed=embed)
+                    if not valid:
                         return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
                                                                               "Make sure to type the Gamertag "
                                                                               "exactly as it's displayed"))
-
-        if playerl == '':
-            embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
-                                              f"Set a Gamertag with `{ctx.prefix}arktools register`")
-            return await ctx.send(embed=embed)
 
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
