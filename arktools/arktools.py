@@ -833,6 +833,11 @@ class ArkTools(commands.Cog):
             await ctx.send("No servers have been added yet.")
             return
         for cname in settings["clusters"]:
+            embed = discord.Embed(
+                description=f"Gathering Server Data for `{cname.upper()}` Cluster..."
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
             serversettings = ""
             serversettings += f"**{cname.upper()} Cluster**\n"
             if settings["clusters"][cname]["servertoserver"] is True:
@@ -879,6 +884,10 @@ class ArkTools(commands.Cog):
                         serversettings += f"**Friend Count:** `{pages}`\n"
                         serversettings += f"**API Calls Remaining:** `{str(remaining)}`\n"
                 serversettings += "\n"
+            try:
+                await msg.delete()
+            except discord.NotFound:
+                pass
             for p in pagify(serversettings):
                 color = discord.Color.dark_purple()
                 embed = discord.Embed(
