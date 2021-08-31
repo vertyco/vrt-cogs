@@ -413,7 +413,7 @@ class ArkTools(commands.Cog):
                             async with ctx.typing():
                                 for clustername in clusters:
                                     for servername in clusters[clustername]["servers"]:
-                                        gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
+                                        gt = clusters[clustername]["servers"][servername]["gamertag"]
                                         apikey = clusters[clustername]["servers"][servername]["api"]
                                         xuid = settings[player]["xuid"]
                                         command = f"https://xbl.io/api/v2/friends/add/{xuid}"
@@ -521,32 +521,32 @@ class ArkTools(commands.Cog):
                         async with ctx.typing():
                             for clustername in clusters:
                                 for servername in clusters[clustername]["servers"]:
-                                    gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
+                                    gt = clusters[clustername]["servers"][servername]["gamertag"]
                                     apikey = clusters[clustername]["servers"][servername]["api"]
                                     xuid = settings[player]["xuid"]
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                     data, status = await self.apicall(command, apikey)
                                     if status == 200:
-                                        embed = discord.Embed(title="Success",
+                                        embed2 = discord.Embed(title="Success",
                                                               color=discord.Color.green(),
                                                               description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
                                                                           f"You should now be able to join from the Gamertag's"
                                                                           f" profile page.")
                                     else:
-                                        embed = discord.Embed(title="Unsuccessful",
+                                        embed2 = discord.Embed(title="Unsuccessful",
                                                               color=discord.Color.green(),
                                                               description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
                                     try:
                                         await reply.delete()
                                     except discord.NotFound:
                                         pass
-                                    await msg.edit(embed=embed)
-                            embed = discord.Embed(title="Finished",
-                                                  color=discord.Color.green(),
-                                                  description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
-                                                              f"You should now be able to join from the Gamertag's"
-                                                              f" profile page.")
-                            await msg.edit(embed=embed)
+                                    await msg.edit(embed=embed2)
+                        embed = discord.Embed(title="Finished",
+                                              color=discord.Color.green(),
+                                              description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
+                                                          f"You should now be able to join from the Gamertag's"
+                                                          f" profile page.")
+                        await msg.edit(embed=embed)
                     else:
                         return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
                                                                               "Make sure to type the Gamertag "
