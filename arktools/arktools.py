@@ -335,7 +335,7 @@ class ArkTools(commands.Cog):
         except asyncio.TimeoutError:
             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
         rep = reply.content.lower()
-        if rep == "yes" or rep == "sure" or rep == "si" or rep == "yeah" or rep == "ya":
+        if rep == "yes" or rep == "sure" or rep == "si" or rep == "yeah" or rep == "ya" or rep == "yea" or "y" in rep:
             try:
                 await reply.delete()
             except discord.NotFound:
@@ -395,8 +395,6 @@ class ArkTools(commands.Cog):
                                             except discord.NotFound:
                                                 pass
                                             await msg.edit(embed=embed)
-        elif reply.content.lower() == "no":
-            return await msg.edit(embed=discord.Embed(description="Menu closed"))
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
 
