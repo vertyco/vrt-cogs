@@ -526,10 +526,6 @@ class ArkTools(commands.Cog):
                                     xuid = settings[player]["xuid"]
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                     data, status = await self.apicall(command, apikey)
-                                    try:
-                                        await reply.delete()
-                                    except discord.NotFound:
-                                        pass
                                     if status == 200:
                                         embed = discord.Embed(title="Success",
                                                               color=discord.Color.green(),
@@ -540,6 +536,10 @@ class ArkTools(commands.Cog):
                                         embed = discord.Embed(title="Unsuccessful",
                                                               color=discord.Color.green(),
                                                               description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                                    try:
+                                        await reply.delete()
+                                    except discord.NotFound:
+                                        pass
                                     await msg.edit(embed=embed)
                         embed = discord.Embed(title="Finished",
                                               color=discord.Color.green(),
