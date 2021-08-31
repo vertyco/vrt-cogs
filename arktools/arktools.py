@@ -312,7 +312,8 @@ class ArkTools(commands.Cog):
                 return await msg.edit(embed=embed)
         async with self.config.guild(ctx.guild).playerstats() as stats:
             current_time = datetime.datetime.utcnow()
-            stats[gamertag] = {"playtime": {"total": 0}}
+            if "playtime" not in stats[gamertag]:
+                stats[gamertag] = {"playtime": {"total": 0}}
             stats[gamertag]["xuid"] = xuid
             stats[gamertag]["lastseen"] = {
                 "time": current_time.isoformat(),
@@ -394,12 +395,6 @@ class ArkTools(commands.Cog):
                                             except discord.NotFound:
                                                 pass
                                             await msg.edit(embed=embed)
-
-
-
-
-
-
 
     # Pull nearest api key
     async def pullkey(self, settings):
