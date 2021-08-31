@@ -355,6 +355,7 @@ class ArkTools(commands.Cog):
                                     cname = clustername.upper()
                                     sname = servername.capitalize()
                                     options += f"**{gametag.capitalize()}** - `{sname} {cname}`\n"
+                        options += f"**All** - `Adds All Servers`\n"
                         embed = discord.Embed(
                             title=f"Add Yourself as a Friend",
                             description=f"**Type the Gamertag that corresponds with the map you want.**\n\n"
@@ -395,6 +396,36 @@ class ArkTools(commands.Cog):
                                             except discord.NotFound:
                                                 pass
                                             await msg.edit(embed=embed)
+                        if "all" in reply.content.lower():
+                            async with ctx.typing():
+                                for clustername in clusters:
+                                    for servername in clusters[clustername]["servers"]:
+                                        gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
+                                        apikey = clusters[clustername]["servers"][servername]["api"]
+                                        xuid = settings[player]["xuid"]
+                                        command = f"https://xbl.io/api/v2/friends/add/{xuid}"
+                                        data, status = await self.apicall(command, apikey)
+                                        if status == 200:
+                                            embed = discord.Embed(title="Success",
+                                                                  color=discord.Color.green(),
+                                                                  description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                              f"You should now be able to join from the Gamertag's"
+                                                                              f" profile page.")
+                                        else:
+                                            embed = discord.Embed(title="Unsuccessful",
+                                                                  color=discord.Color.green(),
+                                                                  description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                                        try:
+                                            await reply.delete()
+                                        except discord.NotFound:
+                                            pass
+                                        await msg.edit(embed=embed)
+                            embed = discord.Embed(title="Finished",
+                                                  color=discord.Color.green(),
+                                                  description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
+                                                              f"You should now be able to join from the Gamertag's"
+                                                              f" profile page.")
+                            await msg.edit(embed=embed)
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
 
@@ -429,6 +460,7 @@ class ArkTools(commands.Cog):
                                 cname = clustername.upper()
                                 sname = servername.capitalize()
                                 options += f"**{gametag.capitalize()}** - `{sname} {cname}`\n"
+                    options += f"**All** - `Adds All Servers`\n"
                     embed = discord.Embed(
                         title=f"Add Yourself as a Friend",
                         description=f"**Type the Gamertag that corresponds with the map you want.**\n\n"
@@ -454,6 +486,10 @@ class ArkTools(commands.Cog):
                                         xuid = settings[player]["xuid"]
                                         command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                         data, status = await self.apicall(command, apikey)
+                                        try:
+                                            await reply.delete()
+                                        except discord.NotFound:
+                                            pass
                                         if status == 200:
                                             embed = discord.Embed(title="Success",
                                                                   color=discord.Color.green(),
@@ -464,7 +500,38 @@ class ArkTools(commands.Cog):
                                             embed = discord.Embed(title="Unsuccessful",
                                                                   color=discord.Color.green(),
                                                                   description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                                        await ctx.send(embed=embed)
+                                        await msg.edit(embed=embed)
+                    if "all" in reply.content.lower():
+                        async with ctx.typing():
+                            for clustername in clusters:
+                                for servername in clusters[clustername]["servers"]:
+                                    gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
+                                    apikey = clusters[clustername]["servers"][servername]["api"]
+                                    xuid = settings[player]["xuid"]
+                                    command = f"https://xbl.io/api/v2/friends/add/{xuid}"
+                                    data, status = await self.apicall(command, apikey)
+                                    try:
+                                        await reply.delete()
+                                    except discord.NotFound:
+                                        pass
+                                    if status == 200:
+                                        embed = discord.Embed(title="Success",
+                                                              color=discord.Color.green(),
+                                                              description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                          f"You should now be able to join from the Gamertag's"
+                                                                          f" profile page.")
+                                    else:
+                                        embed = discord.Embed(title="Unsuccessful",
+                                                              color=discord.Color.green(),
+                                                              description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                                    await msg.edit(embed=embed)
+                        embed = discord.Embed(title="Finished",
+                                              color=discord.Color.green(),
+                                              description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
+                                                          f"You should now be able to join from the Gamertag's"
+                                                          f" profile page.")
+                        await msg.edit(embed=embed)
+
         if playerl == '':
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
                                               f"Set a Gamertag with `{ctx.prefix}arktools register`")
