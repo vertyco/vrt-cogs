@@ -5,7 +5,7 @@
     ],
     "description": "Seamless translation between two languages in one channel.",
     "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data about users.",
+    "end_user_data_statement" : "This cog does not persistently store data about users. This cog uses google's free translator api",
     "hidden": false,
     "install_msg": "Thank you for installing!",
     "min_bot_version" : "3.4.0",
