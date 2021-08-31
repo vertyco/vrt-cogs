@@ -429,7 +429,9 @@ class ArkTools(commands.Cog):
                                                               f" profile page.")
                             await msg.edit(embed=embed)
                         else:
-                            return await msg.edit(embed=discord.Embed(description="Incorrect Reply\nMenu canceled"))
+                            return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
+                                                                              "Make sure to type the gamertag "
+                                                                              "exactly as it's displayed"))
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
 
@@ -536,7 +538,9 @@ class ArkTools(commands.Cog):
                                                           f" profile page.")
                         await msg.edit(embed=embed)
                     else:
-                        return await msg.edit(embed=discord.Embed(description="Incorrect Reply\nMenu canceled"))
+                        return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
+                                                                              "Make sure to type the gamertag "
+                                                                              "exactly as it's displayed"))
 
         if playerl == '':
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
