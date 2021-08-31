@@ -416,17 +416,15 @@ class ArkTools(commands.Cog):
                             apikey = settings["clusters"][clustername]["servers"][servername]["api"]
                             data, status = await self.apicall(command, apikey)
                             if status == 200:
-                                embed2 = discord.Embed(title="Success",
+                                embed = discord.Embed(title="Success",
                                                        color=discord.Color.green(),
-                                                       description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
-                                                                   f"You should now be able to join from the Gamertag's"
-                                                                   f" profile page.")
+                                                       description=f"✅ `{gt}` Successfully added `{ctx.author.name}`")
                             else:
-                                embed2 = discord.Embed(title="Unsuccessful",
+                                embed = discord.Embed(title="Unsuccessful",
                                                        color=discord.Color.green(),
                                                        description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-
-                            await msg.edit(embed=embed2)
+                            embed.set_thumbnail(url="https://i.imgur.com/68femBx.gifv")
+                            await msg.edit(embed=embed)
                     embed = discord.Embed(title="Finished",
                                           color=discord.Color.green(),
                                           description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
@@ -452,7 +450,8 @@ class ArkTools(commands.Cog):
                                                           color=discord.Color.green(),
                                                           description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
                                                                       f"You should now be able to join from the Gamertag's"
-                                                                      f" profile page.")
+                                                                      f" profile page.\n\n"
+                                                                      f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
                                 else:
                                     embed = discord.Embed(title="Unsuccessful",
                                                           color=discord.Color.green(),
