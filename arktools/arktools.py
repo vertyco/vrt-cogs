@@ -14,9 +14,9 @@ import rcon
 from rcon import Client
 import unicodedata
 
-LOADING = "https://i.imgur.com/l3p6EMX.gifv"
+LOADING = "https://i.imgur.com/l3p6EMX.gif"
 FAILED = "https://i.imgur.com/TcnAyVO.png"
-SUCCESS = "https://i.imgur.com/NrLAEpq.gifv"
+SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 
 class ArkTools(commands.Cog):
