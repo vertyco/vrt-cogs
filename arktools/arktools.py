@@ -757,15 +757,13 @@ class ArkTools(commands.Cog):
             leaderboard[player] = time
             global_time = global_time + time
         globaldays, globalhours, globalminutes = await self.time_formatter(global_time)
-
+        sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
         embed = discord.Embed(
             title="Playtime Leaderboard",
             description=f"Global Cumulative Playtime: `{globaldays}d {globalhours}h {globalminutes}m`\n\n"
-                        f"**Top 10 Players by Playtime**",
+                        f"**Top Players by Playtime** `{len(sorted_players)} Total`",
             color=discord.Color.random()
         )
-
-        sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
 
         if len(sorted_players) >= 10:
             for i in range(0, 10, 1):
