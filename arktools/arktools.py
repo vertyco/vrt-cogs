@@ -421,7 +421,7 @@ class ArkTools(commands.Cog):
                 if settings[player]["discord"] == ctx.author.id:
                     playerl += f"settings[player]\n"
                     clusters = await self.config.guild(ctx.guild).clusters()
-                    options = ""
+                    options = "**Gamertag** - `Map-Cluster`\n"
                     for clustername in clusters:
                         for servername in clusters[clustername]["servers"]:
                             if "api" in clusters[clustername]["servers"][servername]:
