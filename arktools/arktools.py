@@ -383,6 +383,10 @@ class ArkTools(commands.Cog):
                         except asyncio.TimeoutError:
                             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
                         if reply.content.lower() == "all":
+                            try:
+                                await reply.delete()
+                            except discord.NotFound:
+                                pass
                             async with ctx.typing():
                                 for clustername in clusters:
                                     for servername in clusters[clustername]["servers"]:
@@ -401,10 +405,7 @@ class ArkTools(commands.Cog):
                                             embed = discord.Embed(title="Unsuccessful",
                                                                   color=discord.Color.green(),
                                                                   description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                                        try:
-                                            await reply.delete()
-                                        except discord.NotFound:
-                                            pass
+
                                         await msg.edit(embed=embed)
                             embed = discord.Embed(title="Finished",
                                                   color=discord.Color.green(),
@@ -491,6 +492,10 @@ class ArkTools(commands.Cog):
                     except asyncio.TimeoutError:
                         return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
                     if reply.content.lower() == "all":
+                        try:
+                            await reply.delete()
+                        except discord.NotFound:
+                            pass
                         async with ctx.typing():
                             for clustername in clusters:
                                 for servername in clusters[clustername]["servers"]:
@@ -509,10 +514,7 @@ class ArkTools(commands.Cog):
                                         embed2 = discord.Embed(title="Unsuccessful",
                                                                color=discord.Color.green(),
                                                                description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                                    try:
-                                        await reply.delete()
-                                    except discord.NotFound:
-                                        pass
+
                                     await msg.edit(embed=embed2)
                         embed = discord.Embed(title="Finished",
                                               color=discord.Color.green(),
