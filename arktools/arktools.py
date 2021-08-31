@@ -304,6 +304,11 @@ class ArkTools(commands.Cog):
 
         gamertag = reply.content
         async with ctx.typing():
+            embed = discord.Embed(color=discord.Color.green(),
+                                  description=f"Searching")
+            url = "https://i.pinimg.com/originals/e4/6b/20/e46b203dc855be2ad356cc607620d657.gif"
+            embed.set_thumbnail(url=url)
+            await msg.edit(embed=embed)
             command = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             settings = await self.config.guild(ctx.guild).all()
             apikey = await self.pullkey(settings)
@@ -417,13 +422,14 @@ class ArkTools(commands.Cog):
                             data, status = await self.apicall(command, apikey)
                             if status == 200:
                                 embed = discord.Embed(title="Success",
-                                                       color=discord.Color.green(),
-                                                       description=f"✅ `{gt}` Successfully added `{ctx.author.name}`")
+                                                      color=discord.Color.green(),
+                                                      description=f"✅ `{gt}` Successfully added `{ctx.author.name}`")
                             else:
                                 embed = discord.Embed(title="Unsuccessful",
-                                                       color=discord.Color.green(),
-                                                       description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                            embed.set_thumbnail(url="https://i.imgur.com/68femBx.gifv")
+                                                      color=discord.Color.green(),
+                                                      description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                            url = "https://i.pinimg.com/originals/e4/6b/20/e46b203dc855be2ad356cc607620d657.gif"
+                            embed.set_thumbnail(url=url)
                             await msg.edit(embed=embed)
                     embed = discord.Embed(title="Finished",
                                           color=discord.Color.green(),
@@ -436,6 +442,11 @@ class ArkTools(commands.Cog):
                         pass
                     return await msg.edit(embed=embed)
             else:
+                embed = discord.Embed(color=discord.Color.green(),
+                                      description=f"Adding you now.")
+                url = "https://i.pinimg.com/originals/e4/6b/20/e46b203dc855be2ad356cc607620d657.gif"
+                embed.set_thumbnail(url=url)
+                await msg.edit(embed=embed)
                 valid = False
                 async with ctx.typing():
                     for clustername in settings["clusters"]:
