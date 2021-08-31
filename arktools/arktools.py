@@ -312,6 +312,8 @@ class ArkTools(commands.Cog):
                 return await msg.edit(embed=embed)
         async with self.config.guild(ctx.guild).playerstats() as stats:
             current_time = datetime.datetime.utcnow()
+            if gamertag not in stats:
+                stats[gamertag] = {}
             if "playtime" not in stats[gamertag]:
                 stats[gamertag] = {"playtime": {"total": 0}}
             stats[gamertag]["xuid"] = xuid
@@ -1341,9 +1343,34 @@ class ArkTools(commands.Cog):
                                 "time": current_time.isoformat(),
                                 "map": map_cluster
                             }
-                            if timedifference > 60:
-                                print(f"{timedifference} added to {player[0]} on {map_cluster}")
+                            # if timedifference > 60:
+                            #     print(f"{timedifference} added to {player[0]} on {map_cluster}")
         self.time = current_time.isoformat()
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+        if not member:
+            return
+        stats = await self.config.guild(member.guild).playerstats()
+        unfriendtasks = []
+        for gt in stats:
+            if "discord" in stats[gt]:
+                if member.id == stats[gt]["discord"]:
+                    xuid = stats[gt]["xuid"]
+                    clusters = await self.config.guild(member.guild).clusters()
+                    for cname in clusters:
+                        for sname in clusters[cname]["servers"]:
+                            if "api" in clusters[cname]["servers"][sname]:
+                                apikey = clusters[cname]["servers"][sname]["api"]
+                                mapgt = clusters[cname]["servers"][sname]["api"]
+                                command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
+                                unfriendtasks.append(self.leaveunfriend(command, apikey, gt, mapgt))
+        await asyncio.gather(*unfriendtasks)
+
+    async def leaveunfriend(self, command, apikey, gt, mapgt):
+        async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
+            if resp.status == 200:
+                print(f"{mapgt} successfully unfriended {gt}")
 
     # Unfriends gamertags if they havent been seen on any server after a certain period of time
     @tasks.loop(hours=2)
