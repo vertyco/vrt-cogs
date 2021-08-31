@@ -541,12 +541,12 @@ class ArkTools(commands.Cog):
                                     except discord.NotFound:
                                         pass
                                     await msg.edit(embed=embed)
-                        embed = discord.Embed(title="Finished",
-                                              color=discord.Color.green(),
-                                              description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
-                                                          f"You should now be able to join from the Gamertag's"
-                                                          f" profile page.")
-                        await msg.edit(embed=embed)
+                            embed = discord.Embed(title="Finished",
+                                                  color=discord.Color.green(),
+                                                  description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
+                                                              f"You should now be able to join from the Gamertag's"
+                                                              f" profile page.")
+                            await msg.edit(embed=embed)
                     else:
                         return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
                                                                               "Make sure to type the Gamertag "
