@@ -383,7 +383,9 @@ class ArkTools(commands.Cog):
                                             if status == 200:
                                                 embed = discord.Embed(title="Success",
                                                                       color=discord.Color.green(),
-                                                                      description=f"✅ `{gt}` Successfully added `{ctx.author.name}`")
+                                                                      description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                                  f"You should now be able to join from the Gamertag's"
+                                                                                  f"profile page.")
                                             else:
                                                 embed = discord.Embed(title="Unsuccessful",
                                                                       color=discord.Color.green(),
@@ -457,7 +459,9 @@ class ArkTools(commands.Cog):
                                         if status == 200:
                                             embed = discord.Embed(title="Success",
                                                                   color=discord.Color.green(),
-                                                                  description=f"✅ `{gt}` Successfully added `{ctx.author.name}`")
+                                                                  description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                              f"You should now be able to join from the Gamertag's"
+                                                                              f"profile page.")
                                         else:
                                             embed = discord.Embed(title="Unsuccessful",
                                                                   color=discord.Color.green(),
