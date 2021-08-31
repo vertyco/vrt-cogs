@@ -280,16 +280,16 @@ class ArkTools(commands.Cog):
         This command requires api keys to be set for the servers
         """
         clusters = await self.config.guild(ctx.guild).clusters()
+        apipresent = ""
         for cname in clusters:
             for sname in clusters[cname]["servers"]:
-                for key in sname.keys():
-                    if key == "api":
-                        break
-            else:
-                embed = discord.Embed(
-                    description=f"❌ API key has not been set!."
-                )
-                return await ctx.send(embed=embed)
+                if "api" in clusters[cname]["servers"][sname]:
+                    apipresent += "Detected\n"
+        if apipresent == "":
+            embed = discord.Embed(
+                description=f"❌ API key has not been set!."
+            )
+            return await ctx.send(embed=embed)
         embed = discord.Embed(
             description=f"**Type your Gamertag in chat.**"
         )
