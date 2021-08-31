@@ -430,7 +430,7 @@ class ArkTools(commands.Cog):
                             await msg.edit(embed=embed)
                         else:
                             return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
-                                                                              "Make sure to type the gamertag "
+                                                                              "Make sure to type the Gamertag "
                                                                               "exactly as it's displayed"))
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
@@ -539,7 +539,7 @@ class ArkTools(commands.Cog):
                         await msg.edit(embed=embed)
                     else:
                         return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
-                                                                              "Make sure to type the gamertag "
+                                                                              "Make sure to type the Gamertag "
                                                                               "exactly as it's displayed"))
 
         if playerl == '':
