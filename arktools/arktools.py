@@ -398,7 +398,7 @@ class ArkTools(commands.Cog):
                                             except discord.NotFound:
                                                 pass
                                             await msg.edit(embed=embed)
-                        if "all" in reply.content.lower():
+                        elif "all" in reply.content.lower():
                             async with ctx.typing():
                                 for clustername in clusters:
                                     for servername in clusters[clustername]["servers"]:
@@ -429,7 +429,7 @@ class ArkTools(commands.Cog):
                                                               f" profile page.")
                             await msg.edit(embed=embed)
                         else:
-                            return await msg.edit(embed=discord.Embed(description="Menu canceled"))
+                            return await msg.edit(embed=discord.Embed(description="Incorrect Reply\nMenu canceled"))
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
 
@@ -536,7 +536,7 @@ class ArkTools(commands.Cog):
                                                           f" profile page.")
                         await msg.edit(embed=embed)
                     else:
-                        return await msg.edit(embed=discord.Embed(description="Menu canceled"))
+                        return await msg.edit(embed=discord.Embed(description="Incorrect Reply\nMenu canceled"))
 
         if playerl == '':
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
