@@ -105,22 +105,18 @@ class Fluent(commands.Cog):
         for channel_id in channels:
             if int(message.channel.id) == int(channel_id):
                 mentions = discord.AllowedMentions.all()
-                print("channel match!")
                 author = message.author
                 lang1 = channels[channel_id]["lang1"]
                 lang2 = channels[channel_id]["lang2"]
                 channel = message.channel
                 trans = await self._translator(message.content, lang1)
-                print(f"SOURCE: {trans}")
                 if trans is None:
                     return await channel.send(embed=discord.Embed(description=f"❌ API seems to be down at the moment."))
                 elif trans.src == lang2:
-                    print(f"Detected: Lang2")
                     await message.delete()
                     return await channel.send(f"`{author.name}: {message.content}`\n"
                                               f"**{trans.text}**", allowed_mentions=mentions)
                 elif trans.src == lang1:
-                    print(f"Detected: Lang2")
                     trans = await self._translator(message.content, lang2)
                     await message.delete()
                     return await channel.send(f"`{author.name}:` {message.content}\n"
