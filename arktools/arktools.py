@@ -421,12 +421,10 @@ class ArkTools(commands.Cog):
                             apikey = settings["clusters"][clustername]["servers"][servername]["api"]
                             data, status = await self.apicall(command, apikey)
                             if status == 200:
-                                embed = discord.Embed(title="Success",
-                                                      color=discord.Color.green(),
+                                embed = discord.Embed(color=discord.Color.green(),
                                                       description=f"✅ `{gt}` Successfully added `{ctx.author.name}`")
                             else:
-                                embed = discord.Embed(title="Unsuccessful",
-                                                      color=discord.Color.green(),
+                                embed = discord.Embed(color=discord.Color.green(),
                                                       description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
                             url = "https://i.pinimg.com/originals/e4/6b/20/e46b203dc855be2ad356cc607620d657.gif"
                             embed.set_thumbnail(url=url)
