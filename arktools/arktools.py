@@ -334,9 +334,6 @@ class ArkTools(commands.Cog):
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-        if reply.content.lower() == "no":
-            return await msg.edit(embed=discord.Embed(description="Menu closed"))
         rep = reply.content.lower()
         if rep == "yes" or rep == "sure" or rep == "si" or rep == "yeah" or rep == "ya":
             try:
@@ -396,6 +393,11 @@ class ArkTools(commands.Cog):
                                             except discord.NotFound:
                                                 pass
                                             await msg.edit(embed=embed)
+        elif reply.content.lower() == "no":
+            return await msg.edit(embed=discord.Embed(description="Menu closed"))
+        else:
+            return await msg.edit(embed=discord.Embed(description="Menu canceled"))
+
 
     # Pull nearest api key
     async def pullkey(self, settings):
