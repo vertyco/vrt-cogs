@@ -10,6 +10,7 @@ I am relatively new to Python and coding in general, and enjoy working with API'
 | Inspire | ✓ | <details><summary>Get inpsirational messages.</summary> Super simple cog that replies to certain sad words with positive encouragements, and responds to the [p]inspire command with an inspirational quote using zenquotes.io API. Note: this cog was my very first project just to get the feel for Red so it's not very big and there aren't any plans of expanding it at the moment.</details>|
 | MCTools | ✓ | <details><summary>Super simple status cog for Minecraft Bedrock servers.</summary> Displays a status embed showing server version and player count. Only for **Bedrock** dedicated servers since there is already one that supports Java.</details> |
 | XTools | ✓ | <details><summary>View your Xbox profile, friends, screenshots and game clips using simple commands and interactive menus.</summary> Various tools for Xbox using xbl.io and xapi.us APIs.  (You will need to register for a free key to use this cog. The profile and friends command uses only xbl.io but the other commands use a combination of the two.)</details> |
+| Fluent | ✓ | <details><summary>Set any channel as a two-way translator for fluent conversation.</summary> Set a channel and both languages, if a message is in language 1 it gets converted to language 2 and vice versa.</details> |
 
 # Installation
 Run the following commands with your Red instance, replacing `[p]` with your prefix:
