@@ -85,7 +85,6 @@ class ArkTools(commands.Cog):
         pass
 
     @_setarktools.group(name="api")
-    @commands.guildowner()
     async def _api(self, ctx: commands.Context):
         """
         (CROSSPLAY ONLY) API tools for the host gamertags.
@@ -327,8 +326,8 @@ class ArkTools(commands.Cog):
         playerl = ''
         for player in settings:
             if "discord" in settings[player]:
-                playerl += f"settings[player]\n"
                 if settings[player]["discord"] == ctx.author.id:
+                    playerl += f"settings[player]\n"
                     clusters = await self.config.guild(ctx.guild).clusters()
                     options = ""
                     for clustername in clusters:
