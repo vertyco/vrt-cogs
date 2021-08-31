@@ -760,7 +760,8 @@ class ArkTools(commands.Cog):
                         getfriends = "https://xbl.io/api/v2/friends"
                         data, status = await self.apicall(getfriends, apikey)
                         if data:
-                            pages = len(data["people"])
+                            if "people" in data:
+                                pages = len(data["people"])
                         else:
                             pages = "None"
                         serversettings += f"**Friend Count:** `{pages}`\n"
