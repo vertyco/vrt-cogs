@@ -394,10 +394,10 @@ class ArkTools(commands.Cog):
                                             except discord.NotFound:
                                                 pass
                                             return await msg.edit(embed=embed)
-                    if playerl == '':
-                        embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
-                                                          f"Set a Gamertag with `{ctx.prefix}arktools register <Gamertag>`")
-                        return await ctx.send(embed=embed)
+            if playerl == '':
+                embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
+                                                  f"Set a Gamertag with `{ctx.prefix}arktools register <Gamertag>`")
+                return await ctx.send(embed=embed)
 
 
 
