@@ -505,7 +505,7 @@ class ArkTools(commands.Cog):
                                                                   color=discord.Color.green(),
                                                                   description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
                                         await msg.edit(embed=embed)
-                    if "all" in reply.content.lower():
+                    elif "all" in reply.content.lower():
                         async with ctx.typing():
                             for clustername in clusters:
                                 for servername in clusters[clustername]["servers"]:
