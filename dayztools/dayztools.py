@@ -118,6 +118,11 @@ class DayZTools(commands.Cog):
         game_name = server["game_name"]
         version = server["version"]
         last_update = server["last_update"]
+        if last_update is not None:
+            time = datetime.datetime.fromisoformat(last_update)
+            time = time.strftime('%m/%d/%Y at %H:%M:%S')
+        else:
+            time = "Unknown"
         players = server["players"]
         playermax = server["playermax"]
         status = server["status"]
@@ -135,13 +140,12 @@ class DayZTools(commands.Cog):
             color=discord.Color.random(),
             description=f"**Players:** `{players}/{playermax}`"
         )
-        time = datetime.datetime.fromisoformat(last_update)
         embed.set_thumbnail(url=guild.icon_url)
         embed.add_field(
             name="Server Info",
             value=f"Server Status: `{status}`\n"
                   f"Current Version: `{version}`\n"
-                  f"Last Updated: `{time.strftime('%m/%d/%Y at %H:%M:%S')}`\n"
+                  f"Last Updated: `{time}`\n"
                   f"Location: `{location}`\n"
                   f"Memory: `{memory} MB`",
             inline=False
@@ -437,7 +441,7 @@ class DayZTools(commands.Cog):
         msg = json.dumps(server, indent=4, sort_keys=True)[:2030]
         await ctx.send(box(f"{msg}", lang="json"))
 
-    # For testing or visual purposes
+    # Setting overview
     @dayz_tools.command()
     @commands.guildowner()
     async def view(self, ctx):
@@ -467,3 +471,57 @@ class DayZTools(commands.Cog):
                         f"**Status Channel:** {statuschannel}\n"
         )
         await ctx.send(embed=embed)
+
+    # GET REQUESTS
+    async def apiget(self, req, header):
+        pass
+
+    # POST REQUESTS
+    async def apipost(self, req, header):
+        async with self.session.post(req, headers=header) as resp:
+            data = await resp.text()
+            data = json.loads(data)
+            return data
+
+    # SERVER COMMANDS
+    @dayz_tools.command()
+    @commands.admin()
+    async def restart(self, ctx):
+        """Restart the server"""
+        async with ctx.typing():
+            settings = await self.config.guild(ctx.guild).all()
+            ntoken = settings["ntoken"]
+            if not ntoken:
+                return await ctx.send("No API token has been set!")
+            else:
+                server = self.servercache[ctx.guild.id]
+                sid = server["service_id"]
+                restart = f"https://api.nitrado.net/services/{sid}:id/gameservers/restart"
+                header = {"Authorization": f"Bearer {ntoken}"}
+                res = await self.apipost(restart, header)
+                status = res["status"]
+                if status == "success":
+                    return await ctx.send("Server reboot initiated...")
+                else:
+                    return await ctx.send("Server failed to reboot...")
+
+    @dayz_tools.command()
+    @commands.admin()
+    async def stop(self, ctx):
+        """Stop the server"""
+        async with ctx.typing():
+            settings = await self.config.guild(ctx.guild).all()
+            ntoken = settings["ntoken"]
+            if not ntoken:
+                return await ctx.send("No API token has been set!")
+            else:
+                server = self.servercache[ctx.guild.id]
+                sid = server["service_id"]
+                stop = f"https://api.nitrado.net/services/{sid}:id/gameservers/stop"
+                header = {"Authorization": f"Bearer {ntoken}"}
+                res = await self.apipost(stop, header)
+                status = res["status"]
+                if status == "success":
+                    return await ctx.send("Server stopped...")
+                else:
+                    return await ctx.send("Server failed to stop...")
