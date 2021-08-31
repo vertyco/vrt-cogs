@@ -428,6 +428,8 @@ class ArkTools(commands.Cog):
                                                               f"You should now be able to join from the Gamertag's"
                                                               f" profile page.")
                             await msg.edit(embed=embed)
+                        else:
+                            return await msg.edit(embed=discord.Embed(description="Menu canceled"))
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
 
@@ -533,6 +535,8 @@ class ArkTools(commands.Cog):
                                                           f"You should now be able to join from the Gamertag's"
                                                           f" profile page.")
                         await msg.edit(embed=embed)
+                    else:
+                        return await msg.edit(embed=discord.Embed(description="Menu canceled"))
 
         if playerl == '':
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
