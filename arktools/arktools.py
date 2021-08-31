@@ -469,7 +469,7 @@ class ArkTools(commands.Cog):
                                         await ctx.send(embed=embed)
         if playerl == '':
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
-                                              f"Set a Gamertag with `{ctx.prefix}arktools register <Gamertag>`")
+                                              f"Set a Gamertag with `{ctx.prefix}arktools register`")
             return await ctx.send(embed=embed)
 
 
