@@ -14,13 +14,17 @@ import rcon
 from rcon import Client
 import unicodedata
 
+LOADING = "https://i.imgur.com/l3p6EMX.gifv"
+FAILED = "https://i.imgur.com/TcnAyVO.png"
+SUCCESS = "https://i.imgur.com/NrLAEpq.gifv"
+
 
 class ArkTools(commands.Cog):
     """
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.6.34"
+    __version__ = "1.6.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -288,6 +292,7 @@ class ArkTools(commands.Cog):
             embed = discord.Embed(
                 description=f"❌ API key has not been set!."
             )
+            embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
         embed = discord.Embed(
             description=f"**Type your Gamertag in chat.**"
@@ -306,8 +311,7 @@ class ArkTools(commands.Cog):
         async with ctx.typing():
             embed = discord.Embed(color=discord.Color.green(),
                                   description=f"Searching")
-            url = "https://i.pinimg.com/originals/e4/6b/20/e46b203dc855be2ad356cc607620d657.gif"
-            embed.set_thumbnail(url=url)
+            embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
             command = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
             settings = await self.config.guild(ctx.guild).all()
@@ -324,6 +328,7 @@ class ArkTools(commands.Cog):
                 embed = discord.Embed(title="Error",
                                       color=discord.Color.dark_red(),
                                       description="Gamertag is invalid or does not exist.")
+                embed.set_thumbnail(url=FAILED)
                 return await msg.edit(embed=embed)
         async with self.config.guild(ctx.guild).playerstats() as stats:
             current_time = datetime.datetime.utcnow()
@@ -341,6 +346,7 @@ class ArkTools(commands.Cog):
                                               f"XUID: `{xuid}`\n\n"
                                               f"**Would you like to add yourself to a gamertag as well?**")
             embed.set_footer(text="Reply with 'yes' to go to the next step.")
+            embed.set_thumbnail(url=SUCCESS)
             await msg.edit(embed=embed)
 
         try:
@@ -386,6 +392,7 @@ class ArkTools(commands.Cog):
         if not registered:
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.mention}**!\n"
                                               f"Set a Gamertag with `{ctx.prefix}arktools register`")
+            embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
         else:
             options = "**Gamertag** - `Map/Cluster`\n"
@@ -414,6 +421,11 @@ class ArkTools(commands.Cog):
                 return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
 
             if reply.content.lower() == "all":
+                embed = discord.Embed(
+                    description="Gathering Data..."
+                )
+                embed.set_thumbnail(url=LOADING)
+                await msg.edit(embed=embed)
                 async with ctx.typing():
                     for clustername in settings["clusters"]:
                         for servername in settings["clusters"][clustername]["servers"]:
@@ -421,29 +433,31 @@ class ArkTools(commands.Cog):
                             apikey = settings["clusters"][clustername]["servers"][servername]["api"]
                             data, status = await self.apicall(command, apikey)
                             if status == 200:
-                                embed = discord.Embed(color=discord.Color.green(),
-                                                      description=f"✅ `{gt}` Successfully added `{ctx.author.name}`")
+                                color = discord.Color.random()
+                                embed = discord.Embed(color=color,
+                                                      description=f"Sending friend requests from... `{gt}`")
+                                embed.set_thumbnail(url=LOADING)
                             else:
-                                embed = discord.Embed(color=discord.Color.green(),
-                                                      description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                            url = "https://i.pinimg.com/originals/e4/6b/20/e46b203dc855be2ad356cc607620d657.gif"
-                            embed.set_thumbnail(url=url)
+                                embed = discord.Embed(color=color,
+                                                      description=f"⚠ `{gt}` Failed to add you!")
+                                embed.set_thumbnail(url=FAILED)
                             await msg.edit(embed=embed)
                     embed = discord.Embed(title="Finished",
                                           color=discord.Color.green(),
                                           description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
                                                       f"You should now be able to join from the Gamertag's"
                                                       f" profile page.")
+                    embed.set_thumbnail(url=SUCCESS)
                     try:
                         await reply.delete()
                     except discord.NotFound:
                         pass
                     return await msg.edit(embed=embed)
             else:
-                embed = discord.Embed(color=discord.Color.green(),
-                                      description=f"Adding you now.")
-                url = "https://i.pinimg.com/originals/e4/6b/20/e46b203dc855be2ad356cc607620d657.gif"
-                embed.set_thumbnail(url=url)
+                embed = discord.Embed(
+                    description="Gathering Data..."
+                )
+                embed.set_thumbnail(url=LOADING)
                 await msg.edit(embed=embed)
                 valid = False
                 async with ctx.typing():
@@ -461,6 +475,7 @@ class ArkTools(commands.Cog):
                                                                       f"You should now be able to join from the Gamertag's"
                                                                       f" profile page.\n\n"
                                                                       f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
+                                    embed.set_thumbnail(url=SUCCESS)
                                 else:
                                     embed = discord.Embed(title="Unsuccessful",
                                                           color=discord.Color.green(),
