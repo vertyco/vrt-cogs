@@ -4,6 +4,7 @@ import datetime
 import pytz
 import asyncio
 import json
+import math
 import re
 
 from redbot.core.utils.chat_formatting import box, pagify
@@ -24,7 +25,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.6.35"
+    __version__ = "1.6.36"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -252,7 +253,7 @@ class ArkTools(commands.Cog):
 
         Variables that can be used in the welcome message are:
         {discord} - Discord name
-        {gamertag} - Persons gamertag
+        {gamertag} - Persons Gamertag
         {link} - Discord link
         Put "Default" in welcome string to revert to default message.
         """
@@ -677,7 +678,12 @@ class ArkTools(commands.Cog):
     # PLAYER STAT COMMANDS
     @_setarktools.command(name="leaderboard")
     async def _leaderboard(self, ctx):
-        """View time played leaderboard"""
+        """
+        View time played leaderboard
+
+        (Optional) Include how many players to display
+        """
+
         stats = await self.config.guild(ctx.guild).playerstats()
         leaderboard = {}
         global_time = 0
@@ -689,35 +695,100 @@ class ArkTools(commands.Cog):
             global_time = global_time + time
         globaldays, globalhours, globalminutes = await self.time_formatter(global_time)
         sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
-        embed = discord.Embed(
-            title="Playtime Leaderboard",
-            description=f"Global Cumulative Playtime: `{globaldays}d {globalhours}h {globalminutes}m`\n\n"
-                        f"**Top Players by Playtime** `{len(sorted_players)} Total`",
-            color=discord.Color.random()
-        )
 
         if len(sorted_players) >= 10:
-            for i in range(0, 10, 1):
-                playername = sorted_players[i][0]
-                maps = ""
-                for smap in stats[playername]["playtime"]:
-                    if smap != "total":
-                        time = stats[playername]["playtime"][smap]
-                        days, hours, minutes = await self.time_formatter(time)
-                        maps += f"{smap.capitalize()}: `{days}d {hours}h {minutes}m`\n"
-                time_played = sorted_players[i][1]
-                days, hours, minutes = await self.time_formatter(time_played)
-                timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen']["time"])
-                embed.add_field(
-                    name=f"{i + 1}: {playername}",
-                    value=f"Total: `{days}d {hours}h {minutes}m`\n"
-                          f"{maps}"
-                          f"Last Seen: `{timestamp.strftime('%m/%d/%Y at %H:%M:%S')} UTC`",
-                    inline=True
+            pages = math.ceil(len(sorted_players)/10)
+            embedlist = []
+            start = 0
+            stop = 10
+            for page in range(int(pages)):
+                embed = discord.Embed(
+                    title="Playtime Leaderboard",
+                    description=f"Global Cumulative Playtime: `{globaldays}d {globalhours}h {globalminutes}m`\n\n"
+                                f"**Top Players by Playtime** - `{len(sorted_players)} Total`\n",
+                    color=discord.Color.random()
                 )
-            await ctx.send(embed=embed)
+                embed.set_thumbnail(url=ctx.guild.icon_url)
+                if stop > len(sorted_players):
+                    stop = len(sorted_players)
+                for i in range(start, stop, 1):
+
+                    playername = sorted_players[i][0]
+                    maps = ""
+                    for smap in stats[playername]["playtime"]:
+                        if smap != "total":
+                            time = stats[playername]["playtime"][smap]
+                            days, hours, minutes = await self.time_formatter(time)
+                            maps += f"{smap.capitalize()}: `{days}d {hours}h {minutes}m`\n"
+                    time_played = sorted_players[i][1]
+                    days, hours, minutes = await self.time_formatter(time_played)
+                    timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen']["time"])
+                    embed.add_field(name=f"{i + 1}. {playername}",
+                                    value=f"Total: `{days}d {hours}h {minutes}m`\n"
+                                          f"{maps}"
+                                          f"Last Seen: `{timestamp.strftime('%m/%d/%Y at %H:%M:%S')} UTC`")
+                embedlist.append(embed)
+                start += 10
+                stop += 10
+
+            await self.paginate(ctx, embedlist)
         else:
-            await ctx.send(embed=discord.Embed(description="Not enough player data to establish a leaderboard."))
+            remaining = 10 - len(sorted_players)
+            await ctx.send(embed=discord.Embed(description=f"Not enough player data to establish a leaderboard.\n"
+                                                           f"Need {remaining} more players in database."))
+
+    async def paginate(self, ctx, embeds):
+        pages = len(embeds)
+        cur_page = 0
+        embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
+        message = await ctx.send(embed=embeds[cur_page])
+        await message.add_reaction("⏪")
+        await message.add_reaction("◀️")
+        await message.add_reaction("❌")
+        await message.add_reaction("▶️")
+        await message.add_reaction("⏩")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+
+                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
+                    cur_page += 10
+                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
+                    await message.edit(embed=embeds[cur_page])
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "▶️" and cur_page + 1 != pages:
+                    cur_page += 1
+                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
+                    await message.edit(embed=embeds[cur_page])
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
+                    cur_page -= 10
+                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
+                    await message.edit(embed=embeds[cur_page])
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                    cur_page -= 1
+                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
+                    await message.edit(embed=embeds[cur_page])
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "❌":
+                    await message.clear_reactions()
+                    return await ctx.send(embed=discord.Embed(description="Menu closed."))
+
+            except asyncio.TimeoutError:
+                try:
+                    await message.clear_reactions()
+                except discord.NotFound:
+                    pass
+                return await ctx.send(embed=discord.Embed(description="Menu timed out."))
 
     @_setarktools.command(name="playtime")
     async def _playtime(self, ctx, *, gamertag):
@@ -895,6 +966,7 @@ class ArkTools(commands.Cog):
                     description=f"{p}"
                 )
                 await ctx.send(embed=embed)
+                await asyncio.sleep(1)
 
     @_tribesettings.command(name="view")
     @commands.guildowner()
@@ -1454,7 +1526,12 @@ class ArkTools(commands.Cog):
                 message = await destinationchannel.send(embed=embed)
                 await self.config.guild(guild).statusmessage.set(message.id)
             if msgtoedit:
-                await msgtoedit.edit(embed=embed)
+                try:
+                    await msgtoedit.edit(embed=embed)
+                except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
+                    await self.config.guild(guild).statusmessage.set(None)
+                    message = await destinationchannel.send(embed=embed)
+                    await self.config.guild(guild).statusmessage.set(message.id)
 
     # Executes all task loop RCON commands synchronously in another thread
     # Process is synchronous for easing network buffer and keeping network traffic manageable
