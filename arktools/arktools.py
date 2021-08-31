@@ -6,11 +6,9 @@ import asyncio
 import json
 import re
 
-
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config
 from discord.ext import tasks
-
 
 import rcon
 from rcon import Client
@@ -384,32 +382,7 @@ class ArkTools(commands.Cog):
                             reply = await self.bot.wait_for("message", timeout=60, check=check)
                         except asyncio.TimeoutError:
                             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-                        if reply.content.lower() in options.lower():
-                            async with ctx.typing():
-                                for clustername in clusters:
-                                    for servername in clusters[clustername]["servers"]:
-                                        gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
-                                        if reply.content.lower() == gt:
-                                            apikey = clusters[clustername]["servers"][servername]["api"]
-                                            xuid = settings[player]["xuid"]
-                                            command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                            data, status = await self.apicall(command, apikey)
-                                            if status == 200:
-                                                embed = discord.Embed(title="Success",
-                                                                      color=discord.Color.green(),
-                                                                      description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
-                                                                                  f"You should now be able to join from the Gamertag's"
-                                                                                  f"profile page.")
-                                            else:
-                                                embed = discord.Embed(title="Unsuccessful",
-                                                                      color=discord.Color.green(),
-                                                                      description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                                            try:
-                                                await reply.delete()
-                                            except discord.NotFound:
-                                                pass
-                                            await msg.edit(embed=embed)
-                        elif reply.content.lower() == "all":
+                        if reply.content.lower() == "all":
                             async with ctx.typing():
                                 for clustername in clusters:
                                     for servername in clusters[clustername]["servers"]:
@@ -439,10 +412,35 @@ class ArkTools(commands.Cog):
                                                               f"You should now be able to join from the Gamertag's"
                                                               f" profile page.")
                             await msg.edit(embed=embed)
+                        elif reply.content.lower() in options.lower():
+                            async with ctx.typing():
+                                for clustername in clusters:
+                                    for servername in clusters[clustername]["servers"]:
+                                        gt = clusters[clustername]["servers"][servername]["gamertag"].lower()
+                                        if reply.content.lower() == gt:
+                                            apikey = clusters[clustername]["servers"][servername]["api"]
+                                            xuid = settings[player]["xuid"]
+                                            command = f"https://xbl.io/api/v2/friends/add/{xuid}"
+                                            data, status = await self.apicall(command, apikey)
+                                            if status == 200:
+                                                embed = discord.Embed(title="Success",
+                                                                      color=discord.Color.green(),
+                                                                      description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                                  f"You should now be able to join from the Gamertag's"
+                                                                                  f"profile page.")
+                                            else:
+                                                embed = discord.Embed(title="Unsuccessful",
+                                                                      color=discord.Color.green(),
+                                                                      description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                                            try:
+                                                await reply.delete()
+                                            except discord.NotFound:
+                                                pass
+                                            await msg.edit(embed=embed)
                         else:
                             return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
-                                                                              "Make sure to type the Gamertag "
-                                                                              "exactly as it's displayed"))
+                                                                                  "Make sure to type the Gamertag "
+                                                                                  "exactly as it's displayed"))
         else:
             return await msg.edit(embed=discord.Embed(description="Menu canceled"))
 
@@ -492,7 +490,37 @@ class ArkTools(commands.Cog):
                         reply = await self.bot.wait_for("message", timeout=60, check=check)
                     except asyncio.TimeoutError:
                         return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-                    if reply.content.lower() in options.lower():
+                    if reply.content.lower() == "all":
+                        async with ctx.typing():
+                            for clustername in clusters:
+                                for servername in clusters[clustername]["servers"]:
+                                    gt = clusters[clustername]["servers"][servername]["gamertag"]
+                                    apikey = clusters[clustername]["servers"][servername]["api"]
+                                    xuid = settings[player]["xuid"]
+                                    command = f"https://xbl.io/api/v2/friends/add/{xuid}"
+                                    data, status = await self.apicall(command, apikey)
+                                    if status == 200:
+                                        embed2 = discord.Embed(title="Success",
+                                                               color=discord.Color.green(),
+                                                               description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                                           f"You should now be able to join from the Gamertag's"
+                                                                           f" profile page.")
+                                    else:
+                                        embed2 = discord.Embed(title="Unsuccessful",
+                                                               color=discord.Color.green(),
+                                                               description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                                    try:
+                                        await reply.delete()
+                                    except discord.NotFound:
+                                        pass
+                                    await msg.edit(embed=embed2)
+                        embed = discord.Embed(title="Finished",
+                                              color=discord.Color.green(),
+                                              description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
+                                                          f"You should now be able to join from the Gamertag's"
+                                                          f" profile page.")
+                        await msg.edit(embed=embed)
+                    elif reply.content.lower() in options.lower():
                         async with ctx.typing():
                             for clustername in clusters:
                                 for servername in clusters[clustername]["servers"]:
@@ -517,36 +545,6 @@ class ArkTools(commands.Cog):
                                                                   color=discord.Color.green(),
                                                                   description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
                                         await msg.edit(embed=embed)
-                    elif reply.content.lower() == "all":
-                        async with ctx.typing():
-                            for clustername in clusters:
-                                for servername in clusters[clustername]["servers"]:
-                                    gt = clusters[clustername]["servers"][servername]["gamertag"]
-                                    apikey = clusters[clustername]["servers"][servername]["api"]
-                                    xuid = settings[player]["xuid"]
-                                    command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                    data, status = await self.apicall(command, apikey)
-                                    if status == 200:
-                                        embed2 = discord.Embed(title="Success",
-                                                              color=discord.Color.green(),
-                                                              description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
-                                                                          f"You should now be able to join from the Gamertag's"
-                                                                          f" profile page.")
-                                    else:
-                                        embed2 = discord.Embed(title="Unsuccessful",
-                                                              color=discord.Color.green(),
-                                                              description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
-                                    try:
-                                        await reply.delete()
-                                    except discord.NotFound:
-                                        pass
-                                    await msg.edit(embed=embed2)
-                        embed = discord.Embed(title="Finished",
-                                              color=discord.Color.green(),
-                                              description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
-                                                          f"You should now be able to join from the Gamertag's"
-                                                          f" profile page.")
-                        await msg.edit(embed=embed)
                     else:
                         return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
                                                                               "Make sure to type the Gamertag "
@@ -556,9 +554,6 @@ class ArkTools(commands.Cog):
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.name}**!\n"
                                               f"Set a Gamertag with `{ctx.prefix}arktools register`")
             return await ctx.send(embed=embed)
-
-
-
 
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
@@ -869,7 +864,6 @@ class ArkTools(commands.Cog):
             value=box(welcomemsg)
         )
         await ctx.send(embed=embed)
-
 
     @_permissions.command(name="view")
     async def _viewperms(self, ctx: commands.Context):
