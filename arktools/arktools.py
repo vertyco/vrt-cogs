@@ -282,8 +282,9 @@ class ArkTools(commands.Cog):
         clusters = await self.config.guild(ctx.guild).clusters()
         for cname in clusters:
             for sname in clusters[cname]["servers"]:
-                if "api" in sname.keys():
-                    break
+                for key in sname.keys():
+                    if key == "api":
+                        break
             else:
                 embed = discord.Embed(
                     description=f"❌ API key has not been set!."
