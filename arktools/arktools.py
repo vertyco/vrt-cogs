@@ -545,7 +545,7 @@ class ArkTools(commands.Cog):
             for user in purgelist:
                 xuid = user[0]
                 key = user[1]
-                gt = user[3]
+                gt = user[2]
                 command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
                 purgetasks.append(self._purgewipe(ctx, command, key, gt))
             await asyncio.gather(*purgetasks)
