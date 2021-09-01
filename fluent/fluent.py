@@ -113,14 +113,18 @@ class Fluent(commands.Cog):
                 if trans is None:
                     return await channel.send(embed=discord.Embed(description=f"❌ API seems to be down at the moment."))
                 elif trans.src == lang2:
-                    await message.delete()
-                    return await channel.send(f"`{author.name}: {message.content}`\n"
-                                              f"**{trans.text}**", allowed_mentions=mentions)
+                    embed = discord.Embed(
+                        description=f"{trans.text}"
+                    )
+                    if hasattr(message, "reply"):
+                        return await message.reply(embed=embed, mention_author=False)
                 elif trans.src == lang1:
                     trans = await self._translator(message.content, lang2)
-                    await message.delete()
-                    return await channel.send(f"`{author.name}:` {message.content}\n"
-                                              f"**{trans.text}**", allowed_mentions=mentions)
+                    embed = discord.Embed(
+                        description=f"{trans.text}"
+                    )
+                    if hasattr(message, "reply"):
+                        return await message.reply(embed=embed, mention_author=False)
                 else:
                     return
 
