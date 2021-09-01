@@ -494,10 +494,10 @@ class ArkTools(commands.Cog):
                                                                               "exactly as it's displayed"))
 
     # Purge host gamertag friends list of anyone not in the cog's database
-    @_api.command(name="purgefriends")
+    @_api.command(name="prunefriends")
     @commands.guildowner()
     async def _purge(self, ctx):
-        """Purge all host gamertag friends that are not in the database."""
+        """Prune any host gamertag friends that are not in the database."""
         tokens = []
         playerdb = []
         purgelist = []
@@ -521,34 +521,28 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             friendreq = "https://xbl.io/api/v2/friends"
-            gtfriends = []
             for host in tokens:
                 key = host[0]
                 gt = host[1]
+                embed = discord.Embed(
+                    description=f"Gathering data for {gt}..."
+                )
+                embed.set_footer(text="This may take a while. Sit back and relax.")
+                embed.set_thumbnail(url=LOADING)
+                await msg.edit(embed=embed)
                 data, status = await self.apicall(friendreq, key)
                 if status == 200:
                     for friend in data["people"]:
                         xuid = friend["xuid"]
-                        gtfriends.append((xuid, gt))
-
-            for xuser in gtfriends:
-                if xuser[0] not in playerdb:
-                    for token in tokens:
-                        if token[1] == xuser[1]:
-                            purgelist.append((xuser[0], token[0], token[1]))
-            embed = discord.Embed(
-                description=f"Purging players..."
-            )
-            embed.set_footer(text="This may take a while. Sit back and relax.")
-            embed.set_thumbnail(url=LOADING)
-            await msg.edit(embed=embed)
-            for user in purgelist:
-                xuid = user[0]
-                key = user[1]
-                gt = user[2]
-                command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
-                purgetasks.append(self._purgewipe(ctx, command, key, gt))
-            await asyncio.gather(*purgetasks)
+                        if xuid not in playerdb:
+                            purgelist.append(self._purgewipe(ctx, xuid, key, gt))
+                    embed = discord.Embed(
+                        description=f"Purging players from {gt}..."
+                    )
+                    embed.set_footer(text="This may take a while. Sit back and relax.")
+                    embed.set_thumbnail(url=LOADING)
+                    await msg.edit(embed=embed)
+                    await asyncio.gather(*purgetasks)
             embed = discord.Embed(
                 description=f"Purge Complete"
             )
@@ -556,7 +550,8 @@ class ArkTools(commands.Cog):
             await msg.edit(embed=embed)
 
     # Purge and Wipe friend tasks
-    async def _purgewipe(self, ctx, command, key, gt):
+    async def _purgewipe(self, ctx, xuid, key, gt):
+        command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
         async with self.session.get(command, headers={"X-Authorization": key}) as resp:
             if resp.status != 200:
                 return
