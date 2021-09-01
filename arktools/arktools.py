@@ -1190,7 +1190,7 @@ class ArkTools(commands.Cog):
                         return await ctx.send("Server name not found.")
                     serverlist.append(settings["clusters"][clustername]["servers"][servername])
                 else:
-                    return await ctx.send("Cluster name not found.")
+                    return await ctx.send("Server name not found.")
         if clustername == "all":
             for cluster in settings["clusters"]:
                 if servername == "all":
@@ -1198,7 +1198,7 @@ class ArkTools(commands.Cog):
                         settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
                         serverlist.append(settings["clusters"][cluster]["servers"][server])
                 if servername != "all":
-                    if servername in settings["clusters"][cluster]["servers"][servername]["cluster"]:
+                    if servername in settings["clusters"][cluster]["servers"]:
                         settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
                         if not settings["clusters"][cluster]["servers"][servername]:
                             return await ctx.send("Server name not found.")
