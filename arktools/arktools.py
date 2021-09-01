@@ -569,7 +569,7 @@ class ArkTools(commands.Cog):
             embed = discord.Embed(
                 description=f"Gathering Data..."
             )
-            embed.set_footer(text="This may take a while, sit back and relax.🏝")
+            embed.set_footer(text="This may take a while, sit back and relax.")
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             friendreq = "https://xbl.io/api/v2/friends"
@@ -587,7 +587,7 @@ class ArkTools(commands.Cog):
                     embed = discord.Embed(
                         description=f"Pruning players from {gt}..."
                     )
-                    embed.set_footer(text="This may take a while, sit back and relax.🏝")
+                    embed.set_footer(text="This may take a while, sit back and relax.")
                     embed.set_thumbnail(url=LOADING)
                     await msg.edit(embed=embed)
                     async with ctx.typing():
@@ -611,7 +611,7 @@ class ArkTools(commands.Cog):
                                     description=f"Pruning `{xuid[1]}` from {gt}...\n"
                                                 f"`{cur_member}/{trash}` pruned."
                                 )
-                                embed.set_footer(text="This may take a while, sit back and relax.🏝")
+                                embed.set_footer(text="This may take a while, sit back and relax.")
                                 embed.set_thumbnail(url=LOADING)
                                 await msg.edit(embed=embed)
                                 cur_member += 1
