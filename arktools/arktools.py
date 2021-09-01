@@ -521,7 +521,9 @@ class ArkTools(commands.Cog):
                     embed.set_thumbnail(url=LOADING)
                     await msg.edit(embed=embed)
                     async with self.session.get(command, headers={"X-Authorization": key}) as resp:
-                        await resp.text()
+                        print(f"Response: {await resp.text()}")
+                        print(f"Command: {command}")
+                        print(f"Key: {key}")
                         if resp.status == 200:
                             embed = discord.Embed(color=discord.Color.green(),
                                                   description=f"✅ `{gt}` Successfully added `{ptag}`\n"
