@@ -523,9 +523,7 @@ class ArkTools(commands.Cog):
                     await msg.edit(embed=embed)
                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                     async with self.session.get(command, headers={"X-Authorization": key}) as resp:
-                        print(f"Response: {await resp.text()}")
-                        print(f"Command: {command}")
-                        print(f"Key: {key}")
+                        await resp.text()
                         if resp.status == 200:
                             embed = discord.Embed(color=discord.Color.green(),
                                                   description=f"✅ `{gt}` Successfully added `{ptag}`\n"
