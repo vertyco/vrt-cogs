@@ -803,11 +803,19 @@ class ArkTools(commands.Cog):
                             maps += f"{smap.capitalize()}: `{days}d {hours}h {minutes}m`\n"
                     time_played = sorted_players[i][1]
                     days, hours, minutes = await self.time_formatter(time_played)
+                    current_time = datetime.datetime.utcnow()
                     timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen']["time"])
+                    timedifference_raw = current_time - timestamp
+                    timedifference = timedifference_raw.seconds
+                    d, h, m = await self.time_formatter(timedifference)
+                    time = f"Last Seen: `{d}d {h}h {m}m ago`"
+                    if d >= 5:
+                        time = f"Last Seen: `{d} days ago`"
+
                     embed.add_field(name=f"{i + 1}. {playername}",
                                     value=f"Total: `{days}d {hours}h {minutes}m`\n"
                                           f"{maps}"
-                                          f"Last Seen: `{timestamp.strftime('%m/%d/%Y at %H:%M:%S')} UTC`")
+                                          f"{time}")
                 embedlist.append(embed)
                 start += 10
                 stop += 10
