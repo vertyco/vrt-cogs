@@ -569,7 +569,7 @@ class ArkTools(commands.Cog):
             embed = discord.Embed(
                 description=f"Gathering Data..."
             )
-            embed.set_footer(text="This may take a while. Sit back and relax.")
+            embed.set_footer(text="This may take a while, sit back and relax.🏝")
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             friendreq = "https://xbl.io/api/v2/friends"
