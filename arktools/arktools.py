@@ -530,20 +530,21 @@ class ArkTools(commands.Cog):
                 await msg.edit(embed=embed)
                 data, status = await self.apicall(friendreq, key)
                 if status == 200:
+                    embed = discord.Embed(
+                        description=f"Purging players from {gt}..."
+                    )
+                    embed.set_footer(text="This may take a while. Sit back and relax.")
+                    embed.set_thumbnail(url=LOADING)
+                    await msg.edit(embed=embed)
                     async with ctx.typing():
                         for friend in data["people"]:
                             xuid = friend["xuid"]
                             if xuid not in playerdb:
                                 purgetasks.append(self._purgewipe(ctx, xuid, key, gt))
-                        embed = discord.Embed(
-                            description=f"Purging players from {gt}..."
-                        )
-                        embed.set_footer(text="This may take a while. Sit back and relax.")
-                        embed.set_thumbnail(url=LOADING)
-                        await msg.edit(embed=embed)
                         await asyncio.gather(*purgetasks)
             embed = discord.Embed(
-                description=f"Purge Complete"
+                description=f"Purge Complete",
+                color=discord.Color.green()
             )
             embed.set_thumbnail(url=SUCCESS)
             await msg.edit(embed=embed)
