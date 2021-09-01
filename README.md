@@ -1,12 +1,12 @@
 # vrt-cogs
 Various utility/fun cogs for Red V3.
 
-I am relatively new to Python and coding in general, and enjoy working with API's and utility cogs for game servers. I plan on focusing in a niche of server management cogs but am keeping an open mind about any ideas that might interest me.
+I am relatively new to Python and coding in general, and enjoy working on utility cogs for game servers. I plan on focusing in a niche of game server related or utility cogs but am keeping an open mind about any ideas that might come by!
 
 | Cog | Status | Description |
 |---|:---:|---|
-| ArkTools | ✓ | <details><summary>Connect to your ark servers and chat seamlessly between in-game and discord.</summary> This cog includes many utility features for overseeing your Ark: Survival Evolved server including a status channel, join/leave logs, auto-renaming blacklisting player names, and admin command logging with tribe logs. (This cog is for self-hosted Xbox/PC crossplay or steam servers only, will not work with Nitrado)</details> |
-| DayZTools | ✓ | <details><summary>In-depth logging for your Nitrado Day-Z server.</summary> Various logging features for Day Z: Player join/leave log, Killfeed and server status channel with server info.</details> |
+| ArkTools | ✓ | <details><summary>Remotely manage/monitor your Ark servers via RCON and chat seamlessly between in-game and discord.</summary> This cog comes packed with utility features for overseeing your Ark: Survival Evolved server; Including a status channel, join/leave logs, auto-renaming blacklisted player names, admin command logging with tribe logs, player stat tracking with leaderboards, and a sizeable collection of API tools for crossplay servers hosted from a Gamertag. (This cog is for self-hosted Xbox/PC crossplay or steam servers only, will not work with Nitrado)</details> |
+| DayZTools | beta | <details><summary>Remotely manage/monitor your Nitrado Day-Z server from Discord.</summary> Various logging/management features for Day Z: Player join/leave log, server reboots, Killfeed and server status channel with server info.</details> |
 | Inspire | ✓ | <details><summary>Get inpsirational messages.</summary> Super simple cog that replies to certain sad words with positive encouragements, and responds to the [p]inspire command with an inspirational quote using zenquotes.io API. Note: this cog was my very first project just to get the feel for Red so it's not very big and there aren't any plans of expanding it at the moment.</details>|
 | MCTools | ✓ | <details><summary>Super simple status cog for Minecraft Bedrock servers.</summary> Displays a status embed showing server version and player count. Only for **Bedrock** dedicated servers since there is already one that supports Java.</details> |
 | XTools | ✓ | <details><summary>View your Xbox profile, friends, screenshots and game clips using simple commands and interactive menus.</summary> Various tools for Xbox using xbl.io and xapi.us APIs.  (You will need to register for a free key to use this cog. The profile and friends command uses only xbl.io but the other commands use a combination of the two.)</details> |
