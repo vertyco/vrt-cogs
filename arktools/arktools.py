@@ -549,6 +549,11 @@ class ArkTools(commands.Cog):
                 command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
                 purgetasks.append(self._purgewipe(ctx, command, key, gt))
             await asyncio.gather(*purgetasks)
+            embed = discord.Embed(
+                description=f"Purge Complete"
+            )
+            embed.set_thumbnail(url=SUCCESS)
+            await msg.edit(embed=embed)
 
     # Purge and Wipe friend tasks
     async def _purgewipe(self, ctx, command, key, gt):
