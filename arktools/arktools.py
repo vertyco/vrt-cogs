@@ -540,8 +540,21 @@ class ArkTools(commands.Cog):
                         for friend in data["people"]:
                             xuid = friend["xuid"]
                             if xuid not in playerdb:
-                                purgetasks.append(self._purgewipe(ctx, xuid, key, gt))
-                        await asyncio.gather(*purgetasks)
+                                data, status, remaining = await self._purgewipe(xuid, key)
+                                if int(remaining) < 20:
+                                    await ctx.send(f"`{gt}` ran out of api calls. Skipping for now.")
+                                    break
+                                elif int(status) != 200:
+                                    await msg.edit(f"`{gt}` failed to unfriend `{xuid}`.")
+                                    continue
+                                else:
+                                    embed = discord.Embed(
+                                        description=f"Purging `{xuid}` from {gt}..."
+                                    )
+                                    embed.set_footer(text="This may take a while. Sit back and relax.")
+                                    embed.set_thumbnail(url=LOADING)
+                                    await msg.edit(embed=embed)
+
             embed = discord.Embed(
                 description=f"Purge Complete",
                 color=discord.Color.green()
@@ -550,15 +563,14 @@ class ArkTools(commands.Cog):
             await msg.edit(embed=embed)
 
     # Purge and Wipe friend tasks
-    async def _purgewipe(self, ctx, xuid, key, gt):
+    async def _purgewipe(self, xuid, key):
         command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
         async with self.session.get(command, headers={"X-Authorization": key}) as resp:
-            if resp.status != 200:
-                return
-            print(f"Unfriending {xuid}")
-            if int(resp.headers['X-RateLimit-Remaining']) < 30:
-                await ctx.send(f"{gt} has less than 30 calls remaining.")
-                await asyncio.sleep(1800)
+            data = resp.json()
+            status = resp.status
+            remaining = resp.headers['X-RateLimit-Remaining']
+            return data, status, remaining
+
 
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
