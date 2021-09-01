@@ -493,6 +493,72 @@ class ArkTools(commands.Cog):
                                                                               "Make sure to type the Gamertag "
                                                                               "exactly as it's displayed"))
 
+    # Purge host gamertag friends list of anyone not in the cog's database
+    @_api.command(name="purgefriends")
+    @commands.guildowner()
+    async def _purge(self, ctx):
+        """Purge all host gamertag friends that are not in the database."""
+        tokens = []
+        playerdb = []
+        purgelist = []
+        purgetasks = []
+        settings = await self.config.guild(ctx.guild).all()
+        for member in settings["playerstats"]:
+            if "xuid" in settings["playerstats"][member]:
+                xuid = settings["playerstats"][member]["xuid"]
+                playerdb.append(xuid)
+        for cname in settings["clusters"]:
+            for sname in settings["clusters"][cname]["servers"]:
+                if "api" in settings["clusters"][cname]["servers"][sname]:
+                    api = settings["clusters"][cname]["servers"][sname]["api"]
+                    gt = settings["clusters"][cname]["servers"][sname]["gamertag"]
+                    tokens.append((api, gt))
+        if tokens:
+            embed = discord.Embed(
+                description=f"Gathering Data..."
+            )
+            embed.set_footer(text="This may take a while. Sit back and relax.")
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
+            friendreq = "https://xbl.io/api/v2/friends"
+            gtfriends = []
+            for host in tokens:
+                key = host[0]
+                gt = host[1]
+                data, status = await self.apicall(friendreq, key)
+                if status == 200:
+                    for friend in data["people"]:
+                        xuid = friend["xuid"]
+                        gtfriends.append((xuid, gt))
+
+            for xuser in gtfriends:
+                if xuser[0] not in playerdb:
+                    for token in tokens:
+                        if token[1] == xuser[1]:
+                            purgelist.append((xuser[0], token[0], token[1]))
+            embed = discord.Embed(
+                description=f"Purging players..."
+            )
+            embed.set_footer(text="This may take a while. Sit back and relax.")
+            embed.set_thumbnail(url=LOADING)
+            await msg.edit(embed=embed)
+            for user in purgelist:
+                xuid = user[0]
+                key = user[1]
+                gt = user[3]
+                command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
+                purgetasks.append(self._purgewipe(ctx, command, key, gt))
+            await asyncio.gather(*purgetasks)
+
+    # Purge and Wipe friend tasks
+    async def _purgewipe(self, ctx, command, key, gt):
+        async with self.session.get(command, headers={"X-Authorization": key}) as resp:
+            if resp.status != 200:
+                return
+            if int(resp.headers['X-RateLimit-Remaining']) < 30:
+                await ctx.send(f"{gt} has less than 30 calls remaining.")
+                await asyncio.sleep(1800)
+
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
     async def _addcluster(self, ctx: commands.Context,
@@ -893,7 +959,7 @@ class ArkTools(commands.Cog):
                             f"**Status Channel:** {statuschannel}"
             )
             return await ctx.send(embed=embed)
-        except Exception:
+        except KeyError:
             await ctx.send(f"Setup permissions first.")
 
     @_serversettings.command(name="view")
