@@ -91,7 +91,7 @@ class ArkTools(commands.Cog):
     async def _api(self, ctx: commands.Context):
         """
         (CROSSPLAY ONLY) API tools for the host gamertags.
-        Get API keys for each host gamertag from https://xbl.io/
+        Get API keys for each host Gamertag from https://xbl.io/
         """
         pass
 
@@ -178,6 +178,8 @@ class ArkTools(commands.Cog):
     async def _addkey(self, ctx, clustername, servername, apikey):
         """
         Add an API key for a server.
+
+        Get API keys for each host Gamertag from https://xbl.io/
         """
         async with self.config.guild(ctx.guild).clusters() as clusters:
             for cluster in clusters:
@@ -473,17 +475,18 @@ class ArkTools(commands.Cog):
                             if "api" in settings["clusters"][clustername]["servers"][servername]:
                                 gt = settings["clusters"][clustername]["servers"][servername]["gamertag"]
                                 apikey = settings["clusters"][clustername]["servers"][servername]["api"]
-                                data, status = await self.apicall(command, apikey)
-                                if status == 200:
-                                    color = discord.Color.random()
-                                    embed = discord.Embed(color=color,
-                                                          description=f"Sending friend request from... `{gt}`")
-                                    embed.set_thumbnail(url=LOADING)
-                                else:
-                                    embed = discord.Embed(color=color,
-                                                          description=f"⚠ `{gt}` Failed to add you!")
-                                    embed.set_thumbnail(url=FAILED)
-                                await msg.edit(embed=embed)
+                                async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
+                                    await resp.text()
+                                    if resp.status == 200:
+                                        color = discord.Color.random()
+                                        embed = discord.Embed(color=color,
+                                                              description=f"Sending friend request from... `{gt}`")
+                                        embed.set_thumbnail(url=LOADING)
+                                    else:
+                                        embed = discord.Embed(color=color,
+                                                              description=f"⚠ `{gt}` Failed to add you!")
+                                        embed.set_thumbnail(url=FAILED)
+                                    await msg.edit(embed=embed)
                     embed = discord.Embed(color=discord.Color.green(),
                                           description=f"✅ `All Gamertags` Successfully added `{ptag}`\n"
                                                       f"You should now be able to join from the Gamertag's"
@@ -517,26 +520,28 @@ class ArkTools(commands.Cog):
                     )
                     embed.set_thumbnail(url=LOADING)
                     await msg.edit(embed=embed)
-                    data, status = await self.apicall(command, key)
-                    if status == 200:
-                        embed = discord.Embed(color=discord.Color.green(),
-                                              description=f"✅ `{gt}` Successfully added `{ptag}`\n"
-                                                          f"You should now be able to join from the Gamertag's"
-                                                          f" profile page.\n\n"
-                                                          f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
-                        embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-                        embed.set_thumbnail(url=SUCCESS)
-                    else:
-                        embed = discord.Embed(title="Unsuccessful",
-                                              color=discord.Color.green(),
-                                              description=f"⚠ `{gt}` Failed to add `{ptag}`")
+                    async with self.session.get(command, headers={"X-Authorization": key}) as resp:
+                        await resp.text()
+                        if resp.status == 200:
+                            embed = discord.Embed(color=discord.Color.green(),
+                                                  description=f"✅ `{gt}` Successfully added `{ptag}`\n"
+                                                              f"You should now be able to join from the Gamertag's"
+                                                              f" profile page.\n\n"
+                                                              f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
+                            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+                            embed.set_thumbnail(url=SUCCESS)
+                        else:
+                            embed = discord.Embed(title="Unsuccessful",
+                                                  color=discord.Color.green(),
+                                                  description=f"⚠ `{gt}` Failed to add `{ptag}`")
                     try:
                         await reply.delete()
                     except discord.NotFound:
                         pass
                     await msg.edit(embed=embed)
             else:
-                return await msg.edit(embed=discord.Embed(description="Incorrect Reply, menu closed."))
+                color = discord.Color.red()
+                return await msg.edit(embed=discord.Embed(description="Incorrect Reply, menu closed.", color=color))
 
     # Purge host gamertag friends list of anyone not in the cog's database
     @_api.command(name="prunefriends")
