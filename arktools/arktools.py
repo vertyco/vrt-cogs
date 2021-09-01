@@ -1500,7 +1500,7 @@ class ArkTools(commands.Cog):
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                     data, status = await self.apicall(command, apikey)
                                     if status == 200:
-                                        print(f"{gt} Successful added {player[0]}")
+                                        print(f"{gt} Successfully added {player[0]}")
                                     else:
                                         print(f"{gt} Failed to add {player[0]}")
 
