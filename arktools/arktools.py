@@ -477,28 +477,29 @@ class ArkTools(commands.Cog):
                 async with ctx.typing():
                     for clustername in settings["clusters"]:
                         for servername in settings["clusters"][clustername]["servers"]:
-                            gt = settings["clusters"][clustername]["servers"][servername]["gamertag"].lower()
-                            if reply.content.lower() == gt:
-                                valid = True
-                                apikey = settings["clusters"][clustername]["servers"][servername]["api"]
-                                data, status = await self.apicall(command, apikey)
-                                if status == 200:
-                                    embed = discord.Embed(color=discord.Color.green(),
-                                                          description=f"✅ `{gt}` Successfully added `{ptag}`\n"
-                                                                      f"You should now be able to join from the Gamertag's"
-                                                                      f" profile page.\n\n"
-                                                                      f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
-                                    embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-                                    embed.set_thumbnail(url=SUCCESS)
-                                else:
-                                    embed = discord.Embed(title="Unsuccessful",
-                                                          color=discord.Color.green(),
-                                                          description=f"⚠ `{gt}` Failed to add `{ptag}`")
-                                try:
-                                    await reply.delete()
-                                except discord.NotFound:
-                                    pass
-                                await msg.edit(embed=embed)
+                            if "api" in settings["clusters"][clustername]["servers"][servername]:
+                                gt = settings["clusters"][clustername]["servers"][servername]["gamertag"].lower()
+                                if reply.content.lower() == gt:
+                                    valid = True
+                                    apikey = settings["clusters"][clustername]["servers"][servername]["api"]
+                                    data, status = await self.apicall(command, apikey)
+                                    if status == 200:
+                                        embed = discord.Embed(color=discord.Color.green(),
+                                                              description=f"✅ `{gt}` Successfully added `{ptag}`\n"
+                                                                          f"You should now be able to join from the Gamertag's"
+                                                                          f" profile page.\n\n"
+                                                                          f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
+                                        embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+                                        embed.set_thumbnail(url=SUCCESS)
+                                    else:
+                                        embed = discord.Embed(title="Unsuccessful",
+                                                              color=discord.Color.green(),
+                                                              description=f"⚠ `{gt}` Failed to add `{ptag}`")
+                                    try:
+                                        await reply.delete()
+                                    except discord.NotFound:
+                                        pass
+                                    await msg.edit(embed=embed)
                     if not valid:
                         return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
                                                                               "Make sure to type the Gamertag "
