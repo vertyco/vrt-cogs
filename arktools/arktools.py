@@ -62,18 +62,18 @@ class ArkTools(commands.Cog):
         self.time = ""
 
         # Loops
-        # self.loop_refresher.start()
-        # self.chat_executor.start()
-        # self.playerlist_executor.start()
-        # self.status_channel.start()
-        # self.playerstats.start()
+        self.loop_refresher.start()
+        self.chat_executor.start()
+        self.playerlist_executor.start()
+        self.status_channel.start()
+        self.playerstats.start()
 
-    # def cog_unload(self):
-    #     self.loop_refresher.cancel()
-    #     self.chat_executor.cancel()
-    #     self.playerlist_executor.cancel()
-    #     self.status_channel.cancel()
-    #     self.playerstats.cancel()
+    def cog_unload(self):
+        self.loop_refresher.cancel()
+        self.chat_executor.cancel()
+        self.playerlist_executor.cancel()
+        self.status_channel.cancel()
+        self.playerstats.cancel()
 
     # GROUPS
     @commands.group(name="arktools")
