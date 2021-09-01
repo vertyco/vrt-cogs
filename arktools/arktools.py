@@ -175,24 +175,47 @@ class ArkTools(commands.Cog):
 
     # API SETTINGS
     @_api.command(name="addkey")
-    async def _addkey(self, ctx, clustername, servername, host_gamertag, apikey):
+    async def _addkey(self, ctx, clustername, servername, apikey):
         """
         Add an API key for a server.
         """
         async with self.config.guild(ctx.guild).clusters() as clusters:
             for cluster in clusters:
                 if cluster.lower() == clustername.lower():
-                    for server in clusters[cluster]["servers"]:
-                        if server.lower() == servername.lower():
-                            clusters[cluster]["servers"][server]["gamertag"] = host_gamertag
-                            clusters[cluster]["servers"][server]["api"] = apikey
-                            color = discord.Color.green()
-                            embed = discord.Embed(description=f"✅ Your token has been set for {host_gamertag}!", color=color)
-                            try:
-                                await ctx.message.delete()
-                            except discord.NotFound:
-                                pass
-                            return await ctx.send(embed=embed)
+                    cname = cluster
+                    break
+            else:
+                color = discord.Color.red()
+                embed = discord.Embed(description=f"Could not find {clustername}!", color=color)
+                return await ctx.send(embed=embed)
+            for server in clusters[cname]["servers"]:
+                if server.lower() == servername.lower():
+                    sname = server
+                    break
+            else:
+                color = discord.Color.red()
+                embed = discord.Embed(description=f"Could not find {servername}!", color=color)
+                return await ctx.send(embed=embed)
+
+            data, status = await self.apicall(f"https://xbl.io/api/v2/account", apikey)
+            if status == 200:
+                for user in data["profileUsers"]:
+                    for setting in user["settings"]:
+                        if setting["id"] == "Gamertag":
+                            gtag = setting["value"]
+                clusters[cname]["servers"][sname]["gamertag"] = gtag
+                clusters[cname]["servers"][sname]["api"] = apikey
+                color = discord.Color.green()
+                embed = discord.Embed(description=f"✅ Your token has been set for {gtag}!", color=color)
+                try:
+                    await ctx.message.delete()
+                except discord.NotFound:
+                    pass
+                return await ctx.send(embed=embed)
+            else:
+                color = discord.Color.red()
+                embed = discord.Embed(description=f"Failed to collect API data!", color=color)
+                return await ctx.send(embed=embed)
 
     @_api.command(name="delkey")
     async def _delkey(self, ctx, clustername, servername):
@@ -409,17 +432,22 @@ class ArkTools(commands.Cog):
             return await ctx.send(embed=embed)
         else:
             options = "**Gamertag** - `Map/Cluster`\n"
+            servernum = 1
+            serverlist = []
             for clustername in settings["clusters"]:
                 for servername in settings["clusters"][clustername]["servers"]:
                     if "api" in settings["clusters"][clustername]["servers"][servername]:
-                        gametag = str(settings["clusters"][clustername]["servers"][servername]['gamertag'])
+                        key = settings["clusters"][clustername]["servers"][servername]["api"]
+                        gametag = str(settings["clusters"][clustername]["servers"][servername]["gamertag"])
                         cname = clustername.upper()
                         sname = servername.capitalize()
-                        options += f"**{gametag.capitalize()}** - `{sname} {cname}`\n"
+                        options += f"**{servernum}.** `{gametag.capitalize()}` - `{sname} {cname}`\n"
+                        serverlist.append((servernum, gametag, key))
+                        servernum += 1
             options += f"**All** - `Adds All Servers`\n"
             embed = discord.Embed(
                 title=f"Add Yourself as a Friend",
-                description=f"**Type the Gamertag that corresponds with the map you want.**\n\n"
+                description=f"**Type the Number that corresponds with the server you want.**\n\n"
                             f"{options}"
             )
             embed.set_footer(text="Type your reply below")
@@ -467,43 +495,44 @@ class ArkTools(commands.Cog):
                     except discord.NotFound:
                         pass
                     return await msg.edit(embed=embed)
-            else:
+            elif reply.content.isdigit():
                 embed = discord.Embed(
                     description="Gathering Data..."
                 )
                 embed.set_thumbnail(url=LOADING)
                 await msg.edit(embed=embed)
-                valid = False
                 async with ctx.typing():
-                    for clustername in settings["clusters"]:
-                        for servername in settings["clusters"][clustername]["servers"]:
-                            if "api" in settings["clusters"][clustername]["servers"][servername]:
-                                gt = settings["clusters"][clustername]["servers"][servername]["gamertag"].lower()
-                                if reply.content.lower() == gt:
-                                    valid = True
-                                    apikey = settings["clusters"][clustername]["servers"][servername]["api"]
-                                    data, status = await self.apicall(command, apikey)
-                                    if status == 200:
-                                        embed = discord.Embed(color=discord.Color.green(),
-                                                              description=f"✅ `{gt}` Successfully added `{ptag}`\n"
-                                                                          f"You should now be able to join from the Gamertag's"
-                                                                          f" profile page.\n\n"
-                                                                          f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
-                                        embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-                                        embed.set_thumbnail(url=SUCCESS)
-                                    else:
-                                        embed = discord.Embed(title="Unsuccessful",
-                                                              color=discord.Color.green(),
-                                                              description=f"⚠ `{gt}` Failed to add `{ptag}`")
-                                    try:
-                                        await reply.delete()
-                                    except discord.NotFound:
-                                        pass
-                                    await msg.edit(embed=embed)
-                    if not valid:
-                        return await msg.edit(embed=discord.Embed(description="Incorrect Reply\n"
-                                                                              "Make sure to type the Gamertag "
-                                                                              "exactly as it's displayed"))
+                    for data in serverlist:
+                        if int(reply.content) == data[0]:
+                            gt = data[1]
+                            key = data[2]
+                            break
+                    else:
+                        color = discord.Color.red()
+                        embed = discord.Embed(description=f"Could not find the server corresponding to {reply.content}!",
+                                              color=color)
+                        return await ctx.send(embed=embed)
+
+                    data, status = await self.apicall(command, key)
+                    if status == 200:
+                        embed = discord.Embed(color=discord.Color.green(),
+                                              description=f"✅ `{gt}` Successfully added `{ptag}`\n"
+                                                          f"You should now be able to join from the Gamertag's"
+                                                          f" profile page.\n\n"
+                                                          f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
+                        embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+                        embed.set_thumbnail(url=SUCCESS)
+                    else:
+                        embed = discord.Embed(title="Unsuccessful",
+                                              color=discord.Color.green(),
+                                              description=f"⚠ `{gt}` Failed to add `{ptag}`")
+                    try:
+                        await reply.delete()
+                    except discord.NotFound:
+                        pass
+                    await msg.edit(embed=embed)
+            else:
+                return await msg.edit(embed=discord.Embed(description="Incorrect Reply, menu closed."))
 
     # Purge host gamertag friends list of anyone not in the cog's database
     @_api.command(name="prunefriends")
@@ -588,7 +617,6 @@ class ArkTools(commands.Cog):
             status = resp.status
             remaining = resp.headers['X-RateLimit-Remaining']
             return data, status, remaining
-
 
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
@@ -796,7 +824,7 @@ class ArkTools(commands.Cog):
         sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
 
         if len(sorted_players) >= 10:
-            pages = math.ceil(len(sorted_players)/10)
+            pages = math.ceil(len(sorted_players) / 10)
             embedlist = []
             start = 0
             stop = 10

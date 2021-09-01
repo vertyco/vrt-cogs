@@ -147,8 +147,8 @@ class XTools(commands.Cog):
     async def time_format(self, timestamp_raw):
         regex = r'(\d{4})-(\d\d)-(\d\d).(\d\d:\d\d)'
         if timestamp_raw:
-            list = re.findall(regex, timestamp_raw)
-            parts = list[0]
+            lists = re.findall(regex, timestamp_raw)
+            parts = lists[0]
             timestamp_formatted = f"{parts[1]}-{parts[2]}-{parts[0]} at {parts[3]} GMT"
             return timestamp_formatted
 
