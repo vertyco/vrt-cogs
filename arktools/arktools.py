@@ -198,8 +198,8 @@ class ArkTools(commands.Cog):
                 color = discord.Color.red()
                 embed = discord.Embed(description=f"Could not find {servername}!", color=color)
                 return await ctx.send(embed=embed)
-
-            data, status = await self.apicall(f"https://xbl.io/api/v2/account", apikey)
+            async with ctx.typing():
+                data, status = await self.apicall(f"https://xbl.io/api/v2/account", apikey)
             if status == 200:
                 for user in data["profileUsers"]:
                     for setting in user["settings"]:
@@ -216,7 +216,8 @@ class ArkTools(commands.Cog):
                 return await ctx.send(embed=embed)
             else:
                 color = discord.Color.red()
-                embed = discord.Embed(description=f"Failed to collect API data!", color=color)
+                embed = discord.Embed(description=f"Failed to collect data!\n"
+                                                  f"Key may be Invalid or API might be down.", color=color)
                 return await ctx.send(embed=embed)
 
     @_api.command(name="delkey")
@@ -548,7 +549,7 @@ class ArkTools(commands.Cog):
     # Purge host gamertag friends list of anyone not in the cog's database
     @_api.command(name="prunefriends")
     @commands.guildowner()
-    async def _purge(self, ctx):
+    async def _prune(self, ctx):
         """Prune any host gamertag friends that are not in the database."""
         tokens = []
         playerdb = []
@@ -591,21 +592,22 @@ class ArkTools(commands.Cog):
                     async with ctx.typing():
                         for friend in data["people"]:
                             xuid = friend["xuid"]
+                            playertag = friend["gamertag"]
                             if xuid not in playerdb:
-                                purgelist.append(xuid)
+                                purgelist.append((xuid, playertag))
                         trash = len(purgelist)
                         cur_member = 1
                         for xuid in purgelist:
-                            status, remaining = await self._purgewipe(xuid, key)
+                            status, remaining = await self._purgewipe(xuid[0], key)
                             if int(remaining) < 20:
                                 await ctx.send(f"`{gt}` low on remaining API calls. Skipping for now.")
                                 break
                             elif int(status) != 200:
-                                await msg.edit(f"`{gt}` failed to unfriend `{xuid}`.")
+                                await msg.edit(f"`{gt}` failed to unfriend `{xuid[1]}`.")
                                 continue
                             else:
                                 embed = discord.Embed(
-                                    description=f"Pruning `{xuid}` from {gt}...\n"
+                                    description=f"Pruning `{xuid[1]}` from {gt}...\n"
                                                 f"`{cur_member}/{trash}` pruned."
                                 )
                                 embed.set_footer(text="This may take a while. Sit back and relax.")
