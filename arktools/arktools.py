@@ -1029,7 +1029,7 @@ class ArkTools(commands.Cog):
                             remaining = 0
                             if int(resp.status) == 200:
                                 remaining = resp.headers['X-RateLimit-Remaining']
-                                data = await resp.json()
+                                data = await resp.json(content_type=None)
                             if data:
                                 if "people" in data:
                                     pages = len(data["people"])
