@@ -419,7 +419,6 @@ class ArkTools(commands.Cog):
         registered = False
         xuid = None
         ptag = None
-        command = f"https://xbl.io/api/v2/friends/add/{xuid}"
         settings = await self.config.guild(ctx.guild).all()
         for player in settings["playerstats"]:
             if "discord" in settings["playerstats"][player]:
@@ -427,6 +426,7 @@ class ArkTools(commands.Cog):
                     registered = True
                     xuid = settings["playerstats"][player]["xuid"]
                     ptag = player
+                    break
         if not registered:
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.mention}**!\n"
                                               f"Set a Gamertag with `{ctx.prefix}arktools register`")
@@ -475,6 +475,7 @@ class ArkTools(commands.Cog):
                             if "api" in settings["clusters"][clustername]["servers"][servername]:
                                 gt = settings["clusters"][clustername]["servers"][servername]["gamertag"]
                                 apikey = settings["clusters"][clustername]["servers"][servername]["api"]
+                                command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                 async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
                                     await resp.text()
                                     if resp.status == 200:
@@ -520,6 +521,7 @@ class ArkTools(commands.Cog):
                     )
                     embed.set_thumbnail(url=LOADING)
                     await msg.edit(embed=embed)
+                    command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                     async with self.session.get(command, headers={"X-Authorization": key}) as resp:
                         print(f"Response: {await resp.text()}")
                         print(f"Command: {command}")
