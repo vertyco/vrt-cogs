@@ -1307,8 +1307,11 @@ class ArkTools(commands.Cog):
     # Xbox API call handler
     async def apicall(self, command, apikey):
         async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
-            data = await resp.json(content_type=None)
             status = resp.status
+            try:
+                data = await resp.json(content_type=None)
+            except json.decoder.JSONDecodeError:
+                return None, status
             return data, status
 
     async def apipost(self, url, payload, apikey):
