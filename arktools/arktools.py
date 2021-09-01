@@ -200,6 +200,7 @@ class ArkTools(commands.Cog):
         Delete an API key from a server.
         """
         async with self.config.guild(ctx.guild).clusters() as clusters:
+            found = False
             for cluster in clusters:
                 if cluster.lower() == clustername.lower():
                     for server in clusters[cluster]["servers"]:
@@ -207,8 +208,9 @@ class ArkTools(commands.Cog):
                             if "api" in clusters[cluster]["servers"][server]:
                                 del clusters[cluster]["servers"][server]["gamertag"]
                                 del clusters[cluster]["servers"][server]["api"]
+                                found = True
                                 await ctx.send(f"API key deleted for {server} {cluster}")
-            else:
+            if not found:
                 await ctx.send("Server not found.")
 
     @_api.command(name="welcome")
