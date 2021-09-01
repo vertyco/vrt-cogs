@@ -327,6 +327,10 @@ class ArkTools(commands.Cog):
             try:
                 for user in data["profileUsers"]:
                     xuid = user['id']
+                    pfp = SUCCESS
+                    for setting in user["settings"]:
+                        if setting["id"] == "GameDisplayPicRaw":
+                            pfp = (setting['value'])
             except KeyError:
                 embed = discord.Embed(title="Error",
                                       color=discord.Color.dark_red(),
@@ -349,7 +353,7 @@ class ArkTools(commands.Cog):
                                               f"XUID: `{xuid}`\n\n"
                                               f"**Would you like to add yourself to a gamertag as well?**")
             embed.set_footer(text="Reply with 'yes' to go to the next step.")
-            embed.set_thumbnail(url=SUCCESS)
+            embed.set_thumbnail(url=pfp)
             await msg.edit(embed=embed)
 
         try:
@@ -385,6 +389,7 @@ class ArkTools(commands.Cog):
         """
         registered = False
         xuid = None
+        ptag = None
         command = f"https://xbl.io/api/v2/friends/add/{xuid}"
         settings = await self.config.guild(ctx.guild).all()
         for player in settings["playerstats"]:
@@ -392,6 +397,7 @@ class ArkTools(commands.Cog):
                 if settings["playerstats"][player]["discord"] == ctx.author.id:
                     registered = True
                     xuid = settings["playerstats"][player]["xuid"]
+                    ptag = player
         if not registered:
             embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.mention}**!\n"
                                               f"Set a Gamertag with `{ctx.prefix}arktools register`")
@@ -438,7 +444,7 @@ class ArkTools(commands.Cog):
                             if status == 200:
                                 color = discord.Color.random()
                                 embed = discord.Embed(color=color,
-                                                      description=f"Sending friend requests from... `{gt}`")
+                                                      description=f"Sending friend request from... `{gt}`")
                                 embed.set_thumbnail(url=LOADING)
                             else:
                                 embed = discord.Embed(color=color,
@@ -447,9 +453,10 @@ class ArkTools(commands.Cog):
                             await msg.edit(embed=embed)
                     embed = discord.Embed(title="Finished",
                                           color=discord.Color.green(),
-                                          description=f"✅ `All Gamertags` Successfully added `{ctx.author.name}`\n"
+                                          description=f"✅ `All Gamertags` Successfully added `{ptag}`\n"
                                                       f"You should now be able to join from the Gamertag's"
                                                       f" profile page.")
+                    embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
                     embed.set_thumbnail(url=SUCCESS)
                     try:
                         await reply.delete()
