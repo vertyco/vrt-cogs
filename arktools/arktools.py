@@ -208,8 +208,8 @@ class ArkTools(commands.Cog):
                                 del clusters[cluster]["servers"][server]["gamertag"]
                                 del clusters[cluster]["servers"][server]["api"]
                                 await ctx.send(f"API key deleted for {server} {cluster}")
-                else:
-                    await ctx.send("Server not found.")
+            else:
+                await ctx.send("Server not found.")
 
     @_api.command(name="welcome")
     async def _welcometoggle(self, ctx):
