@@ -490,7 +490,7 @@ class ArkTools(commands.Cog):
                                 else:
                                     embed = discord.Embed(title="Unsuccessful",
                                                           color=discord.Color.green(),
-                                                          description=f"⚠ `{gt}` Failed to add `{ctx.author.name}`")
+                                                          description=f"⚠ `{gt}` Failed to add `{ptag}`")
                                 try:
                                     await reply.delete()
                                 except discord.NotFound:
