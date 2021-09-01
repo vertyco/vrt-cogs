@@ -989,6 +989,7 @@ class ArkTools(commands.Cog):
             )
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
+            await asyncio.sleep(1)
             serversettings = ""
             serversettings += f"**{cname.upper()} Cluster**\n"
             if settings["clusters"][cname]["servertoserver"] is True:
@@ -1024,13 +1025,14 @@ class ArkTools(commands.Cog):
                         getfriends = "https://xbl.io/api/v2/friends"
                         header = {"X-Authorization": apikey}
                         async with self.session.get(url=getfriends, headers=header) as resp:
-                            status = resp.status
-                            remaining = resp.headers['X-RateLimit-Remaining']
-                            data = await resp.json()
-                        pages = "None"
-                        if data:
-                            if "people" in data:
-                                pages = len(data["people"])
+                            pages = "None"
+                            remaining = 0
+                            if int(resp.status) == 200:
+                                remaining = resp.headers['X-RateLimit-Remaining']
+                                data = await resp.json()
+                            if data:
+                                if "people" in data:
+                                    pages = len(data["people"])
                         serversettings += f"**Friend Count:** `{pages}`\n"
                         serversettings += f"**API Calls Remaining:** `{str(remaining)}`\n"
                 serversettings += "\n"
@@ -1045,7 +1047,6 @@ class ArkTools(commands.Cog):
                     description=f"{p}"
                 )
                 await ctx.send(embed=embed)
-                await asyncio.sleep(1)
 
     @_tribesettings.command(name="view")
     @commands.guildowner()
