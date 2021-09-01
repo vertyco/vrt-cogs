@@ -787,8 +787,7 @@ class ArkTools(commands.Cog):
                 try:
                     await message.clear_reactions()
                 except discord.NotFound:
-                    pass
-                return await ctx.send(embed=discord.Embed(description="Menu timed out."))
+                    return
 
     @_setarktools.command(name="playtime")
     async def _playtime(self, ctx, *, gamertag):
