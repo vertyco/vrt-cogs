@@ -1176,14 +1176,28 @@ class ArkTools(commands.Cog):
         serverlist = []
         clustername = clustername.lower()
         servername = servername.lower()
-        if clustername != "all":
+        if clustername == "all":
+            for cluster in settings["clusters"]:
+                if servername == "all":
+                    for server in settings["clusters"][cluster]["servers"]:
+                        settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
+                        serverlist.append(settings["clusters"][cluster]["servers"][server])
+                else:
+                    if servername in settings["clusters"][cluster]["servers"]:
+                        settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
+                        if not settings["clusters"][cluster]["servers"][servername]:
+                            return await ctx.send("Server name not found.")
+                        serverlist.append(settings["clusters"][cluster]["servers"][servername])
+                    else:
+                        return await ctx.send("Server name not found.")
+        else:
             if clustername not in settings["clusters"]:
                 return await ctx.send("Cluster name not found.")
-            if servername == "all":
+            elif servername == "all":
                 for server in settings["clusters"][clustername]["servers"]:
                     settings["clusters"][clustername]["servers"][server]["cluster"] = clustername
                     serverlist.append(settings["clusters"][clustername]["servers"][server])
-            if servername != "all":
+            else:
                 if servername in settings["clusters"][clustername]["servers"]:
                     settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername
                     if not settings["clusters"][clustername]["servers"][servername]:
@@ -1191,21 +1205,9 @@ class ArkTools(commands.Cog):
                     serverlist.append(settings["clusters"][clustername]["servers"][servername])
                 else:
                     return await ctx.send("Server name not found.")
-        if clustername == "all":
-            for cluster in settings["clusters"]:
-                if servername == "all":
-                    for server in settings["clusters"][cluster]["servers"]:
-                        settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
-                        serverlist.append(settings["clusters"][cluster]["servers"][server])
-                if servername != "all":
-                    if servername in settings["clusters"][cluster]["servers"]:
-                        settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
-                        if not settings["clusters"][cluster]["servers"][servername]:
-                            return await ctx.send("Server name not found.")
-                        serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
         # Sending manual commands off to the task loop
-        tasks = []
+        mtasks = []
         if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
             await ctx.send("Beginning reboot countdown...")
             for i in range(10, 0, -1):
@@ -1226,8 +1228,8 @@ class ArkTools(commands.Cog):
 
         else:
             for server in serverlist:
-                tasks.append(self.manual_rcon(ctx, server, command))
-            await asyncio.gather(*tasks)
+                mtasks.append(self.manual_rcon(ctx, server, command))
+            await asyncio.gather(*mtasks)
 
         if command.lower() == "doexit":
             await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
