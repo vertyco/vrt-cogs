@@ -500,7 +500,6 @@ class ArkTools(commands.Cog):
         """Prune any host gamertag friends that are not in the database."""
         tokens = []
         playerdb = []
-        purgelist = []
         purgetasks = []
         settings = await self.config.guild(ctx.guild).all()
         for member in settings["playerstats"]:
@@ -527,22 +526,22 @@ class ArkTools(commands.Cog):
                 embed = discord.Embed(
                     description=f"Gathering data for {gt}..."
                 )
-                embed.set_footer(text="This may take a while. Sit back and relax.")
                 embed.set_thumbnail(url=LOADING)
                 await msg.edit(embed=embed)
                 data, status = await self.apicall(friendreq, key)
                 if status == 200:
-                    for friend in data["people"]:
-                        xuid = friend["xuid"]
-                        if xuid not in playerdb:
-                            purgelist.append(self._purgewipe(ctx, xuid, key, gt))
-                    embed = discord.Embed(
-                        description=f"Purging players from {gt}..."
-                    )
-                    embed.set_footer(text="This may take a while. Sit back and relax.")
-                    embed.set_thumbnail(url=LOADING)
-                    await msg.edit(embed=embed)
-                    await asyncio.gather(*purgetasks)
+                    async with ctx.typing():
+                        for friend in data["people"]:
+                            xuid = friend["xuid"]
+                            if xuid not in playerdb:
+                                purgetasks.append(self._purgewipe(ctx, xuid, key, gt))
+                        embed = discord.Embed(
+                            description=f"Purging players from {gt}..."
+                        )
+                        embed.set_footer(text="This may take a while. Sit back and relax.")
+                        embed.set_thumbnail(url=LOADING)
+                        await msg.edit(embed=embed)
+                        await asyncio.gather(*purgetasks)
             embed = discord.Embed(
                 description=f"Purge Complete"
             )
@@ -555,6 +554,7 @@ class ArkTools(commands.Cog):
         async with self.session.get(command, headers={"X-Authorization": key}) as resp:
             if resp.status != 200:
                 return
+            print(f"Unfriending {xuid}")
             if int(resp.headers['X-RateLimit-Remaining']) < 30:
                 await ctx.send(f"{gt} has less than 30 calls remaining.")
                 await asyncio.sleep(1800)
