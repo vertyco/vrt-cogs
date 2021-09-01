@@ -626,10 +626,12 @@ class ArkTools(commands.Cog):
     # Purge and Wipe friend tasks
     async def _purgewipe(self, xuid, key):
         command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
+        remaining = 0
         async with self.session.get(command, headers={"X-Authorization": key}) as resp:
             await resp.text()
             status = resp.status
-            remaining = resp.headers['X-RateLimit-Remaining']
+            if status == 200:
+                remaining = resp.headers['X-RateLimit-Remaining']
             return status, remaining
 
     # SERVER SETTINGS COMMANDS
