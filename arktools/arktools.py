@@ -1316,35 +1316,35 @@ class ArkTools(commands.Cog):
             return status
 
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
-    @commands.Cog.listener("on_message")
-    async def chat_toserver(self, message: discord.Message):
-        channels = []
-        for data in self.taskdata:
-            server = data[1]
-            channels.append(server["globalchatchannel"])
-            channels.append(server["chatchannel"])
-        if message.channel.id not in channels:
-            return
-        if message.author.bot:
-            return
-        if message.mentions:
-            for mention in message.mentions:
-                message.content = message.content.replace(f"<@!{mention.id}>", f"@{mention.name}")
-        if message.channel_mentions:
-            for mention in message.channel_mentions:
-                message.content = message.content.replace(f"<#{mention.id}>", f"#{mention.name}")
-        if message.role_mentions:
-            for mention in message.role_mentions:
-                message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
-
-        clusterchannels, allservers = await self.globalchannelchecker(message.channel)
-
-        chatchannels, map = await self.mapchannelchecker(message.channel)
-
-        if message.channel.id in clusterchannels:
-            await self.chat_toserver_rcon(allservers, message)
-        if message.channel.id in chatchannels:
-            await self.chat_toserver_rcon(map, message)
+    # @commands.Cog.listener("on_message")
+    # async def chat_toserver(self, message: discord.Message):
+    #     channels = []
+    #     for data in self.taskdata:
+    #         server = data[1]
+    #         channels.append(server["globalchatchannel"])
+    #         channels.append(server["chatchannel"])
+    #     if message.channel.id not in channels:
+    #         return
+    #     if message.author.bot:
+    #         return
+    #     if message.mentions:
+    #         for mention in message.mentions:
+    #             message.content = message.content.replace(f"<@!{mention.id}>", f"@{mention.name}")
+    #     if message.channel_mentions:
+    #         for mention in message.channel_mentions:
+    #             message.content = message.content.replace(f"<#{mention.id}>", f"#{mention.name}")
+    #     if message.role_mentions:
+    #         for mention in message.role_mentions:
+    #             message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
+    #
+    #     clusterchannels, allservers = await self.globalchannelchecker(message.channel)
+    #
+    #     chatchannels, map = await self.mapchannelchecker(message.channel)
+    #
+    #     if message.channel.id in clusterchannels:
+    #         await self.chat_toserver_rcon(allservers, message)
+    #     if message.channel.id in chatchannels:
+    #         await self.chat_toserver_rcon(map, message)
 
     # Send chat to server(filters any unicode characters or custom discord emojis before hand)
     async def chat_toserver_rcon(self, server, message):
