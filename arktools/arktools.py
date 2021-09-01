@@ -1025,7 +1025,7 @@ class ArkTools(commands.Cog):
                         getfriends = "https://xbl.io/api/v2/friends"
                         header = {"X-Authorization": apikey}
                         async with self.session.get(url=getfriends, headers=header) as resp:
-                            pages = "None"
+                            pages = "Unknown"
                             remaining = 0
                             if int(resp.status) == 200:
                                 remaining = resp.headers['X-RateLimit-Remaining']
