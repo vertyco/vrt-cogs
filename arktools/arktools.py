@@ -512,7 +512,11 @@ class ArkTools(commands.Cog):
                         embed = discord.Embed(description=f"Could not find the server corresponding to {reply.content}!",
                                               color=color)
                         return await ctx.send(embed=embed)
-
+                    embed = discord.Embed(
+                        description=f"Sending freind request from {gt}..."
+                    )
+                    embed.set_thumbnail(url=LOADING)
+                    await msg.edit(embed=embed)
                     data, status = await self.apicall(command, key)
                     if status == 200:
                         embed = discord.Embed(color=discord.Color.green(),
