@@ -470,6 +470,10 @@ class ArkTools(commands.Cog):
                 embed.set_thumbnail(url=LOADING)
                 await msg.edit(embed=embed)
                 async with ctx.typing():
+                    try:
+                        await reply.delete()
+                    except discord.NotFound:
+                        pass
                     for clustername in settings["clusters"]:
                         for servername in settings["clusters"][clustername]["servers"]:
                             if "api" in settings["clusters"][clustername]["servers"][servername]:
@@ -494,10 +498,6 @@ class ArkTools(commands.Cog):
                                                       f" profile page.")
                     embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
                     embed.set_thumbnail(url=SUCCESS)
-                    try:
-                        await reply.delete()
-                    except discord.NotFound:
-                        pass
                     return await msg.edit(embed=embed)
             elif reply.content.isdigit():
                 embed = discord.Embed(
