@@ -442,19 +442,20 @@ class ArkTools(commands.Cog):
                 async with ctx.typing():
                     for clustername in settings["clusters"]:
                         for servername in settings["clusters"][clustername]["servers"]:
-                            gt = settings["clusters"][clustername]["servers"][servername]["gamertag"]
-                            apikey = settings["clusters"][clustername]["servers"][servername]["api"]
-                            data, status = await self.apicall(command, apikey)
-                            if status == 200:
-                                color = discord.Color.random()
-                                embed = discord.Embed(color=color,
-                                                      description=f"Sending friend request from... `{gt}`")
-                                embed.set_thumbnail(url=LOADING)
-                            else:
-                                embed = discord.Embed(color=color,
-                                                      description=f"⚠ `{gt}` Failed to add you!")
-                                embed.set_thumbnail(url=FAILED)
-                            await msg.edit(embed=embed)
+                            if "api" in settings["clusters"][clustername]["servers"][servername]:
+                                gt = settings["clusters"][clustername]["servers"][servername]["gamertag"]
+                                apikey = settings["clusters"][clustername]["servers"][servername]["api"]
+                                data, status = await self.apicall(command, apikey)
+                                if status == 200:
+                                    color = discord.Color.random()
+                                    embed = discord.Embed(color=color,
+                                                          description=f"Sending friend request from... `{gt}`")
+                                    embed.set_thumbnail(url=LOADING)
+                                else:
+                                    embed = discord.Embed(color=color,
+                                                          description=f"⚠ `{gt}` Failed to add you!")
+                                    embed.set_thumbnail(url=FAILED)
+                                await msg.edit(embed=embed)
                     embed = discord.Embed(color=discord.Color.green(),
                                           description=f"✅ `All Gamertags` Successfully added `{ptag}`\n"
                                                       f"You should now be able to join from the Gamertag's"
