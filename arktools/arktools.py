@@ -506,6 +506,10 @@ class ArkTools(commands.Cog):
                 embed.set_thumbnail(url=LOADING)
                 await msg.edit(embed=embed)
                 async with ctx.typing():
+                    try:
+                        await reply.delete()
+                    except discord.NotFound:
+                        pass
                     for data in serverlist:
                         if int(reply.content) == data[0]:
                             gt = data[1]
@@ -536,10 +540,6 @@ class ArkTools(commands.Cog):
                             embed = discord.Embed(title="Unsuccessful",
                                                   color=discord.Color.green(),
                                                   description=f"⚠ `{gt}` Failed to add `{ptag}`")
-                    try:
-                        await reply.delete()
-                    except discord.NotFound:
-                        pass
                     await msg.edit(embed=embed)
             else:
                 color = discord.Color.red()
