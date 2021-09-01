@@ -328,9 +328,12 @@ class ArkTools(commands.Cog):
                 for user in data["profileUsers"]:
                     xuid = user['id']
                     pfp = SUCCESS
+                    gs = 0
                     for setting in user["settings"]:
                         if setting["id"] == "GameDisplayPicRaw":
                             pfp = (setting['value'])
+                        if setting["id"] == "Gamerscore":
+                            gs = "{:,}".format(int(setting['value']))
             except KeyError:
                 embed = discord.Embed(title="Error",
                                       color=discord.Color.dark_red(),
@@ -347,12 +350,13 @@ class ArkTools(commands.Cog):
                 "map": "None"
             }
             stats[gamertag]["discord"] = ctx.author.id
-            embed = discord.Embed(title="Success",
-                                  color=discord.Color.green(),
+            embed = discord.Embed(color=discord.Color.green(),
                                   description=f"✅ Gamertag set to `{gamertag}`\n"
-                                              f"XUID: `{xuid}`\n\n"
+                                              f"XUID: `{xuid}`\n"
+                                              f"Gamerscore: `{gs}`\n\n"
                                               f"**Would you like to add yourself to a gamertag as well?**")
             embed.set_footer(text="Reply with 'yes' to go to the next step.")
+            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
             embed.set_thumbnail(url=pfp)
             await msg.edit(embed=embed)
 
@@ -451,12 +455,11 @@ class ArkTools(commands.Cog):
                                                       description=f"⚠ `{gt}` Failed to add you!")
                                 embed.set_thumbnail(url=FAILED)
                             await msg.edit(embed=embed)
-                    embed = discord.Embed(title="Finished",
-                                          color=discord.Color.green(),
+                    embed = discord.Embed(color=discord.Color.green(),
                                           description=f"✅ `All Gamertags` Successfully added `{ptag}`\n"
                                                       f"You should now be able to join from the Gamertag's"
                                                       f" profile page.")
-                    embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+                    embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
                     embed.set_thumbnail(url=SUCCESS)
                     try:
                         await reply.delete()
@@ -479,13 +482,12 @@ class ArkTools(commands.Cog):
                                 apikey = settings["clusters"][clustername]["servers"][servername]["api"]
                                 data, status = await self.apicall(command, apikey)
                                 if status == 200:
-                                    embed = discord.Embed(title="Success",
-                                                          color=discord.Color.green(),
+                                    embed = discord.Embed(color=discord.Color.green(),
                                                           description=f"✅ `{gt}` Successfully added `{ptag}`\n"
                                                                       f"You should now be able to join from the Gamertag's"
                                                                       f" profile page.\n\n"
                                                                       f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
-                                    embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+                                    embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
                                     embed.set_thumbnail(url=SUCCESS)
                                 else:
                                     embed = discord.Embed(title="Unsuccessful",
