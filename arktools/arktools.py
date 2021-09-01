@@ -594,7 +594,7 @@ class ArkTools(commands.Cog):
                         trash = len(purgelist)
                         cur_member = 1
                         for xuid in purgelist:
-                            data, status, remaining = await self._purgewipe(xuid, key)
+                            status, remaining = await self._purgewipe(xuid, key)
                             if int(remaining) < 20:
                                 await ctx.send(f"`{gt}` low on remaining API calls. Skipping for now.")
                                 break
@@ -622,10 +622,10 @@ class ArkTools(commands.Cog):
     async def _purgewipe(self, xuid, key):
         command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
         async with self.session.get(command, headers={"X-Authorization": key}) as resp:
-            data = resp.json()
+            await resp.text()
             status = resp.status
             remaining = resp.headers['X-RateLimit-Remaining']
-            return data, status, remaining
+            return status, remaining
 
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
