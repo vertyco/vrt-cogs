@@ -546,7 +546,7 @@ class ArkTools(commands.Cog):
                         for xuid in purgelist:
                             data, status, remaining = await self._purgewipe(xuid, key)
                             if int(remaining) < 20:
-                                await ctx.send(f"`{gt}` ran out of api calls. Skipping for now.")
+                                await ctx.send(f"`{gt}` low on remaining API calls. Skipping for now.")
                                 break
                             elif int(status) != 200:
                                 await msg.edit(f"`{gt}` failed to unfriend `{xuid}`.")
