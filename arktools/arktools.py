@@ -1027,11 +1027,10 @@ class ArkTools(commands.Cog):
                             status = resp.status
                             remaining = resp.headers['X-RateLimit-Remaining']
                             data = await resp.json()
+                        pages = "None"
                         if data:
                             if "people" in data:
                                 pages = len(data["people"])
-                        else:
-                            pages = "None"
                         serversettings += f"**Friend Count:** `{pages}`\n"
                         serversettings += f"**API Calls Remaining:** `{str(remaining)}`\n"
                 serversettings += "\n"
