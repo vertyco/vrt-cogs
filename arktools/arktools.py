@@ -862,7 +862,7 @@ class ArkTools(commands.Cog):
             try:
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
 
-                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
+                if str(reaction.emoji) == "⏩" and cur_page + 10 < pages:
                     cur_page += 10
                     embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
                     await message.edit(embed=embeds[cur_page])
