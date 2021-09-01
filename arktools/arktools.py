@@ -548,7 +548,7 @@ class ArkTools(commands.Cog):
                 return await msg.edit(embed=discord.Embed(description="Incorrect Reply, menu closed.", color=color))
 
     # Purge host gamertag friends list of anyone not in the cog's database
-    @_api.command(name="prunefriends")
+    @_api.command(name="prune")
     @commands.guildowner()
     async def _prune(self, ctx):
         """Prune any host gamertag friends that are not in the database."""
@@ -1177,17 +1177,20 @@ class ArkTools(commands.Cog):
         clustername = clustername.lower()
         servername = servername.lower()
         if clustername != "all":
-            if not settings["clusters"][clustername]:
+            if clustername not in settings["clusters"]:
                 return await ctx.send("Cluster name not found.")
             if servername == "all":
                 for server in settings["clusters"][clustername]["servers"]:
                     settings["clusters"][clustername]["servers"][server]["cluster"] = clustername
                     serverlist.append(settings["clusters"][clustername]["servers"][server])
             if servername != "all":
-                settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername
-                if not settings["clusters"][clustername]["servers"][servername]:
-                    return await ctx.send("Server name not found.")
-                serverlist.append(settings["clusters"][clustername]["servers"][servername])
+                if servername in settings["clusters"][clustername]["servers"][servername]["cluster"]:
+                    settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername
+                    if not settings["clusters"][clustername]["servers"][servername]:
+                        return await ctx.send("Server name not found.")
+                    serverlist.append(settings["clusters"][clustername]["servers"][servername])
+                else:
+                    return await ctx.send("Cluster name not found.")
         if clustername == "all":
             for cluster in settings["clusters"]:
                 if servername == "all":
@@ -1195,10 +1198,11 @@ class ArkTools(commands.Cog):
                         settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
                         serverlist.append(settings["clusters"][cluster]["servers"][server])
                 if servername != "all":
-                    settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
-                    if not settings["clusters"][cluster]["servers"][servername]:
-                        return await ctx.send("Server name not found.")
-                    serverlist.append(settings["clusters"][cluster]["servers"][servername])
+                    if servername in settings["clusters"][cluster]["servers"][servername]["cluster"]:
+                        settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
+                        if not settings["clusters"][cluster]["servers"][servername]:
+                            return await ctx.send("Server name not found.")
+                        serverlist.append(settings["clusters"][cluster]["servers"][servername])
 
         # Sending manual commands off to the task loop
         tasks = []
