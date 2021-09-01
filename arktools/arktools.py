@@ -313,7 +313,7 @@ class ArkTools(commands.Cog):
         gamertag = reply.content
         async with ctx.typing():
             embed = discord.Embed(color=discord.Color.green(),
-                                  description=f"Searching")
+                                  description=f"Searching...")
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
             command = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
@@ -481,10 +481,11 @@ class ArkTools(commands.Cog):
                                 if status == 200:
                                     embed = discord.Embed(title="Success",
                                                           color=discord.Color.green(),
-                                                          description=f"✅ `{gt}` Successfully added `{ctx.author.name}`\n"
+                                                          description=f"✅ `{gt}` Successfully added `{ptag}`\n"
                                                                       f"You should now be able to join from the Gamertag's"
                                                                       f" profile page.\n\n"
                                                                       f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
+                                    embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
                                     embed.set_thumbnail(url=SUCCESS)
                                 else:
                                     embed = discord.Embed(title="Unsuccessful",
