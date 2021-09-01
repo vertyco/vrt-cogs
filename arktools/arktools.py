@@ -173,7 +173,7 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send("That command doesnt exist")
 
-    # API KEY SETTINGS
+    # API SETTINGS
     @_api.command(name="addkey")
     async def _addkey(self, ctx, clustername, servername, host_gamertag, apikey):
         """
@@ -187,7 +187,7 @@ class ArkTools(commands.Cog):
                             clusters[cluster]["servers"][server]["gamertag"] = host_gamertag
                             clusters[cluster]["servers"][server]["api"] = apikey
                             color = discord.Color.green()
-                            embed = discord.Embed(description=f"✅ Your token has been set for {gamertag}!", color=color)
+                            embed = discord.Embed(description=f"✅ Your token has been set for {host_gamertag}!", color=color)
                             try:
                                 await ctx.message.delete()
                             except discord.NotFound:
