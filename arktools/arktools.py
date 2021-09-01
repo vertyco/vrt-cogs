@@ -553,7 +553,6 @@ class ArkTools(commands.Cog):
         """Prune any host gamertag friends that are not in the database."""
         tokens = []
         playerdb = []
-        purgelist = []
         settings = await self.config.guild(ctx.guild).all()
         for member in settings["playerstats"]:
             if "xuid" in settings["playerstats"][member]:
@@ -574,6 +573,7 @@ class ArkTools(commands.Cog):
             msg = await ctx.send(embed=embed)
             friendreq = "https://xbl.io/api/v2/friends"
             for host in tokens:
+                purgelist = []
                 key = host[0]
                 gt = host[1]
                 embed = discord.Embed(
@@ -600,7 +600,8 @@ class ArkTools(commands.Cog):
                         for xuid in purgelist:
                             status, remaining = await self._purgewipe(xuid[0], key)
                             if int(remaining) < 20:
-                                await ctx.send(f"`{gt}` low on remaining API calls. Skipping for now.")
+                                await ctx.send(f"`{gt}` low on remaining API calls. Skipping for now.\n"
+                                               f"Try again in an hour.")
                                 break
                             elif int(status) != 200:
                                 await msg.edit(f"`{gt}` failed to unfriend `{xuid[1]}`.")
