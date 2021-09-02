@@ -15,6 +15,9 @@ import rcon
 from rcon import Client
 import unicodedata
 
+import logging
+log = logging.getLogger("red.vrt.arktools")
+
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 STATUS = "https://i.imgur.com/LPzCcgU.gif"
 FAILED = "https://i.imgur.com/TcnAyVO.png"
@@ -26,7 +29,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.7.39"
+    __version__ = "1.7.40"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1447,7 +1450,7 @@ class ArkTools(commands.Cog):
                     self.taskdata.append([guild.id, server])
         time = datetime.datetime.utcnow()
         self.time = time.isoformat()
-        print("ArkTools config initialized.")  # If this doesnt print then something is fucky...
+        log.info("ArkTools config initialized.")  # If this doesnt log then something is fucky...
 
     # Xbox API call handler
     async def apicall(self, command, apikey):
@@ -1547,9 +1550,9 @@ class ArkTools(commands.Cog):
                     passwd=data['password'])
             except Exception as e:
                 if "semaphor" in str(e):
-                    print(f"TO_SERVER ERROR: Server is probably offline")
+                    log.warning("chat_toserver_rcon: Server is probably offline")
                 else:
-                    print(f"TO_SERVER ERROR: {e}")
+                    log.exception("chat_toserver_rcon", e)
                 continue
 
     # Returns all channels and servers related to the message
@@ -1647,7 +1650,7 @@ class ArkTools(commands.Cog):
                 if self.playerlist[channel]:
                     for player in self.playerlist[channel]:
                         if player[0] not in stats:  # New Player
-                            print(f"New Player: {player[0]}")
+                            log.info(f"New Player: {player[0]}")
                             stats[player[0]] = {"playtime": {"total": 0}}
                             stats[player[0]]["xuid"] = player[1]
                             stats[player[0]]["lastseen"] = {
@@ -1674,20 +1677,20 @@ class ArkTools(commands.Cog):
                                     xuid = player[1]
                                     url = "https://xbl.io/api/v2/conversations"
                                     payload = {"xuid": str(xuid), "message": welcome}
-                                    print(f"Sending DM to XUID: {player[1]}")
+                                    log.info(f"Sending DM to XUID: {player[1]}")
                                     status = await self.apipost(url, payload, apikey)
                                     if status == 200:
-                                        print("New Player DM Successful")
+                                        log.info("New Player DM Successful")
                                     else:
-                                        print("New Player DM FAILED")
+                                        log.warning("New Player DM FAILED")
                                 if autofriend:
                                     xuid = player[1]
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                     data, status = await self.apicall(command, apikey)
                                     if status == 200:
-                                        print(f"{gt} Successfully added {player[0]}")
+                                        log.info(f"{gt} Successfully added {player[0]}")
                                     else:
-                                        print(f"{gt} FAILED to add {player[0]}")
+                                        log.warning(f"{gt} FAILED to add {player[0]}")
 
                         if map_cluster not in stats[player[0]]["playtime"]:
                             stats[player[0]]["playtime"][map_cluster] = 0
@@ -1703,8 +1706,6 @@ class ArkTools(commands.Cog):
                                 "time": current_time.isoformat(),
                                 "map": map_cluster
                             }
-                            # if timedifference > 60:
-                            #     print(f"{timedifference} added to {player[0]} on {map_cluster}")
         self.time = current_time.isoformat()
 
     @commands.Cog.listener()
@@ -1730,7 +1731,7 @@ class ArkTools(commands.Cog):
     async def leaveunfriend(self, command, apikey, gt, mapgt):
         async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
             if resp.status == 200:
-                print(f"{mapgt} successfully unfriended {gt}")
+                log.info(f"{mapgt} successfully unfriended {gt}")
 
     # Unfriends gamertags if they havent been seen on any server after a certain period of time
     @tasks.loop(hours=2)
@@ -1757,9 +1758,9 @@ class ArkTools(commands.Cog):
                                 gt = settings["clusters"][cluster]["servers"][server]["gamertag"]
                                 data, status = await self.apicall(command, apikey)
                                 if status == 200:
-                                    print(f"{gt} Successful unfriended {gamertag}")
+                                    log.info(f"{gt} Successful unfriended {gamertag}")
                                 else:
-                                    print(f"{gt} Failed to unfriend {gamertag}")
+                                    log.warning(f"{gt} Failed to unfriend {gamertag}")
 
     # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
@@ -1854,7 +1855,7 @@ class ArkTools(commands.Cog):
                 try:
                     msgtoedit = await destinationchannel.fetch_message(messagedata)
                 except discord.NotFound:
-                    print(f"ArkTools Status message not found. Creating new message.")
+                    log.info(f"ArkTools Status message not found. Creating new message.")
 
             if not msgtoedit:
                 await self.config.guild(guild).statusmessage.set(None)
@@ -1938,11 +1939,9 @@ class ArkTools(commands.Cog):
                     try:
                         link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
                         await self.process_handler(guild, server, f"serverchat {link}")
-                    except Exception:
-                        if discord.HTTPException:
-                            print("INVITE CREATION FAILED")
-                        elif discord.NotFound:
-                            print("INVALID CHANNEL FOR INVITE CREATION")
+                    except Exception as e:
+                        log.exception("INVITE CREATION FAILED", e)
+
                 await chatchannel.send(msg)
                 await globalchat.send(f"{chatchannel.mention}: {msg}")
                 clustername = server["cluster"]
@@ -2023,33 +2022,33 @@ class ArkTools(commands.Cog):
     async def before_loop_refresher(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(3600)
-        print("Task loops have been refreshed.")
+        log.info("Task loops have been refreshed.")
 
     # Initialize the config before the chat loop starts
     @chat_executor.before_loop
     async def before_chat_executor(self):
         await self.bot.wait_until_red_ready()
-        print("Chat executor is ready.")
+        log.info("Chat executor is ready.")
 
     # Nothing special before playerlist executor
     @playerlist_executor.before_loop
     async def before_playerlist_executor(self):
         await self.bot.wait_until_red_ready()
-        print("Playerlist executor is ready.")
+        log.info("Playerlist executor is ready.")
 
     @playerstats.before_loop
     async def before_playerstatst(self):
         await self.bot.wait_until_red_ready()
         await self.initialize()
         await asyncio.sleep(5)
-        print("Playerstat tracking active.")
+        log.info("Playerstat tracking active.")
 
     # Sleep before starting so playerlist executor has time to gather the player list
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(15)  # Gives playerlist executor time to gather player count
-        print("Status channel monitor is ready.")
+        log.info("Status channel monitor is ready.")
 
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
     @_setarktools.command(name="checkname")
