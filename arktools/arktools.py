@@ -1546,7 +1546,10 @@ class ArkTools(commands.Cog):
                     port=data['port'],
                     passwd=data['password'])
             except Exception as e:
-                print(f"TO_SERVER ERROR: {e}")
+                if "semaphor" in str(e):
+                    print(f"TO_SERVER ERROR: Server is probably offline")
+                else:
+                    print(f"TO_SERVER ERROR: {e}")
                 continue
 
     # Returns all channels and servers related to the message
@@ -1673,11 +1676,10 @@ class ArkTools(commands.Cog):
                                     payload = {"xuid": str(xuid), "message": welcome}
                                     print(f"Sending DM to XUID: {player[1]}")
                                     status = await self.apipost(url, payload, apikey)
-                                    print(f"Status: {status}")
                                     if status == 200:
                                         print("New Player DM Successful")
                                     else:
-                                        print("New Player DM Unuccessful")
+                                        print("New Player DM FAILED")
                                 if autofriend:
                                     xuid = player[1]
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
@@ -1685,7 +1687,7 @@ class ArkTools(commands.Cog):
                                     if status == 200:
                                         print(f"{gt} Successfully added {player[0]}")
                                     else:
-                                        print(f"{gt} Failed to add {player[0]}")
+                                        print(f"{gt} FAILED to add {player[0]}")
 
                         if map_cluster not in stats[player[0]]["playtime"]:
                             stats[player[0]]["playtime"][map_cluster] = 0
