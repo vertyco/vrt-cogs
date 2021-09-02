@@ -1157,7 +1157,7 @@ class ArkTools(commands.Cog):
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
-            return await msg.edit("Ok guess ya didn't need help then :yawning_face:")
+            return await msg.edit("Ok guess ya didn't need help then.")
 
         if reply.content.isdigit():
             implant_id = reply.content
@@ -1189,7 +1189,7 @@ class ArkTools(commands.Cog):
                 await asyncio.gather(*stucktasks)
             return
         else:
-            return await msg.edit("Ok guess ya didn't need help then :yawning_face:")
+            return await msg.edit("Ok guess ya didn't need help then.")
 
     async def imstuck_rcon(self, serverlist, command):
         try:
