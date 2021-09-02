@@ -25,7 +25,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.6.38"
+    __version__ = "1.7.38"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -938,8 +938,8 @@ class ArkTools(commands.Cog):
                 except discord.NotFound:
                     return
 
-    @_setarktools.command(name="stats")
-    async def _stats(self, ctx, *, gamertag):
+    @_setarktools.command(name="playerstats", aliases=["pstats, stats"])
+    async def _playerstats(self, ctx, *, gamertag):
         """View stats for a Gamertag"""
         stats = await self.config.guild(ctx.guild).playerstats()
         for player in stats:
@@ -966,6 +966,44 @@ class ArkTools(commands.Cog):
             else:
                 continue
         await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
+
+    @_setarktools.command(name="mapstats")
+    async def _mapstats(self, ctx):
+        """View statistics for all servers"""
+        stats = await self.config.guild(ctx.guild).playerstats()
+        maps = {}
+        t = {}
+        for player in stats:
+            for map in stats[player]["playtime"]:
+                if map != "total":
+                    t[map] = {}
+                    maps[map] = 0
+        for player in stats:
+            for map in stats[player]["playtime"]:
+                if map != "total":
+                    t[map][player] = stats[player]["playtime"][map]
+                    time = stats[player]["playtime"][map]
+                    maps[map] += time
+        sorted_maps = sorted(maps.items(), key=lambda x: x[1], reverse=True)
+        mstats = ""
+        count = 1
+        for map in sorted_maps:
+            max_p = max(t[map[0]], key=t[map[0]].get)
+            maxptime = t[map[0]][max_p]
+            md, mh, mm = await self.time_formatter(maxptime)
+            name = map[0]
+            time = map[1]
+            d, h, m = await self.time_formatter(time)
+            mstats += f"**{count}. {name.upper()}**\n" \
+                      f"Total Time Played: `{d}d {h}h {m}m`\n" \
+                      f"Top Player: `{max_p}` - `{md}d {mh}h {mm}m`\n\n"
+            count += 1
+        color = discord.Color.random()
+        embed = discord.Embed(title="Map Stats",
+                              description=f"{mstats}",
+                              color=color)
+        embed.set_thumbnail(url=ctx.guild.icon_url)
+        await ctx.send(embed=embed)
 
     @_setarktools.command(name="resetlb")
     @commands.guildowner()
