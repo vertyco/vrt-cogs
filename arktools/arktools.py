@@ -16,6 +16,7 @@ from rcon import Client
 import unicodedata
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
+STATUS = "https://i.imgur.com/LPzCcgU.gif"
 FAILED = "https://i.imgur.com/TcnAyVO.png"
 SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
@@ -25,7 +26,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.7.38"
+    __version__ = "1.7.39"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -435,24 +436,11 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
         else:
-            options = "**Gamertag** - `Map/Cluster`\n"
-            servernum = 1
-            serverlist = []
-            for clustername in settings["clusters"]:
-                for servername in settings["clusters"][clustername]["servers"]:
-                    if "api" in settings["clusters"][clustername]["servers"][servername]:
-                        key = settings["clusters"][clustername]["servers"][servername]["api"]
-                        gametag = str(settings["clusters"][clustername]["servers"][servername]["gamertag"])
-                        cname = clustername.upper()
-                        sname = servername.capitalize()
-                        options += f"**{servernum}.** `{gametag.capitalize()}` - `{sname} {cname}`\n"
-                        serverlist.append((servernum, gametag, key))
-                        servernum += 1
-            options += f"**All** - `Adds All Servers`\n"
+            map_options, serverlist = await self.enumerate_maps(ctx)
             embed = discord.Embed(
                 title=f"Add Yourself as a Friend",
                 description=f"**Type the Number that corresponds with the server you want.**\n\n"
-                            f"{options}"
+                            f"{map_options}"
             )
             embed.set_footer(text="Type your reply below")
             msg = await ctx.send(embed=embed)
@@ -879,18 +867,23 @@ class ArkTools(commands.Cog):
                 embedlist.append(embed)
                 start += 10
                 stop += 10
-
-            await self.paginate(ctx, embedlist)
+            msg = False
+            return await self.paginate(ctx, embedlist, msg)
         else:
             remaining = 10 - len(sorted_players)
             await ctx.send(embed=discord.Embed(description=f"Not enough player data to establish a leaderboard.\n"
                                                            f"Need {remaining} more players in database."))
 
-    async def paginate(self, ctx, embeds):
+    async def paginate(self, ctx, embeds, msg):
         pages = len(embeds)
         cur_page = 0
         embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
-        message = await ctx.send(embed=embeds[cur_page])
+        if not msg:
+            message = await ctx.send(embed=embeds[cur_page])
+        else:
+            message = msg
+            await msg.edit(embed=embeds[cur_page])
+
         await message.add_reaction("⏪")
         await message.add_reaction("◀️")
         await message.add_reaction("❌")
@@ -930,7 +923,7 @@ class ArkTools(commands.Cog):
 
                 elif str(reaction.emoji) == "❌":
                     await message.clear_reactions()
-                    return await ctx.send(embed=discord.Embed(description="Menu closed."))
+                    return await message.edit(embed=discord.Embed(description="Menu closed."))
 
             except asyncio.TimeoutError:
                 try:
@@ -942,16 +935,20 @@ class ArkTools(commands.Cog):
     async def _playerstats(self, ctx, *, gamertag):
         """View stats for a Gamertag"""
         stats = await self.config.guild(ctx.guild).playerstats()
+        current_time = datetime.datetime.utcnow()
         for player in stats:
             if player.lower() == gamertag.lower():
                 time = stats[player]["playtime"]["total"]
-                lastseen = datetime.datetime.fromisoformat(stats[player]["lastseen"]["time"])
+                timestamp = datetime.datetime.fromisoformat(stats[player]["lastseen"]["time"])
+                timedifference_raw = current_time - timestamp
+                timedifference = timedifference_raw.seconds
+                d, h, m = await self.time_formatter(timedifference)
                 lastmap = stats[player]["lastseen"]["map"]
                 days, hours, minutes = await self.time_formatter(time)
                 embed = discord.Embed(
                     title=f"Playerstats for {player}",
                     description=f"Total Time Played: `{days}d {hours}h {minutes}m`\n"
-                                f"Last Seen: `{lastseen.strftime('%m/%d/%Y at %H:%M:%S')} UTC` on `{lastmap}`",
+                                f"Last Seen: `{d}d {h}h {m}m` ago on `{lastmap}`",
                     color=discord.Color.random()
                 )
                 for map in stats[player]["playtime"]:
@@ -967,8 +964,8 @@ class ArkTools(commands.Cog):
                 continue
         await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
 
-    @_setarktools.command(name="mapstats")
-    async def _mapstats(self, ctx):
+    @_setarktools.command(name="clusterstats")
+    async def _clusterstats(self, ctx):
         """View statistics for all servers"""
         stats = await self.config.guild(ctx.guild).playerstats()
         maps = {}
@@ -1004,6 +1001,110 @@ class ArkTools(commands.Cog):
                               color=color)
         embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
+
+    @_setarktools.command(name="mapstats")
+    async def _mapstats(self, ctx):
+        """View stats for a particular server"""
+        map_options, serverlist = await self.enumerate_maps_all(ctx)
+        embed = discord.Embed(
+            title="Select a map to see stats",
+            description=f"**Type the Number that corresponds with the server you want.**\n\n"
+                        f"{map_options}"
+        )
+        msg = await ctx.send(embed=embed)
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        if reply.content.isdigit():
+            async with ctx.typing():
+                try:
+                    await reply.delete()
+                except discord.NotFound:
+                    pass
+                for data in serverlist:
+                    if int(reply.content) == data[0]:
+                        sname = data[1]
+                        cname = data[2]
+                        break
+                else:
+                    color = discord.Color.red()
+                    embed = discord.Embed(description=f"Could not find the server corresponding to {reply.content}!",
+                                          color=color)
+                    return await ctx.send(embed=embed)
+                stats = await self.config.guild(ctx.guild).playerstats()
+                leaderboard = {}
+                lastseen = {}
+                global_time = 0
+                for player in stats:
+                    if f"{sname} {cname}" in stats[player]["playtime"]:
+                        time = stats[player]["playtime"][f"{sname} {cname}"]
+                        leaderboard[player] = time
+                        lastseen[player] = stats[player]["lastseen"]["time"]
+                        global_time = global_time + time
+                gd, gh, gm = await self.time_formatter(global_time)
+                sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+
+                current_time = datetime.datetime.utcnow()
+                if len(sorted_players) >= 10:
+                    pages = math.ceil(len(sorted_players) / 10)
+                    embedlist = []
+                    start = 0
+                    stop = 10
+                    for page in range(int(pages)):
+                        embed = discord.Embed(
+                            title=f"Stats for {sname.capitalize()} {cname.upper()}",
+                            description=f"Global Cumulative Playtime: `{gd}d {gh}h {gm}m`\n\n"
+                                        f"**Top Players by Playtime** - `{len(sorted_players)} Total`\n",
+                            color=discord.Color.random()
+                        )
+                        embed.set_thumbnail(url=ctx.guild.icon_url)
+                        if stop > len(sorted_players):
+                            stop = len(sorted_players)
+                        for i in range(start, stop, 1):
+                            playername = sorted_players[i][0]
+                            playertime = sorted_players[i][1]
+                            timestamp = datetime.datetime.fromisoformat(lastseen[playername])
+                            timedifference_raw = current_time - timestamp
+                            timedifference = timedifference_raw.seconds
+                            dt, ht, mt = await self.time_formatter(playertime)
+                            d, h, m = await self.time_formatter(timedifference)
+                            embed.add_field(
+                                name=f"{i + 1}. {playername}",
+                                value=f"Time Played: `{dt}d {ht}h {mt}m`\n"
+                                      f"Last Seen: `{d}d {h}h {m}m ago`"
+                            )
+                        embedlist.append(embed)
+                        start += 10
+                        stop += 10
+                    return await self.paginate(ctx, embedlist, msg)
+                else:
+                    embed = discord.Embed(
+                        title=f"Stats for {sname.capitalize()} {cname.upper()}",
+                        description=f"Global Cumulative Playtime: `{gd}d {gh}h {gm}m`\n\n"
+                                    f"**Top Players by Playtime** - `{len(sorted_players)} Total`\n",
+                        color=discord.Color.random()
+                    )
+                    embed.set_thumbnail(url=ctx.guild.icon_url)
+                    for i in range(0, len(sorted_players), 1):
+                        playername = sorted_players[i][0]
+                        playertime = sorted_players[i][1]
+                        timestamp = datetime.datetime.fromisoformat(lastseen[playername])
+                        timedifference_raw = current_time - timestamp
+                        timedifference = timedifference_raw.seconds
+                        dt, ht, mt = await self.time_formatter(playertime)
+                        d, h, m = await self.time_formatter(timedifference)
+                        embed.add_field(
+                            name=f"{i + 1}. playername",
+                            value=f"Time Played: `{dt}d {ht}h {mt}m`\n"
+                                  f"Last Seen: `{d}d {h}h {m}m ago`"
+                        )
+                    return await msg.edit(embed=embed)
 
     @_setarktools.command(name="resetlb")
     @commands.guildowner()
@@ -1364,6 +1465,38 @@ class ArkTools(commands.Cog):
             status = resp.status
             return status
 
+    async def enumerate_maps_api(self, ctx):
+        settings = await self.config.guild(ctx.guild).all()
+        map_options = "**Gamertag** - `Map/Cluster`\n"
+        servernum = 1
+        serverlist = []
+        for clustername in settings["clusters"]:
+            for servername in settings["clusters"][clustername]["servers"]:
+                if "api" in settings["clusters"][clustername]["servers"][servername]:
+                    key = settings["clusters"][clustername]["servers"][servername]["api"]
+                    gametag = str(settings["clusters"][clustername]["servers"][servername]["gamertag"])
+                    cname = clustername.upper()
+                    sname = servername.capitalize()
+                    map_options += f"**{servernum}.** `{gametag.capitalize()}` - `{sname} {cname}`\n"
+                    serverlist.append((servernum, gametag, key))
+                    servernum += 1
+        map_options += f"**All** - `Adds All Servers`\n"
+        return map_options, serverlist
+
+    async def enumerate_maps_all(self, ctx):
+        settings = await self.config.guild(ctx.guild).all()
+        map_options = "**Map/Cluster**\n"
+        servernum = 1
+        serverlist = []
+        for clustername in settings["clusters"]:
+            for servername in settings["clusters"][clustername]["servers"]:
+                    cname = clustername.upper()
+                    sname = servername.capitalize()
+                    map_options += f"**{servernum}.** `{sname} {cname}`\n"
+                    serverlist.append((servernum, sname.lower(), cname.lower()))
+                    servernum += 1
+        return map_options, serverlist
+
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
@@ -1632,6 +1765,7 @@ class ArkTools(commands.Cog):
         data = await self.config.all_guilds()
         for guildID in data:
             guild = self.bot.get_guild(int(guildID))
+            thumbnail = STATUS
             if not guild:
                 continue
             settings = await self.config.guild(guild).all()
@@ -1655,6 +1789,7 @@ class ArkTools(commands.Cog):
 
                     count = self.alerts[channel]
                     if playercount is None:
+                        thumbnail = FAILED
                         inc = "Minutes."
                         if count >= 60:
                             count = count / 60
@@ -1690,9 +1825,9 @@ class ArkTools(commands.Cog):
                         status += f"{guild.get_channel(channel).mention}: {playercount} players\n"
 
                 if clustertotal == 1:
-                    status += f"`{clustertotal}` player in the cluster\n"
+                    status += f"`{clustertotal}` player in the cluster\n\n"
                 else:
-                    status += f"`{clustertotal}` players in the cluster\n"
+                    status += f"`{clustertotal}` players in the cluster\n\n"
 
             messagedata = await self.config.guild(guild).statusmessage()
             channeldata = await self.config.guild(guild).statuschannel()
@@ -1700,15 +1835,14 @@ class ArkTools(commands.Cog):
                 continue
 
             # Embed setup
-            thumbnail = guild.icon_url
             eastern = pytz.timezone('US/Eastern')  # Might make this configurable in the future
             time = datetime.datetime.now(eastern)
             embed = discord.Embed(
                 timestamp=time,
-                title="Server Status",
                 color=discord.Color.random(),
                 description=status
             )
+            embed.set_author(name="Server Status", icon_url=guild.icon_url)
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
             embed.set_thumbnail(url=thumbnail)
             destinationchannel = guild.get_channel(channeldata)
