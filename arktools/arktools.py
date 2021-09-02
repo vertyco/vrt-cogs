@@ -1063,7 +1063,7 @@ class ArkTools(commands.Cog):
                                         f"**Top Players by Playtime** - `{len(sorted_players)} Total`\n",
                             color=discord.Color.random()
                         )
-                        embed.set_thumbnail(url=ctx.guild.icon_url)
+                        embed.set_thumbnail(url=STATUS)
                         if stop > len(sorted_players):
                             stop = len(sorted_players)
                         for i in range(start, stop, 1):
