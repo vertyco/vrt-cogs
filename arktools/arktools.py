@@ -927,7 +927,7 @@ class ArkTools(commands.Cog):
 
             except asyncio.TimeoutError:
                 try:
-                    await message.clear_reactions()
+                    return await message.clear_reactions()
                 except discord.NotFound:
                     return
 
