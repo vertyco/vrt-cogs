@@ -431,7 +431,7 @@ class ArkTools(commands.Cog):
                     ptag = player
                     break
         if not registered:
-            embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.mention}**!\n"
+            embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.mention}**!\n\n"
                                               f"Set a Gamertag with `{ctx.prefix}arktools register`")
             embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
