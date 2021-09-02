@@ -29,7 +29,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.7.40"
+    __version__ = "1.8.40"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1136,6 +1136,59 @@ class ArkTools(commands.Cog):
         days, hours = divmod(hours, 24)
         return days, hours, minutes
 
+    # HARDCODED ITEM SEND
+    @_setarktools.command(name="imstuck")
+    @commands.cooldown(1, 1800, commands.BucketType.user)
+    async def imstuck(self, ctx, implant_id):
+        """
+        For those tough times when Ark is being Ark
+
+        Sends you tools to get unstuck, or off yourself.
+        """
+        embed = discord.Embed(
+            description=f"Sit tight, your care package is on the way!"
+        )
+        embed.set_thumbnail(url=STATUS)
+        await ctx.send(embed=embed)
+        settings = await self.config.guild(ctx.guild).all()
+        serverlist = []
+        for cluster in settings["clusters"]:
+            for server in settings["clusters"][cluster]["servers"]:
+                settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
+                serverlist.append(settings["clusters"][cluster]["servers"][server])
+        commands = [
+            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 20 0 0""",
+            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 2 0 0""",
+            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
+            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
+            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
+        ]
+
+        stucktasks = []
+        for server in serverlist:
+            for command in commands:
+                stucktasks.append(self.imstuck_rcon(server, command))
+
+        async with ctx.typing():
+            await asyncio.gather(*stucktasks)
+        return
+
+    async def imstuck_rcon(self, serverlist, command):
+        try:
+            await rcon.asyncio.rcon(
+                command=command,
+                host=serverlist['ip'],
+                port=serverlist['port'],
+                passwd=serverlist['password']
+            )
+            return
+        except WindowsError as e:
+            if e.winerror == 121:
+                clustername = serverlist['cluster']
+                servername = serverlist['name']
+                log.warning(f"IMSTUCK COMAMND: The **{servername}** **{clustername}** server has timed out and is probably down.")
+                return
+
     # VIEW SETTINGSs
     @_api.command(name="view")
     async def _viewapi(self, ctx):
@@ -1395,10 +1448,10 @@ class ArkTools(commands.Cog):
             await ctx.send(box(unfriend, lang="python"))
 
     # RCON function for manual commands
-    async def manual_rcon(self, ctx, serverlist, command):
+    async def manual_rcon(self, ctx, serverlist, command, ctype=None):
         async with ctx.typing():
             try:
-                map = serverlist['name'].capitalize()
+                mapn = serverlist['name'].capitalize()
                 cluster = serverlist['cluster'].upper()
                 res = await rcon.asyncio.rcon(
                     command=command,
@@ -1408,10 +1461,10 @@ class ArkTools(commands.Cog):
                 )
                 res = res.rstrip()
                 if command.lower() == "listplayers":
-                    await ctx.send(f"**{map} {cluster}**\n"
+                    await ctx.send(f"**{mapn} {cluster}**\n"
                                    f"{box(res, lang='python')}")
                 else:
-                    await ctx.send(box(f"{map} {cluster}\n{res}", lang="python"))
+                    await ctx.send(box(f"{mapn} {cluster}\n{res}", lang="python"))
             except WindowsError as e:
                 if e.winerror == 121:
                     clustername = serverlist['cluster']
