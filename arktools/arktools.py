@@ -1450,7 +1450,8 @@ class ArkTools(commands.Cog):
                     self.taskdata.append([guild.id, server])
         time = datetime.datetime.utcnow()
         self.time = time.isoformat()
-        log.info("ArkTools config initialized.")  # If this doesnt log then something is fucky...
+        log.info("ArkTools: config initialized.")  # If this doesnt log then something is fucky...
+        return
 
     # Xbox API call handler
     async def apicall(self, command, apikey):
@@ -1650,7 +1651,7 @@ class ArkTools(commands.Cog):
                 if self.playerlist[channel]:
                     for player in self.playerlist[channel]:
                         if player[0] not in stats:  # New Player
-                            log.info(f"New Player: {player[0]}")
+                            log.info(f"ArkTools: New Player - {player[0]}")
                             stats[player[0]] = {"playtime": {"total": 0}}
                             stats[player[0]]["xuid"] = player[1]
                             stats[player[0]]["lastseen"] = {
@@ -1677,18 +1678,18 @@ class ArkTools(commands.Cog):
                                     xuid = player[1]
                                     url = "https://xbl.io/api/v2/conversations"
                                     payload = {"xuid": str(xuid), "message": welcome}
-                                    log.info(f"Sending DM to XUID: {player[1]}")
+                                    log.info(f"ArkTools: Sending DM to XUID - {player[1]}")
                                     status = await self.apipost(url, payload, apikey)
                                     if status == 200:
-                                        log.info("New Player DM Successful")
+                                        log.info("ArkTools: New Player DM Successful")
                                     else:
-                                        log.warning("New Player DM FAILED")
+                                        log.warning("ArkTools: New Player DM FAILED")
                                 if autofriend:
                                     xuid = player[1]
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                     data, status = await self.apicall(command, apikey)
                                     if status == 200:
-                                        log.info(f"{gt} Successfully added {player[0]}")
+                                        log.info(f"ArkTools: {gt} Successfully added {player[0]}")
                                     else:
                                         log.warning(f"{gt} FAILED to add {player[0]}")
 
@@ -1731,7 +1732,7 @@ class ArkTools(commands.Cog):
     async def leaveunfriend(self, command, apikey, gt, mapgt):
         async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
             if resp.status == 200:
-                log.info(f"{mapgt} successfully unfriended {gt}")
+                log.info(f"ArkTools: {mapgt} successfully unfriended {gt}")
 
     # Unfriends gamertags if they havent been seen on any server after a certain period of time
     @tasks.loop(hours=2)
@@ -1758,9 +1759,9 @@ class ArkTools(commands.Cog):
                                 gt = settings["clusters"][cluster]["servers"][server]["gamertag"]
                                 data, status = await self.apicall(command, apikey)
                                 if status == 200:
-                                    log.info(f"{gt} Successful unfriended {gamertag}")
+                                    log.info(f"ArkTools: {gt} Successful unfriended {gamertag}")
                                 else:
-                                    log.warning(f"{gt} Failed to unfriend {gamertag}")
+                                    log.warning(f"ArkTools: {gt} Failed to unfriend {gamertag}")
 
     # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
@@ -1855,7 +1856,7 @@ class ArkTools(commands.Cog):
                 try:
                     msgtoedit = await destinationchannel.fetch_message(messagedata)
                 except discord.NotFound:
-                    log.info(f"ArkTools Status message not found. Creating new message.")
+                    log.info(f"ArkTools: Status message not found. Creating new message.")
 
             if not msgtoedit:
                 await self.config.guild(guild).statusmessage.set(None)
@@ -2022,33 +2023,35 @@ class ArkTools(commands.Cog):
     async def before_loop_refresher(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(3600)
-        log.info("Task loops have been refreshed.")
+        log.info("ArkTools: Loop refresher ready.")
 
     # Initialize the config before the chat loop starts
     @chat_executor.before_loop
     async def before_chat_executor(self):
         await self.bot.wait_until_red_ready()
-        log.info("Chat executor is ready.")
+        await asyncio.sleep(3)
+        log.info("ArkTools: Chat executor ready.")
 
     # Nothing special before playerlist executor
     @playerlist_executor.before_loop
     async def before_playerlist_executor(self):
         await self.bot.wait_until_red_ready()
-        log.info("Playerlist executor is ready.")
+        await asyncio.sleep(2)
+        log.info("ArkTools: Playerlist executor ready.")
 
     @playerstats.before_loop
     async def before_playerstatst(self):
         await self.bot.wait_until_red_ready()
         await self.initialize()
-        await asyncio.sleep(5)
-        log.info("Playerstat tracking active.")
+        await asyncio.sleep(1)
+        log.info("ArkTools: Player stat tracking ready.")
 
     # Sleep before starting so playerlist executor has time to gather the player list
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(15)  # Gives playerlist executor time to gather player count
-        log.info("Status channel monitor is ready.")
+        log.info("ArkTools: Status monitor ready.")
 
     # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
     @_setarktools.command(name="checkname")
