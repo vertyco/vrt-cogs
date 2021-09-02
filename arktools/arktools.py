@@ -25,7 +25,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.6.37"
+    __version__ = "1.6.38"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -823,8 +823,6 @@ class ArkTools(commands.Cog):
     async def _leaderboard(self, ctx):
         """
         View time played leaderboard
-
-        (Optional) Include how many players to display
         """
 
         stats = await self.config.guild(ctx.guild).playerstats()
@@ -940,9 +938,9 @@ class ArkTools(commands.Cog):
                 except discord.NotFound:
                     return
 
-    @_setarktools.command(name="playtime")
-    async def _playtime(self, ctx, *, gamertag):
-        """View playtime for a Gamertag"""
+    @_setarktools.command(name="stats")
+    async def _stats(self, ctx, *, gamertag):
+        """View stats for a Gamertag"""
         stats = await self.config.guild(ctx.guild).playerstats()
         for player in stats:
             if player.lower() == gamertag.lower():
@@ -1006,7 +1004,9 @@ class ArkTools(commands.Cog):
         unfriendtime = settings["unfriendafter"]
         welcomemsg = settings["welcomemsg"]
         if welcomemsg is None:
-            welcomemsg = "Default"
+            welcomemsg = f"Welcome to {ctx.guild.name}!\nThis is an automated message:\n" \
+                                                  f"You appear to be a new player, " \
+                                                  f"here is an invite to the Discord server:\n\n*Invite Link*"
         color = discord.Color.random()
         embed = discord.Embed(
             title="API Settings",
