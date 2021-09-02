@@ -436,7 +436,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
         else:
-            map_options, serverlist = await self.enumerate_maps(ctx)
+            map_options, serverlist = await self.enumerate_maps_api(ctx)
             embed = discord.Embed(
                 title=f"Add Yourself as a Friend",
                 description=f"**Type the Number that corresponds with the server you want.**\n\n"
