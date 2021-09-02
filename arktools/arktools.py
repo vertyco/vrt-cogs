@@ -1139,39 +1139,56 @@ class ArkTools(commands.Cog):
     # HARDCODED ITEM SEND
     @_setarktools.command(name="imstuck")
     @commands.cooldown(1, 1800, commands.BucketType.user)
-    async def imstuck(self, ctx, implant_id):
+    async def imstuck(self, ctx):
         """
         For those tough times when Ark is being Ark
 
         Sends you tools to get unstuck, or off yourself.
         """
         embed = discord.Embed(
-            description=f"Sit tight, your care package is on the way!"
+            description=f"Type your Implant ID"
         )
-        embed.set_thumbnail(url=STATUS)
-        await ctx.send(embed=embed)
-        settings = await self.config.guild(ctx.guild).all()
-        serverlist = []
-        for cluster in settings["clusters"]:
-            for server in settings["clusters"][cluster]["servers"]:
-                settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
-                serverlist.append(settings["clusters"][cluster]["servers"][server])
-        commands = [
-            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 20 0 0""",
-            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 2 0 0""",
-            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
-            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
-            f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
-        ]
+        embed.set_thumbnail(url="https://i.imgur.com/kfanq99.png")
+        msg = await ctx.send(embed=embed)
 
-        stucktasks = []
-        for server in serverlist:
-            for command in commands:
-                stucktasks.append(self.imstuck_rcon(server, command))
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit("Ok guess ya didn't need help then :yawning_face:")
 
-        async with ctx.typing():
-            await asyncio.gather(*stucktasks)
-        return
+        if reply.content.isdigit():
+            implant_id = reply.content
+            embed = discord.Embed(
+                description=f"Sit tight, your care package is on the way!"
+            )
+            embed.set_thumbnail(url=STATUS)
+            await ctx.send(embed=embed)
+            settings = await self.config.guild(ctx.guild).all()
+            serverlist = []
+            for cluster in settings["clusters"]:
+                for server in settings["clusters"][cluster]["servers"]:
+                    settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
+                    serverlist.append(settings["clusters"][cluster]["servers"][server])
+            commands = [
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 20 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 2 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
+            ]
+
+            stucktasks = []
+            for server in serverlist:
+                for command in commands:
+                    stucktasks.append(self.imstuck_rcon(server, command))
+
+            async with ctx.typing():
+                await asyncio.gather(*stucktasks)
+            return
+        else:
+            return await msg.edit("Ok guess ya didn't need help then :yawning_face:")
 
     async def imstuck_rcon(self, serverlist, command):
         try:
