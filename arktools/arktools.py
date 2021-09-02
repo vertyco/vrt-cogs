@@ -1146,8 +1146,9 @@ class ArkTools(commands.Cog):
         Sends you tools to get unstuck, or off yourself.
         """
         embed = discord.Embed(
-            description=f"Type your Implant ID"
+            description=f"Type your Implant ID in chat."
         )
+        embed.set_footer(text="Hint: your implant id can be seen by hovering over it in your inventory!")
         embed.set_thumbnail(url="https://i.imgur.com/kfanq99.png")
         msg = await ctx.send(embed=embed)
 
