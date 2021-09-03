@@ -2054,7 +2054,8 @@ class ArkTools(commands.Cog):
                 await self.tribelog_formatter(guild, server, msg)
             elif msg.startswith('SERVER:'):
                 continue
-
+            elif ":" not in msg:
+                continue
             else:
                 messages.append(msg)
                 for names in badnames:
