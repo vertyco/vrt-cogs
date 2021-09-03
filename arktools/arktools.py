@@ -932,7 +932,7 @@ class ArkTools(commands.Cog):
                     await message.edit(embed=embeds[cur_page])
                     await message.remove_reaction(reaction, user)
 
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                elif str(reaction.emoji) == "◀️" and cur_page > 0:
                     cur_page -= 1
                     embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
                     await message.edit(embed=embeds[cur_page])
