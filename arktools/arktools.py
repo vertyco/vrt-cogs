@@ -1178,7 +1178,7 @@ class ArkTools(commands.Cog):
                 description=f"Sit tight, your care package is on the way!"
             )
             embed.set_thumbnail(url="https://i.imgur.com/8ofOx6X.png")
-            await ctx.send(embed=embed)
+            await msg.edit(embed=embed)
             settings = await self.config.guild(ctx.guild).all()
             serverlist = []
             for cluster in settings["clusters"]:
