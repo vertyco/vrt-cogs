@@ -1962,6 +1962,7 @@ class ArkTools(commands.Cog):
                 if e.winerror == 10038:
                     log.exception("PROCESS HANDLER", e)
 
+
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
             if "getchat" in command:
