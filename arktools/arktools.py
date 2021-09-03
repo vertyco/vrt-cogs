@@ -1959,6 +1959,8 @@ class ArkTools(commands.Cog):
             except WindowsError as e:
                 if e.winerror == 121:
                     return None
+                if e.winerror == 10038:
+                    log.exception("PROCESS HANDLER", e)
 
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
