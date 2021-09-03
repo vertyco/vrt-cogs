@@ -1473,6 +1473,7 @@ class ArkTools(commands.Cog):
 
             async with ctx.typing():
                 try:
+                    print("Awaiting manual tasks")
                     await asyncio.gather(*mtasks)
                 except Exception as e:
                     log.exception(f"MANUAL RCON GATHER", e)
@@ -1511,12 +1512,14 @@ class ArkTools(commands.Cog):
                 passwd=serverlist['password']
             )
             res = res.rstrip()
+            print("res complete")
             if command.lower() == "listplayers":
                 await ctx.send(f"**{mapn} {cluster}**\n"
                                f"{box(res, lang='python')}")
             else:
                 await ctx.send(box(f"{mapn} {cluster}\n{res}", lang="python"))
         except WindowsError as e:
+            print("WinError")
             if e.winerror == 121:
                 clustername = serverlist['cluster']
                 servername = serverlist['name']
@@ -1524,6 +1527,7 @@ class ArkTools(commands.Cog):
                 return
         except Exception as e:
             if "WinError" not in e:
+                print("Not WinError")
                 log.exception(f"MANUAL RCON", e)
 
     # Cache the config on cog load for the task loops to use
