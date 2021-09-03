@@ -1174,6 +1174,10 @@ class ArkTools(commands.Cog):
 
         if reply.content.isdigit():
             implant_id = reply.content
+            try:
+                await reply.delete()
+            except discord.NotFound:
+                pass
             embed = discord.Embed(
                 description=f"Sit tight, your care package is on the way!"
             )
