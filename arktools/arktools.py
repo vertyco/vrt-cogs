@@ -1471,8 +1471,12 @@ class ArkTools(commands.Cog):
             for server in serverlist:
                 mtasks.append(self.manual_rcon(ctx, server, command))
 
-            await asyncio.gather(*mtasks)
-
+            async with ctx.typing():
+                try:
+                    await asyncio.gather(*mtasks)
+                except Exception as e:
+                    log.exception(f"MANUAL RCON GATHER", e)
+                    return await ctx.send(f"Command failed to gather")
 
         if command.lower() == "doexit":
             await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
@@ -1497,31 +1501,30 @@ class ArkTools(commands.Cog):
 
     # RCON function for manual commands
     async def manual_rcon(self, ctx, serverlist, command):
-        async with ctx.typing():
-            try:
-                mapn = serverlist['name'].capitalize()
-                cluster = serverlist['cluster'].upper()
-                res = await rcon.asyncio.rcon(
-                    command=command,
-                    host=serverlist['ip'],
-                    port=serverlist['port'],
-                    passwd=serverlist['password']
-                )
-                res = res.rstrip()
-                if command.lower() == "listplayers":
-                    await ctx.send(f"**{mapn} {cluster}**\n"
-                                   f"{box(res, lang='python')}")
-                else:
-                    await ctx.send(box(f"{mapn} {cluster}\n{res}", lang="python"))
-            except WindowsError as e:
-                if e.winerror == 121:
-                    clustername = serverlist['cluster']
-                    servername = serverlist['name']
-                    await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
-                    return
-            except Exception as e:
-                if "WinError" not in e:
-                    log.exception(f"MANUAL RCON", e)
+        try:
+            mapn = serverlist['name'].capitalize()
+            cluster = serverlist['cluster'].upper()
+            res = await rcon.asyncio.rcon(
+                command=command,
+                host=serverlist['ip'],
+                port=serverlist['port'],
+                passwd=serverlist['password']
+            )
+            res = res.rstrip()
+            if command.lower() == "listplayers":
+                await ctx.send(f"**{mapn} {cluster}**\n"
+                               f"{box(res, lang='python')}")
+            else:
+                await ctx.send(box(f"{mapn} {cluster}\n{res}", lang="python"))
+        except WindowsError as e:
+            if e.winerror == 121:
+                clustername = serverlist['cluster']
+                servername = serverlist['name']
+                await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
+                return
+        except Exception as e:
+            if "WinError" not in e:
+                log.exception(f"MANUAL RCON", e)
 
     # Cache the config on cog load for the task loops to use
     async def initialize(self):
@@ -1988,7 +1991,7 @@ class ArkTools(commands.Cog):
                 await self.config.guild(guild).statusmessage.set(message.id)
             if msgtoedit:
                 try:
-                    await msgtoedit.edit(embed=embed)
+                    return await msgtoedit.edit(embed=embed)
                 except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
                     await self.config.guild(guild).statusmessage.set(None)
                     message = await destinationchannel.send(embed=embed)
