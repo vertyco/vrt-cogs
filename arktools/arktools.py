@@ -112,6 +112,25 @@ class ArkTools(commands.Cog):
         """Tribe commands."""
         pass
 
+    # EXTRA LOGS SENT TO THE ADMIN LOG CHANNELS IF ENABLED
+    @_setarktools.command(name="datalog")
+    @commands.guildowner()
+    async def _datalog(self, ctx):
+        """
+        (TOGGLE): Send extra data logs to admin log channels
+
+        Notifies when new player is registered in the database.
+        If an API key is set for the server they joined, it will include whether or not they were
+        DM'd and friend requested if AutoFriend or AutoWelcome is enabled.
+        """
+        log = await self.config.guild(ctx.guild).datalogs()
+        if log:
+            await self.config.guild(ctx.guild).datalogs.set(False)
+            return await ctx.send("Data logging Disabled.")
+        else:
+            await self.config.guild(ctx.guild).datalogs.set(True)
+            return await ctx.send(f"Data logging Enabled")
+
     # PERMISSIONS COMMANDS
     @_permissions.command(name="setfullaccessrole")
     async def _setfullaccessrole(self, ctx: commands.Context, role: discord.Role):
@@ -628,18 +647,6 @@ class ArkTools(commands.Cog):
             return status, remaining
 
     # SERVER SETTINGS COMMANDS
-    @_serversettings.command(name="toggledatalog")
-    @commands.guildowner()
-    async def _datalog(self, ctx):
-        """Toggle extra data logs to be sent to the admin log channels"""
-        log = await self.config.guild(ctx.guild).datalogs()
-        if log:
-            await self.config.guild(ctx.guild).datalogs.set(False)
-            return await ctx.send("Data logging Disabled.")
-        else:
-            await self.config.guild(ctx.guild).datalogs.set(True)
-            return await ctx.send(f"Data logging Enabled")
-
     @_serversettings.command(name="addcluster")
     async def _addcluster(self, ctx: commands.Context,
                           clustername: str,
