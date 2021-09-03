@@ -629,6 +629,7 @@ class ArkTools(commands.Cog):
 
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="toggledatalog")
+    @commands.guildowner()
     async def _datalog(self, ctx):
         """Toggle extra data logs to be sent to the admin log channels"""
         log = await self.config.guild(ctx.guild).datalogs()
