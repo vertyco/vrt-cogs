@@ -893,13 +893,13 @@ class ArkTools(commands.Cog):
 
     async def paginate(self, ctx, embeds, msg):
         pages = len(embeds)
-        cur_page = 0
-        embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
+        cur_page = 1
+        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
         if not msg:
-            message = await ctx.send(embed=embeds[cur_page])
+            message = await ctx.send(embed=embeds[cur_page - 1])
         else:
             message = msg
-            await msg.edit(embed=embeds[cur_page])
+            await msg.edit(embed=embeds[cur_page - 1])
 
         await message.add_reaction("⏪")
         await message.add_reaction("◀️")
@@ -914,28 +914,28 @@ class ArkTools(commands.Cog):
             try:
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
 
-                if str(reaction.emoji) == "⏩" and cur_page + 10 < pages:
+                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
                     cur_page += 10
-                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
-                    await message.edit(embed=embeds[cur_page])
+                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embeds[cur_page - 1])
                     await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "▶️" and cur_page + 1 != pages:
                     cur_page += 1
-                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
-                    await message.edit(embed=embeds[cur_page])
+                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embeds[cur_page - 1])
                     await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
                     cur_page -= 10
-                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
-                    await message.edit(embed=embeds[cur_page])
+                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embeds[cur_page - 1])
                     await message.remove_reaction(reaction, user)
 
-                elif str(reaction.emoji) == "◀️" and cur_page > 0:
+                elif str(reaction.emoji) == "◀️" and cur_page > 1:
                     cur_page -= 1
-                    embeds[cur_page].set_footer(text=f"Page {cur_page + 1}/{pages}")
-                    await message.edit(embed=embeds[cur_page])
+                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embeds[cur_page - 1])
                     await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "❌":
