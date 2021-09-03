@@ -48,6 +48,7 @@ class ArkTools(commands.Cog):
             "servertoserverchat": False,
             "autowelcome": False,
             "autofriend": False,
+            "datalogs": False,
             "unfriendafter": 15,
             "clusters": {},
             "modroles": [],
@@ -59,6 +60,7 @@ class ArkTools(commands.Cog):
         self.config.register_guild(**default_guild)
 
         # Cache on cog load
+        self.logs = {}
         self.servercount = 0
         self.taskdata = []
         self.alerts = {}
@@ -626,6 +628,17 @@ class ArkTools(commands.Cog):
             return status, remaining
 
     # SERVER SETTINGS COMMANDS
+    @_serversettings.command(name="toggledatalog")
+    async def _datalog(self, ctx):
+        """Toggle extra data logs to be sent to the admin log channels"""
+        log = await self.config.guild(ctx.guild).datalogs()
+        if log:
+            await self.config.guild(ctx.guild).datalogs.set(False)
+            return await ctx.send("Data logging Disabled.")
+        else:
+            await self.config.guild(ctx.guild).datalogs.set(True)
+            return await ctx.send(f"Data logging Enabled")
+
     @_serversettings.command(name="addcluster")
     async def _addcluster(self, ctx: commands.Context,
                           clustername: str,
@@ -1183,7 +1196,7 @@ class ArkTools(commands.Cog):
             stucktasks = []
             for server in serverlist:
                 for command in commands:
-                    stucktasks.append(self.imstuck_rcon(server, command))
+                    stucktasks.append(self.imstuck_rcon(server, command, ctx.guild))
 
             async with ctx.typing():
                 await asyncio.gather(*stucktasks)
@@ -1191,7 +1204,7 @@ class ArkTools(commands.Cog):
         else:
             return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
 
-    async def imstuck_rcon(self, serverlist, command):
+    async def imstuck_rcon(self, serverlist, command, guild):
         try:
             await rcon.asyncio.rcon(
                 command=command,
@@ -1718,11 +1731,16 @@ class ArkTools(commands.Cog):
             mapname = server["name"]
             clustername = server["cluster"]
             map_cluster = f"{mapname} {clustername}"
+            extralog = await self.config.guild(guild).datalogs()
             async with self.config.guild(guild).playerstats() as stats:
                 if self.playerlist[channel]:
                     for player in self.playerlist[channel]:
                         if player[0] not in stats:  # New Player
+                            admchannel = settings["clusters"][clustername]["adminlogchannel"]
+                            admchannel = guild.get_channel(admchannel)
                             log.info(f"New Player - {player[0]}")
+                            if extralog:
+                                await admchannel.send(f"New Player - `{player[0]}` added to database.")
                             stats[player[0]] = {"playtime": {"total": 0}}
                             stats[player[0]]["xuid"] = player[1]
                             stats[player[0]]["lastseen"] = {
@@ -1753,16 +1771,23 @@ class ArkTools(commands.Cog):
                                     status = await self.apipost(url, payload, apikey)
                                     if status == 200:
                                         log.info("New Player DM Successful")
+                                        if extralog:
+                                            await admchannel.send("DM Successful")
                                     else:
                                         log.warning("New Player DM FAILED")
+                                        if extralog:
+                                            await admchannel.send("DM FAILED")
                                 if autofriend:
                                     xuid = player[1]
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                     data, status = await self.apicall(command, apikey)
                                     if status == 200:
                                         log.info(f"{gt} Successfully added {player[0]}")
+                                        await admchannel.send(f"{gt} Successfully added {player[0]}")
                                     else:
                                         log.warning(f"{gt} FAILED to add {player[0]}")
+                                        if extralog:
+                                            await admchannel.send(f"{gt} FAILED to add {player[0]}")
 
                         if map_cluster not in stats[player[0]]["playtime"]:
                             stats[player[0]]["playtime"][map_cluster] = 0
