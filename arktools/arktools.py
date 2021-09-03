@@ -1146,7 +1146,7 @@ class ArkTools(commands.Cog):
         Sends you tools to get unstuck, or off yourself.
         """
         embed = discord.Embed(
-            description=f"\n**Type your Implant ID in chat.**"
+            description=f"**Type your Implant ID in chat.**"
         )
         embed.set_footer(text="Hint: your implant id can be seen by hovering over it in your inventory!")
         embed.set_thumbnail(url="https://i.imgur.com/kfanq99.png")
@@ -1157,7 +1157,7 @@ class ArkTools(commands.Cog):
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
-            return await msg.edit("Ok guess ya didn't need help then.")
+            return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
 
         if reply.content.isdigit():
             implant_id = reply.content
@@ -1189,7 +1189,7 @@ class ArkTools(commands.Cog):
                 await asyncio.gather(*stucktasks)
             return
         else:
-            return await msg.edit("Ok guess ya didn't need help then.")
+            return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
 
     async def imstuck_rcon(self, serverlist, command):
         try:
