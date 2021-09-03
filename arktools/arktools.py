@@ -1470,7 +1470,11 @@ class ArkTools(commands.Cog):
         else:
             for server in serverlist:
                 mtasks.append(self.manual_rcon(ctx, server, command))
-            await asyncio.gather(*mtasks)
+            try:
+                await asyncio.gather(*mtasks)
+            except Exception as e:
+                log.exception(f"MANUAL RCON", e)
+                return
 
         if command.lower() == "doexit":
             await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
@@ -1603,6 +1607,9 @@ class ArkTools(commands.Cog):
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
+        if message.author.bot:
+            return
+
         channels = []
         for data in self.taskdata:
             server = data[1]
@@ -1610,8 +1617,7 @@ class ArkTools(commands.Cog):
             channels.append(server["chatchannel"])
         if message.channel.id not in channels:
             return
-        if message.author.bot:
-            return
+
         if message.mentions:
             for mention in message.mentions:
                 message.content = message.content.replace(f"<@!{mention.id}>", f"@{mention.name}")
