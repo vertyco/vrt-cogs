@@ -2009,9 +2009,10 @@ class ArkTools(commands.Cog):
                     return result
             except WindowsError as e:
                 if e.winerror == 121:
-                    return None
+                    log.exception("PROCESS HANDLER 121", e)
                 if e.winerror == 10038:
-                    log.exception("PROCESS HANDLER", e)
+                    log.exception("PROCESS HANDLER 10038", e)
+                return None
 
         res = await self.bot.loop.run_in_executor(None, rcon)
         if res:
@@ -2021,6 +2022,8 @@ class ArkTools(commands.Cog):
                 regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
                 playerlist = re.findall(regex, res)
                 return playerlist
+        else:
+            return None
 
     # Sends messages to their designated channels from the in-game chat
     async def message_handler(self, guild, server, res):
