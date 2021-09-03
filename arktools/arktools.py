@@ -126,10 +126,10 @@ class ArkTools(commands.Cog):
         log = await self.config.guild(ctx.guild).datalogs()
         if log:
             await self.config.guild(ctx.guild).datalogs.set(False)
-            return await ctx.send("Data logging Disabled.")
+            return await ctx.send("Extra data logs **Disabled**")
         else:
             await self.config.guild(ctx.guild).datalogs.set(True)
-            return await ctx.send(f"Data logging Enabled")
+            return await ctx.send(f"Extra data logs **Enabled**")
 
     # PERMISSIONS COMMANDS
     @_permissions.command(name="setfullaccessrole")
