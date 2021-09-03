@@ -1994,7 +1994,7 @@ class ArkTools(commands.Cog):
 
     # Executes all task loop RCON commands synchronously in another thread
     # Process is synchronous for easing network buffer and keeping network traffic manageable
-    async def process_handler(self, guild, server, command, ):
+    async def process_handler(self, guild, server, command):
         if command == "getchat":
             timeout = 1
         elif command == "listplayers":
