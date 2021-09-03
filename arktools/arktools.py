@@ -1473,7 +1473,6 @@ class ArkTools(commands.Cog):
 
             async with ctx.typing():
                 try:
-                    print("Awaiting manual tasks")
                     await asyncio.gather(*mtasks)
                 except Exception as e:
                     log.exception(f"MANUAL RCON GATHER", e)
@@ -1519,15 +1518,16 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send(box(f"{mapn} {cluster}\n{res}", lang="python"))
         except WindowsError as e:
-            print("WinError")
             if e.winerror == 121:
                 clustername = serverlist['cluster']
                 servername = serverlist['name']
                 await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
                 return
+            else:
+                log.exception("MANUAL RCON WINERROR", e)
+                return
         except Exception as e:
             if "WinError" not in e:
-                print("Not WinError")
                 log.exception(f"MANUAL RCON", e)
 
     # Cache the config on cog load for the task loops to use
