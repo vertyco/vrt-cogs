@@ -112,14 +112,14 @@ class ArkTools(commands.Cog):
         """Tribe commands."""
         pass
 
-    # EXTRA LOGS SENT TO THE ADMIN LOG CHANNELS IF ENABLED
+    # EXTRA LOGS SENT TO THE JOIN LOG CHANNELS IF ENABLED
     @_setarktools.command(name="datalog")
     @commands.guildowner()
     async def _datalog(self, ctx):
         """
-        (TOGGLE): Send extra data logs to admin log channels
+        (TOGGLE): Send extra data logs to join log channels
 
-        Notifies when new player is registered in the database.
+        Says when new player is registered in the database.
         If an API key is set for the server they joined, it will include whether or not they were
         DM'd and friend requested if AutoFriend or AutoWelcome is enabled.
         """
@@ -1766,8 +1766,8 @@ class ArkTools(commands.Cog):
                     for player in self.playerlist[channel]:
                         if player[0] not in stats:  # New Player
                             newplayermessage = ""
-                            admchannel = settings["clusters"][clustername]["adminlogchannel"]
-                            admchannel = guild.get_channel(admchannel)
+                            jchannel = settings["clusters"][clustername]["joinchannel"]
+                            jchannel = guild.get_channel(jchannel)
                             log.info(f"New Player - {player[0]}")
                             if extralog:
                                 newplayermessage += f"**{player[0]}** added to the database.\n"
@@ -1822,7 +1822,7 @@ class ArkTools(commands.Cog):
                                 description=newplayermessage,
                                 color=discord.Color.green()
                             )
-                            await admchannel.send(embed=embed)
+                            await jchannel.send(embed=embed)
 
                         if map_cluster not in stats[player[0]]["playtime"]:
                             stats[player[0]]["playtime"][map_cluster] = 0
