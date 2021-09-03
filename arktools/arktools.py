@@ -1164,7 +1164,7 @@ class ArkTools(commands.Cog):
             embed = discord.Embed(
                 description=f"Sit tight, your care package is on the way!"
             )
-            embed.set_thumbnail(url=STATUS)
+            embed.set_thumbnail(url="https://i.imgur.com/DLLwmM0.png")
             await ctx.send(embed=embed)
             settings = await self.config.guild(ctx.guild).all()
             serverlist = []
