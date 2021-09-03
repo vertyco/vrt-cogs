@@ -1792,11 +1792,11 @@ class ArkTools(commands.Cog):
                                     data, status = await self.apicall(command, apikey)
                                     if status == 200:
                                         log.info(f"{gt} Successfully added {player[0]}")
-                                        newplayermessage += f"{gt} added: ✅\n"
+                                        newplayermessage += f"Added by {gt}: ✅\n"
                                     else:
                                         log.warning(f"{gt} FAILED to add {player[0]}")
                                         if extralog:
-                                            newplayermessage += f"{gt} added: ❌\n"
+                                            newplayermessage += f"Added by {gt}: ❌\n"
                             embed = discord.Embed(
                                 description=newplayermessage,
                                 color=discord.Color.green()
