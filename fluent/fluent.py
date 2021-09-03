@@ -104,8 +104,6 @@ class Fluent(commands.Cog):
         channels = await self.config.guild(message.guild).channels()
         for channel_id in channels:
             if int(message.channel.id) == int(channel_id):
-                mentions = discord.AllowedMentions.all()
-                author = message.author
                 lang1 = channels[channel_id]["lang1"]
                 lang2 = channels[channel_id]["lang2"]
                 channel = message.channel
