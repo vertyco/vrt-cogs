@@ -920,7 +920,7 @@ class ArkTools(commands.Cog):
                     await message.edit(embed=embeds[cur_page - 1])
                     await message.remove_reaction(reaction, user)
 
-                elif str(reaction.emoji) == "▶️" and cur_page + 1 != pages:
+                elif str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
                     cur_page += 1
                     embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embeds[cur_page - 1])
@@ -941,6 +941,9 @@ class ArkTools(commands.Cog):
                 elif str(reaction.emoji) == "❌":
                     await message.clear_reactions()
                     return await message.edit(embed=discord.Embed(description="Menu closed."))
+
+                else:
+                    await message.remove_reaction(reaction, user)
 
             except asyncio.TimeoutError:
                 try:
