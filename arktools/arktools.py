@@ -1470,11 +1470,9 @@ class ArkTools(commands.Cog):
         else:
             for server in serverlist:
                 mtasks.append(self.manual_rcon(ctx, server, command))
-            try:
-                await asyncio.gather(*mtasks)
-            except Exception as e:
-                log.exception(f"MANUAL RCON", e)
-                return
+
+            await asyncio.gather(*mtasks)
+
 
         if command.lower() == "doexit":
             await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
@@ -1498,7 +1496,7 @@ class ArkTools(commands.Cog):
             await ctx.send(box(unfriend, lang="python"))
 
     # RCON function for manual commands
-    async def manual_rcon(self, ctx, serverlist, command, ctype=None):
+    async def manual_rcon(self, ctx, serverlist, command):
         async with ctx.typing():
             try:
                 mapn = serverlist['name'].capitalize()
@@ -1521,6 +1519,9 @@ class ArkTools(commands.Cog):
                     servername = serverlist['name']
                     await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
                     return
+            except Exception as e:
+                if "WinError" not in e:
+                    log.exception(f"MANUAL RCON", e)
 
     # Cache the config on cog load for the task loops to use
     async def initialize(self):
@@ -1553,7 +1554,7 @@ class ArkTools(commands.Cog):
                     self.taskdata.append([guild.id, server])
         time = datetime.datetime.utcnow()
         self.time = time.isoformat()
-        log.info("config initialized.")  # If this doesnt log then something is fucky...
+        log.info("Config initialized.")  # If this doesnt log then something is fucky...
         return
 
     # Xbox API call handler
