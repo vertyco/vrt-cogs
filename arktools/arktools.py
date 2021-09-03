@@ -1741,15 +1741,12 @@ class ArkTools(commands.Cog):
                 if self.playerlist[channel]:
                     for player in self.playerlist[channel]:
                         if player[0] not in stats:  # New Player
+                            newplayermessage = ""
                             admchannel = settings["clusters"][clustername]["adminlogchannel"]
                             admchannel = guild.get_channel(admchannel)
                             log.info(f"New Player - {player[0]}")
                             if extralog:
-                                embed = discord.Embed(
-                                    title="New Player",
-                                    description=f"`{player[0]}` added to database."
-                                )
-                                await admchannel.send(embed=embed)
+                                newplayermessage += f"**{player[0]}** added to the database.\n"
                             stats[player[0]] = {"playtime": {"total": 0}}
                             stats[player[0]]["xuid"] = player[1]
                             stats[player[0]]["lastseen"] = {
@@ -1781,40 +1778,27 @@ class ArkTools(commands.Cog):
                                     if status == 200:
                                         log.info("New Player DM Successful")
                                         if extralog:
-                                            embed = discord.Embed(
-                                                title="DM Sent",
-                                                description=f"`{player[0]}`",
-                                                color=discord.Color.green()
-                                            )
-                                            await admchannel.send(embed=embed)
+                                            newplayermessage += f"DM sent: ✅\n"
                                     else:
                                         log.warning("New Player DM FAILED")
                                         if extralog:
-                                            embed = discord.Embed(
-                                                title="DM FAILED",
-                                                description=f"`{player[0]}`",
-                                                color=discord.Color.red()
-                                            )
-                                            await admchannel.send(embed=embed)
+                                            newplayermessage += f"DM sent: ❌\n"
                                 if autofriend:
                                     xuid = player[1]
                                     command = f"https://xbl.io/api/v2/friends/add/{xuid}"
                                     data, status = await self.apicall(command, apikey)
                                     if status == 200:
                                         log.info(f"{gt} Successfully added {player[0]}")
-                                        embed = discord.Embed(
-                                            description=f"{gt} Successfully added {player[0]}",
-                                            color=discord.Color.green()
-                                        )
-                                        await admchannel.send(embed=embed)
+                                        newplayermessage += f"{gt} added: ✅\n"
                                     else:
                                         log.warning(f"{gt} FAILED to add {player[0]}")
                                         if extralog:
-                                            embed = discord.Embed(
-                                                description=f"{gt} FAILED to add {player[0]}",
-                                                color=discord.Color.red()
-                                            )
-                                            await admchannel.send(embed=embed)
+                                            newplayermessage += f"{gt} added: ❌\n"
+                            embed = discord.Embed(
+                                description=newplayermessage,
+                                color=discord.Color.green()
+                            )
+                            await admchannel.send(embed=embed)
 
                         if map_cluster not in stats[player[0]]["playtime"]:
                             stats[player[0]]["playtime"][map_cluster] = 0
