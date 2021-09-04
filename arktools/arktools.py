@@ -325,7 +325,7 @@ class ArkTools(commands.Cog):
                            f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
                            f"for a list of valid placeholders.")
         else:
-            await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
+            await self.config.guild(ctx.guild).welcomemsg.set(str(welcome_message)
             await ctx.send(f"Welcome message set as:\n{to_send}")
 
     # API COMMANDS
