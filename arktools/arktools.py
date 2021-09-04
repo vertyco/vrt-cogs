@@ -319,7 +319,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Welcome message reverted to Default!")
             return await self.config.guild(ctx.guild).welcomemsg.set(None)
         try:
-            to_send = welcome_message.format(**params)
+            to_send = str(welcome_message.format(**params))
         except KeyError as e:
             await ctx.send(f"The welcome message cannot be formatted, because it contains an "
                            f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
