@@ -1162,7 +1162,7 @@ class ArkTools(commands.Cog):
 
     # HARDCODED ITEM SEND
     @_setarktools.command(name="imstuck")
-    @commands.cooldown(1, 1800, commands.BucketType.user)
+    @commands.cooldown(1, 7200, commands.BucketType.user)
     async def imstuck(self, ctx):
         """
         For those tough times when Ark is being Ark
