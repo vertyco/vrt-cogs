@@ -224,6 +224,7 @@ class ArkTools(commands.Cog):
                 embed = discord.Embed(description=f"Could not find {servername}!", color=color)
                 return await ctx.send(embed=embed)
             async with ctx.typing():
+                # pull host gamertag name
                 data, status = await self.apicall("https://xbl.io/api/v2/account", apikey)
             if status == 200:
                 for user in data["profileUsers"]:
@@ -248,6 +249,7 @@ class ArkTools(commands.Cog):
                                                   f"Key may be Invalid or API might be down.", color=color)
                 return await ctx.send(embed=embed)
 
+    # Delete a key from a server
     @_api.command(name="delkey")
     async def _delkey(self, ctx, clustername, servername):
         """
@@ -267,6 +269,7 @@ class ArkTools(commands.Cog):
             if not found:
                 await ctx.send("Server not found.")
 
+    # Toggle the host gamertag sending an automated welcome message when it detects a new player in the database
     @_api.command(name="welcome")
     async def _welcometoggle(self, ctx):
         """(Toggle) Automatic server welcome messages"""
@@ -278,6 +281,7 @@ class ArkTools(commands.Cog):
             await self.config.guild(ctx.guild).autowelcome.set(True)
             await ctx.send("Auto Welcome Message **Enabled**")
 
+    # Toggle the host gamertag sending an automated friend request when it detects a new player in the database
     @_api.command(name="autofriend")
     async def _autofriendtoggle(self, ctx):
         """(Toggle) Automatic maintenance of gamertag friend lists"""
@@ -289,6 +293,7 @@ class ArkTools(commands.Cog):
             await self.config.guild(ctx.guild).autofriend.set(True)
             await ctx.send("Autofriend Message **Enabled**")
 
+    # Time (in days) of a player not being detected online that the host gamertag unfriends them
     @_api.command(name="unfriendtime")
     async def _unfriendtime(self, ctx, days: int):
         """
@@ -299,6 +304,7 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).unfriendafter.set(days)
         await ctx.send(f"Inactivity days till auto unfriend is {days} days.")
 
+    # Set the welcome message to send to new players if autowelcome is enabled
     @_api.command(name="setwelcome")
     async def _welcome(self, ctx, *, welcome_message: str):
         """
@@ -332,6 +338,7 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Welcome message set as:\n{to_send}")
 
     # API COMMANDS
+    # Register a gamertag in the database
     @_setarktools.command(name="register")
     async def _register(self, ctx):
         """
@@ -679,6 +686,7 @@ class ArkTools(commands.Cog):
                 }
                 await ctx.send(f"**{clustername}** has been added to the list of clusters.")
 
+    # Delete an entire cluster
     @_serversettings.command(name="delcluster")
     async def _delcluster(self, ctx: commands.Context, clustername: str):
         """Delete a cluster."""
@@ -689,6 +697,7 @@ class ArkTools(commands.Cog):
                 del clusters[clustername]
                 await ctx.send(f"{clustername} cluster has been deleted")
 
+    # Add a server to a cluster
     @_serversettings.command(name="addserver")
     async def _addserver(self, ctx: commands.Context, clustername: str, servername: str, ip: str,
                          port: int, password: str, channel: discord.TextChannel):
@@ -710,6 +719,7 @@ class ArkTools(commands.Cog):
             if clustername not in clusters.keys():
                 await ctx.send(f"The cluster {clustername} does not exist!")
 
+    # Delete a server from a cluster
     @_serversettings.command(name="delserver")
     async def _delserver(self, ctx: commands.Context, clustername: str, servername: str):
         """Remove a server."""
@@ -722,6 +732,7 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send(f"{servername} server not found.")
 
+    # Set a channel for the server status to be displayed
     @_serversettings.command(name="setstatuschannel")
     async def _setstatuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set a channel for a server status embed."""
@@ -729,6 +740,7 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).statuschannel.set(channel.id)
         await ctx.send(f"Status channel has been set to {channel.mention}")
 
+    # Toggle map-to-map chat for a specific cluster
     @_serversettings.command(name="toggle")
     async def _servertoservertoggle(self, ctx: commands.Context, clustername):
         """Toggle server to server chat so maps can talk to eachother"""
