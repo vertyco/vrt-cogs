@@ -123,13 +123,13 @@ class ArkTools(commands.Cog):
         If an API key is set for the server they joined, it will include whether or not they were
         DM'd and friend requested if AutoFriend or AutoWelcome is enabled.
         """
-        log = await self.config.guild(ctx.guild).datalogs()
-        if log:
+        dlog = await self.config.guild(ctx.guild).datalogs()
+        if dlog:
             await self.config.guild(ctx.guild).datalogs.set(False)
             return await ctx.send("Extra data logs **Disabled**")
         else:
             await self.config.guild(ctx.guild).datalogs.set(True)
-            return await ctx.send(f"Extra data logs **Enabled**")
+            return await ctx.send("Extra data logs **Enabled**")
 
     # PERMISSIONS COMMANDS
     @_permissions.command(name="setfullaccessrole")
@@ -224,7 +224,7 @@ class ArkTools(commands.Cog):
                 embed = discord.Embed(description=f"Could not find {servername}!", color=color)
                 return await ctx.send(embed=embed)
             async with ctx.typing():
-                data, status = await self.apicall(f"https://xbl.io/api/v2/account", apikey)
+                data, status = await self.apicall("https://xbl.io/api/v2/account", apikey)
             if status == 200:
                 for user in data["profileUsers"]:
                     for setting in user["settings"]:
@@ -233,7 +233,10 @@ class ArkTools(commands.Cog):
                 clusters[cname]["servers"][sname]["gamertag"] = gtag
                 clusters[cname]["servers"][sname]["api"] = apikey
                 color = discord.Color.green()
-                embed = discord.Embed(description=f"✅ Your token has been set for {gtag}!", color=color)
+                embed = discord.Embed(
+                    description=f"✅ Your token has been set for {gtag}!",
+                    color=color
+                )
                 try:
                     await ctx.message.delete()
                 except discord.NotFound:
@@ -345,7 +348,7 @@ class ArkTools(commands.Cog):
                     break
         if not apipresent:
             embed = discord.Embed(
-                description=f"❌ API key has not been set!."
+                description="❌ API key has not been set!."
             )
             embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
@@ -372,6 +375,12 @@ class ArkTools(commands.Cog):
             settings = await self.config.guild(ctx.guild).all()
             apikey = await self.pullkey(settings)
             data, status = await self.apicall(command, apikey)
+            if status != 200:
+                embed = discord.Embed(title="Error",
+                                      color=discord.Color.dark_red(),
+                                      description="API failed, please try again in a few minutes.")
+                embed.set_thumbnail(url=FAILED)
+                return await ctx.send(embed=embed)
             try:
                 await reply.delete()
             except discord.NotFound:
@@ -649,7 +658,7 @@ class ArkTools(commands.Cog):
     # SERVER SETTINGS COMMANDS
     @_serversettings.command(name="addcluster")
     async def _addcluster(self, ctx: commands.Context,
-                          clustername: str,
+                          clustername,
                           joinchannel: discord.TextChannel,
                           leavechannel: discord.TextChannel,
                           adminlogchannel: discord.TextChannel,
@@ -978,12 +987,12 @@ class ArkTools(commands.Cog):
                                 f"Last Seen: `{d}d {h}h {m}m` ago on `{lastmap}`",
                     color=discord.Color.random()
                 )
-                for map in stats[player]["playtime"]:
-                    if map != "total":
-                        raw_time = stats[player]["playtime"][map]
+                for mapn in stats[player]["playtime"]:
+                    if mapn != "total":
+                        raw_time = stats[player]["playtime"][mapn]
                         days, hours, minutes = await self.time_formatter(raw_time)
                         embed.add_field(
-                            name=f"{map}",
+                            name=f"{mapn}",
                             value=f"`{days}d {hours}h {minutes}m`"
                         )
                 return await ctx.send(embed=embed)
@@ -998,16 +1007,16 @@ class ArkTools(commands.Cog):
         maps = {}
         t = {}
         for player in stats:
-            for map in stats[player]["playtime"]:
-                if map != "total":
-                    t[map] = {}
-                    maps[map] = 0
+            for mapn in stats[player]["playtime"]:
+                if mapn != "total":
+                    t[mapn] = {}
+                    maps[mapn] = 0
         for player in stats:
-            for map in stats[player]["playtime"]:
-                if map != "total":
-                    t[map][player] = stats[player]["playtime"][map]
-                    time = stats[player]["playtime"][map]
-                    maps[map] += time
+            for mapn in stats[player]["playtime"]:
+                if mapn != "total":
+                    t[mapn][player] = stats[player]["playtime"][mapn]
+                    time = stats[player]["playtime"][mapn]
+                    maps[mapn] += time
         sorted_maps = sorted(maps.items(), key=lambda x: x[1], reverse=True)
         mstats = ""
         count = 1
@@ -1155,7 +1164,7 @@ class ArkTools(commands.Cog):
 
     # Time Converter
     async def time_formatter(self, time_played):
-        minutes, seconds = divmod(time_played, 60)
+        minutes,_ = divmod(time_played, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
         return days, hours, minutes
@@ -1475,7 +1484,7 @@ class ArkTools(commands.Cog):
                 try:
                     await asyncio.gather(*mtasks)
                 except Exception as e:
-                    log.exception(f"MANUAL RCON GATHER", e)
+                    log.exception(f"MANUAL RCON GATHER: {e}")
                     return await ctx.send(f"Command failed to gather")
 
         if command.lower() == "doexit":
@@ -1523,11 +1532,11 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
                 return
             else:
-                log.exception("MANUAL RCON WINERROR", e)
+                log.exception(f"MANUAL RCON WINERROR: {e}")
                 return
         except Exception as e:
-            if "WinError" not in e:
-                log.exception(f"MANUAL RCON", e)
+            if "WinError" not in str(e):
+                log.exception(f"MANUAL RCON: {e}")
 
     # Cache the config on cog load for the task loops to use
     async def initialize(self):
@@ -1665,7 +1674,7 @@ class ArkTools(commands.Cog):
                 if "semaphor" in str(e):
                     log.warning("chat_toserver_rcon: Server is probably offline")
                 else:
-                    log.exception("chat_toserver_rcon", e)
+                    log.exception(f"chat_toserver_rcon: {e}")
                 continue
 
     # Returns all channels and servers related to the message
@@ -2017,9 +2026,9 @@ class ArkTools(commands.Cog):
                     return result
             except WindowsError as e:
                 if e.winerror == 121:
-                    log.exception("PROCESS HANDLER 121", e)
+                    log.exception(f"PROCESS HANDLER 121: {e}")
                 if e.winerror == 10038:
-                    log.exception("PROCESS HANDLER 10038", e)
+                    log.exception(f"PROCESS HANDLER 10038: {e}")
                 return None
 
         res = await self.bot.loop.run_in_executor(None, rcon)
@@ -2077,16 +2086,16 @@ class ArkTools(commands.Cog):
                         link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
                         await self.process_handler(guild, server, f"serverchat {link}")
                     except Exception as e:
-                        log.exception("INVITE CREATION FAILED", e)
+                        log.exception(f"INVITE CREATION FAILED: {e}")
 
                 await chatchannel.send(msg)
                 await globalchat.send(f"{chatchannel.mention}: {msg}")
                 clustername = server["cluster"]
                 if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
                     for data in self.taskdata:
-                        map = data[1]
-                        if map["cluster"] is server["cluster"] and map["name"] is not sourcename:
-                            await self.process_handler(guild, map, f"serverchat {sourcename.capitalize()}: {msg}")
+                        mapn = data[1]
+                        if mapn["cluster"] is server["cluster"] and mapn["name"] is not sourcename:
+                            await self.process_handler(guild, mapn, f"serverchat {sourcename.capitalize()}: {msg}")
 
     # Handles tribe log formatting/itemizing
     async def tribelog_formatter(self, guild, server, msg):
