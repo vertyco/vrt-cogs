@@ -1511,7 +1511,6 @@ class ArkTools(commands.Cog):
                 passwd=serverlist['password']
             )
             res = res.rstrip()
-            print("res complete")
             if command.lower() == "listplayers":
                 await ctx.send(f"**{mapn} {cluster}**\n"
                                f"{box(res, lang='python')}")
