@@ -487,7 +487,7 @@ class ArkTools(commands.Cog):
             map_options, serverlist = await self.enumerate_maps_api(ctx)
             embed = discord.Embed(
                 title=f"Add Yourself as a Friend",
-                description=f"**Type the Number that corresponds with the server you want.**\n\n"
+                description=f"**TYPE THE NUMBER that corresponds with the server you want.**\n\n"
                             f"{map_options}"
             )
             embed.set_footer(text="Type your reply below")
@@ -571,7 +571,7 @@ class ArkTools(commands.Cog):
                                                   description=f"✅ `{gt}` Successfully added `{ptag}`\n"
                                                               f"You should now be able to join from the Gamertag's"
                                                               f" profile page.\n\n"
-                                                              f"To add more Gamertags, type `{ctx.prefix}arktools addme`")
+                                                              f"**TO ADD MORE:** type `{ctx.prefix}arktools addme`")
                             embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
                             embed.set_thumbnail(url=SUCCESS)
                         else:
