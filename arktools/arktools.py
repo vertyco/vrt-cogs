@@ -393,15 +393,23 @@ class ArkTools(commands.Cog):
             except discord.NotFound:
                 pass
             try:
-                for user in data["profileUsers"]:
-                    xuid = user['id']
-                    pfp = SUCCESS
-                    gs = 0
-                    for setting in user["settings"]:
-                        if setting["id"] == "GameDisplayPicRaw":
-                            pfp = (setting['value'])
-                        if setting["id"] == "Gamerscore":
-                            gs = "{:,}".format(int(setting['value']))
+                if data["profileUsers"]:
+                    for user in data["profileUsers"]:
+                        xuid = user['id']
+                        pfp = SUCCESS
+                        gs = 0
+                        for setting in user["settings"]:
+                            if setting["id"] == "GameDisplayPicRaw":
+                                pfp = (setting['value'])
+                            if setting["id"] == "Gamerscore":
+                                gs = "{:,}".format(int(setting['value']))
+                else:
+                    embed = discord.Embed(title="Error",
+                                          color=discord.Color.dark_red(),
+                                          description="Failed to parse player data.\n"
+                                                      "This may be due to player's privacy settings.")
+                    embed.set_thumbnail(url=FAILED)
+                    return await ctx.send(embed=embed)
             except KeyError:
                 embed = discord.Embed(title="Error",
                                       color=discord.Color.dark_red(),
