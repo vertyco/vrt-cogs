@@ -1364,6 +1364,7 @@ class ArkTools(commands.Cog):
                         apikey = settings["clusters"][cname]["servers"][server]["api"]
                         getfriends = "https://xbl.io/api/v2/friends"
                         header = {"X-Authorization": apikey}
+                        data = None
                         async with self.session.get(url=getfriends, headers=header) as resp:
                             pages = "Unknown"
                             remaining = 0
