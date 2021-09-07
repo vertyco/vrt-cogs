@@ -906,12 +906,11 @@ class ArkTools(commands.Cog):
                     days, hours, minutes = await self.time_formatter(time_played)
                     current_time = datetime.datetime.utcnow()
                     timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen']["time"])
-                    timedifference_raw = current_time - timestamp
-                    timedifference = timedifference_raw.seconds
-                    d, h, m = await self.time_formatter(timedifference)
-                    time = f"Last Seen: `{d}d {h}h {m}m ago`"
-                    if d >= 5:
-                        time = f"Last Seen: `{d} days ago`"
+                    timedifference = current_time - timestamp
+                    _, h, m = await self.time_formatter(timedifference.seconds)
+                    time = f"Last Seen: `{timedifference.days}d {h}h {m}m ago`"
+                    if timedifference.days >= 5:
+                        time = f"Last Seen: `{timedifference.days} days ago`"
 
                     embed.add_field(name=f"{i + 1}. {playername}",
                                     value=f"Total: `{days}d {hours}h {minutes}m`\n"
@@ -996,15 +995,14 @@ class ArkTools(commands.Cog):
             if player.lower() == gamertag.lower():
                 time = stats[player]["playtime"]["total"]
                 timestamp = datetime.datetime.fromisoformat(stats[player]["lastseen"]["time"])
-                timedifference_raw = current_time - timestamp
-                timedifference = timedifference_raw.seconds
-                d, h, m = await self.time_formatter(timedifference)
+                timedifference = current_time - timestamp
+                _, h, m = await self.time_formatter(timedifference.seconds)
                 lastmap = stats[player]["lastseen"]["map"]
                 days, hours, minutes = await self.time_formatter(time)
                 embed = discord.Embed(
                     title=f"Playerstats for {player}",
                     description=f"Total Time Played: `{days}d {hours}h {minutes}m`\n"
-                                f"Last Seen: `{d}d {h}h {m}m` ago on `{lastmap}`",
+                                f"Last Seen: `{timedifference.days}d {h}h {m}m` ago on `{lastmap}`",
                     color=discord.Color.random()
                 )
                 for mapn in stats[player]["playtime"]:
@@ -1126,14 +1124,13 @@ class ArkTools(commands.Cog):
                             playername = sorted_players[i][0]
                             playertime = sorted_players[i][1]
                             timestamp = datetime.datetime.fromisoformat(lastseen[playername])
-                            timedifference_raw = current_time - timestamp
-                            timedifference = timedifference_raw.seconds
+                            timedifference = current_time - timestamp
                             dt, ht, mt = await self.time_formatter(playertime)
-                            d, h, m = await self.time_formatter(timedifference)
+                            _, h, m = await self.time_formatter(timedifference.seconds)
                             embed.add_field(
                                 name=f"{i + 1}. {playername}",
                                 value=f"Time Played: `{dt}d {ht}h {mt}m`\n"
-                                      f"Last Seen: `{d}d {h}h {m}m ago`"
+                                      f"Last Seen: `{timedifference.days}d {h}h {m}m ago`"
                             )
                         embedlist.append(embed)
                         start += 10
@@ -1151,14 +1148,13 @@ class ArkTools(commands.Cog):
                         playername = sorted_players[i][0]
                         playertime = sorted_players[i][1]
                         timestamp = datetime.datetime.fromisoformat(lastseen[playername])
-                        timedifference_raw = current_time - timestamp
-                        timedifference = timedifference_raw.seconds
+                        timedifference = current_time - timestamp
                         dt, ht, mt = await self.time_formatter(playertime)
-                        d, h, m = await self.time_formatter(timedifference)
+                        _, h, m = await self.time_formatter(timedifference.seconds)
                         embed.add_field(
                             name=f"{i + 1}. playername",
                             value=f"Time Played: `{dt}d {ht}h {mt}m`\n"
-                                  f"Last Seen: `{d}d {h}h {m}m ago`"
+                                  f"Last Seen: `{timedifference.days}d {h}h {m}m ago`"
                         )
                     return await msg.edit(embed=embed)
 
@@ -1230,7 +1226,7 @@ class ArkTools(commands.Cog):
                     settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
                     serverlist.append(settings["clusters"][cluster]["servers"][server])
             commands = [
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 20 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 10 0 0""",
                 f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 2 0 0""",
                 f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
                 f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
@@ -1240,7 +1236,7 @@ class ArkTools(commands.Cog):
             stucktasks = []
             for server in serverlist:
                 for command in commands:
-                    stucktasks.append(self.imstuck_rcon(server, command, ctx.guild))
+                    stucktasks.append(self.imstuck_rcon(server, command))
 
             async with ctx.typing():
                 await asyncio.gather(*stucktasks)
@@ -1248,7 +1244,7 @@ class ArkTools(commands.Cog):
         else:
             return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
 
-    async def imstuck_rcon(self, serverlist, command, guild):
+    async def imstuck_rcon(self, serverlist, command):
         try:
             await rcon.asyncio.rcon(
                 command=command,
@@ -1903,6 +1899,7 @@ class ArkTools(commands.Cog):
             guild = self.bot.get_guild(int(guildID))
             if not guild:
                 continue
+            extralog = await self.config.guild(guild).datalogs()
             settings = await self.config.guild(guild).all()
             if settings["autofriend"]:
                 days = settings["unfriendafter"]
@@ -1914,14 +1911,30 @@ class ArkTools(commands.Cog):
                     if timedifference >= days:
                         command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
                         for cluster in settings["clusters"]:
+                            lchannel = settings["clusters"][cluster]["leavechannel"]
+                            lchannel = guild.get_channel(lchannel)
                             for server in settings["clusters"][cluster]["servers"]:
-                                apikey = settings["clusters"][cluster]["servers"][server]["api"]
-                                gt = settings["clusters"][cluster]["servers"][server]["gamertag"]
-                                data, status = await self.apicall(command, apikey)
-                                if status == 200:
-                                    log.info(f"{gt} Successful unfriended {gamertag}")
-                                else:
-                                    log.warning(f"{gt} Failed to unfriend {gamertag}")
+                                if "api" in settings["clusters"][cluster]["servers"][server]:
+                                    apikey = settings["clusters"][cluster]["servers"][server]["api"]
+                                    gt = settings["clusters"][cluster]["servers"][server]["gamertag"]
+                                    data, status = await self.apicall(command, apikey)
+                                    color = discord.Color.red()
+                                    if status == 200:
+                                        embed = discord.Embed(
+                                            description=f"{gt} unfriended {gamertag}"
+                                                        f" for not being active for {days}days",
+                                            color=color
+                                        )
+                                        await lchannel.send(embed=embed)
+                                        log.info(f"{gt} Successfully unfriended {gamertag}")
+                                    else:
+                                        embed = discord.Embed(
+                                            description=f"{gt} Failed to unfriend {gamertag}"
+                                                        f" for not being active for {days}days",
+                                            color=color
+                                        )
+                                        await lchannel.send(embed=embed)
+                                        log.warning(f"{gt} Failed to unfriend {gamertag}")
 
     # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
