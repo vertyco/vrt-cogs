@@ -360,7 +360,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
         embed = discord.Embed(
-            description=f"**Type your Gamertag in chat.**"
+            description=f"**Type your Gamertag (or ID# if Steam) in chat.**"
         )
         msg = await ctx.send(embed=embed)
 
@@ -371,6 +371,39 @@ class ArkTools(commands.Cog):
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        if reply.content.isdigit():
+            async with self.config.guild(ctx.guild).playerstats() as stats:
+                current_time = datetime.datetime.utcnow()
+                for name in stats:
+                    if reply.content in stats[name]["xuid"]:
+                        embed = discord.Embed(
+                            description="You are already in the system."
+                        )
+                        return await ctx.send(embed=embed)
+                else:
+                    sid = reply.content
+                    embed = discord.Embed(
+                        description=f"**Type your Steam Username.**"
+                    )
+                    await msg.edit(embed=embed)
+                    try:
+                        reply = await self.bot.wait_for("message", timeout=60, check=check)
+                    except asyncio.TimeoutError:
+                        return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+                    steamname = reply.content
+
+                    stats[steamname] = {"playtime": {"total": 0}}
+                    stats[steamname]["xuid"] = sid
+                    stats[steamname]["lastseen"] = {
+                        "time": current_time.isoformat(),
+                        "map": "None"
+                    }
+                    embed = discord.Embed(
+                        description=f"Your ID `{sid}` has been registered under `{steamname}`."
+                    )
+                    return await msg.edit(embed=embed)
 
         gamertag = reply.content
         async with ctx.typing():
