@@ -393,7 +393,7 @@ class ArkTools(commands.Cog):
             except discord.NotFound:
                 pass
             try:
-                if data["profileUsers"]:
+                if data:
                     for user in data["profileUsers"]:
                         xuid = user['id']
                         pfp = SUCCESS
@@ -860,6 +860,7 @@ class ArkTools(commands.Cog):
                 await ctx.send("No tribe data available")
 
     # PLAYER STAT COMMANDS
+    # Get the top 10 players in the cluster, browse pages to see them all
     @_setarktools.command(name="leaderboard")
     async def _leaderboard(self, ctx):
         """
@@ -926,6 +927,7 @@ class ArkTools(commands.Cog):
             await ctx.send(embed=discord.Embed(description=f"Not enough player data to establish a leaderboard.\n"
                                                            f"Need {remaining} more players in database."))
 
+    # Menu for doing menu things
     async def paginate(self, ctx, embeds, msg):
         pages = len(embeds)
         cur_page = 1
@@ -986,6 +988,7 @@ class ArkTools(commands.Cog):
                 except discord.NotFound:
                     return
 
+    # Get a specific player's stats
     @_setarktools.command(name="playerstats", aliases=["pstats, stats"])
     async def _playerstats(self, ctx, *, gamertag):
         """View stats for a Gamertag"""
@@ -1018,6 +1021,7 @@ class ArkTools(commands.Cog):
                 continue
         await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
 
+    # Get stats for all maps in a cluster showing top player for each map
     @_setarktools.command(name="clusterstats")
     async def _clusterstats(self, ctx):
         """View statistics for all servers"""
@@ -1056,6 +1060,7 @@ class ArkTools(commands.Cog):
         embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
 
+    # Get stats by map, shows everyone in a selected map
     @_setarktools.command(name="mapstats")
     async def _mapstats(self, ctx):
         """View stats for a particular server"""
@@ -1158,6 +1163,7 @@ class ArkTools(commands.Cog):
                         )
                     return await msg.edit(embed=embed)
 
+    # Resets all player playtime data back to 0 in the config
     @_setarktools.command(name="resetlb")
     @commands.guildowner()
     async def _resetlb(self, ctx: commands.Context):
@@ -1169,6 +1175,7 @@ class ArkTools(commands.Cog):
                         stats[gamertag]["playtime"][key] = 0
                 await ctx.send(embed=discord.Embed(description="Player Stats have been reset."))
 
+    # Deletes all player data in the config
     @_setarktools.command(name="wipestats")
     @commands.guildowner()
     async def _wipestats(self, ctx: commands.Context):
@@ -2218,6 +2225,7 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(2)
         log.info("Playerlist executor ready.")
 
+    # Initialize cache before logging playerstats
     @playerstats.before_loop
     async def before_playerstatst(self):
         await self.bot.wait_until_red_ready()
@@ -2246,7 +2254,7 @@ class ArkTools(commands.Cog):
         except Exception as e:
             await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")
 
-    # For debug purposes or just wanting to see your raw config easily
+    # Sends guild config to the channel the command was invoked from as a json file
     @commands.command(name="backup")
     @commands.guildowner()
     async def _backup(self, ctx):
@@ -2258,6 +2266,7 @@ class ArkTools(commands.Cog):
         with open(f"{ctx.guild}.json", "rb") as file:
             await ctx.send(file=discord.File(file, f"{ctx.guild}.json"))
 
+    # Restore config from a json file attached to command message
     @commands.command(name="restore")
     @commands.guildowner()
     async def _restore(self, ctx):
@@ -2272,6 +2281,7 @@ class ArkTools(commands.Cog):
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
+    # Refreshes the main task loops if needed for some reason.
     @commands.command(name="refresh")
     async def _refresh(self, ctx):
         """Refresh the task loops"""
