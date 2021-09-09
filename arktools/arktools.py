@@ -378,7 +378,7 @@ class ArkTools(commands.Cog):
                 for name in stats:
                     if reply.content in stats[name]["xuid"] and ctx.author.id == stats[name]["discord"]:
                         embed = discord.Embed(
-                            description="You are already in the system."
+                            description="You are already in the system 👍"
                         )
                         return await ctx.send(embed=embed)
                 else:
@@ -401,7 +401,7 @@ class ArkTools(commands.Cog):
                         "map": "None"
                     }
                     embed = discord.Embed(
-                        description=f"Your ID `{sid}` has been registered under `{steamname}`."
+                        description=f"Your ID `{sid}` has been registered under `{steamname}` for `{ctx.author.name}`."
                     )
                     return await msg.edit(embed=embed)
 
