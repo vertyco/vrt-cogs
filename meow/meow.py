@@ -1,3 +1,5 @@
+import random
+
 import discord
 from redbot.core import commands
 
@@ -41,4 +43,15 @@ class Meow(commands.Cog):
             newstring = text.replace("now", "meow")
             await ctx.send(newstring)
         else:
-            return await ctx.send("Meow")
+            cats = ["^._.^",
+                    "ฅ(＾・ω・＾ฅ)",
+                    "（＾・ω・＾✿）",
+                    "（＾・ω・＾❁）",
+                    "(=^･ω･^=)",
+                    "(^・x・^)",
+                    "(=^･ｪ･^=))ﾉ彡☆",
+                    "/ᐠ｡▿｡ᐟ\*ᵖᵘʳʳ*",
+                    "✧/ᐠ-ꞈ-ᐟ\\",
+                    "/ᐠ –ꞈ –ᐟ\\",
+                    ]
+            return await ctx.send(random.choice(cats))
