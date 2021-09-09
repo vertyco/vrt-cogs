@@ -11,6 +11,7 @@ I am relatively new to Python and coding in general, and enjoy working on utilit
 | MCTools | ✓ | <details><summary>Super simple status cog for Minecraft Bedrock servers.</summary> Displays a status embed showing server version and player count. Only for **Bedrock** dedicated servers since there is already one that supports Java.</details> |
 | XTools | ✓ | <details><summary>View your Xbox profile, friends, screenshots and game clips using simple commands and interactive menus.</summary> Various tools for Xbox using xbl.io and xapi.us APIs.  (You will need to register for a free key to use this cog. The profile and friends command uses only xbl.io but the other commands use a combination of the two.)</details> |
 | Fluent | ✓ | <details><summary>Set any channel as a two-way translator for fluent conversation.</summary> Set a channel and both languages, if a message is in language 1 it gets converted to language 2 and vice versa using googles free api.</details> |
+| Meow | ✓ | <details><summary>Meow</summary> Yall have a good day meow.</details> |
 
 # Installation
 Run the following commands with your Red instance, replacing `[p]` with your prefix:
