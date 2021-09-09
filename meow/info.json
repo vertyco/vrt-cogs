@@ -1,0 +1,18 @@
+{
+    "author": [
+        "Vertyco"
+    ],
+    "description": "Meow",
+    "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data about users right meow.",
+    "hidden": false,
+    "install_msg": "Thanks for installing, have a good day meow!",
+    "min_bot_version" : "3.4.0",
+    "min_python_version" : [3, 8, 1],
+    "permissions" : [],
+    "required_cogs" : {},
+    "requirements" : [],
+    "short": "Meow",
+    "tags" : ["meow"],
+    "type": "COG"
+}
