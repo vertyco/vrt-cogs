@@ -360,7 +360,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=FAILED)
             return await ctx.send(embed=embed)
         embed = discord.Embed(
-            description=f"**Type your Gamertag (or ID# if Steam) in chat.**"
+            description=f"**Type your Gamertag (or ID if Steam) in chat.**"
         )
         msg = await ctx.send(embed=embed)
 
