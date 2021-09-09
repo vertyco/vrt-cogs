@@ -13,6 +13,6 @@
     "required_cogs" : {},
     "requirements" : [],
     "short": "Meow",
-    "tags" : ["meow"],
+    "tags" : ["meow", "cat", "cats"],
     "type": "COG"
 }
