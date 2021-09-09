@@ -376,7 +376,7 @@ class ArkTools(commands.Cog):
             async with self.config.guild(ctx.guild).playerstats() as stats:
                 current_time = datetime.datetime.utcnow()
                 for name in stats:
-                    if reply.content in stats[name]["xuid"]:
+                    if reply.content in stats[name]["xuid"] and ctx.author.id == stats[name]["discord"]:
                         embed = discord.Embed(
                             description="You are already in the system."
                         )
@@ -393,7 +393,7 @@ class ArkTools(commands.Cog):
                         return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
 
                     steamname = reply.content
-
+                    stats[steamname]["discord"] = ctx.author.id
                     stats[steamname] = {"playtime": {"total": 0}}
                     stats[steamname]["xuid"] = sid
                     stats[steamname]["lastseen"] = {
