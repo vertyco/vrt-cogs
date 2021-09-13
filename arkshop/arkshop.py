@@ -392,7 +392,8 @@ class ArkShop(commands.Cog):
             else:
                 msg = await ctx.send(
                     "Type the full blueprint paths including quantity/quality/blueprint numbers below.\n"
-                    "Separate each full path with a new line for multiple items in one option.")
+                    "Separate each full path with a new line for multiple items in one option.\n"
+                    "type `cancel` to cancel the option.")
 
                 def check(message: discord.Message):
                     return message.author == ctx.author and message.channel == ctx.channel
@@ -400,11 +401,14 @@ class ArkShop(commands.Cog):
                 try:
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
                 except asyncio.TimeoutError:
-                    return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                    return await msg.edit("You took too long :yawning_face:")
 
-                paths = reply.content.split("\n")
-                shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
-                return await reply.tick()
+                if reply.content.lower() == "cancel":
+                    return await msg.edit("Option add canceled.")
+                else:
+                    paths = reply.content.split("\n")
+                    shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
+                    return await reply.tick()
 
     @_rconshopset.command(name="checkitem")
     async def check_rcon_item(self, ctx, shop_name, item_name):
