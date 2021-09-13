@@ -400,15 +400,32 @@ class ArkShop(commands.Cog):
 
                 try:
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
+
+                    if reply.content.lower() == "cancel":
+                        return await msg.edit("Option add canceled.")
+                    else:
+                        paths = reply.content.split("\n")
+                        shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
+                        return await reply.tick()
                 except asyncio.TimeoutError:
                     return await msg.edit("You took too long :yawning_face:")
 
-                if reply.content.lower() == "cancel":
-                    return await msg.edit("Option add canceled.")
-                else:
-                    paths = reply.content.split("\n")
-                    shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
-                    return await reply.tick()
+    @_rconshopset.command(name="deloption")
+    async def del_rcon_item_option(self, ctx, shop_name, item_name, option):
+        """Delete an option from an existing item in the rcon shop"""
+        async with self.config.guild(ctx.guild).shops() as shops:
+            # check if shop exists
+            if shop_name not in shops:
+                return await ctx.send(f"{shop_name} shop not found!")
+            # check if item exists
+            elif item_name not in shops[shop_name]:
+                return await ctx.send(f"{item_name} item not found!")
+            # check if option exists
+            elif option not in shops[shop_name][item_name]["options"]:
+                return await ctx.send(f"{option} option not found!")
+            else:
+                del shops[shop_name][item_name]["options"][option]
+                return await ctx.tick()
 
     @_rconshopset.command(name="checkitem")
     async def check_rcon_item(self, ctx, shop_name, item_name):
