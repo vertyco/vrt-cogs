@@ -1299,8 +1299,9 @@ class ArkShop(commands.Cog):
                     category_items += f"• {item}: {price}\n"
                 else:
                     category_items += f"• {item}\n"
-                    for option in shops[category][item]["options"]:
-                        price = shops[category][item]["options"][option]["price"]
+                    for k, v in shops[category][item]["options"].items():
+                        price = v
+                        option = k
                         category_items += f"  -{option}: {price}\n"
             embed.add_field(
                 name=f"{category}",
