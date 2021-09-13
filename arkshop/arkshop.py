@@ -1298,9 +1298,9 @@ class ArkShop(commands.Cog):
             for item in shops[category]:
                 if shops[category][item]["options"] == {}:
                     price = shops[category][item]["price"]
-                    category_items += f"🇮🇹🇪🇲 {item}: {price}\n"
+                    category_items += f"🇮 🇹 🇪 🇲 {item}: {price}\n"
                 else:
-                    category_items += f"🇮🇹🇪🇲 {item}\n"
+                    category_items += f"🇮 🇹 🇪 🇲 {item}\n"
                     for k, v in shops[category][item]["options"].items():
                         price = v
                         option = k
