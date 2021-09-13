@@ -406,7 +406,7 @@ class ArkShop(commands.Cog):
                     else:
                         paths = reply.content.split("\n")
                         shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
-                        return await reply.tick()
+                        return await ctx.send(f"Option set!")
                 except asyncio.TimeoutError:
                     return await msg.edit("You took too long :yawning_face:")
 
