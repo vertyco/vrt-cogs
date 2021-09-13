@@ -1102,10 +1102,10 @@ class ArkShop(commands.Cog):
     async def shop_menu(self, ctx, xuid, cname, embeds, type, message=None):
         pages = len(embeds)
         cur_page = 1
-        if type == ["category", "opiton", "item"]:
+        if type in ["category", "opiton", "item"]:
             embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
                                                  f"Remember to empty your Ark data before purchasing from the Data Shop!")
-        if type == ["rconcategory", "rconopiton", "rconitem"]:
+        if type in ["rconcategory", "rconopiton", "rconitem"]:
             embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
                                                  f"Make sure you are ONLINE when purchasing from the RCON shop!")
         if message is None:
