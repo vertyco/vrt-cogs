@@ -1887,7 +1887,11 @@ class ArkTools(commands.Cog):
                                 description=newplayermessage,
                                 color=discord.Color.green()
                             )
-                            await jchannel.send(embed=embed)
+                            try:
+                                await jchannel.send(embed=embed)
+                            except discord.HTTPException:
+                                log.warning("New Player Message Failed.")
+                                pass
 
                         if map_cluster not in stats[player[0]]["playtime"]:
                             stats[player[0]]["playtime"][map_cluster] = 0
@@ -1940,41 +1944,65 @@ class ArkTools(commands.Cog):
             if not guild:
                 continue
             extralog = await self.config.guild(guild).datalogs()
-            settings = await self.config.guild(guild).all()
-            if settings["autofriend"]:
-                days = settings["unfriendafter"]
-                for gamertag in settings["playerstats"]:
-                    xuid = settings["playerstats"][gamertag]["xuid"]
-                    timestamp = datetime.datetime.fromisoformat(settings["playerstats"][gamertag]["lastseen"]["time"])
-                    timedifference_raw = current_time - timestamp
-                    timedifference = timedifference_raw.days
-                    if timedifference >= days:
-                        command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
-                        for cluster in settings["clusters"]:
-                            lchannel = settings["clusters"][cluster]["leavechannel"]
-                            lchannel = guild.get_channel(lchannel)
-                            for server in settings["clusters"][cluster]["servers"]:
-                                if "api" in settings["clusters"][cluster]["servers"][server]:
-                                    apikey = settings["clusters"][cluster]["servers"][server]["api"]
-                                    gt = settings["clusters"][cluster]["servers"][server]["gamertag"]
-                                    data, status = await self.apicall(command, apikey)
-                                    color = discord.Color.red()
-                                    if status == 200:
-                                        embed = discord.Embed(
-                                            description=f"{gt} unfriended {gamertag}"
-                                                        f" for not being active for {days}days",
-                                            color=color
-                                        )
-                                        await lchannel.send(embed=embed)
-                                        log.info(f"{gt} Successfully unfriended {gamertag}")
-                                    else:
-                                        embed = discord.Embed(
-                                            description=f"{gt} Failed to unfriend {gamertag}"
-                                                        f" for not being active for {days}days",
-                                            color=color
-                                        )
-                                        await lchannel.send(embed=embed)
-                                        log.warning(f"{gt} Failed to unfriend {gamertag}")
+            async with self.config.guild(guild).all() as settings:
+                if settings["autofriend"]:
+                    days = settings["unfriendafter"]
+                    for gamertag in settings["playerstats"]:
+                        xuid = settings["playerstats"][gamertag]["xuid"]
+                        rawtime = settings["playerstats"][gamertag]["lastseen"]["time"]
+                        if rawtime is None:
+                            continue
+                        timestamp = datetime.datetime.fromisoformat(rawtime)
+                        timedifference_raw = current_time - timestamp
+                        timedifference = timedifference_raw.days
+                        if timedifference >= days - 2:
+                            unfriendmsg = f"Hello {gamertag}, long time no see!\nThis is an automated message:\n" \
+                                          f"We noticed you have not been detected on our servers  in {days - 2} days.\n" \
+                                          f"If you are not detected in the server within 2 days, You will be " \
+                                          f"automatically unfriended by the host Gamertags.\n" \
+                                          f"Once unfriended, you will need to re-register your Gamertag in our Discord" \
+                                          f" to play on the servers.\n" \
+                                          f"Hope to see you back soon :)"
+                            url = "https://xbl.io/api/v2/conversations"
+                            payload = {"xuid": str(xuid), "message": unfriendmsg}
+                            apikey = await self.pullkey(settings)
+                            log.info(f"Sending DM to XUID - {xuid}")
+                            status = await self.apipost(url, payload, apikey)
+                            if status == 200:
+                                log.info(f"Successfully warned {gamertag}")
+                            else:
+                                log.warning(f"Failed to warn {gamertag}")
+
+                        if timedifference >= days:
+                            settings["playerstats"][gamertag]["lastseen"]["time"] = None
+                            command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
+                            for cluster in settings["clusters"]:
+                                lchannel = settings["clusters"][cluster]["leavechannel"]
+                                lchannel = guild.get_channel(lchannel)
+                                for server in settings["clusters"][cluster]["servers"]:
+                                    if "api" in settings["clusters"][cluster]["servers"][server]:
+                                        apikey = settings["clusters"][cluster]["servers"][server]["api"]
+                                        gt = settings["clusters"][cluster]["servers"][server]["gamertag"]
+                                        data, status = await self.apicall(command, apikey)
+                                        color = discord.Color.red()
+                                        if status == 200:
+                                            embed = discord.Embed(
+                                                description=f"{gt} unfriended {gamertag}"
+                                                            f" for not being active for {days}days",
+                                                color=color
+                                            )
+                                            if extralog:
+                                                await lchannel.send(embed=embed)
+                                            log.info(f"{gt} Successfully unfriended {gamertag}")
+                                        else:
+                                            embed = discord.Embed(
+                                                description=f"{gt} Failed to unfriend {gamertag}"
+                                                            f" for not being active for {days}days",
+                                                color=color
+                                            )
+                                            if extralog:
+                                                await lchannel.send(embed=embed)
+                                            log.warning(f"{gt} Failed to unfriend {gamertag}")
 
     # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
