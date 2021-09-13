@@ -1294,13 +1294,13 @@ class ArkShop(commands.Cog):
             embed.set_thumbnail(url=SHOP_ICON)
         category_items = "**DATA SHOP ITEMS**\n"
         for category in shops:
-            category_items += f"🛒 **{category}**\n"
+            category_items += f"🔰 **{category}**\n"
             for item in shops[category]:
                 if shops[category][item]["options"] == {}:
                     price = shops[category][item]["price"]
-                    category_items += f"🇮 🇹 🇪 🇲 {item}: {price}\n"
+                    category_items += f"🔸 {item}: {price}\n"
                 else:
-                    category_items += f"🇮 🇹 🇪 🇲 {item}\n"
+                    category_items += f"🔸 {item}\n"
                     for k, v in shops[category][item]["options"].items():
                         price = v
                         option = k
