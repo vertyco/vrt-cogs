@@ -544,9 +544,18 @@ class ArkShop(commands.Cog):
         else:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory", message)
 
-    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname):
+    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname, oname=None):
         categories = await self.config.guild(ctx.guild).shops()
-        category = categories[category_name]
+        category = {}
+        if category_name:
+            category = categories[category_name]
+        else:
+            for catname in categories:
+                for item in categories[catname]:
+                    if oname in categories[catname][item]["options"]:
+                        category = categories[catname]
+                        break
+
         # how many items
         item_count = len(category.keys())
 
@@ -877,7 +886,6 @@ class ArkShop(commands.Cog):
         else:
             for catname in categories:
                 for item in categories[catname]:
-                    print(categories[catname][item])
                     if oname in categories[catname][item]["options"]:
                         category = categories[catname]
                         break
@@ -1214,6 +1222,8 @@ class ArkShop(commands.Cog):
                         return await self.category_compiler(ctx, xuid, cname, message)
                     if type == "option":
                         return await self.item_compiler(ctx, message, None, xuid, cname, oname)
+                    if type == "rconoption":
+                        return await self.rcon_item_compiler(ctx, message, None, xuid, cname, oname)
 
                 else:
                     await message.remove_reaction(reaction, user)
