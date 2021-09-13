@@ -4,7 +4,9 @@ import math
 import shutil
 import os
 
+from redbot.core.utils.chat_formatting import box
 from redbot.core import commands, Config, bank
+from discord.ext import tasks
 
 import rcon
 
@@ -32,13 +34,15 @@ class ArkShop(commands.Cog):
         default_global = {
             "main_server": None,
             "main_path": None,
+            "viewchannel": None,
             "clusters": {},
-            "datashops": {}
+            "datashops": {},
 
         }
         default_guild = {
             "shops": {},
             "logchannel": None,
+            "viewchannel": None,
             "users": {},
             "logs": {"items": {}, "users": {}}
         }
@@ -112,6 +116,18 @@ class ArkShop(commands.Cog):
         """Set main path for Data Pack folder"""
         await self.config.main_path.set(path)
         return await ctx.send(f"DataPack path has been set as:\n`{path}`")
+
+    @_datashopset.command(name="setviewchannel")
+    async def set_data_view(self, ctx, channel: discord.TextChannel):
+        """Set a channel to be automatically updated with current the data shop prices"""
+        await self.config.viewchannel.set(channel)
+        return await ctx.send(f"View channel set to {channel.mention}")
+
+    @_rconshopset.command(name="setviewchannel")
+    async def set_data_view(self, ctx, channel: discord.TextChannel):
+        """Set a channel to be automatically updated with current the rcon shop prices"""
+        await self.config.guild(ctx.guild).viewchannel.set(channel)
+        return await ctx.send(f"View channel set to {channel.mention}")
 
     @_datashopset.command(name="addcluster")
     async def add_cluster(self, ctx, cluster_name, *, path):
@@ -1265,6 +1281,34 @@ class ArkShop(commands.Cog):
                         shops[category][item] = {"price": price, "options": {}}
             await ctx.send("Config imported from Papi's shit cog successfully!")
 
+
+    @commands.command(name="listdata")
+    async def data_status(self, ctx=None):
+        """List all items in the data shop"""
+        shops = await self.config.datashops()
+
+        embed = discord.Embed(
+            description="Current available Data shop items."
+        )
+        embed.set_thumbnail(url=SHOP_ICON)
+        for category in shops:
+            category_items = ""
+            for item in shops[category]:
+                if shops[category][item]["options"] == {}:
+                    price = shops[category][item]["price"]
+                    category_items += f"• {item}: {price}\n"
+                else:
+                    category_items += f"• {item}\n"
+                    for option in shops[category][item]["options"]:
+                        price = shops[category][item]["options"][option]["price"]
+                        category_items += f"  -{option}: {price}\n"
+            embed.add_field(
+                name=f"{category}",
+                value=f"{box(category_items, lang='python')}"
+            )
+
+        if ctx:
+            return await ctx.send(embed=embed)
 
 
 
