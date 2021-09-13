@@ -1274,13 +1274,12 @@ class ArkShop(commands.Cog):
         """List all items in the data shop"""
         shops = await self.config.datashops()
 
-        category_items = "**DATA SHOP ITEMS**\n"
         for category in shops:
-            category_items += f"🔰 **{category}**\n"
+            category_items = ""
             for item in shops[category]:
                 if shops[category][item]["options"] == {}:
                     price = shops[category][item]["price"]
-                    category_items += f"🔸 {item}: {price}\n"
+                    category_items += f"🔸 {item}: `{price}`\n"
                 else:
                     category_items += f"🔸 {item}\n```py\n"
                     for k, v in shops[category][item]["options"].items():
@@ -1288,13 +1287,12 @@ class ArkShop(commands.Cog):
                         option = k
                         category_items += f"• {option}: {price}\n"
                     category_items += "```"
-
-        for p in pagify(category_items):
             embed = discord.Embed(
-                description=f"{p}"
+                title=f"🔰 {category}",
+                description=f"{category_items}"
             )
-            embed.set_thumbnail(url=SHOP_ICON)
             await ctx.send(embed=embed)
+
 
 
 
