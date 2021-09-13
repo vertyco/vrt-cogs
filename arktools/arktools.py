@@ -63,6 +63,7 @@ class ArkTools(commands.Cog):
         self.logs = {}
         self.servercount = 0
         self.taskdata = []
+        self.channels = []
         self.alerts = {}
         self.playerlist = {}
         self.time = ""
@@ -1624,6 +1625,8 @@ class ArkTools(commands.Cog):
                     self.alerts[server["chatchannel"]] = 0
                     self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
+                    self.channels.append(server["globalchatchannel"])
+                    self.channels.append(server["chatchannel"])
         time = datetime.datetime.utcnow()
         self.time = time.isoformat()
         log.info("Config initialized.")  # If this doesnt log then something is fucky...
@@ -1683,12 +1686,7 @@ class ArkTools(commands.Cog):
         if message.author.bot:
             return
 
-        channels = []
-        for data in self.taskdata:
-            server = data[1]
-            channels.append(server["globalchatchannel"])
-            channels.append(server["chatchannel"])
-        if message.channel.id not in channels:
+        if message.channel.id not in self.channels:
             return
 
         if message.mentions:
