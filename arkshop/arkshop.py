@@ -349,7 +349,7 @@ class ArkShop(commands.Cog):
                 try:
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
                     if reply.content.lower() == "cancel":
-                        return await msg.edit("Item add canceled.")
+                        return await ctx.send("Item add canceled.")
                     else:
                         paths = reply.content.split("\n")
                         shops[shop_name][item_name]["paths"] = paths
@@ -409,7 +409,7 @@ class ArkShop(commands.Cog):
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
 
                     if reply.content.lower() == "cancel":
-                        return await msg.edit("Option add canceled.")
+                        return await ctx.send("Option add canceled.")
                     else:
                         paths = reply.content.split("\n")
                         shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
@@ -520,6 +520,9 @@ class ArkShop(commands.Cog):
         for category in categories:
             num_items = len(categories[category].keys())
             shop_categories.append((category, num_items))
+
+        # sort that bitch
+        shop_categories = sorted(shop_categories, key=lambda x: x[0])
 
         # menu setup
         start = 0
@@ -658,7 +661,7 @@ class ArkShop(commands.Cog):
             for page in range(int(pages)):
                 embed = discord.Embed(
                     title="RCON Shop",
-                    description="Option list"
+                    description=f"{name} options"
                 )
                 embed.set_thumbnail(url=SHOP_ICON)
                 count = 0
@@ -714,7 +717,7 @@ class ArkShop(commands.Cog):
             description=f"**Type your implant ID below.**\n",
             color=discord.Color.blue()
         )
-        embed.set_thumbnail(url="https://i.imgur.com/kfanq99.png")
+        embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
         await message.edit(embed=embed)
 
         def check(message: discord.Message):
@@ -856,6 +859,9 @@ class ArkShop(commands.Cog):
             num_items = len(categories[category].keys())
             shop_categories.append((category, num_items))
 
+        # sort that bitch
+        shop_categories = sorted(shop_categories, key=lambda x: x[0])
+
         # menu setup
         start = 0
         stop = 4
@@ -994,7 +1000,7 @@ class ArkShop(commands.Cog):
             for page in range(int(pages)):
                 embed = discord.Embed(
                     title="Data Shop",
-                    description="Option list"
+                    description=f"{name} options"
                 )
                 embed.set_thumbnail(url=SHOP_ICON)
                 count = 0
@@ -1269,7 +1275,7 @@ class ArkShop(commands.Cog):
                         shops[category][item] = {"price": price, "options": {}}
             await ctx.send("Config imported from Papi's shit cog successfully!")
 
-    @commands.command(name="listdata")
+    @commands.command(name="dshoplist")
     async def data_status(self, ctx):
         """List all items in the data shop"""
         shops = await self.config.datashops()
