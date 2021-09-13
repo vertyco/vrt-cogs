@@ -39,17 +39,12 @@ class ArkShop(commands.Cog):
         default_guild = {
             "shops": {},
             "logchannel": None,
-            "users": {}
+            "users": {},
+            "logs": {"items": {}, "users": {}}
         }
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
 
-    @commands.command(name="mainserver")
-    @commands.is_owner()
-    async def set_main_server(self, ctx):
-        """Set Main Server"""
-        await self.config.main_server.set(ctx.guild.id)
-        return await ctx.send(f"{ctx.guild} is now set as the main server!")
 
     @commands.group(name="shopset")
     @commands.admin()
@@ -67,6 +62,13 @@ class ArkShop(commands.Cog):
             return await ctx.send(embed=embed)
         else:
             pass
+
+    @_shopset.command(name="mainserver")
+    @commands.is_owner()
+    async def set_main_server(self, ctx):
+        """Set the Main Server for the data shop"""
+        await self.config.main_server.set(ctx.guild.id)
+        return await ctx.send(f"**{ctx.guild}** is now set as the main server!")
 
     @_shopset.group(name="data")
     @commands.is_owner()
@@ -702,7 +704,34 @@ class ArkShop(commands.Cog):
         )
         embed.set_thumbnail(url=SHOP_ICON)
         await message.clear_reactions()
-        return await message.edit(embed=embed)
+        await message.edit(embed=embed)
+
+        logchannel = await self.config.guild(ctx.guild).logchannel()
+        logchannel = ctx.guild.get_channel(logchannel)
+        embed = discord.Embed(
+            title="DATA Purchase",
+            description=f"**{ctx.author.name}** has purchased the {name} item.\n"
+                        f"Price: {price} {currency_name}\n"
+                        f"XUID: {xuid}"
+        )
+        await logchannel.send(embed=embed)
+
+        async with self.config.guild(ctx.guild).logs() as logs:
+            if name not in logs["items"]:
+                logs["items"][name] = {"type": "rcon", "count": 1}
+            else:
+                if logs["items"][name]["type"] == "rcon":
+                    logs["items"][name]["count"] += 1
+
+            if ctx.author.id not in logs["users"]:
+                logs["users"][ctx.author.id] = {}
+
+            if name not in logs["users"][ctx.author.id]:
+                logs["users"][ctx.author.id][name] = {"type": "rcon", "count": 1}
+            else:
+                if logs["users"][ctx.author.id][name]["type"] == "rcon":
+                    logs["users"][ctx.author.id][name]["count"] += 1
+            return
 
     async def rcon(self, server, command):
         try:
@@ -722,8 +751,10 @@ class ArkShop(commands.Cog):
         """
         Open up the data shop
 
-        This shop uses pre-made data packs created in-game and then having
-        the ark data moved into a spearate location
+        This shop uses pre-made data packs created in-game and then moved to a separate folder.
+
+        The ark data, when purchased, gets copied to the cluster folder as the person's XUID, allowing
+        them to access it as their own data.
 
         """
 
@@ -992,7 +1023,34 @@ class ArkShop(commands.Cog):
             color=discord.Color.green()
         )
         await message.clear_reactions()
-        return await message.edit(embed=embed)
+        await message.edit(embed=embed)
+
+        logchannel = await self.config.guild(ctx.guild).logchannel()
+        logchannel = ctx.guild.get_channel(logchannel)
+        embed = discord.Embed(
+            title="RCON Purchase",
+            description=f"**{ctx.author.name}** has purchased the {name} item.\n"
+                        f"Price: {price} {currency_name}\n"
+                        f"XUID: {xuid}"
+        )
+        await logchannel.send(embed=embed)
+
+        async with self.config.guild(ctx.guild).logs() as logs:
+            if name not in logs["items"]:
+                logs["items"][name] = {"type": "data", "count": 1}
+            else:
+                if logs["items"][name]["type"] == "data":
+                    logs["items"][name]["count"] += 1
+
+            if ctx.author.id not in logs["users"]:
+                logs["users"][ctx.author.id] = {}
+
+            if name not in logs["users"][ctx.author.id]:
+                logs["users"][ctx.author.id][name] = {"type": "data", "count": 1}
+            else:
+                if logs["users"][ctx.author.id][name]["type"] == "data":
+                    logs["users"][ctx.author.id][name]["count"] += 1
+            return
 
     async def shop_menu(self, ctx, xuid, cname, embeds, type, message=None):
         pages = len(embeds)
