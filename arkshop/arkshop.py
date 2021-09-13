@@ -6,7 +6,6 @@ import os
 
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config, bank
-from discord.ext import tasks
 
 import rcon
 
@@ -116,18 +115,6 @@ class ArkShop(commands.Cog):
         """Set main path for Data Pack folder"""
         await self.config.main_path.set(path)
         return await ctx.send(f"DataPack path has been set as:\n`{path}`")
-
-    @_datashopset.command(name="setviewchannel")
-    async def set_data_view(self, ctx, channel: discord.TextChannel):
-        """Set a channel to be automatically updated with current the data shop prices"""
-        await self.config.viewchannel.set(channel)
-        return await ctx.send(f"View channel set to {channel.mention}")
-
-    @_rconshopset.command(name="setviewchannel")
-    async def set_data_view(self, ctx, channel: discord.TextChannel):
-        """Set a channel to be automatically updated with current the rcon shop prices"""
-        await self.config.guild(ctx.guild).viewchannel.set(channel)
-        return await ctx.send(f"View channel set to {channel.mention}")
 
     @_datashopset.command(name="addcluster")
     async def add_cluster(self, ctx, cluster_name, *, path):
@@ -698,9 +685,10 @@ class ArkShop(commands.Cog):
         for category in categories:
             for item in categories[category]:
                 for option in categories[category][item]["options"]:
-                    price = categories[category][item]["options"][option]["price"]
-                    paths = categories[category][item]["options"][option]["paths"]
-                    break
+                    if name == option:
+                        price = categories[category][item]["options"][option]["price"]
+                        paths = categories[category][item]["options"][option]["paths"]
+                        break
         return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
 
     async def make_rcon_purchase(self, ctx, name, xuid, price, cname, message, paths):
@@ -1280,7 +1268,6 @@ class ArkShop(commands.Cog):
                         price = xshop[category]["items"][item]["price"]
                         shops[category][item] = {"price": price, "options": {}}
             await ctx.send("Config imported from Papi's shit cog successfully!")
-
 
     @commands.command(name="listdata")
     async def data_status(self, ctx=None):
