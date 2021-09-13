@@ -1270,15 +1270,10 @@ class ArkShop(commands.Cog):
             await ctx.send("Config imported from Papi's shit cog successfully!")
 
     @commands.command(name="listdata")
-    async def data_status(self, ctx=None):
+    async def data_status(self, ctx):
         """List all items in the data shop"""
         shops = await self.config.datashops()
 
-        if ctx is None:
-            embed = discord.Embed(
-                description="Current available Data shop items."
-            )
-            embed.set_thumbnail(url=SHOP_ICON)
         category_items = "**DATA SHOP ITEMS**\n"
         for category in shops:
             category_items += f"🔰 **{category}**\n"
@@ -1287,19 +1282,19 @@ class ArkShop(commands.Cog):
                     price = shops[category][item]["price"]
                     category_items += f"🔸 {item}: {price}\n"
                 else:
-                    category_items += f"🔸 {item}\n"
+                    category_items += f"🔸 {item}\n```py"
                     for k, v in shops[category][item]["options"].items():
                         price = v
                         option = k
                         category_items += f"• {option}: {price}\n"
+                    category_items += "```"
 
-        if ctx:
-            for p in pagify(category_items):
-                embed = discord.Embed(
-                    description=f"{p}"
-                )
-                embed.set_thumbnail(url=SHOP_ICON)
-                await ctx.send(embed=embed)
+        for p in pagify(category_items):
+            embed = discord.Embed(
+                description=f"{p}"
+            )
+            embed.set_thumbnail(url=SHOP_ICON)
+            await ctx.send(embed=embed)
 
 
 
