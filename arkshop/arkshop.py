@@ -4,7 +4,7 @@ import math
 import shutil
 import os
 
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config, bank
 from discord.ext import tasks
 
@@ -1287,12 +1287,14 @@ class ArkShop(commands.Cog):
         """List all items in the data shop"""
         shops = await self.config.datashops()
 
-        embed = discord.Embed(
-            description="Current available Data shop items."
-        )
-        embed.set_thumbnail(url=SHOP_ICON)
+        if ctx is None:
+            embed = discord.Embed(
+                description="Current available Data shop items."
+            )
+            embed.set_thumbnail(url=SHOP_ICON)
+        category_items = "**DATA SHOP ITEMS**\n"
         for category in shops:
-            category_items = ""
+            category_items += f"🛒 **{category}**\n"
             for item in shops[category]:
                 if shops[category][item]["options"] == {}:
                     price = shops[category][item]["price"]
@@ -1303,13 +1305,14 @@ class ArkShop(commands.Cog):
                         price = v
                         option = k
                         category_items += f"  -{option}: {price}\n"
-            embed.add_field(
-                name=f"{category}",
-                value=f"{box(category_items, lang='python')}"
-            )
 
         if ctx:
-            return await ctx.send(embed=embed)
+            for p in pagify(category_items):
+                embed = discord.Embed(
+                    description=f"{p}"
+                )
+                embed.set_thumbnail(url=SHOP_ICON)
+                return await ctx.send(embed=embed)
 
 
 
