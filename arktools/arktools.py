@@ -749,6 +749,10 @@ class ArkTools(commands.Cog):
                          port: int, password: str, channel: discord.TextChannel):
         """Add a server. (Use all lower case letters for server name and cluster name)"""
         async with self.config.guild(ctx.guild).clusters() as clusters:
+            if clustername not in clusters:
+                return await ctx.send(f"The cluster {clustername} does not exist!")
+            if servername not in clusters[servername]:
+                return await ctx.send(f"The server {servername} does not exist!")
             if clustername in clusters.keys():
                 if servername in clusters[clustername]["servers"].keys():
                     await ctx.send(f"The **{servername}** server was **overwritten** in the **{clustername}** cluster!")
@@ -762,8 +766,6 @@ class ArkTools(commands.Cog):
                 "chatchannel": channel.id
             }
             await self.initialize()
-            if clustername not in clusters.keys():
-                await ctx.send(f"The cluster {clustername} does not exist!")
 
     # Delete a server from a cluster
     @_serversettings.command(name="delserver")
