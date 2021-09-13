@@ -1957,7 +1957,7 @@ class ArkTools(commands.Cog):
                         timedifference = timedifference_raw.days
                         if timedifference >= days - 2:
                             unfriendmsg = f"Hello {gamertag}, long time no see!\nThis is an automated message:\n" \
-                                          f"We noticed you have not been detected on our servers  in {days - 2} days.\n" \
+                                          f"We noticed you have not been detected on any of the servers  in {days - 2} days.\n" \
                                           f"If you are not detected in the server within 2 days, You will be " \
                                           f"automatically unfriended by the host Gamertags.\n" \
                                           f"Once unfriended, you will need to re-register your Gamertag in our Discord" \
