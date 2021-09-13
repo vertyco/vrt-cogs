@@ -243,6 +243,8 @@ class ArkTools(commands.Cog):
                     await ctx.message.delete()
                 except discord.NotFound:
                     pass
+                except discord.Forbidden:
+                    return await ctx.send("Failed to delete your key because bot doesn't have permissions.")
                 return await ctx.send(embed=embed)
             else:
                 color = discord.Color.red()
