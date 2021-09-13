@@ -589,6 +589,9 @@ class ArkShop(commands.Cog):
                 price = None
             items.append((item, num_options, price))
 
+        # sort that bitch
+        items = sorted(items, key=lambda x: x[0])
+
         # menu setup
         start = 0
         stop = 4
@@ -653,6 +656,9 @@ class ArkShop(commands.Cog):
             for option in options:
                 option_price = options[option]["price"]
                 optionlist.append((option, option_price))
+
+            # sort that bitch
+            optionlist = sorted(optionlist, key=lambda x: x[0])
 
             # menu setup
             start = 0
@@ -927,6 +933,9 @@ class ArkShop(commands.Cog):
                 price = None
             items.append((item, num_options, price))
 
+        # sort that bitch
+        items = sorted(items, key=lambda x: x[0])
+
         # menu setup
         start = 0
         stop = 4
@@ -992,6 +1001,9 @@ class ArkShop(commands.Cog):
                 option_name = key
                 option_price = value
                 optionlist.append((option_name, option_price))
+
+            # sort that bitch
+            optionlist = sorted(optionlist, key=lambda x: x[0])
 
             # menu setup
             start = 0
