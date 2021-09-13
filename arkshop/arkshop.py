@@ -1312,7 +1312,7 @@ class ArkShop(commands.Cog):
                     description=f"{p}"
                 )
                 embed.set_thumbnail(url=SHOP_ICON)
-                return await ctx.send(embed=embed)
+                await ctx.send(embed=embed)
 
 
 
