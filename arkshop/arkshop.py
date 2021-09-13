@@ -869,9 +869,17 @@ class ArkShop(commands.Cog):
         else:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "category", message)
 
-    async def item_compiler(self, ctx, message, category_name, xuid, cname):
+    async def item_compiler(self, ctx, message, category_name, xuid, cname, oname=None):
         categories = await self.config.datashops()
-        category = categories[category_name]
+        category = {}
+        if category_name:
+            category = categories[category_name]
+        else:
+            for category in categories:
+                for item in categories[category]:
+                    for option in categories[category][item]["options"]:
+                        if oname == option:
+                            category = categories[category]
 
         # how many items
         item_count = len(category.keys())
@@ -1197,8 +1205,14 @@ class ArkShop(commands.Cog):
 
                 elif str(reaction.emoji) == "↩️":
                     await message.remove_reaction(reaction, user)
+                    name = embeds[cur_page - 1].fields[0].name
+                    oname = name.split(' ', 1)[-1]
                     if type == "item":
                         return await self.category_compiler(ctx, xuid, cname, message)
+                    if type == "rconitem":
+                        return await self.category_compiler(ctx, xuid, cname, message)
+                    if type == "option":
+                        return await self.item_compiler(ctx, message, None, xuid, cname, oname)
 
                 else:
                     await message.remove_reaction(reaction, user)
