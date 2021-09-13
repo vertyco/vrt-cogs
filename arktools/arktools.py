@@ -712,8 +712,12 @@ class ArkTools(commands.Cog):
                           leavechannel: discord.TextChannel,
                           adminlogchannel: discord.TextChannel,
                           globalchatchannel: discord.TextChannel):
-        """Add a cluster with specified log channels."""
-        """Include desired join, leave, admin log, and global chat channel."""
+        """
+        Add a cluster with specified log channels. (Use all lower case letters for cluster name)
+
+
+        Include desired join, leave, admin log, and global chat channel.
+        """
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername in clusters.keys():
                 await ctx.send("Cluster already exists")
@@ -743,7 +747,7 @@ class ArkTools(commands.Cog):
     @_serversettings.command(name="addserver")
     async def _addserver(self, ctx: commands.Context, clustername: str, servername: str, ip: str,
                          port: int, password: str, channel: discord.TextChannel):
-        """Add a server."""
+        """Add a server. (Use all lower case letters for server name and cluster name)"""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername in clusters.keys():
                 if servername in clusters[clustername]["servers"].keys():
