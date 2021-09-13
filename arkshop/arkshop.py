@@ -877,9 +877,11 @@ class ArkShop(commands.Cog):
         else:
             for category in categories:
                 for item in categories[category]:
-                    for option in categories[category][item]["options"]:
-                        if oname == option:
-                            category = categories[category]
+                    if categories[category][item]["options"]:
+                        for option in categories[category][item]["options"]:
+                            if oname == option:
+                                category = categories[category]
+                                break
 
         # how many items
         item_count = len(category.keys())
