@@ -434,12 +434,7 @@ class ArkShop(commands.Cog):
                     xuid = playerdata[player]["xuid"]
                     break
         else:
-            embed = discord.Embed(
-                description=f"Your discord ID has not been found in the database.\n"
-                            f"Please register with `{ctx.prefix}arktools register`",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
+            return None
         return xuid
 
     # USER COMMANDS
@@ -452,6 +447,13 @@ class ArkShop(commands.Cog):
         """
         # check if player is registered in arktools config and get their xuid if they are
         xuid = await self.get_xuid_from_arktools(ctx)
+        if xuid is None:
+            embed = discord.Embed(
+                description=f"Your discord ID has not been found in the database.\n"
+                            f"Please register with `{ctx.prefix}arktools register`",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
 
         # check if player has set a cluster
         users = await self.config.guild(ctx.guild).users()
@@ -711,8 +713,8 @@ class ArkShop(commands.Cog):
         embed = discord.Embed(
             title="DATA Purchase",
             description=f"**{ctx.author.name}** has purchased the {name} item.\n"
-                        f"Price: {price} {currency_name}\n"
-                        f"XUID: {xuid}"
+                        f"**Price:** {price} {currency_name}\n"
+                        f"**XUID:** {xuid}"
         )
         await logchannel.send(embed=embed)
 
@@ -770,6 +772,13 @@ class ArkShop(commands.Cog):
 
         # check if player is registered in arktools config and get their xuid if they are
         xuid = await self.get_xuid_from_arktools(ctx)
+        if xuid is None:
+            embed = discord.Embed(
+                description=f"Your discord ID has not been found in the database.\n"
+                            f"Please register with `{ctx.prefix}arktools register`",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
 
         # check if player has set a cluster
         users = await self.config.guild(ctx.guild).users()
@@ -1030,8 +1039,8 @@ class ArkShop(commands.Cog):
         embed = discord.Embed(
             title="RCON Purchase",
             description=f"**{ctx.author.name}** has purchased the {name} item.\n"
-                        f"Price: {price} {currency_name}\n"
-                        f"XUID: {xuid}"
+                        f"**Price:** {price} {currency_name}\n"
+                        f"**XUID:** {xuid}"
         )
         await logchannel.send(embed=embed)
 
