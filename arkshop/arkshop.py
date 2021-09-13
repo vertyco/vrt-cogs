@@ -875,11 +875,11 @@ class ArkShop(commands.Cog):
         if category_name:
             category = categories[category_name]
         else:
-            for category in categories:
-                for item in categories[category]:
-                    print(categories[category][item])
-                    if oname in categories[category][item]["options"]:
-                        category = categories[category]
+            for catname in categories:
+                for item in categories[catname]:
+                    print(categories[catname][item])
+                    if oname in categories[catname][item]["options"]:
+                        category = categories[catname]
                         break
 
         # how many items
