@@ -355,7 +355,9 @@ class ArkShop(commands.Cog):
 
     @_rconshopset.command(name="delitem")
     async def delete_rcon_item(self, ctx, shop_name, item_name):
-        """Delete an item from an rcon shop category"""
+        """
+        Delete an item from an rcon shop category
+        """
         async with self.config.guild(ctx.guild).shops() as shops:
             # check if shop exists
             if shop_name not in shops:
@@ -369,7 +371,12 @@ class ArkShop(commands.Cog):
 
     @_rconshopset.command(name="addoption")
     async def add_rcon_item_option(self, ctx, shop_name, item_name, option, price):
-        """Add an option to an existing item in the rcon shop"""
+        """
+        Add an option to an existing item in the rcon shop
+
+        When it asks for paths, be sure to include the FULL blueprint path and <quantity> <quality> <BP T/F> identifiers
+        for BP identifier: 1=True and 0=False
+        """
         async with self.config.guild(ctx.guild).shops() as shops:
             # check if shop exists
             if shop_name not in shops:
@@ -381,7 +388,6 @@ class ArkShop(commands.Cog):
             elif option in shops[shop_name][item_name]["options"]:
                 return await ctx.send(f"{option} option already exists!")
             else:
-                shops[shop_name][item_name]["options"][option] = price
                 msg = await ctx.send(
                     "Type the full blueprint paths including quantity/quality/blueprint numbers below.\n"
                     "Separate each full path with a new line for multiple items in one option.")
@@ -396,7 +402,7 @@ class ArkShop(commands.Cog):
 
                 paths = reply.content.split("\n")
                 shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
-                return await ctx.tick()
+                return await reply.tick()
 
     @_rconshopset.command(name="checkitem")
     async def check_rcon_item(self, ctx, shop_name, item_name):
@@ -574,11 +580,142 @@ class ArkShop(commands.Cog):
             stop += 4
         return await self.shop_menu(ctx, xuid, cname, embedlist, "rconitem", message)
 
-    async def rcon_but_or_goto_options(self, ctx, message, name, xuid, cname):
-        pass
+    async def rcon_buy_or_goto_options(self, ctx, message, name, xuid, cname):
+        categories = await self.config.guild(ctx.guild).shops()
+        full_item = {}
+        for category in categories:
+            for item in categories[category]:
+                if name == item:
+                    full_item = categories[category][name]
+                    break
+        options = full_item["options"]
+        price = full_item["price"]
+
+        # if item has no options
+        if price and not options:
+            await message.clear_reactions()
+            return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message)
+
+        # go back to menu if item contains options
+        else:
+            # how many options
+            option_count = len(options.keys())
+
+            # how many pages
+            pages = math.ceil(option_count / 4)
+
+            # option info setup
+            optionlist = []
+            for option in options:
+                option_price = options[option]["price"]
+                optionlist.append((option, option_price))
+
+            # menu setup
+            start = 0
+            stop = 4
+            embedlist = []
+            for page in range(int(pages)):
+                embed = discord.Embed(
+                    title="Option Menu",
+                    description="Option list"
+                )
+                embed.set_thumbnail(url=SHOP_ICON)
+                count = 0
+                if stop > len(optionlist):
+                    stop = len(optionlist)
+                for i in range(start, stop, 1):
+                    oname = optionlist[i][0]
+                    oprice = optionlist[i][1]
+                    embed.add_field(
+                        name=f"{SELECTORS[count]} {oname}",
+                        value=f"Price: {oprice}",
+                        inline=False
+                    )
+                    count += 1
+                embedlist.append(embed)
+                start += 4
+                stop += 4
+            return await self.shop_menu(ctx, xuid, cname, embedlist, "rconoption", message)
 
     async def rcon_option_path_finder(self, ctx, message, name, xuid, cname):
-        pass
+        categories = await self.config.guild(ctx.guild).shops()
+        price = 0
+        paths = []
+        for category in categories:
+            for item in categories[category]:
+                for option in categories[category][item]["options"]:
+                    price = categories[category][item]["options"][option]["price"]
+                    paths = categories[category][item]["options"][option]["paths"]
+                    break
+        return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
+
+    async def make_rcon_purchase(self, ctx, name, xuid, price, cname, message, paths):
+        # check if user can afford the item
+        currency_name = await bank.get_currency_name(ctx.guild)
+        if not await bank.can_spend(ctx.author, int(price)):
+            await message.clear_reactions()
+            embed = discord.Embed(
+                description=f"You don't have enough {currency_name} to buy this :smiling_face_with_tear:",
+                color=discord.Color.red()
+            )
+            return await message.edit(embed=embed)
+
+        # gather server data
+        arktools = self.bot.get_cog("ArkTools")
+        clusters = await arktools.config.guild(ctx.guild).clusters()
+        serverlist = []
+        for server in clusters[cname]["servers"]:
+            serverlist.append(clusters[cname]["servers"][server])
+
+        # ask for implant ID
+        embed = discord.Embed(
+            description=f"**Type your implant ID below.**\n",
+            color=discord.Color.blue()
+        )
+        embed.set_thumbnail(url="https://i.imgur.com/kfanq99.png")
+        await message.edit(embed=embed)
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        commandlist = []
+        for path in paths:
+            commandlist.append(f"giveitemtoplayer {reply.content} {path}")
+
+        tasks = []
+        for server in serverlist:
+            for command in commandlist:
+                tasks.append(self.rcon(server, command))
+
+        await asyncio.gather(*tasks)
+
+        # withdraw credits and send purchase message
+        await bank.withdraw_credits(ctx.author, int(price))
+        embed = discord.Embed(
+            description=f"You have purchased the {name} item for {price} {currency_name}!",
+            color=discord.Color.green()
+        )
+        embed.set_thumbnail(url=SHOP_ICON)
+        await message.clear_reactions()
+        return await message.edit(embed=embed)
+
+    async def rcon(self, server, command):
+        try:
+            await rcon.asyncio.rcon(
+                command=command,
+                host=server["ip"],
+                port=server["port"],
+                passwd=server["password"]
+            )
+        except WindowsError as e:
+            log.exception(f"Rcon failed:", e)
+        except Exception:
+            log.exception(f"Other RCON failure", Exception)
 
     @commands.command(name="dshop")
     async def _datashop(self, ctx):
@@ -759,7 +896,6 @@ class ArkShop(commands.Cog):
 
             # option info setup
             optionlist = []
-            print(options)
             for key, value in options.items():
                 option_name = key
                 option_price = value
@@ -806,7 +942,6 @@ class ArkShop(commands.Cog):
 
     async def make_purchase(self, ctx, name, xuid, price, cname, message):
         source_directory = await self.config.main_path()
-        print(source_directory)
         clusters = await self.config.clusters()
         dest_directory = clusters[cname]
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -916,7 +1051,6 @@ class ArkShop(commands.Cog):
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
                         return await self.rcon_option_path_finder(ctx, message, name, xuid, cname)
-                    print(name)
 
                 elif str(reaction.emoji) == "2️⃣" and len(embeds[cur_page - 1].fields) > 1:
                     name = embeds[cur_page - 1].fields[1].name
@@ -934,7 +1068,6 @@ class ArkShop(commands.Cog):
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
                         return await self.rcon_option_path_finder(ctx, message, name, xuid, cname)
-                    print(name)
 
                 elif str(reaction.emoji) == "3️⃣" and len(embeds[cur_page - 1].fields) > 2:
                     name = embeds[cur_page - 1].fields[2].name
@@ -952,7 +1085,6 @@ class ArkShop(commands.Cog):
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
                         return await self.rcon_option_path_finder(ctx, message, name, xuid, cname)
-                    print(name)
 
                 elif str(reaction.emoji) == "4️⃣" and len(embeds[cur_page - 1].fields) > 3:
                     name = embeds[cur_page - 1].fields[3].name
@@ -970,7 +1102,6 @@ class ArkShop(commands.Cog):
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
                         return await self.rcon_option_path_finder(ctx, message, name, xuid, cname)
-                    print(name)
 
                 elif str(reaction.emoji) == "❌":
                     await message.clear_reactions()
@@ -999,8 +1130,6 @@ class ArkShop(commands.Cog):
             for category in xshop:
                 shops[category] = {}
                 for item in xshop[category]["items"]:
-                    print(item)
-                    print(xshop[category]["items"][item])
                     if xshop[category]["items"][item]["options"]:
                         shops[category][item] = {"price": False, "options": {}}
                         for option in xshop[category]["items"][item]["options"]:
