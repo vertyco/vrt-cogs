@@ -1219,7 +1219,7 @@ class ArkShop(commands.Cog):
                     if type == "item":
                         return await self.category_compiler(ctx, xuid, cname, message)
                     if type == "rconitem":
-                        return await self.category_compiler(ctx, xuid, cname, message)
+                        return await self.rcon_category_compiler(ctx, xuid, cname, message)
                     if type == "option":
                         return await self.item_compiler(ctx, message, None, xuid, cname, oname)
                     if type == "rconoption":
