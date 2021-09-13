@@ -524,7 +524,6 @@ class ArkShop(commands.Cog):
                 description="Category list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
-            embed.set_footer(text="Make sure you are ONLINE when purchasing from the RCON shop!")
             count = 0
             if stop > len(shop_categories):
                 stop = len(shop_categories)
@@ -590,7 +589,6 @@ class ArkShop(commands.Cog):
                 description="Item list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
-            embed.set_footer(text="Make sure you are ONLINE when purchasing from the RCON shop!")
             count = 0
             if stop > len(items):
                 stop = len(items)
@@ -656,7 +654,6 @@ class ArkShop(commands.Cog):
                     description="Option list"
                 )
                 embed.set_thumbnail(url=SHOP_ICON)
-                embed.set_footer(text="Make sure you are ONLINE when purchasing from the RCON shop!")
                 count = 0
                 if stop > len(optionlist):
                     stop = len(optionlist)
@@ -861,7 +858,6 @@ class ArkShop(commands.Cog):
                 description="Category list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
-            embed.set_footer(text="Remember to empty your Ark data before purchasing from the Data Shop!")
             count = 0
             if stop > len(shop_categories):
                 stop = len(shop_categories)
@@ -927,7 +923,6 @@ class ArkShop(commands.Cog):
                 description="Item list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
-            embed.set_footer(text="Remember to empty your Ark data before purchasing from the Data Shop!")
             count = 0
             if stop > len(items):
                 stop = len(items)
@@ -994,7 +989,6 @@ class ArkShop(commands.Cog):
                     description="Option list"
                 )
                 embed.set_thumbnail(url=SHOP_ICON)
-                embed.set_footer(text="Remember to empty your Ark data before purchasing from the Data Shop!")
                 count = 0
                 if stop > len(optionlist):
                     stop = len(optionlist)
@@ -1108,7 +1102,12 @@ class ArkShop(commands.Cog):
     async def shop_menu(self, ctx, xuid, cname, embeds, type, message=None):
         pages = len(embeds)
         cur_page = 1
-        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+        if type == ["category", "opiton", "item"]:
+            embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
+                                                 f"Remember to empty your Ark data before purchasing from the Data Shop!")
+        if type == ["rconcategory", "rconopiton", "rconitem"]:
+            embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
+                                                 f"Make sure you are ONLINE when purchasing from the RCON shop!")
         if message is None:
             message = await ctx.send(embed=embeds[cur_page - 1])
         else:
