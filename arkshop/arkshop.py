@@ -337,19 +337,23 @@ class ArkShop(commands.Cog):
 
                 msg = await ctx.send(
                     "Type the full blueprint paths including quantity/quality/blueprint numbers below.\n"
-                    "Separate each full path with a new line for multiple items in one pack.")
+                    "Separate each full path with a new line for multiple items in one pack.\n"
+                    "Type `cancel` to cancel the item.")
 
                 def check(message: discord.Message):
                     return message.author == ctx.author and message.channel == ctx.channel
 
                 try:
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
+                    if reply.content.lower() == "cancel":
+                        return await msg.edit("Item add canceled.")
+                    else:
+                        paths = reply.content.split("\n")
+                        shops[shop_name][item_name]["paths"] = paths
+                        return await ctx.send(f"Item paths set!")
+
                 except asyncio.TimeoutError:
                     return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-                paths = reply.content.split("\n")
-                shops[shop_name][item_name]["paths"] = paths
-                return await ctx.tick()
 
             else:
                 shops[shop_name][item_name] = {"price": False, "options": {}, "paths": []}
@@ -393,7 +397,7 @@ class ArkShop(commands.Cog):
                 msg = await ctx.send(
                     "Type the full blueprint paths including quantity/quality/blueprint numbers below.\n"
                     "Separate each full path with a new line for multiple items in one option.\n"
-                    "type `cancel` to cancel the option.")
+                    "Type `cancel` to cancel the option.")
 
                 def check(message: discord.Message):
                     return message.author == ctx.author and message.channel == ctx.channel
