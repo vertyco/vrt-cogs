@@ -1683,6 +1683,9 @@ class ArkTools(commands.Cog):
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
+        if not message:
+            return
+
         if message.author.bot:
             return
 
@@ -1725,6 +1728,7 @@ class ArkTools(commands.Cog):
                     host=data['ip'],
                     port=data['port'],
                     passwd=data['password'])
+                continue
             except Exception as e:
                 if "semaphor" in str(e):
                     log.warning("chat_toserver_rcon: Server is probably offline")
