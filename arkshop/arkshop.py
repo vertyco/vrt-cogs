@@ -1282,7 +1282,7 @@ class ArkShop(commands.Cog):
                     price = shops[category][item]["price"]
                     category_items += f"🔸 {item}: {price}\n"
                 else:
-                    category_items += f"🔸 {item}\n```py"
+                    category_items += f"🔸 {item}\n```py\n"
                     for k, v in shops[category][item]["options"].items():
                         price = v
                         option = k
