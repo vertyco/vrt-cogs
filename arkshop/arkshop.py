@@ -1224,7 +1224,6 @@ class ArkShop(commands.Cog):
                         return await self.item_compiler(ctx, message, None, xuid, cname, oname)
                     if type == "rconoption":
                         return await self.rcon_item_compiler(ctx, message, None, xuid, cname, oname)
-
                 else:
                     await message.remove_reaction(reaction, user)
 
