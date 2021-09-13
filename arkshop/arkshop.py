@@ -520,10 +520,11 @@ class ArkShop(commands.Cog):
         embedlist = []
         for page in range(int(pages)):
             embed = discord.Embed(
-                title="Shop Menu",
-                description="RCON Shop categories"
+                title="RCON Shop",
+                description="Category list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
+            embed.set_footer(text="Make sure you are ONLINE when purchasing from the RCON shop!")
             count = 0
             if stop > len(shop_categories):
                 stop = len(shop_categories)
@@ -585,10 +586,11 @@ class ArkShop(commands.Cog):
         embedlist = []
         for page in range(int(pages)):
             embed = discord.Embed(
-                title="Item Menu",
+                title="RCON Shop",
                 description="Item list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
+            embed.set_footer(text="Make sure you are ONLINE when purchasing from the RCON shop!")
             count = 0
             if stop > len(items):
                 stop = len(items)
@@ -650,10 +652,11 @@ class ArkShop(commands.Cog):
             embedlist = []
             for page in range(int(pages)):
                 embed = discord.Embed(
-                    title="Option Menu",
+                    title="RCON Shop",
                     description="Option list"
                 )
                 embed.set_thumbnail(url=SHOP_ICON)
+                embed.set_footer(text="Make sure you are ONLINE when purchasing from the RCON shop!")
                 count = 0
                 if stop > len(optionlist):
                     stop = len(optionlist)
@@ -854,10 +857,11 @@ class ArkShop(commands.Cog):
         embedlist = []
         for page in range(int(pages)):
             embed = discord.Embed(
-                title="Shop Menu",
-                description="Shop categories"
+                title="Data Shop",
+                description="Category list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
+            embed.set_footer(text="Remember to empty your Ark data before purchasing from the Data Shop!")
             count = 0
             if stop > len(shop_categories):
                 stop = len(shop_categories)
@@ -919,10 +923,11 @@ class ArkShop(commands.Cog):
         embedlist = []
         for page in range(int(pages)):
             embed = discord.Embed(
-                title="Item Menu",
+                title="Data Shop",
                 description="Item list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
+            embed.set_footer(text="Remember to empty your Ark data before purchasing from the Data Shop!")
             count = 0
             if stop > len(items):
                 stop = len(items)
@@ -985,10 +990,11 @@ class ArkShop(commands.Cog):
             embedlist = []
             for page in range(int(pages)):
                 embed = discord.Embed(
-                    title="Option Menu",
+                    title="Data Shop",
                     description="Option list"
                 )
                 embed.set_thumbnail(url=SHOP_ICON)
+                embed.set_footer(text="Remember to empty your Ark data before purchasing from the Data Shop!")
                 count = 0
                 if stop > len(optionlist):
                     stop = len(optionlist)
@@ -1224,6 +1230,7 @@ class ArkShop(commands.Cog):
                         return await self.item_compiler(ctx, message, None, xuid, cname, oname)
                     if type == "rconoption":
                         return await self.rcon_item_compiler(ctx, message, None, xuid, cname, oname)
+
                 else:
                     await message.remove_reaction(reaction, user)
 
