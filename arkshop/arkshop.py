@@ -1438,7 +1438,7 @@ class ArkShop(commands.Cog):
 
         while True:
             try:
-                reaction, user = await self.bot.wait_for("reaction_add" or "reaction_remove", timeout=60, check=check)
+                reaction, user = await self.bot.wait_for(["reaction_add" or "reaction_remove"], timeout=60, check=check)
 
                 if str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
                     cur_page += 1
