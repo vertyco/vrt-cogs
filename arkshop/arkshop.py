@@ -1300,7 +1300,7 @@ class ArkShop(commands.Cog):
     async def data_status(self, ctx):
         """List all items in the data shop"""
         shops = await self.config.datashops()
-
+        embeds = []
         for category in shops:
             category_items = ""
             for item in shops[category]:
@@ -1318,13 +1318,14 @@ class ArkShop(commands.Cog):
                 title=f"🔰 {category}",
                 description=f"{category_items}"
             )
-            await ctx.send(embed=embed)
+            embeds.append(embed)
+        await self.paginate(ctx, embeds)
 
     @commands.command(name="rshoplist")
     async def rcon_status(self, ctx):
         """List all items in the rcon shop"""
         shops = await self.config.guild(ctx.guild).shops()
-
+        embeds = []
         for category in shops:
             category_items = ""
             for item in shops[category]:
@@ -1342,7 +1343,52 @@ class ArkShop(commands.Cog):
                 title=f"🔰 {category}",
                 description=f"{category_items}"
             )
-            await ctx.send(embed=embed)
+            embeds.append(embed)
+        await self.paginate(ctx, embeds)
+
+    # Menu for doing menu things
+    async def paginate(self, ctx, embeds):
+        pages = len(embeds)
+        cur_page = 1
+        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+
+        message = await ctx.send(embed=embeds[cur_page - 1])
+
+        await message.add_reaction("◀️")
+        await message.add_reaction("❌")
+        await message.add_reaction("▶️")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "❌", "▶️"]
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+
+                if str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
+                    cur_page += 1
+                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embeds[cur_page - 1])
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                    cur_page -= 1
+                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embeds[cur_page - 1])
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "❌":
+                    await message.clear_reactions()
+                    return await message.edit(embed=discord.Embed(description="Menu closed."))
+
+                else:
+                    await message.remove_reaction(reaction, user)
+
+            except asyncio.TimeoutError:
+                try:
+                    return await message.clear_reactions()
+                except discord.NotFound:
+                    return
 
 
 
