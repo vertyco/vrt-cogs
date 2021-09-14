@@ -1334,7 +1334,7 @@ class ArkShop(commands.Cog):
                 else:
                     category_items += f"🔸 {item}\n```py\n"
                     for k, v in shops[category][item]["options"].items():
-                        price = v
+                        price = v["price"]
                         option = k
                         category_items += f"• {option}: {price}\n"
                     category_items += "```"
