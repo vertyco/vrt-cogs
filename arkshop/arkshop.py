@@ -213,8 +213,8 @@ class ArkShop(commands.Cog):
         # move/replace pack
         if os.path.exists(item_destination):
             try:
-                os.replace(item_source_file, item_destination)
-                os.remove(item_source_file)
+                os.remove(item_destination)
+                shutil.move(item_source_file, item_destination)
                 return await ctx.send(f"Pack uploaded and overwritten as `{packname}`")
             except Exception as e:
                 return await ctx.send(f"Data upload failed!\nError: {e}")
@@ -293,7 +293,8 @@ class ArkShop(commands.Cog):
         # remove any existing data from destination
         if os.path.exists(item_destination):
             try:
-                os.replace(item_source_file, item_destination)
+                os.remove(item_destination)
+                shutil.copyfile(item_source_file, item_destination)
                 return await ctx.send(f"Pack sent to XUID: `{xuid}`")
             except Exception as e:
                 return await ctx.send(f"Data send failed!\nError: {e}")
