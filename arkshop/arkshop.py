@@ -309,11 +309,11 @@ class ArkShop(commands.Cog):
         """List all data packs in the main path"""
         path = await self.config.main_path()
         packs = os.listdir(path)
-        packlist = ""
+        packlist = "NAME - SIZE IN BYTES\n"
         for pack in packs:
             fullpath = os.path.join(path, pack)
             size = os.path.getsize(fullpath)
-            packlist += f"{pack}: {size}b\n"
+            packlist += f"{pack} - {size}\n"
 
         for p in pagify(packlist):
             await ctx.send(box(p, lang="python"))
