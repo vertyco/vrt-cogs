@@ -22,7 +22,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -405,6 +405,31 @@ class ArkShop(commands.Cog):
         else:
             return await ctx.send("File not found!")
 
+    @_file.command(name="wipeplayerdata")
+    async def wipe_player_data(self, ctx, clustername, player_xuid):
+        """Wipe a players Ark data"""
+        clusters = await self.config.clusters()
+        # check if clustername exists
+        if clustername not in clusters:
+            clist = ""
+            for clustername in clusters:
+                clist += f"`{clustername}`\n"
+            embed = discord.Embed(
+                description=f"Invalid clustername, try one of these instead:\n"
+                            f"{clist}",
+                color=discord.Color.orange()
+            )
+            return await ctx.send(embed=embed)
+        directory = clusters[clustername]
+        file = os.path.join(directory, player_xuid)
+        if os.path.exists(file):
+            try:
+                os.remove(file)
+                return await ctx.send(f"Player data matching XUID `{player_xuid}` has been wiped.")
+            except Exception as e:
+                return await ctx.send(f"Failed to delete player data!\nError: {e}")
+        else:
+            return await ctx.send("File not found!")
 
     @_datashopset.command(name="addcategory")
     async def add_category(self, ctx, shop_name):
