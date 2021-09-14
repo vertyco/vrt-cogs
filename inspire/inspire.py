@@ -32,7 +32,8 @@ class Inspire(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def _message_listener(self, message: discord.Message):
-
+        if not message.guild:
+            return
         if message.author.bot:
             return
 
