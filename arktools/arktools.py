@@ -753,7 +753,7 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername not in clusters:
                 return await ctx.send(f"The cluster {clustername} does not exist!")
-            if servername not in clusters[servername]:
+            if servername not in clusters[clustername]["servers"][servername]:
                 return await ctx.send(f"The server {servername} does not exist!")
             if clustername in clusters.keys():
                 if servername in clusters[clustername]["servers"].keys():
