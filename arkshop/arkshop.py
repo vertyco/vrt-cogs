@@ -5,6 +5,7 @@ import shutil
 import os
 
 from redbot.core import commands, Config, bank
+from redbot.core.utils.chat_formatting import box, pagify
 
 import rcon
 
@@ -308,13 +309,14 @@ class ArkShop(commands.Cog):
         """List all data packs in the main path"""
         path = await self.config.main_path()
         packs = os.listdir(path)
-        packlist = "```py\n"
+        packlist = ""
         for pack in packs:
             fullpath = os.path.join(path, pack)
             size = os.path.getsize(fullpath)
-            packlist += f"`{pack}: {size}b`\n"
-        packlist += "```"
-        return await ctx.send(packlist)
+            packlist += f"{pack}: {size}b\n"
+
+        for p in pagify(packlist):
+            await ctx.send(box(p, lang="python"))
 
 
     @_datashopset.command(name="addcategory")
