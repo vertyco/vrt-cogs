@@ -1090,7 +1090,7 @@ class ArkTools(commands.Cog):
             name = map[0]
             time = map[1]
             d, h, m = await self.time_formatter(time)
-            mstats += f"**{count}. {name.upper()}** - `{len(t[map[0]].keys())} Players in Database`\n" \
+            mstats += f"**{count}. {name.upper()}** - `{len(t[map[0]].keys())} Players`\n" \
                       f"Total Time Played: `{d}d {h}h {m}m`\n" \
                       f"Top Player: `{max_p}` - `{md}d {mh}h {mm}m`\n\n"
             count += 1
