@@ -29,7 +29,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.8.40"
+    __version__ = "1.8.41"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -753,13 +753,12 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername not in clusters:
                 return await ctx.send(f"The cluster {clustername} does not exist!")
-            if servername not in clusters[clustername]["servers"]:
+            elif servername not in clusters[clustername]["servers"]:
                 return await ctx.send(f"The server {servername} does not exist!")
-            if clustername in clusters.keys():
-                if servername in clusters[clustername]["servers"].keys():
-                    await ctx.send(f"The **{servername}** server was **overwritten** in the **{clustername}** cluster!")
-                if servername not in clusters[clustername]["servers"].keys():
-                    await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
+            elif servername in clusters[clustername]["servers"].keys():
+                await ctx.send(f"The **{servername}** server was **overwritten** in the **{clustername}** cluster!")
+            elif servername not in clusters[clustername]["servers"].keys():
+                await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
             clusters[clustername]["servers"][servername] = {
                 "name": servername.lower(),
                 "ip": ip,
