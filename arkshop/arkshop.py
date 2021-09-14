@@ -98,7 +98,7 @@ class ArkShop(commands.Cog):
             pass
 
     @_shopset.group(name="file")
-    @commands.is_owner()
+    @commands.admin()
     async def _file(self, ctx):
         """
         Manage and create data packs for use in the data shop
@@ -277,8 +277,12 @@ class ArkShop(commands.Cog):
             clist = ""
             for clustername in clusters:
                 clist += f"`{clustername}`\n"
-            return await ctx.send(f"Invalid clustername, try one of these instead:\n"
-                                  f"{clist}")
+            embed = discord.Embed(
+                description=f"Invalid clustername, try one of these instead:\n"
+                            f"{clist}",
+                color=discord.Color.orange()
+            )
+            return await ctx.send(embed=embed)
 
         destination_dir = clusters[clustername]
         item_destination = os.path.join(destination_dir, xuid)
@@ -296,13 +300,21 @@ class ArkShop(commands.Cog):
             try:
                 os.remove(item_destination)
                 shutil.copyfile(item_source_file, item_destination)
-                return await ctx.send(f"Pack sent to XUID: `{xuid}`")
+                embed = discord.Embed(
+                    description=f"Pack sent to XUID: `{xuid}`",
+                    color=discord.Color.blue()
+                )
+                return await ctx.send(embed=embed)
             except Exception as e:
                 return await ctx.send(f"Data send failed!\nError: {e}")
 
         else:
             shutil.copyfile(item_source_file, item_destination)
-            return await ctx.send(f"Pack sent to XUID: `{xuid}`")
+            embed = discord.Embed(
+                description=f"Pack sent to XUID: `{xuid}`",
+                color=discord.Color.blue()
+            )
+            return await ctx.send(embed=embed)
 
     @_file.command(name="listpacks")
     async def list_packs(self, ctx):
@@ -319,20 +331,66 @@ class ArkShop(commands.Cog):
             await ctx.send(box(p, lang="python"))
 
     @_file.command(name="rename")
-    async def rename_pack(self, ctx, current_name, new_name):
+    async def rename_pack(self, ctx, packname):
         """Rename a data pack"""
         directory = await self.config.main_path()
-        oldfile = os.path.join(directory, current_name)
-        newfile = os.path.join(directory, new_name)
+        file = os.path.join(directory, packname)
 
-        if os.path.exists(oldfile):
+        if os.path.exists(file):
             try:
-                os.rename(oldfile, newfile)
-                return await ctx.send(f"`{current_name}` pack renamed to `{new_name}`")
+                os.remove(file)
+                return await ctx.send(f"`{packname}` removed.")
             except Exception as e:
-                return await ctx.send(f"Failed to rename file!\nError: {e}")
+                return await ctx.send(f"Failed to delete datapack!\nError: {e}")
         else:
             return await ctx.send("File not found!")
+
+    @_file.command(name="copyplayerdata")
+    async def copy_player_data(self, ctx, clustername, source_xuid, destination_xuid):
+        """
+        Copy a players ark data to your own.
+
+        useful for checking other players data for various reasons
+        """
+        clusters = await self.config.clusters()
+        # check if clustername exists
+        if clustername not in clusters:
+            clist = ""
+            for clustername in clusters:
+                clist += f"`{clustername}`\n"
+            embed = discord.Embed(
+                description=f"Invalid clustername, try one of these instead:\n"
+                            f"{clist}",
+                color=discord.Color.orange()
+            )
+            return await ctx.send(embed=embed)
+
+        directory = clusters[clustername]
+        source = os.path.join(directory, source_xuid)
+        target = os.path.join(directory, destination_xuid)
+
+        # check source file
+        if not os.path.exists(source):
+            embed = discord.Embed(
+                description="Source file does not exist!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+
+        # check if target already exists
+        if os.path.exists(target):
+            os.remove(target)
+
+        shutil.copyfile(source, target)
+        embed = discord.Embed(
+            description=f"Player data from `{source_xuid}` copied to `{destination_xuid}`",
+            color=discord.Color.blue()
+        )
+        return await ctx.send(embed=embed)
+
+    @_file.command(name="delete")
+    async def delete_pack(self, ctx, current_name, new_name):
+        """Delete a data pack"""
 
     @_datashopset.command(name="addcategory")
     async def add_category(self, ctx, shop_name):
