@@ -187,6 +187,8 @@ class ArkShop(commands.Cog):
         Pack name will be the actual file name and xuid is your xuid
         """
         destination_dir = await self.config.main_path()
+        item_destination = os.path.join(destination_dir, packname)
+
         clusters = await self.config.clusters()
 
         # check if clustername exists
@@ -198,39 +200,27 @@ class ArkShop(commands.Cog):
                                   f"{clist}")
 
         source_dir = clusters[clustername]
+        item_source_file = os.path.join(source_dir, xuid)
 
-        # check source path
+        # check source dir
         if not os.path.exists(source_dir):
-            embed = discord.Embed(
-                description=f"Source path does not exist!",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
+            return await ctx.send("Source path does not exist!")
 
-        # check destination path
+        # check destination dir
         if not os.path.exists(destination_dir):
-            embed = discord.Embed(
-                description=f"Destination path does not exist!",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
+            return await ctx.send("Destination path does not exist!")
 
-        item_destination = os.path.join(destination_dir, packname)
-
-        # remove any existing data from destination
+        # move/replace pack
         if os.path.exists(item_destination):
             try:
-                os.remove(item_destination)
-            except PermissionError:
-                embed = discord.Embed(
-                    description=f"Failed to clean source file!\n",
-                    color=discord.Color.red()
-                )
-                return await ctx.send(embed=embed)
-
-        item_source_file = os.path.join(source_dir, xuid)
-        shutil.copyfile(item_source_file, item_destination)
-        return await ctx.send(f"Pack uploaded and saved as `{packname}`")
+                os.replace(item_source_file, item_destination)
+                os.remove(item_source_file)
+                return await ctx.send(f"Pack uploaded and overwritten as `{packname}`")
+            except Exception as e:
+                return await ctx.send(f"Data upload failed!\nError: {e}")
+        else:
+            shutil.move(item_source_file, item_destination)
+            return await ctx.send(f"Pack uploaded and saved as `{packname}`")
 
     @_file.command(name="check")
     async def check_player_data(self, ctx, clustername, xuid):
@@ -272,6 +262,46 @@ class ArkShop(commands.Cog):
             color=discord.Color.blue()
         )
         return await ctx.send(embed=embed)
+
+    @_file.command(name="send")
+    async def send_pack(self, ctx, clustername, packname, xuid):
+        """Send a data pack to a player manually"""
+        source_dir = await self.config.main_path()
+        item_source_file = os.path.join(source_dir, packname)
+
+        clusters = await self.config.clusters()
+
+        # check if clustername exists
+        if clustername not in clusters:
+            clist = ""
+            for clustername in clusters:
+                clist += f"`{clustername}`\n"
+            return await ctx.send(f"Invalid clustername, try one of these instead:\n"
+                                  f"{clist}")
+
+        destination_dir = clusters[clustername]
+        item_destination = os.path.join(destination_dir, xuid)
+
+        # check source dir
+        if not os.path.exists(source_dir):
+            return await ctx.send("Source path does not exist!")
+
+        # check destination dir
+        if not os.path.exists(destination_dir):
+            return await ctx.send("Destination path does not exist!")
+
+        # remove any existing data from destination
+        if os.path.exists(item_destination):
+            try:
+                os.replace(item_source_file, item_destination)
+                return await ctx.send(f"Pack sent to XUID: `{xuid}`")
+            except Exception as e:
+                return await ctx.send(f"Data send failed!\nError: {e}")
+
+        else:
+            shutil.copyfile(item_source_file, item_destination)
+            return await ctx.send(f"Pack sent to XUID: `{xuid}`")
+
 
 
     @_datashopset.command(name="addcategory")
