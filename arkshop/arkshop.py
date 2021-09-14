@@ -183,9 +183,10 @@ class ArkShop(commands.Cog):
     @_file.command(name="upload")
     async def upload_pack(self, ctx, clustername, packname, xuid):
         """
-        Upload a pre-made pack from your ark data.
+        Upload/Create a pre-made pack from your ark data.
 
         Pack name will be the actual file name and xuid is your xuid
+        If the pack name already exists, it will be overwritten by the new pack
         """
         destination_dir = await self.config.main_path()
         item_destination = os.path.join(destination_dir, packname)
@@ -331,17 +332,18 @@ class ArkShop(commands.Cog):
             await ctx.send(box(p, lang="python"))
 
     @_file.command(name="rename")
-    async def rename_pack(self, ctx, packname):
+    async def rename_pack(self, ctx, current_name, new_name):
         """Rename a data pack"""
         directory = await self.config.main_path()
-        file = os.path.join(directory, packname)
+        oldfile = os.path.join(directory, current_name)
+        newfile = os.path.join(directory, new_name)
 
-        if os.path.exists(file):
+        if os.path.exists(oldfile):
             try:
-                os.remove(file)
-                return await ctx.send(f"`{packname}` removed.")
+                os.rename(oldfile, newfile)
+                return await ctx.send(f"`{current_name}` pack renamed to `{new_name}`")
             except Exception as e:
-                return await ctx.send(f"Failed to delete datapack!\nError: {e}")
+                return await ctx.send(f"Failed to rename file!\nError: {e}")
         else:
             return await ctx.send("File not found!")
 
@@ -389,8 +391,20 @@ class ArkShop(commands.Cog):
         return await ctx.send(embed=embed)
 
     @_file.command(name="delete")
-    async def delete_pack(self, ctx, current_name, new_name):
+    async def delete_pack(self, ctx, packname):
         """Delete a data pack"""
+        directory = await self.config.main_path()
+        file = os.path.join(directory, packname)
+
+        if os.path.exists(file):
+            try:
+                os.remove(file)
+                return await ctx.send(f"`{packname}` removed.")
+            except Exception as e:
+                return await ctx.send(f"Failed to delete datapack!\nError: {e}")
+        else:
+            return await ctx.send("File not found!")
+
 
     @_datashopset.command(name="addcategory")
     async def add_category(self, ctx, shop_name):
