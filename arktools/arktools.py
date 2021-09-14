@@ -29,7 +29,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.8.41"
+    __version__ = "1.8.42"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -929,7 +929,7 @@ class ArkTools(commands.Cog):
                 embed = discord.Embed(
                     title="Playtime Leaderboard",
                     description=f"Global Cumulative Playtime: `{globaldays}d {globalhours}h {globalminutes}m`\n\n"
-                                f"**Top Players by Playtime** - `{len(sorted_players)} Total`\n",
+                                f"**Top Players by Playtime** - `{len(sorted_players)} in Database`\n",
                     color=discord.Color.random()
                 )
                 embed.set_thumbnail(url=ctx.guild.icon_url)
@@ -1090,7 +1090,7 @@ class ArkTools(commands.Cog):
             name = map[0]
             time = map[1]
             d, h, m = await self.time_formatter(time)
-            mstats += f"**{count}. {name.upper()}**\n" \
+            mstats += f"**{count}. {name.upper()}** - `{len(t[map].keys())} Players in Database`\n" \
                       f"Total Time Played: `{d}d {h}h {m}m`\n" \
                       f"Top Player: `{max_p}` - `{md}d {mh}h {mm}m`\n\n"
             count += 1
