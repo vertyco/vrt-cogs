@@ -273,6 +273,7 @@ class ArkShop(commands.Cog):
         )
         return await ctx.send(embed=embed)
 
+
     @_datashopset.command(name="addcategory")
     async def add_category(self, ctx, shop_name):
         """Add a data shop category"""
