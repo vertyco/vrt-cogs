@@ -1438,7 +1438,7 @@ class ArkShop(commands.Cog):
 
         while True:
             try:
-                reaction, user = await self.bot.wait_for(["reaction_add" or "reaction_remove"], timeout=60, check=check)
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
 
                 if str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
                     cur_page += 1
@@ -1449,7 +1449,7 @@ class ArkShop(commands.Cog):
                         embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
                                                              f"Make sure you are ONLINE when purchasing from the RCON shop!")
                     await message.edit(embed=embeds[cur_page - 1])
-                    await asyncio.sleep(0.1)
+                    await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "◀️" and cur_page > 1:
                     cur_page -= 1
@@ -1460,11 +1460,12 @@ class ArkShop(commands.Cog):
                         embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
                                                              f"Make sure you are ONLINE when purchasing from the RCON shop!")
                     await message.edit(embed=embeds[cur_page - 1])
-                    await asyncio.sleep(0.1)
+                    await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "1️⃣":
                     name = embeds[cur_page - 1].fields[0].name
                     name = name.split(' ', 1)[-1]
+                    await message.remove_reaction(reaction, user)
                     if type == "category":
                         return await self.item_compiler(ctx, message, name, xuid, cname)
                     if type == "item":
@@ -1481,6 +1482,7 @@ class ArkShop(commands.Cog):
                 elif str(reaction.emoji) == "2️⃣" and len(embeds[cur_page - 1].fields) > 1:
                     name = embeds[cur_page - 1].fields[1].name
                     name = name.split(' ', 1)[-1]
+                    await message.remove_reaction(reaction, user)
                     if type == "category":
                         return await self.item_compiler(ctx, message, name, xuid, cname)
                     if type == "item":
@@ -1497,6 +1499,7 @@ class ArkShop(commands.Cog):
                 elif str(reaction.emoji) == "3️⃣" and len(embeds[cur_page - 1].fields) > 2:
                     name = embeds[cur_page - 1].fields[2].name
                     name = name.split(' ', 1)[-1]
+                    await message.remove_reaction(reaction, user)
                     if type == "category":
                         return await self.item_compiler(ctx, message, name, xuid, cname)
                     if type == "item":
@@ -1513,6 +1516,7 @@ class ArkShop(commands.Cog):
                 elif str(reaction.emoji) == "4️⃣" and len(embeds[cur_page - 1].fields) > 3:
                     name = embeds[cur_page - 1].fields[3].name
                     name = name.split(' ', 1)[-1]
+                    await message.remove_reaction(reaction, user)
                     if type == "category":
                         return await self.item_compiler(ctx, message, name, xuid, cname)
                     if type == "item":
@@ -1533,6 +1537,7 @@ class ArkShop(commands.Cog):
                 elif str(reaction.emoji) == "↩️":
                     name = embeds[cur_page - 1].fields[0].name
                     oname = name.split(' ', 1)[-1]
+                    await message.remove_reaction(reaction, user)
                     if type == "item":
                         return await self.category_compiler(ctx, xuid, cname, message)
                     if type == "rconitem":
