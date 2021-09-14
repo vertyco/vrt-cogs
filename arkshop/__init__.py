@@ -1,7 +1,7 @@
 from .arkshop import ArkShop
 
 ___red_end_user_data_statement__ = (
-    "WIP"
+    "This cog stores player XUID's and Discord ID's."
 )
 
 
