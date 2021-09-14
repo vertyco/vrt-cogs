@@ -303,6 +303,18 @@ class ArkShop(commands.Cog):
             shutil.copyfile(item_source_file, item_destination)
             return await ctx.send(f"Pack sent to XUID: `{xuid}`")
 
+    @_file.command(name="listpacks")
+    async def send_pack(self, ctx):
+        """List all data packs in the main path"""
+        path = await self.config.main_path()
+        packs = os.listdir(path)
+        packlist = "```py\n"
+        for pack in packs:
+            fullpath = os.path.join(path, pack)
+            size = os.path.getsize(fullpath)
+            packlist += f"`{pack}: {size}b`\n"
+        packlist += "```"
+        return await ctx.send(packlist)
 
 
     @_datashopset.command(name="addcategory")
