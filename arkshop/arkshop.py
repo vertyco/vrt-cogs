@@ -1294,7 +1294,7 @@ class ArkShop(commands.Cog):
                     else:
                         price = xshop[category]["items"][item]["price"]
                         shops[category][item] = {"price": price, "options": {}}
-            await ctx.send("Config imported from Papi's shit cog successfully!")
+            await ctx.send("Finished importing the config from Papi's absolute fucking dumpster fire of a cog")
 
     @commands.command(name="dshoplist")
     async def data_status(self, ctx):
