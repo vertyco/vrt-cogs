@@ -1691,6 +1691,10 @@ class ArkTools(commands.Cog):
     # Message listener to detect channel message is sent in and sends ServerChat command to designated server
     @commands.Cog.listener("on_message")
     async def chat_toserver(self, message: discord.Message):
+
+        if not message.guild:
+            return
+
         if not message:
             return
 
