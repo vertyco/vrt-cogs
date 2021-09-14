@@ -2064,19 +2064,31 @@ class ArkTools(commands.Cog):
                                                 allowed_mentions=mentions)
                             self.alerts[channel] += 1
                             continue
+
+                        # try refreshing loops at 10 min mark
+                        elif count == 10:
+                            self.chat_executor.cancel()
+                            self.playerlist_executor.cancel()
+                            await asyncio.sleep(5)
+                            self.chat_executor.start()
+                            self.playerlist_executor.start()
+                            log.info("Refreshing RCON loops for playerlist executor")
+                            self.alerts[channel] += 1
+                            continue
                         else:
                             self.alerts[channel] += 1
                             continue
 
-                    if playercount is []:
+                    elif playercount is []:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
                         if count > 0:
                             self.alerts[channel] = 0
                         continue
 
-                    playercount = len(playercount)
-                    clustertotal += playercount
-                    totalplayers += playercount
+                    else:
+                        playercount = len(playercount)
+                        clustertotal += playercount
+                        totalplayers += playercount
                     if playercount == 1:
                         status += f"{guild.get_channel(channel).mention}: {playercount} player\n"
                     else:
