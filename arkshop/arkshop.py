@@ -1159,14 +1159,24 @@ class ArkShop(commands.Cog):
 
                 if str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
                     cur_page += 1
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    if type in ["category", "opiton", "item"]:
+                        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
+                                                             f"Remember to empty your Ark data before purchasing from the Data Shop!")
+                    if type in ["rconcategory", "rconopiton", "rconitem"]:
+                        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
+                                                             f"Make sure you are ONLINE when purchasing from the RCON shop!")
                     await message.edit(embed=embeds[cur_page - 1])
                     await asyncio.sleep(0.1)
                     await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "◀️" and cur_page > 1:
                     cur_page -= 1
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+                    if type in ["category", "opiton", "item"]:
+                        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
+                                                             f"Remember to empty your Ark data before purchasing from the Data Shop!")
+                    if type in ["rconcategory", "rconopiton", "rconitem"]:
+                        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
+                                                             f"Make sure you are ONLINE when purchasing from the RCON shop!")
                     await message.edit(embed=embeds[cur_page - 1])
                     await asyncio.sleep(0.1)
                     await message.remove_reaction(reaction, user)
