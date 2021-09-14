@@ -305,8 +305,8 @@ class ArkShop(commands.Cog):
             return await ctx.send(f"Pack sent to XUID: `{xuid}`")
 
     @_file.command(name="listpacks")
-    async def send_pack(self, ctx):
-        """List all data packs in the main path"""
+    async def list_packs(self, ctx):
+        """List all data packs in the main path as well as their file size"""
         path = await self.config.main_path()
         packs = os.listdir(path)
         packlist = "NAME - SIZE IN BYTES\n"
@@ -318,6 +318,21 @@ class ArkShop(commands.Cog):
         for p in pagify(packlist):
             await ctx.send(box(p, lang="python"))
 
+    @_file.command(name="rename")
+    async def rename_pack(self, ctx, current_name, new_name):
+        """Rename a data pack"""
+        directory = await self.config.main_path()
+        oldfile = os.path.join(directory, current_name)
+        newfile = os.path.join(directory, new_name)
+
+        if os.path.exists(oldfile):
+            try:
+                os.rename(oldfile, newfile)
+                return await ctx.send(f"`{current_name}` pack renamed to `{new_name}`")
+            except Exception as e:
+                return await ctx.send(f"Failed to rename file!\nError: {e}")
+        else:
+            return await ctx.send("File not found!")
 
     @_datashopset.command(name="addcategory")
     async def add_category(self, ctx, shop_name):
