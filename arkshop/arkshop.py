@@ -9,6 +9,7 @@ from redbot.core import commands, Config, bank
 import rcon
 
 import logging
+
 log = logging.getLogger("red.vrt.arkshop")
 
 SELECTORS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
@@ -20,7 +21,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -46,7 +47,6 @@ class ArkShop(commands.Cog):
         }
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
-
 
     @commands.group(name="shopset")
     @commands.admin()
@@ -76,6 +76,40 @@ class ArkShop(commands.Cog):
     @commands.is_owner()
     async def _datashopset(self, ctx):
         """Base Data Shop Setup Command"""
+        check = await self.config.main_server()
+        # check if main server has been set
+        if check is None:
+            embed = discord.Embed(
+                title="Main Server Not Set",
+                description="The Data Shop portion of this cog needs a main server set by the bot owner.",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+        # check if command was used in main server
+        elif check != ctx.guild.id:
+            embed = discord.Embed(
+                title="Not Main Server",
+                description="This feature can only be used on the main bot owner server!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+        else:
+            pass
+
+    @_shopset.group(name="file")
+    @commands.is_owner()
+    async def _file(self, ctx):
+        """
+        Manage and create data packs for use in the data shop
+
+        To create a pack follow these steps:
+        1. Make the pack in-game manually, put what you want in the pack in your ark data.
+        2. Upload the pack with the `upload` subcommand. (pack name will be the actual file and shop name). This will
+        move the file from the cluster folder into the "MainPath" folder you set the cog to.
+        3. Add the item to the data shop, make sure the item(or option name if item has options) is the exact same name
+        as the file name.
+        3. For other management tools, see the commands below.
+        """
         check = await self.config.main_server()
         # check if main server has been set
         if check is None:
@@ -144,6 +178,99 @@ class ArkShop(commands.Cog):
                     return await ctx.send(f"{cluster_name} cluster deleted!")
             else:
                 return await ctx.send(f"Cluster name `{cluster_name}` not found!")
+
+    @_file.command(name="upload")
+    async def upload_pack(self, ctx, clustername, packname, xuid):
+        """
+        Upload a pre-made pack from your ark data.
+
+        Pack name will be the actual file name and xuid is your xuid
+        """
+        destination_dir = await self.config.main_path()
+        clusters = await self.config.clusters()
+
+        # check if clustername exists
+        if clustername not in clusters:
+            clist = ""
+            for clustername in clusters:
+                clist += f"`{clustername}`\n"
+            return await ctx.send(f"Invalid clustername, try one of these instead:\n"
+                                  f"{clist}")
+
+        source_dir = clusters[clustername]
+
+        # check source path
+        if not os.path.exists(source_dir):
+            embed = discord.Embed(
+                description=f"Source path does not exist!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+
+        # check destination path
+        if not os.path.exists(destination_dir):
+            embed = discord.Embed(
+                description=f"Destination path does not exist!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+
+        item_destination = os.path.join(destination_dir, packname)
+
+        # remove any existing data from destination
+        if os.path.exists(item_destination):
+            try:
+                os.remove(item_destination)
+            except PermissionError:
+                embed = discord.Embed(
+                    description=f"Failed to clean source file!\n",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
+
+        item_source_file = os.path.join(source_dir, xuid)
+        shutil.copyfile(item_source_file, item_destination)
+        return await ctx.send(f"Pack uploaded and saved as `{packname}`")
+
+    @_file.command(name="check")
+    async def check_player_data(self, ctx, clustername, xuid):
+        """
+        Check a player's in-game data to see if there is anything in it
+
+        If file size is anything other than 0, then there is something in their data.
+        """
+        clusters = await self.config.clusters()
+
+        # check if clustername exists
+        if clustername not in clusters:
+            clist = ""
+            for clustername in clusters:
+                clist += f"`{clustername}`\n"
+            return await ctx.send(f"Invalid clustername, try one of these instead:\n"
+                                  f"{clist}")
+
+        source_dir = clusters[clustername]
+        if not os.path.exists(source_dir):
+            embed = discord.Embed(
+                description=f"Cluster path does not exist!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+
+        player_data_file = os.path.join(source_dir, xuid)
+        if not os.path.exists(player_data_file):
+            embed = discord.Embed(
+                description=f"Player has no data saved.",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+
+        size = os.path.getsize(player_data_file)
+        embed = discord.Embed(
+            description=f"Player data size: `{size} bytes`",
+            color=discord.Color.red()
+        )
+        return await ctx.send(embed=embed)
 
     @_datashopset.command(name="addcategory")
     async def add_category(self, ctx, shop_name):
@@ -258,11 +385,9 @@ class ArkShop(commands.Cog):
         """Set a cluster for the data shop so the cog knows where to send your data"""
         arktools = self.bot.get_cog("ArkTools")
         clusters = await arktools.config.guild(ctx.guild).clusters()
-        cpaths = await self.config.clusters()
         clist = ""
         for clustername in clusters:
-            if clustername in cpaths:
-                clist += f"`{clustername}`\n"
+            clist += f"`{clustername}`\n"
 
         embed = discord.Embed(
             description=f"**Type one of the cluster names below.**\n"
@@ -1389,31 +1514,3 @@ class ArkShop(commands.Cog):
                     return await message.clear_reactions()
                 except discord.NotFound:
                     return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
