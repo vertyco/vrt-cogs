@@ -4,7 +4,6 @@ import math
 import shutil
 import os
 
-from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config, bank
 
 import rcon
