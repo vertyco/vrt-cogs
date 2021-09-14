@@ -35,7 +35,9 @@ class Inspire(commands.Cog):
 
         if message.author.bot:
             return
-        msg = message.content.lower().split()
+
+        # msg = message.content.lower().split()
+
         sad_words = [
             "sad",
             "depressed",
@@ -59,7 +61,13 @@ class Inspire(commands.Cog):
             "I know you can do this!"
         ]
 
-        if any(w in msg for w in sad_words):
-            await message.channel.send(random.choice(starter_encouragements))
+        for word in sad_words:
+            if word in message.content.lower():
+                return await message.channel.send(random.choice(starter_encouragements))
         else:
             return
+
+        # if any(w in msg for w in sad_words):
+        #     await message.channel.send(random.choice(starter_encouragements))
+        # else:
+        #     return
