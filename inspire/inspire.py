@@ -4,6 +4,7 @@ import json
 import random
 import discord
 
+
 class Inspire(commands.Cog):
     """Get Inspiring Messages"""
 
@@ -23,10 +24,6 @@ class Inspire(commands.Cog):
             data = await resp.json(content_type=None)
             quote = data[0]['q'] + " - " + data[0]['a']
             return quote
-
-
-
-
 
     @commands.command()
     async def inspire(self, ctx):
@@ -64,3 +61,5 @@ class Inspire(commands.Cog):
 
         if any(w in msg for w in sad_words):
             await message.channel.send(random.choice(starter_encouragements))
+        else:
+            return
