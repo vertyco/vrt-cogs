@@ -261,14 +261,15 @@ class ArkShop(commands.Cog):
         if not os.path.exists(player_data_file):
             embed = discord.Embed(
                 description=f"Player has no data saved.",
-                color=discord.Color.red()
+                color=discord.Color.blue()
             )
             return await ctx.send(embed=embed)
 
         size = os.path.getsize(player_data_file)
+        size = "{:,}".format(int(size))
         embed = discord.Embed(
             description=f"Player data size: `{size} bytes`",
-            color=discord.Color.red()
+            color=discord.Color.blue()
         )
         return await ctx.send(embed=embed)
 
