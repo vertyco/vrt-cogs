@@ -1320,6 +1320,30 @@ class ArkShop(commands.Cog):
             )
             await ctx.send(embed=embed)
 
+    @commands.command(name="rshoplist")
+    async def rcon_status(self, ctx):
+        """List all items in the rcon shop"""
+        shops = await self.config.guild(ctx.guild).shops()
+
+        for category in shops:
+            category_items = ""
+            for item in shops[category]:
+                if shops[category][item]["options"] == {}:
+                    price = shops[category][item]["price"]
+                    category_items += f"🔸 {item}: `{price}`\n"
+                else:
+                    category_items += f"🔸 {item}\n```py\n"
+                    for k, v in shops[category][item]["options"].items():
+                        price = v
+                        option = k
+                        category_items += f"• {option}: {price}\n"
+                    category_items += "```"
+            embed = discord.Embed(
+                title=f"🔰 {category}",
+                description=f"{category_items}"
+            )
+            await ctx.send(embed=embed)
+
 
 
 
