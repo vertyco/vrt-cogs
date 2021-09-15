@@ -1038,7 +1038,6 @@ class ArkShop(commands.Cog):
             color=discord.Color.green()
         )
         embed.set_thumbnail(url=SHOP_ICON)
-        await message.clear_reactions()
         await message.edit(embed=embed)
 
         logchannel = await self.config.guild(ctx.guild).logchannel()
