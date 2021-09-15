@@ -847,11 +847,17 @@ class ArkShop(commands.Cog):
         else:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory", message)
 
-    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname):
+    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname, oname=None):
         categories = await self.config.guild(ctx.guild).shops()
-
-        category = categories[category_name]
-
+        category = {}
+        if category_name:
+            category = categories[category_name]
+        else:
+            for catname in categories:
+                for item in categories[catname]:
+                    if oname in categories[catname][item]["options"]:
+                        category = categories[catname]
+                        break
 
         # how many items
         item_count = len(category.keys())
@@ -924,11 +930,11 @@ class ArkShop(commands.Cog):
                     break
         options = full_item["options"]
         price = full_item["price"]
+        paths = full_item["paths"]
 
         # if item has no options
         if price and not options:
-            await message.clear_reactions()
-            return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message)
+            return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
 
         # go back to menu if item contains options
         else:
@@ -984,7 +990,7 @@ class ArkShop(commands.Cog):
             embedlist.append(embed)
             start += 4
             stop += 4
-        return await self.shop_menu(ctx, xuid, cname, embedlist, "rconoption", message, category)
+        return await self.shop_menu(ctx, xuid, cname, embedlist, "rconoption", message, name)
 
     async def rcon_option_path_finder(self, ctx, message, name, xuid, cname, itemname):
         categories = await self.config.guild(ctx.guild).shops()
@@ -1338,7 +1344,7 @@ class ArkShop(commands.Cog):
             embedlist.append(embed)
             start += 4
             stop += 4
-        return await self.shop_menu(ctx, xuid, cname, embedlist, "option", message)
+        return await self.shop_menu(ctx, xuid, cname, embedlist, "option", message, name)
 
     async def option_path_finder(self, ctx, message, name, xuid, cname):
         categories = await self.config.datashops()
@@ -1430,7 +1436,7 @@ class ArkShop(commands.Cog):
                 logs["users"][ctx.author.id][name]["count"] += 1
             return
 
-    async def shop_menu(self, ctx, xuid, cname, embeds, type, message=None, itemname=None):
+    async def shop_menu(self, ctx, xuid, cname, embeds, type, message=None, altname=None):
         pages = len(embeds)
         cur_page = 1
         if type in ["category", "opiton", "item"]:
@@ -1499,7 +1505,7 @@ class ArkShop(commands.Cog):
                     if type == "rconitem":
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
-                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, itemname)
+                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "2️⃣" and len(embeds[cur_page - 1].fields) > 1:
                     name = embeds[cur_page - 1].fields[1].name
@@ -1516,7 +1522,7 @@ class ArkShop(commands.Cog):
                     if type == "rconitem":
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
-                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, itemname)
+                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "3️⃣" and len(embeds[cur_page - 1].fields) > 2:
                     name = embeds[cur_page - 1].fields[2].name
@@ -1533,7 +1539,7 @@ class ArkShop(commands.Cog):
                     if type == "rconitem":
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
-                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, itemname)
+                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "4️⃣" and len(embeds[cur_page - 1].fields) > 3:
                     name = embeds[cur_page - 1].fields[3].name
@@ -1550,7 +1556,7 @@ class ArkShop(commands.Cog):
                     if type == "rconitem":
                         return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
                     if type == "rconoption":
-                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, itemname)
+                        return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "❌":
                     await message.clear_reactions()
@@ -1565,9 +1571,9 @@ class ArkShop(commands.Cog):
                     if type == "rconitem":
                         return await self.rcon_category_compiler(ctx, xuid, cname, message)
                     if type == "option":
-                        return await self.item_compiler(ctx, message, None, xuid, cname, oname)
+                        return await self.item_compiler(ctx, message, None, xuid, cname, altname)
                     if type == "rconoption":
-                        return await self.rcon_item_compiler(ctx, message, itemname, xuid, cname)
+                        return await self.rcon_item_compiler(ctx, message, None, xuid, cname, altname)
 
                 else:
                     await message.remove_reaction(reaction, user)
