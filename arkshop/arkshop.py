@@ -1078,7 +1078,7 @@ class ArkShop(commands.Cog):
                 logs["items"][name]["count"] += 1
 
             # individual user logs
-            if ctx.author.id not in logs["users"]:
+            if str(ctx.author.id) not in logs["users"]:
                 logs["users"][ctx.author.id] = {}
             if name not in logs["users"][ctx.author.id]:
                 logs["users"][ctx.author.id][name] = {"type": "rcon", "count": 1}
@@ -1432,7 +1432,7 @@ class ArkShop(commands.Cog):
                 logs["items"][name]["count"] += 1
 
             # individual user logs
-            if ctx.author.id not in logs["users"]:
+            if str(ctx.author.id) not in logs["users"]:
                 logs["users"][ctx.author.id] = {}
             if name not in logs["users"][ctx.author.id]:
                 logs["users"][ctx.author.id][name] = {"type": "data", "count": 1}
