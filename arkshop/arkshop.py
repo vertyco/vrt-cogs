@@ -814,7 +814,7 @@ class ArkShop(commands.Cog):
         return await self.paginate(ctx, embeds)
 
     @commands.command(name="playershopstats")
-    async def player_shop_stats(self, ctx, member: discord.member):
+    async def player_shop_stats(self, ctx, member: discord.Member = None):
         """Get yours or another members shop stats"""
         logs = await self.config.guild(ctx.guild).logs()
         if not member:
