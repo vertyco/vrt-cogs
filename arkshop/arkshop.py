@@ -805,13 +805,39 @@ class ArkShop(commands.Cog):
                 did = sorted_items[i][0]
                 member = self.bot.get_user(int(did))
                 purchases = sorted_items[i][1]
-                items += f"**{member.name}**: `{purchases} purchased`\n"
+                items += f"**{member.name}**: `{purchases} purchases`\n"
             embed = discord.Embed(
                 title="Item Purchases",
                 description=items
             )
             embeds.append(embed)
         return await self.paginate(ctx, embeds)
+
+    @commands.command(name="myshopstats")
+    async def player_shop_stats(self, ctx, member: discord.member = None):
+        """Get yours or another members shop stats"""
+        logs = await self.config.guild(ctx.guild).logs()
+        if not member:
+            for user in logs["users"]:
+                if str(ctx.author.id) == user:
+                    member = ctx.author
+                    break
+            else:
+                return await ctx.send("It appears you haven't purchased anything yet.")
+
+        if str(member.id) not in logs["users"]:
+            return await ctx.send("It appears you haven't purchased anything yet.")
+
+        items = ""
+        for item in logs["users"][str(member.id)]:
+            itemtype = logs["users"][str(member.id)][item]["type"]
+            count = logs["users"][str(member.id)][item]["count"]
+            items += f"**{item}**\nType: `{itemtype}`\nPurchased: `{count}`\n\n"
+        embed = discord.Embed(
+            title=f"Shop stats for {member.name}",
+            description=items
+        )
+        return await ctx.send(embed=embed)
 
     @commands.command(name="rconshop")
     async def _rconshop(self, ctx):
