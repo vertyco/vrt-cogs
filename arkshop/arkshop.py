@@ -981,6 +981,7 @@ class ArkShop(commands.Cog):
                         price = categories[category][item]["options"][option]["price"]
                         paths = categories[category][item]["options"][option]["paths"]
                         break
+        await ctx.send(price)
         return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
 
     async def make_rcon_purchase(self, ctx, name, xuid, price, cname, message, paths):
