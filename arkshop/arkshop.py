@@ -749,6 +749,16 @@ class ArkShop(commands.Cog):
         return xuid
 
     # USER COMMANDS
+    @commands.command(name="shoplb")
+    async def shop_leaderboard(self, ctx):
+        """Get leaderboard for most items bought"""
+        pass
+
+    @commands.command(name="shopstats")
+    async def shop_stats(self, ctx):
+        """Get ordered list of items purchased"""
+        pass
+
     @commands.command(name="rconshop")
     async def _rconshop(self, ctx):
         """
@@ -982,7 +992,7 @@ class ArkShop(commands.Cog):
                     break
 
         await ctx.send(price)
-        return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
+        return await self.make_rcon_purchase(ctx, itemname, xuid, price, cname, message, paths)
 
     async def make_rcon_purchase(self, ctx, name, xuid, price, cname, message, paths):
         # check if user can afford the item
