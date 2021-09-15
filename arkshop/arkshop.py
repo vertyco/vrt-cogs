@@ -803,7 +803,7 @@ class ArkShop(commands.Cog):
             items = ""
             for i in range(start, stop, 1):
                 did = sorted_items[i][0]
-                member = ctx.guild.get_user(did)
+                member = self.bot.get_user(int(did))
                 purchases = sorted_items[i][1]
                 items += f"**{member.name}**: `{purchases} purchased`\n"
             embed = discord.Embed(
