@@ -749,9 +749,9 @@ class ArkShop(commands.Cog):
         return xuid
 
     # USER COMMANDS
-    @commands.command(name="shoplb")
-    async def shop_leaderboard(self, ctx):
-        """Get leaderboard for most items bought"""
+    @commands.command(name="shopstats")
+    async def shop_stats(self, ctx):
+        """Get ordered list of items purchased"""
         logs = await self.config.guild(ctx.guild).logs()
 
         shop_logs = {}
@@ -771,18 +771,47 @@ class ArkShop(commands.Cog):
             for i in range(start, stop, 1):
                 name = sorted_items[i][0]
                 purchases = sorted_items[i][1]
-                items += f"**{name}**: `{purchases} purchases`\n"
+                items += f"**{name}**: `{purchases} purchased`\n"
             embed = discord.Embed(
-                title="Shop Leaderboard",
+                title="Item Purchases",
                 description=items
             )
             embeds.append(embed)
         return await self.paginate(ctx, embeds)
 
-    @commands.command(name="shopstats")
-    async def shop_stats(self, ctx):
-        """Get ordered list of items purchased"""
-        pass
+    @commands.command(name="shoplb")
+    async def shop_leaderboard(self, ctx):
+        """"Get user leaderboard for most items bought"""
+        logs = await self.config.guild(ctx.guild).logs()
+
+        shop_logs = {}
+        for user_id in logs["users"]:
+            count = 0
+            for item in logs["users"][user_id]:
+                purchased = logs["users"][user_id][item]["count"]
+                count += purchased
+            shop_logs[user_id] = count
+
+        sorted_items = sorted(shop_logs.items(), key=lambda x: x[1], reverse=True)
+        pages = math.ceil(len(sorted_items) / 10)
+        embeds = []
+        start = 0
+        stop = 10
+        for page in range(int(pages)):
+            if stop > len(sorted_items):
+                stop = len(sorted_items)
+            items = ""
+            for i in range(start, stop, 1):
+                did = sorted_items[i][0]
+                member = ctx.guild.get_user(did)
+                purchases = sorted_items[i][1]
+                items += f"**{member.name}**: `{purchases} purchased`\n"
+            embed = discord.Embed(
+                title="Item Purchases",
+                description=items
+            )
+            embeds.append(embed)
+        return await self.paginate(ctx, embeds)
 
     @commands.command(name="rconshop")
     async def _rconshop(self, ctx):
