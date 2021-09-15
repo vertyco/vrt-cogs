@@ -1081,7 +1081,8 @@ class ArkShop(commands.Cog):
             if str(ctx.author.id) not in logs["users"]:
                 print("user not in logs!")
                 logs["users"][ctx.author.id] = {}
-            if name not in logs["users"][ctx.author.id]:
+            print(logs["users"])
+            if name not in logs["users"][str(ctx.author.id)]:
                 logs["users"][ctx.author.id][name] = {"type": "rcon", "count": 1}
             else:
                 logs["users"][ctx.author.id][name]["count"] += 1
