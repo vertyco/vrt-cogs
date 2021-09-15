@@ -847,17 +847,17 @@ class ArkShop(commands.Cog):
         else:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory", message)
 
-    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname, oname=None):
+    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname, altname=None):
         categories = await self.config.guild(ctx.guild).shops()
         category = {}
-        if category_name:
-            category = categories[category_name]
-        else:
-            for catname in categories:
-                for item in categories[catname]:
-                    if oname in categories[catname][item]["options"]:
-                        category = categories[catname]
+        if altname:
+            for cat in categories:
+                for item in categories[cat]:
+                    if altname == item:
+                        category = categories[cat]
                         break
+        else:
+            category = categories[category_name]
 
         # how many items
         item_count = len(category.keys())
@@ -1200,17 +1200,17 @@ class ArkShop(commands.Cog):
         else:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "category", message)
 
-    async def item_compiler(self, ctx, message, category_name, xuid, cname, oname=None):
+    async def item_compiler(self, ctx, message, category_name, xuid, cname, altname=None):
         categories = await self.config.datashops()
         category = {}
-        if category_name:
-            category = categories[category_name]
-        else:
-            for catname in categories:
-                for item in categories[catname]:
-                    if oname in categories[catname][item]["options"]:
-                        category = categories[catname]
+        if altname:
+            for cat in categories:
+                for item in categories[cat]:
+                    if altname == item:
+                        category = categories[cat]
                         break
+        else:
+            category = categories[category_name]
 
         # how many items
         item_count = len(category.keys())
