@@ -978,7 +978,9 @@ class ArkShop(commands.Cog):
             for item in categories[category]:
                 for option in categories[category][item]["options"]:
                     if name == option:
+                        await ctx.send(name)
                         price = categories[category][item]["options"][option]["price"]
+                        await ctx.send(price)
                         paths = categories[category][item]["options"][option]["paths"]
                         break
         await ctx.send(price)
