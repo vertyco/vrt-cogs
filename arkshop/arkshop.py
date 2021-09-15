@@ -1062,18 +1062,14 @@ class ArkShop(commands.Cog):
         async with self.config.guild(ctx.guild).logs() as logs:
             if name not in logs["items"]:
                 logs["items"][name] = {"type": "rcon", "count": 1}
-            else:
-                if logs["items"][name]["type"] == "rcon":
-                    logs["items"][name]["count"] += 1
+            logs["items"][name]["count"] += 1
 
             if ctx.author.id not in logs["users"]:
                 logs["users"][ctx.author.id] = {}
 
             if name not in logs["users"][ctx.author.id]:
                 logs["users"][ctx.author.id][name] = {"type": "rcon", "count": 1}
-            else:
-                if logs["users"][ctx.author.id][name]["type"] == "rcon":
-                    logs["users"][ctx.author.id][name]["count"] += 1
+            logs["users"][ctx.author.id][name]["count"] += 1
             return
 
     async def rcon(self, server, command):
@@ -1405,18 +1401,14 @@ class ArkShop(commands.Cog):
         async with self.config.guild(ctx.guild).logs() as logs:
             if name not in logs["items"]:
                 logs["items"][name] = {"type": "data", "count": 1}
-            else:
-                if logs["items"][name]["type"] == "data":
-                    logs["items"][name]["count"] += 1
+            logs["items"][name]["count"] += 1
 
             if ctx.author.id not in logs["users"]:
                 logs["users"][ctx.author.id] = {}
 
             if name not in logs["users"][ctx.author.id]:
                 logs["users"][ctx.author.id][name] = {"type": "data", "count": 1}
-            else:
-                if logs["users"][ctx.author.id][name]["type"] == "data":
-                    logs["users"][ctx.author.id][name]["count"] += 1
+            logs["users"][ctx.author.id][name]["count"] += 1
             return
 
     async def shop_menu(self, ctx, xuid, cname, embeds, type, message=None, itemname=None):
