@@ -824,9 +824,9 @@ class ArkShop(commands.Cog):
                     break
             else:
                 return await ctx.send("It appears you haven't purchased anything yet.")
-        print(member)
+
         if str(member.id) not in logs["users"]:
-            return await ctx.send("It appears you haven't purchased anything yet.")
+            return await ctx.send("It appears that player hasn't purchased anything yet.")
 
         items = ""
         for item in logs["users"][str(member.id)]:
