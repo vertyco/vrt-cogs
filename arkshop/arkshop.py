@@ -768,6 +768,9 @@ class ArkShop(commands.Cog):
         """Get ordered list of items purchased"""
         logs = await self.config.guild(ctx.guild).logs()
 
+        if logs["items"] == {}:
+            return await ctx.send("No logs yet!")
+
         shop_logs = {}
         for item in logs["items"]:
             count = logs["items"][item]["count"]
@@ -797,6 +800,9 @@ class ArkShop(commands.Cog):
     async def shop_leaderboard(self, ctx):
         """"Get user leaderboard for most items bought"""
         logs = await self.config.guild(ctx.guild).logs()
+
+        if logs["users"] == {}:
+            return await ctx.send("No logs yet!")
 
         shop_logs = {}
         for user_id in logs["users"]:
