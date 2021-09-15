@@ -813,7 +813,7 @@ class ArkShop(commands.Cog):
             embeds.append(embed)
         return await self.paginate(ctx, embeds)
 
-    @commands.command(name="myshopstats")
+    @commands.command(name="playershopstats")
     async def player_shop_stats(self, ctx, member: discord.member = None):
         """Get yours or another members shop stats"""
         logs = await self.config.guild(ctx.guild).logs()
@@ -824,7 +824,7 @@ class ArkShop(commands.Cog):
                     break
             else:
                 return await ctx.send("It appears you haven't purchased anything yet.")
-
+        print(member)
         if str(member.id) not in logs["users"]:
             return await ctx.send("It appears you haven't purchased anything yet.")
 
