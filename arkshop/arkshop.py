@@ -847,17 +847,11 @@ class ArkShop(commands.Cog):
         else:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory", message)
 
-    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname, oname=None):
+    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname):
         categories = await self.config.guild(ctx.guild).shops()
-        category = {}
-        if category_name:
-            category = categories[category_name]
-        else:
-            for catname in categories:
-                for item in categories[catname]:
-                    if oname in categories[catname][item]["options"]:
-                        category = categories[catname]
-                        break
+
+        category = categories[category_name]
+
 
         # how many items
         item_count = len(category.keys())
@@ -938,47 +932,59 @@ class ArkShop(commands.Cog):
 
         # go back to menu if item contains options
         else:
-            # how many options
-            option_count = len(options.keys())
+            return await self.rcon_option_compiler(ctx, message, name, xuid, cname)
 
-            # how many pages
-            pages = math.ceil(option_count / 4)
+    async def rcon_option_compiler(self, ctx, message, name, xuid, cname):
+        categories = await self.config.guild(ctx.guild).shops()
+        full_item = {}
+        for category in categories:
+            for item in categories[category]:
+                if name == item:
+                    full_item = categories[category][name]
+                    break
+        options = full_item["options"]
 
-            # option info setup
-            optionlist = []
-            for option in options:
-                option_price = options[option]["price"]
-                optionlist.append((option, option_price))
+        # how many options
+        option_count = len(options.keys())
 
-            # sort that bitch
-            optionlist = sorted(optionlist, key=lambda x: x[0])
+        # how many pages
+        pages = math.ceil(option_count / 4)
 
-            # menu setup
-            start = 0
-            stop = 4
-            embedlist = []
-            for page in range(int(pages)):
-                embed = discord.Embed(
-                    title="RCON Shop",
-                    description=f"{name} options"
+        # option info setup
+        optionlist = []
+        for option in options:
+            option_price = options[option]["price"]
+            optionlist.append((option, option_price))
+
+        # sort that bitch
+        optionlist = sorted(optionlist, key=lambda x: x[0])
+
+        # menu setup
+        start = 0
+        stop = 4
+        embedlist = []
+        for page in range(int(pages)):
+            embed = discord.Embed(
+                title="RCON Shop",
+                description=f"{name} options"
+            )
+            embed.set_thumbnail(url=SHOP_ICON)
+            count = 0
+            if stop > len(optionlist):
+                stop = len(optionlist)
+            for i in range(start, stop, 1):
+                oname = optionlist[i][0]
+                oprice = optionlist[i][1]
+                embed.add_field(
+                    name=f"{SELECTORS[count]} {oname}",
+                    value=f"Price: {oprice}",
+                    inline=False
                 )
-                embed.set_thumbnail(url=SHOP_ICON)
-                count = 0
-                if stop > len(optionlist):
-                    stop = len(optionlist)
-                for i in range(start, stop, 1):
-                    oname = optionlist[i][0]
-                    oprice = optionlist[i][1]
-                    embed.add_field(
-                        name=f"{SELECTORS[count]} {oname}",
-                        value=f"Price: {oprice}",
-                        inline=False
-                    )
-                    count += 1
-                embedlist.append(embed)
-                start += 4
-                stop += 4
-            return await self.shop_menu(ctx, xuid, cname, embedlist, "rconoption", message, name)
+                count += 1
+            embedlist.append(embed)
+            start += 4
+            stop += 4
+        return await self.shop_menu(ctx, xuid, cname, embedlist, "rconoption", message, category)
 
     async def rcon_option_path_finder(self, ctx, message, name, xuid, cname, itemname):
         categories = await self.config.guild(ctx.guild).shops()
@@ -1279,48 +1285,60 @@ class ArkShop(commands.Cog):
 
         # go back to menu if item contains options
         else:
-            # how many options
-            option_count = len(options.keys())
+            return await self.option_compiler(ctx, message, name, xuid, cname)
 
-            # how many pages
-            pages = math.ceil(option_count / 4)
+    async def option_compiler(self, ctx, message, name, xuid, cname):
+        categories = await self.config.datashops()
+        full_item = {}
+        for category in categories:
+            for item in categories[category]:
+                if name == item:
+                    full_item = categories[category][name]
+                    break
+        options = full_item["options"]
 
-            # option info setup
-            optionlist = []
-            for key, value in options.items():
-                option_name = key
-                option_price = value
-                optionlist.append((option_name, option_price))
+        # how many options
+        option_count = len(options.keys())
 
-            # sort that bitch
-            optionlist = sorted(optionlist, key=lambda x: x[0])
+        # how many pages
+        pages = math.ceil(option_count / 4)
 
-            # menu setup
-            start = 0
-            stop = 4
-            embedlist = []
-            for page in range(int(pages)):
-                embed = discord.Embed(
-                    title="Data Shop",
-                    description=f"{name} options"
+        # option info setup
+        optionlist = []
+        for key, value in options.items():
+            option_name = key
+            option_price = value
+            optionlist.append((option_name, option_price))
+
+        # sort that bitch
+        optionlist = sorted(optionlist, key=lambda x: x[0])
+
+        # menu setup
+        start = 0
+        stop = 4
+        embedlist = []
+        for page in range(int(pages)):
+            embed = discord.Embed(
+                title="Data Shop",
+                description=f"{name} options"
+            )
+            embed.set_thumbnail(url=SHOP_ICON)
+            count = 0
+            if stop > len(optionlist):
+                stop = len(optionlist)
+            for i in range(start, stop, 1):
+                oname = optionlist[i][0]
+                oprice = optionlist[i][1]
+                embed.add_field(
+                    name=f"{SELECTORS[count]} {oname}",
+                    value=f"Price: {oprice}",
+                    inline=False
                 )
-                embed.set_thumbnail(url=SHOP_ICON)
-                count = 0
-                if stop > len(optionlist):
-                    stop = len(optionlist)
-                for i in range(start, stop, 1):
-                    oname = optionlist[i][0]
-                    oprice = optionlist[i][1]
-                    embed.add_field(
-                        name=f"{SELECTORS[count]} {oname}",
-                        value=f"Price: {oprice}",
-                        inline=False
-                    )
-                    count += 1
-                embedlist.append(embed)
-                start += 4
-                stop += 4
-            return await self.shop_menu(ctx, xuid, cname, embedlist, "option", message)
+                count += 1
+            embedlist.append(embed)
+            start += 4
+            stop += 4
+        return await self.shop_menu(ctx, xuid, cname, embedlist, "option", message)
 
     async def option_path_finder(self, ctx, message, name, xuid, cname):
         categories = await self.config.datashops()
@@ -1549,7 +1567,7 @@ class ArkShop(commands.Cog):
                     if type == "option":
                         return await self.item_compiler(ctx, message, None, xuid, cname, oname)
                     if type == "rconoption":
-                        return await self.rcon_item_compiler(ctx, message, None, xuid, cname, oname)
+                        return await self.rcon_item_compiler(ctx, message, itemname, xuid, cname)
 
                 else:
                     await message.remove_reaction(reaction, user)
