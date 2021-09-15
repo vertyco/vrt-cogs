@@ -151,12 +151,10 @@ class ArkShop(commands.Cog):
         async with self.config.guild(ctx.guild).logs() as logs:
 
             # wipe item logs
-            for item in logs["items"]:
-                del logs["items"][item]
+            logs["items"].clear()
 
             # wipe user logs
-            for user in logs["users"]:
-                del logs["users"][user]
+            logs["users"].clear()
 
             return await ctx.send("All logs wiped!")
 
