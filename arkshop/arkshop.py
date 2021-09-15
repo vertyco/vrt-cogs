@@ -1079,9 +1079,7 @@ class ArkShop(commands.Cog):
 
             # individual user logs
             if str(ctx.author.id) not in logs["users"]:
-                print("user not in logs!")
                 logs["users"][ctx.author.id] = {}
-            print(logs["users"])
             if name not in logs["users"][str(ctx.author.id)]:
                 logs["users"][str(ctx.author.id)][name] = {"type": "rcon", "count": 1}
             else:
@@ -1435,11 +1433,11 @@ class ArkShop(commands.Cog):
 
             # individual user logs
             if str(ctx.author.id) not in logs["users"]:
-                logs["users"][ctx.author.id] = {}
-            if name not in logs["users"][ctx.author.id]:
-                logs["users"][ctx.author.id][name] = {"type": "data", "count": 1}
+                logs["users"][str(ctx.author.id)] = {}
+            if name not in logs["users"][str(ctx.author.id)]:
+                logs["users"][str(ctx.author.id)][name] = {"type": "data", "count": 1}
             else:
-                logs["users"][ctx.author.id][name]["count"] += 1
+                logs["users"][str(ctx.author.id)][name]["count"] += 1
             return
 
     async def shop_menu(self, ctx, xuid, cname, embeds, type, message=None, altname=None):
