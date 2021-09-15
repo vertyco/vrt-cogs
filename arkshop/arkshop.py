@@ -978,7 +978,6 @@ class ArkShop(commands.Cog):
             for item in categories[category]:
                 if itemname == item:
                     price = categories[category][item]["options"][name]["price"]
-                    print(price)
                     paths = categories[category][item]["options"][name]["paths"]
                     break
 
