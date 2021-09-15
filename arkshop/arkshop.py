@@ -144,6 +144,22 @@ class ArkShop(commands.Cog):
         await self.config.guild(ctx.guild).logchannel.set(channel.id)
         await ctx.send(f"Log channle set to {channel.mention}")
 
+    @_shopset.command(name="wipelogs")
+    @commands.guildowner()
+    async def wipe_logs(self, ctx):
+        """Wipe shop logs/user logs"""
+        async with self.config.guild(ctx.guild).logs() as logs:
+
+            # wipe item logs
+            for item in logs["items"]:
+                del logs["items"][item]
+
+            # wipe user logs
+            for user in logs["users"]:
+                del logs["users"][user]
+
+            return await ctx.send("All logs wiped!")
+
     @_datashopset.command(name="mainpath")
     async def set_main_path(self, ctx, *, path):
         """Set main path for Data Pack folder"""
