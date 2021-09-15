@@ -1002,6 +1002,8 @@ class ArkShop(commands.Cog):
         for server in clusters[cname]["servers"]:
             serverlist.append(clusters[cname]["servers"][server])
 
+        await message.clear_reactions()
+
         # ask for implant ID
         embed = discord.Embed(
             description=f"**Type your implant ID below.**\n",
