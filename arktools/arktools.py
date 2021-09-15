@@ -753,8 +753,6 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername not in clusters:
                 return await ctx.send(f"The cluster {clustername} does not exist!")
-            elif servername not in clusters[clustername]["servers"]:
-                return await ctx.send(f"The server {servername} does not exist!")
             elif servername in clusters[clustername]["servers"].keys():
                 await ctx.send(f"The **{servername}** server was **overwritten** in the **{clustername}** cluster!")
             elif servername not in clusters[clustername]["servers"].keys():
