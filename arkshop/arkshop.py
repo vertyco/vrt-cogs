@@ -837,6 +837,10 @@ class ArkShop(commands.Cog):
     async def player_shop_stats(self, ctx, member: discord.Member = None):
         """Get yours or another members shop stats"""
         logs = await self.config.guild(ctx.guild).logs()
+
+        if logs["users"] == {}:
+            return await ctx.send("No purchase history yet!")
+
         if not member:
             for user in logs["users"]:
                 if str(ctx.author.id) == user:
