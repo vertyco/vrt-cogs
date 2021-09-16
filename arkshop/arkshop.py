@@ -1205,7 +1205,8 @@ class ArkShop(commands.Cog):
             if member not in logs["users"]:
                 logs["users"][member] = {}
 
-            if name not in logs["users"][member].keys():
+            if str(name) not in logs["users"][member].keys():
+                print(logs["users"][member])
                 print("item doesnt exist")
                 logs["users"][member][name] = {"type": "rcon", "count": 1}
 
