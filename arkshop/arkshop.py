@@ -1202,7 +1202,7 @@ class ArkShop(commands.Cog):
                 logs["items"][name]["count"] += 1
 
             # individual user logs
-            user = logs["users"].get(member)
+            user = logs["users"].get(str(member))
             if not user:
                 print(f"USER NOT EXIST: {member}")
                 logs["users"][member] = {}
