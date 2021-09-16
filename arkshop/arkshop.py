@@ -810,7 +810,6 @@ class ArkShop(commands.Cog):
                 title="Item Purchases",
                 description=items
             )
-            embed.set_footer(text=random.choice(TIPS))
             embeds.append(embed)
         return await self.paginate(ctx, embeds)
 
@@ -848,7 +847,6 @@ class ArkShop(commands.Cog):
                 title="Item Purchases",
                 description=items
             )
-            embed.set_footer(text=random.choice(TIPS))
             embeds.append(embed)
         return await self.paginate(ctx, embeds)
 
@@ -880,7 +878,6 @@ class ArkShop(commands.Cog):
             title=f"Shop stats for {member.name}",
             description=items
         )
-        embed.set_footer(text=random.choice(TIPS))
         return await ctx.send(embed=embed)
 
     @commands.command(name="rshop")
@@ -1802,7 +1799,8 @@ class ArkShop(commands.Cog):
     async def paginate(self, ctx, embeds):
         pages = len(embeds)
         cur_page = 1
-        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
+        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
+                                             f"{random.choice(TIPS)}")
 
         message = await ctx.send(embed=embeds[cur_page - 1])
 
