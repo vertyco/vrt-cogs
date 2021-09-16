@@ -23,7 +23,7 @@ TIPS = [
     "Tip: The rshoplist command shows an overview of all RCON shop categories and items!",
     "Tip: The dshoplist command shows an overview of all DATA shop categories and items!",
     "Tip: The playershopstats command shows shop stats for a particular member, or yourself!",
-    "Tip: You can use the playerstats command to view playtime stats for a specific player, or yourself!!",
+    "Tip: You can use the playerstats command to view playtime stats for a specific player, or yourself!",
     "Tip: You can use the clusterstats command to view the top player on each cluster!",
     "Tip: You can use the mapstats command to view stats for a specific map!",
     "Tip: You can use the arklb command to view a global playtime leaderboard for all maps!",
