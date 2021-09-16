@@ -1503,6 +1503,7 @@ class ArkShop(commands.Cog):
         clusters = await self.config.clusters()
         dest_directory = clusters[cname]
         currency_name = await bank.get_currency_name(ctx.guild)
+        await message.clear_reactions()
         if not await bank.can_spend(ctx.author, int(price)):
             await message.clear_reactions()
             embed = discord.Embed(
@@ -1513,7 +1514,6 @@ class ArkShop(commands.Cog):
 
         # check source path
         if not os.path.exists(source_directory):
-            await message.clear_reactions()
             embed = discord.Embed(
                 description=f"Source path does not exist!",
                 color=discord.Color.red()
@@ -1522,7 +1522,6 @@ class ArkShop(commands.Cog):
 
         # check destination path
         if not os.path.exists(dest_directory):
-            await message.clear_reactions()
             embed = discord.Embed(
                 description=f"Destination path does not exist!",
                 color=discord.Color.red()
@@ -1560,7 +1559,6 @@ class ArkShop(commands.Cog):
             try:
                 os.remove(destination)
             except PermissionError:
-                await message.clear_reactions()
                 embed = discord.Embed(
                     description=f"Failed to clean source file!\n",
                     color=discord.Color.red()
@@ -1577,7 +1575,6 @@ class ArkShop(commands.Cog):
         )
         embed.set_footer(text=random.choice(TIPS))
         embed.set_thumbnail(url=SHOP_ICON)
-        await message.clear_reactions()
         await message.edit(embed=embed)
 
         logchannel = await self.config.guild(ctx.guild).logchannel()
