@@ -810,6 +810,7 @@ class ArkShop(commands.Cog):
                 title="Item Purchases",
                 description=items
             )
+            embed.set_footer(text=random.choice(TIPS))
             embeds.append(embed)
         return await self.paginate(ctx, embeds)
 
@@ -847,6 +848,7 @@ class ArkShop(commands.Cog):
                 title="Item Purchases",
                 description=items
             )
+            embed.set_footer(text=random.choice(TIPS))
             embeds.append(embed)
         return await self.paginate(ctx, embeds)
 
@@ -878,6 +880,7 @@ class ArkShop(commands.Cog):
             title=f"Shop stats for {member.name}",
             description=items
         )
+        embed.set_footer(text=random.choice(TIPS))
         return await ctx.send(embed=embed)
 
     @commands.command(name="rshop")
