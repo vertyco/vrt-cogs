@@ -1150,6 +1150,7 @@ class ArkShop(commands.Cog):
             description=f"**Type your implant ID below.**\n",
             color=discord.Color.blue()
         )
+        embed.set_footer(text="Type 'cancel' to cancel the purchase.")
         embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
         await message.edit(embed=embed)
 
@@ -1160,6 +1161,15 @@ class ArkShop(commands.Cog):
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
             return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        if reply.content.lower() == "cancel":
+            embed = discord.Embed(
+                description=f"**Purchase cancelled.**\n",
+                color=discord.Color.blue()
+            )
+            embed.set_footer(text=random.choice(TIPS))
+            embed.set_thumbnail(url=SHOP_ICON)
+            return await message.edit(embed=embed)
 
         commandlist = []
         for path in paths:
@@ -1501,6 +1511,7 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await message.edit(embed=embed)
+
         # check source path
         if not os.path.exists(source_directory):
             await message.clear_reactions()
@@ -1517,6 +1528,31 @@ class ArkShop(commands.Cog):
                 description=f"Destination path does not exist!",
                 color=discord.Color.red()
             )
+            return await message.edit(embed=embed)
+
+        # last check to make sure user still wants to buy item
+        embed = discord.Embed(
+            description=f"**Are you sure you want to purchase the {name} item?**\n"
+                        f"Type 'yes' or 'no'",
+            color=discord.Color.blue()
+        )
+        await message.edit(embed=embed)
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        if reply.content.lower() == "no" or reply.content.lower() == "cancel":
+            embed = discord.Embed(
+                description=f"**Purchase cancelled.**\n",
+                color=discord.Color.blue()
+            )
+            embed.set_footer(text=random.choice(TIPS))
+            embed.set_thumbnail(url=SHOP_ICON)
             return await message.edit(embed=embed)
 
         destination = os.path.join(dest_directory, xuid)
