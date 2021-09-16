@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import random
 import math
 import shutil
 import os
@@ -15,6 +16,18 @@ log = logging.getLogger("red.vrt.arkshop")
 
 SELECTORS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 SHOP_ICON = "https://i.imgur.com/iYpszMO.jpg"
+
+TIPS = [
+    "Tip: The shopstats command shows how many items have been purchased!",
+    "Tip: The shoplb command shows the shop leaderboard for the server!",
+    "Tip: The rshoplist command shows an overview of all RCON shop categories and items!",
+    "Tip: The dshoplist command shows an overview of all DATA shop categories and items!",
+    "Tip: The playershopstats command shows shop stats for a particular member, or yourself!",
+    "Tip: You can use the playerstats command to view playtime stats for a specific player, or yourself!!",
+    "Tip: You can use the clusterstats command to view the top player on each cluster!",
+    "Tip: You can use the mapstats command to view stats for a specific map!",
+    "Tip: You can use the arklb command to view a global playtime leaderboard for all maps!",
+]
 
 
 class ArkShop(commands.Cog):
@@ -1161,6 +1174,7 @@ class ArkShop(commands.Cog):
             description=f"You have purchased the {name} item for {price} {currency_name}!",
             color=discord.Color.green()
         )
+        embed.set_footer(text=random.choice(TIPS))
         embed.set_thumbnail(url=SHOP_ICON)
         await message.edit(embed=embed)
 
@@ -1517,9 +1531,12 @@ class ArkShop(commands.Cog):
         shutil.copyfile(item_source_file, destination)
         await bank.withdraw_credits(ctx.author, int(price))
         embed = discord.Embed(
-            description=f"You have purchased the {name} item for {price} {currency_name}!",
+            description=f"You have purchased the {name} item for {price} {currency_name}!\n"
+                        f"**Make sure to wait 30 seconds before accessing your Ark data!**",
             color=discord.Color.green()
         )
+        embed.set_footer(text=random.choice(TIPS))
+        embed.set_thumbnail(url=SHOP_ICON)
         await message.clear_reactions()
         await message.edit(embed=embed)
 

@@ -900,7 +900,7 @@ class ArkTools(commands.Cog):
 
     # PLAYER STAT COMMANDS
     # Get the top 10 players in the cluster, browse pages to see them all
-    @_setarktools.command(name="leaderboard")
+    @commands.command(name="arklb")
     async def _leaderboard(self, ctx):
         """
         View time played leaderboard
@@ -1028,7 +1028,7 @@ class ArkTools(commands.Cog):
                     return
 
     # Get a specific player's stats
-    @_setarktools.command(name="playerstats", aliases=["pstats, stats"])
+    @commands.command(name="playerstats", aliases=["pstats, stats"])
     async def _playerstats(self, ctx, *, gamertag):
         """View stats for a Gamertag"""
         stats = await self.config.guild(ctx.guild).playerstats()
@@ -1061,7 +1061,7 @@ class ArkTools(commands.Cog):
         await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
 
     # Get stats for all maps in a cluster showing top player for each map
-    @_setarktools.command(name="clusterstats")
+    @commands.command(name="clusterstats")
     async def _clusterstats(self, ctx):
         """View statistics for all servers"""
         stats = await self.config.guild(ctx.guild).playerstats()
@@ -1100,7 +1100,7 @@ class ArkTools(commands.Cog):
         await ctx.send(embed=embed)
 
     # Get stats by map, shows everyone in a selected map
-    @_setarktools.command(name="mapstats")
+    @commands.command(name="mapstats")
     async def _mapstats(self, ctx):
         """View stats for a particular server"""
         map_options, serverlist = await self.enumerate_maps_all(ctx)
