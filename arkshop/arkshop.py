@@ -1168,7 +1168,6 @@ class ArkShop(commands.Cog):
                 color=discord.Color.blue()
             )
             embed.set_footer(text=random.choice(TIPS))
-            embed.set_thumbnail(url=SHOP_ICON)
             return await message.edit(embed=embed)
 
         commandlist = []
@@ -1533,7 +1532,7 @@ class ArkShop(commands.Cog):
         # last check to make sure user still wants to buy item
         embed = discord.Embed(
             description=f"**Are you sure you want to purchase the {name} item?**\n"
-                        f"Type 'yes' or 'no'",
+                        f"Type **yes** or **no**",
             color=discord.Color.blue()
         )
         await message.edit(embed=embed)
@@ -1552,7 +1551,6 @@ class ArkShop(commands.Cog):
                 color=discord.Color.blue()
             )
             embed.set_footer(text=random.choice(TIPS))
-            embed.set_thumbnail(url=SHOP_ICON)
             return await message.edit(embed=embed)
 
         destination = os.path.join(dest_directory, xuid)
