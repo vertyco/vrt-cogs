@@ -876,7 +876,7 @@ class ArkShop(commands.Cog):
         )
         return await ctx.send(embed=embed)
 
-    @commands.command(name="rconshop")
+    @commands.command(name="rshop")
     async def _rconshop(self, ctx):
         """
         Open up the rcon shop
