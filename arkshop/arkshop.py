@@ -1204,17 +1204,13 @@ class ArkShop(commands.Cog):
             # individual user logs
             user = logs["users"].get(member)
             if not user:
-                print(f"USER NOT EXIST: {member}")
                 logs["users"][member] = {}
 
             item = logs["users"][member].get(name)
             if not item:
-                print(logs["users"][member])
-                print("item doesnt exist")
                 logs["users"][member][name] = {"type": "rcon", "count": 1}
 
             else:
-                print("item exists!")
                 logs["users"][member][name]["count"] += 1
 
             return
@@ -1561,7 +1557,7 @@ class ArkShop(commands.Cog):
         await logchannel.send(embed=embed)
 
         async with self.config.guild(ctx.guild).logs() as logs:
-            member = int(ctx.author.id)
+            member = str(ctx.author.id)
 
             # shop logs
             if name not in logs["items"]:
@@ -1570,10 +1566,12 @@ class ArkShop(commands.Cog):
                 logs["items"][name]["count"] += 1
 
             # individual user logs
-            if member not in logs["users"]:
+            user = logs["users"].get(member)
+            if not user:
                 logs["users"][member] = {}
 
-            if name not in logs["users"][member]:
+            item = logs["users"][member].get(name)
+            if not item:
                 logs["users"][member][name] = {"type": "data", "count": 1}
 
             else:
