@@ -568,7 +568,11 @@ class ArkShop(commands.Cog):
 
     @commands.command(name="setcluster")
     async def set_cluster(self, ctx):
-        """Set a cluster for the data shop so the cog knows where to send your data"""
+        """
+        Set the cluster you play on
+
+        This is so the cog knows where to send your data
+        """
         arktools = self.bot.get_cog("ArkTools")
         clusters = await arktools.config.guild(ctx.guild).clusters()
         clist = ""
@@ -778,7 +782,7 @@ class ArkShop(commands.Cog):
     # USER COMMANDS
     @commands.command(name="shopstats")
     async def shop_stats(self, ctx):
-        """Get ordered list of items purchased"""
+        """View all items purchased from all shops"""
         logs = await self.config.guild(ctx.guild).logs()
 
         if logs["items"] == {}:
@@ -811,7 +815,7 @@ class ArkShop(commands.Cog):
 
     @commands.command(name="shoplb")
     async def shop_leaderboard(self, ctx):
-        """"Get user leaderboard for most items bought"""
+        """Open the shop leaderboard"""
         logs = await self.config.guild(ctx.guild).logs()
 
         if logs["users"] == {}:
@@ -848,7 +852,7 @@ class ArkShop(commands.Cog):
 
     @commands.command(name="playershopstats")
     async def player_shop_stats(self, ctx, member: discord.Member = None):
-        """Get yours or another members shop stats"""
+        """Get a member's shop stats, or yours"""
         logs = await self.config.guild(ctx.guild).logs()
 
         if logs["users"] == {}:
