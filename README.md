@@ -1,7 +1,7 @@
 # vrt-cogs
-Various utility/fun cogs for Red V3.
+Various utility/random cogs for Red V3.
 
-I enjoy working on utility cogs for game servers and other use cases.
+I enjoy working with API's and making cogs for game servers or other helpful use cases. Check out some of my projects below!
 
 | Cog | Status | Description |
 |---|:---:|---|
