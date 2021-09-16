@@ -1167,7 +1167,7 @@ class ArkShop(commands.Cog):
         logchannel = await self.config.guild(ctx.guild).logchannel()
         logchannel = ctx.guild.get_channel(logchannel)
         embed = discord.Embed(
-            title="DATA Purchase",
+            title="RCON Purchase",
             description=f"**{ctx.author.name}** has purchased the {name} item.\n"
                         f"**Price:** {price} {currency_name}\n"
                         f"**XUID:** {xuid}"
@@ -1526,7 +1526,7 @@ class ArkShop(commands.Cog):
         logchannel = await self.config.guild(ctx.guild).logchannel()
         logchannel = ctx.guild.get_channel(logchannel)
         embed = discord.Embed(
-            title="RCON Purchase",
+            title="DATA Purchase",
             description=f"**{ctx.author.name}** has purchased the {name} item.\n"
                         f"**Price:** {price} {currency_name}\n"
                         f"**XUID:** {xuid}"
