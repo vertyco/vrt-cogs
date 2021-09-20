@@ -29,7 +29,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.8.42"
+    __version__ = "1.8.43"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -379,11 +379,13 @@ class ArkTools(commands.Cog):
             async with self.config.guild(ctx.guild).playerstats() as stats:
                 current_time = datetime.datetime.utcnow()
                 for name in stats:
-                    if reply.content in stats[name]["xuid"] and ctx.author.id == stats[name]["discord"]:
-                        embed = discord.Embed(
-                            description="You are already in the system 👍"
-                        )
-                        return await ctx.send(embed=embed)
+                    if reply.content in stats[name]["xuid"]:
+                        if "discord" in stats[name]:
+                            if str(ctx.author.id) in stats[name]["discord"]:
+                                embed = discord.Embed(
+                                    description="You are already in the system 👍"
+                                )
+                                return await ctx.send(embed=embed)
                 else:
                     sid = reply.content
                     embed = discord.Embed(
