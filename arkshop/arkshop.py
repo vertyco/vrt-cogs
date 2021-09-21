@@ -890,9 +890,9 @@ class ArkShop(commands.Cog):
 
         embed = discord.Embed(
             title=f"Shop stats for {member.name}",
-            description=f"Registered Cluster: {users[str(member.id)]}\n"
-                        f"Gamertag: {gt}\n"
-                        f"XUID: {xuid}\n"
+            description=f"**Registered Cluster:** `{users[str(member.id)].upper()}`\n"
+                        f"**Gamertag:** `{gt}`\n"
+                        f"**XUID:** `{xuid}`\n\n"
                         f"{items}"
         )
         return await ctx.send(embed=embed)
