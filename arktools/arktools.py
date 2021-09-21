@@ -1806,7 +1806,7 @@ class ArkTools(commands.Cog):
 
     # For the Discord join log
     def checkplayerjoin(self, channel, newplayerlist):
-        if newplayerlist:
+        if newplayerlist is not None:
             for player in newplayerlist:
                 if player not in self.playerlist[channel]:
                     return player
