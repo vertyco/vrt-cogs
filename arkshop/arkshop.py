@@ -880,9 +880,9 @@ class ArkShop(commands.Cog):
 
         for player in playerstats:
             if "discord" in playerstats[player]:
-                if str(member.id) == str(playerstats["discord"]):
+                if str(member.id) == str(playerstats[player]["discord"]):
                     gt = player
-                    xuid = playerstats["xuid"]
+                    xuid = playerstats[player]["xuid"]
                     break
         else:
             gt = "Unknown"
