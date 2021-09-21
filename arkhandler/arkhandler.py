@@ -1,20 +1,19 @@
-# Create a webhook for the discord channel this rig hosts and pase it below in the quotes.
-import win32con
-
-WEBHOOK_URL = ""
-
-
-"""DO NOT CHANGE ANYTHING BELOW THIS LINE"""
 import psutil
 import os
 import asyncio
 import win32gui
 import win32api
+import win32con
 import win32evtlog
 import datetime
+import requests
+import configparser
+import colorama
+import shutil
 
+from colorama import Fore
+from pywinauto.application import Application
 from pymouse import PyMouse
-from time import sleep
 
 TEAMVIEWER = (0.59562272, 0.537674419)
 START = (0.49975574, 0.863596872)
@@ -23,31 +22,88 @@ RUN = (0.497313141, 0.748913988)
 ACCEPT1 = (0.424035173, 0.544743701)
 ACCEPT2 = (0.564240352, 0.67593397)
 
+user = os.environ['USERPROFILE']
+appdata = "\\AppData\\Local\\Packages\\StudioWildcard.4558480580BB9_1w2mm55455e38\\LocalState\\Saved\\UWPConfig\\UWP"
+TARGET = f"{user}{appdata}"
+
 UPDATING = False
+INSTALLING = False
+RUNNING = False
 TIMESTAMP = ""
+LOGO = """
+                _    _    _                 _ _           
+     /\        | |  | |  | |               | | |          
+    /  \   _ __| | _| |__| | __ _ _ __   __| | | ___ _ __ 
+   / /\ \ | '__| |/ /  __  |/ _` | '_ \ / _` | |/ _ \ '__|
+  / ____ \| |  |   <| |  | | (_| | | | | (_| | |  __/ |   
+ /_/    \_\_|  |_|\_\_|  |_|\__,_|_| |_|\__,_|_|\___|_|   
+                                                          
+                                                          
+  ___       __   __       _               
+ | _ )_  _  \ \ / /__ _ _| |_ _  _ __ ___ 
+ | _ \ || |  \ V / -_) '_|  _| || / _/ _ \\
+ |___/\_, |   \_/\___|_|  \__|\_, \__\___/
+      |__/                    |__/        
+"""
+colorama.init()
+print(Fore.GREEN + LOGO)
 
 
 async def watchdog():
     """Check every 30 seconds if Ark is running, and start the server if it is not."""
+    global RUNNING
     if "ShooterGame.exe" in (p.name() for p in psutil.process_iter()):
-        print("Ark is Running!")
+        if not RUNNING:
+            print(Fore.GREEN + "Ark is Running.")
+            RUNNING = True
     else:
+        RUNNING = False
         if not UPDATING:
-            print("Ark is not Running! Starting now...")
+            print(Fore.RED + "Ark is not Running! Beginning reboot sequence...")
+            await asyncio.sleep(1)
+            # sync Game.ini file
+            if GAME_SOURCE != "":
+                if os.path.exists(GAME_SOURCE) and os.path.exists(TARGET):
+                    s_file = os.path.join(GAME_SOURCE, "Game.ini")
+                    t_file = os.path.join(TARGET, "Game.ini")
+                    try:
+                        os.remove(t_file)
+                        shutil.copyfile(s_file, t_file)
+                        print(Fore.CYAN + "Game.ini synced.")
+                    except Exception as ex:
+                        print(Fore.RED + f"Failed to sync Game.ini\nError: {ex}")
+
+            # sync GameUserSettings.ini file
+            if GAMEUSERSETTINGS_SOURCE != "":
+                if os.path.exists(GAMEUSERSETTINGS_SOURCE) and os.path.exists(TARGET):
+                    s_file = os.path.join(GAMEUSERSETTINGS_SOURCE, "GameUserSettings.ini")
+                    t_file = os.path.join(TARGET, "GameUserSettings.ini")
+                    try:
+                        os.remove(t_file)
+                        shutil.copyfile(s_file, t_file)
+                        print(Fore.CYAN + "GameUserSettings.ini synced.")
+                    except Exception as ex:
+                        print(Fore.RED + f"Failed to sync GameUserSettings.ini\nError: {ex}")
+
             await calc_position_click(TEAMVIEWER)
-            sleep(1)
+            await asyncio.sleep(1)
             os.system("explorer.exe shell:appsFolder\StudioWildcard.4558480580BB9_1w2mm55455e38!AppARKSurvivalEvolved")
-            sleep(12)
+            await asyncio.sleep(12)
             await calc_position_click(START)
-            sleep(6)
+            await asyncio.sleep(5)
             await calc_position_click(HOST)
-            sleep(3)
+            await asyncio.sleep(2)
             await calc_position_click(RUN)
-            sleep(1)
+            await asyncio.sleep(0.5)
             await calc_position_click(ACCEPT1)
-            sleep(1)
+            await asyncio.sleep(0.5)
             await calc_position_click(ACCEPT2)
-            print(f"Ark has been started!")
+            await asyncio.sleep(8)
+            print(Fore.MAGENTA)
+            os.system("net stop LicenseManager")
+            await asyncio.sleep(5)
+            await send_hook("Reboot Complete", "Server should be back online shortly.", 65314)
+            return
 
 
 async def calc_position_click(clicktype):
@@ -83,7 +139,6 @@ async def calc_position_click(clicktype):
     # get click positions
     x_click = right * x
     y_click = bottom * y
-    # print(f"Click: x = {x_click}, y = {y_click}")
 
     # click dat shit
     mouse = PyMouse()
@@ -91,58 +146,152 @@ async def calc_position_click(clicktype):
     mouse.click(int(x_click), int(y_click))
 
 
-async def event_watcher():
+async def event_puller():
     """Gets most recent update event for ark and determines how recent it was"""
     server = 'localhost'
     logtype = 'System'
     hand = win32evtlog.OpenEventLog(server, logtype)
     flags = win32evtlog.EVENTLOG_SEQUENTIAL_READ | win32evtlog.EVENTLOG_BACKWARDS_READ
+    current_time = datetime.datetime.utcnow()
     n = 0
     while n == 0:
         events = win32evtlog.ReadEventLog(hand, flags, 0)
-        current_time = datetime.datetime.utcnow()
         for event in events:
             data = event.StringInserts
             if data:
                 for msg in data:
-
                     # get most recent event that meets criteria
                     if msg == "9NBLGGH52XC6-StudioWildcard.4558480580BB9":
-                        print('Time Generated:', event.TimeGenerated)
-                        print('Source Name:', event.SourceName)
                         global UPDATING
+                        global INSTALLING
+                        timestamp = event.TimeGenerated
+                        timedifference = current_time - timestamp
+                        recent = False
 
-                        if event.EventID == 44:
-                            timestamp = event.TimeGenerated
-                            timedifference = current_time - timestamp
-                            if timedifference.seconds < 3600:
-                                print("DOWNLOAD DETECTED")
-                                UPDATING = True
+                        # check how recent the last event was and determine if it just happened
+                        if timedifference.days < 1:
+                            if timedifference.seconds < 1800:
+                                recent = True
 
-                        elif event.EventID == 43:
-                            timestamp = event.TimeGenerated
-                            timedifference = current_time - timestamp
-                            if timedifference.seconds < 3600:
-                                print("INSTALL DETECTED")
+                        if not UPDATING:
+                            if event.EventID == 44:
+                                if recent:
+                                    print(Fore.RED + "DOWNLOAD DETECTED")
+                                    await send_hook("Download Detected!", DOWNLOAD_MESSAGE, 14177041)
+                                    UPDATING = True
 
-                        elif event.EventID == 19:
-                            timestamp = event.TimeGenerated
-                            timedifference = current_time - timestamp
-                            if timedifference.seconds < 3600:
-                                print("UPDATE SUCCESS")
-                                UPDATING = False
+                        else:
+                            if not INSTALLING:
+                                if event.EventID == 43:
+                                    if recent:
+                                        print(Fore.MAGENTA + "INSTALL DETECTED")
+                                        await send_hook("Installing", INSTALL_MESSAGE, 1127128)
+                                        INSTALLING = True
+
+                            if event.EventID == 19:
+                                if recent:
+                                    print(Fore.GREEN + "UPDATE SUCCESS")
+                                    await send_hook("Update Complete", COMPLETED_MESSAGE, 65314)
+                                    UPDATING = False
+                                    INSTALLING = False
+                                    await asyncio.sleep(5)
+                                    for p in psutil.process_iter():
+                                        if p.name() == "ShooterGame.exe":
+                                            p.kill()
+
                         n += 1
                         break
-        else:
-            n += 1
-            break
 
-# asyncio.run(event_watcher())
-# asyncio.run(watchdog_loop())
+
+async def send_hook(title, message, color):
+    if WEBHOOK_URL == "":
+        return
+    data = {"username": "ArkHandler", "avatar_url": "https://i.imgur.com/Wv5SsBo.png", "embeds": [
+        {
+            "description": message,
+            "title": title,
+            "color": color
+        }
+    ]}
+
+    result = requests.post(WEBHOOK_URL, json=data)
+    if result.status_code == 200:
+        print(f"{title} Webhook sent!")
+    else:
+        print(f"{title} Webhook not sent!")
+
+
+async def update_checker():
+    processes = []
+    for p in psutil.process_iter():
+        if p.status() == "running":
+            processes.append(p.name())
+    if "WinStore.App.exe" not in processes:
+        os.system("explorer.exe shell:appsFolder\Microsoft.WindowsStore_8wekyb3d8bbwe!App")
+        await asyncio.sleep(3)
+
+    else:
+        def window_enumeration_handler(hwnd, top_windows):
+            top_windows.append((hwnd, win32gui.GetWindowText(hwnd)))
+
+        program = "microsoft store"
+        top_windows = []
+        win32gui.EnumWindows(window_enumeration_handler, top_windows)
+        for window in top_windows:
+            if program in window[1].lower():
+                win32gui.ShowWindow(window[0], win32con.SW_MAXIMIZE)
+
+    app = Application(backend="uia").connect(title="Microsoft Store")
+    for button in app.windows()[0].descendants(control_type="Button"):
+        if "See More" in str(button):
+            button.click()
+            await asyncio.sleep(1)
+            for button2 in app.windows()[0].descendants(control_type="Button"):
+                if "Downloads and updates" in str(button2):
+                    button2.click()
+                    await asyncio.sleep(1)
+                    for button3 in app.windows()[0].descendants(control_type="Button"):
+                        if "Get updates" in str(button3):
+                            button3.click()
+                            window = win32gui.GetForegroundWindow()
+                            win32gui.ShowWindow(window, win32con.SW_MINIMIZE)
+                            return
+
 
 async def main():
-    await event_watcher()
-    await watchdog()
+    update_timer = 0
+    while True:
+        await event_puller()
+        await watchdog()
+        if update_timer == 30:
+            if not UPDATING:
+                for p in psutil.process_iter():
+                    if p.name() == "WinStore.App.exe":
+                        p.kill()
+        if update_timer == 60:
+            if not UPDATING:
+                await update_checker()
+            update_timer = 0
+
+        update_timer += 1
+        await asyncio.sleep(30)
+
+try:
+    Config = configparser.ConfigParser()
+    Config.read("config.ini")
+    url = Config.get("UserSettings", "webhookurl")
+    WEBHOOK_URL = url.strip('\"')
+    DOWNLOAD_MESSAGE = Config.get("UserSettings", "downloadmessage")
+    INSTALL_MESSAGE = Config.get("UserSettings", "installmessage")
+    COMPLETED_MESSAGE = Config.get("UserSettings", "completedmessage")
+    g_source = Config.get("UserSettings", "gameinipath")
+    GAME_SOURCE = g_source.strip('\"')
+    gus_source = Config.get("UserSettings", "gameusersettingsinipath")
+    GAMEUSERSETTINGS_SOURCE = gus_source.strip('\"')
+    print(Fore.CYAN + "Config imported")
+except Exception as e:
+    print(Fore.RED + f"Config failed to import!\nError: {e}")
+
 
 asyncio.run(main())
 
