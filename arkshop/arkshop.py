@@ -35,7 +35,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -854,6 +854,9 @@ class ArkShop(commands.Cog):
     async def player_shop_stats(self, ctx, member: discord.Member = None):
         """Get a member's shop stats, or yours"""
         logs = await self.config.guild(ctx.guild).logs()
+        users = await self.config.guild(ctx.guild).users()
+        arktools = self.bot.get_cog("ArkTools")
+        playerstats = await arktools.config.guild(ctx.guild).playerstats()
 
         if logs["users"] == {}:
             return await ctx.send("No purchase history yet!")
@@ -874,9 +877,23 @@ class ArkShop(commands.Cog):
             itemtype = logs["users"][str(member.id)][item]["type"]
             count = logs["users"][str(member.id)][item]["count"]
             items += f"**{item}**\nType: `{itemtype}`\nPurchased: `{count}`\n\n"
+
+        for player in playerstats:
+            if "discord" in playerstats[player]:
+                if str(member.id) == str(playerstats["discord"]):
+                    gt = player
+                    xuid = playerstats["xuid"]
+                    break
+        else:
+            gt = "Unknown"
+            xuid = "Unknown"
+
         embed = discord.Embed(
             title=f"Shop stats for {member.name}",
-            description=items
+            description=f"Registered Cluster: {users[str(member.id)]}\n"
+                        f"Gamertag: {gt}\n"
+                        f"XUID: {xuid}\n"
+                        f"{items}"
         )
         return await ctx.send(embed=embed)
 
@@ -1013,7 +1030,7 @@ class ArkShop(commands.Cog):
         for page in range(int(pages)):
             embed = discord.Embed(
                 title="RCON Shop",
-                description="Item list"
+                description=f"{category_name} Item list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
             count = 0
@@ -1123,7 +1140,7 @@ class ArkShop(commands.Cog):
                     price = categories[category][item]["options"][name]["price"]
                     paths = categories[category][item]["options"][name]["paths"]
                     break
-        return await self.make_rcon_purchase(ctx, itemname, xuid, price, cname, message, paths)
+        return await self.make_rcon_purchase(ctx, f"{itemname}({name})", xuid, price, cname, message, paths)
 
     async def make_rcon_purchase(self, ctx, name, xuid, price, cname, message, paths):
         # check if user can afford the item
@@ -1385,7 +1402,7 @@ class ArkShop(commands.Cog):
         for page in range(int(pages)):
             embed = discord.Embed(
                 title="Data Shop",
-                description="Item list"
+                description=f"{category_name} Item list"
             )
             embed.set_thumbnail(url=SHOP_ICON)
             count = 0
@@ -1426,7 +1443,6 @@ class ArkShop(commands.Cog):
 
         # if item has no options
         if price and not options:
-            await message.clear_reactions()
             return await self.make_purchase(ctx, name, xuid, price, cname, message)
 
         # go back to menu if item contains options
