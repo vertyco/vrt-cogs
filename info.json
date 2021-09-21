@@ -3,9 +3,9 @@
 		"Vertyco"
 	],
 	"description": "Various Utility/Fun cogs Red V3",
-	"install_msg": "Thanks for installing!\nIf you have any suggestions, or found any bugs, feel free to create an issue on my repo or contact me in my discord at discord.gg/vertyco",
+	"install_msg": "Thanks for installing!\nIf you have any suggestions, or found any bugs, feel free to create an issue on my repo or contact me in the Red 3rd party cog support server",
 	"name": "vrt-cogs",
-	"short": "Random Cogs for Red by Vertyco",
+	"short": "Utility Cogs for Red by Vertyco",
 	"tags": [
 		"utilities",
 		"fun"
