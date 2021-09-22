@@ -597,7 +597,7 @@ class ArkTools(commands.Cog):
                                               color=color)
                         return await ctx.send(embed=embed)
                     embed = discord.Embed(
-                        description=f"Sending freind request from {gt}..."
+                        description=f"Sending friend request from {gt}..."
                     )
                     embed.set_thumbnail(url=LOADING)
                     await msg.edit(embed=embed)
@@ -1922,6 +1922,7 @@ class ArkTools(commands.Cog):
                             }
         self.time = current_time.isoformat()
 
+    # have the gamertags unfriend a member when they leave the server
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         if not member:
