@@ -811,6 +811,8 @@ class ArkShop(commands.Cog):
                 description=items
             )
             embeds.append(embed)
+            start += 10
+            stop += 10
         return await self.paginate(ctx, embeds)
 
     @commands.command(name="shoplb")
@@ -848,6 +850,8 @@ class ArkShop(commands.Cog):
                 description=items
             )
             embeds.append(embed)
+            start += 10
+            stop += 10
         return await self.paginate(ctx, embeds)
 
     @commands.command(name="playershopstats")
