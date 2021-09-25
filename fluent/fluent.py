@@ -73,10 +73,11 @@ class Fluent(commands.Cog):
                 if int(channel.id) == int(channel_id):
                     del channels[channel_id]
                     color = discord.Color.green()
-                    return await ctx.send(
+                    await ctx.send(
                         embed=discord.Embed(description=f"✅ Fluent channel has deleted!", color=color))
-                else:
-                    return await ctx.send(embed=discord.Embed(description=f"❌ {channel.mention} isn't a fluent channel."))
+                    break
+            else:
+                return await ctx.send(embed=discord.Embed(description=f"❌ {channel.mention} isn't a fluent channel."))
 
     @_fluent.command(name="view")
     async def _view(self, ctx):
