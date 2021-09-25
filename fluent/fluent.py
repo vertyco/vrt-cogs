@@ -87,7 +87,7 @@ class Fluent(commands.Cog):
             description="Below is a list of fluent channels and their translated languages."
         )
         for channel in channels:
-            if channel:
+            if channel is not None:
                 discordchannel = ctx.guild.get_channel(int(channel))
                 lang1 = channels[channel]["lang1"]
                 lang2 = channels[channel]["lang2"]
