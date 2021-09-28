@@ -29,7 +29,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.8.43"
+    __version__ = "1.8.44"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2056,25 +2056,15 @@ class ArkTools(commands.Cog):
                             count = int(count)
 
                         status += f"{guild.get_channel(channel).mention}: Offline for {count} {inc}\n"
-                        alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
-                        mentions = discord.AllowedMentions(roles=True)
-                        pingrole = guild.get_role(settings['fullaccessrole'])
-                        if count == 5:
+
+                        if self.alerts[channel] == 5:
+                            self.alerts[channel] += 1
+                            mentions = discord.AllowedMentions(roles=True)
+                            pingrole = guild.get_role(settings['fullaccessrole'])
+                            alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
                             await alertmsg.send(f"{pingrole.mention}, "
                                                 f"The **{server}** server has been offline for 5 minutes now!!!",
                                                 allowed_mentions=mentions)
-                            self.alerts[channel] += 1
-                            continue
-
-                        # try refreshing loops at 10 min mark
-                        elif count == 10:
-                            self.chat_executor.cancel()
-                            self.playerlist_executor.cancel()
-                            await asyncio.sleep(5)
-                            self.chat_executor.start()
-                            self.playerlist_executor.start()
-                            log.info("Refreshing RCON loops for playerlist executor")
-                            self.alerts[channel] += 1
                             continue
                         else:
                             self.alerts[channel] += 1
@@ -2082,7 +2072,7 @@ class ArkTools(commands.Cog):
 
                     elif playercount is []:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
-                        if count > 0:
+                        if self.alerts[channel] > 0:
                             self.alerts[channel] = 0
                         continue
 
@@ -2090,6 +2080,7 @@ class ArkTools(commands.Cog):
                         playercount = len(playercount)
                         clustertotal += playercount
                         totalplayers += playercount
+
                     if playercount == 1:
                         status += f"{guild.get_channel(channel).mention}: {playercount} player\n"
                     else:
@@ -2131,11 +2122,12 @@ class ArkTools(commands.Cog):
                 await self.config.guild(guild).statusmessage.set(message.id)
             if msgtoedit:
                 try:
-                    return await msgtoedit.edit(embed=embed)
+                    await msgtoedit.edit(embed=embed)
                 except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
                     await self.config.guild(guild).statusmessage.set(None)
                     message = await destinationchannel.send(embed=embed)
                     await self.config.guild(guild).statusmessage.set(message.id)
+        return
 
     # Executes all task loop RCON commands synchronously in another thread
     # Process is synchronous for easing network buffer and keeping network traffic manageable
