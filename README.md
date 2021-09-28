@@ -1,6 +1,15 @@
 # vrt-cogs
 Various utility/random cogs for Red V3.
 
+<p align="center">
+  <a href="https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop">
+    <img src="https://img.shields.io/badge/Red%20DiscordBot-V3-red.svg">
+    </a>
+  <a href="https://github.com/Rapptz/discord.py">
+    <img src="https://img.shields.io/badge/Discord-py-blue.svg">
+    </a>
+<p>
+
 I enjoy working with API's and making cogs for game servers or other helpful use cases. Check out some of my projects below!
 
 | Cog | Status | Description |
