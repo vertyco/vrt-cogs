@@ -173,7 +173,7 @@ class XTools(commands.Cog):
             await site.start()
         except OSError:
             await site.stop()
-            return await self.authorize_tokens
+            return await self.authorize_tokens(ctx)
         try:
             await auth_session(client_id, client_secret, REDIRECT_URI)
         except AuthenticationException:
