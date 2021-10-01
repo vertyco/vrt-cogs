@@ -64,7 +64,7 @@ class XTools(commands.Cog):
         tokens = await self.config.tokens()
         client_id = await self.config.clientid()
         client_secret = await self.config.clientsecret()
-        if not tokens:
+        if not client_id:
             await ctx.send(f"Client ID and Secret have not been set yet!\n"
                            f"Bot owner needs to run `{ctx.prefix}apiset tokens`")
             return None
@@ -116,7 +116,7 @@ class XTools(commands.Cog):
         """Set Client ID and Secret"""
         await self.config.clientid.set(client_id)
         await self.config.clientsecret.set(client_secret)
-        return await ctx.tick()
+        return await ctx.send(f"Tokens have been set! Run `{ctx.prefix}apiset authorize` to authorize your tokens")
 
     @api_settings.command(name="authorize")
     async def authorize_tokens(self, ctx):
