@@ -13,6 +13,7 @@ from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 from xbox.webapi.scripts import REDIRECT_URI
 from xbox.webapi.api.client import XboxLiveClient
+from xbox.webapi.common.exceptions import AuthenticationException
 
 from .menus import menu, DEFAULT_CONTROLS, next_page, prev_page, skip_ten, back_ten, close_menu
 from .formatter import profile, profile_embed, screenshot_embeds, game_embeds, friend_embeds, gameclip_embeds, status
@@ -160,7 +161,10 @@ class XTools(commands.Cog):
                     auth_url = auth_mgr.generate_authorization_url()
                     webbrowser.open(auth_url)
                     code = await queue.get()
-                    await auth_mgr.request_tokens(code)
+                    try:
+                        await auth_mgr.request_tokens(code)
+                    except AuthenticationException:
+                        return await ctx.send("Authentication failed :(")
                 await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
 
         app = web.Application()
