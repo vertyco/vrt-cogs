@@ -5,6 +5,7 @@ import xmltojson
 import webbrowser
 
 from redbot.core import commands, Config
+from redbot.vendored.discord.ext import menus
 
 import aiohttp
 from aiohttp import web, ClientResponseError
@@ -27,7 +28,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.0.1"
+    __version__ = "3.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -323,7 +324,13 @@ class XTools(commands.Cog):
             profile_data["presence"] = presence_data
             profile_data["activity"] = activity_data["activityItems"]
             embed = profile_embed(profile_data)
-            return await msg.edit(embed=embed)
+            try:
+                return await msg.edit(embed=embed)
+            except discord.HTTPException:
+                try:
+                    return await ctx.send(embed=embed)
+                except discord.HTTPException:
+                    return await ctx.send("Something broke")  # Fuck it
 
     @commands.command(name="xscreenshots")
     async def get_screenshots(self, ctx, *, gamertag=None):
@@ -351,6 +358,10 @@ class XTools(commands.Cog):
             data = json.loads(
                 (await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)).json())
             pages = screenshot_embeds(data, gamertag)
+            if len(pages) == 0:
+                color = discord.Color.red()
+                embed = discord.Embed(description="No screenshots found", color=color)
+                return await msg.edit(embed=embed)
             await msg.delete()
             await menu(ctx, pages, DEFAULT_CONTROLS)
 
@@ -445,18 +456,53 @@ class XTools(commands.Cog):
                 i = int(reply.content) - 1
                 gamename = gamelist[i][0]
                 title_id = gamelist[i][1]
+                gs = gamelist[i][2]
             else:
                 gamename = gamelist[0][0]
                 title_id = gamelist[0][1]
+                gs = gamelist[0][2]
 
+            header = {"x-xbl-contract-version": "2",
+                      "Authorization": token,
+                      "Accept": "application/json",
+                      "Accept-Language": "en-US",
+                      "Content-Type": "application/json"
+                      }
+            url = f"https://userstats.xboxlive.com/batch"
+            payload = json.dumps({
+                "arrangebyfield": "xuid",
+                "xuids": [
+                    xuid
+                ],
+                "groups": [
+                    {
+                        "name": "Hero",
+                        "titleId": title_id
+                    }
+                ],
+                "stats": [
+                    {
+                        "name": "MinutesPlayed",
+                        "titleId": title_id
+                    }
+                ]
+            })
+            async with self.session.post(url=url, headers=header, data=payload) as res:
+                game_stats = await res.json(content_type=None)
+                print(game_stats)
+
+            # game_stats = json.loads((await xbl_client.userstats.get_stats_batch(xuids=[xuid], title_id=title_id)).json())
             title_info = json.loads((await xbl_client.titlehub.get_title_info(title_id)).json())
-            scid = title_info["titles"][0]["service_config_id"]
-            title_pic = title_info["titles"][0]["display_image"]
-            playtime = json.loads((await xbl_client.userstats.get_stats(xuid, scid)).json())
-            minutes_played = playtime["statlistscollection"][0]["stats"][0]["value"]
             achievement_data = json.loads(
                 (await xbl_client.achievements.get_achievements_xboxone_gameprogress(xuid, title_id)).json())
-            pages = game_embeds(gt, gamename, title_pic, gs, achievement_data, int(minutes_played))
+            # scid = title_info["titles"][0]["service_config_id"]
+            # title_pic = title_info["titles"][0]["display_image"]
+            data = {
+                "stats": game_stats,
+                "info": title_info,
+                "achievements": achievement_data
+            }
+            pages = game_embeds(gt, gamename, gs, data)
             await msg.delete()
             await menu(ctx, pages, DEFAULT_CONTROLS)
 
@@ -592,6 +638,10 @@ class XTools(commands.Cog):
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             data = json.loads((await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json())
             pages = gameclip_embeds(data, gamertag)
+            if len(pages) == 0:
+                color = discord.Color.red()
+                embed = discord.Embed(description="No game clips found", color=color)
+                return await msg.edit(embed=embed)
             await msg.delete()
             await menu(ctx, pages, DEFAULT_CONTROLS)
 
@@ -601,4 +651,3 @@ class XTools(commands.Cog):
         data = await self.microsoft_services_status()
         embed = status(data)
         await ctx.send(embed=embed)
-

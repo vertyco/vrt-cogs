@@ -147,6 +147,8 @@ def profile_embed(data):
         else:
             event = f"{h}h {m}m ago"
         activitylist += f"{desc} - {event}\n"
+    if activitylist == "":
+        activitylist = "`Can't fetch data`"
     embed.add_field(name="Recent Activity", value=activitylist, inline=False)
 
     if bio != "":
@@ -162,15 +164,20 @@ def screenshot_embeds(data, gamertag):
     for pic in data["screenshots"]:
         game = pic["title_name"]
         name = pic["screenshot_name"]
+        if name == "":
+            name = "Untitled"
         caption = pic["user_caption"]
+        if caption == "":
+            caption = "Uncaptioned"
         views = pic["views"]
+        if views == "":
+            views = "None lol"
         ss = pic["screenshot_uris"][0]["uri"]
         ss = ss.split("?")[0]
         timestamp = (datetime.datetime.fromisoformat(pic["date_taken"])).strftime("%m/%d/%Y, %H:%M:%S")
         embed = discord.Embed(
-            title=f"{gamertag}'s Screenshots",
             color=discord.Color.random(),
-            description=f"If a field says `Can't fetch data` it is because there is nothing entered for it "
+            description=f"**{gamertag}'s Screenshots**"
         )
         embed.set_image(url=ss)
         embed.add_field(name="Info",
@@ -186,9 +193,16 @@ def screenshot_embeds(data, gamertag):
 
 
 # Format game info
-def game_embeds(gamertag, gamename, title_pic, gs, achievement_data, minutes_played):
+def game_embeds(gamertag, gamename, gs, data):
     embeds = []
-    achievements = achievement_data["achievements"]
+    # List setup
+    stats = data["stats"]["groups"][0]["statlistscollection"][0]["stats"]
+    achievements = data["achievements"]["achievements"]
+
+    # Main data setup
+    minutes_played = int(data["stats"]["statlistscollection"][0]["stats"][0]["value"])
+    title_pic = data["info"]["titles"][0]["display_image"]
+
     count = 1
     for ach in achievements:
         name = ach["name"]
@@ -201,12 +215,12 @@ def game_embeds(gamertag, gamename, title_pic, gs, achievement_data, minutes_pla
             time = fix_timestamp(timestamp)
             time = time.strftime("%m/%d/%Y, %H:%M:%S")
             desc = ach["description"]
-            info = f"{name}" \
+            info = f"{name}\n" \
                    f"Status: Unlocked on {time}\n" \
                    f"{desc}\n" \
                    f"{worth} Gamerscore"
         else:
-            info = f"{name}" \
+            info = f"{name}\n" \
                    f"Status: {status}\n" \
                    f"{desc}\n" \
                    f"{worth} Gamerscore"
@@ -214,7 +228,18 @@ def game_embeds(gamertag, gamename, title_pic, gs, achievement_data, minutes_pla
         embed = discord.Embed(
             description=f"**{gamertag}'s Achievements for {gamename}**\n{gs} Gamerscore"
         )
-        embed.add_field(name="Achievement Info", value=info)
+        for stat in stats:
+            statname = stat["groupproperties"]["DisplayName"]
+            stype = "Integer"
+            if "DisplayFormat" in stat["groupproperties"]:
+                stype = stat["groupproperties"]["DisplayFormat"]
+            value = "--"
+            if "value" in stat:
+                value = int(float(stat["value"]))
+            if stype == "Percentage":
+                value = f"{value}%"
+            embed.add_field(name=statname, value=value)
+        embed.add_field(name="Achievement Info", value=info, inline=False)
         embed.set_thumbnail(url=title_pic)
         embed.set_image(url=icon)
         hours, minutes = divmod(minutes_played, 60)
