@@ -5,7 +5,6 @@ import xmltojson
 import webbrowser
 
 from redbot.core import commands, Config
-from redbot.vendored.discord.ext import menus
 
 import aiohttp
 from aiohttp import web, ClientResponseError
@@ -28,7 +27,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.0.2"
+    __version__ = "3.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -363,7 +362,7 @@ class XTools(commands.Cog):
                 embed = discord.Embed(description="No screenshots found", color=color)
                 return await msg.edit(embed=embed)
             await msg.delete()
-            await menu(ctx, pages, DEFAULT_CONTROLS)
+            # await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="xgames")
     async def get_games(self, ctx, *, gamertag=None):
