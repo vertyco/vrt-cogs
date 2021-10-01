@@ -3,17 +3,17 @@
     "author": [
         "Vertyco"
     ],
-    "description": "Get a Gamertag's profile, friends, screenshots, and game clips",
+    "description": "View your Xbox profile, friends, game clips, achievements and more!",
     "disabled" : false,
-    "end_user_data_statement" : "This cog uses the xbl.io and xapi.us API, it does not persistently store data about users.",
+    "end_user_data_statement" : "This cog Microsofts XSAPI to pull data, it stores your (the bot owner's) client ID and secret for the Azure application for authorization.",
     "hidden": false,
-    "install_msg": "Thank you for installing! Use `[p]help XTools` for more a list of commands you can use.",
+    "install_msg": "Thank you for installing! Use `[p]help XTools` for a list of commands you can use. To setup the cog for use, make sure to use `[p]apiset` to set your client ID and secret!",
     "min_bot_version" : "3.4.0",
     "min_python_version" : [3, 8, 1],
-    "permissions" : ["read_messages","send_messages","embed_links", "add_reactions"],
+    "permissions" : ["read_messages", "send_messages", "manage_messages", "embed_links", "add_reactions", "manage_reactions"],
     "required_cogs" : {},
-    "requirements" : ["xmltojson>=0.2.0", "utils>=1.0.1"],
-    "short": "Get Xbox Gamertag info.",
-    "tags" : ["fun", "tools", "utility"],
+    "requirements" : ["xmltojson>=0.2.0", "xbox-webapi"],
+    "short": "Get Xbox Live Info and Player Stats.",
+    "tags" : ["fun", "tools", "utility", "xbox", "microsoft", "xsapi"],
     "type": "COG"
 }

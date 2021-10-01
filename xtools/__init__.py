@@ -1,6 +1,7 @@
 from .xtools import XTools
+
 ___red_end_user_data_statement__ = (
-    "This cog uses the xbl.io and xapi.us API, it does not persistently store data about users."
+    "This cog Microsofts XSAPI to pull data, it stores your (the bot owner's) client ID and secret for the Azure application for authorization."
 )
 
 
