@@ -112,6 +112,52 @@ class XTools(commands.Cog):
         """Setup the XTools cog"""
         pass
 
+    @api_settings.command(name="help")
+    async def get_help(self, ctx):
+        """Tutorial for getting your ClientID and Secret"""
+        embed = discord.Embed(
+            description="**How to get your Client ID and Secret**",
+            color=discord.Color.magenta()
+        )
+        embed.add_field(
+            name="Step 1",
+            value="Register a new application in "
+                  "[Azure AD](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 2",
+            value="• Name your app\n"
+                  "• Select `Personal Microsoft accounts only` under supported account types\n"
+                  "• Add http://localhost/auth/callback as a Redirect URI of type `Web`",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 3",
+            value="Copy your Application (client) ID and save it for setting your tokens",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 4",
+            value="On the App Page, navigate to `Certificates & secrets`\n"
+                  "• Generate a new client secret and save it for setting your tokens\n",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 5",
+            value=f"type `{ctx.prefix}apiset tokens` and include your Client ID and Secret\n",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 6",
+            value=f"type `{ctx.prefix}apiset authorize` and your bot will open a web browser for you to sign in\n"
+                  f"and verify. Do not use the same account that you registered the application with!\n"
+                  f"If the window is opening and closing immediately, go to Microsoft.com and sign out then try again.",
+            inline=False
+        )
+        embed.set_footer(text='The "Value" for the secret is what you use, NOT the "Secret ID"')
+        await ctx.send(embed=embed)
+
     @api_settings.command(name="tokens")
     async def set_tokens(self, ctx, client_id, client_secret):
         """Set Client ID and Secret"""
