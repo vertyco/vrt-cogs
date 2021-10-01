@@ -27,7 +27,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.0.3"
+    __version__ = "3.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -394,14 +394,22 @@ class XTools(commands.Cog):
                       "Accept-Language": "en-US",
                       }
             url = f"https://achievements.xboxlive.com/users/xuid({xuid})/history/titles"
-            async with self.session.get(url=url, headers=header) as res:
-                game_data = await res.json(content_type=None)
-            params = {"continuationToken": "32"}
-            async with self.session.get(url=url, headers=header, params=params) as res:
-                game_data2 = await res.json(content_type=None)
 
-            # Merge data from continuation token
-            game_data["titles"].extend(game_data2["titles"])
+            # Keep pulling continuation token till all data is obtained
+            running = True
+            params = None
+            game_data = {"titles": []}
+            while running:
+                async with self.session.get(url=url, headers=header, params=params) as res:
+                    data = await res.json(content_type=None)
+                    c_token = data["pagingInfo"]["continuationToken"]
+                    if not c_token:
+                        running = False
+                        break
+                    titles = data["titles"]
+                    game_data["titles"].extend(titles)
+                    params = {"continuationToken": c_token}
+
             embed = discord.Embed(
                 description="What game would you like to search for?",
                 color=discord.Color.random()
@@ -488,14 +496,10 @@ class XTools(commands.Cog):
             })
             async with self.session.post(url=url, headers=header, data=payload) as res:
                 game_stats = await res.json(content_type=None)
-                print(game_stats)
 
-            # game_stats = json.loads((await xbl_client.userstats.get_stats_batch(xuids=[xuid], title_id=title_id)).json())
             title_info = json.loads((await xbl_client.titlehub.get_title_info(title_id)).json())
             achievement_data = json.loads(
                 (await xbl_client.achievements.get_achievements_xboxone_gameprogress(xuid, title_id)).json())
-            # scid = title_info["titles"][0]["service_config_id"]
-            # title_pic = title_info["titles"][0]["display_image"]
             data = {
                 "stats": game_stats,
                 "info": title_info,

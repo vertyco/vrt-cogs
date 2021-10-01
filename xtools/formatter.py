@@ -79,14 +79,14 @@ def profile_embed(data):
     )
     following = data["friends"]["target_following_count"]
     followers = data["friends"]["target_follower_count"]
-    account_info = f"`Gamerscore: `{gs}\n" \
-                   f"`Followers:  `{followers}\n" \
-                   f"`Following:  `{following}\n" \
-                   f"`AccountTier:`{tier}\n" \
-                   f"`Player Rep: `{rep}\n" \
-                   f"`Location:   `{check(location)}\n" \
-                   f"`Member For: `{tenure} years\n" \
-                   f"`XUID:       `{xuid}"
+    account_info = f"`Gamerscore:  `{gs}\n" \
+                   f"`Followers:   `{followers}\n" \
+                   f"`Following:   `{following}\n" \
+                   f"`AccountTier: `{tier}\n" \
+                   f"`Player Rep:  `{rep}\n" \
+                   f"`Location:    `{check(location)}\n" \
+                   f"`Member For:  `{tenure} years\n" \
+                   f"`XUID:        `{xuid}"
     embed.set_thumbnail(url=pfp)
     embed.add_field(name="Account Info", value=account_info)
 
