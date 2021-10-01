@@ -121,7 +121,7 @@ class XTools(commands.Cog):
         )
         embed.add_field(
             name="Step 1",
-            value="Register a new application in "
+            value="• Register a new application in "
                   "[Azure AD](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)",
             inline=False
         )
@@ -134,23 +134,23 @@ class XTools(commands.Cog):
         )
         embed.add_field(
             name="Step 3",
-            value="Copy your Application (client) ID and save it for setting your tokens",
+            value="• Copy your Application (client) ID and save it for setting your tokens",
             inline=False
         )
         embed.add_field(
             name="Step 4",
-            value="On the App Page, navigate to `Certificates & secrets`\n"
+            value="• On the App Page, navigate to `Certificates & secrets`\n"
                   "• Generate a new client secret and save it for setting your tokens\n",
             inline=False
         )
         embed.add_field(
             name="Step 5",
-            value=f"type `{ctx.prefix}apiset tokens` and include your Client ID and Secret\n",
+            value=f"• Type `{ctx.prefix}apiset tokens` and include your Client ID and Secret\n",
             inline=False
         )
         embed.add_field(
             name="Step 6",
-            value=f"type `{ctx.prefix}apiset authorize` and your bot will open a web browser for you to sign in\n"
+            value=f"• Type `{ctx.prefix}apiset authorize` and your bot will open a web browser for you to sign in\n"
                   f"and verify. Do not use the same account that you registered the application with!\n"
                   f"If the window is opening and closing immediately, go to Microsoft.com and sign out then try again.",
             inline=False
