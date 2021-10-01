@@ -169,7 +169,11 @@ class XTools(commands.Cog):
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, "localhost", 8080)
-        await site.start()
+        try:
+            await site.start()
+        except OSError:
+            await site.stop()
+            return await self.authorize_tokens
         try:
             await auth_session(client_id, client_secret, REDIRECT_URI)
         except AuthenticationException:
