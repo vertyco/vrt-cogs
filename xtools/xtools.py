@@ -173,9 +173,10 @@ class XTools(commands.Cog):
         try:
             await auth_session(client_id, client_secret, REDIRECT_URI)
         except AuthenticationException:
+            await site.stop()
             return await ctx.send("Authentication failed :(")
-        await ctx.send(f"Tokens Authorized✅")
         await site.stop()
+        await ctx.send(f"Tokens Authorized✅")
 
     @commands.command(name="setgt")
     async def set_gamertag(self, ctx: commands, *, gamertag):
