@@ -8,7 +8,7 @@ from redbot.core.utils.chat_formatting import box
 def check(data):
     if data:
         return data
-    return "Can't fetch data"
+    return "¯\_(ツ)_/¯"
 
 
 # Time Converter
@@ -74,19 +74,19 @@ def profile_embed(data):
     embed = discord.Embed(
         title=title,
         color=color,
-        description="Any field saying `Can't fetch data` is due to account privacy settings, you can manage that "
+        description="Any field with `¯\_(ツ)_/¯` is due to account privacy settings, you can manage that "
                     "**[here](https://account.xbox.com/en-gb/Settings)**"
     )
     following = data["friends"]["target_following_count"]
     followers = data["friends"]["target_follower_count"]
-    account_info = f"Gamerscore: `{gs}`\n" \
-                   f"Followers: `{followers}`\n" \
-                   f"Following: `{following}`\n" \
-                   f"AccountTier: `{tier}`\n" \
-                   f"Player Rep: `{rep}`\n" \
-                   f"Location: `{check(location)}`\n" \
-                   f"Member For: `{tenure} years`\n" \
-                   f"XUID: `{xuid}`"
+    account_info = f"`Gamerscore: `{gs}\n" \
+                   f"`Followers:  `{followers}\n" \
+                   f"`Following:  `{following}\n" \
+                   f"`AccountTier:`{tier}\n" \
+                   f"`Player Rep: `{rep}\n" \
+                   f"`Location:   `{check(location)}\n" \
+                   f"`Member For: `{tenure} years\n" \
+                   f"`XUID:       `{xuid}"
     embed.set_thumbnail(url=pfp)
     embed.add_field(name="Account Info", value=account_info)
 
@@ -148,7 +148,7 @@ def profile_embed(data):
             event = f"{h}h {m}m ago"
         activitylist += f"{desc} - {event}\n"
     if activitylist == "":
-        activitylist = "`Can't fetch data`"
+        activitylist = "`¯\_(ツ)_/¯`"
     embed.add_field(name="Recent Activity", value=activitylist, inline=False)
 
     if bio != "":
