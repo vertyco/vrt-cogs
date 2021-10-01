@@ -179,10 +179,11 @@ class XTools(commands.Cog):
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
                 xbl_client = await self.auth_manager(ctx, session)
-                try:
-                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-                except ClientResponseError:
-                    return await ctx.send("Invalid Gamertag. Try again.")
+                if xbl_client:
+                    try:
+                        profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                    except ClientResponseError:
+                        return await ctx.send("Invalid Gamertag. Try again.")
         # Format json data
         gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
         async with self.config.users() as users:
