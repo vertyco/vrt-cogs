@@ -161,10 +161,7 @@ class XTools(commands.Cog):
                     auth_url = auth_mgr.generate_authorization_url()
                     webbrowser.open(auth_url)
                     code = await queue.get()
-                    try:
-                        await auth_mgr.request_tokens(code)
-                    except AuthenticationException:
-                        return await ctx.send("Authentication failed :(")
+                    await auth_mgr.request_tokens(code)
                 await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
 
         app = web.Application()
@@ -173,7 +170,10 @@ class XTools(commands.Cog):
         await runner.setup()
         site = web.TCPSite(runner, "localhost", 8080)
         await site.start()
-        await auth_session(client_id, client_secret, REDIRECT_URI)
+        try:
+            await auth_session(client_id, client_secret, REDIRECT_URI)
+        except AuthenticationException:
+            return await ctx.send("Authentication failed :(")
         await ctx.send(f"Tokens Authorized✅")
         await site.stop()
 
@@ -236,17 +236,16 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        embed = discord.Embed(
-            description="Gathering data...",
-            color=discord.Color.random()
-        )
-        embed.set_thumbnail(url=LOADING)
-        msg = await ctx.send(embed=embed)
-
         async with aiohttp.ClientSession() as session:
             xbl_client = await self.auth_manager(ctx, session)
             if not xbl_client:
                 return
+            embed = discord.Embed(
+                description="Gathering data...",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except ClientResponseError:
@@ -282,17 +281,16 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        embed = discord.Embed(
-            description="Gathering data...",
-            color=discord.Color.random()
-        )
-        embed.set_thumbnail(url=LOADING)
-        msg = await ctx.send(embed=embed)
-
         async with aiohttp.ClientSession() as session:
             xbl_client = await self.auth_manager(ctx, session)
             if not xbl_client:
                 return
+            embed = discord.Embed(
+                description="Gathering data...",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except ClientResponseError:
@@ -312,16 +310,16 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        embed = discord.Embed(
-            description="Gathering data...",
-            color=discord.Color.random()
-        )
-        embed.set_thumbnail(url=LOADING)
-        msg = await ctx.send(embed=embed)
         async with aiohttp.ClientSession() as session:
             xbl_client = await self.auth_manager(ctx, session)
             if not xbl_client:
                 return
+            embed = discord.Embed(
+                description="Gathering data...",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except ClientResponseError:
@@ -418,17 +416,16 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        embed = discord.Embed(
-            description="Gathering data...",
-            color=discord.Color.random()
-        )
-        embed.set_thumbnail(url=LOADING)
-        msg = await ctx.send(embed=embed)
-
         async with aiohttp.ClientSession() as session:
             xbl_client = await self.auth_manager(ctx, session)
             if not xbl_client:
                 return
+            embed = discord.Embed(
+                description="Gathering data...",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except ClientResponseError:
@@ -526,16 +523,16 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        embed = discord.Embed(
-            description="Gathering data...",
-            color=discord.Color.random()
-        )
-        embed.set_thumbnail(url=LOADING)
-        msg = await ctx.send(embed=embed)
         async with aiohttp.ClientSession() as session:
             xbl_client = await self.auth_manager(ctx, session)
             if not xbl_client:
                 return
+            embed = discord.Embed(
+                description="Gathering data...",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except ClientResponseError:
