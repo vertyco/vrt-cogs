@@ -29,7 +29,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.8.44"
+    __version__ = "1.8.45"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1228,7 +1228,7 @@ class ArkTools(commands.Cog):
 
     # Time Converter
     async def time_formatter(self, time_played):
-        minutes,_ = divmod(time_played, 60)
+        minutes, _ = divmod(time_played, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
         return days, hours, minutes
@@ -1979,7 +1979,7 @@ class ArkTools(commands.Cog):
                                           f"Hope to see you back soon :)"
                             url = "https://xbl.io/api/v2/conversations"
                             payload = {"xuid": str(xuid), "message": unfriendmsg}
-                            apikey = await self.pullkey(settings)
+                            apikey = await self.pullkey(await self.config.guild(guild).all())
                             log.info(f"Sending DM to XUID - {xuid}")
                             status = await self.apipost(url, payload, apikey)
                             if status == 200:
