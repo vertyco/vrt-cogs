@@ -65,8 +65,8 @@ class XTools(commands.Cog):
         client_id = await self.config.clientid()
         client_secret = await self.config.clientsecret()
         if not tokens:
-            await ctx.send(f"Client ID and Secret have not been authorized yet!\n"
-                           f"Bot owner needs to run `{ctx.prefix}apiset authorize`")
+            await ctx.send(f"Client ID and Secret have not been set yet!\n"
+                           f"Bot owner needs to run `{ctx.prefix}apiset tokens`")
             return None
         auth_mgr = AuthenticationManager(
             session, client_id, client_secret, REDIRECT_URI
@@ -75,8 +75,8 @@ class XTools(commands.Cog):
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
             if "validation error" in str(e):
-                await ctx.send(f"Client ID and Secret have not been set on this device yet!\n"
-                               f"Bot owner needs to run `{ctx.prefix}apiset tokens`")
+                await ctx.send(f"Client ID and Secret have not been authorized yet!\n"
+                               f"Bot owner needs to run `{ctx.prefix}apiset authorize`")
                 return None
         await auth_mgr.refresh_tokens()
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
