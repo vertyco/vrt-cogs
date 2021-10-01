@@ -155,7 +155,7 @@ class XTools(commands.Cog):
                   f"If the window is opening and closing immediately, go to Microsoft.com and sign out then try again.",
             inline=False
         )
-        embed.set_footer(text='The "Value" for the secret is what you use, NOT the "Secret ID"')
+        embed.set_footer(text='Hint: The "Value" for the secret is what you use, NOT the "Secret ID"')
         await ctx.send(embed=embed)
 
     @api_settings.command(name="tokens")
