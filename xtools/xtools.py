@@ -409,6 +409,13 @@ class XTools(commands.Cog):
                     titles = data["titles"]
                     game_data["titles"].extend(titles)
                     params = {"continuationToken": c_token}
+            if len(game_data["titles"]) == 0:
+                embed = discord.Embed(
+                    color=discord.Color.red(),
+                    description="Your privacy settings are blocking your gameplay history.\n"
+                                "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings."
+                )
+                return await msg.edit(embed=embed)
 
             embed = discord.Embed(
                 description="What game would you like to search for?",
