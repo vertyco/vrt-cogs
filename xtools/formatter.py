@@ -393,8 +393,51 @@ def status(data):
     return embed
 
 
+# Format games with gold products
+def gwg_embeds(products):
+    embeds = []
+    count = 1
+    for game in products:
+        dev_name = game["localized_properties"][0]["developer_name"]
+        game_name = game["localized_properties"][0]["product_title"]
+        desc = game["localized_properties"][0]["short_description"]
+        for image in game["localized_properties"][0]["images"]:
+            if image["image_purpose"] == "BoxArt":
+                icon = f'https:{image["uri"]}'
+                break
+        else:
+            for image in game["localized_properties"][0]["images"]:
+                if image["image_purpose"] != "Screenshot":
+                    icon = f'https:{image["uri"]}'
+                    break
+            else:
+                icon = None
 
-
+        categories = ""
+        for category in game["properties"]["categories"]:
+            categories += f"{category}\n"
+        if categories == "":
+            categories = "--"
+        price = game["display_sku_availabilities"][0]["availabilities"][0]["order_management_data"]["price"]["list_price"]
+        release_date = game["display_sku_availabilities"][0]["availabilities"][0]["properties"]["original_release_date"]
+        timestamp = fix_timestamp(release_date).strftime("%m/%d/%Y")
+        embed = discord.Embed(
+            title=f"{game_name}",
+            description=f"**Description**\n{box(desc)}"
+        )
+        embed.add_field(
+            name="Info",
+            value=f"`Developer:` {dev_name}\n"
+                  f"`Release Date:` {timestamp}\n"
+                  f"`Price:` ~~${price}~~ FREE",
+            inline=False
+        )
+        embed.add_field(name="Categories", value=categories)
+        embed.set_image(url=icon)
+        embed.set_footer(text=f"Page {count}/{len(products)}")
+        embeds.append(embed)
+        count += 1
+    return embeds
 
 
 

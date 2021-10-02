@@ -15,8 +15,22 @@ from xbox.webapi.scripts import REDIRECT_URI
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.common.exceptions import AuthenticationException
 
-from .menus import menu, DEFAULT_CONTROLS, next_page, prev_page, skip_ten, back_ten, close_menu
-from .formatter import profile, profile_embed, screenshot_embeds, game_embeds, friend_embeds, gameclip_embeds, status
+from .menus import (menu,
+                    DEFAULT_CONTROLS,
+                    next_page,
+                    prev_page,
+                    skip_ten,
+                    back_ten,
+                    close_menu)
+
+from .formatter import (profile,
+                        profile_embed,
+                        screenshot_embeds,
+                        game_embeds,
+                        friend_embeds,
+                        gameclip_embeds,
+                        status,
+                        gwg_embeds)
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 
@@ -27,7 +41,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.0.4"
+    __version__ = "3.1.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -661,3 +675,25 @@ class XTools(commands.Cog):
         data = await self.microsoft_services_status()
         embed = status(data)
         await ctx.send(embed=embed)
+
+    @commands.command(name="gameswithgold")
+    async def get_gameswithgold(self, ctx):
+        """View this month's free games with Gold"""
+        url = f"https://reco-public.rec.mp.microsoft.com/channels/Reco/V8.0/Lists/Collection/GamesWithGold?ItemTypes=Game&Market=US&deviceFamily=Windows.Xbox"
+        async with self.session.post(url=url) as res:
+            async with ctx.typing():
+                games_raw = await res.json(content_type=None)
+                game_ids = []
+                for game in games_raw["Items"]:
+                    game_ids.append(game["Id"])
+                if len(game_ids) == 0:
+                    return await ctx.send("No games found!")
+                async with aiohttp.ClientSession() as session:
+                    xbl_client = await self.auth_manager(ctx, session)
+                    if not xbl_client:
+                        return
+                    game_data = json.loads((await xbl_client.catalog.get_products(game_ids)).json())
+                    products = game_data["products"]
+                    pages = gwg_embeds(products)
+                    return await menu(ctx, pages, DEFAULT_CONTROLS)
+
