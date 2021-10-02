@@ -34,11 +34,9 @@ class Meow(commands.Cog):
                 text = (await ctx.channel.history(limit=2).flatten())[
                     1
                 ].content
-                print(text)
         await self.meowstring(text, ctx)
 
     async def meowstring(self, text, ctx):
-        print(text)
         if "now" in text:
             newstring = text.replace("now", "meow")
             await ctx.send(newstring)

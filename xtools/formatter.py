@@ -170,8 +170,6 @@ def screenshot_embeds(data, gamertag):
         if caption == "":
             caption = "Uncaptioned"
         views = pic["views"]
-        if views == "":
-            views = "None lol"
         ss = pic["screenshot_uris"][0]["uri"]
         ss = ss.split("?")[0]
         timestamp = (datetime.datetime.fromisoformat(pic["date_taken"])).strftime("%m/%d/%Y, %H:%M:%S")
@@ -183,7 +181,7 @@ def screenshot_embeds(data, gamertag):
         embed.add_field(name="Info",
                         value=f"Game: `{check(game)}`\n"
                         f"Screenshot Name: `{check(name)}`\n"
-                        f"Views: `{check(views)}`\n"
+                        f"Views: `{views}`\n"
                         f"Taken on: `{check(timestamp)}`\n"
                         f"Caption: `{check(caption)}`\n")
         embed.set_footer(text=f"Pages: {cur_page}/{length}")
