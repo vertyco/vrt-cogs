@@ -8,7 +8,7 @@ from redbot.core.utils.chat_formatting import box
 def check(data):
     if data:
         return data
-    return "¯\_(ツ)_/¯"
+    return "¯\\_(ツ)_/¯"
 
 
 # Time Converter
@@ -74,7 +74,7 @@ def profile_embed(data):
     embed = discord.Embed(
         title=title,
         color=color,
-        description="Any field with `¯\_(ツ)_/¯` is due to account privacy settings, you can manage that "
+        description="Any field with `¯\\_(ツ)_/¯` is due to account privacy settings, you can manage that "
                     "**[here](https://account.xbox.com/en-gb/Settings)**"
     )
     following = data["friends"]["target_following_count"]
@@ -148,7 +148,7 @@ def profile_embed(data):
             event = f"{h}h {m}m ago"
         activitylist += f"{desc} - {event}\n"
     if activitylist == "":
-        activitylist = "`¯\_(ツ)_/¯`"
+        activitylist = "`¯\\_(ツ)_/¯`"
     embed.add_field(name="Recent Activity", value=activitylist, inline=False)
 
     if bio != "":
