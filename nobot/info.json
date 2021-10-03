@@ -13,6 +13,6 @@
     "required_cogs" : {},
     "requirements" : [],
     "short": "Filter bot messages",
-    "tags" : ["utility"],
+    "tags" : ["utility", "nobot"],
     "type": "COG"
 }
