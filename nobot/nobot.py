@@ -138,6 +138,7 @@ class NoBot(commands.Cog):
                 except discord.Forbidden:
                     print("Insufficient permissions")
                     pass
+                return
         if message.embeds:
             for embed in message.embeds:
                 for msg in config["content"]:
@@ -147,5 +148,7 @@ class NoBot(commands.Cog):
                         except discord.Forbidden:
                             print("Insufficient permissions")
                             pass
+                    return
+        return
 
 
