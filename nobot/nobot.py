@@ -119,7 +119,7 @@ class NoBot(commands.Cog):
         if not message.author.bot:
             return
 
-        if message.author == self.bot.user:
+        if str(message.author) == str(self.bot.user):
             return
 
         if not message.guild:
