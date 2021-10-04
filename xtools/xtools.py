@@ -30,7 +30,8 @@ from .formatter import (profile,
                         friend_embeds,
                         gameclip_embeds,
                         status,
-                        gwg_embeds)
+                        gwg_embeds,
+                        mostplayed)
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 
@@ -41,7 +42,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.1.4"
+    __version__ = "3.2.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -116,7 +117,8 @@ class XTools(commands.Cog):
     async def pull_user(self, ctx):
         users = await self.config.users()
         if str(ctx.author.id) not in users:
-            await ctx.send(f"You haven't set your Gamertag yet! To set a Gamertag type `{ctx.prefix}setgt`")
+            await ctx.send(f"You haven't set your Gamertag yet! To set a Gamertag type `{ctx.prefix}setgt`\n"
+                           f"Alternatively, you can type the command and include a Gamertag.")
             return None
         return users[str(ctx.author.id)]["gamertag"]
 
@@ -417,12 +419,12 @@ class XTools(commands.Cog):
                 async with self.session.get(url=url, headers=header, params=params) as res:
                     data = await res.json(content_type=None)
                     c_token = data["pagingInfo"]["continuationToken"]
-                    if not c_token:
-                        running = False
-                        break
                     titles = data["titles"]
                     game_data["titles"].extend(titles)
-                    params = {"continuationToken": c_token}
+                    if not c_token:
+                        running = False
+                    else:
+                        params = {"continuationToken": c_token}
             if len(game_data["titles"]) == 0:
                 embed = discord.Embed(
                     color=discord.Color.red(),
@@ -696,4 +698,76 @@ class XTools(commands.Cog):
                     products = game_data["products"]
                     pages = gwg_embeds(products)
                     return await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    @commands.command(name="xmostplayed")
+    async def get_mostplayed(self, ctx, *, gamertag=None):
+        """View your most played games"""
+        if not gamertag:
+            gamertag = await self.pull_user(ctx)
+            if not gamertag:
+                return
+        async with aiohttp.ClientSession() as session:
+            xbl_client = await self.auth_manager(ctx, session)
+            if not xbl_client:
+                return
+            embed = discord.Embed(
+                description="Gathering data...",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
+            try:
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+            except ClientResponseError:
+                embed = discord.Embed(description="Invalid Gamertag. Try again.")
+                return await msg.edit(embed=embed)
+            gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
+
+            token = await self.get_token(session)
+            header = {"x-xbl-contract-version": "2",
+                      "Authorization": token,
+                      "Accept-Language": "en-US",
+                      }
+            url = f"https://achievements.xboxlive.com/users/xuid({xuid})/history/titles"
+
+            # Keep pulling continuation token till all data is obtained
+            running = True
+            params = None
+            game_data = {"titles": []}
+            while running:
+                async with self.session.get(url=url, headers=header, params=params) as res:
+                    data = await res.json(content_type=None)
+                    c_token = data["pagingInfo"]["continuationToken"]
+                    titles = data["titles"]
+                    game_data["titles"].extend(titles)
+                    if not c_token:
+                        running = False
+                    else:
+                        params = {"continuationToken": c_token}
+            if len(game_data["titles"]) == 0:
+                embed = discord.Embed(
+                    color=discord.Color.red(),
+                    description="Your privacy settings are blocking your gameplay history.\n"
+                                "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings."
+                )
+                return await msg.edit(embed=embed)
+
+            titles = game_data["titles"]
+            embed = discord.Embed(
+                description=f"Found `{len(titles)}` titles..",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            await msg.edit(embed=embed)
+            most_played = {}
+            for title in titles:
+                scid = title["serviceConfigId"]
+                apptype = title["titleType"]
+                if apptype != "LiveApp":
+                    data = json.loads((await xbl_client.userstats.get_stats(xuid, scid)).json())
+                    most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
+            pages = mostplayed(most_played, gt)
+            await msg.delete()
+            return await menu(ctx, pages, DEFAULT_CONTROLS)
+
 

@@ -1,5 +1,6 @@
 import discord
 import datetime
+import math
 
 from redbot.core.utils.chat_formatting import box
 
@@ -436,6 +437,50 @@ def gwg_embeds(products):
         embeds.append(embed)
         count += 1
     return embeds
+
+
+# Format most played list
+def mostplayed(data, gt):
+    embeds = []
+    sorted_playtime = sorted(data.items(), key=lambda x: x[1], reverse=True)
+
+    total_playtime = 0
+    for game in sorted_playtime:
+        total_playtime += int(game[1])
+
+    pages = math.ceil(len(sorted_playtime) / 10)
+    start = 0
+    stop = 10
+    for p in range(int(pages)):
+        mostplayedlist = ""
+        if stop > len(sorted_playtime):
+            stop = len(sorted_playtime)
+        for i in range(start, stop, 1):
+            game = sorted_playtime[i][0]
+            minutes_played = int(sorted_playtime[i][1])
+            hours, minutes = divmod(minutes_played, 60)
+            days, hours = divmod(hours, 24)
+            if days > 0:
+                mostplayedlist += f"**{i + 1}.** `{days}d {hours}h {minutes}m` - {game}\n"
+            elif hours > 0:
+                mostplayedlist += f"**{i + 1}.** `{hours}h {minutes}m` - {game}\n"
+            elif minutes_played == 0:
+                mostplayedlist += f"**{i + 1}.** `None` - {game}\n"
+            else:
+                mostplayedlist += f"**{i + 1}.** `{minutes} minutes` - {game}\n"
+        start += 10
+        stop += 10
+        embed = discord.Embed(
+            title=f"{gt}'s Most Played Games",
+            description=mostplayedlist,
+            color=discord.Color.random()
+        )
+        hours, minutes = divmod(total_playtime, 60)
+        days, hours = divmod(hours, 24)
+        embed.set_footer(text=f"Page {p + 1}/{int(pages)} | Total Playtime: {days}d {hours}h {minutes}m")
+        embeds.append(embed)
+    return embeds
+
 
 
 
