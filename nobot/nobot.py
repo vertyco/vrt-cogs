@@ -142,12 +142,13 @@ class NoBot(commands.Cog):
         if message.embeds:
             for embed in message.embeds:
                 for msg in config["content"]:
-                    if msg.lower() in embed.description.lower():
-                        try:
-                            await message.delete()
-                        except discord.Forbidden:
-                            print("Insufficient permissions")
-                            pass
+                    if embed.description:
+                        if msg.lower() in embed.description.lower():
+                            try:
+                                await message.delete()
+                            except discord.Forbidden:
+                                print("Insufficient permissions")
+                                pass
                 for field in embed.fields:
                     for msg in config["content"]:
                         if msg.lower() in field.value.lower():
