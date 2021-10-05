@@ -9,7 +9,7 @@ class NoBot(commands.Cog):
     Filter messages from other bots
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -131,14 +131,14 @@ class NoBot(commands.Cog):
         config = await self.config.guild(message.guild).all()
         if str(message.author.id) not in config["bots"]:
             return
+
         for msg in config["content"]:
-            if msg in message.content:
+            if msg.lower() in message.content.lower():
                 try:
                     await message.delete()
                 except discord.Forbidden:
                     print("Insufficient permissions")
                     pass
-                return
         if message.embeds:
             for embed in message.embeds:
                 for msg in config["content"]:
@@ -148,7 +148,6 @@ class NoBot(commands.Cog):
                         except discord.Forbidden:
                             print("Insufficient permissions")
                             pass
-                        break
                 for field in embed.fields:
                     for msg in config["content"]:
                         if msg.lower() in field.value.lower():
@@ -157,7 +156,5 @@ class NoBot(commands.Cog):
                             except discord.Forbidden:
                                 print("Insufficient permissions")
                                 pass
-                            break
-        return
 
 
