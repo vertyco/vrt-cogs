@@ -7,9 +7,13 @@ from redbot.core import commands, Config
 class NoBot(commands.Cog):
     """
     Filter messages from other bots
+
+    Some "Free" bots spam ads and links when using their commands, this cog fixes that.
+    Vertyco#0117 is in no way liable for how this cog is used
+    or any ToS it may violate for the bot it blocks messages from.
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -114,24 +118,33 @@ class NoBot(commands.Cog):
                 content.pop(i)
                 await ctx.tick()
 
+    # Only detects messages from bots set
     @commands.Cog.listener("on_message")
     async def no_bot_chat(self, message: discord.Message):
+        # Make sure message IS from a bot
         if not message.author.bot:
             return
 
+        # Check if message author is itself
         if str(message.author) == str(self.bot.user):
             return
 
+        # Make sure message is from a guild
         if not message.guild:
             return
 
+        # Make sure its a message?
         if not message:
             return
 
+        # Pull config
         config = await self.config.guild(message.guild).all()
+
+        # Check if message author is in the config
         if str(message.author.id) not in config["bots"]:
             return
 
+        # Check if filter is contained in message content
         for msg in config["content"]:
             if msg.lower() in message.content.lower():
                 try:
@@ -139,16 +152,19 @@ class NoBot(commands.Cog):
                 except discord.Forbidden:
                     print("Insufficient permissions")
                     pass
+
+        # Check if message contains an embed
         if message.embeds:
             for embed in message.embeds:
                 for msg in config["content"]:
-                    if embed.description:
+                    if embed.description:  # Make sure embed actually has a description
                         if msg.lower() in embed.description.lower():
                             try:
                                 await message.delete()
                             except discord.Forbidden:
                                 print("Insufficient permissions")
                                 pass
+                # Iterate through embed fields
                 for field in embed.fields:
                     for msg in config["content"]:
                         if msg.lower() in field.value.lower():
