@@ -358,13 +358,13 @@ class ArkShop(commands.Cog):
             for p in pagify(packlist):
                 await ctx.send(box(p, lang="python"))
         else:
-            if packname not in packs:
+            if packname.lower() not in str(packs).lower():
                 return await ctx.send("Pack not found")
             for pack in packs:
                 if pack.lower() == packname.lower():
                     fullpath = os.path.join(path, packname)
                     size = os.path.getsize(fullpath)
-                    return await ctx.send(f"**{packname}** is `{size}` Bytes")
+                    return await ctx.send(f"**{packname}:** `{size}` Bytes")
 
     @_file.command(name="rename")
     async def rename_pack(self, ctx, current_name, new_name):
