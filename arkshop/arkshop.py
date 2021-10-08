@@ -364,7 +364,7 @@ class ArkShop(commands.Cog):
                 if pack.lower() == packname.lower():
                     fullpath = os.path.join(path, packname)
                     size = os.path.getsize(fullpath)
-                    return await ctx.send(f"**{packname}:** `{size}` Bytes")
+                    return await ctx.send(f"**{pack}:** `{size}` Bytes")
 
     @_file.command(name="rename")
     async def rename_pack(self, ctx, current_name, new_name):
