@@ -267,7 +267,7 @@ def friend_embeds(friend_data, main_gamertag):
                        f"AccountTier: `{tier}`\n" \
                        f"Player Rep: `{rep}`\n" \
                        f"XUID: `{xuid}`\n" \
-                       f"Is Following {main_gamertag}: `{followed_by}`"
+                       # f"Is Following {main_gamertag}: `{followed_by}`" guess this only works for token owner
 
         game = None
         color = discord.Color.random()
