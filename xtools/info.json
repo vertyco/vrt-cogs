@@ -12,7 +12,7 @@
     "min_python_version" : [3, 8, 1],
     "permissions" : ["read_messages", "send_messages", "manage_messages", "embed_links", "add_reactions", "manage_reactions"],
     "required_cogs" : {},
-    "requirements" : ["xmltojson>=0.2.0", "xbox-webapi"],
+    "requirements" : ["xmltojson>=0.2.0", "xbox-webapi", "utils>=1.0.1"],
     "short": "Get Xbox Live Info and Player Stats.",
     "tags" : ["fun", "tools", "utility", "xbox", "microsoft", "xsapi"],
     "type": "COG"
