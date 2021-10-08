@@ -179,7 +179,13 @@ class XTools(commands.Cog):
         """Set Client ID and Secret"""
         await self.config.clientid.set(client_id)
         await self.config.clientsecret.set(client_secret)
-        return await ctx.send(f"Tokens have been set! Run `{ctx.prefix}apiset authorize` to authorize your tokens")
+        await ctx.send(f"Tokens have been set! Run `{ctx.prefix}apiset authorize` to authorize your tokens")
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            await ctx.send("I do not have permissions to delete your message!")
+        except discord.NotFound:
+            print("Where dafuq did the message go?")
 
     @api_settings.command(name="authorize")
     async def authorize_tokens(self, ctx):
