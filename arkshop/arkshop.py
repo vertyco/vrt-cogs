@@ -345,18 +345,24 @@ class ArkShop(commands.Cog):
             return await ctx.send(embed=embed)
 
     @_file.command(name="listpacks")
-    async def list_packs(self, ctx):
-        """List all data packs in the main path as well as their file size"""
+    async def list_packs(self, ctx, packname=None):
+        """List data packs in the main path as well as their file size"""
         path = await self.config.main_path()
         packs = os.listdir(path)
-        packlist = "NAME - SIZE IN BYTES\n"
-        for pack in packs:
-            fullpath = os.path.join(path, pack)
+        if not packname:
+            packlist = "NAME - SIZE IN BYTES\n"
+            for pack in packs:
+                fullpath = os.path.join(path, pack)
+                size = os.path.getsize(fullpath)
+                packlist += f"{pack} - {size}\n"
+            for p in pagify(packlist):
+                await ctx.send(box(p, lang="python"))
+        else:
+            if packname not in packs:
+                return await ctx.send("Pack not found")
+            fullpath = os.path.join(path, packname)
             size = os.path.getsize(fullpath)
-            packlist += f"{pack} - {size}\n"
-
-        for p in pagify(packlist):
-            await ctx.send(box(p, lang="python"))
+            await ctx.send(f"Size of {packname}: {size} Bytes")
 
     @_file.command(name="rename")
     async def rename_pack(self, ctx, current_name, new_name):
