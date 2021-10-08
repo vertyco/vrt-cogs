@@ -360,9 +360,11 @@ class ArkShop(commands.Cog):
         else:
             if packname not in packs:
                 return await ctx.send("Pack not found")
-            fullpath = os.path.join(path, packname)
-            size = os.path.getsize(fullpath)
-            await ctx.send(f"Size of {packname}: {size} Bytes")
+            for pack in packs:
+                if pack.lower() == packname.lower():
+                    fullpath = os.path.join(path, packname)
+                    size = os.path.getsize(fullpath)
+                    return await ctx.send(f"**{packname}** is `{size}` Bytes")
 
     @_file.command(name="rename")
     async def rename_pack(self, ctx, current_name, new_name):
