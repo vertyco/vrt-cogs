@@ -102,6 +102,8 @@ class Fluent(commands.Cog):
     async def _message_handler(self, message: discord.Message):
         if message.author.bot:
             return
+        if not message.guild:
+            return
         channels = await self.config.guild(message.guild).channels()
         for channel_id in channels:
             if int(message.channel.id) == int(channel_id):
