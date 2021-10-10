@@ -564,6 +564,11 @@ class XTools(commands.Cog):
             friend_data = json.loads((await xbl_client.people.get_friends_by_xuid(xuid)).json())
             self.cache[str(ctx.author.id)] = friend_data
             pages = friend_embeds(friend_data, gt)
+            if len(pages) == 0:
+                embed = discord.Embed(
+                    description=f"No friends found for {gamertag}."
+                )
+                return await msg.edit(embed=embed)
             await msg.delete()
 
             search_controls = {
