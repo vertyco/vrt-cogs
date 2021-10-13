@@ -98,8 +98,7 @@ class XTools(commands.Cog):
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
             if "validation error" in str(e):
-                await ctx.send(f"Client ID and Secret have not been authorized yet!\n"
-                               f"Bot owner needs to run `{ctx.prefix}apiset authorize`")
+                await ctx.send(f"Tokens have not been authorized by bot owner yet!")
                 return None
         await auth_mgr.refresh_tokens()
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
@@ -109,7 +108,8 @@ class XTools(commands.Cog):
     # Send user DM asking for authentication
     async def ask_auth(self, ctx, author: discord.User, auth_url):
         plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
-                   f"Copy whats in the address bar after you authorize and reply to this message with the result.\n" \
+                   f"Copy the contents of the address bar after you authorize " \
+                   f"and reply to this message with the result.\n" \
                    f"{auth_url}"
         await author.send(plz_auth)
 
