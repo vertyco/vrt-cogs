@@ -2,12 +2,10 @@ import discord
 import asyncio
 import json
 import xmltojson
-import webbrowser
 
 from redbot.core import commands, Config
 
 import aiohttp
-from aiohttp import web, ClientResponseError
 
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
@@ -42,7 +40,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.3.4"
+    __version__ = "3.3.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -238,7 +236,7 @@ class XTools(commands.Cog):
                     return
                 try:
                     profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-                except ClientResponseError:
+                except aiohttp.ClientResponseError:
                     return await ctx.send("Invalid Gamertag. Try again.")
                 # Format json data
                 gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -260,7 +258,7 @@ class XTools(commands.Cog):
                 return
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid Gamertag. Try again.")
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             return await ctx.send(f"`{xuid}`")
@@ -274,7 +272,7 @@ class XTools(commands.Cog):
                 return
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_xuid(xuid)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid XUID. Try again.")
             gt, _, _, _, _, _, _, _, _ = profile(profile_data)
             return await ctx.send(f"`{gt}`")
@@ -299,7 +297,7 @@ class XTools(commands.Cog):
             msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -350,7 +348,7 @@ class XTools(commands.Cog):
             msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -383,7 +381,7 @@ class XTools(commands.Cog):
             msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -535,7 +533,7 @@ class XTools(commands.Cog):
             msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -647,7 +645,7 @@ class XTools(commands.Cog):
             msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -707,7 +705,7 @@ class XTools(commands.Cog):
             msg = await ctx.send(embed=embed)
             try:
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except ClientResponseError:
+            except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
