@@ -42,7 +42,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.2.4"
+    __version__ = "3.3.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -87,6 +87,15 @@ class XTools(commands.Cog):
         auth_mgr = AuthenticationManager(
             session, client_id, client_secret, REDIRECT_URI
         )
+        if tokens == {}:
+            if ctx.author.id in self.bot.owner_ids:
+                auth_url = auth_mgr.generate_authorization_url()
+                await ctx.send("Sending you a DM to authorize your tokens.")
+                await self.ask_auth(ctx, ctx.author, auth_url)
+                return None
+            else:
+                await ctx.send(f"Tokens have not been authorized by bot owner yet!")
+                return None
         try:
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
@@ -98,6 +107,40 @@ class XTools(commands.Cog):
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
         xbl_client = XboxLiveClient(auth_mgr)
         return xbl_client
+
+    # Send user DM asking for authentication
+    async def ask_auth(self, ctx, author: discord.User, auth_url):
+        plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
+                   f"Copy whats in the address bar after you authorize and reply to this message with the result.\n" \
+                   f"{auth_url}"
+        await author.send(plz_auth)
+
+        def check(message):
+            return message.author == ctx.author
+
+        try:
+            reply = await self.bot.wait_for("message", check=check, timeout=120)
+        except asyncio.TimeoutError:
+            return await author.send("Authorization timeout.")
+
+        if "code" in reply.content:
+            code = reply.content.split("code=")[-1]
+        else:
+            return await author.send("Invalid response")
+
+        client_id = await self.config.clientid()
+        client_secret = await self.config.clientsecret()
+
+        async with aiohttp.ClientSession() as session:
+            auth_mgr = AuthenticationManager(
+                session, client_id, client_secret, REDIRECT_URI
+            )
+            try:
+                await auth_mgr.request_tokens(code)
+                await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
+            except Exception as e:
+                return await author.send(f"Authorization failed: {e}")
+            await author.send("Your authorization has been verified✅")
 
     # Get XSTS token
     async def get_token(self, session):
@@ -186,69 +229,6 @@ class XTools(commands.Cog):
             await ctx.send("I do not have permissions to delete your message!")
         except discord.NotFound:
             print("Where dafuq did the message go?")
-
-    @api_settings.command(name="authorize")
-    async def authorize_tokens(self, ctx):
-        """
-        Authorize the Client ID and Secret
-
-        This opens a web page on the computer hosting your bot, you will need to sign
-        in and authorize the device to use the cog
-        """
-        await ctx.send("Authorizing, make sure to check the computer hosting your bot to authorize it.")
-        tokens = await self.config.tokens()
-        client_id = await self.config.clientid()
-        client_secret = await self.config.clientsecret()
-        queue = asyncio.Queue(1)
-
-        # Pull response from the web browser after authorization
-        async def auth_callback(request):
-            error = request.query.get("error")
-            if error:
-                description = request.query.get("error_description")
-                print(f"Error in auth_callback: {description}")
-                return
-            # Run in task to not make unsuccessful parsing of the HTTP response fail
-            asyncio.create_task(queue.put(request.query["code"]))
-            return web.Response(
-                headers={"content-type": "text/html"},
-                text="<script>window.close()</script>",
-            )
-
-        async def auth_session(client_id: str, client_secret: str, redirect_uri: str):
-            async with aiohttp.ClientSession() as session:
-                auth_mgr = AuthenticationManager(
-                    session, client_id, client_secret, redirect_uri
-                )
-                # Refresh tokens if we have them
-                if tokens != {}:
-                    auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
-                    await auth_mgr.refresh_tokens()
-                # Request new ones if they are not valid
-                if not (auth_mgr.xsts_token and auth_mgr.xsts_token.is_valid()):
-                    auth_url = auth_mgr.generate_authorization_url()
-                    webbrowser.open(auth_url)
-                    code = await queue.get()
-                    await auth_mgr.request_tokens(code)
-                await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
-
-        app = web.Application()
-        app.add_routes([web.get("/auth/callback", auth_callback)])
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, "localhost", 8080)
-        try:
-            await site.start()
-        except OSError:
-            await site.stop()
-            return await ctx.send("Error: There is another process using port 8080, close it and re-run the command.")
-        try:
-            await auth_session(client_id, client_secret, REDIRECT_URI)
-        except AuthenticationException:
-            await site.stop()
-            return await ctx.send("Authentication failed :(")
-        await site.stop()
-        await ctx.send(f"Tokens Authorized✅")
 
     @commands.command(name="setgt")
     async def set_gamertag(self, ctx: commands, *, gamertag):
@@ -780,5 +760,3 @@ class XTools(commands.Cog):
             pages = mostplayed(most_played, gt)
             await msg.delete()
             return await menu(ctx, pages, DEFAULT_CONTROLS)
-
-
