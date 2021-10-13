@@ -209,9 +209,7 @@ class XTools(commands.Cog):
         )
         embed.add_field(
             name="Step 6",
-            value=f"• Type `{ctx.prefix}apiset authorize` and your bot will open a web browser for you to sign in\n"
-                  f"and verify. Do not use the same account that you registered the application with!\n"
-                  f"If the window is opening and closing immediately, go to Microsoft.com and sign out then try again.",
+            value=f"• Try any command and the bot will DM you the link with instructions to authorize your tokens",
             inline=False
         )
         embed.set_footer(text='Hint: The "Value" for the secret is what you use, NOT the "Secret ID"')
