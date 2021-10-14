@@ -9,9 +9,7 @@ import aiohttp
 
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
-from xbox.webapi.scripts import REDIRECT_URI
 from xbox.webapi.api.client import XboxLiveClient
-from xbox.webapi.common.exceptions import AuthenticationException
 
 from .menus import (menu,
                     DEFAULT_CONTROLS,
@@ -31,6 +29,7 @@ from .formatter import (profile,
                         gwg_embeds,
                         mostplayed)
 
+REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 
 
@@ -40,7 +39,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.3.5"
+    __version__ = "3.3.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -87,7 +86,13 @@ class XTools(commands.Cog):
         )
         if tokens == {}:
             if ctx.author.id in self.bot.owner_ids:
-                auth_url = auth_mgr.generate_authorization_url()
+                url = "https://login.live.com/oauth20_authorize.srf?"
+                cid = f"client_id={client_id}"
+                types = "&response_type=code&approval_prompt=auto"
+                scopes = "&scope=Xboxlive.signin+Xboxlive.offline_access&"
+                redirect_uri = "&redirect_uri=http://localhost/auth/callback"
+                # auth_url = auth_mgr.generate_authorization_url()
+                auth_url = f"{url}{cid}{types}{scopes}{redirect_uri}"
                 await ctx.send("Sending you a DM to authorize your tokens.")
                 await self.ask_auth(ctx, ctx.author, auth_url)
                 return None
@@ -108,8 +113,8 @@ class XTools(commands.Cog):
     # Send user DM asking for authentication
     async def ask_auth(self, ctx, author: discord.User, auth_url):
         plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
-                   f"Copy the contents of the address bar after you authorize " \
-                   f"and reply to this message with the result.\n" \
+                   f"Copy the ENTIRE contents of the address bar after you authorize, " \
+                   f"and reply to this message with what you copied.\n" \
                    f"{auth_url}"
         await author.send(plz_auth)
 
@@ -137,6 +142,8 @@ class XTools(commands.Cog):
                 await auth_mgr.request_tokens(code)
                 await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
             except Exception as e:
+                if "Bad Request" in str(e):
+                    return await author.send("Bad Request")
                 return await author.send(f"Authorization failed: {e}")
             await author.send("Your authorization has been verified✅")
 
