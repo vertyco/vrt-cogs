@@ -91,7 +91,6 @@ class XTools(commands.Cog):
                 types = "&response_type=code&approval_prompt=auto"
                 scopes = "&scope=Xboxlive.signin+Xboxlive.offline_access&"
                 redirect_uri = "&redirect_uri=http://localhost/auth/callback"
-                # auth_url = auth_mgr.generate_authorization_url()
                 auth_url = f"{url}{cid}{types}{scopes}{redirect_uri}"
                 await ctx.send("Sending you a DM to authorize your tokens.")
                 await self.ask_auth(ctx, ctx.author, auth_url)
