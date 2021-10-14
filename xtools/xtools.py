@@ -142,7 +142,9 @@ class XTools(commands.Cog):
                 await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
             except Exception as e:
                 if "Bad Request" in str(e):
-                    return await author.send("Bad Request")
+                    return await author.send("Bad Request, make sure to paste the entire contents of the address bar.\n"
+                                             "Also make sure that the callback URI in your azure app is:\n"
+                                             "http://localhost/auth/callback")
                 return await author.send(f"Authorization failed: {e}")
             await author.send("Your authorization has been verified✅")
 
