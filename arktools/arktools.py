@@ -1629,7 +1629,7 @@ class ArkTools(commands.Cog):
                     guildsettings[cluster]["servers"][server]["cluster"] = cluster
                     server = guildsettings[cluster]["servers"][server]
                     self.servercount += 1
-                    self.alerts[server["chatchannel"]] = 0
+                    # self.alerts[server["chatchannel"]] = 0
                     self.playerlist[server["chatchannel"]] = []
                     self.taskdata.append([guild.id, server])
                     self.channels.append(server["globalchatchannel"])
@@ -2265,10 +2265,10 @@ class ArkTools(commands.Cog):
     # Handles sending off tribe logs to their designated channels
     async def tribe_handler(self, guild, tribe_id, embed):
         settings = await self.config.guild(guild).all()
-        if "masterlog" in settings.keys():
+        if "masterlog" in settings:
             masterlog = guild.get_channel(settings["masterlog"])
             await masterlog.send(embed=embed)
-        if "tribes" in settings.keys():
+        if "tribes" in settings:
             for tribes in settings["tribes"]:
                 if tribe_id == tribes:
                     tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])

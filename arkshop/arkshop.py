@@ -1262,10 +1262,11 @@ class ArkShop(commands.Cog):
                 port=server["port"],
                 passwd=server["password"]
             )
-        except WindowsError as e:
-            log.exception(f"Rcon failed:", e)
-        except Exception:
-            log.exception(f"Other RCON failure", Exception)
+        except Exception as e:
+            if "semaphore" in str(e):
+                log.info(f"{server['cluster']} {server['name']} is offline")
+            else:
+                log.warning(f"RSHOP RCON Error: {e}")
 
     @commands.command(name="dshop")
     async def _datashop(self, ctx):
