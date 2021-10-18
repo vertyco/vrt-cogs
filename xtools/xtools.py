@@ -27,7 +27,8 @@ from .formatter import (profile,
                         gameclip_embeds,
                         status,
                         gwg_embeds,
-                        mostplayed)
+                        mostplayed,
+                        stats_api_format)
 
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -39,7 +40,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.3.6"
+    __version__ = "3.3.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -482,31 +483,7 @@ class XTools(commands.Cog):
                 title_id = gamelist[0][1]
                 gs = gamelist[0][2]
 
-            header = {"x-xbl-contract-version": "2",
-                      "Authorization": token,
-                      "Accept": "application/json",
-                      "Accept-Language": "en-US",
-                      "Content-Type": "application/json"
-                      }
-            url = f"https://userstats.xboxlive.com/batch"
-            payload = json.dumps({
-                "arrangebyfield": "xuid",
-                "xuids": [
-                    xuid
-                ],
-                "groups": [
-                    {
-                        "name": "Hero",
-                        "titleId": title_id
-                    }
-                ],
-                "stats": [
-                    {
-                        "name": "MinutesPlayed",
-                        "titleId": title_id
-                    }
-                ]
-            })
+            url, header, payload = stats_api_format(token, title_id, xuid)
             async with self.session.post(url=url, headers=header, data=payload) as res:
                 game_stats = await res.json(content_type=None)
 
@@ -756,11 +733,15 @@ class XTools(commands.Cog):
             await msg.edit(embed=embed)
             most_played = {}
             for title in titles:
-                scid = title["serviceConfigId"]
+                title_id = title["titleId"]
                 apptype = title["titleType"]
                 if apptype != "LiveApp":
-                    data = json.loads((await xbl_client.userstats.get_stats(xuid, scid)).json())
-                    most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
+                    url, header, payload = stats_api_format(token, title_id, xuid)
+                    async with self.session.post(url=url, headers=header, data=payload) as res:
+                        data = await res.json(content_type=None)
+                    most_played[title["name"]] = 0
+                    if len(data["statlistscollection"][0]["stats"]) > 0:
+                        most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
             pages = mostplayed(most_played, gt)
             await msg.delete()
             return await menu(ctx, pages, DEFAULT_CONTROLS)

@@ -1,6 +1,7 @@
 import discord
 import datetime
 import math
+import json
 
 from redbot.core.utils.chat_formatting import box
 
@@ -199,7 +200,9 @@ def game_embeds(gamertag, gamename, gs, data):
     achievements = data["achievements"]["achievements"]
 
     # Main data setup
-    minutes_played = int(data["stats"]["statlistscollection"][0]["stats"][0]["value"])
+    minutes_played = 0
+    if len(data["stats"]["statlistscollection"][0]["stats"]) > 0:
+        minutes_played = int(data["stats"]["statlistscollection"][0]["stats"][0]["value"])
     title_pic = data["info"]["titles"][0]["display_image"]
 
     count = 1
@@ -480,6 +483,36 @@ def mostplayed(data, gt):
         embed.set_footer(text=f"Page {p + 1}/{int(pages)} | Total Playtime: {days}d {hours}h {minutes}m")
         embeds.append(embed)
     return embeds
+
+
+# Formatting for game stats api call
+def stats_api_format(token, title_id, xuid):
+    header = {"x-xbl-contract-version": "2",
+              "Authorization": token,
+              "Accept": "application/json",
+              "Accept-Language": "en-US",
+              "Content-Type": "application/json"
+              }
+    url = f"https://userstats.xboxlive.com/batch"
+    payload = json.dumps({
+        "arrangebyfield": "xuid",
+        "xuids": [
+            xuid
+        ],
+        "groups": [
+            {
+                "name": "Hero",
+                "titleId": title_id
+            }
+        ],
+        "stats": [
+            {
+                "name": "MinutesPlayed",
+                "titleId": title_id
+            }
+        ]
+    })
+    return url, header, payload
 
 
 
