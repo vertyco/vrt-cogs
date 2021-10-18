@@ -732,16 +732,17 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
             most_played = {}
-            for title in titles:
-                title_id = title["titleId"]
-                apptype = title["titleType"]
-                if apptype != "LiveApp":
-                    url, header, payload = stats_api_format(token, title_id, xuid)
-                    async with self.session.post(url=url, headers=header, data=payload) as res:
-                        data = await res.json(content_type=None)
-                    most_played[title["name"]] = 0
-                    if len(data["statlistscollection"][0]["stats"]) > 0:
-                        most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
+            async with ctx.typing():
+                for title in titles:
+                    title_id = title["titleId"]
+                    apptype = title["titleType"]
+                    if apptype != "LiveApp":
+                        url, header, payload = stats_api_format(token, title_id, xuid)
+                        async with self.session.post(url=url, headers=header, data=payload) as res:
+                            data = await res.json(content_type=None)
+                        most_played[title["name"]] = 0
+                        if len(data["statlistscollection"][0]["stats"]) > 0:
+                            most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
             pages = mostplayed(most_played, gt)
             await msg.delete()
             return await menu(ctx, pages, DEFAULT_CONTROLS)
