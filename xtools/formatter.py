@@ -239,7 +239,11 @@ def game_embeds(gamertag, gamename, gs, data):
                 stype = stat["groupproperties"]["DisplayFormat"]
             value = "--"
             if "value" in stat:
-                value = int(float(stat["value"]))
+                print(stat["value"])
+                if stat["value"].isdigit():
+                    value = int(float(stat["value"]))
+                else:
+                    value = stat["value"]
             if stype == "Percentage":
                 value = f"{value}%"
             embed.add_field(name=statname, value=value)
