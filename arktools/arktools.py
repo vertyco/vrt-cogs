@@ -2052,7 +2052,7 @@ class ArkTools(commands.Cog):
                     # Get cached player count data
                     playercount = self.playerlist[channel]
 
-                    count = self.alerts[channel]
+                    count = self.alerts[str(channel)]
                     if playercount is None:
                         thumbnail = FAILED
                         inc = "Minutes."
