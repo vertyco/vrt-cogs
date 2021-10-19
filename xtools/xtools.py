@@ -143,8 +143,11 @@ class XTools(commands.Cog):
                 await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
             except Exception as e:
                 if "Bad Request" in str(e):
-                    return await author.send("Bad Request, make sure to paste the entire contents of the address bar.\n"
-                                             "Also make sure that the callback URI in your azure app is:\n"
+                    return await author.send("Bad Request, Make sure to use a **Different** email than the one "
+                                             "you used to make your Azure app to sign into.\n"
+                                             "Check the following as well:\n"
+                                             "• Paste the **entire** contents of the address bar.\n"
+                                             "• Make sure that the callback URI in your azure app is: "
                                              "http://localhost/auth/callback")
                 return await author.send(f"Authorization failed: {e}")
             await author.send("Your authorization has been verified✅")
@@ -216,7 +219,8 @@ class XTools(commands.Cog):
         )
         embed.add_field(
             name="Step 6",
-            value=f"• Try any command and the bot will DM you the link with instructions to authorize your tokens",
+            value=f"• Try any command and the bot will DM you the link with instructions to authorize your tokens\n"
+                  f"make sure to use a **Different** email to sign in than the one you created the Azure app with",
             inline=False
         )
         embed.set_footer(text='Hint: The "Value" for the secret is what you use, NOT the "Secret ID"')
@@ -227,7 +231,8 @@ class XTools(commands.Cog):
         """Set Client ID and Secret"""
         await self.config.clientid.set(client_id)
         await self.config.clientsecret.set(client_secret)
-        await ctx.send(f"Tokens have been set! Run `{ctx.prefix}apiset authorize` to authorize your tokens")
+        await ctx.send(f"Tokens have been set! "
+                       f"Try any command and the bot will DM you the link with instructions to authorize your tokens")
         try:
             await ctx.message.delete()
         except discord.Forbidden:
