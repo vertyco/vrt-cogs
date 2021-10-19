@@ -196,7 +196,9 @@ def screenshot_embeds(data, gamertag):
 def game_embeds(gamertag, gamename, gs, data):
     embeds = []
     # List setup
-    stats = data["stats"]["groups"][0]["statlistscollection"][0]["stats"]
+    stats = []
+    if len(data["stats"]["groups"][0]["statlistscollection"]) > 0:
+        stats = data["stats"]["groups"][0]["statlistscollection"][0]["stats"]
     achievements = data["achievements"]["achievements"]
 
     # Main data setup
