@@ -273,7 +273,7 @@ def friend_embeds(friend_data, main_gamertag):
     friends = friend_data["people"]
     for friend in friends:
         xuid = friend["xuid"]
-        followed_by = friend["is_following_caller"]
+        followed_by = friend["is_following_caller"]  # Only useful for authorized user
         name = friend["gamertag"]
         pfp = friend["display_pic_raw"]
         gs = friend["gamer_score"]
@@ -356,10 +356,10 @@ def gameclip_embeds(clip_data, gamertag):
     return embeds
 
 
-# Format microsoft service data
+# Format microsoft service data, has some commented out lines for if i plan on expanding this later
 def status(data):
     overall_status = data["ServiceStatus"]["Status"]["Overall"]["State"]
-    overall_id = data["ServiceStatus"]["Status"]["Overall"]["Id"]
+    # overall_id = data["ServiceStatus"]["Status"]["Overall"]["Id"]
     last_updated = data["ServiceStatus"]["Status"]["Overall"]["LastUpdated"]
     last_updated = fix_timestamp(last_updated).strftime("%m/%d/%Y, %H:%M:%S")
     if overall_status == "Impacted":
@@ -372,17 +372,17 @@ def status(data):
         for service in data["ServiceStatus"]["CoreServices"]["Category"]:
             service_status = service["Status"]["Name"]
             if service_status == "Impacted":
-                service_id = service["Id"]
+                # service_id = service["Id"]
                 service_name = service["Name"]
-                status_id = service["Status"]["Id"]
+                # status_id = service["Status"]["Id"]
                 actions = ''
                 for scenario in service["Scenarios"]["Scenario"]:
                     if scenario["Status"]["Name"] == "Impacted":
-                        scenario_id = scenario["Status"]["Id"]
+                        # scenario_id = scenario["Status"]["Id"]
                         action = scenario["Name"]
                         timestamp = scenario["Incidents"]["Incident"]["Begin"]
                         timestamp = fix_timestamp(timestamp).strftime("%m/%d/%Y, %H:%M:%S")
-                        message = scenario["Incidents"]["Incident"]["Stage"]["Message"]
+                        # message = scenario["Incidents"]["Incident"]["Stage"]["Message"]
                         level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
                         actions += f"`{action}`-`{timestamp}`-`{level_of_impact} impact`\n"
                 embed.add_field(name=f"{service_name}",
