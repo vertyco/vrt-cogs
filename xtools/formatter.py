@@ -244,7 +244,7 @@ def game_embeds(gamertag, gamename, gs, data):
                 else:
                     value = stat["value"]
             if stype == "Percentage":
-                value = f"{value}%"
+                value = f"{int(float(value))}%"
             embed.add_field(name=statname, value=value)
         embed.add_field(name="Achievement Info", value=info, inline=False)
         embed.set_thumbnail(url=title_pic)
