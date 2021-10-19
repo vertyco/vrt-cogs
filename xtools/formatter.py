@@ -239,7 +239,6 @@ def game_embeds(gamertag, gamename, gs, data):
                 stype = stat["groupproperties"]["DisplayFormat"]
             value = "--"
             if "value" in stat:
-                print(stat["value"])
                 if stat["value"].isdigit():
                     value = int(float(stat["value"]))
                 else:
