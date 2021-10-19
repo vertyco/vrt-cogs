@@ -150,7 +150,7 @@ class XTools(commands.Cog):
                                              "• Make sure that the callback URI in your azure app is: "
                                              "http://localhost/auth/callback")
                 return await author.send(f"Authorization failed: {e}")
-            await author.send("Your authorization has been verified✅")
+            await author.send("Tokens have been Authorized✅")
 
     # Get XSTS token
     async def get_token(self, session):
@@ -209,7 +209,8 @@ class XTools(commands.Cog):
         embed.add_field(
             name="Step 4",
             value="• On the App Page, navigate to `Certificates & secrets`\n"
-                  "• Generate a new client secret and save it for setting your tokens\n",
+                  "• Generate a new client secret and save it for setting your tokens\n"
+                  "• **Importatnt:** The 'Value' for the secret is what you use, NOT the 'Secret ID'",
             inline=False
         )
         embed.add_field(
@@ -223,7 +224,6 @@ class XTools(commands.Cog):
                   f"• Make sure to use a **Different** email to sign in than the one you created the Azure app with",
             inline=False
         )
-        embed.set_footer(text='Hint: The "Value" for the secret is what you use, NOT the "Secret ID"')
         await ctx.send(embed=embed)
 
     @api_settings.command(name="tokens")
