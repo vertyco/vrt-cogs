@@ -486,9 +486,15 @@ class ArkTools(commands.Cog):
                 pass
             return await self._addme(ctx)
         elif "n" in rep:
-            return await msg.edit(embed=discord.Embed(description="Menu closed."))
+            try:
+                return await msg.edit(embed=discord.Embed(description="Menu closed."))
+            except discord.NotFound:
+                return
         else:
-            return await msg.edit(embed=discord.Embed(description="Invalid response. Menu closed."))
+            try:
+                return await msg.edit(embed=discord.Embed(description="Invalid response. Menu closed."))
+            except discord.NotFound:
+                return
 
     # Pull nearest api key
     async def pullkey(self, settings):
