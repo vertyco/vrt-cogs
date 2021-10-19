@@ -232,6 +232,15 @@ def game_embeds(gamertag, gamename, gs, data):
         embed = discord.Embed(
             description=f"**{gamertag}'s Achievements for {gamename}**\n{gs} Gamerscore"
         )
+
+        # See if stat value is a float for a percentage or something
+        def check_float(number):
+            try:
+                float(number)
+                return True
+            except ValueError:
+                return False
+
         for stat in stats:
             statname = stat["groupproperties"]["DisplayName"]
             stype = "Integer"
@@ -239,12 +248,12 @@ def game_embeds(gamertag, gamename, gs, data):
                 stype = stat["groupproperties"]["DisplayFormat"]
             value = "--"
             if "value" in stat:
-                if stat["value"].isdigit():
+                if stat["value"].isdigit() or check_float(stat["value"]):
                     value = int(float(stat["value"]))
                 else:
                     value = stat["value"]
             if stype == "Percentage":
-                value = f"{int(float(value))}%"
+                value = f"{value}%"
             embed.add_field(name=statname, value=value)
         embed.add_field(name="Achievement Info", value=info, inline=False)
         embed.set_thumbnail(url=title_pic)
