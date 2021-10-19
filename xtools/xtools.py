@@ -220,7 +220,7 @@ class XTools(commands.Cog):
         embed.add_field(
             name="Step 6",
             value=f"• Try any command and the bot will DM you the link with instructions to authorize your tokens\n"
-                  f"make sure to use a **Different** email to sign in than the one you created the Azure app with",
+                  f"• Make sure to use a **Different** email to sign in than the one you created the Azure app with",
             inline=False
         )
         embed.set_footer(text='Hint: The "Value" for the secret is what you use, NOT the "Secret ID"')
