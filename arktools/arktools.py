@@ -1720,8 +1720,12 @@ class ArkTools(commands.Cog):
                 message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
 
         clusterchannels, allservers = await self.globalchannelchecker(message.channel)
+        if not allservers:
+            return
 
         chatchannels, map = await self.mapchannelchecker(message.channel)
+        if not map:
+            return
 
         if message.channel.id in clusterchannels:
             await self.chat_toserver_rcon(allservers, message)
