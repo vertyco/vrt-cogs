@@ -2357,6 +2357,18 @@ class ArkTools(commands.Cog):
         with open(f"{ctx.guild}.json", "rb") as file:
             await ctx.send(file=discord.File(file, f"{ctx.guild}.json"))
 
+    # Sends guild config to the channel the command was invoked from as a json file
+    @commands.command(name="statbackup")
+    @commands.guildowner()
+    async def _statbackup(self, ctx):
+        """Create backup of config and send to Discord."""
+        settings = await self.config.guild(ctx.guild).playerstats()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}.json"))
+
     # Restore config from a json file attached to command message
     @commands.command(name="restore")
     @commands.guildowner()
