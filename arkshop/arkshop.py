@@ -851,8 +851,10 @@ class ArkShop(commands.Cog):
             for i in range(start, stop, 1):
                 did = sorted_items[i][0]
                 member = self.bot.get_user(int(did))
+                if member:
+                    member = member.name
                 purchases = sorted_items[i][1]
-                items += f"**{member.name}**: `{purchases} purchases`\n"
+                items += f"**{member}**: `{purchases} purchases`\n"
             embed = discord.Embed(
                 title="Item Purchases",
                 description=items
