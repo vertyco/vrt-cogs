@@ -35,7 +35,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.2"
+    __version__ = "1.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -583,6 +583,8 @@ class ArkShop(commands.Cog):
         This is so the cog knows where to send your data
         """
         arktools = self.bot.get_cog("ArkTools")
+        if not arktools:
+            return await ctx.send(f"ArkTools is not loaded!")
         clusters = await arktools.config.guild(ctx.guild).clusters()
         clist = ""
         for clustername in clusters:
@@ -776,17 +778,14 @@ class ArkShop(commands.Cog):
     async def get_xuid_from_arktools(self, ctx):
         arktools = self.bot.get_cog("ArkTools")
         if not arktools:
-            return await ctx.send("The `ArkTools` cog is required for this cog to function, "
+            await ctx.send("The `ArkTools` cog is required for this cog to function, "
                                   "please have the bot owner install that first and load it.")
-        playerdata = await arktools.config.guild(ctx.guild).playerstats()
-        for player in playerdata:
-            if "discord" in playerdata[player]:
-                if ctx.author.id == playerdata[player]["discord"]:
-                    xuid = playerdata[player]["xuid"]
-                    break
-        else:
             return None
-        return xuid
+        playerdata = await arktools.config.guild(ctx.guild).playerstats()
+        for xuid, data in playerdata.items():
+            if "discord" in data:
+                if ctx.author.id == data["discord"]:
+                    return xuid
 
     # USER COMMANDS
     @commands.command(name="shopstats")
