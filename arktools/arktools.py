@@ -2163,15 +2163,13 @@ class ArkTools(commands.Cog):
                 tz = pytz.timezone("UTC")
                 time = datetime.datetime.now(tz)
                 timedifference = time - added
-                if not following and timedifference.seconds > 600:
+                if not following and timedifference.days > 0:
                     status = await remove_friend(xuid, token)
                     if 200 <= status <= 204:
                         ustatus = "successfully"
-                        async with self.config.guild(guild).players() as playerstats:
-                            playerstats[xuid]["lastseen"]["map"] = None
-                            msg = f"Hi {username}, you have been unfollowed by this account for not following back.\n" \
-                                  "To play this map again simply add the account again and join session."
-                            await xbl_client.message.send_message(str(xuid), msg)
+                        msg = f"Hi {username}, you have been unfollowed by this account for not following back.\n" \
+                              "To play this map again simply add the account again and join session."
+                        await xbl_client.message.send_message(str(xuid), msg)
                     else:
                         ustatus = "unsuccessfully"
                     log.info(f"{username} - {xuid} was {ustatus} removed by {sname} {cname} "
