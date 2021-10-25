@@ -854,6 +854,7 @@ class ArkShop(commands.Cog):
                 if member:
                     member = member.name
                 else:
+                    print(did)
                     member = "Deleted User?"
                 purchases = sorted_items[i][1]
                 items += f"**{member}**: `{purchases} purchases`\n"
