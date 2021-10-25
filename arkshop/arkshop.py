@@ -781,7 +781,7 @@ class ArkShop(commands.Cog):
             await ctx.send("The `ArkTools` cog is required for this cog to function, "
                                   "please have the bot owner install that first and load it.")
             return None
-        playerdata = await arktools.config.guild(ctx.guild).playerstats()
+        playerdata = await arktools.config.guild(ctx.guild).players()
         for xuid, data in playerdata.items():
             if "discord" in data:
                 if ctx.author.id == data["discord"]:
@@ -868,7 +868,7 @@ class ArkShop(commands.Cog):
         logs = await self.config.guild(ctx.guild).logs()
         users = await self.config.guild(ctx.guild).users()
         arktools = self.bot.get_cog("ArkTools")
-        playerstats = await arktools.config.guild(ctx.guild).playerstats()
+        playerstats = await arktools.config.guild(ctx.guild).players()
 
         if logs["users"] == {}:
             return await ctx.send("No purchase history yet!")
