@@ -510,20 +510,20 @@ class ArkTools(commands.Cog):
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
                     await mapchannel.send(f"Reboot in {i}")
-                    await self.executor(server, f"serverchat Reboot in {i}")
+                    await self.executor(ctx.guild, server, f"serverchat Reboot in {i}")
                 await asyncio.sleep(1)
             await ctx.send("Saving maps...")
             save = []
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
                 await mapchannel.send(f"Saving map...")
-                save.append(self.executor(server, "saveworld"))
+                save.append(self.executor(ctx.guild, server, "saveworld"))
             await asyncio.gather(*save)
             await asyncio.sleep(5)
             await ctx.send("Running DoExit...")
             exiting = []
             for server in serverlist:
-                exiting.append(self.executor(server, "doexit"))
+                exiting.append(self.executor(ctx.guild, server, "doexit"))
             await asyncio.gather(*exiting)
         else:
             rtasks = []
@@ -1697,7 +1697,7 @@ class ArkTools(commands.Cog):
                 if "discord" in msg.lower() or "discordia" in msg.lower():
                     try:
                         link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
-                        await self.executor(server, f"serverchat {link}")
+                        await self.executor(guild, server, f"serverchat {link}")
                     except Exception as e:
                         log.exception(f"INVITE CREATION FAILED: {e}")
 
@@ -1709,7 +1709,7 @@ class ArkTools(commands.Cog):
                     for data in self.servers:
                         s = data[1]
                         if s["cluster"] == server["cluster"] and s["name"] != server["name"]:
-                            await self.executor(s, f"serverchat {server['name'].capitalize()}: {msg}")
+                            await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
 
     @tasks.loop(seconds=60)
     async def status_channel(self):
