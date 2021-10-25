@@ -5,6 +5,7 @@ import socket
 import json
 import re
 import aiohttp
+import pydantic.error_wrappers
 import pytz
 
 from rcon import Client
@@ -46,7 +47,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1843,8 +1844,9 @@ class ArkTools(commands.Cog):
                     xuid = player[1]
                     gamertag = player[0]
                     # New player found
+                    newplayermessage = ""
                     if xuid not in stats:
-                        newplayermessage = f"**{gamertag}** added to the database.\n"
+                        newplayermessage += f"**{gamertag}** added to the database.\n"
                         log.info(f"New Player - {gamertag}")
                         stats[xuid] = {
                             "playtime": {"total": 0},
@@ -1955,7 +1957,7 @@ class ArkTools(commands.Cog):
             return
         eventlog = settings["eventlog"]
         tokendata = []
-        for xuid, data in settings["stats"].items():
+        for xuid, data in settings["players"].items():
             if "discord" in data:
                 if str(member.id) == data["discord"]:
                     for cname, cluster in settings["clusters"].items():
@@ -2051,35 +2053,44 @@ class ArkTools(commands.Cog):
                                      f"for exceeding {unfriendtime} days of inactivity.")
 
                         # Check host Gamertag friends list and unfollow the users not following them back
-                        friends = json.loads((await xbl_client.people.get_friends_own()).json())
-                        friends = friends["people"]
-                        for person in friends:
-                            xuid = person["xuid"]
-                            displayname = person["display_name"]
-                            following = person["is_following_caller"]
-                            if not following:
-                                status = await remove_friend(xuid, token)
-                                if 200 <= status <= 204:
-                                    ustatus = "Successfuly"
-                                    if xuid in settings["players"]:
-                                        async with self.config.guild(guild).players() as playerstats:
-                                            playerstats[xuid]["lastseen"]["map"] = None
-                                    msg = "AUTOMATED MESSAGE\n\n You have been unfriended by this Gamertag.\n" \
-                                          "Reason: Not following back\n" \
-                                          "If you want to join this server again you will need to join the Discord " \
-                                          "and re-add yourself or join the server when its on the lists."
-                                    await xbl_client.message.send_message(str(xuid), msg)
-                                else:
-                                    ustatus = "Unsuccessfuly"
-                                log.info(f"{displayname} - {xuid} was {ustatus} removed by {host} "
-                                         f"for unfollowing.")
-                                if eventlog:
-                                    embed = discord.Embed(
-                                        description=f"**{displayname}** - `{xuid}` was removed by {host} for "
-                                                    f"unfollowing.",
-                                        color=discord.Color.red()
-                                    )
-                                    await eventlog.send(embed=embed)
+                        friends = None
+                        try:
+                            friends = json.loads((await xbl_client.people.get_friends_own()).json())
+                            friends = friends["people"]
+                        except pydantic.error_wrappers.ValidationError:
+                            log.info(f"Pydantic error, Microsoft side maybe?")
+                            pass
+                        except Exception as e:
+                            log.warning(f"Maintenance Get-Friends API call ERROR: {e}")
+                            pass
+                        if friends:
+                            for person in friends:
+                                xuid = person["xuid"]
+                                displayname = person["display_name"]
+                                following = person["is_following_caller"]
+                                if not following:
+                                    status = await remove_friend(xuid, token)
+                                    if 200 <= status <= 204:
+                                        ustatus = "Successfuly"
+                                        if xuid in settings["players"]:
+                                            async with self.config.guild(guild).players() as playerstats:
+                                                playerstats[xuid]["lastseen"]["map"] = None
+                                        msg = "AUTOMATED MESSAGE\n\n You have been unfriended by this Gamertag.\n" \
+                                              "Reason: Not following back\n" \
+                                              "If you want to join this server again you will need to join the Discord " \
+                                              "and re-add yourself or join the server when its on the lists."
+                                        await xbl_client.message.send_message(str(xuid), msg)
+                                    else:
+                                        ustatus = "Unsuccessfuly"
+                                    log.info(f"{displayname} - {xuid} was {ustatus} removed by {host} "
+                                             f"for unfollowing.")
+                                    if eventlog:
+                                        embed = discord.Embed(
+                                            description=f"**{displayname}** - `{xuid}` was removed by {host} for "
+                                                        f"unfollowing.",
+                                            color=discord.Color.red()
+                                        )
+                                        await eventlog.send(embed=embed)
             if eventlog:
                 for user in expired:
                     player = user[1]
