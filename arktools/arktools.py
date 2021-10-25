@@ -351,7 +351,7 @@ class ArkTools(commands.Cog):
                 if "tokens" in server:
                     tokendata = server["tokens"]
                     map_options += f"**{servernum}.** `{server['gamertag']}` - `{sname} {cname}`\n"
-                    serverlist.append((servernum, server['gamertag'], tokendata))
+                    serverlist.append((servernum, server['gamertag'], tokendata, cname, sname))
                     servernum += 1
         map_options += f"**All** - `Adds All Servers`"
         embed = discord.Embed(
@@ -415,6 +415,8 @@ class ArkTools(commands.Cog):
                 if int(reply.content) == data[0]:
                     gt = data[1]
                     tokendata = data[2]
+                    cname = data[3]
+                    sname = data[4]
                     break
             else:
                 color = discord.Color.red()
@@ -427,7 +429,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
             async with aiohttp.ClientSession() as session:
-                xbl_client, token = await self.auth_manager(ctx, session, tokendata)
+                xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokendata)
                 if not xbl_client:
                     return
                 status = await add_friend(xuid, token)
