@@ -90,6 +90,18 @@ async def remove_friend(xuid: str, token: str):
             return res.status
 
 
+# API call for retrieving followers
+async def get_followers(token: str):
+    url = "https://peoplehub.xboxlive.com/users/me/people/followers/decoration/details"
+    headers = {
+        'x-xbl-contract-version': ' 2',
+        'Authorization': token,
+        "Accept-Language": "en-US",
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url=url, headers=headers) as res:
+            return await res.json()
+
 
 
 

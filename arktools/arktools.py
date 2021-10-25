@@ -5,7 +5,6 @@ import socket
 import json
 import re
 import aiohttp
-import pydantic.error_wrappers
 import pytz
 
 from rcon import Client
@@ -22,13 +21,16 @@ from .menus import menu, DEFAULT_CONTROLS
 from .calls import (serverchat,
                     add_friend,
                     remove_friend,
-                    manual_rcon)
+                    manual_rcon,
+                    get_followers)
 from .formatter import (tribelog_format,
                         profile_format,
                         expired_players,
                         lb_format,
                         cstats_format,
-                        player_stats)
+                        player_stats,
+                        detect_friends,
+                        fix_timestamp)
 
 import logging
 
@@ -97,6 +99,7 @@ class ArkTools(commands.Cog):
         self.status_channel.start()
         self.playerstats.start()
         self.maintenance.start()
+        self.autofriend.start()
 
     def cog_unload(self):
         self.getchat.cancel()
@@ -104,6 +107,7 @@ class ArkTools(commands.Cog):
         self.status_channel.cancel()
         self.playerstats.cancel()
         self.maintenance.cancel()
+        self.autofriend.cancel()
 
     # General authentication manager
     async def auth_manager(
@@ -1105,7 +1109,12 @@ class ArkTools(commands.Cog):
 
     @api_settings.command(name="welcome")
     async def welcome_toggle(self, ctx):
-        """(Toggle) Automatic server welcome messages when a new player is detected on the servers"""
+        """
+        (Toggle) Automatic server welcome messages when a new player is detected on the servers
+
+        When a new player joins the server through the list or without being in the Discord,
+        the bot will send them a welcome message.
+        """
         welcometoggle = await self.config.guild(ctx.guild).autowelcome()
         if welcometoggle:
             await self.config.guild(ctx.guild).autowelcome.set(False)
@@ -1624,11 +1633,11 @@ class ArkTools(commands.Cog):
         else:
             for player in newplayerlist:
                 if player not in lastplayerlist:
-                    print(f"{player[0]} joined {mapname} {clustername}")
+                    # print(f"{player[0]} joined {mapname} {clustername}")
                     await joinlog.send(f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
             for player in lastplayerlist:
                 if player not in newplayerlist:
-                    print(f"{player[0]} Left {mapname} {clustername}")
+                    # print(f"{player[0]} Left {mapname} {clustername}")
                     await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = newplayerlist
 
@@ -1993,7 +2002,6 @@ class ArkTools(commands.Cog):
                 await eventlog.send(embed=embed)
 
     # Unfriends players if they havent been seen on any server for the set amount of time
-    # Unfriend players if they are no longer following the host gamertag
     @tasks.loop(hours=2)
     async def maintenance(self):
         cid = await self.config.clientid()
@@ -2004,7 +2012,7 @@ class ArkTools(commands.Cog):
             settings = await self.config.guild(guild).all()
             autofriend = settings["autofriend"]
             if not autofriend:
-                return
+                continue
             eventlog = settings["eventlog"]
             eventlog = guild.get_channel(eventlog)
             stats = settings["players"]
@@ -2014,6 +2022,8 @@ class ArkTools(commands.Cog):
 
             # List of users who havent been detected on the servers in X amount of time
             expired = await expired_players(stats, time, unfriendtime, tz)
+            if len(expired) == 0:
+                continue
 
             tokendata = []
             for cname, cluster in settings["clusters"].items():
@@ -2021,7 +2031,7 @@ class ArkTools(commands.Cog):
                     if "tokens" in server:
                         tokendata.append((cname, sname, server["tokens"]))
             if len(tokendata) == 0:
-                return
+                continue
 
             # Remove players from host Gamertags' friends list
             async with aiohttp.ClientSession() as session:
@@ -2036,64 +2046,24 @@ class ArkTools(commands.Cog):
                     if token:
                         host = f"{item[1].capitalize()} {item[0].upper()}"
                         # Adding expired players to unfriend queue
-                        for user in expired:
-                            xuid = user[0]
-                            player = [1]
-                            status = await remove_friend(xuid, token)
-                            if 200 <= status <= 204:
-                                ustatus = "Successfuly"
-                                # Set last seen to None
-                                async with self.config.guild(guild).players() as playerstats:
-                                    for player in expired:
-                                        xuid = player[0]
-                                        playerstats[xuid]["lastseen"]["map"] = None
-                                msg = "AUTOMATED MESSAGE\n\n You have been unfriended by this Gamertag.\n" \
-                                      f"Reason: No activity in any server over the last {unfriendtime} days\n"
-                                await xbl_client.message.send_message(str(xuid), msg)
-                            else:
-                                ustatus = "Unsuccessfuly"
-                            log.info(f"{player} - {xuid} was {ustatus} unfriended by the host {host} "
-                                     f"for exceeding {unfriendtime} days of inactivity.")
+                        async with self.config.guild(guild).players() as playerstats:
+                            for user in expired:
+                                xuid = user[0]
+                                playerstats[xuid]["lastseen"]["map"] = None
+                                player = user[1]
+                                status = await remove_friend(xuid, token)
+                                if 200 <= status <= 204:
+                                    ustatus = "Successfuly"
+                                    # Set last seen to None
+                                    msg = "AUTOMATED MESSAGE\n\nYou have been unfriended by this Gamertag.\n" \
+                                          f"Reason: No activity in any server over the last {unfriendtime} days\n" \
+                                          f"To play this map again simply friend the account and join session."
+                                    await xbl_client.message.send_message(str(xuid), msg)
+                                else:
+                                    ustatus = "Unsuccessfuly"
+                                log.info(f"{player} - {xuid} was {ustatus} unfriended by the host {host} "
+                                         f"for exceeding {unfriendtime} days of inactivity.")
 
-                        # Check host Gamertag friends list and unfollow the users not following them back
-                        friends = None
-                        try:
-                            friends = json.loads((await xbl_client.people.get_friends_own()).json())
-                            friends = friends["people"]
-                        except pydantic.error_wrappers.ValidationError:
-                            log.info(f"Pydantic error, Microsoft side maybe?")
-                            pass
-                        except Exception as e:
-                            log.warning(f"Maintenance Get-Friends API call ERROR: {e}")
-                            pass
-                        if friends:
-                            for person in friends:
-                                xuid = person["xuid"]
-                                displayname = person["display_name"]
-                                following = person["is_following_caller"]
-                                if not following:
-                                    status = await remove_friend(xuid, token)
-                                    if 200 <= status <= 204:
-                                        ustatus = "Successfuly"
-                                        if xuid in settings["players"]:
-                                            async with self.config.guild(guild).players() as playerstats:
-                                                playerstats[xuid]["lastseen"]["map"] = None
-                                        msg = "AUTOMATED MESSAGE\n\n You have been unfriended by this Gamertag.\n" \
-                                              "Reason: Not following back\n" \
-                                              "If you want to join this server again you will need to join the Discord " \
-                                              "and re-add yourself or join the server when its on the lists."
-                                        await xbl_client.message.send_message(str(xuid), msg)
-                                    else:
-                                        ustatus = "Unsuccessfuly"
-                                    log.info(f"{displayname} - {xuid} was {ustatus} removed by {host} "
-                                             f"for unfollowing.")
-                                    if eventlog:
-                                        embed = discord.Embed(
-                                            description=f"**{displayname}** - `{xuid}` was removed by {host} for "
-                                                        f"unfollowing.",
-                                            color=discord.Color.red()
-                                        )
-                                        await eventlog.send(embed=embed)
             if eventlog:
                 for user in expired:
                     player = user[1]
@@ -2110,3 +2080,112 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(5)
         log.info("Maintenance loop ready")
+
+    @tasks.loop(seconds=15)
+    async def autofriend(self):
+        cid = await self.config.clientid()
+        if not cid:
+            return
+        for guild in self.activeguilds:
+            guild = self.bot.get_guild(guild)
+            settings = await self.config.guild(guild).all()
+            autofriend = settings["autofriend"]
+            if not autofriend:
+                continue
+            eventlog = settings["eventlog"]
+            eventlog = guild.get_channel(eventlog)
+            tokendata = []
+            for cname, cluster in settings["clusters"].items():
+                for sname, server in cluster["servers"].items():
+                    if "tokens" in server:
+                        tokendata.append((cname, sname, server["tokens"]))
+            if len(tokendata) == 0:
+                continue
+            atasks = []
+            async with aiohttp.ClientSession() as session:
+                for item in tokendata:
+                    cname = item[0]
+                    sname = item[1]
+                    tokens = item[2]
+                    atasks.append(self.autofriend_session(session, guild, cname, sname, tokens, eventlog))
+                await asyncio.gather(*atasks)
+
+    async def autofriend_session(self, session, guild: discord.guild, cname, sname, tokens, eventlog):
+        xbl_client, token = await self.loop_auth_manager(
+            guild,
+            session,
+            cname,
+            sname,
+            tokens
+        )
+        if token:
+            friends = json.loads((await xbl_client.people.get_friends_own()).json())
+            friends = friends["people"]
+            followers = await get_followers(token)
+            if "people" not in followers:
+                return
+            followers = followers["people"]
+
+            # Detecting friend requests
+            people_to_add = await detect_friends(friends, followers)
+            sname = sname.capitalize()
+            cname = cname.upper()
+            if len(people_to_add) > 0:
+                for xuid, username in people_to_add:
+                    status = await add_friend(xuid, token)
+                    if 200 <= status <= 204 and eventlog:
+                        embed = discord.Embed(
+                            description=f"**{sname} {cname}** accepted **{username}**'s friend request.",
+                            color=discord.Color.green()
+                        )
+                        log.info(f"{sname} {cname} accepted {username}'s friend request.")
+                        if eventlog:
+                            await eventlog.send(embed=embed)
+                        welcome = f"Friend request accepted! " \
+                                  f"{username}, you can now join session from this account's profile page"
+                        await xbl_client.message.send_message(str(xuid), welcome)
+                    else:
+                        embed = discord.Embed(
+                            description=f"**{sname} {cname}** failed to accept **{username}**'s friend request.",
+                            color=discord.Color.red()
+                        )
+                        log.info(f"{sname} {cname} failed to accept {username}'s friend request.")
+                        if eventlog:
+                            await eventlog.send(embed=embed)
+
+            # Detecting non-following players
+            for person in friends:
+                xuid = person["xuid"]
+                username = person["gamertag"]
+                following = person["is_following_caller"]
+                added = person["added_date_time_utc"]
+                added = fix_timestamp(str(added))
+                tz = pytz.timezone("UTC")
+                time = datetime.datetime.now(tz)
+                timedifference = time - added
+                if not following and timedifference.seconds > 600:
+                    status = await remove_friend(xuid, token)
+                    if 200 <= status <= 204:
+                        ustatus = "successfully"
+                        async with self.config.guild(guild).players() as playerstats:
+                            playerstats[xuid]["lastseen"]["map"] = None
+                            msg = f"Hi {username}, you have been unfollowed by this account for not following back.\n" \
+                                  "To play this map again simply add the account again and join session."
+                            await xbl_client.message.send_message(str(xuid), msg)
+                    else:
+                        ustatus = "unsuccessfully"
+                    log.info(f"{username} - {xuid} was {ustatus} removed by {sname} {cname} "
+                             f"for unfollowing.")
+                    if eventlog:
+                        embed = discord.Embed(
+                            description=f"**{username}** - `{xuid}` was {ustatus} removed by **{sname} {cname}**"
+                                        f" for unfollowing.",
+                            color=discord.Color.red()
+                        )
+                        await eventlog.send(embed=embed)
+
+    @autofriend.before_loop
+    async def before_autofriend(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(5)
+        log.info("Autofriend loop ready")

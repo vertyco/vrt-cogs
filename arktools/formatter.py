@@ -14,6 +14,24 @@ def time_format(time_played: int):
     return days, hours, minutes
 
 
+# Microsoft's timestamp end digits are fucked up and random so we iteratively try fixing them by stripping digits
+def fix_timestamp(time: str):
+    try:
+        time = datetime.datetime.fromisoformat(time)
+    except ValueError:
+        stripping_that_shit = True
+        strip = -1
+        while stripping_that_shit:
+            try:
+                time = datetime.datetime.fromisoformat(time[:strip])
+                stripping_that_shit = False
+            except ValueError:
+                strip -= 1
+                if strip < -10:
+                    stripping_that_shit = False  # idfk then
+    return time
+
+
 def lseen_format(d: int, h: int, m: int):
     if int(d) == 0 and h == 0 and m == 0:
         last_seen = f"Last Seen: `Just now`"
@@ -265,4 +283,24 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                         )
             return embed
     return None
+
+
+async def detect_friends(friends: list, followers: list):
+    people_to_add = []
+    xuids = []
+    for friend in friends:
+        xuids.append(friend["xuid"])
+
+    for follower in followers:
+        if follower["xuid"] not in xuids:
+            followed_back = follower["isFollowedByCaller"]
+            if not followed_back:
+                date_followed = follower["follower"]["followedDateTime"]
+                date_followed = fix_timestamp(date_followed)
+                time = datetime.datetime.utcnow()
+                timedifference = time - date_followed
+                if timedifference.days == 0 and timedifference.seconds < 3600:
+                    people_to_add.append((follower["xuid"], follower["gamertag"]))
+    return people_to_add
+
 
