@@ -1,27 +1,44 @@
-import aiohttp
 import discord
 import datetime
-import pytz
 import asyncio
+import socket
 import json
-import math
 import re
+import aiohttp
+import pytz
+
+from rcon import Client
 
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config
 from discord.ext import tasks
 
-import rcon
-from rcon import Client
-import unicodedata
+from xbox.webapi.authentication.manager import AuthenticationManager
+from xbox.webapi.authentication.models import OAuth2TokenResponse
+from xbox.webapi.api.client import XboxLiveClient
+
+from .menus import menu, DEFAULT_CONTROLS
+from .calls import (serverchat,
+                    add_friend,
+                    remove_friend,
+                    manual_rcon)
+from .formatter import (tribelog_format,
+                        profile_format,
+                        expired_players,
+                        lb_format,
+                        cstats_format,
+                        player_stats)
 
 import logging
+
 log = logging.getLogger("red.vrt.arktools")
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
-STATUS = "https://i.imgur.com/LPzCcgU.gif"
+LIVE = "https://i.imgur.com/LPzCcgU.gif"
 FAILED = "https://i.imgur.com/TcnAyVO.png"
 SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
+
+REDIRECT_URI = "http://localhost/auth/callback"
 
 
 class ArkTools(commands.Cog):
@@ -29,7 +46,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "1.8.45"
+    __version__ = "2.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -37,110 +54,624 @@ class ArkTools(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.session = aiohttp.ClientSession()
-        self.config = Config.get_conf(self, 117117117, force_registration=True)
+        self.config = Config.get_conf(self, 117117117117117117, force_registration=True)
         default_guild = {
             "welcomemsg": None,
-            "statuschannel": None,
-            "statusmessage": None,
+            "playerclearmessage": None,
+            "status": {"channel": None, "message": None},
             "masterlog": None,
+            "eventlog": None,
             "fullaccessrole": None,
-            "servertoserverchat": False,
             "autowelcome": False,
             "autofriend": False,
             "datalogs": False,
-            "unfriendafter": 15,
+            "unfriendafter": 30,
             "clusters": {},
             "modroles": [],
             "modcommands": [],
             "badnames": [],
             "tribes": {},
-            "playerstats": {},
+            "players": {},
+            "timezone": "US/Eastern"
+        }
+        default_global = {
+            "clientid": None,
+            "secret": None
         }
         self.config.register_guild(**default_guild)
+        self.config.register_global(**default_global)
 
         # Cache on cog load
-        self.logs = {}
-        self.servercount = 0
-        self.taskdata = []
+        self.activeguilds = []
+        self.servers = []
         self.channels = []
-        self.alerts = {}
+        self.servercount = 0
         self.playerlist = {}
+        self.downtime = {}
         self.time = ""
 
         # Loops
-        self.loop_refresher.start()
-        self.chat_executor.start()
-        self.playerlist_executor.start()
+        self.getchat.start()
+        self.listplayers.start()
         self.status_channel.start()
         self.playerstats.start()
+        self.maintenance.start()
 
     def cog_unload(self):
-        self.loop_refresher.cancel()
-        self.chat_executor.cancel()
-        self.playerlist_executor.cancel()
+        self.getchat.cancel()
+        self.listplayers.cancel()
         self.status_channel.cancel()
         self.playerstats.cancel()
+        self.maintenance.cancel()
 
-    # GROUPS
-    @commands.group(name="arktools")
-    async def _setarktools(self, ctx: commands.Context):
-        """Ark Tools base command."""
-        pass
+    # General authentication manager
+    async def auth_manager(
+            self,
+            ctx: commands.Context,
+            session: aiohttp.ClientSession,
+            cname: str,
+            sname: str,
+            tokens: dict,
+    ):
+        client_id = await self.config.clientid()
+        client_secret = await self.config.secret()
+        if not client_id:
+            await ctx.send(f"Client ID and Secret have not been set yet!\n"
+                           f"Bot owner needs to run `{ctx.prefix}arktools api addtokens`")
+            return None, None
+        auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
+        try:
+            auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
+        except Exception as e:
+            if "validation error" in str(e):
+                await ctx.send(f"Client ID and Secret have not been authorized yet!\n"
+                               f"Bot owner needs to run `{ctx.prefix}apiset authorize`")
+                return None, None
+        await auth_mgr.refresh_tokens()
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
+        xbl_client = XboxLiveClient(auth_mgr)
+        token = auth_mgr.xsts_token.authorization_header_value
+        return xbl_client, token
 
-    @_setarktools.group(name="permissions")
+    # Task loop specific authentication handling
+    async def loop_auth_manager(
+            self,
+            guild: discord.guild,
+            session: aiohttp.ClientSession,
+            cname: str,
+            sname: str,
+            tokens: dict,
+    ):
+        client_id = await self.config.clientid()
+        client_secret = await self.config.secret()
+        if not client_id:
+            return None, None
+        auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
+        try:
+            auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
+        except Exception as e:
+            if "validation error" in str(e):
+                return None, None
+        await auth_mgr.refresh_tokens()
+        async with self.config.guild(guild).clusters() as clusters:
+            clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
+        xbl_client = XboxLiveClient(auth_mgr)
+        token = auth_mgr.xsts_token.authorization_header_value
+        return xbl_client, token
+
+    # Pull the first (authorized) token data found for non-specific api use
+    @staticmethod
+    def pull_key(clusters: dict):
+        for cname, cluster in clusters.items():
+            for sname, server in cluster["servers"].items():
+                if "tokens" in server:
+                    tokens = server["tokens"]
+                    return tokens, cname, sname
+
+    # Deletes all player data in the config
+    @commands.command(name="wipestats")
     @commands.guildowner()
-    async def _permissions(self, ctx: commands.Context):
-        """Permission specific role settings for rcon commands."""
-        pass
+    async def wipe_all_stats(self, ctx: commands.Context):
+        """Wipe all player stats including last seen data and registration."""
+        async with self.config.guild(ctx.guild).all() as data:
+            data["players"].clear()
+            await ctx.send(embed=discord.Embed(description="All player data has been wiped."))
 
-    @_setarktools.group(name="api")
-    async def _api(self, ctx: commands.Context):
+    @commands.command(name="unregister")
+    @commands.admin()
+    async def unregister_user(self, ctx: commands.Context, member: discord.Member):
+        """Unregister a user from a Gamertag"""
+        async with self.config.guild(ctx.guild).players() as players:
+            for data in players.values():
+                if "discord" in data:
+                    if data["discord"] == member.id:
+                        del data["discord"]
+                        return await ctx.send(f"{member.mention} has been unregistered!")
+            else:
+                await ctx.send(f"{member.mention} not found registered to any Gamertag!")
+
+    @commands.command(name="register")
+    @commands.guild_only()
+    async def register_user(self, ctx: commands.Context):
+        """Register your Gamertag or steam ID in the database."""
+        timezone = await self.config.guild(ctx.guild).timezone()
+        tz = pytz.timezone(timezone)
+        time = datetime.datetime.now(tz)
+        embed = discord.Embed(
+            description=f"**Type your Xbox Gamertag or Steam ID in chat below.**"
+        )
+        msg = await ctx.send(embed=embed)
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        # Check if user entered ID instead of Gamertag and go that route instead
+        if reply.content.isdigit():
+            sid = reply.content
+            async with self.config.guild(ctx.guild).players() as players:
+                if sid not in players:
+                    players[sid] = {}
+                if "discord" in players[sid]:
+                    if players[sid]["discord"] != str(ctx.author.id):
+                        claimed = ctx.guild.get_member(players[sid]["discord"])
+                        embed = discord.Embed(
+                            description=f"{claimed.mention} has already claimed this Steam ID",
+                            color=discord.Color.orange()
+                        )
+                        return await msg.edit(embed=embed)
+                embed = discord.Embed(
+                    description=f"**Type your Steam Username in chat below(Or Gamertag).**"
+                )
+                await msg.edit(embed=embed)
+                try:
+                    reply = await self.bot.wait_for("message", timeout=60, check=check)
+                except asyncio.TimeoutError:
+                    return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                sname = reply.content
+                players[sid] = {
+                    "discord": ctx.author.id,
+                    "username": sname,
+                    "playtime": {"total": 0},
+                    "lastseen": {
+                        "time": time.isoformat(),
+                        "map": None
+                    }
+                }
+                players[sid]["discord"] = ctx.author.id
+                players[sid]["username"] = sname
+                embed = discord.Embed(
+                    description=f"Your account has been registered as **{sname}**: `{sid}`"
+                )
+                return await msg.edit(embed=embed)
+
+        # Make sure there's at least one server with an active API before registering
+        apipresent = False
+        clusters = await self.config.guild(ctx.guild).clusters()
+        for cluster in clusters.values():
+            for server in cluster["servers"].values():
+                if "tokens" in server:
+                    apipresent = True
+                    break
+        if not apipresent:
+            embed = discord.Embed(
+                description="❌ API keys have not been set!."
+            )
+            embed.set_thumbnail(url=FAILED)
+            return await ctx.send(embed=embed)
+
+        gamertag = reply.content
+        embed = discord.Embed(color=discord.Color.green(),
+                              description=f"Searching...")
+        embed.set_thumbnail(url=LOADING)
+        await msg.edit(embed=embed)
+        async with aiohttp.ClientSession() as session:
+            tokens, cname, sname = self.pull_key(clusters)
+            xbl_client, _ = await self.auth_manager(ctx, session, cname, sname, tokens)
+            if not xbl_client:
+                return
+            try:
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+            except aiohttp.ClientResponseError:
+                embed = discord.Embed(
+                    description=f"Invalid Gamertag. Try again.",
+                    color=discord.Color.red()
+                )
+                return await msg.edit(embed=embed)
+            # Format json data
+            gt, xuid, gs, pfp = profile_format(profile_data)
+            async with self.config.guild(ctx.guild).players() as players:
+                if xuid not in players:
+                    players[xuid] = {}
+                if "discord" in players[xuid]:
+                    if players[xuid]["discord"] != str(ctx.author.id):
+                        claimed = ctx.guild.get_member(players[xuid]["discord"])
+                        embed = discord.Embed(
+                            description=f"{claimed.mention} has already claimed this Gamertag",
+                            color=discord.Color.orange()
+                        )
+                        return await msg.edit(embed=embed)
+                players[xuid] = {
+                    "discord": ctx.author.id,
+                    "username": gt,
+                    "playtime": {"total": 0},
+                    "lastseen": {
+                        "time": time.isoformat(),
+                        "map": None
+                    }
+                }
+            embed = discord.Embed(
+                color=discord.Color.green(),
+                description=f"✅ Gamertag set to `{gamertag}`\n"
+                            f"XUID: `{xuid}`\n"
+                            f"Gamerscore: `{gs}`\n\n"
+            )
+            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+            embed.set_thumbnail(url=pfp)
+            await msg.edit(embed=embed)
+            embed = discord.Embed(
+                description=f"You can now type `{ctx.prefix}addme` to have a host Gamertag add you.",
+                color=discord.Color.magenta()
+            )
+            embed.set_footer(text="Then you can follow it back and join session from its profile page!")
+            await ctx.send(embed=embed)
+
+    @commands.command(name="addme")
+    @commands.guild_only()
+    async def add_user(self, ctx: commands.Context):
         """
-        (CROSSPLAY ONLY) API tools for the host gamertags.
-        Get API keys for each host Gamertag from https://xbl.io/
+        (Xbox/Win10 CROSSPLAY ONLY)Add yourself as a friend from the host gamertags
+
+        This command requires api keys to be set for the servers
         """
-        pass
-
-    @_setarktools.group(name="server")
-    @commands.guildowner()
-    async def _serversettings(self, ctx: commands.Context):
-        """Server setup."""
-        pass
-
-    @_setarktools.group(name="tribe")
-    async def _tribesettings(self, ctx: commands.Context):
-        """Tribe commands."""
-        pass
-
-    # EXTRA LOGS SENT TO THE JOIN LOG CHANNELS IF ENABLED
-    @_setarktools.command(name="datalog")
-    @commands.guildowner()
-    async def _datalog(self, ctx):
-        """
-        (TOGGLE): Send extra data logs to join log channels
-
-        Says when new player is registered in the database.
-        If an API key is set for the server they joined, it will include whether or not they were
-        DM'd and friend requested if AutoFriend or AutoWelcome is enabled.
-        """
-        dlog = await self.config.guild(ctx.guild).datalogs()
-        if dlog:
-            await self.config.guild(ctx.guild).datalogs.set(False)
-            return await ctx.send("Extra data logs **Disabled**")
+        players = await self.config.guild(ctx.guild).players()
+        for xuid in players:
+            if "discord" in players[xuid]:
+                if ctx.author.id == players[xuid]["discord"]:
+                    ptag = players[xuid]["username"]
+                    break
         else:
-            await self.config.guild(ctx.guild).datalogs.set(True)
-            return await ctx.send("Extra data logs **Enabled**")
+            embed = discord.Embed(description=f"You havent registered yet!\n\n"
+                                              f"Register with the `{ctx.prefix}register` command.")
+            embed.set_thumbnail(url=FAILED)
+            return await ctx.send(embed=embed)
+        # Enumerate maps and display them in an embed
+        clusters = await self.config.guild(ctx.guild).clusters()
+        map_options = "**Gamertag** - `Map/Cluster`\n"
+        servernum = 1
+        serverlist = []
+        for cname, cluster in clusters.items():
+            for sname, server in cluster["servers"].items():
+                if "tokens" in server:
+                    tokendata = server["tokens"]
+                    map_options += f"**{servernum}.** `{server['gamertag']}` - `{sname} {cname}`\n"
+                    serverlist.append((servernum, server['gamertag'], tokendata))
+                    servernum += 1
+        map_options += f"**All** - `Adds All Servers`"
+        embed = discord.Embed(
+            title=f"Add Yourself as a Friend",
+            description=f"**TYPE THE NUMBER that corresponds with the server you want.**\n\n"
+                        f"{map_options}"
+        )
+        embed.set_footer(text="Type your reply below")
+        msg = await ctx.send(embed=embed)
 
-    # PERMISSIONS COMMANDS
-    @_permissions.command(name="setfullaccessrole")
-    async def _setfullaccessrole(self, ctx: commands.Context, role: discord.Role):
-        """Set a full RCON access role."""
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        if reply.content.lower() == "all":
+            embed = discord.Embed(
+                description="Gathering Data..."
+            )
+            embed.set_thumbnail(url=LOADING)
+            await msg.edit(embed=embed)
+
+            for cname, cluster in clusters.items():
+                for sname, server in cluster["servers"].items():
+                    if "tokens" in server:
+                        tokendata = server["tokens"]
+                        async with aiohttp.ClientSession() as session:
+                            xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokendata)
+                            if not xbl_client:
+                                return
+                            status = await add_friend(xuid, token)
+                            if 200 <= status <= 204:
+                                embed = discord.Embed(
+                                    description=f"Friend request sent from... `{server['gamertag']}`",
+                                    color=discord.Color.green()
+                                )
+                                embed.set_thumbnail(url=LOADING)
+                            else:
+                                embed = discord.Embed(
+                                    description=f"Friend request from `{tokendata['gamertag']}` may have failed!",
+                                    color=discord.Color.red()
+                                )
+                                embed.set_thumbnail(url=FAILED)
+                            await msg.edit(embed=embed)
+            embed = discord.Embed(color=discord.Color.green(),
+                                  description=f"✅ Finished adding `{players[xuid]['username']}` for All Gamertags.\n"
+                                              f"You should now be able to join from the Gamertags' profile page.")
+            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+            embed.set_thumbnail(url=SUCCESS)
+            await msg.edit(embed=embed)
+        elif reply.content.isdigit():
+            embed = discord.Embed(
+                description="Gathering Data..."
+            )
+            embed.set_thumbnail(url=LOADING)
+            await msg.edit(embed=embed)
+            for data in serverlist:
+                if int(reply.content) == data[0]:
+                    gt = data[1]
+                    tokendata = data[2]
+                    break
+            else:
+                color = discord.Color.red()
+                embed = discord.Embed(description=f"Could not find the server corresponding to {reply.content}!",
+                                      color=color)
+                return await ctx.send(embed=embed)
+            embed = discord.Embed(
+                description=f"Sending friend request from {gt}..."
+            )
+            embed.set_thumbnail(url=LOADING)
+            await msg.edit(embed=embed)
+            async with aiohttp.ClientSession() as session:
+                xbl_client, token = await self.auth_manager(ctx, session, tokendata)
+                if not xbl_client:
+                    return
+                status = await add_friend(xuid, token)
+                if 200 <= status <= 204:
+                    embed = discord.Embed(color=discord.Color.green(),
+                                          description=f"✅ `{gt}` Successfully added `{ptag}`\n"
+                                                      f"You should now be able to join from the Gamertag's"
+                                                      f" profile page.\n\n"
+                                                      f"**TO ADD MORE:** type `{ctx.prefix}addme` again.")
+                    embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+                    embed.set_thumbnail(url=SUCCESS)
+                else:
+                    embed = discord.Embed(
+                        description=f"Friend request from `{tokendata['gamertag']}` may have failed!",
+                        color=discord.Color.red()
+                    )
+                    embed.set_thumbnail(url=FAILED)
+                await msg.edit(embed=embed)
+        else:
+            color = discord.Color.dark_grey()
+            return await msg.edit(embed=discord.Embed(description="Incorrect Reply, menu closed.", color=color))
+
+    @commands.command(name="rcon")
+    @commands.guild_only()
+    async def manual_rcon(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
+        """Perform an RCON command"""
+        cname = clustername.lower()
+        sname = servername.lower()
+        settings = await self.config.guild(ctx.guild).all()
+        if not settings["fullaccessrole"]:
+            return await ctx.send("Full access role has not been set!")
+        allowed = False
+        for role in ctx.author.roles:
+            if role.id == settings["fullaccessrole"]:
+                allowed = True
+            for modrole in settings["modroles"]:
+                if role.id == modrole:
+                    modcmds = settings["modcommands"]
+                    for cmd in modcmds:
+                        if str(cmd.lower()) in command.lower():
+                            allowed = True
+        if not allowed:
+            if ctx.guild.owner != ctx.author:
+                return await ctx.send("You do not have the required permissions to run that command.")
+
+        clusters = settings["clusters"]
+        if cname != "all" and cname not in clusters:
+            return await ctx.send(f"{cname} cluster not found")
+        if cname != "all" and sname != "all" and sname not in clusters[cname]["servers"]:
+            return await ctx.send(f"Server not found in {cname} cluster")
+
+        serverlist = []
+        for tup in self.servers:
+            server = tup[1]
+            if cname == "all" and sname == "all":
+                serverlist.append(server)
+            elif cname == "all" and sname != "all":
+                if server["name"] == sname:
+                    serverlist.append(server)
+            elif cname != "all" and sname == "all":
+                if server["cluster"] == cname:
+                    serverlist.append(server)
+            elif cname != "all" and sname != "all":
+                if server["cluster"] == cname and server["name"] == sname:
+                    serverlist.append(server)
+            else:
+                continue
+        if len(serverlist) == 0:
+            return await ctx.send("No servers have been found")
+
+        if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
+            await ctx.send("Beginning reboot countdown...")
+            for i in range(10, 0, -1):
+                for server in serverlist:
+                    mapchannel = ctx.guild.get_channel(server["chatchannel"])
+                    await mapchannel.send(f"Reboot in {i}")
+                    await self.executor(server, f"serverchat Reboot in {i}")
+                await asyncio.sleep(1)
+            await ctx.send("Saving maps...")
+            save = []
+            for server in serverlist:
+                mapchannel = ctx.guild.get_channel(server["chatchannel"])
+                await mapchannel.send(f"Saving map...")
+                save.append(self.executor(server, "saveworld"))
+            await asyncio.gather(*save)
+            await asyncio.sleep(5)
+            await ctx.send("Running DoExit...")
+            exiting = []
+            for server in serverlist:
+                exiting.append(self.executor(server, "doexit"))
+            await asyncio.gather(*exiting)
+        else:
+            rtasks = []
+            for server in serverlist:
+                rtasks.append(manual_rcon(ctx.channel, server, command))
+            await asyncio.gather(*rtasks)
+
+        if "banplayer" in command.lower():
+            player_id = str(re.search(r'(\d+)', command).group(1))
+            unfriend = ""
+            async with ctx.typing():
+                for server in serverlist:
+                    if "tokens" in server:
+                        token = server["tokens"]
+                        host = server["gamertag"]
+                        status = await remove_friend(player_id, token)
+                        if 200 <= status <= 204:
+                            unfriend += f"**{host}** Successfully unfriended XUID: {player_id}\n"
+                        else:
+                            unfriend += f"**{host}** Failed to unfriend XUID: {player_id}\n"
+                await ctx.send(box(unfriend, lang="python"))
+
+    # PLAYER STAT COMMANDS
+    # Get the top 10 players in the cluster, browse pages to see them all
+    @commands.command(name="arklb")
+    async def ark_leaderboard(self, ctx: commands.Context):
+        """View leaderboard for time played"""
+        stats = await self.config.guild(ctx.guild).players()
+        tz = await self.config.guild(ctx.guild).timezone()
+        pages = lb_format(stats, ctx.guild, tz)
+        if len(pages) == 0:
+            return await ctx.send("There are no stats available yet!")
+        await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    @commands.command(name="clusterstats")
+    async def cluster_stats(self, ctx: commands.Context):
+        """View playtime data for all clusters"""
+        stats = await self.config.guild(ctx.guild).players()
+        pages = cstats_format(stats, ctx.guild)
+        await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    @commands.command(name="playerstats")
+    async def get_player_stats(self, ctx: commands.Context, *, gamertag: str = None):
+        """View stats for yourself or another gamertag"""
+        settings = await self.config.guild(ctx.guild).all()
+        stats = settings["players"]
+        tz = pytz.timezone(settings["timezone"])
+        if not gamertag:
+            for xuid, data in stats.items():
+                if "discord" in data:
+                    if ctx.author.id == data["discord"]:
+                        gamertag = data["username"]
+                        break
+            else:
+                embed = discord.Embed(description=f"You havent registered yet!\n\n"
+                                                  f"Register with the `{ctx.prefix}register` command.")
+                embed.set_thumbnail(url=FAILED)
+                return await ctx.send(embed=embed)
+        embed = player_stats(stats, tz, ctx.guild, gamertag)
+        if not embed:
+            return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
+        await ctx.send(embed=embed)
+
+    # Main group
+    @commands.group(name="arktools")
+    @commands.guild_only()
+    async def arktools_main(self, ctx: commands.Context):
+        """ArkTools base setting command."""
+        pass
+
+    @arktools_main.command(name="backup")
+    @commands.guildowner()
+    async def backup_settings(self, ctx: commands.Context):
+        """Sends a backup of the config as a JSON file to Discord."""
+        settings = await self.config.guild(ctx.guild).all()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
+
+    @arktools_main.command(name="backupstats")
+    @commands.guildowner()
+    async def backup_stat_settings(self, ctx: commands.Context):
+        """Sends a backup of the player stats as a JSON file to Discord."""
+        settings = await self.config.guild(ctx.guild).players()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_playerstats.json"))
+
+    @arktools_main.command(name="restore")
+    @commands.guildowner()
+    async def restore_settings(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.guild(ctx.guild).set(config)
+            await self.initialize()
+            return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
+    @arktools_main.command(name="restorestats")
+    @commands.guildowner()
+    async def restore_stats(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the player stats."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.guild(ctx.guild).players.set(config)
+            await self.initialize()
+            return await ctx.send("Player stats restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
+    # Arktools-Mod subgroup
+    @arktools_main.group(name="mod")
+    @commands.guildowner()
+    async def mod_permissions(self, ctx: commands.Context):
+        """Permission settings for rcon commands."""
+        pass
+
+    @mod_permissions.command(name="view")
+    async def view_permission_settings(self, ctx: commands.Context):
+        """View current permission settings."""
+        settings = await self.config.guild(ctx.guild).all()
+        color = discord.Color.dark_purple()
+        try:
+            embed = discord.Embed(
+                title=f"Permission Settings",
+                color=color,
+                description=f"**Full Access Role:** {settings['fullaccessrole']}\n"
+                            f"**Mod Roles:** {settings['modroles']}\n"
+                            f"**Mod Commands:** {settings['modcommands']}\n"
+                            f"**Blacklisted Names:** {settings['badnames']}"
+            )
+            return await ctx.send(embed=embed)
+        except KeyError:
+            await ctx.send(f"Setup permissions first.")
+
+    @mod_permissions.command(name="fullaccess")
+    async def set_fullaccessrole(self, ctx: commands.Context, role: discord.Role):
+        """Set a role for full RCON access."""
         await self.config.guild(ctx.guild).fullaccessrole.set(role.id)
-        await ctx.send(f"Full rcon access role has been set to {role}")
+        await ctx.send(f"Full access role set to {role}")
 
-    @_permissions.command(name="addmodrole")
-    async def _addmodrole(self, ctx: commands.Context, *, role: discord.Role):
+    @mod_permissions.command(name="addmodrole")
+    async def add_modrole(self, ctx: commands.Context, role: discord.Role):
         """Add a role to allow limited command access for."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
             if role.id in modroles:
@@ -149,8 +680,8 @@ class ArkTools(commands.Cog):
                 modroles.append(role.id)
                 await ctx.send(f"The **{role}** role has been added.")
 
-    @_permissions.command(name="delmodrole")
-    async def _delmodrole(self, ctx: commands.Context, role: discord.Role):
+    @mod_permissions.command(name="delmodrole")
+    async def del_modrole(self, ctx: commands.Context, role: discord.Role):
         """Delete a mod role."""
         async with self.config.guild(ctx.guild).modroles() as modroles:
             if role.id in modroles:
@@ -159,9 +690,9 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send("That role isn't in the list.")
 
-    @_permissions.command(name="addbadname")
-    async def _addbadname(self, ctx: commands.Context, *, badname: str):
-        """Blacklisted a player name."""
+    @mod_permissions.command(name="addbadname")
+    async def add_badname(self, ctx: commands.Context, *, badname: str):
+        """Blacklist a player name to be auto-renamed if detected in chat."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
             if badname in badnames:
                 await ctx.send("That name already exists.")
@@ -169,8 +700,8 @@ class ArkTools(commands.Cog):
                 badnames.append(badname)
                 await ctx.send(f"**{badname}** has been added to the blacklist.")
 
-    @_permissions.command(name="delbadname")
-    async def _delbadname(self, ctx: commands.Context, badname: str):
+    @mod_permissions.command(name="delbadname")
+    async def del_badname(self, ctx: commands.Context, *, badname: str):
         """Delete a blacklisted name."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
             if badname in badnames:
@@ -179,8 +710,8 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send("That name doesnt exist")
 
-    @_permissions.command(name="addmodcommand")
-    async def _addmodcommand(self, ctx: commands.Context, *, modcommand: str):
+    @mod_permissions.command(name="addmodcommand")
+    async def add_modcommand(self, ctx: commands.Context, modcommand: str):
         """Add allowable commands for the mods to use."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
             if modcommand in modcommands:
@@ -189,8 +720,8 @@ class ArkTools(commands.Cog):
                 modcommands.append(modcommand)
                 await ctx.send(f"The command **{modcommand}** has been added to the list.")
 
-    @_permissions.command(name="delmodcommand")
-    async def _delmodcommand(self, ctx: commands.Context, modcommand: str):
+    @mod_permissions.command(name="delmodcommand")
+    async def del_modcommand(self, ctx: commands.Context, modcommand: str):
         """Delete an allowed mod command."""
         async with self.config.guild(ctx.guild).modcommands() as modcommands:
             if modcommand in modcommands:
@@ -199,1249 +730,15 @@ class ArkTools(commands.Cog):
             else:
                 await ctx.send("That command doesnt exist")
 
-    # API SETTINGS
-    @_api.command(name="addkey")
-    async def _addkey(self, ctx, clustername, servername, apikey):
-        """
-        Add an API key for a server.
+    # Arktools-Tribe subgroup
+    @arktools_main.group(name="tribe")
+    async def tribe_settings(self, ctx: commands.Context):
+        """Tribe settings."""
+        pass
 
-        Get API keys for each host Gamertag from https://xbl.io/
-        """
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            for cluster in clusters:
-                if cluster.lower() == clustername.lower():
-                    cname = cluster
-                    break
-            else:
-                color = discord.Color.red()
-                embed = discord.Embed(description=f"Could not find {clustername}!", color=color)
-                return await ctx.send(embed=embed)
-            for server in clusters[cname]["servers"]:
-                if server.lower() == servername.lower():
-                    sname = server
-                    break
-            else:
-                color = discord.Color.red()
-                embed = discord.Embed(description=f"Could not find {servername}!", color=color)
-                return await ctx.send(embed=embed)
-            async with ctx.typing():
-                # pull host gamertag name
-                data, status = await self.apicall("https://xbl.io/api/v2/account", apikey)
-            if status == 200:
-                for user in data["profileUsers"]:
-                    for setting in user["settings"]:
-                        if setting["id"] == "Gamertag":
-                            gtag = setting["value"]
-                clusters[cname]["servers"][sname]["gamertag"] = gtag
-                clusters[cname]["servers"][sname]["api"] = apikey
-                color = discord.Color.green()
-                embed = discord.Embed(
-                    description=f"✅ Your token has been set for {gtag}!",
-                    color=color
-                )
-                try:
-                    await ctx.message.delete()
-                except discord.NotFound:
-                    pass
-                except discord.Forbidden:
-                    return await ctx.send("Failed to delete your key because bot doesn't have permissions.")
-                return await ctx.send(embed=embed)
-            else:
-                color = discord.Color.red()
-                embed = discord.Embed(description=f"Failed to collect data!\n"
-                                                  f"Key may be Invalid or API might be down.", color=color)
-                return await ctx.send(embed=embed)
-
-    # Delete a key from a server
-    @_api.command(name="delkey")
-    async def _delkey(self, ctx, clustername, servername):
-        """
-        Delete an API key from a server.
-        """
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            found = False
-            for cluster in clusters:
-                if cluster.lower() == clustername.lower():
-                    for server in clusters[cluster]["servers"]:
-                        if server.lower() == servername.lower():
-                            if "api" in clusters[cluster]["servers"][server]:
-                                del clusters[cluster]["servers"][server]["gamertag"]
-                                del clusters[cluster]["servers"][server]["api"]
-                                found = True
-                                await ctx.send(f"API key deleted for {server} {cluster}")
-            if not found:
-                await ctx.send("Server not found.")
-
-    # Toggle the host gamertag sending an automated welcome message when it detects a new player in the database
-    @_api.command(name="welcome")
-    async def _welcometoggle(self, ctx):
-        """(Toggle) Automatic server welcome messages"""
-        welcometoggle = await self.config.guild(ctx.guild).autowelcome()
-        if welcometoggle:
-            await self.config.guild(ctx.guild).autowelcome.set(False)
-            await ctx.send("Auto Welcome Message **Disabled**")
-        else:
-            await self.config.guild(ctx.guild).autowelcome.set(True)
-            await ctx.send("Auto Welcome Message **Enabled**")
-
-    # Toggle the host gamertag sending an automated friend request when it detects a new player in the database
-    @_api.command(name="autofriend")
-    async def _autofriendtoggle(self, ctx):
-        """(Toggle) Automatic maintenance of gamertag friend lists"""
-        autofriendtoggle = await self.config.guild(ctx.guild).autofriend()
-        if autofriendtoggle:
-            await self.config.guild(ctx.guild).autofriend.set(False)
-            await ctx.send("Autofriend Message **Disabled**")
-        else:
-            await self.config.guild(ctx.guild).autofriend.set(True)
-            await ctx.send("Autofriend Message **Enabled**")
-
-    # Time (in days) of a player not being detected online that the host gamertag unfriends them
-    @_api.command(name="unfriendtime")
-    async def _unfriendtime(self, ctx, days: int):
-        """
-        Set number of days of inactivity for the host Gamertags to unfriend a player.
-
-        This keep xbox host Gamertag friends lists clean since the max you can have is 1000.
-        """
-        await self.config.guild(ctx.guild).unfriendafter.set(days)
-        await ctx.send(f"Inactivity days till auto unfriend is {days} days.")
-
-    # Set the welcome message to send to new players if autowelcome is enabled
-    @_api.command(name="setwelcome")
-    async def _welcome(self, ctx, *, welcome_message: str):
-        """
-        Set a welcome message to be used instead of the default.
-        When the bot detects a new gamertag that isnt in the database, it sends it a welcome DM with
-        an invite to the server.
-
-
-        Variables that can be used in the welcome message are:
-        {discord} - Discord name
-        {gamertag} - Persons Gamertag
-        {link} - Discord link
-        Put "Default" in welcome string to revert to default message.
-        """
-        params = {
-            "discord": ctx.guild.name,
-            "gamertag": "gamertag",
-            "link": "channel invite"
-        }
-        if "default" in welcome_message.lower():
-            await ctx.send("Welcome message reverted to Default!")
-            return await self.config.guild(ctx.guild).welcomemsg.set(None)
-        try:
-            to_send = welcome_message.format(**params)
-        except KeyError as e:
-            await ctx.send(f"The welcome message cannot be formatted, because it contains an "
-                           f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
-                           f"for a list of valid placeholders.")
-        else:
-            await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
-            await ctx.send(f"Welcome message set as:\n{to_send}")
-
-    # API COMMANDS
-    # Register a gamertag in the database
-    @_setarktools.command(name="register")
-    async def _register(self, ctx):
-        """
-        (CROSSPLAY ONLY)Set your Gamertag
-
-        This command requires api keys to be set for the servers
-        """
-        apipresent = False
-        clusters = await self.config.guild(ctx.guild).clusters()
-        for cname in clusters:
-            for sname in clusters[cname]["servers"]:
-                if "api" in clusters[cname]["servers"][sname]:
-                    apipresent = True
-                    break
-        if not apipresent:
-            embed = discord.Embed(
-                description="❌ API key has not been set!."
-            )
-            embed.set_thumbnail(url=FAILED)
-            return await ctx.send(embed=embed)
-        embed = discord.Embed(
-            description=f"**Type your Gamertag (or ID if Steam) in chat.**"
-        )
-        msg = await ctx.send(embed=embed)
-
-        def check(message: discord.Message):
-            return message.author == ctx.author and message.channel == ctx.channel
-
-        try:
-            reply = await self.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-        if reply.content.isdigit():
-            async with self.config.guild(ctx.guild).playerstats() as stats:
-                current_time = datetime.datetime.utcnow()
-                for name in stats:
-                    if reply.content in stats[name]["xuid"]:
-                        if "discord" in stats[name]:
-                            if str(ctx.author.id) in stats[name]["discord"]:
-                                embed = discord.Embed(
-                                    description="You are already in the system 👍"
-                                )
-                                return await ctx.send(embed=embed)
-                else:
-                    sid = reply.content
-                    embed = discord.Embed(
-                        description=f"**Type your Steam Username.**"
-                    )
-                    await msg.edit(embed=embed)
-                    try:
-                        reply = await self.bot.wait_for("message", timeout=60, check=check)
-                    except asyncio.TimeoutError:
-                        return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-                    steamname = reply.content
-                    stats[steamname]["discord"] = ctx.author.id
-                    stats[steamname] = {"playtime": {"total": 0}}
-                    stats[steamname]["xuid"] = sid
-                    stats[steamname]["lastseen"] = {
-                        "time": current_time.isoformat(),
-                        "map": "None"
-                    }
-                    embed = discord.Embed(
-                        description=f"Your ID `{sid}` has been registered under `{steamname}` for `{ctx.author.name}`."
-                    )
-                    return await msg.edit(embed=embed)
-
-        gamertag = reply.content
-        async with ctx.typing():
-            embed = discord.Embed(color=discord.Color.green(),
-                                  description=f"Searching...")
-            embed.set_thumbnail(url=LOADING)
-            await msg.edit(embed=embed)
-            command = f"https://xbl.io/api/v2/friends/search?gt={gamertag}"
-            settings = await self.config.guild(ctx.guild).all()
-            apikey = await self.pullkey(settings)
-            data, status = await self.apicall(command, apikey)
-            if status != 200:
-                embed = discord.Embed(title="Error",
-                                      color=discord.Color.dark_red(),
-                                      description="API failed, please try again in a few minutes.")
-                embed.set_thumbnail(url=FAILED)
-                return await ctx.send(embed=embed)
-            try:
-                await reply.delete()
-            except discord.NotFound:
-                pass
-            try:
-                if data:
-                    for user in data["profileUsers"]:
-                        xuid = user['id']
-                        pfp = SUCCESS
-                        gs = 0
-                        for setting in user["settings"]:
-                            if setting["id"] == "GameDisplayPicRaw":
-                                pfp = (setting['value'])
-                            if setting["id"] == "Gamerscore":
-                                gs = "{:,}".format(int(setting['value']))
-                else:
-                    embed = discord.Embed(title="Error",
-                                          color=discord.Color.dark_red(),
-                                          description="Failed to parse player data.\n"
-                                                      "This may be due to player's privacy settings.")
-                    embed.set_thumbnail(url=FAILED)
-                    return await ctx.send(embed=embed)
-            except KeyError:
-                embed = discord.Embed(title="Error",
-                                      color=discord.Color.dark_red(),
-                                      description="Gamertag is invalid or does not exist.")
-                embed.set_thumbnail(url=FAILED)
-                return await msg.edit(embed=embed)
-        async with self.config.guild(ctx.guild).playerstats() as stats:
-            current_time = datetime.datetime.utcnow()
-            if gamertag not in stats:
-                stats[gamertag] = {"playtime": {"total": 0}}
-            stats[gamertag]["xuid"] = xuid
-            stats[gamertag]["lastseen"] = {
-                "time": current_time.isoformat(),
-                "map": "None"
-            }
-            stats[gamertag]["discord"] = ctx.author.id
-            embed = discord.Embed(color=discord.Color.green(),
-                                  description=f"✅ Gamertag set to `{gamertag}`\n"
-                                              f"XUID: `{xuid}`\n"
-                                              f"Gamerscore: `{gs}`\n\n"
-                                              f"**Would you like to add yourself to a gamertag as well?**")
-            embed.set_footer(text="Reply with 'yes' to go to the next step.")
-            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-            embed.set_thumbnail(url=pfp)
-            await msg.edit(embed=embed)
-
-        try:
-            reply = await self.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-        rep = reply.content.lower()
-        if "y" in rep:
-            try:
-                await reply.delete()
-            except discord.NotFound:
-                pass
-            return await self._addme(ctx)
-        elif "n" in rep:
-            try:
-                return await msg.edit(embed=discord.Embed(description="Menu closed."))
-            except discord.NotFound:
-                return
-        else:
-            try:
-                return await msg.edit(embed=discord.Embed(description="Invalid response. Menu closed."))
-            except discord.NotFound:
-                return
-
-    # Pull nearest api key
-    async def pullkey(self, settings):
-        for clustername in settings["clusters"]:
-            for mapname in settings["clusters"][clustername]["servers"]:
-                if "api" in settings["clusters"][clustername]["servers"][mapname]:
-                    return settings["clusters"][clustername]["servers"][mapname]["api"]
-
-    # Make host gamertags add you as a friend
-    @_setarktools.command(name="addme")
-    async def _addme(self, ctx):
-        """
-        (CROSSPLAY ONLY)Add yourself as a friend from the host gamertags
-
-        This command requires api keys to be set for the servers
-        """
-        registered = False
-        xuid = None
-        ptag = None
-        settings = await self.config.guild(ctx.guild).all()
-        for player in settings["playerstats"]:
-            if "discord" in settings["playerstats"][player]:
-                if settings["playerstats"][player]["discord"] == ctx.author.id:
-                    registered = True
-                    xuid = settings["playerstats"][player]["xuid"]
-                    ptag = player
-                    break
-        if not registered:
-            embed = discord.Embed(description=f"No Gamertag set for **{ctx.author.mention}**!\n\n"
-                                              f"Set a Gamertag with `{ctx.prefix}arktools register`")
-            embed.set_thumbnail(url=FAILED)
-            return await ctx.send(embed=embed)
-        else:
-            map_options, serverlist = await self.enumerate_maps_api(ctx)
-            embed = discord.Embed(
-                title=f"Add Yourself as a Friend",
-                description=f"**TYPE THE NUMBER that corresponds with the server you want.**\n\n"
-                            f"{map_options}"
-            )
-            embed.set_footer(text="Type your reply below")
-            msg = await ctx.send(embed=embed)
-
-            def check(message: discord.Message):
-                return message.author == ctx.author and message.channel == ctx.channel
-
-            try:
-                reply = await self.bot.wait_for("message", timeout=60, check=check)
-            except asyncio.TimeoutError:
-                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-            if reply.content.lower() == "all":
-                embed = discord.Embed(
-                    description="Gathering Data..."
-                )
-                embed.set_thumbnail(url=LOADING)
-                await msg.edit(embed=embed)
-                async with ctx.typing():
-                    try:
-                        await reply.delete()
-                    except discord.NotFound:
-                        pass
-                    for clustername in settings["clusters"]:
-                        for servername in settings["clusters"][clustername]["servers"]:
-                            if "api" in settings["clusters"][clustername]["servers"][servername]:
-                                gt = settings["clusters"][clustername]["servers"][servername]["gamertag"]
-                                apikey = settings["clusters"][clustername]["servers"][servername]["api"]
-                                command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
-                                    await resp.text()
-                                    if resp.status == 200:
-                                        color = discord.Color.random()
-                                        embed = discord.Embed(color=color,
-                                                              description=f"Sending friend request from... `{gt}`")
-                                        embed.set_thumbnail(url=LOADING)
-                                    else:
-                                        embed = discord.Embed(color=color,
-                                                              description=f"⚠ `{gt}` Failed to add you!")
-                                        embed.set_thumbnail(url=FAILED)
-                                    await msg.edit(embed=embed)
-                    embed = discord.Embed(color=discord.Color.green(),
-                                          description=f"✅ `All Gamertags` Successfully added `{ptag}`\n"
-                                                      f"You should now be able to join from the Gamertag's"
-                                                      f" profile page.")
-                    embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-                    embed.set_thumbnail(url=SUCCESS)
-                    return await msg.edit(embed=embed)
-            elif reply.content.isdigit():
-                embed = discord.Embed(
-                    description="Gathering Data..."
-                )
-                embed.set_thumbnail(url=LOADING)
-                await msg.edit(embed=embed)
-                async with ctx.typing():
-                    try:
-                        await reply.delete()
-                    except discord.NotFound:
-                        pass
-                    for data in serverlist:
-                        if int(reply.content) == data[0]:
-                            gt = data[1]
-                            key = data[2]
-                            break
-                    else:
-                        color = discord.Color.red()
-                        embed = discord.Embed(description=f"Could not find the server corresponding to {reply.content}!",
-                                              color=color)
-                        return await ctx.send(embed=embed)
-                    embed = discord.Embed(
-                        description=f"Sending friend request from {gt}..."
-                    )
-                    embed.set_thumbnail(url=LOADING)
-                    await msg.edit(embed=embed)
-                    command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                    async with self.session.get(command, headers={"X-Authorization": key}) as resp:
-                        await resp.text()
-                        if resp.status == 200:
-                            embed = discord.Embed(color=discord.Color.green(),
-                                                  description=f"✅ `{gt}` Successfully added `{ptag}`\n"
-                                                              f"You should now be able to join from the Gamertag's"
-                                                              f" profile page.\n\n"
-                                                              f"**TO ADD MORE:** type `{ctx.prefix}arktools addme`")
-                            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-                            embed.set_thumbnail(url=SUCCESS)
-                        else:
-                            embed = discord.Embed(title="Unsuccessful",
-                                                  color=discord.Color.green(),
-                                                  description=f"⚠ `{gt}` Failed to add `{ptag}`")
-                    await msg.edit(embed=embed)
-            else:
-                color = discord.Color.red()
-                return await msg.edit(embed=discord.Embed(description="Incorrect Reply, menu closed.", color=color))
-
-    # Purge host gamertag friends list of anyone not in the cog's database
-    @_api.command(name="prune")
+    @tribe_settings.command(name="view")
     @commands.guildowner()
-    async def _prune(self, ctx):
-        """Prune any host gamertag friends that are not in the database."""
-        tokens = []
-        playerdb = []
-        settings = await self.config.guild(ctx.guild).all()
-        for member in settings["playerstats"]:
-            if "xuid" in settings["playerstats"][member]:
-                xuid = settings["playerstats"][member]["xuid"]
-                playerdb.append(xuid)
-        for cname in settings["clusters"]:
-            for sname in settings["clusters"][cname]["servers"]:
-                if "api" in settings["clusters"][cname]["servers"][sname]:
-                    api = settings["clusters"][cname]["servers"][sname]["api"]
-                    gt = settings["clusters"][cname]["servers"][sname]["gamertag"]
-                    tokens.append((api, gt))
-        if tokens:
-            embed = discord.Embed(
-                description=f"Gathering Data..."
-            )
-            embed.set_footer(text="This may take a while, sit back and relax.")
-            embed.set_thumbnail(url=LOADING)
-            msg = await ctx.send(embed=embed)
-            friendreq = "https://xbl.io/api/v2/friends"
-            for host in tokens:
-                purgelist = []
-                key = host[0]
-                gt = host[1]
-                embed = discord.Embed(
-                    description=f"Gathering data for {gt}..."
-                )
-                embed.set_thumbnail(url=LOADING)
-                await msg.edit(embed=embed)
-                data, status = await self.apicall(friendreq, key)
-                if status == 200:
-                    embed = discord.Embed(
-                        description=f"Pruning players from {gt}..."
-                    )
-                    embed.set_footer(text="This may take a while, sit back and relax.")
-                    embed.set_thumbnail(url=LOADING)
-                    await msg.edit(embed=embed)
-                    async with ctx.typing():
-                        for friend in data["people"]:
-                            xuid = friend["xuid"]
-                            playertag = friend["gamertag"]
-                            if xuid not in playerdb:
-                                purgelist.append((xuid, playertag))
-                        trash = len(purgelist)
-                        cur_member = 1
-                        for xuid in purgelist:
-                            status, remaining = await self._purgewipe(xuid[0], key)
-                            if int(remaining) < 30:
-                                await ctx.send(f"`{gt}` low on remaining API calls `(30)`. Skipping for now.")
-                                break
-                            elif int(status) != 200:
-                                await msg.edit(f"`{gt}` failed to unfriend `{xuid[1]}`.")
-                                continue
-                            else:
-                                embed = discord.Embed(
-                                    description=f"Pruning `{xuid[1]}` from {gt}...\n"
-                                                f"`{cur_member}/{trash}` pruned."
-                                )
-                                embed.set_footer(text="This may take a while, sit back and relax.")
-                                embed.set_thumbnail(url=LOADING)
-                                await msg.edit(embed=embed)
-                                cur_member += 1
-
-            embed = discord.Embed(
-                description=f"Purge Complete",
-                color=discord.Color.green()
-            )
-            embed.set_thumbnail(url=SUCCESS)
-            await msg.edit(embed=embed)
-
-    # Purge and Wipe friend tasks
-    async def _purgewipe(self, xuid, key):
-        command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
-        remaining = 0
-        async with self.session.get(command, headers={"X-Authorization": key}) as resp:
-            await resp.text()
-            status = resp.status
-            if status == 200:
-                remaining = resp.headers['X-RateLimit-Remaining']
-            return status, remaining
-
-    # SERVER SETTINGS COMMANDS
-    @_serversettings.command(name="addcluster")
-    async def _addcluster(self, ctx: commands.Context,
-                          clustername,
-                          joinchannel: discord.TextChannel,
-                          leavechannel: discord.TextChannel,
-                          adminlogchannel: discord.TextChannel,
-                          globalchatchannel: discord.TextChannel):
-        """
-        Add a cluster with specified log channels. (Use all lower case letters for cluster name)
-
-
-        Include desired join, leave, admin log, and global chat channel.
-        """
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            if clustername in clusters.keys():
-                await ctx.send("Cluster already exists")
-            else:
-                clusters[clustername.lower()] = {
-                    "joinchannel": joinchannel.id,
-                    "leavechannel": leavechannel.id,
-                    "adminlogchannel": adminlogchannel.id,
-                    "globalchatchannel": globalchatchannel.id,
-                    "servertoserver": False,
-                    "servers": {}
-                }
-                await ctx.send(f"**{clustername}** has been added to the list of clusters.")
-
-    # Delete an entire cluster
-    @_serversettings.command(name="delcluster")
-    async def _delcluster(self, ctx: commands.Context, clustername: str):
-        """Delete a cluster."""
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            if clustername not in clusters.keys():
-                await ctx.send("Cluster name not found")
-            else:
-                del clusters[clustername]
-                await ctx.send(f"{clustername} cluster has been deleted")
-
-    # Add a server to a cluster
-    @_serversettings.command(name="addserver")
-    async def _addserver(self, ctx: commands.Context, clustername: str, servername: str, ip: str,
-                         port: int, password: str, channel: discord.TextChannel):
-        """Add a server. (Use all lower case letters for server name and cluster name)"""
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            if clustername not in clusters:
-                return await ctx.send(f"The cluster {clustername} does not exist!")
-            elif servername in clusters[clustername]["servers"].keys():
-                await ctx.send(f"The **{servername}** server was **overwritten** in the **{clustername}** cluster!")
-            elif servername not in clusters[clustername]["servers"].keys():
-                await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
-            clusters[clustername]["servers"][servername] = {
-                "name": servername.lower(),
-                "ip": ip,
-                "port": port,
-                "password": password,
-                "chatchannel": channel.id
-            }
-            await self.initialize()
-
-    # Delete a server from a cluster
-    @_serversettings.command(name="delserver")
-    async def _delserver(self, ctx: commands.Context, clustername: str, servername: str):
-        """Remove a server."""
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            server = clusters[clustername]["servers"]
-            if servername in server.keys():
-                del clusters[clustername]["servers"][servername]
-                await ctx.send(f"{servername} server has been removed from {clustername}")
-                await self.initialize()
-            else:
-                await ctx.send(f"{servername} server not found.")
-
-    # Set a channel for the server status to be displayed
-    @_serversettings.command(name="setstatuschannel")
-    async def _setstatuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
-        """Set a channel for a server status embed."""
-        """This embed will be created if not exists, and updated every 60 seconds."""
-        await self.config.guild(ctx.guild).statuschannel.set(channel.id)
-        await ctx.send(f"Status channel has been set to {channel.mention}")
-
-    # Toggle map-to-map chat for a specific cluster
-    @_serversettings.command(name="toggle")
-    async def _servertoservertoggle(self, ctx: commands.Context, clustername):
-        """Toggle server to server chat so maps can talk to eachother"""
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            if "servertoserver" not in clusters[clustername].keys():
-                clusters[clustername]["servertoserver"] = False
-                return await ctx.send(
-                    f"Server to server chat for {clustername.upper()} has been initialized as **Disabled**.")
-            if clusters[clustername]["servertoserver"] is False:
-                clusters[clustername]["servertoserver"] = True
-                return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Enabled**.")
-            if clusters[clustername]["servertoserver"] is True:
-                clusters[clustername]["servertoserver"] = False
-                return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Disabled**.")
-
-    # TRIBE COMMANDS
-    @_tribesettings.command(name="setmasterlog")
-    async def _setmasterlog(self, ctx, channel: discord.TextChannel):
-        """Set global channel for all unassigned tribe logs."""
-        await self.config.guild(ctx.guild).masterlog.set(channel.id)
-        await ctx.send(f"Master tribe log channel has been set to {channel.mention}")
-
-    @_tribesettings.command(name="addtribe")
-    async def _addtribe(self, ctx, tribe_id, owner: discord.Member, channel: discord.TextChannel):
-        """Add a tribe to be managed by it's owner."""
-        async with self.config.guild(ctx.guild).tribes() as tribes:
-            if tribe_id in tribes.keys():
-                await ctx.send("Tribe ID already exists!")
-            else:
-                tribes[tribe_id] = {
-                    "owner": owner.id,
-                    "channel": channel.id,
-                    "allowed": []
-                }
-                await channel.set_permissions(owner, read_messages=True)
-                await ctx.send(f"Tribe ID `{tribe_id}` has been set for {owner.mention} in {channel.mention}.")
-
-    @_tribesettings.command(name="deltribe")
-    async def _deltribe(self, ctx, tribe_id):
-        """Delete a tribe."""
-        async with self.config.guild(ctx.guild).tribes() as tribes:
-            if tribe_id in tribes.keys():
-                await ctx.send(f"Tribe with ID: {tribe_id} has been deleted")
-                del tribes[tribe_id]
-            else:
-                await ctx.send("Tribe ID doesn't exist!")
-
-    @_tribesettings.command(name="mytribe")
-    async def _viewtribe(self, ctx):
-        """View your tribe(if you've been granted ownership of one"""
-        async with self.config.guild(ctx.guild).tribes() as tribes:
-            if tribes != {}:
-                for tribe in tribes:
-                    if ctx.author.id == tribes[tribe]["owner"] or ctx.author.id in tribes[tribe]["allowed"]:
-                        owner = ctx.guild.get_member(tribes[tribe]['owner']).mention
-                        embed = discord.Embed(
-                            title=f"{ctx.author.name}'s Tribe",
-                            description=f"Tribe ID: {tribe}\nOwner: {owner}"
-                        )
-                        members = ""
-                        for member in tribes[tribe]["allowed"]:
-                            members += f"{ctx.guild.get_member(member).mention}\n"
-                        if members == "":
-                            members = "None Added"
-                        embed.add_field(
-                            name=f"Tribe Members",
-                            value=f"{members}"
-                        )
-                    else:
-                        await ctx.send("You don't have access any tribes.")
-                    await ctx.send(embed=embed)
-            else:
-                await ctx.send(f"There are no tribes set for this server.")
-
-    @_tribesettings.command(name="add")
-    async def _addmember(self, ctx, member: discord.Member):
-        """Add a member to your tribe logs."""
-        async with self.config.guild(ctx.guild).tribes() as tribes:
-            if tribes:
-                for tribe in tribes:
-                    if ctx.author.id == tribes[tribe]["owner"]:
-                        tribes[tribe]["allowed"].append(member.id)
-                        channel = ctx.guild.get_channel(tribes[tribe]["channel"])
-                        await channel.set_permissions(member, read_messages=True)
-                        await ctx.send(f"{member.mention} has been added to the tribe logs")
-                    else:
-                        await ctx.send(f"You arent set as owner of any tribes to add people on.")
-            else:
-                await ctx.send("No tribe data available")
-
-    @_tribesettings.command(name="remove")
-    async def _removemember(self, ctx, member: discord.Member):
-        """Remove a member from your tribe logs"""
-        async with self.config.guild(ctx.guild).tribes() as tribes:
-            if tribes:
-                for tribe in tribes:
-                    if ctx.author.id == tribes[tribe]["owner"]:
-                        memberlist = tribes[tribe]["allowed"]
-                        if member.id in memberlist:
-                            memberlist.remove(member.id)
-                            channel = ctx.guild.get_channel(tribes[tribe]["channel"])
-                            await channel.set_permissions(member, read_messages=False)
-                            await ctx.send(f"{member.mention} has been remove from tribe log access.")
-                        else:
-                            await ctx.send("Member does not exist in tribe log access.")
-                    else:
-                        await ctx.send("You do not have ownership of any tribes")
-            else:
-                await ctx.send("No tribe data available")
-
-    # PLAYER STAT COMMANDS
-    # Get the top 10 players in the cluster, browse pages to see them all
-    @commands.command(name="arklb")
-    async def _leaderboard(self, ctx):
-        """
-        View time played leaderboard
-        """
-
-        stats = await self.config.guild(ctx.guild).playerstats()
-        leaderboard = {}
-        global_time = 0
-
-        # Global cumulative time
-        for player in stats:
-            time = stats[player]["playtime"]["total"]
-            leaderboard[player] = time
-            global_time = global_time + time
-        globaldays, globalhours, globalminutes = await self.time_formatter(global_time)
-        sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
-
-        if len(sorted_players) >= 10:
-            pages = math.ceil(len(sorted_players) / 10)
-            embedlist = []
-            start = 0
-            stop = 10
-            for page in range(int(pages)):
-                embed = discord.Embed(
-                    title="Playtime Leaderboard",
-                    description=f"Global Cumulative Playtime: `{globaldays}d {globalhours}h {globalminutes}m`\n\n"
-                                f"**Top Players by Playtime** - `{len(sorted_players)} in Database`\n",
-                    color=discord.Color.random()
-                )
-                embed.set_thumbnail(url=ctx.guild.icon_url)
-                if stop > len(sorted_players):
-                    stop = len(sorted_players)
-                for i in range(start, stop, 1):
-
-                    playername = sorted_players[i][0]
-                    maps = ""
-                    for smap in stats[playername]["playtime"]:
-                        if smap != "total":
-                            time = stats[playername]["playtime"][smap]
-                            days, hours, minutes = await self.time_formatter(time)
-                            maps += f"{smap.capitalize()}: `{days}d {hours}h {minutes}m`\n"
-                    time_played = sorted_players[i][1]
-                    days, hours, minutes = await self.time_formatter(time_played)
-                    current_time = datetime.datetime.utcnow()
-                    timestamp = datetime.datetime.fromisoformat(stats[playername]['lastseen']["time"])
-                    timedifference = current_time - timestamp
-                    _, h, m = await self.time_formatter(timedifference.seconds)
-                    time = f"Last Seen: `{timedifference.days}d {h}h {m}m ago`"
-                    if timedifference.days >= 5:
-                        time = f"Last Seen: `{timedifference.days} days ago`"
-
-                    embed.add_field(name=f"{i + 1}. {playername}",
-                                    value=f"Total: `{days}d {hours}h {minutes}m`\n"
-                                          f"{maps}"
-                                          f"{time}")
-                embedlist.append(embed)
-                start += 10
-                stop += 10
-            msg = False
-            return await self.paginate(ctx, embedlist, msg)
-        else:
-            remaining = 10 - len(sorted_players)
-            await ctx.send(embed=discord.Embed(description=f"Not enough player data to establish a leaderboard.\n"
-                                                           f"Need {remaining} more players in database."))
-
-    # Menu for doing menu things
-    async def paginate(self, ctx, embeds, msg):
-        pages = len(embeds)
-        cur_page = 1
-        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
-        if not msg:
-            message = await ctx.send(embed=embeds[cur_page - 1])
-        else:
-            message = msg
-            await msg.edit(embed=embeds[cur_page - 1])
-
-        await message.add_reaction("⏪")
-        await message.add_reaction("◀️")
-        await message.add_reaction("❌")
-        await message.add_reaction("▶️")
-        await message.add_reaction("⏩")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["⏪", "◀️", "❌", "▶️", "⏩"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-
-                if str(reaction.emoji) == "⏩" and cur_page + 10 <= pages:
-                    cur_page += 10
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
-                    cur_page += 1
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "⏪" and cur_page - 10 >= 1:
-                    cur_page -= 10
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
-                    cur_page -= 1
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "❌":
-                    await message.clear_reactions()
-                    return await message.edit(embed=discord.Embed(description="Menu closed."))
-
-                else:
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                try:
-                    return await message.clear_reactions()
-                except discord.NotFound:
-                    return
-
-    # Get a specific player's stats
-    @commands.command(name="playerstats", aliases=["pstats, stats"])
-    async def _playerstats(self, ctx, *, gamertag):
-        """View stats for a Gamertag"""
-        stats = await self.config.guild(ctx.guild).playerstats()
-        current_time = datetime.datetime.utcnow()
-        for player in stats:
-            if player.lower() == gamertag.lower():
-                time = stats[player]["playtime"]["total"]
-                timestamp = datetime.datetime.fromisoformat(stats[player]["lastseen"]["time"])
-                timedifference = current_time - timestamp
-                _, h, m = await self.time_formatter(timedifference.seconds)
-                lastmap = stats[player]["lastseen"]["map"]
-                days, hours, minutes = await self.time_formatter(time)
-                embed = discord.Embed(
-                    title=f"Playerstats for {player}",
-                    description=f"Total Time Played: `{days}d {hours}h {minutes}m`\n"
-                                f"Last Seen: `{timedifference.days}d {h}h {m}m` ago on `{lastmap}`",
-                    color=discord.Color.random()
-                )
-                for mapn in stats[player]["playtime"]:
-                    if mapn != "total":
-                        raw_time = stats[player]["playtime"][mapn]
-                        days, hours, minutes = await self.time_formatter(raw_time)
-                        embed.add_field(
-                            name=f"{mapn}",
-                            value=f"`{days}d {hours}h {minutes}m`"
-                        )
-                return await ctx.send(embed=embed)
-            else:
-                continue
-        await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
-
-    # Get stats for all maps in a cluster showing top player for each map
-    @commands.command(name="clusterstats")
-    async def _clusterstats(self, ctx):
-        """View statistics for all servers"""
-        stats = await self.config.guild(ctx.guild).playerstats()
-        maps = {}
-        t = {}
-        for player in stats:
-            for mapn in stats[player]["playtime"]:
-                if mapn != "total":
-                    t[mapn] = {}
-                    maps[mapn] = 0
-        for player in stats:
-            for mapn in stats[player]["playtime"]:
-                if mapn != "total":
-                    t[mapn][player] = stats[player]["playtime"][mapn]
-                    time = stats[player]["playtime"][mapn]
-                    maps[mapn] += time
-        sorted_maps = sorted(maps.items(), key=lambda x: x[1], reverse=True)
-        mstats = ""
-        count = 1
-        for map in sorted_maps:
-            max_p = max(t[map[0]], key=t[map[0]].get)
-            maxptime = t[map[0]][max_p]
-            md, mh, mm = await self.time_formatter(maxptime)
-            name = map[0]
-            time = map[1]
-            d, h, m = await self.time_formatter(time)
-            mstats += f"**{count}. {name.upper()}** - `{len(t[map[0]].keys())} Players`\n" \
-                      f"Total Time Played: `{d}d {h}h {m}m`\n" \
-                      f"Top Player: `{max_p}` - `{md}d {mh}h {mm}m`\n\n"
-            count += 1
-        color = discord.Color.random()
-        embed = discord.Embed(title="Map Stats",
-                              description=f"{mstats}",
-                              color=color)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        await ctx.send(embed=embed)
-
-    # Get stats by map, shows everyone in a selected map
-    @commands.command(name="mapstats")
-    async def _mapstats(self, ctx):
-        """View stats for a particular server"""
-        map_options, serverlist = await self.enumerate_maps_all(ctx)
-        embed = discord.Embed(
-            title="Select a map to see stats",
-            description=f"**Type the Number that corresponds with the server you want.**\n\n"
-                        f"{map_options}"
-        )
-        msg = await ctx.send(embed=embed)
-
-        def check(message: discord.Message):
-            return message.author == ctx.author and message.channel == ctx.channel
-
-        try:
-            reply = await self.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-        if reply.content.isdigit():
-            async with ctx.typing():
-                try:
-                    await reply.delete()
-                except discord.NotFound:
-                    pass
-                for data in serverlist:
-                    if int(reply.content) == data[0]:
-                        sname = data[1]
-                        cname = data[2]
-                        break
-                else:
-                    color = discord.Color.red()
-                    embed = discord.Embed(description=f"Could not find the server corresponding to {reply.content}!",
-                                          color=color)
-                    return await ctx.send(embed=embed)
-                stats = await self.config.guild(ctx.guild).playerstats()
-                leaderboard = {}
-                lastseen = {}
-                global_time = 0
-                for player in stats:
-                    if f"{sname} {cname}" in stats[player]["playtime"]:
-                        time = stats[player]["playtime"][f"{sname} {cname}"]
-                        leaderboard[player] = time
-                        lastseen[player] = stats[player]["lastseen"]["time"]
-                        global_time = global_time + time
-                gd, gh, gm = await self.time_formatter(global_time)
-                sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
-
-                current_time = datetime.datetime.utcnow()
-                if len(sorted_players) >= 10:
-                    pages = math.ceil(len(sorted_players) / 10)
-                    embedlist = []
-                    start = 0
-                    stop = 10
-                    for page in range(int(pages)):
-                        embed = discord.Embed(
-                            title=f"Stats for {sname.capitalize()} {cname.upper()}",
-                            description=f"Global Cumulative Playtime: `{gd}d {gh}h {gm}m`\n\n"
-                                        f"**Top Players by Playtime** - `{len(sorted_players)} Total`\n",
-                            color=discord.Color.random()
-                        )
-                        embed.set_thumbnail(url=STATUS)
-                        if stop > len(sorted_players):
-                            stop = len(sorted_players)
-                        for i in range(start, stop, 1):
-                            playername = sorted_players[i][0]
-                            playertime = sorted_players[i][1]
-                            timestamp = datetime.datetime.fromisoformat(lastseen[playername])
-                            timedifference = current_time - timestamp
-                            dt, ht, mt = await self.time_formatter(playertime)
-                            _, h, m = await self.time_formatter(timedifference.seconds)
-                            embed.add_field(
-                                name=f"{i + 1}. {playername}",
-                                value=f"Time Played: `{dt}d {ht}h {mt}m`\n"
-                                      f"Last Seen: `{timedifference.days}d {h}h {m}m ago`"
-                            )
-                        embedlist.append(embed)
-                        start += 10
-                        stop += 10
-                    return await self.paginate(ctx, embedlist, msg)
-                else:
-                    embed = discord.Embed(
-                        title=f"Stats for {sname.capitalize()} {cname.upper()}",
-                        description=f"Global Cumulative Playtime: `{gd}d {gh}h {gm}m`\n\n"
-                                    f"**Top Players by Playtime** - `{len(sorted_players)} Total`\n",
-                        color=discord.Color.random()
-                    )
-                    embed.set_thumbnail(url=ctx.guild.icon_url)
-                    for i in range(0, len(sorted_players), 1):
-                        playername = sorted_players[i][0]
-                        playertime = sorted_players[i][1]
-                        timestamp = datetime.datetime.fromisoformat(lastseen[playername])
-                        timedifference = current_time - timestamp
-                        dt, ht, mt = await self.time_formatter(playertime)
-                        _, h, m = await self.time_formatter(timedifference.seconds)
-                        embed.add_field(
-                            name=f"{i + 1}. playername",
-                            value=f"Time Played: `{dt}d {ht}h {mt}m`\n"
-                                  f"Last Seen: `{timedifference.days}d {h}h {m}m ago`"
-                        )
-                    return await msg.edit(embed=embed)
-
-    # Resets all player playtime data back to 0 in the config
-    @_setarktools.command(name="resetlb")
-    @commands.guildowner()
-    async def _resetlb(self, ctx: commands.Context):
-        """Reset all playtime stats in the leaderboard."""
-        async with self.config.guild(ctx.guild).playerstats() as stats:
-            async with ctx.typing():
-                for gamertag in stats:
-                    for key in stats[gamertag]["playtime"]:
-                        stats[gamertag]["playtime"][key] = 0
-                await ctx.send(embed=discord.Embed(description="Player Stats have been reset."))
-
-    # Deletes all player data in the config
-    @_setarktools.command(name="wipestats")
-    @commands.guildowner()
-    async def _wipestats(self, ctx: commands.Context):
-        """Wipe all player stats including last seen data."""
-        async with self.config.guild(ctx.guild).all() as data:
-            async with ctx.typing():
-                del data["playerstats"]
-            await ctx.send(embed=discord.Embed(description="Player Stats have been wiped."))
-
-    # Time Converter
-    async def time_formatter(self, time_played):
-        minutes, _ = divmod(time_played, 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        return days, hours, minutes
-
-    # HARDCODED ITEM SEND
-    @_setarktools.command(name="imstuck")
-    @commands.cooldown(1, 7200, commands.BucketType.user)
-    async def imstuck(self, ctx):
-        """
-        For those tough times when Ark is being Ark
-
-        Sends you tools to get unstuck, or off yourself.
-        """
-        embed = discord.Embed(
-            description=f"**Type your Implant ID in chat.**"
-        )
-        embed.set_footer(text="Hint: your implant id can be seen by hovering over it in your inventory!")
-        embed.set_thumbnail(url="https://i.imgur.com/kfanq99.png")
-        msg = await ctx.send(embed=embed)
-
-        def check(message: discord.Message):
-            return message.author == ctx.author and message.channel == ctx.channel
-        try:
-            reply = await self.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
-
-        if reply.content.isdigit():
-            implant_id = reply.content
-            try:
-                await reply.delete()
-            except discord.NotFound:
-                pass
-            embed = discord.Embed(
-                description=f"Sit tight, your care package is on the way!"
-            )
-            embed.set_thumbnail(url="https://i.imgur.com/8ofOx6X.png")
-            await msg.edit(embed=embed)
-            settings = await self.config.guild(ctx.guild).all()
-            serverlist = []
-            for cluster in settings["clusters"]:
-                for server in settings["clusters"][cluster]["servers"]:
-                    settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
-                    serverlist.append(settings["clusters"][cluster]["servers"][server])
-            commands = [
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 10 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 2 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
-            ]
-
-            stucktasks = []
-            for server in serverlist:
-                for command in commands:
-                    stucktasks.append(self.imstuck_rcon(server, command))
-
-            async with ctx.typing():
-                await asyncio.gather(*stucktasks)
-            return
-        else:
-            return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
-
-    async def imstuck_rcon(self, serverlist, command):
-        try:
-            await rcon.asyncio.rcon(
-                command=command,
-                host=serverlist['ip'],
-                port=serverlist['port'],
-                passwd=serverlist['password']
-            )
-            return
-        except WindowsError as e:
-            if e.winerror == 121:
-                clustername = serverlist['cluster']
-                servername = serverlist['name']
-                log.warning(f"IMSTUCK COMAMND: The **{servername}** **{clustername}** server has timed out and is probably down.")
-                return
-
-    # VIEW SETTINGSs
-    @_api.command(name="view")
-    async def _viewapi(self, ctx):
-        """View current API settings"""
-        settings = await self.config.guild(ctx.guild).all()
-        autofriend = settings["autofriend"]
-        autowelcome = settings["autowelcome"]
-        unfriendtime = settings["unfriendafter"]
-        welcomemsg = settings["welcomemsg"]
-        if welcomemsg is None:
-            welcomemsg = f"Welcome to {ctx.guild.name}!\nThis is an automated message:\n" \
-                                                  f"You appear to be a new player, " \
-                                                  f"here is an invite to the Discord server:\n\n*Invite Link*"
-        color = discord.Color.random()
-        embed = discord.Embed(
-            title="API Settings",
-            description=f"**AutoFriend System:** `{'Enabled' if autofriend else 'Disabled'}`\n"
-                        f"**AutoWelcome System:** `{'Enabled' if autowelcome else 'Disabled'}`\n"
-                        f"**AutoUnfriend Days:** `{unfriendtime}`\n",
-            color=color
-        )
-        embed.add_field(
-            name="Welcome Message",
-            value=box(welcomemsg)
-        )
-        await ctx.send(embed=embed)
-
-    @_permissions.command(name="view")
-    async def _viewperms(self, ctx: commands.Context):
-        """View current permission settings."""
-        settings = await self.config.guild(ctx.guild).all()
-        color = discord.Color.dark_purple()
-        statuschannel = ctx.guild.get_channel(settings['statuschannel'])
-        if settings['statuschannel']:
-            statuschannel = statuschannel.mention
-        if not settings['statuschannel']:
-            statuschannel = "Not Set"
-        try:
-            embed = discord.Embed(
-                title=f"Permission Settings",
-                color=color,
-                description=f"**Full Access Role:** {settings['fullaccessrole']}\n"
-                            f"**Mod Roles:** {settings['modroles']}\n"
-                            f"**Mod Commands:** {settings['modcommands']}\n"
-                            f"**Blacklisted Names:** {settings['badnames']}\n"
-                            f"**Status Channel:** {statuschannel}"
-            )
-            return await ctx.send(embed=embed)
-        except KeyError:
-            await ctx.send(f"Setup permissions first.")
-
-    @_serversettings.command(name="view")
-    async def _viewsettings(self, ctx: commands.Context):
-        """View current server settings."""
-
-        settings = await self.config.guild(ctx.guild).all()
-        if not settings["clusters"]:
-            await ctx.send("No servers have been added yet.")
-            return
-        for cname in settings["clusters"]:
-            embed = discord.Embed(
-                description=f"Gathering Server Data for `{cname.upper()}` Cluster..."
-            )
-            embed.set_thumbnail(url=LOADING)
-            msg = await ctx.send(embed=embed)
-            await asyncio.sleep(1)
-            serversettings = ""
-            serversettings += f"**{cname.upper()} Cluster**\n"
-            if settings["clusters"][cname]["servertoserver"] is True:
-                serversettings += f"`Map-to-Map Chat:` **Enabled**\n"
-            if settings["clusters"][cname]["servertoserver"] is False:
-                serversettings += f"`Map-to-Map Chat:` **Disabled**\n"
-            for k, v in settings["clusters"][cname].items():
-                if k == "globalchatchannel":
-                    serversettings += f"`GlobalChat:` {ctx.guild.get_channel(v).mention}\n"
-                if k == "adminlogchannel":
-                    serversettings += f"`AdminLog:` {ctx.guild.get_channel(v).mention}\n"
-                if k == "joinchannel":
-                    serversettings += f"`JoinChannel:` {ctx.guild.get_channel(v).mention}\n"
-                if k == "leavechannel":
-                    serversettings += f"`LeaveChannel:` {ctx.guild.get_channel(v).mention}\n"
-                else:
-                    continue
-            for server in settings["clusters"][cname]["servers"]:
-                for k, v in settings["clusters"][cname]["servers"][server].items():
-                    if k == "name":
-                        serversettings += f"**Map:** `{v.capitalize()}`\n"
-                    if k != "chatchannel":
-                        if k != "name":
-                            if k != "ip":
-                                serversettings += f"**{k.capitalize()}:** `{v}`\n"
-                            if k == "ip":
-                                serversettings += f"**{k.upper()}:** `{v}`\n"
-                    if k == "chatchannel":
-                        serversettings += f"**Channel:** {ctx.guild.get_channel(v).mention}\n"
-                if "api" in settings["clusters"][cname]["servers"][server]:
-                    async with ctx.typing():
-                        apikey = settings["clusters"][cname]["servers"][server]["api"]
-                        getfriends = "https://xbl.io/api/v2/friends"
-                        header = {"X-Authorization": apikey}
-                        data = None
-                        async with self.session.get(url=getfriends, headers=header) as resp:
-                            pages = "Unknown"
-                            remaining = 0
-                            if int(resp.status) == 200:
-                                remaining = resp.headers['X-RateLimit-Remaining']
-                                data = await resp.json(content_type=None)
-                            if data:
-                                if "people" in data:
-                                    pages = len(data["people"])
-                        serversettings += f"**Friend Count:** `{pages}`\n"
-                        serversettings += f"**API Calls Remaining:** `{str(remaining)}`\n"
-                serversettings += "\n"
-            try:
-                await msg.delete()
-            except discord.NotFound:
-                pass
-            for p in pagify(serversettings):
-                color = discord.Color.dark_purple()
-                embed = discord.Embed(
-                    color=color,
-                    description=f"{p}"
-                )
-                await ctx.send(embed=embed)
-
-    @_tribesettings.command(name="view")
-    @commands.guildowner()
-    async def _viewtribesettings(self, ctx):
+    async def view_tribe_settings(self, ctx: commands.Context):
         """Overview of all tribes and settings"""
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
@@ -1473,242 +770,712 @@ class ArkTools(commands.Cog):
                 )
         await ctx.send(embed=embed)
 
-    # Manual RCON commands
-    @_setarktools.command(name="rcon")
-    async def rcon(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
-        """Perform an RCON command."""
-        settings = await self.config.guild(ctx.guild).all()
-        # Check whether user has perms
-        userallowed = False
-        for role in ctx.author.roles:
-            if role.id == settings['fullaccessrole']:
-                userallowed = True
-            for modrole in settings['modroles']:
-                if role.id == modrole:
-                    modcmds = settings['modcommands']
-                    for cmd in modcmds:
-                        if str(cmd.lower()) in command.lower():
-                            userallowed = True
-        if not userallowed:
-            if ctx.guild.owner != ctx.author:
-                return await ctx.send("You do not have the required permissions to run that command.")
+    @tribe_settings.command(name="setmasterlog")
+    async def set_masterlog(self, ctx: commands.Context, channel: discord.TextChannel):
+        """Set global channel for all tribe logs."""
+        await self.config.guild(ctx.guild).masterlog.set(channel.id)
+        await ctx.send(f"Master tribe log channel has been set to {channel.mention}")
 
-        # Pull data to send with command to task loop depending on what user designated
-        serverlist = []
-        clustername = clustername.lower()
-        servername = servername.lower()
-        if clustername == "all":
-            for cluster in settings["clusters"]:
-                if servername == "all":
-                    for server in settings["clusters"][cluster]["servers"]:
-                        settings["clusters"][cluster]["servers"][server]["cluster"] = cluster.lower()
-                        serverlist.append(settings["clusters"][cluster]["servers"][server])
-                else:
-                    if servername in settings["clusters"][cluster]["servers"]:
-                        settings["clusters"][cluster]["servers"][servername]["cluster"] = cluster.lower()
-                        if not settings["clusters"][cluster]["servers"][servername]:
-                            return await ctx.send("Server name not found.")
-                        serverlist.append(settings["clusters"][cluster]["servers"][servername])
+    @tribe_settings.command(name="assign")
+    async def assign_tribe(self,
+                           ctx: commands.Context,
+                           tribe_id: str,
+                           owner: discord.Member,
+                           channel: discord.TextChannel):
+        """Assign a tribe to an owner to be managed by ithem."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribe_id in tribes:
+                return await ctx.send("Tribe ID already exists!")
+            tribes[tribe_id] = {
+                "owner": owner.id,
+                "channel": channel.id,
+                "allowed": []
+            }
+            await channel.set_permissions(owner, read_messages=True)
+            await ctx.send(f"Tribe ID `{tribe_id}` has been assigned to {owner.mention} in {channel.mention}.")
+
+    @tribe_settings.command(name="unassign")
+    async def unassign_tribe(self, ctx: commands.Context, tribe_id: str):
+        """Unassign a tribe owner from a tribe."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribe_id not in tribes:
+                return await ctx.send("Tribe ID doesn't exist!")
+            await ctx.send(f"Tribe with ID: {tribe_id} has been unassigned.")
+            del tribes[tribe_id]
+
+    @tribe_settings.command(name="mytribe")
+    async def view_my_tribe(self, ctx):
+        """View your tribe(if you've been granted ownership of one."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribes == {}:
+                return await ctx.send(f"There are no tribes set for this server.")
+            for tribe in tribes:
+                if str(ctx.author.id) == tribes[tribe]["owner"] or str(ctx.author.id) in tribes[tribe]["allowed"]:
+                    owner = ctx.guild.get_member(tribes[tribe]['owner']).mention
+                    embed = discord.Embed(
+                        title=f"{ctx.author.name}'s Tribe",
+                        description=f"Tribe ID: {tribe}\nOwner: {owner}"
+                    )
+                    members = ""
+                    for member in tribes[tribe]["allowed"]:
+                        members += f"{ctx.guild.get_member(member).mention}\n"
+                    if members == "":
+                        members = "None Added"
+                    embed.add_field(
+                        name=f"Tribe Members",
+                        value=f"{members}"
+                    )
+                    await ctx.send(embed=embed)
+                    break
+            else:
+                await ctx.send("You don't have access any tribes.")
+
+    @tribe_settings.command(name="add")
+    async def add_member(self, ctx: commands.Context, member: discord.Member):
+        """Add a member to your tribe log channel."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribes == {}:
+                return await ctx.send(f"There are no tribes set for this server.")
+            for tribe in tribes:
+                if str(ctx.author.id) == tribes[tribe]["owner"]:
+                    tribes[tribe]["allowed"].append(member.id)
+                    channel = ctx.guild.get_channel(tribes[tribe]["channel"])
+                    await channel.set_permissions(member, read_messages=True)
+                    await ctx.send(f"{member.mention} has been added to the tribe logs")
+                    break
+            else:
+                await ctx.send(f"You arent set as owner of any tribes to add people to.")
+
+    @tribe_settings.command(name="remove")
+    async def remove_member(self, ctx: commands.Context, member: discord.Member):
+        """Remove a member from your tribe log channel."""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            if tribes == {}:
+                return await ctx.send(f"There are no tribes set for this server.")
+            for tribe in tribes:
+                if str(ctx.author.id) == tribes[tribe]["owner"]:
+                    memberlist = tribes[tribe]["allowed"]
+                    if str(member.id) in memberlist:
+                        memberlist.remove(str(member.id))
+                        channel = ctx.guild.get_channel(tribes[tribe]["channel"])
+                        await channel.set_permissions(member, read_messages=False)
+                        await ctx.send(f"{member.mention} has been remove from tribe log access.")
+                        break
                     else:
-                        return await ctx.send("Server name not found.")
-        else:
-            if clustername not in settings["clusters"]:
-                return await ctx.send("Cluster name not found.")
-            elif servername == "all":
-                for server in settings["clusters"][clustername]["servers"]:
-                    settings["clusters"][clustername]["servers"][server]["cluster"] = clustername
-                    serverlist.append(settings["clusters"][clustername]["servers"][server])
+                        return await ctx.send("Member does not exist in tribe log access.")
             else:
-                if servername in settings["clusters"][clustername]["servers"]:
-                    settings["clusters"][clustername]["servers"][servername]["cluster"] = clustername
-                    if not settings["clusters"][clustername]["servers"][servername]:
-                        return await ctx.send("Server name not found.")
-                    serverlist.append(settings["clusters"][clustername]["servers"][servername])
-                else:
-                    return await ctx.send("Server name not found.")
+                await ctx.send("You do not have ownership of any tribes")
 
-        # Sending manual commands off to the task loop
-        mtasks = []
-        if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
-            await ctx.send("Beginning reboot countdown...")
-            for i in range(10, 0, -1):
-                for server in serverlist:
-                    mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                    await mapchannel.send(f"Reboot in {i}")
-                    await self.process_handler(ctx.guild, server, f"serverchat Reboot in {i}")
-                await asyncio.sleep(1)
-            await ctx.send("Saving maps...")
-            for server in serverlist:
-                mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                await mapchannel.send(f"Saving map...")
-                await self.process_handler(ctx.guild, server, "saveworld")
-            await asyncio.sleep(5)
-            await ctx.send("Running DoExit...")
-            for server in serverlist:
-                await self.process_handler(ctx.guild, server, "doexit")
+    # Arktools-API subgroup
+    @arktools_main.group(name="api")
+    async def api_settings(self, ctx: commands.Context):
+        """
+        (Win10/Xbox CROSSPLAY ONLY) API tools for the host Gamertags.
 
-        else:
-            for server in serverlist:
-                mtasks.append(self.manual_rcon(ctx, server, command))
+        Type `[p]arktools api help` for more information.
+        """
+        pass
 
-            async with ctx.typing():
-                try:
-                    await asyncio.gather(*mtasks)
-                except Exception as e:
-                    log.exception(f"MANUAL RCON GATHER: {e}")
-                    return await ctx.send(f"Command failed to gather")
+    @api_settings.command(name="help")
+    async def get_help(self, ctx):
+        """Tutorial for getting your ClientID and Secret"""
+        embed = discord.Embed(
+            description="**How to get your Client ID and Secret**",
+            color=discord.Color.magenta()
+        )
+        embed.add_field(
+            name="Step 1",
+            value="• Register a new application in "
+                  "[Azure AD](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 2",
+            value="• Name your app\n"
+                  "• Select `Personal Microsoft accounts only` under supported account types\n"
+                  "• Add http://localhost/auth/callback as a Redirect URI of type `Web`",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 3",
+            value="• Copy your Application (client) ID and save it for setting your tokens",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 4",
+            value="• On the App Page, navigate to `Certificates & secrets`\n"
+                  "• Generate a new client secret and save it for setting your tokens\n"
+                  "• **Importatnt:** The 'Value' for the secret is what you use, NOT the 'Secret ID'",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 5",
+            value=f"• Type `{ctx.prefix}arktools api tokenset` and include your Client ID and Secret\n",
+            inline=False
+        )
+        embed.add_field(
+            name="Step 6",
+            value=f"• Type `{ctx.prefix}arktools api auth clustername servername` to authorize a server in a cluster\n"
+                  f"• The bot will DM you instructions with a link, follow them exactly\n"
+                  f"• After authorizing each host Gamertag, remember to sign out of Microsoft each time",
+            inline=False
+        )
+        await ctx.send(embed=embed)
 
-        if command.lower() == "doexit":
-            await ctx.send(f"Saved and rebooted `{len(serverlist)}` servers for `{clustername}` clusters.")
-        else:
-            await ctx.send(f"Executed `{command}` command on `{len(serverlist)}` servers for `{clustername}` clusters.")
+    @api_settings.command(name="viewhosts")
+    async def view_host_gamertags(self, ctx: commands.Context):
+        """
+        View API information for the host Gamertags such as if they're authorized,
+        friend list count, ect..
+        """
+        clientid = await self.config.clientid()
+        if not clientid:
+            return await ctx.send("Bot owner needs to set Client ID and Secret before api commands can be used!")
+        clusters = await self.config.guild(ctx.guild).clusters()
+        async with aiohttp.ClientSession() as session:
+            for cname, cluster in clusters.items():
+                description = f"**{cname.upper()} Cluster**\n"
+                async with ctx.typing():
+                    for sname, server in cluster["servers"].items():
+                        authorized = "False"
+                        gamertag = "N/A"
+                        following = "N/A"
+                        followers = "N/A"
+                        if "tokens" in server:
+                            tokens = server["tokens"]
+                            xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokens)
+                            if xbl_client:
+                                authorized = "True"
+                                friends = json.loads((await xbl_client.people.get_friends_summary_own()).json())
+                                gamertag = server["gamertag"]
+                                following = friends["target_following_count"]
+                                followers = friends["target_follower_count"]
+                        description += f"**{sname.capitalize()}**\n" \
+                                       f"`Authorized: `{authorized}\n" \
+                                       f"`Gamertag:   `{gamertag}\n" \
+                                       f"`Followers:  `{followers}\n" \
+                                       f"`Following:  `{following}\n\n"
+                embed = discord.Embed(
+                    description=description
+                )
+                await ctx.send(embed=embed)
 
-        if "banplayer" in command.lower():
-            player_id = int(re.search(r'(\d+)', command).group(1))
-            callcommand = f"https://xbl.io/api/v2/friends/remove/{player_id}"
-            unfriend = ""
-            async with ctx.typing():
-                for server in serverlist:
-                    if "api" in server:
-                        apikey = server["api"]
-                        gamertag = server["gamertag"]
-                        data, status = await self.apicall(callcommand, apikey)
-                        if status == 200:
-                            unfriend += f"{gamertag.capitalize()} Successfully unfriended XUID: {player_id}\n"
-                        else:
-                            unfriend += f"{gamertag.capitalize()} Failed to unfriend XUID: {player_id}\n"
-            await ctx.send(box(unfriend, lang="python"))
+    @api_settings.command(name="view")
+    async def view_api_settings(self, ctx: commands.Context):
+        """View API configuration settings"""
+        settings = await self.config.guild(ctx.guild).all()
+        autofriend = settings["autofriend"]
+        autowelcome = settings["autowelcome"]
+        unfriendtime = settings["unfriendafter"]
+        welcomemsg = settings["welcomemsg"]
+        if welcomemsg is None:
+            welcomemsg = f"Welcome to {ctx.guild.name}!\nThis is an automated message:\n" \
+                         f"You appear to be a new player, " \
+                         f"here is an invite to the Discord server:\n\n*Invite Link*"
+        desc = f"`AutoFriend System:  `{'Enabled' if autofriend else 'Disabled'}\n" \
+               f"`AutoWelcome System: `{'Enabled' if autowelcome else 'Disabled'}\n" \
+               f"`AutoUnfriend Days:  `{unfriendtime}\n"
 
-    # RCON function for manual commands
-    async def manual_rcon(self, ctx, serverlist, command):
+        color = discord.Color.random()
+        embed = discord.Embed(
+            title="API Settings",
+            description=desc,
+            color=color
+        )
+        if ctx.author.id in self.bot.owner_ids:
+            client_id = await self.config.clientid()
+            client_secret = await self.config.secret()
+            token_info = f"`Client ID:     `{client_id}\n" \
+                         f"`Client Secret: `{client_secret}"
+            embed.add_field(
+                name="Bot Owner Only Info",
+                value=token_info,
+                inline=False)
+        embed.add_field(
+            name="Welcome Message",
+            value=box(welcomemsg),
+            inline=False
+        )
+        await ctx.send(embed=embed)
+
+    @api_settings.command(name="tokenset")
+    @commands.is_owner()
+    async def set_tokens(self,
+                         ctx: commands.Context, client_id: str, client_secret: str):
+        """Set Client ID and Secret for the bot to use"""
+        await self.config.clientid.set(client_id)
+        await self.config.secret.set(client_secret)
+        await ctx.send(f"Client ID and secret have been set.✅\n"
+                       f"Run `{ctx.prefix}arktools api auth <clustername> <servername>` to authorize your tokens.")
+
+    @api_settings.command(name="deltokens")
+    @commands.is_owner()
+    async def remove_tokens(self, ctx: commands.Context):
+        """Remove API tokens from the bot"""
+        await self.config.client_id.set(None)
+        await self.config.secret.set(None)
+        await ctx.send(f"API keys removed.")
+
+    @api_settings.command(name="auth")
+    async def authorize_tokens(self, ctx: commands.Context, clustername: str, servername: str):
+        """
+        Authorize your tokens for a server
+
+        This sends you a DM with instructions and a link, you will need to sign
+        in with the host Gamertag email and authorize it to be used with the API
+        """
+        clusters = await self.config.guild(ctx.guild).clusters()
+        if clustername.lower() not in clusters:
+            return await ctx.send(f"{clustername} cluster does not exist!")
+        if servername.lower() not in clusters[clustername]["servers"]:
+            return await ctx.send(f"{servername} server does not exist!")
+
+        client_id = await self.config.clientid()
+        if client_id is None:
+            return await ctx.send(f"Bot owner needs to set their Client ID and Secret first!\n"
+                                  f"Command is `{ctx.prefix}arktools api tokenset` to add them.")
+
+        url = "https://login.live.com/oauth20_authorize.srf?"
+        cid = f"client_id={client_id}"
+        types = "&response_type=code&approval_prompt=auto"
+        scopes = "&scope=Xboxlive.signin+Xboxlive.offline_access&"
+        redirect_uri = "&redirect_uri=http://localhost/auth/callback"
+        auth_url = f"{url}{cid}{types}{scopes}{redirect_uri}"
+        await ctx.send("Sending you a DM to authorize your tokens.")
+        await self.ask_auth(ctx, ctx.author, auth_url, clustername, servername)
+
+    # Send user DM asking for authentication
+    async def ask_auth(self,
+                       ctx: commands.Context,
+                       author: discord.User,
+                       auth_url: str,
+                       clustername: str,
+                       servername: str
+                       ):
+        plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
+                   f"Sign in with the host Gamertag email the corresponds with the server you selected.\n" \
+                   f"Copy the ENTIRE contents of the address bar after you authorize, " \
+                   f"and reply to this message with what you copied.\n" \
+                   f"{auth_url}"
+        await author.send(plz_auth)
+
+        def check(message):
+            return message.author == ctx.author
+
         try:
-            mapn = serverlist['name'].capitalize()
-            cluster = serverlist['cluster'].upper()
-            res = await rcon.asyncio.rcon(
-                command=command,
-                host=serverlist['ip'],
-                port=serverlist['port'],
-                passwd=serverlist['password']
-            )
-            res = res.rstrip()
-            if command.lower() == "listplayers":
-                await ctx.send(f"**{mapn} {cluster}**\n"
-                               f"{box(res, lang='python')}")
-            else:
-                await ctx.send(box(f"{mapn} {cluster}\n{res}", lang="python"))
-        except WindowsError as e:
-            if e.winerror == 121:
-                clustername = serverlist['cluster']
-                servername = serverlist['name']
-                await ctx.send(f"The **{servername}** **{clustername}** server has timed out and is probably down.")
-                return
-            else:
-                log.exception(f"MANUAL RCON WINERROR: {e}")
-                return
-        except Exception as e:
-            if "WinError" not in str(e):
-                log.exception(f"MANUAL RCON: {e}")
+            reply = await self.bot.wait_for("message", check=check, timeout=120)
+        except asyncio.TimeoutError:
+            return await author.send("Authorization timeout.")
 
-    # Cache the config on cog load for the task loops to use
+        # Retrieve code from url
+        if "code" in reply.content:
+            code = reply.content.split("code=")[-1]
+        else:
+            return await author.send("Invalid response")
+
+        client_id = await self.config.clientid()
+        client_secret = await self.config.secret()
+
+        async with aiohttp.ClientSession() as session:
+            auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
+            try:
+                await auth_mgr.request_tokens(code)
+                tokens = json.loads(auth_mgr.oauth.json())
+            except Exception as e:
+                if "Bad Request" in str(e):
+                    return await author.send("Bad Request, Make sure to use a **Different** email than the one "
+                                             "you used to make your Azure app to sign into.\n"
+                                             "Check the following as well:\n"
+                                             "• Paste the **Entire** contents of the address bar.\n"
+                                             "• Make sure that the callback URI in your azure app is: "
+                                             "http://localhost/auth/callback")
+                return await author.send(f"Authorization failed: {e}")
+            async with self.config.guild(ctx.guild).clusters() as clusters:
+                clusters[clustername]["servers"][servername]["tokens"] = tokens
+                xbl_client = XboxLiveClient(auth_mgr)
+                xuid = xbl_client.xuid
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_xuid(xuid)).json())
+                gt, _, _, _ = profile_format(profile_data)
+                clusters[clustername]["servers"][servername]["gamertag"] = gt
+
+            await author.send(f"Tokens have been Authorized for **{servername.capitalize()} {clustername.upper()}**✅")
+
+    @api_settings.command(name="welcome")
+    async def welcome_toggle(self, ctx):
+        """(Toggle) Automatic server welcome messages when a new player is detected on the servers"""
+        welcometoggle = await self.config.guild(ctx.guild).autowelcome()
+        if welcometoggle:
+            await self.config.guild(ctx.guild).autowelcome.set(False)
+            await ctx.send("Auto Welcome Message **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).autowelcome.set(True)
+            await ctx.send("Auto Welcome Message **Enabled**")
+
+    @api_settings.command(name="smartmanage")
+    async def autofriend_toggle(self, ctx: commands.Context):
+        """
+        (Toggle) Automatic maintenance of host Gamertag friend lists.
+
+        This will enable automatically adding new players as a friend by the host Gamertag
+        and automatically unfriending them after the set number of days of inactivity (Default is 30).
+        The Gamertags will also unfriend anyone that isnt following them back
+        or leaves the discord after registering.
+        """
+        autofriendtoggle = await self.config.guild(ctx.guild).autofriend()
+        if autofriendtoggle:
+            await self.config.guild(ctx.guild).autofriend.set(False)
+            await ctx.send("Smart management **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).autofriend.set(True)
+            await ctx.send("Smart management **Enabled**")
+
+    @api_settings.command(name="unfriendtime")
+    async def unfriend_time(self, ctx: commands.Context, days: int):
+        """
+        Set number of days of inactivity for the host Gamertags to unfriend a player.
+
+        This keep xbox host Gamertag friends lists clean since the max you can have is 1000.
+        """
+        await self.config.guild(ctx.guild).unfriendafter.set(days)
+        await ctx.send(f"Inactivity days till auto unfriend is {days} days.")
+
+    @api_settings.command(name="welcomemsg")
+    async def welcome_message(self, ctx: commands.Context, *, welcome_message: str):
+        """
+        Set a welcome message to be used instead of the default.
+        When the bot detects a new Gamertag that isn't in the database, it sends it a welcome DM with
+        an invite to the server.
+
+
+        Variables that can be used in the welcome message are:
+        {discord} - Discord name
+        {gamertag} - Persons Gamertag
+        {link} - Discord link
+        Put "Default" in welcome string to revert to default message.
+        """
+        params = {
+            "discord": ctx.guild.name,
+            "gamertag": "gamertag",
+            "link": "channel invite"
+        }
+        if "default" in welcome_message.lower():
+            await ctx.send("Welcome message reverted to Default!")
+            return await self.config.guild(ctx.guild).welcomemsg.set(None)
+        try:
+            to_send = welcome_message.format(**params)
+        except KeyError as e:
+            await ctx.send(f"The welcome message cannot be formatted, because it contains an "
+                           f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
+                           f"for a list of valid placeholders.")
+        else:
+            await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
+            await ctx.send(f"Welcome message set as:\n{to_send}")
+
+    # Arktools-Server subgroup
+    @arktools_main.group(name="server")
+    @commands.guildowner()
+    async def server_settings(self, ctx: commands.Context):
+        """Server settings."""
+        pass
+
+    @server_settings.command(name="view")
+    async def view_server_settings(self, ctx: commands.Context):
+        """View current server settings"""
+        settings = await self.config.guild(ctx.guild).all()
+        tz = settings["timezone"]
+        statuschannel = "Not Set"
+        eventlog = "Not Set"
+        if settings["eventlog"]:
+            eventlog = ctx.guild.get_channel(settings["eventlog"]).mention
+        if settings["status"]["channel"]:
+            statuschannel = ctx.guild.get_channel(settings["status"]["channel"])
+            try:
+                statuschannel = statuschannel.mention
+            except AttributeError:
+                statuschannel = "`#deleted-channel`"
+        embed = discord.Embed(
+            description=f"`Server Status Channel: `{statuschannel}\n"
+                        f"`Event Log: `{eventlog}\n"
+                        f"`Timezone:  `{tz}",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
+        clusters = settings["clusters"]
+        if clusters == {}:
+            return await ctx.send("No clusters have been created!")
+        for cluster in clusters:
+            settings = f"**{cluster.upper()} Cluster**\n"
+            cluster = clusters[cluster]
+            interchat = cluster["servertoserver"]
+            if interchat:
+                settings += "`Interchat:  `Enabled\n"
+            else:
+                settings += "`Interchat:  `Disabled\n"
+
+            settings += f"`GlobalChat: `{ctx.guild.get_channel(cluster['globalchatchannel']).mention}\n" \
+                        f"`AdminLog:   `{ctx.guild.get_channel(cluster['adminlogchannel']).mention}\n" \
+                        f"`JoinLog:    `{ctx.guild.get_channel(cluster['joinchannel']).mention}\n" \
+                        f"`LeaveLog:   `{ctx.guild.get_channel(cluster['leavechannel']).mention}\n\n"
+
+            for server in cluster["servers"]:
+                name = server
+                server = cluster["servers"][server]
+                channel = ctx.guild.get_channel(server['chatchannel'])
+                settings += f"{channel.mention}\n" \
+                            f"`Map:  `{name}\n" \
+                            f"`ip:   `{server['ip']}\n" \
+                            f"`Port: `{server['port']}\n" \
+                            f"`Pass: `{server['password']}\n"
+                if "api" in server.keys():
+                    cid = server["api"]["clientid"]
+                    secret = server["api"]["clientsecret"]
+                    gt = server["api"]["gamertag"]
+                    settings += f"`Gamertag: `{gt}\n" \
+                                f"`ClientID: `{cid}\n" \
+                                f"`Secret:   `{secret}\n"
+                settings += "\n"
+            for p in pagify(settings):
+                embed = discord.Embed(
+                    description=p,
+                    color=discord.Color.blue()
+                )
+                await ctx.send(embed=embed)
+
+    @server_settings.command(name="timezone")
+    async def set_timezone(self, ctx: commands.Context, timezone: str):
+        """
+        Set your timezone to display in the Server Status footer.
+
+        You can type "[p]arktools server showtimezones" for a list of all available timezones
+        """
+
+        try:
+            tz = pytz.timezone(timezone)
+        except pytz.UnknownTimeZoneError:
+            return await ctx.send(
+                f"Invalid Timezone, type `{ctx.prefix}arktools server timezones` for all available timezones."
+            )
+        time = datetime.datetime.now(tz)
+        time = time.strftime('%I:%M %p')  # Convert to 12 hour format
+
+        embed = discord.Embed(
+            description=f"Timezone set as **{timezone}**\nCurrent time is displayed below\n"
+                        f"`{time}`",
+            color=discord.Color.green()
+        )
+        await self.config.guild(ctx.guild).timezone.set(timezone)
+        await ctx.send(embed=embed)
+
+    @server_settings.command(name="timezones")
+    async def display_timezones(self, ctx: commands.Context):
+        """Display all available timezones for your server status embed"""
+        tzlist = ""
+        content = []
+        pages = []
+        timezones = pytz.all_timezones
+        for tz in timezones:
+            tzlist += f"{tz}\n"
+
+        cur_page = 1
+        for p in pagify(tzlist):
+            content.append(p)
+        for c in content:
+            embed = discord.Embed(
+                description=c
+            )
+            embed.set_footer(text=f"Pages: {cur_page}/{len(content)}")
+            pages.append(embed)
+            cur_page += 1
+        await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    @server_settings.command(name="eventlog")
+    async def set_event_log(self, ctx: commands.Context, channel: discord.TextChannel = None):
+        """
+        Set a channel for server events to be logged to.
+        The logs include the following events:
+        1. New players that are added to the database
+        2. Welcome messages sent to new players(if enabled)
+        3. Old players that are unfriended for inactivity(if enabled)
+        4. Players that are unfriended for leaving the Discord(if enabled)
+        5. Players that are unfriended due to unfriending a host Gamertag
+        """
+        if channel:
+            await self.config.guild(ctx.guild).eventlog.set(channel.id)
+            await ctx.send(f"Event log has been set to {channel.mention}")
+        else:
+            await self.config.guild(ctx.guild).eventlog.set(None)
+            await ctx.send(f"Event log has been set to **None**")
+
+    @server_settings.command(name="addcluster")
+    async def add_cluster(self,
+                          ctx: commands.Context,
+                          clustername: str,
+                          joinchannel: discord.TextChannel,
+                          leavechannel: discord.TextChannel,
+                          adminlogchannel: discord.TextChannel,
+                          globalchatchannel: discord.TextChannel):
+        """Add a cluster with specified log channels."""
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if clustername in clusters.keys():
+                return await ctx.send(f"**{clustername}** cluster already exists!")
+            else:
+                await ctx.send(f"**{clustername}** has been added to the list of clusters.")
+                clusters[clustername.lower()] = {
+                    "joinchannel": joinchannel.id,
+                    "leavechannel": leavechannel.id,
+                    "adminlogchannel": adminlogchannel.id,
+                    "globalchatchannel": globalchatchannel.id,
+                    "servertoserver": False,
+                    "servers": {}
+                }
+
+    @server_settings.command(name="delcluster")
+    async def del_cluster(self, ctx: commands.Context, clustername: str):
+        """Delete a cluster."""
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if clustername not in clusters.keys():
+                await ctx.send("Cluster name not found")
+            else:
+                del clusters[clustername]
+                await ctx.send(f"**{clustername}** cluster has been deleted")
+
+    @server_settings.command(name="addserver")
+    async def add_server(self, ctx: commands.Context,
+                         clustername: str,
+                         servername: str,
+                         ip: str,
+                         port: int,
+                         password: str,
+                         channel: discord.TextChannel):
+        """Add a server to a cluster."""
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if clustername.lower() not in clusters:
+                return await ctx.send(f"The cluster {clustername} does not exist!")
+            elif servername.lower() in clusters[clustername]["servers"]:
+                await ctx.send(f"The **{servername}** server was **overwritten** in the **{clustername}** cluster!")
+            else:
+                clusters[clustername.lower()]["servers"][servername.lower()] = {
+                    "ip": ip,
+                    "port": port,
+                    "password": password,
+                    "chatchannel": channel.id
+                }
+                await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
+
+    @server_settings.command(name="delserver")
+    async def del_server(self, ctx: commands.Context, clustername: str, servername: str):
+        """Remove a server from a cluster."""
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if clustername not in clusters:
+                return await ctx.send(f"{clustername} cluster not found.")
+            if servername not in clusters[clustername]["servers"]:
+                return await ctx.send(f"{servername} server not found.")
+            del clusters[clustername]["servers"][servername]
+            await ctx.send(f"**{servername}** server has been removed from **{clustername}**")
+
+    @server_settings.command(name="statuschannel")
+    async def set_statuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
+        """
+        Set a channel for the server status monitor.
+
+
+        Server status embed will be created and updated every 60 seconds.
+        """
+        await self.config.guild(ctx.guild).status.channel.set(channel.id)
+        await ctx.send(f"Status channel has been set to {channel.mention}")
+
+    @server_settings.command(name="interchat")
+    async def server_to_server_toggle(self, ctx: commands.Context, clustername: str):
+        """(Toggle) server to server chat for a cluster so maps can talk to eachother."""
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if clustername.lower() not in clusters:
+                return await ctx.send(f"{clustername} cluster does not exist!")
+            if clusters[clustername]["servertoserver"] is False:
+                clusters[clustername]["servertoserver"] = True
+                return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Enabled**.")
+            if clusters[clustername]["servertoserver"] is True:
+                clusters[clustername]["servertoserver"] = False
+                return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Disabled**.")
+
+    # Cache server data
     async def initialize(self):
+        self.servercount = 0
+        self.servers = []
+        self.channels = []
+        self.playerlist = {}
         config = await self.config.all_guilds()
-        for guildID in config:
-            guild = self.bot.get_guild(int(guildID))
+        for guild_id in config:
+            guild = self.bot.get_guild(int(guild_id))
             if not guild:
                 continue
-            guildsettings = await self.config.guild(guild).clusters()
-            if not guildsettings:
+            clusters = await self.config.guild(guild).clusters()
+            if clusters == {}:
                 continue
-            for cluster in guildsettings:
-                if not guildsettings[cluster]:
+            self.activeguilds.append(guild_id)
+            for cluster in clusters:
+                if clusters[cluster] == {}:
                     continue
-                guildsettings[cluster]["servertoserver"] = False
-                globalchatchannel = guildsettings[cluster]["globalchatchannel"]
-                adminlogchannel = guildsettings[cluster]["adminlogchannel"]
-                joinchannel = guildsettings[cluster]["joinchannel"]
-                leavechannel = guildsettings[cluster]["leavechannel"]
-                for server in guildsettings[cluster]["servers"]:
-                    guildsettings[cluster]["servers"][server]["joinchannel"] = joinchannel
-                    guildsettings[cluster]["servers"][server]["leavechannel"] = leavechannel
-                    guildsettings[cluster]["servers"][server]["adminlogchannel"] = adminlogchannel
-                    guildsettings[cluster]["servers"][server]["globalchatchannel"] = globalchatchannel
-                    guildsettings[cluster]["servers"][server]["cluster"] = cluster
-                    server = guildsettings[cluster]["servers"][server]
+                globalchannel = clusters[cluster]["globalchatchannel"]
+                self.channels.append(globalchannel)
+                adminlog = clusters[cluster]["adminlogchannel"]
+                joinchannel = clusters[cluster]["joinchannel"]
+                leavechannel = clusters[cluster]["leavechannel"]
+                for server in clusters[cluster]["servers"]:
+                    name = server
+                    server = clusters[cluster]["servers"][server]
+                    server["globalchatchannel"] = globalchannel
+                    server["adminlogchannel"] = adminlog
+                    server["joinchannel"] = joinchannel
+                    server["leavechannel"] = leavechannel
+                    server["cluster"] = cluster
+                    server["name"] = name
+                    self.servers.append((guild.id, server))
                     self.servercount += 1
-                    # self.alerts[server["chatchannel"]] = 0
-                    self.playerlist[server["chatchannel"]] = []
-                    self.taskdata.append([guild.id, server])
-                    self.channels.append(server["globalchatchannel"])
                     self.channels.append(server["chatchannel"])
-        time = datetime.datetime.utcnow()
-        self.time = time.isoformat()
-        log.info("Config initialized.")  # If this doesnt log then something is fucky...
-        return
+                    self.playerlist[server["chatchannel"]] = None
 
-    # Xbox API call handler
-    async def apicall(self, command, apikey):
-        async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
-            status = resp.status
-            try:
-                data = await resp.json(content_type=None)
-            except json.decoder.JSONDecodeError:
-                return None, status
-            return data, status
+            # Rehash player stats for ArkTools version < 2.0.0 config conversion
+            rehashed_stats = {}
+            stats = await self.config.guild(guild).players()
+            for key, value in stats.items():
+                if not key.isdigit():
+                    log.info(f"Fixing config for {key}")
+                    xuid = value["xuid"]
+                    last_seen = value["lastseen"]
+                    if last_seen["map"] == "None":
+                        last_seen["map"] = None
+                    rehashed_stats[xuid] = {
+                        "playtime": value["playtime"],
+                        "lastseen": last_seen,
+                        "username": key
+                    }
+                    if "discord" in value:
+                        rehashed_stats[xuid]["discord"] = value["discord"]
+                else:
+                    rehashed_stats[key] = value
+            await self.config.guild(guild).players.set(rehashed_stats)
 
-    async def apipost(self, url, payload, apikey):
-        async with self.session.post(url=url, data=json.dumps(payload),
-                                     headers={"X-Authorization": str(apikey)}) as resp:
-            status = resp.status
-            return status
+        log.info("Config initialized.")
 
-    async def enumerate_maps_api(self, ctx):
-        settings = await self.config.guild(ctx.guild).all()
-        map_options = "**Gamertag** - `Map/Cluster`\n"
-        servernum = 1
-        serverlist = []
-        for clustername in settings["clusters"]:
-            for servername in settings["clusters"][clustername]["servers"]:
-                if "api" in settings["clusters"][clustername]["servers"][servername]:
-                    key = settings["clusters"][clustername]["servers"][servername]["api"]
-                    gametag = str(settings["clusters"][clustername]["servers"][servername]["gamertag"])
-                    cname = clustername.upper()
-                    sname = servername.capitalize()
-                    map_options += f"**{servernum}.** `{gametag.capitalize()}` - `{sname} {cname}`\n"
-                    serverlist.append((servernum, gametag, key))
-                    servernum += 1
-        map_options += f"**All** - `Adds All Servers`\n"
-        return map_options, serverlist
-
-    async def enumerate_maps_all(self, ctx):
-        settings = await self.config.guild(ctx.guild).all()
-        map_options = "**Map/Cluster**\n"
-        servernum = 1
-        serverlist = []
-        for clustername in settings["clusters"]:
-            for servername in settings["clusters"][clustername]["servers"]:
-                    cname = clustername.upper()
-                    sname = servername.capitalize()
-                    map_options += f"**{servernum}.** `{sname} {cname}`\n"
-                    serverlist.append((servernum, sname.lower(), cname.lower()))
-                    servernum += 1
-        return map_options, serverlist
-
-    # Message listener to detect channel message is sent in and sends ServerChat command to designated server
+    # Sends ServerChat command to designated server if message is in the server chat channel
     @commands.Cog.listener("on_message")
-    async def chat_toserver(self, message: discord.Message):
-
-        if not message.guild:
-            return
-
-        if not message:
-            return
-
+    async def to_server_chat(self, message: discord.Message):
+        # If message was from a bot
         if message.author.bot:
             return
-
-        if message.channel.id not in self.channels:
+        # If message wasnt sent in a guild
+        if not message.guild:
             return
-
+        # If message has no content for some reason?
+        if not message:
+            return
+        # Check if guild id is initialized
+        if message.channel.guild.id not in self.activeguilds:
+            return
+        # Check if any servers have been initialized
+        if not self.servers:
+            return
+        # Reformat messages if containing mentions
         if message.mentions:
             for mention in message.mentions:
                 message.content = message.content.replace(f"<@!{mention.id}>", f"@{mention.name}")
@@ -1719,377 +1486,271 @@ class ArkTools(commands.Cog):
             for mention in message.role_mentions:
                 message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
 
-        clusterchannels, allservers = await self.globalchannelchecker(message.channel)
-        if not allservers:
-            return
+        # Run checks for what channel the message was sent in to see if its a map channel
+        clusterchannels, allservers = self.globalchannelchecker(message.channel)
+        chatchannel, servermap = self.mapchannelchecker(message.channel)
 
-        chatchannels, map = await self.mapchannelchecker(message.channel)
-        if not map:
+        if not allservers and not servermap:
             return
-
+        rtasks = []
         if message.channel.id in clusterchannels:
-            await self.chat_toserver_rcon(allservers, message)
-        if message.channel.id in chatchannels:
-            return await self.chat_toserver_rcon(map, message)
+            for server in allservers:
+                rtasks.append(serverchat(server, message))
+            await asyncio.gather(*rtasks)
+        elif int(message.channel.id) == int(chatchannel):
+            await serverchat(servermap, message)
         else:
             return
 
-    # Send chat to server(filters any unicode characters or custom discord emojis before hand)
-    async def chat_toserver_rcon(self, server, message):
-        author = message.author.name
-        nolinks = re.sub(r'https?:\/\/[^\s]+', '', message.content)
-        noemojis = re.sub(r'<:\w*:\d*>', '', nolinks)
-        nocustomemojis = re.sub(r'<a:\w*:\d*>', '', noemojis)
-        message = unicodedata.normalize('NFKD', nocustomemojis).encode('ascii', 'ignore').decode()
-        normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
-        for data in server:
-            try:
-                await rcon.asyncio.rcon(
-                    command=f"serverchat {normalizedname}: {message}",
-                    host=data['ip'],
-                    port=data['port'],
-                    passwd=data['password'])
-                continue
-            except Exception as e:
-                if "semaphor" in str(e):
-                    log.warning("chat_toserver_rcon: Server is probably offline")
-                else:
-                    log.exception(f"chat_toserver_rcon: {e}")
-                continue
-
     # Returns all channels and servers related to the message
-    async def globalchannelchecker(self, channel):
-        settings = await self.config.guild(channel.guild).all()
+    def globalchannelchecker(self, channel: discord.TextChannel):
         clusterchannels = []
         allservers = []
-        for cluster in settings["clusters"]:
-            if settings["clusters"][cluster]["globalchatchannel"] == channel.id:
-                clusterchannels.append(settings["clusters"][cluster]["globalchatchannel"])
-                for server in settings["clusters"][cluster]["servers"]:
-                    globalchat = settings["clusters"][cluster]["globalchatchannel"]
-                    settings["clusters"][cluster]["servers"][server]["globalchatchannel"] = globalchat
-                    clusterchannels.append(settings["clusters"][cluster]["servers"][server]["chatchannel"])
-                    allservers.append(settings["clusters"][cluster]["servers"][server])
+        for tup in self.servers:
+            server = tup[1]
+            if server["globalchatchannel"] == channel.id:
+                clusterchannels.append(server["globalchatchannel"])
+                allservers.append(server)
         return clusterchannels, allservers
 
     # Returns the channel and server related to the message
-    async def mapchannelchecker(self, channel):
-        settings = await self.config.guild(channel.guild).all()
-        chatchannels = []
-        map = []
-        for cluster in settings["clusters"]:
-            for server in settings["clusters"][cluster]["servers"]:
-                if settings["clusters"][cluster]["servers"][server]["chatchannel"] == channel.id:
-                    chatchannels.append(settings["clusters"][cluster]["servers"][server]["chatchannel"])
-                    map.append(settings["clusters"][cluster]["servers"][server])
-        return chatchannels, map
+    def mapchannelchecker(self, channel: discord.TextChannel):
+        for tup in self.servers:
+            server = tup[1]
+            if server["chatchannel"] == channel.id:
+                return channel.id, server
+        return None, None
+
+    # Initiates the Listplayers loop
+    @tasks.loop(seconds=30)
+    async def listplayers(self):
+        listplayertasks = []
+        for data in self.servers:
+            guild = self.bot.get_guild(data[0])
+            server = data[1]
+            listplayertasks.append(self.executor(guild, server, "listplayers"))
+        await asyncio.gather(*listplayertasks)
 
     # Initiates the GetChat loop
-    @tasks.loop(seconds=5)
-    async def chat_executor(self):
-        for data in self.taskdata:
+    @tasks.loop(seconds=3)
+    async def getchat(self):
+        chat_tasks = []
+        for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            await self.process_handler(guild, server, "getchat")
+            chat_tasks.append(self.executor(guild, server, "getchat"))
+        await asyncio.gather(*chat_tasks)
 
-    # Initiates the ListPlayers loop for both join/leave logs and status message to use
-    @tasks.loop(seconds=60)
-    async def playerlist_executor(self):
-        for data in self.taskdata:
-            guild = self.bot.get_guild(data[0])
-            server = data[1]
-            channel = server["chatchannel"]
-            joinlog = guild.get_channel(server["joinchannel"])
-            leavelog = guild.get_channel(server["leavechannel"])
-            mapname = server["name"].capitalize()
-            clustername = server["cluster"].upper()
-            newplayerlist = await self.process_handler(guild, server, "listplayers")
+    # Non-blocking sync executor for rcon task loops
+    async def executor(self, guild: discord.guild, server: dict, command: str):
+        if not server:
+            return
+        if command == "getchat" or "serverchat" in command:
+            timeout = 1
+        elif command == "listplayers":
+            timeout = 10
+        else:
+            timeout = 3
 
-            playerjoin = self.checkplayerjoin(channel, newplayerlist)
-            if playerjoin:
-                await joinlog.send(
-                    f":green_circle: `{playerjoin[0]}, {playerjoin[1]}` joined {mapname} {clustername}")
-            playerleft = self.checkplayerleave(channel, newplayerlist)
-            if playerleft:
-                await leavelog.send(f":red_circle: `{playerleft[0]}, {playerleft[1]}` left {mapname} {clustername}")
+        def exe():
+            try:
+                with Client(
+                        host=server['ip'],
+                        port=server['port'],
+                        passwd=server['password'],
+                        timeout=timeout
+                ) as client:
+                    result = client.run(command)
+                    return result
+            except socket.timeout:
+                pass
+            except Exception as e:
+                log.warning(f"Executor Error: {e}")
+                pass
+
+        res = await self.bot.loop.run_in_executor(None, exe)
+        if command == "getchat":
+            await self.message_handler(guild, server, res)
+        if command == "listplayers":
+            if res:  # If server is online create list of player tuples
+                regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
+                res = re.findall(regex, res)
+                await self.player_join_leave(guild, server, res)
+            else:  # If server is offline return None
+                await self.player_join_leave(guild, server, res)
+
+    @getchat.before_loop
+    async def before_getchat(self):
+        await self.bot.wait_until_red_ready()
+        await self.initialize()
+        await asyncio.sleep(7)
+        log.info("Chat loop ready.")
+
+    @listplayers.before_loop
+    async def before_listplayers(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(7)
+        log.info("Listplayers loop ready")
+
+    # Detect player joins/leaves and log to respective channels
+    async def player_join_leave(self, guild: discord.guild, server: dict, newplayerlist: list):
+        channel = server["chatchannel"]
+        joinlog = guild.get_channel(server["joinchannel"])
+        leavelog = guild.get_channel(server["leavechannel"])
+        mapname = server["name"].capitalize()
+        clustername = server["cluster"].upper()
+
+        lastplayerlist = self.playerlist[channel]
+
+        if newplayerlist is None and lastplayerlist is None:
+            return
+
+        if newplayerlist is None and lastplayerlist:
+            for player in lastplayerlist:
+                await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = newplayerlist
 
-    # For the Discord join log
-    def checkplayerjoin(self, channel, newplayerlist):
-        if newplayerlist is not None:
-            for player in newplayerlist:
-                if player not in self.playerlist[channel]:
-                    return player
+        # Cog was probably reloaded so dont bother spamming join log with all current members
+        elif len(newplayerlist) >= 0 and lastplayerlist is None:
+            self.playerlist[channel] = newplayerlist
 
-    # For the Discord leave log
-    def checkplayerleave(self, channel, newplayerlist):
-        if self.playerlist[channel] is not None:
-            for player in self.playerlist[channel]:
-                if newplayerlist is None:
-                    return player
-                if player not in newplayerlist:
-                    return player
-
-    # Player stat handler
-    @tasks.loop(minutes=2)
-    async def playerstats(self):
-        current_time = datetime.datetime.utcnow()
-        last_ran = datetime.datetime.fromisoformat(str(self.time))
-        timedifference_raw = current_time - last_ran
-        timedifference = timedifference_raw.seconds
-        for data in self.taskdata:
-            guild = self.bot.get_guild(data[0])
-            settings = await self.config.guild(guild).all()
-            autofriend = settings["autofriend"]
-            autowelcome = settings["autowelcome"]
-            server = data[1]
-            channel = server["chatchannel"]
-            channel_obj = guild.get_channel(channel)
-            mapname = server["name"]
-            clustername = server["cluster"]
-            map_cluster = f"{mapname} {clustername}"
-            extralog = await self.config.guild(guild).datalogs()
-            async with self.config.guild(guild).playerstats() as stats:
-                if self.playerlist[channel]:
-                    for player in self.playerlist[channel]:
-                        if player[0] not in stats:  # New Player
-                            newplayermessage = ""
-                            jchannel = settings["clusters"][clustername]["joinchannel"]
-                            jchannel = guild.get_channel(jchannel)
-                            log.info(f"New Player - {player[0]}")
-                            if extralog:
-                                newplayermessage += f"**{player[0]}** added to the database.\n"
-                            stats[player[0]] = {"playtime": {"total": 0}}
-                            stats[player[0]]["xuid"] = player[1]
-                            stats[player[0]]["lastseen"] = {
-                                "time": current_time.isoformat(),
-                                "map": map_cluster
-                            }
-                            if "api" in settings["clusters"][clustername]["servers"][mapname]:
-                                apikey = settings["clusters"][clustername]["servers"][mapname]["api"]
-                                gt = settings["clusters"][clustername]["servers"][mapname]["gamertag"]
-                                if autowelcome:
-                                    link = await channel_obj.create_invite(unique=False, reason="New Player")
-                                    if settings["welcomemsg"]:
-                                        params = {
-                                            "discord": guild.name,
-                                            "gamertag": player[0],
-                                            "link": link
-                                        }
-                                        welcome_raw = settings["welcomemsg"]
-                                        welcome = welcome_raw.format(**params)
-                                    else:
-                                        welcome = f"Welcome to {guild.name}!\nThis is an automated message:\n" \
-                                                  f"You appear to be a new player, " \
-                                                  f"here is an invite to the Discord server:\n\n{link}"
-                                    xuid = player[1]
-                                    url = "https://xbl.io/api/v2/conversations"
-                                    payload = {"xuid": str(xuid), "message": welcome}
-                                    log.info(f"Sending DM to XUID - {player[0]}")
-                                    status = await self.apipost(url, payload, apikey)
-                                    if status == 200:
-                                        log.info("New Player DM Successful")
-                                        if extralog:
-                                            newplayermessage += f"DM sent: ✅\n"
-                                    else:
-                                        log.warning("New Player DM FAILED")
-                                        if extralog:
-                                            newplayermessage += f"DM sent: ❌\n"
-                                if autofriend:
-                                    xuid = player[1]
-                                    command = f"https://xbl.io/api/v2/friends/add/{xuid}"
-                                    data, status = await self.apicall(command, apikey)
-                                    if status == 200:
-                                        log.info(f"{gt} Successfully added {player[0]}")
-                                        newplayermessage += f"Added by {gt}: ✅\n"
-                                    else:
-                                        log.warning(f"{gt} FAILED to add {player[0]}")
-                                        if extralog:
-                                            newplayermessage += f"Added by {gt}: ❌\n"
-                            embed = discord.Embed(
-                                description=newplayermessage,
-                                color=discord.Color.green()
-                            )
-                            try:
-                                await jchannel.send(embed=embed)
-                            except discord.HTTPException:
-                                log.warning("New Player Message Failed.")
-                                pass
-
-                        if map_cluster not in stats[player[0]]["playtime"]:
-                            stats[player[0]]["playtime"][map_cluster] = 0
-                            continue
-                        else:
-                            current_map_playtime = stats[player[0]]["playtime"][map_cluster]
-                            current_total_playtime = stats[player[0]]["playtime"]["total"]
-                            new_map_playtime = int(current_map_playtime) + int(timedifference)
-                            new_total = int(current_total_playtime) + int(timedifference)
-                            stats[player[0]]["playtime"][map_cluster] = new_map_playtime
-                            stats[player[0]]["playtime"]["total"] = new_total
-                            stats[player[0]]["lastseen"] = {
-                                "time": current_time.isoformat(),
-                                "map": map_cluster
-                            }
-        self.time = current_time.isoformat()
-
-    # have the gamertags unfriend a member when they leave the server
-    @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member):
-        if not member:
+        elif len(newplayerlist) == 0 and len(lastplayerlist) == 0:
             return
-        stats = await self.config.guild(member.guild).playerstats()
-        unfriendtasks = []
-        for gt in stats:
-            if "discord" in stats[gt]:
-                if member.id == stats[gt]["discord"]:
-                    xuid = stats[gt]["xuid"]
-                    clusters = await self.config.guild(member.guild).clusters()
-                    for cname in clusters:
-                        for sname in clusters[cname]["servers"]:
-                            if "api" in clusters[cname]["servers"][sname]:
-                                apikey = clusters[cname]["servers"][sname]["api"]
-                                mapgt = clusters[cname]["servers"][sname]["api"]
-                                command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
-                                unfriendtasks.append(self.leaveunfriend(command, apikey, gt, mapgt))
-        await asyncio.gather(*unfriendtasks)
 
-    async def leaveunfriend(self, command, apikey, gt, mapgt):
-        async with self.session.get(command, headers={"X-Authorization": apikey}) as resp:
-            if resp.status == 200:
-                log.info(f"{mapgt} successfully unfriended {gt}")
+        else:
+            for player in newplayerlist:
+                if player not in lastplayerlist:
+                    print(f"{player[0]} joined {mapname} {clustername}")
+                    await joinlog.send(f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
+            for player in lastplayerlist:
+                if player not in newplayerlist:
+                    print(f"{player[0]} Left {mapname} {clustername}")
+                    await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
+            self.playerlist[channel] = newplayerlist
 
-    # Unfriends gamertags if they havent been seen on any server after a certain period of time
-    @tasks.loop(hours=2)
-    async def player_maintenance(self):
-        current_time = datetime.datetime.utcnow()
-        config = await self.config.all_guilds()
-        for guildID in config:
-            guild = self.bot.get_guild(int(guildID))
-            if not guild:
+    # Sends messages from in-game chat to their designated channels
+    async def message_handler(self, guild: discord.guild, server: dict, res: str):
+        if not res:
+            return
+        if "Server received, But no response!!" in res:  # Common response from an Online server with no new messages
+            return
+        adminlog = guild.get_channel(server["adminlogchannel"])
+        globalchat = guild.get_channel(server["globalchatchannel"])
+        chatchannel = guild.get_channel(server["chatchannel"])
+        msgs = res.split("\n")
+        messages = []
+        settings = await self.config.guild(guild).all()
+        badnames = settings["badnames"]
+        for msg in msgs:
+            if msg.startswith("AdminCmd:"):  # Send off to admin log channel
+                adminmsg = msg
+                await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
+            elif "Tribe" and ", ID" in msg:  # send off to tribe log channel
+                tribe_id, embed = await tribelog_format(server, msg)
+                if "masterlog" in settings:
+                    masterlog = guild.get_channel(settings["masterlog"])
+                    await masterlog.send(embed=embed)
+                if "tribes" in settings:
+                    for tribes in settings["tribes"]:
+                        if tribe_id == tribes:
+                            tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
+                            await tribechannel.send(embed=embed)
+            # Check if message is looped
+            elif msg.startswith('SERVER:'):
                 continue
-            extralog = await self.config.guild(guild).datalogs()
-            async with self.config.guild(guild).all() as settings:
-                if settings["autofriend"]:
-                    days = settings["unfriendafter"]
-                    for gamertag in settings["playerstats"]:
-                        xuid = settings["playerstats"][gamertag]["xuid"]
-                        rawtime = settings["playerstats"][gamertag]["lastseen"]["time"]
-                        if rawtime is None:
-                            continue
-                        timestamp = datetime.datetime.fromisoformat(rawtime)
-                        timedifference_raw = current_time - timestamp
-                        timedifference = timedifference_raw.days
-                        if timedifference >= days - 2:
-                            unfriendmsg = f"Hello {gamertag}, long time no see!\nThis is an automated message:\n" \
-                                          f"We noticed you have not been detected on any of the servers  in {days - 2} days.\n" \
-                                          f"If you are not detected in the server within 2 days, You will be " \
-                                          f"automatically unfriended by the host Gamertags.\n" \
-                                          f"Once unfriended, you will need to re-register your Gamertag in our Discord" \
-                                          f" to play on the servers.\n" \
-                                          f"Hope to see you back soon :)"
-                            url = "https://xbl.io/api/v2/conversations"
-                            payload = {"xuid": str(xuid), "message": unfriendmsg}
-                            apikey = await self.pullkey(await self.config.guild(guild).all())
-                            log.info(f"Sending DM to XUID - {xuid}")
-                            status = await self.apipost(url, payload, apikey)
-                            if status == 200:
-                                log.info(f"Successfully warned {gamertag}")
-                            else:
-                                log.warning(f"Failed to warn {gamertag}")
+            # Check for any other message that might not conform
+            elif ":" not in msg:
+                continue
+            else:
+                messages.append(msg)
+                # Check if any character has a blacklisted name and rename the character to their Gamertag if so
+                for badname in badnames:
+                    if f"({badname.lower()}): " in msg.lower():
+                        reg = r"(.+)\s\("
+                        regname = re.findall(reg, msg)
+                        gt = regname[0]
+                        await self.executor(guild, server, f'renameplayer "{badname}" {gt}')
+                        await chatchannel.send(f"A player named `{badname}` has been renamed to `{gt}`.")
+                        break
+        for msg in messages:
+            if msg == ' ':
+                continue
+            elif msg == '':
+                continue
+            elif msg is None:
+                continue
+            else:
+                # Sends Discord invite to in-game chat if the word Discord is mentioned
+                if "discord" in msg.lower() or "discordia" in msg.lower():
+                    try:
+                        link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
+                        await self.executor(server, f"serverchat {link}")
+                    except Exception as e:
+                        log.exception(f"INVITE CREATION FAILED: {e}")
 
-                        if timedifference >= days:
-                            settings["playerstats"][gamertag]["lastseen"]["time"] = None
-                            command = f"https://xbl.io/api/v2/friends/remove/{xuid}"
-                            for cluster in settings["clusters"]:
-                                lchannel = settings["clusters"][cluster]["leavechannel"]
-                                lchannel = guild.get_channel(lchannel)
-                                for server in settings["clusters"][cluster]["servers"]:
-                                    if "api" in settings["clusters"][cluster]["servers"][server]:
-                                        apikey = settings["clusters"][cluster]["servers"][server]["api"]
-                                        gt = settings["clusters"][cluster]["servers"][server]["gamertag"]
-                                        data, status = await self.apicall(command, apikey)
-                                        color = discord.Color.red()
-                                        if status == 200:
-                                            embed = discord.Embed(
-                                                description=f"{gt} unfriended {gamertag}"
-                                                            f" for not being active for {days}days",
-                                                color=color
-                                            )
-                                            if extralog:
-                                                await lchannel.send(embed=embed)
-                                            log.info(f"{gt} Successfully unfriended {gamertag}")
-                                        else:
-                                            embed = discord.Embed(
-                                                description=f"{gt} Failed to unfriend {gamertag}"
-                                                            f" for not being active for {days}days",
-                                                color=color
-                                            )
-                                            if extralog:
-                                                await lchannel.send(embed=embed)
-                                            log.warning(f"{gt} Failed to unfriend {gamertag}")
+                await chatchannel.send(msg)
+                await globalchat.send(f"{chatchannel.mention}: {msg}")
+                clustername = server["cluster"]
+                # If interchat is enabled, relay message to other servers
+                if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
+                    for data in self.servers:
+                        s = data[1]
+                        if s["cluster"] == server["cluster"] and s["name"] != server["name"]:
+                            await self.executor(s, f"serverchat {server['name'].capitalize()}: {msg}")
 
-    # Creates and maintains an embed of all active servers and player counts
     @tasks.loop(seconds=60)
     async def status_channel(self):
-        data = await self.config.all_guilds()
-        for guildID in data:
-            guild = self.bot.get_guild(int(guildID))
-            thumbnail = STATUS
-            if not guild:
-                continue
+        for guild in self.activeguilds:
+            guild = self.bot.get_guild(guild)
             settings = await self.config.guild(guild).all()
-            if not settings:
-                continue
+            thumbnail = LIVE
             status = ""
             totalplayers = 0
             for cluster in settings["clusters"]:
+                cname = cluster
                 clustertotal = 0
-                clustername = cluster.upper()
-                if not settings["clusters"]:
-                    continue
-                status += f"**{clustername}**\n"
-                for server in settings["clusters"][cluster]["servers"]:
-                    channel = settings["clusters"][cluster]["servers"][server]["chatchannel"]
-                    if not channel:
-                        continue
+                status += f"**{cluster.upper()}**\n"
+                servers = settings["clusters"][cluster]["servers"]
+                clustersettngs = settings["clusters"][cluster]
+                for server in servers:
+                    sname = server
+                    server = servers[server]
+                    channel = server["chatchannel"]
 
                     # Get cached player count data
-                    playercount = self.playerlist[channel]
+                    playerlist = self.playerlist[channel]
 
-                    if channel not in self.alerts:
-                        self.alerts[channel] = 0
-                    count = self.alerts[channel]
-                    if playercount is None:
+                    if channel not in self.downtime:
+                        self.downtime[channel] = 0
+
+                    count = self.downtime[channel]
+                    if playerlist is None:
                         thumbnail = FAILED
                         inc = "Minutes."
                         if count >= 60:
                             count = count / 60
                             inc = "Hours."
                             count = int(count)
-
                         status += f"{guild.get_channel(channel).mention}: Offline for {count} {inc}\n"
-
-                        if self.alerts[channel] == 5:
-                            self.alerts[channel] += 1
+                        if self.downtime[channel] == 5:
                             mentions = discord.AllowedMentions(roles=True)
-                            pingrole = guild.get_role(settings['fullaccessrole'])
-                            alertmsg = guild.get_channel(settings["clusters"][cluster]["adminlogchannel"])
-                            await alertmsg.send(f"{pingrole.mention}, "
-                                                f"The **{server}** server has been offline for 5 minutes now!!!",
-                                                allowed_mentions=mentions)
-                            continue
-                        else:
-                            self.alerts[channel] += 1
-                            continue
+                            pingrole = guild.get_role(settings["fullaccessrole"])
+                            alertchannel = guild.get_channel(clustersettngs["adminlogchannel"])
+                            await alertchannel.send(
+                                f"{pingrole.mention}\n"
+                                f"The **{sname} {cname}** server has been offline for 5 minutes now!",
+                                allowed_mentions=mentions
+                            )
+                        self.downtime[channel] += 1
+                        continue
 
-                    elif playercount is []:
+                    elif len(playerlist) == 0:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
-                        if self.alerts[channel] > 0:
-                            self.alerts[channel] = 0
+                        self.downtime[channel] = 0
                         continue
 
                     else:
-                        playercount = len(playercount)
+                        playercount = len(playerlist)
                         clustertotal += playercount
                         totalplayers += playercount
 
@@ -2103,310 +1764,335 @@ class ArkTools(commands.Cog):
                 else:
                     status += f"`{clustertotal}` players in the cluster\n\n"
 
-            messagedata = await self.config.guild(guild).statusmessage()
-            channeldata = await self.config.guild(guild).statuschannel()
-            if not channeldata:
+            message = settings["status"]["message"]
+            channel = settings["status"]["channel"]
+            if not channel:
                 continue
 
             # Embed setup
-            eastern = pytz.timezone('US/Eastern')  # Might make this configurable in the future
-            time = datetime.datetime.now(eastern)
+            tz = pytz.timezone(settings["timezone"])  # idk if it matters since timestamps use client time
+            time = datetime.datetime.now(tz)
             embed = discord.Embed(
-                timestamp=time,
+                description=status,
                 color=discord.Color.random(),
-                description=status
+                timestamp=time
             )
             embed.set_author(name="Server Status", icon_url=guild.icon_url)
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
             embed.set_thumbnail(url=thumbnail)
-            destinationchannel = guild.get_channel(channeldata)
+
+            dest_channel = guild.get_channel(channel)
             msgtoedit = None
 
-            if messagedata:
+            if message:
                 try:
-                    msgtoedit = await destinationchannel.fetch_message(messagedata)
+                    msgtoedit = await dest_channel.fetch_message(message)
                 except discord.NotFound:
                     log.info(f"Status message not found. Creating new message.")
 
             if not msgtoedit:
-                await self.config.guild(guild).statusmessage.set(None)
-                message = await destinationchannel.send(embed=embed)
-                await self.config.guild(guild).statusmessage.set(message.id)
+                message = await dest_channel.send(embed=embed)
+                await self.config.guild(guild).status.message.set(message.id)
             if msgtoedit:
                 try:
                     await msgtoedit.edit(embed=embed)
                 except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
-                    await self.config.guild(guild).statusmessage.set(None)
-                    message = await destinationchannel.send(embed=embed)
-                    await self.config.guild(guild).statusmessage.set(message.id)
-        return
+                    message = await dest_channel.send(embed=embed)
+                    await self.config.guild(guild).status.message.set(message.id)
 
-    # Executes all task loop RCON commands synchronously in another thread
-    # Process is synchronous for easing network buffer and keeping network traffic manageable
-    async def process_handler(self, guild, server, command):
-        if command == "getchat":
-            timeout = 1
-        elif command == "listplayers":
-            timeout = 10
-        else:
-            timeout = 3
-
-        def rcon():
-            try:
-                with Client(server['ip'], server['port'], passwd=server['password'], timeout=timeout) as client:
-                    result = client.run(command)
-                    return result
-            except WindowsError as e:
-                if e.winerror == 121:
-                    log.exception(f"PROCESS HANDLER 121: {e}")
-                if e.winerror == 10038:
-                    log.exception(f"PROCESS HANDLER 10038: {e}")
-                return None
-
-        res = await self.bot.loop.run_in_executor(None, rcon)
-        if res:
-            if "getchat" in command:
-                await self.message_handler(guild, server, res)
-            if "listplayers" in command:
-                regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
-                playerlist = re.findall(regex, res)
-                return playerlist
-        else:
-            return None
-
-    # Sends messages to their designated channels from the in-game chat
-    async def message_handler(self, guild, server, res):
-        if "Server received, But no response!!" in res:  # Common response from an Online server with no new messages
-            return
-        adminlog = guild.get_channel(server["adminlogchannel"])
-        globalchat = guild.get_channel(server["globalchatchannel"])
-        chatchannel = guild.get_channel(server["chatchannel"])
-        sourcename = server["name"]
-        msgs = res.split("\n")
-        messages = []
-        settings = await self.config.guild(guild).all()
-        badnames = settings["badnames"]
-        for msg in msgs:
-            if msg.startswith("AdminCmd:"):
-                adminmsg = msg
-                await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
-            elif "Tribe" and ", ID" in msg:
-                await self.tribelog_formatter(guild, server, msg)
-            elif msg.startswith('SERVER:'):
-                continue
-            elif ":" not in msg:
-                continue
-            else:
-                messages.append(msg)
-                for names in badnames:
-                    if f"({names.lower()}): " in msg.lower():
-                        reg = r"(.+)\s\("
-                        regname = re.findall(reg, msg)
-                        for name in regname:
-                            await self.process_handler(guild, server, f'renameplayer "{names.lower()}" {name}')
-                            await chatchannel.send(f"A player named `{names}` has been renamed to `{name}`.")
-        for msg in messages:
-            if msg == ' ':
-                continue
-            elif msg == '':
-                continue
-            elif msg is None:
-                continue
-            else:
-                if "discord" in msg.lower() or "discordia" in msg.lower():
-                    try:
-                        link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
-                        await self.process_handler(guild, server, f"serverchat {link}")
-                    except Exception as e:
-                        log.exception(f"INVITE CREATION FAILED: {e}")
-
-                await chatchannel.send(msg)
-                await globalchat.send(f"{chatchannel.mention}: {msg}")
-                clustername = server["cluster"]
-                if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
-                    for data in self.taskdata:
-                        mapn = data[1]
-                        if mapn["cluster"] is server["cluster"] and mapn["name"] is not sourcename:
-                            await self.process_handler(guild, mapn, f"serverchat {sourcename.capitalize()}: {msg}")
-
-    # Handles tribe log formatting/itemizing
-    async def tribelog_formatter(self, guild, server, msg):
-        if "froze" in msg:
-            regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): (.+)\)'
-        else:
-            regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
-        tribe = re.findall(regex, msg)
-        if not tribe:
-            return
-        name = tribe[0][0]
-        tribe_id = tribe[0][1]
-        time = tribe[0][2]
-        action = tribe[0][3]
-        if "was killed" in action.lower():
-            color = discord.Color.from_rgb(255, 13, 0)  # bright red
-        elif "tribe killed" in action.lower():
-            color = discord.Color.from_rgb(246, 255, 0)  # gold
-        elif "starved" in action.lower():
-            color = discord.Color.from_rgb(140, 7, 0)  # dark red
-        elif "demolished" in action.lower():
-            color = discord.Color.from_rgb(133, 86, 5)  # brown
-        elif "destroyed" in action.lower():
-            color = discord.Color.from_rgb(115, 114, 112)  # grey
-        elif "tamed" in action.lower():
-            color = discord.Color.from_rgb(0, 242, 117)  # lime
-        elif "froze" in action.lower():
-            color = discord.Color.from_rgb(0, 247, 255)  # cyan
-        elif "claimed" in action.lower():
-            color = discord.Color.from_rgb(255, 0, 225)  # pink
-        elif "unclaimed" in action.lower():
-            color = discord.Color.from_rgb(102, 0, 90)  # dark purple
-        elif "uploaded" in action.lower():
-            color = discord.Color.from_rgb(255, 255, 255)  # white
-        elif "downloaded" in action.lower():
-            color = discord.Color.from_rgb(2, 2, 117)  # dark blue
-        else:
-            color = discord.Color.purple()
-        embed = discord.Embed(
-            title=f"{server['cluster'].upper()} {server['name'].capitalize()}: {name}",
-            color=color,
-            description=f"{box(action)}"
-        )
-        embed.set_footer(text=f"{time} | Tribe ID: {tribe_id}")
-        await self.tribe_handler(guild, tribe_id, embed)
-
-    # Handles sending off tribe logs to their designated channels
-    async def tribe_handler(self, guild, tribe_id, embed):
-        settings = await self.config.guild(guild).all()
-        if "masterlog" in settings:
-            masterlog = guild.get_channel(settings["masterlog"])
-            await masterlog.send(embed=embed)
-        if "tribes" in settings:
-            for tribes in settings["tribes"]:
-                if tribe_id == tribes:
-                    tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
-                    await tribechannel.send(embed=embed)
-
-    # Refresh all task loops
-    @tasks.loop(seconds=3600)
-    async def loop_refresher(self):
-        self.chat_executor.cancel()
-        self.playerlist_executor.cancel()
-        await asyncio.sleep(5)
-        self.chat_executor.start()
-        self.playerlist_executor.start()
-
-    # Initialize the config before the chat loop starts
-    @loop_refresher.before_loop
-    async def before_loop_refresher(self):
-        await self.bot.wait_until_red_ready()
-        await asyncio.sleep(3600)
-        log.info("Loop refresher ready.")
-
-    # Initialize the config before the chat loop starts
-    @chat_executor.before_loop
-    async def before_chat_executor(self):
-        await self.bot.wait_until_red_ready()
-        await asyncio.sleep(3)
-        log.info("Chat executor ready.")
-
-    # Nothing special before playerlist executor
-    @playerlist_executor.before_loop
-    async def before_playerlist_executor(self):
-        await self.bot.wait_until_red_ready()
-        await asyncio.sleep(2)
-        log.info("Playerlist executor ready.")
-
-    # Initialize cache before logging playerstats
-    @playerstats.before_loop
-    async def before_playerstatst(self):
-        await self.bot.wait_until_red_ready()
-        await self.initialize()
-        await asyncio.sleep(1)
-        log.info("Player stat tracking ready.")
-
-    # Sleep before starting so playerlist executor has time to gather the player list
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(15)  # Gives playerlist executor time to gather player count
-        log.info("Status monitor ready.")
+        await asyncio.sleep(8)
+        log.info("Status Channel loop ready")
 
-    # More of a test command to make sure a unicode discord name can be properly filtered with the unicodedata lib
-    @_setarktools.command(name="checkname")
-    async def _checkname(self, ctx):
-        """
-        View what your name looks like In-game.
-        If your name looks fine and there are no errors then you're good to go.
-        """
-        try:
-            normalizedname = unicodedata.normalize('NFKD', ctx.message.author.name).encode('ascii', 'ignore').decode()
-            await ctx.send(f"Filtered name: {normalizedname}")
-            await ctx.send(f"Unfiltered name: {ctx.message.author.name}")
-        except Exception as e:
-            await ctx.send(f"Looks like your name broke the code, please pick a different name.\nError: {e}")
+    # Player stat handler
+    @tasks.loop(minutes=2)
+    async def playerstats(self):
+        for data in self.servers:
+            guild = data[0]
+            server = data[1]
+            guild = self.bot.get_guild(guild)
 
-    # Sends guild config to the channel the command was invoked from as a json file
-    @commands.command(name="backup")
-    @commands.guildowner()
-    async def _backup(self, ctx):
-        """Create backup of config and send to Discord."""
-        settings = await self.config.guild(ctx.guild).all()
-        settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
-            file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}.json"))
+            settings = await self.config.guild(guild).all()
+            autofriend = settings["autofriend"]
+            autowelcome = settings["autowelcome"]
+            channel = server["chatchannel"]
+            channel_obj = guild.get_channel(channel)
+            eventlog = settings["eventlog"]
+            if eventlog:
+                eventlog = guild.get_channel(eventlog)
 
-    # Sends guild config to the channel the command was invoked from as a json file
-    @commands.command(name="statbackup")
-    @commands.guildowner()
-    async def _statbackup(self, ctx):
-        """Create backup of config and send to Discord."""
-        settings = await self.config.guild(ctx.guild).playerstats()
-        settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
-            file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}.json"))
+            tz = pytz.timezone(settings["timezone"])
+            time = datetime.datetime.now(tz)
+            if self.time == "":
+                self.time = time.isoformat()
+            last = datetime.datetime.fromisoformat(str(self.time))
+            timedifference = time - last
+            timedifference = timedifference.seconds
 
-    # Restore config from a json file attached to command message
-    @commands.command(name="restore")
-    @commands.guildowner()
-    async def _restore(self, ctx):
-        """Upload a backup file to restore config."""
-        if ctx.message.attachments:
-            attachment_url = ctx.message.attachments[0].url
+            sname = server["name"]
+            cname = server["cluster"]
+            mapstring = f"{sname} {cname}"
+            async with self.config.guild(guild).players() as stats:
+                if channel not in self.playerlist:
+                    continue
+                if not self.playerlist[channel]:
+                    continue
+                for player in self.playerlist[channel]:
+                    xuid = player[1]
+                    gamertag = player[0]
+                    # New player found
+                    if xuid not in stats:
+                        newplayermessage = f"**{gamertag}** added to the database.\n"
+                        log.info(f"New Player - {gamertag}")
+                        stats[xuid] = {
+                            "playtime": {"total": 0},
+                            "username": gamertag,
+                            "lastseen": {"time": time.isoformat(), "map": mapstring}
+                        }
+                        if "tokens" in server and (autowelcome or autofriend):
+                            async with aiohttp.ClientSession() as session:
+                                host = server["gamertag"]
+                                tokens = server["tokens"]
+                                xbl_client, token = await self.loop_auth_manager(
+                                    guild,
+                                    session,
+                                    cname,
+                                    sname,
+                                    tokens
+                                )
+                                if autowelcome and xbl_client:
+                                    link = await channel_obj.create_invite(unique=False, reason="New Player")
+                                    if settings["welcomemsg"]:
+                                        params = {
+                                            "discord": guild.name,
+                                            "gamertag": gamertag,
+                                            "link": link
+                                        }
+                                        welcome = settings["welcomemsg"]
+                                        welcome = welcome.format(**params)
+                                    else:
+                                        welcome = f"Welcome to {guild.name}!\nThis is an automated message:\n" \
+                                                  f"You appear to be a new player, " \
+                                                  f"here is an invite to the Discord server:\n\n{link}"
+                                    try:
+                                        await xbl_client.message.send_message(str(xuid), welcome)
+                                        log.info("New Player DM Successful")
+                                        newplayermessage += f"DM sent: ✅\n"
+                                    except Exception as e:
+                                        log.warning(f"New Player DM FAILED: {e}")
+                                        newplayermessage += f"DM sent: ❌\n"
+
+                                if autofriend and xbl_client:
+                                    status = await add_friend(str(xuid), token)
+                                    if 200 <= status <= 204:
+                                        log.info(f"{host} Successfully added {gamertag}")
+                                        newplayermessage += f"Added by {host}: ✅\n"
+                                    else:
+                                        log.warning(f"{host} FAILED to add {gamertag}")
+                                        newplayermessage += f"Added by {host}: ❌\n"
+
+                        if eventlog:
+                            embed = discord.Embed(
+                                description=newplayermessage,
+                                color=discord.Color.green()
+                            )
+                            try:
+                                await eventlog.send(embed=embed)
+                            except discord.HTTPException:
+                                log.warning("New Player Message Failed.")
+                                pass
+
+                    last_seen = stats[xuid]["lastseen"]["map"]
+                    if not last_seen:
+                        if "tokens" in server and autofriend:
+                            async with aiohttp.ClientSession() as session:
+                                host = server["gamertag"]
+                                tokens = server["tokens"]
+                                xbl_client, token = await self.loop_auth_manager(
+                                    guild,
+                                    session,
+                                    cname,
+                                    sname,
+                                    tokens
+                                )
+                                if autofriend and xbl_client:
+                                    status = await add_friend(str(xuid), token)
+                                    if 200 <= status <= 204:
+                                        log.info(f"{host} Successfully added {gamertag}")
+                                        newplayermessage += f"Added by {host}: ✅\n"
+                                    else:
+                                        log.warning(f"{host} FAILED to add {gamertag}")
+                                        newplayermessage += f"Added by {host}: ❌\n"
+
+                    if mapstring not in stats[xuid]["playtime"]:
+                        stats[xuid]["playtime"][mapstring] = 0
+
+                    else:
+                        stats[xuid]["playtime"][mapstring] += int(timedifference)
+                        stats[xuid]["playtime"]["total"] += int(timedifference)
+                        stats[xuid]["lastseen"] = {
+                            "time": time.isoformat(),
+                            "map": mapstring
+                        }
+            self.time = time.isoformat()
+
+    @playerstats.before_loop
+    async def before_playerstats(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(7)
+        log.info("Playerstats loop ready")
+
+    # have the gamertags unfriend a member when they leave the server
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+        if not member:
+            return
+        settings = await self.config.guild(member.guild).all()
+        autofriend = settings["autofriend"]
+        if not autofriend:
+            return
+        eventlog = settings["eventlog"]
+        tokendata = []
+        for xuid, data in settings["stats"].items():
+            if "discord" in data:
+                if str(member.id) == data["discord"]:
+                    for cname, cluster in settings["clusters"].items():
+                        for sname, server in cluster.items():
+                            if "tokens" in server:
+                                tokendata.append((xuid, cname, sname, server["tokens"]))
+        if len(tokendata) == 0:
+            return
+        async with aiohttp.ClientSession() as session:
+            utasks = []
+            for item in tokendata:
+                xbl_client, token = await self.loop_auth_manager(
+                    member.guild,
+                    session,
+                    item[1],
+                    item[2],
+                    item[3]
+                )
+                if token:
+                    utasks.append(remove_friend(item[0], token))
+            await asyncio.gather(*utasks)
+
+            if eventlog:
+                eventlog = member.guild.get_channel(eventlog)
+                embed = discord.Embed(
+                    description=f"**{member.display_name}** - `{member.id}` was unfriended by the host Gamertags "
+                                f"for leaving the Discord.",
+                    color=discord.Color.red()
+                )
+                await eventlog.send(embed=embed)
+
+    # Unfriends players if they havent been seen on any server for the set amount of time
+    # Unfriend players if they are no longer following the host gamertag
+    @tasks.loop(hours=2)
+    async def maintenance(self):
+        cid = await self.config.clientid()
+        if not cid:
+            return
+        for guild in self.activeguilds:
+            guild = self.bot.get_guild(guild)
+            settings = await self.config.guild(guild).all()
+            autofriend = settings["autofriend"]
+            if not autofriend:
+                return
+            eventlog = settings["eventlog"]
+            eventlog = guild.get_channel(eventlog)
+            stats = settings["players"]
+            unfriendtime = int(settings["unfriendafter"])
+            tz = pytz.timezone(settings["timezone"])
+            time = datetime.datetime.now(tz)
+
+            # List of users who havent been detected on the servers in X amount of time
+            expired = await expired_players(stats, time, unfriendtime, tz)
+
+            tokendata = []
+            for cname, cluster in settings["clusters"].items():
+                for sname, server in cluster["servers"].items():
+                    if "tokens" in server:
+                        tokendata.append((cname, sname, server["tokens"]))
+            if len(tokendata) == 0:
+                return
+
+            # Remove players from host Gamertags' friends list
             async with aiohttp.ClientSession() as session:
-                async with session.get(attachment_url) as resp:
-                    config = await resp.json()
-            await self.config.guild(ctx.guild).set(config)
-            return await ctx.send("Config restored from backup file!")
-        else:
-            return await ctx.send("Attach your backup file to the message when using this command.")
+                for item in tokendata:
+                    xbl_client, token = await self.loop_auth_manager(
+                        guild,
+                        session,
+                        item[0],
+                        item[1],
+                        item[2]
+                    )
+                    if token:
+                        host = f"{item[1].capitalize()} {item[0].upper()}"
+                        # Adding expired players to unfriend queue
+                        for user in expired:
+                            xuid = user[0]
+                            player = [1]
+                            status = await remove_friend(xuid, token)
+                            if 200 <= status <= 204:
+                                ustatus = "Successfuly"
+                                # Set last seen to None
+                                async with self.config.guild(guild).players() as playerstats:
+                                    for player in expired:
+                                        xuid = player[0]
+                                        playerstats[xuid]["lastseen"]["map"] = None
+                                msg = "AUTOMATED MESSAGE\n\n You have been unfriended by this Gamertag.\n" \
+                                      f"Reason: No activity in any server over the last {unfriendtime} days\n"
+                                await xbl_client.message.send_message(str(xuid), msg)
+                            else:
+                                ustatus = "Unsuccessfuly"
+                            log.info(f"{player} - {xuid} was {ustatus} unfriended by the host {host} "
+                                     f"for exceeding {unfriendtime} days of inactivity.")
 
-    # Refreshes the main task loops if needed for some reason.
-    @commands.command(name="refresh")
-    async def _refresh(self, ctx):
-        """Refresh the task loops"""
-        settings = await self.config.guild(ctx.guild).all()
-        # Check whether user has perms
-        userallowed = False
-        for role in ctx.author.roles:
-            if role.id == settings['fullaccessrole']:
-                userallowed = True
-            for modrole in settings['modroles']:
-                if role.id == modrole:
-                    userallowed = True
+                        # Check host Gamertag friends list and unfollow the users not following them back
+                        friends = json.loads((await xbl_client.people.get_friends_own()).json())
+                        friends = friends["people"]
+                        for person in friends:
+                            xuid = person["xuid"]
+                            displayname = person["display_name"]
+                            following = person["is_following_caller"]
+                            if not following:
+                                status = await remove_friend(xuid, token)
+                                if 200 <= status <= 204:
+                                    ustatus = "Successfuly"
+                                    if xuid in settings["players"]:
+                                        async with self.config.guild(guild).players() as playerstats:
+                                            playerstats[xuid]["lastseen"]["map"] = None
+                                    msg = "AUTOMATED MESSAGE\n\n You have been unfriended by this Gamertag.\n" \
+                                          "Reason: Not following back\n" \
+                                          "If you want to join this server again you will need to join the Discord " \
+                                          "and re-add yourself or join the server when its on the lists."
+                                    await xbl_client.message.send_message(str(xuid), msg)
+                                else:
+                                    ustatus = "Unsuccessfuly"
+                                log.info(f"{displayname} - {xuid} was {ustatus} removed by {host} "
+                                         f"for unfollowing.")
+                                if eventlog:
+                                    embed = discord.Embed(
+                                        description=f"**{displayname}** - `{xuid}` was removed by {host} for "
+                                                    f"unfollowing.",
+                                        color=discord.Color.red()
+                                    )
+                                    await eventlog.send(embed=embed)
+            if eventlog:
+                for user in expired:
+                    player = user[1]
+                    xuid = user[0]
+                    embed = discord.Embed(
+                        description=f"**{player}** - `{xuid}` was unfriended by the "
+                                    f"host Gamertags for exceeding {unfriendtime} days of inactivity.",
+                        color=discord.Color.red()
+                    )
+                    await eventlog.send(embed=embed)
 
-        if not userallowed:
-            if ctx.guild.owner != ctx.author:
-                return await ctx.send("You do not have the required permissions to run that command.")
-        async with ctx.typing():
-            self.chat_executor.cancel()
-            self.playerlist_executor.cancel()
-            self.status_channel.cancel()
-            await asyncio.sleep(5)
-            self.chat_executor.start()
-            self.playerlist_executor.start()
-            self.status_channel.start()
-            return await ctx.send("Task loops refreshed")
+    @maintenance.before_loop
+    async def before_maintenance(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(5)
+        log.info("Maintenance loop ready")
