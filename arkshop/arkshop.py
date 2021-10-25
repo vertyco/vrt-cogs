@@ -932,7 +932,7 @@ class ArkShop(commands.Cog):
         if xuid is None:
             embed = discord.Embed(
                 description=f"Your discord ID has not been found in the database.\n"
-                            f"Please register with `{ctx.prefix}arktools register`",
+                            f"Please register with `{ctx.prefix}register`",
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
@@ -1305,7 +1305,7 @@ class ArkShop(commands.Cog):
         if xuid is None:
             embed = discord.Embed(
                 description=f"Your discord ID has not been found in the database.\n"
-                            f"Please register with `{ctx.prefix}arktools register`",
+                            f"Please register with `{ctx.prefix}register`",
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
