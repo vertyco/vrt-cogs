@@ -849,13 +849,16 @@ class ArkShop(commands.Cog):
                 stop = len(sorted_items)
             items = ""
             for i in range(start, stop, 1):
-                did = sorted_items[i][0]
-                member = self.bot.get_user(int(did))
-                if member:
-                    member = member.name
-                else:
-                    print(did)
-                    member = "Deleted User?"
+                user_id = int(sorted_items[i][0])
+                # member = await self.bot.get_user(user_id)
+                try:
+                    member = await self.bot.fetch_user(user_id)
+                    member = member.mention
+                except AttributeError:
+                    member = await self.bot.get_user_info(user_id)
+                    member = member.mention
+                except discord.errors.NotFound:
+                    member = "Unknown"
                 purchases = sorted_items[i][1]
                 items += f"**{member}**: `{purchases} purchases`\n"
             embed = discord.Embed(
