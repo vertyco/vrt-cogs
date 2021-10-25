@@ -853,6 +853,8 @@ class ArkShop(commands.Cog):
                 member = self.bot.get_user(int(did))
                 if member:
                     member = member.name
+                else:
+                    member = "Deleted User?"
                 purchases = sorted_items[i][1]
                 items += f"**{member}**: `{purchases} purchases`\n"
             embed = discord.Embed(
