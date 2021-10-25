@@ -853,10 +853,10 @@ class ArkShop(commands.Cog):
                 # member = await self.bot.get_user(user_id)
                 try:
                     member = await self.bot.fetch_user(user_id)
-                    member = member.mention
+                    member = member.name
                 except AttributeError:
                     member = await self.bot.get_user_info(user_id)
-                    member = member.mention
+                    member = member.name
                 except discord.errors.NotFound:
                     member = "Unknown"
                 purchases = sorted_items[i][1]
