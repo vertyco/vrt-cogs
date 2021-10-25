@@ -1167,12 +1167,13 @@ class ArkTools(commands.Cog):
         try:
             to_send = welcome_message.format(**params)
         except KeyError as e:
-            await ctx.send(f"The welcome message cannot be formatted, because it contains an "
-                           f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
-                           f"for a list of valid placeholders.")
-        else:
-            await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
-            await ctx.send(f"Welcome message set as:\n{to_send}")
+            return await ctx.send(f"The welcome message cannot be formatted, because it contains an "
+                                  f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
+                                  f"for a list of valid placeholders.")
+        if len(welcome_message) > 256:
+            return await ctx.send("Message exceeds 256 character length! Make a shorter welcome message.")
+        await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
+        await ctx.send(f"Welcome message set as:\n{to_send}")
 
     # Arktools-Server subgroup
     @arktools_main.group(name="server")
