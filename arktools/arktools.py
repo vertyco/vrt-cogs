@@ -565,6 +565,7 @@ class ArkTools(commands.Cog):
                         await ctx.send(box(unfriend, lang="python"))
 
     @commands.command(name="wipelogs")
+    @commands.guildowner()
     async def wipe_graph_data(self, ctx: commands.Context):
         """Reset the player count graph"""
         async with self.config.guild(ctx.guild).all() as settings:
@@ -622,6 +623,7 @@ class ArkTools(commands.Cog):
                 lim = len(value["value"])
             for i in range(len(value["value"]) - 1, len(value["value"]) - lim, -1):
                 await ctx.send(str(i))
+                await ctx.send(str(len(value["value"])))
                 clusters_hashed[cname]["value"].append(value["value"][i])
                 timestamp = datetime.datetime.fromisoformat(value["times"][i])
                 timestamp = timestamp.strftime('%m/%d %I:%M %p')
