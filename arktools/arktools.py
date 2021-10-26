@@ -620,7 +620,7 @@ class ArkTools(commands.Cog):
                 clusters_hashed[cname] = []
             if len(value) < lim:
                 lim = len(value)
-            for i in range(len(times) - 1, len(times) - lim, -1):
+            for i in range(len(value) - 1, len(value) - lim, -1):
                 clusters_hashed[cname].append(value[i])
 
         times_x.reverse()
