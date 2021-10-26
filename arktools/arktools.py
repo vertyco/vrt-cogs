@@ -1115,7 +1115,8 @@ class ArkTools(commands.Cog):
                        ):
         plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
                    f"Sign in with the host Gamertag email the corresponds with the server you selected.\n" \
-                   f"Copy the ENTIRE contents of the address bar after you authorize, " \
+                   f"**YOU WILL GET A LOCALHOST ERROR AND A BLANK PAGE, THIS IS OKAY!**\n" \
+                   f"On that blank page, copy the ENTIRE contents of the address bar after you authorize, " \
                    f"and reply to this message with what you copied.\n" \
                    f"{auth_url}"
         await author.send(plz_auth)
