@@ -564,7 +564,7 @@ class ArkTools(commands.Cog):
                     if unfriend != "":
                         await ctx.send(box(unfriend, lang="python"))
 
-    @commands.command(name="wipe logs")
+    @commands.command(name="wipelogs")
     async def wipe_graph_data(self, ctx: commands.Context):
         """Reset the player count graph"""
         async with self.config.guild(ctx.guild).all() as settings:
@@ -595,7 +595,7 @@ class ArkTools(commands.Cog):
 
         for mapname, value in settings["serverstats"].items():
             if mapname != "dates" and mapname != "counts" and mapname != "expiration":
-                clusters[mapname] = value
+                clusters[mapname] = {"value": value, "times": []}
         if len(clusters.keys()) == 0:
             return await ctx.send("No data yet")
 
@@ -617,11 +617,14 @@ class ArkTools(commands.Cog):
         for cname, value in clusters.items():
             # await ctx.send(cname)
             if cname not in clusters_hashed:
-                clusters_hashed[cname] = []
-            if len(value) < lim:
-                lim = len(value)
-            for i in range(len(value) - 1, len(value) - lim, -1):
-                clusters_hashed[cname].append(value[i])
+                clusters_hashed[cname] = {"value": [], "times": []}
+            if len(value["value"]) < lim:
+                lim = len(value["value"])
+            for i in range(len(value["value"]) - 1, len(value["value"]) - lim, -1):
+                clusters_hashed[cname]["value"].append(value["value"][i])
+                timestamp = datetime.datetime.fromisoformat(value["times"][i])
+                timestamp = timestamp.strftime('%m/%d %I:%M %p')
+                clusters_hashed[cname]["times"].append(timestamp)
 
         times_x.reverse()
         counts_y.reverse()
@@ -631,8 +634,8 @@ class ArkTools(commands.Cog):
             title = f"Player count graph over the past {hours} hour"
         with plt.style.context("dark_background"):
             fig, ax = plt.subplots()
-            for sname, value in clusters.items():
-                plt.plot(times_x, value, label=sname)
+            for sname, value in clusters_hashed.items():
+                plt.plot(value["times"], value["counts"], label=sname)
 
             plt.plot(times_x, counts_y, color="xkcd:green", label="Total")
             plt.ylim([0, max(counts_y) + 1])
