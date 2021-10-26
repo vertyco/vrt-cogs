@@ -227,7 +227,7 @@ def cstats_format(stats: dict, guild: discord.guild):
             md, mh, mm = time_format(top_player_time)
             d, h, m = time_format(playtime)
             embed.add_field(
-                name=f"{count}. {top_player.upper()} - {len(total_playtimes[mapname].keys())} Players",
+                name=f"{count}. {mapname.capitalize()} - {len(total_playtimes[mapname].keys())} Players",
                 value=f"Total Time Played: `{d}d {h}h {m}m`\n"
                       f"Top Player: `{top_player}` - `{md}d {mh}h {mm}m`",
                 inline=False
