@@ -599,7 +599,7 @@ class ArkTools(commands.Cog):
             lim = len(times)
         for i in range(len(times) - 1, len(times) - lim, -1):
             timestamp = datetime.datetime.fromisoformat(times[i])
-            timestamp = timestamp.strftime('%I:%M %p')
+            timestamp = timestamp.strftime('%m/%d %I:%M %p')
             times_x.append(timestamp)
             counts_y.append(counts[i])
 
@@ -656,6 +656,9 @@ class ArkTools(commands.Cog):
         """View playtime data for all clusters"""
         stats = await self.config.guild(ctx.guild).players()
         pages = cstats_format(stats, ctx.guild)
+        if len(pages) == 1:
+            embed = pages[0]
+            return await ctx.send(embed=embed)
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="playerstats")
@@ -1911,6 +1914,7 @@ class ArkTools(commands.Cog):
                 ax.xaxis.set_major_locator(MaxNLocator(10))
                 plt.xticks(rotation=30)
                 plt.subplots_adjust(bottom=0.2)
+                plt.grid(axis="y")
                 result = io.BytesIO()
                 plt.savefig(result, format="png", dpi=200)
                 plt.close()
