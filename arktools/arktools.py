@@ -616,16 +616,16 @@ class ArkTools(commands.Cog):
 
         clusters_hashed = {}
         for cname, value in clusters.items():
-            # await ctx.send(cname)
             if cname not in clusters_hashed:
                 clusters_hashed[cname] = {"value": [], "times": []}
-            if len(value["value"]) < lim:
-                lim = len(value["value"])
-            for i in range(len(value["value"]) - 1, len(value["value"]) - lim, -1):
-                # await ctx.send(str(i))
-                # await ctx.send(str(len(value["value"])))
-                clusters_hashed[cname]["value"].append(value["value"][i - 1])
-                timestamp = datetime.datetime.fromisoformat(value["times"][i - 1])
+            start = len(times) - 1
+            stop = len(times) - lim
+            for i in range(start, stop, -1):
+                count = value["value"][i]
+                time = value["times"][i]
+                clusters_hashed[cname]["value"].append(count)
+
+                timestamp = datetime.datetime.fromisoformat(time)
                 timestamp = timestamp.strftime('%m/%d %I:%M %p')
                 clusters_hashed[cname]["times"].append(timestamp)
 
