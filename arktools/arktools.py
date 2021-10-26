@@ -1888,7 +1888,10 @@ class ArkTools(commands.Cog):
             embed.set_author(name="Server Status", icon_url=guild.icon_url)
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
             embed.set_thumbnail(url=thumbnail)
-            embed.set_image(url=f"attachment://{result.name}")
+            if len(counts_y) > 5:
+                embed.set_image(url=f"attachment://{result.name}")
+            else:
+                chart = None
 
             dest_channel = guild.get_channel(channel)
             msgtoedit = None
