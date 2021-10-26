@@ -588,20 +588,39 @@ class ArkTools(commands.Cog):
         lim = hours * 60
         settings = await self.config.guild(ctx.guild).all()
         tz = pytz.timezone(settings["timezone"])  # not used atm
+
         times_x = []
         counts_y = []
+        clusters = {}
+
+        for mapname, value in settings["serverstats"].items():
+            if mapname != "dates" and mapname != "counts":
+                clusters[mapname] = value
+        if len(clusters.keys()) == 0:
+            return await ctx.send("No data yet")
+
         times = settings["serverstats"]["dates"]
         counts = settings["serverstats"]["counts"]
         if len(counts) == 0:
             return await ctx.send("No data yet")
-
         if len(times) < lim:
+            await ctx.send("Cannot go back that far.")
+            hours = lim / 60
             lim = len(times)
         for i in range(len(times) - 1, len(times) - lim, -1):
             timestamp = datetime.datetime.fromisoformat(times[i])
             timestamp = timestamp.strftime('%m/%d %I:%M %p')
             times_x.append(timestamp)
             counts_y.append(counts[i])
+
+        clusters_hashed = {}
+        for cname, value in clusters.items():
+            if cname not in clusters_hashed:
+                clusters_hashed[cname] = []
+            if len(value) < lim:
+                lim = len(value)
+            for i in range(len(times) - 1, len(times) - lim, -1):
+                clusters_hashed[cname].append(value[i])
 
         times_x.reverse()
         counts_y.reverse()
@@ -610,14 +629,17 @@ class ArkTools(commands.Cog):
         if hours == 1:
             title = f"Player count graph over the past {hours} hour"
         with plt.style.context("dark_background"):
-
             fig, ax = plt.subplots()
-            plt.plot(times_x, counts_y, color="xkcd:green")
+            for sname, value in clusters.items():
+                plt.plot(times_x, value, label=sname)
+
+            plt.plot(times_x, counts_y, color="xkcd:green", label="Total")
             plt.ylim([0, max(counts_y) + 1])
             # plt.gcf().autofmt_xdate()
             plt.xlabel(f"Time ({settings['timezone']})")
             plt.ylabel("Player Count")
             plt.tight_layout()
+            plt.legend()
 
             ax.xaxis.set_major_locator(MaxNLocator(10))
 
