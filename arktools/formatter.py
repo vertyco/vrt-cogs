@@ -343,9 +343,9 @@ async def get_graph(settings: dict, hours: int):
     x.reverse()
     y.reverse()
 
-    title = f"Player count graph over the past {int(hours)} hours"
+    title = f"Player Count Over the Past {int(hours)} Hours"
     if hours == 1:
-        title = f"Player count graph over the past {int(hours)} hour"
+        title = f"Player Count Over the Last Hour"
 
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
