@@ -106,20 +106,20 @@ class ArkTools(commands.Cog):
         self.time = ""
 
         # Loops
-        # self.getchat.start()
-        # self.listplayers.start()
-        # self.status_channel.start()
-        # self.playerstats.start()
-        # self.maintenance.start()
-        # self.autofriend.start()
+        self.getchat.start()
+        self.listplayers.start()
+        self.status_channel.start()
+        self.playerstats.start()
+        self.maintenance.start()
+        self.autofriend.start()
 
-    # def cog_unload(self):
-        # self.getchat.cancel()
-        # self.listplayers.cancel()
-        # self.status_channel.cancel()
-        # self.playerstats.cancel()
-        # self.maintenance.cancel()
-        # self.autofriend.cancel()
+    def cog_unload(self):
+        self.getchat.cancel()
+        self.listplayers.cancel()
+        self.status_channel.cancel()
+        self.playerstats.cancel()
+        self.maintenance.cancel()
+        self.autofriend.cancel()
 
     # General authentication manager
     async def auth_manager(
