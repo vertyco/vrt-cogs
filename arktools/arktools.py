@@ -622,8 +622,8 @@ class ArkTools(commands.Cog):
             if len(value["value"]) < lim:
                 lim = len(value["value"])
             for i in range(len(value["value"]) - 1, len(value["value"]) - lim, -1):
-                await ctx.send(str(i))
-                await ctx.send(str(len(value["value"])))
+                # await ctx.send(str(i))
+                # await ctx.send(str(len(value["value"])))
                 clusters_hashed[cname]["value"].append(value["value"][i - 1])
                 timestamp = datetime.datetime.fromisoformat(value["times"][i])
                 timestamp = timestamp.strftime('%m/%d %I:%M %p')
