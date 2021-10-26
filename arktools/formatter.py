@@ -3,7 +3,13 @@ import discord
 import re
 import datetime
 import pytz
+import io
+
+from redbot.core import commands
+
 from redbot.core.utils.chat_formatting import box, pagify
+from matplotlib import pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 # Format time from total seconds
@@ -302,5 +308,74 @@ async def detect_friends(friends: list, followers: list):
                 if timedifference.days == 0 and timedifference.seconds < 3600:
                     people_to_add.append((follower["xuid"], follower["gamertag"]))
     return people_to_add
+
+
+# Plot player count for each cluster
+async def get_graph(settings: dict, hours: int):
+    lim = hours * 60
+    times = settings["serverstats"]["dates"]
+    counts = settings["serverstats"]["counts"]
+    if len(counts) == 0 or len(times) == 0:
+        return None
+    x = []
+    y = []
+    c = {}
+
+    if len(times) < lim:
+        hours = lim / 60
+        lim = len(times)
+    start = len(times) - 1
+    stop = len(times) - lim
+
+    for cname, countlist in settings["serverstats"].items():
+        if cname != "dates" and cname != "counts" and cname != "expiration":
+            if cname not in c:
+                c[cname] = []
+            for i in range(start, stop, -1):
+                c[cname].append(countlist[i])
+
+    for i in range(start, stop, -1):
+        timestamp = datetime.datetime.fromisoformat(times[i])
+        timestamp = timestamp.strftime('%m/%d %I:%M %p')
+        x.append(timestamp)
+        y.append(counts[i])
+
+    x.reverse()
+    y.reverse()
+
+    title = f"Player count graph over the past {int(hours)} hours"
+    if hours == 1:
+        title = f"Player count graph over the past {int(hours)} hour"
+
+    with plt.style.context("dark_background"):
+        fig, ax = plt.subplots()
+        plt.plot(x, y, color="xkcd:green", label="Total")
+        for cname, countlist in c.items():
+            plt.plot(x, countlist, label=cname)
+
+        plt.ylim([0, max(y) + 1])
+        plt.xlabel(f"Time ({settings['timezone']})")
+        plt.ylabel("Player Count")
+        plt.title(title)
+        plt.tight_layout()
+        plt.legend()
+        plt.xticks(rotation=30)
+        plt.subplots_adjust(bottom=0.2)
+        plt.grid(axis="y")
+
+        ax.xaxis.set_major_locator(MaxNLocator(10))
+
+        result = io.BytesIO()
+        plt.savefig(result, format="png", dpi=200)
+        plt.close()
+        result.seek(0)
+        file = discord.File(result, filename="plot.png")
+        result.close()
+        return file
+
+
+
+
+
 
 

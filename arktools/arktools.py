@@ -35,7 +35,8 @@ from .formatter import (tribelog_format,
                         cstats_format,
                         player_stats,
                         detect_friends,
-                        fix_timestamp)
+                        fix_timestamp,
+                        get_graph)
 
 import logging
 
@@ -586,88 +587,9 @@ class ArkTools(commands.Cog):
         """View a graph of player count over a set time"""
         if not hours:
             hours = 1
-        lim = hours * 60
         settings = await self.config.guild(ctx.guild).all()
-        tz = pytz.timezone(settings["timezone"])  # not used atm
-
-        times_x = []
-        counts_y = []
-        clusters = {}
-
-        for mapname, value in settings["serverstats"].items():
-            if mapname != "dates" and mapname != "counts" and mapname != "expiration":
-                clusters[mapname] = {"value": value, "times": []}
-        if len(clusters.keys()) == 0:
-            return await ctx.send("No data yet")
-
-        times = settings["serverstats"]["dates"]
-        counts = settings["serverstats"]["counts"]
-        if len(counts) == 0:
-            return await ctx.send("No data yet")
-        if len(times) < lim:
-            await ctx.send("Cannot go back that far.")
-            hours = lim / 60
-            lim = len(times)
-        for i in range(len(times) - 1, len(times) - lim, -1):
-            timestamp = datetime.datetime.fromisoformat(times[i])
-            timestamp = timestamp.strftime('%m/%d %I:%M %p')
-            times_x.append(timestamp)
-            counts_y.append(counts[i])
-
-        clusters_hashed = {}
-        for cname, value in clusters.items():
-            if cname not in clusters_hashed:
-                clusters_hashed[cname] = {"value": [], "times": []}
-            start = len(times) - 1
-            stop = len(times) - lim
-            for i in range(start, stop, -1):
-                count = value["value"][i]
-                time = value["times"][i]
-                clusters_hashed[cname]["value"].append(count)
-
-                timestamp = datetime.datetime.fromisoformat(time)
-                timestamp = timestamp.strftime('%m/%d %I:%M %p')
-                clusters_hashed[cname]["times"].append(timestamp)
-
-        times_x.reverse()
-        counts_y.reverse()
-
-        title = f"Player count graph over the past {hours} hours"
-        if hours == 1:
-            title = f"Player count graph over the past {hours} hour"
-        with plt.style.context("dark_background"):
-            fig, ax = plt.subplots()
-            for sname, value in clusters_hashed.items():
-                plt.plot(value["times"], value["counts"], label=sname)
-
-            plt.plot(times_x, counts_y, color="xkcd:green", label="Total")
-            plt.ylim([0, max(counts_y) + 1])
-            # plt.gcf().autofmt_xdate()
-            plt.xlabel(f"Time ({settings['timezone']})")
-            plt.ylabel("Player Count")
-            plt.tight_layout()
-            plt.legend()
-
-            ax.xaxis.set_major_locator(MaxNLocator(10))
-
-            plt.xticks(rotation=30)
-            plt.subplots_adjust(bottom=0.2)
-            plt.grid(axis="y")
-            # fmt = mdates.DateFormatter('%H:%M', tz=tz)
-            # plt.gca().xaxis.set_major_formatter()
-            result = io.BytesIO()
-            plt.savefig(result, format="png", dpi=200)
-            plt.close()
-            result.seek(0)
-            file = discord.File(result, filename="plot.png")
-            result.close()
-            embed = discord.Embed(
-                description=title
-            )
-            embed.set_image(
-                url=f"attachment://plot.png"
-            )
-            await ctx.send(embed=embed, file=file)
+        file = await get_graph(settings, hours)
+        await ctx.send(file=file)
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")
@@ -1918,39 +1840,7 @@ class ArkTools(commands.Cog):
                 serverstats["counts"].append(int(totalplayers))
 
             # Embed setup
-            times_x = []
-            counts_y = []
-            times = settings["serverstats"]["dates"]
-            counts = settings["serverstats"]["counts"]
-            lim = 60
-            if len(times) < 60:
-                lim = len(times)
-            for i in range(len(times) - 1, len(times) - lim, -1):
-                timestamp = datetime.datetime.fromisoformat(times[i])
-                times_x.append(timestamp.strftime('%I:%M %p'))
-                counts_y.append(counts[i])
-
-            times_x.reverse()
-            counts_y.reverse()
-            with plt.style.context("dark_background"):
-                fig, ax = plt.subplots()
-                plt.plot(times_x, counts_y, color="xkcd:green")
-                if len(counts_y) > 0:
-                    plt.ylim([0, max(counts_y) + 1])
-                plt.xlabel(f"Time ({settings['timezone']})")
-                plt.ylabel("Player Count")
-                plt.tight_layout()
-                ax.xaxis.set_major_locator(MaxNLocator(10))
-                plt.xticks(rotation=30)
-                plt.subplots_adjust(bottom=0.2)
-                plt.grid(axis="y")
-                result = io.BytesIO()
-                plt.savefig(result, format="png", dpi=200)
-                plt.close()
-                result.seek(0)
-                file = discord.File(result, filename="plot.png")
-                result.close()
-
+            file = await get_graph(settings, 1)
             embed = discord.Embed(
                 description=status,
                 color=discord.Color.random(),
@@ -1971,14 +1861,14 @@ class ArkTools(commands.Cog):
                     log.info(f"Status message not found. Creating new message.")
 
             if not msgtoedit:
-                if len(counts) > 10:
+                if file:
                     message = await dest_channel.send(embed=embed, file=file)
                 else:
                     message = await dest_channel.send(embed=embed)
                 await self.config.guild(guild).status.message.set(message.id)
             if msgtoedit:
                 try:
-                    if len(counts) > 10:
+                    if file:
                         await msgtoedit.delete()
                         message = await dest_channel.send(embed=embed, file=file)
                     else:
@@ -1986,7 +1876,7 @@ class ArkTools(commands.Cog):
                         message = await dest_channel.send(embed=embed)
                     await self.config.guild(guild).status.message.set(message.id)
                 except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
-                    if len(counts) > 10:
+                    if file:
                         message = await dest_channel.send(embed=embed, file=file)
                     else:
                         message = await dest_channel.send(embed=embed, file=file)
