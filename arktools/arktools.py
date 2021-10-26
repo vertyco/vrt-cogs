@@ -565,10 +565,8 @@ class ArkTools(commands.Cog):
                                     unfriend += f"{host} Successfully unfriended XUID: {player_id}\n"
                                 else:
                                     unfriend += f"{host} Failed to unfriend XUID: {player_id}\n"
-                    try:
+                    if unfriend != "":
                         await ctx.send(box(unfriend, lang="python"))
-                    except AttributeError:
-                        pass
 
     @commands.command(name="wipegraphlogs")
     async def wipe_graph_data(self, ctx: commands.Context):
@@ -1326,13 +1324,9 @@ class ArkTools(commands.Cog):
                             f"`ip:   `{server['ip']}\n" \
                             f"`Port: `{server['port']}\n" \
                             f"`Pass: `{server['password']}\n"
-                if "api" in server.keys():
-                    cid = server["api"]["clientid"]
-                    secret = server["api"]["clientsecret"]
-                    gt = server["api"]["gamertag"]
-                    settings += f"`Gamertag: `{gt}\n" \
-                                f"`ClientID: `{cid}\n" \
-                                f"`Secret:   `{secret}\n"
+                if "tokens" in server.keys():
+                    gt = server["gamertag"]
+                    settings += f"`Gamertag: `{gt}\n"
                 settings += "\n"
             for p in pagify(settings):
                 embed = discord.Embed(
