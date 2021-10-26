@@ -618,6 +618,7 @@ class ArkTools(commands.Cog):
 
             ax.xaxis.set_major_locator(MaxNLocator(10))
             plt.xticks(rotation=30)
+            plt.subplots_adjust(bottom=0.2)
             # fmt = mdates.DateFormatter('%H:%M', tz=tz)
             # plt.gca().xaxis.set_major_formatter()
             result = io.BytesIO()
@@ -1898,6 +1899,7 @@ class ArkTools(commands.Cog):
                 plt.tight_layout()
                 ax.xaxis.set_major_locator(MaxNLocator(10))
                 plt.xticks(rotation=30)
+                plt.subplots_adjust(bottom=0.2)
                 result = io.BytesIO()
                 plt.savefig(result, format="png", dpi=200)
                 plt.close()
