@@ -555,8 +555,8 @@ class ArkTools(commands.Cog):
                             xbl_client, token = await self.loop_auth_manager(
                                 ctx.guild,
                                 session,
-                                cname,
-                                sname,
+                                server["cluster"],
+                                server["name"],
                                 tokens
                             )
                             if token:
