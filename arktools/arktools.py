@@ -11,8 +11,6 @@ import io
 
 from rcon import Client
 
-import pandas as pd
-
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
