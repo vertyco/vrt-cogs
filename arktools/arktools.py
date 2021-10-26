@@ -10,9 +10,15 @@ import io
 
 from rcon import Client
 
-import matplotlib.pyplot as plt
+import numpy as np
 
-from redbot.core.utils.chat_formatting import box, pagify
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+# from matplotlib.dates import AutoDateLocator, DateFormatter, DateLocator, AutoDateFormatter
+import matplotlib.dates as mdates
+from matplotlib.ticker import MaxNLocator
+
+from redbot.core.utils.chat_formatting import box, pagify, humanize_timedelta
 from redbot.core import commands, Config
 from discord.ext import tasks
 
@@ -561,49 +567,60 @@ class ArkTools(commands.Cog):
             await ctx.tick()
 
     # STAT COMMANDS
+    # Thanks to Vexed#3211 for help with the Matplotlib logic :)
     @commands.command(name="servergraph", hidden=True)
-    async def graph_player_count(self, ctx: commands.Context):
-        """View a graph of player count over the last hour"""
+    async def graph_player_count(self, ctx: commands.Context, hours: int = None):
+        """View a graph of player count over a set time"""
+        if not hours:
+            hours = 1
+        lim = hours * 60
         settings = await self.config.guild(ctx.guild).all()
-        tz = pytz.timezone(settings["timezone"])  # idk if it matters since timestamps use client time
-        time = datetime.datetime.now(tz)  # Not used yet
-        plt.style.use("classic")
+        tz = pytz.timezone(settings["timezone"])  # not used atm
         times_x = []
         counts_y = []
         times = settings["serverstats"]["dates"]
         counts = settings["serverstats"]["counts"]
-        lim = 3600
-        if len(times) < 3600:
+
+        if len(times) < lim:
             lim = len(times)
-        for i in range(0, lim, 10):
+        for i in range(len(times) - 1, len(times) - lim, -1):
             timestamp = datetime.datetime.fromisoformat(times[i])
-            times_x.append(timestamp.strftime('%I:%M %p'))
+            timestamp = timestamp.strftime('%I:%M %p')
+            times_x.append(timestamp)
             counts_y.append(counts[i])
 
-        plt.plot(times_x, counts_y)
-        plt.ylim([0, max(counts_y) + 1])
-        plt.gcf().autofmt_xdate()
-        # plt.xticks(range(0, 60, 5))
-        plt.xlabel("Time")
-        plt.ylabel("Player Count")
-        plt.title("Player count graph")
-        plt.tight_layout()
+        times_x.reverse()
+        counts_y.reverse()
 
-        # fmt = mdates.DateFormatter('%I:%M %p')
-        # plt.gca().xaxis.set_major_formatter(fmt)
-        result = io.BytesIO()
-        result.name = "pgraph.png"
-        plt.savefig(result, format='png')
-        plt.close()
-        result.seek(0)
-        chart = discord.File(result, filename=result.name)
-        embed = discord.Embed(
-            description="Graph of player count over past hour"
-        )
-        embed.set_image(
-            url=f"attachment://{result.name}"
-        )
-        await ctx.send(embed=embed, file=chart)
+        title = f"Player count graph over the past {hours} hours"
+        if hours == 1:
+            title = f"Player count graph over the past {hours} hour"
+        with plt.style.context("dark_background"):
+            fig, ax = plt.subplots()
+            plt.plot(times_x, counts_y)
+            plt.ylim([0, max(counts_y) + 1])
+            # plt.gcf().autofmt_xdate()
+            plt.xlabel(f"Time ({settings['timezone']})")
+            plt.ylabel("Player Count")
+            plt.tight_layout()
+
+            ax.xaxis.set_major_locator(MaxNLocator(10))
+            plt.xticks(rotation=30)
+            # fmt = mdates.DateFormatter('%H:%M', tz=tz)
+            # plt.gca().xaxis.set_major_formatter()
+            result = io.BytesIO()
+            plt.savefig(result, format="png", dpi=200)
+            plt.close()
+            result.seek(0)
+            file = discord.File(result, filename="plot.png")
+            result.close()
+            embed = discord.Embed(
+                description=title
+            )
+            embed.set_image(
+                url=f"attachment://plot.png"
+            )
+            await ctx.send(embed=embed, file=file)
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")
@@ -1856,25 +1873,28 @@ class ArkTools(commands.Cog):
             lim = 60
             if len(times) < 60:
                 lim = len(times)
-            for i in range(0, lim, 10):
+            for i in range(len(times) - 1, len(times) - lim, -1):
                 timestamp = datetime.datetime.fromisoformat(times[i])
                 times_x.append(timestamp.strftime('%I:%M %p'))
                 counts_y.append(counts[i])
-            plt.figure(figsize=(10, 6), facecolor="#134567")
-            plt.plot(times_x, counts_y)
-            if len(counts_y) > 0:
+
+            times_x.reverse()
+            counts_y.reverse()
+            with plt.style.context("dark_background"):
+                fig, ax = plt.subplots()
+                plt.plot(times_x, counts_y)
                 plt.ylim([0, max(counts_y) + 1])
-            plt.gcf().autofmt_xdate()
-            plt.xlabel("Time")
-            plt.ylabel("Player Count")
-            plt.title("Past hour")
-            plt.tight_layout()
-            result = io.BytesIO()
-            result.name = "pgraph.png"
-            plt.savefig(result, format='png')
-            plt.close()
-            result.seek(0)
-            chart = discord.File(result, filename=result.name)
+                plt.xlabel(f"Time ({settings['timezone']})")
+                plt.ylabel("Player Count")
+                plt.tight_layout()
+                ax.xaxis.set_major_locator(MaxNLocator(10))
+                plt.xticks(rotation=30)
+                result = io.BytesIO()
+                plt.savefig(result, format="png", dpi=200)
+                plt.close()
+                result.seek(0)
+                file = discord.File(result, filename="plot.png")
+                result.close()
 
             embed = discord.Embed(
                 description=status,
@@ -1884,7 +1904,7 @@ class ArkTools(commands.Cog):
             embed.set_author(name="Server Status", icon_url=guild.icon_url)
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
             embed.set_thumbnail(url=thumbnail)
-            embed.set_image(url=f"attachment://{result.name}")
+            embed.set_image(url=f"attachment://plot.png")
 
             dest_channel = guild.get_channel(channel)
             msgtoedit = None
@@ -1896,15 +1916,15 @@ class ArkTools(commands.Cog):
                     log.info(f"Status message not found. Creating new message.")
 
             if not msgtoedit:
-                message = await dest_channel.send(embed=embed, file=chart)
+                message = await dest_channel.send(embed=embed, file=file)
                 await self.config.guild(guild).status.message.set(message.id)
             if msgtoedit:
                 try:
                     await msgtoedit.delete()
-                    message = await dest_channel.send(embed=embed, file=chart)
+                    message = await dest_channel.send(embed=embed, file=file)
                     await self.config.guild(guild).status.message.set(message.id)
                 except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
-                    message = await dest_channel.send(embed=embed, file=chart)
+                    message = await dest_channel.send(embed=embed, file=file)
                     await self.config.guild(guild).status.message.set(message.id)
 
     @status_channel.before_loop
