@@ -547,16 +547,28 @@ class ArkTools(commands.Cog):
             player_id = str(re.search(r'(\d+)', command).group(1))
             unfriend = ""
             async with ctx.typing():
-                for server in serverlist:
-                    if "tokens" in server:
-                        token = server["tokens"]
-                        host = server["gamertag"]
-                        status = await remove_friend(player_id, token)
-                        if 200 <= status <= 204:
-                            unfriend += f"**{host}** Successfully unfriended XUID: {player_id}\n"
-                        else:
-                            unfriend += f"**{host}** Failed to unfriend XUID: {player_id}\n"
-                await ctx.send(box(unfriend, lang="python"))
+                async with aiohttp.ClientSession() as session:
+                    for server in serverlist:
+                        if "tokens" in server:
+                            tokens = server["tokens"]
+                            host = server["gamertag"]
+                            xbl_client, token = await self.loop_auth_manager(
+                                ctx.guild,
+                                session,
+                                cname,
+                                sname,
+                                tokens
+                            )
+                            if token:
+                                status = await remove_friend(player_id, token)
+                                if 200 <= status <= 204:
+                                    unfriend += f"**{host}** Successfully unfriended XUID: {player_id}\n"
+                                else:
+                                    unfriend += f"**{host}** Failed to unfriend XUID: {player_id}\n"
+                    try:
+                        await ctx.send(box(unfriend, lang="python"))
+                    except AttributeError:
+                        pass
 
     @commands.command(name="wipegraphlogs")
     async def wipe_graph_data(self, ctx: commands.Context):
