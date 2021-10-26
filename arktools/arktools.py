@@ -1889,7 +1889,8 @@ class ArkTools(commands.Cog):
             with plt.style.context("dark_background"):
                 fig, ax = plt.subplots()
                 plt.plot(times_x, counts_y)
-                plt.ylim([0, max(counts_y) + 1])
+                if len(counts_y) > 0:
+                    plt.ylim([0, max(counts_y) + 1])
                 plt.xlabel(f"Time ({settings['timezone']})")
                 plt.ylabel("Player Count")
                 plt.tight_layout()
@@ -1922,15 +1923,25 @@ class ArkTools(commands.Cog):
                     log.info(f"Status message not found. Creating new message.")
 
             if not msgtoedit:
-                message = await dest_channel.send(embed=embed, file=file)
+                if len(counts) > 10:
+                    message = await dest_channel.send(embed=embed, file=file)
+                else:
+                    message = await dest_channel.send(embed=embed)
                 await self.config.guild(guild).status.message.set(message.id)
             if msgtoedit:
                 try:
-                    await msgtoedit.delete()
-                    message = await dest_channel.send(embed=embed, file=file)
+                    if len(counts) > 10:
+                        await msgtoedit.delete()
+                        message = await dest_channel.send(embed=embed, file=file)
+                    else:
+                        await msgtoedit.delete()
+                        message = await dest_channel.send(embed=embed)
                     await self.config.guild(guild).status.message.set(message.id)
                 except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
-                    message = await dest_channel.send(embed=embed, file=file)
+                    if len(counts) > 10:
+                        message = await dest_channel.send(embed=embed, file=file)
+                    else:
+                        message = await dest_channel.send(embed=embed, file=file)
                     await self.config.guild(guild).status.message.set(message.id)
 
     @status_channel.before_loop
