@@ -1867,7 +1867,8 @@ class ArkTools(commands.Cog):
                 counts_y.append(counts[i])
             plt.figure(figsize=(10, 6), facecolor="#134567")
             plt.plot(times_x, counts_y)
-            plt.ylim([0, max(counts_y) + 1])
+            if len(counts_y) > 0:
+                plt.ylim([0, max(counts_y) + 1])
             plt.gcf().autofmt_xdate()
             plt.xlabel("Time")
             plt.ylabel("Player Count")
@@ -1888,10 +1889,7 @@ class ArkTools(commands.Cog):
             embed.set_author(name="Server Status", icon_url=guild.icon_url)
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
             embed.set_thumbnail(url=thumbnail)
-            if len(counts_y) > 5:
-                embed.set_image(url=f"attachment://{result.name}")
-            else:
-                chart = None
+            embed.set_image(url=f"attachment://{result.name}")
 
             dest_channel = guild.get_channel(channel)
             msgtoedit = None
