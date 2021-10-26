@@ -625,7 +625,7 @@ class ArkTools(commands.Cog):
                 # await ctx.send(str(i))
                 # await ctx.send(str(len(value["value"])))
                 clusters_hashed[cname]["value"].append(value["value"][i - 1])
-                timestamp = datetime.datetime.fromisoformat(value["times"][i])
+                timestamp = datetime.datetime.fromisoformat(value["times"][i - 1])
                 timestamp = timestamp.strftime('%m/%d %I:%M %p')
                 clusters_hashed[cname]["times"].append(timestamp)
 
