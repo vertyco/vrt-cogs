@@ -562,9 +562,9 @@ class ArkTools(commands.Cog):
                             if token:
                                 status = await remove_friend(player_id, token)
                                 if 200 <= status <= 204:
-                                    unfriend += f"**{host}** Successfully unfriended XUID: {player_id}\n"
+                                    unfriend += f"{host} Successfully unfriended XUID: {player_id}\n"
                                 else:
-                                    unfriend += f"**{host}** Failed to unfriend XUID: {player_id}\n"
+                                    unfriend += f"{host} Failed to unfriend XUID: {player_id}\n"
                     try:
                         await ctx.send(box(unfriend, lang="python"))
                     except AttributeError:
