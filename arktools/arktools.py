@@ -594,7 +594,7 @@ class ArkTools(commands.Cog):
         clusters = {}
 
         for mapname, value in settings["serverstats"].items():
-            if mapname != "dates" and mapname != "counts":
+            if mapname != "dates" and mapname != "counts" and mapname != "expiration":
                 clusters[mapname] = value
         if len(clusters.keys()) == 0:
             return await ctx.send("No data yet")
@@ -615,6 +615,7 @@ class ArkTools(commands.Cog):
 
         clusters_hashed = {}
         for cname, value in clusters.items():
+            # await ctx.send(cname)
             if cname not in clusters_hashed:
                 clusters_hashed[cname] = []
             if len(value) < lim:
