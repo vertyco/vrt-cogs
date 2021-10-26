@@ -235,8 +235,8 @@ class ArkTools(commands.Cog):
                         return await msg.edit(embed=embed)
                     if players[sid]["discord"] == ctx.author.id:
                         embed = discord.Embed(
-                            description=f"You already claimed this Steam ID",
-                            color=discord.Color.orange()
+                            description=f"You have already claimed this Steam ID",
+                            color=discord.Color.green()
                         )
                         return await msg.edit(embed=embed)
                 embed = discord.Embed(
@@ -312,8 +312,8 @@ class ArkTools(commands.Cog):
                         return await msg.edit(embed=embed)
                     if players[xuid]["discord"] == ctx.author.id:
                         embed = discord.Embed(
-                            description=f"You already claimed this Gamertag",
-                            color=discord.Color.orange()
+                            description=f"You have already claimed this Gamertag",
+                            color=discord.Color.green()
                         )
                         return await msg.edit(embed=embed)
                 players[xuid] = {
