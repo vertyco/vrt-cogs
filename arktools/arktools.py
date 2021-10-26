@@ -46,6 +46,8 @@ SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 REDIRECT_URI = "http://localhost/auth/callback"
 
+plt.figure(figsize=(10, 6), facecolor="#134567")
+
 
 class ArkTools(commands.Cog):
     """
@@ -578,22 +580,15 @@ class ArkTools(commands.Cog):
             times_x.append(timestamp.strftime('%I:%M %p'))
             counts_y.append(counts[i])
 
-        # plt.style.use('dark_background')
-        plt.figure(figsize=(10, 6), facecolor="#134567")
         plt.plot(times_x, counts_y)
-        # ax = plt.axes()
-        # ax.set_facecolor("black")
-
         plt.ylim([0, max(counts_y) + 1])
         plt.gcf().autofmt_xdate()
         # plt.xticks(range(0, 60, 5))
-
         plt.xlabel("Time")
         plt.ylabel("Player Count")
-        plt.title("Player count over time")
+        plt.title("Player count graph")
         plt.tight_layout()
 
-        # plt.xlim([0, 60])
         # fmt = mdates.DateFormatter('%I:%M %p')
         # plt.gca().xaxis.set_major_formatter(fmt)
         result = io.BytesIO()
@@ -1858,8 +1853,8 @@ class ArkTools(commands.Cog):
             counts_y = []
             times = settings["serverstats"]["dates"]
             counts = settings["serverstats"]["counts"]
-            lim = 3600
-            if len(times) < 3600:
+            lim = 60
+            if len(times) < 60:
                 lim = len(times)
             for i in range(0, lim, 10):
                 timestamp = datetime.datetime.fromisoformat(times[i])
@@ -1872,7 +1867,7 @@ class ArkTools(commands.Cog):
             plt.gcf().autofmt_xdate()
             plt.xlabel("Time")
             plt.ylabel("Player Count")
-            plt.title("Player count over time")
+            plt.title("Past hour")
             plt.tight_layout()
             result = io.BytesIO()
             result.name = "pgraph.png"

@@ -162,7 +162,6 @@ class ArkShop(commands.Cog):
     async def wipe_logs(self, ctx):
         """Wipe shop logs/user logs"""
         async with self.config.guild(ctx.guild).logs() as logs:
-
             # wipe item logs
             logs["items"].clear()
 
@@ -775,11 +774,12 @@ class ArkShop(commands.Cog):
                 pathmsg += f"`{path}`\n"
             return await ctx.send(pathmsg)
 
+    # Iterate through arktools config and find player XUID
     async def get_xuid_from_arktools(self, ctx):
         arktools = self.bot.get_cog("ArkTools")
         if not arktools:
             await ctx.send("The `ArkTools` cog is required for this cog to function, "
-                                  "please have the bot owner install that first and load it.")
+                           "please have the bot owner install that first and load it.")
             return None
         playerdata = await arktools.config.guild(ctx.guild).players()
         for xuid, data in playerdata.items():
