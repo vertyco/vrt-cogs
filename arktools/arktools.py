@@ -226,10 +226,16 @@ class ArkTools(commands.Cog):
                 if sid not in players:
                     players[sid] = {}
                 if "discord" in players[sid]:
-                    if players[sid]["discord"] != str(ctx.author.id):
+                    if players[sid]["discord"] != ctx.author.id:
                         claimed = ctx.guild.get_member(players[sid]["discord"])
                         embed = discord.Embed(
                             description=f"{claimed.mention} has already claimed this Steam ID",
+                            color=discord.Color.orange()
+                        )
+                        return await msg.edit(embed=embed)
+                    if players[sid]["discord"] == ctx.author.id:
+                        embed = discord.Embed(
+                            description=f"You already claimed this Steam ID",
                             color=discord.Color.orange()
                         )
                         return await msg.edit(embed=embed)
@@ -297,10 +303,16 @@ class ArkTools(commands.Cog):
                 if xuid not in players:
                     players[xuid] = {}
                 if "discord" in players[xuid]:
-                    if players[xuid]["discord"] != str(ctx.author.id):
+                    if players[xuid]["discord"] != ctx.author.id:
                         claimed = ctx.guild.get_member(players[xuid]["discord"])
                         embed = discord.Embed(
                             description=f"{claimed.mention} has already claimed this Gamertag",
+                            color=discord.Color.orange()
+                        )
+                        return await msg.edit(embed=embed)
+                    if players[xuid]["discord"] == ctx.author.id:
+                        embed = discord.Embed(
+                            description=f"You already claimed this Gamertag",
                             color=discord.Color.orange()
                         )
                         return await msg.edit(embed=embed)
