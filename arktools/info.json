@@ -11,7 +11,7 @@
     "min_python_version" : [3, 8, 1],
     "permissions" : ["administrator"],
     "required_cogs" : {},
-    "requirements" : ["rcon==1.3.6", "pytz", "xbox-webapi==2.0.11"],
+    "requirements" : ["rcon", "pytz", "xbox-webapi"],
     "short": "RCON tools for Ark",
     "tags" : ["utility", "ark", "rcon", "servermanager"],
     "type": "COG"

@@ -6,8 +6,11 @@ import json
 import re
 import aiohttp
 import pytz
+import io
 
 from rcon import Client
+
+import matplotlib.pyplot as plt
 
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config
@@ -49,7 +52,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.0.2"
+    __version__ = "2.1.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -75,6 +78,7 @@ class ArkTools(commands.Cog):
             "badnames": [],
             "tribes": {},
             "players": {},
+            "serverstats": {"dates": [], "counts": []},
             "timezone": "US/Eastern"
         }
         default_global = {
@@ -546,7 +550,66 @@ class ArkTools(commands.Cog):
                             unfriend += f"**{host}** Failed to unfriend XUID: {player_id}\n"
                 await ctx.send(box(unfriend, lang="python"))
 
-    # PLAYER STAT COMMANDS
+    @commands.command(name="wipegraphlogs")
+    async def wipe_graph_data(self, ctx: commands.Context):
+        """Reset the player count graph"""
+        async with self.config.guild(ctx.guild).all() as settings:
+            settings["serverstats"]["dates"].clear()
+            settings["serverstats"]["counts"].clear()
+            await ctx.tick()
+
+    # STAT COMMANDS
+    @commands.command(name="servergraph", hidden=True)
+    async def graph_player_count(self, ctx: commands.Context):
+        """View a graph of player count over the last hour"""
+        settings = await self.config.guild(ctx.guild).all()
+        tz = pytz.timezone(settings["timezone"])  # idk if it matters since timestamps use client time
+        time = datetime.datetime.now(tz)  # Not used yet
+        plt.style.use("classic")
+        times_x = []
+        counts_y = []
+        times = settings["serverstats"]["dates"]
+        counts = settings["serverstats"]["counts"]
+        lim = 3600
+        if len(times) < 3600:
+            lim = len(times)
+        for i in range(0, lim, 10):
+            timestamp = datetime.datetime.fromisoformat(times[i])
+            times_x.append(timestamp.strftime('%I:%M %p'))
+            counts_y.append(counts[i])
+
+        # plt.style.use('dark_background')
+        plt.figure(figsize=(10, 6), facecolor="#134567")
+        plt.plot(times_x, counts_y)
+        # ax = plt.axes()
+        # ax.set_facecolor("black")
+
+        plt.ylim([0, max(counts_y) + 1])
+        plt.gcf().autofmt_xdate()
+        # plt.xticks(range(0, 60, 5))
+
+        plt.xlabel("Time")
+        plt.ylabel("Player Count")
+        plt.title("Player count over time")
+        plt.tight_layout()
+
+        # plt.xlim([0, 60])
+        # fmt = mdates.DateFormatter('%I:%M %p')
+        # plt.gca().xaxis.set_major_formatter(fmt)
+        result = io.BytesIO()
+        result.name = "pgraph.png"
+        plt.savefig(result, format='png')
+        plt.close()
+        result.seek(0)
+        chart = discord.File(result, filename=result.name)
+        embed = discord.Embed(
+            description="Graph of player count over past hour"
+        )
+        embed.set_image(
+            url=f"attachment://{result.name}"
+        )
+        await ctx.send(embed=embed, file=chart)
+
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")
     async def ark_leaderboard(self, ctx: commands.Context):
@@ -1782,9 +1845,41 @@ class ArkTools(commands.Cog):
             if not channel:
                 continue
 
-            # Embed setup
+            # Log player counts
             tz = pytz.timezone(settings["timezone"])  # idk if it matters since timestamps use client time
             time = datetime.datetime.now(tz)
+            async with self.config.guild(guild).serverstats() as serverstats:
+                # times = time.strftime('%I:%M %p')
+                serverstats["dates"].append(time.isoformat())
+                serverstats["counts"].append(int(totalplayers))
+
+            # Embed setup
+            times_x = []
+            counts_y = []
+            times = settings["serverstats"]["dates"]
+            counts = settings["serverstats"]["counts"]
+            lim = 3600
+            if len(times) < 3600:
+                lim = len(times)
+            for i in range(0, lim, 10):
+                timestamp = datetime.datetime.fromisoformat(times[i])
+                times_x.append(timestamp.strftime('%I:%M %p'))
+                counts_y.append(counts[i])
+            plt.figure(figsize=(10, 6), facecolor="#134567")
+            plt.plot(times_x, counts_y)
+            plt.ylim([0, max(counts_y) + 1])
+            plt.gcf().autofmt_xdate()
+            plt.xlabel("Time")
+            plt.ylabel("Player Count")
+            plt.title("Player count over time")
+            plt.tight_layout()
+            result = io.BytesIO()
+            result.name = "pgraph.png"
+            plt.savefig(result, format='png')
+            plt.close()
+            result.seek(0)
+            chart = discord.File(result, filename=result.name)
+
             embed = discord.Embed(
                 description=status,
                 color=discord.Color.random(),
@@ -1793,6 +1888,7 @@ class ArkTools(commands.Cog):
             embed.set_author(name="Server Status", icon_url=guild.icon_url)
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
             embed.set_thumbnail(url=thumbnail)
+            embed.set_image(url=f"attachment://{result.name}")
 
             dest_channel = guild.get_channel(channel)
             msgtoedit = None
@@ -1804,13 +1900,15 @@ class ArkTools(commands.Cog):
                     log.info(f"Status message not found. Creating new message.")
 
             if not msgtoedit:
-                message = await dest_channel.send(embed=embed)
+                message = await dest_channel.send(embed=embed, file=chart)
                 await self.config.guild(guild).status.message.set(message.id)
             if msgtoedit:
                 try:
-                    await msgtoedit.edit(embed=embed)
+                    await msgtoedit.delete()
+                    message = await dest_channel.send(embed=embed, file=chart)
+                    await self.config.guild(guild).status.message.set(message.id)
                 except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
-                    message = await dest_channel.send(embed=embed)
+                    message = await dest_channel.send(embed=embed, file=chart)
                     await self.config.guild(guild).status.message.set(message.id)
 
     @status_channel.before_loop
