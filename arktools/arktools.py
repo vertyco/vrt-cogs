@@ -8,17 +8,17 @@ import aiohttp
 import pytz
 import io
 
+
 from rcon import Client
 
-import numpy as np
+import pandas as pd
+
+import plotly.express as px
 
 from matplotlib import pyplot as plt
-from matplotlib.axes import Axes
-# from matplotlib.dates import AutoDateLocator, DateFormatter, DateLocator, AutoDateFormatter
-import matplotlib.dates as mdates
 from matplotlib.ticker import MaxNLocator
 
-from redbot.core.utils.chat_formatting import box, pagify, humanize_timedelta
+from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config
 from discord.ext import tasks
 
@@ -60,7 +60,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.1.2"
+    __version__ = "2.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -86,7 +86,7 @@ class ArkTools(commands.Cog):
             "badnames": [],
             "tribes": {},
             "players": {},
-            "serverstats": {"dates": [], "counts": []},
+            "serverstats": {"dates": [], "counts": [], "expiration": 30},
             "timezone": "US/Eastern"
         }
         default_global = {
@@ -106,20 +106,20 @@ class ArkTools(commands.Cog):
         self.time = ""
 
         # Loops
-        self.getchat.start()
-        self.listplayers.start()
-        self.status_channel.start()
-        self.playerstats.start()
-        self.maintenance.start()
-        self.autofriend.start()
+        # self.getchat.start()
+        # self.listplayers.start()
+        # self.status_channel.start()
+        # self.playerstats.start()
+        # self.maintenance.start()
+        # self.autofriend.start()
 
-    def cog_unload(self):
-        self.getchat.cancel()
-        self.listplayers.cancel()
-        self.status_channel.cancel()
-        self.playerstats.cancel()
-        self.maintenance.cancel()
-        self.autofriend.cancel()
+    # def cog_unload(self):
+        # self.getchat.cancel()
+        # self.listplayers.cancel()
+        # self.status_channel.cancel()
+        # self.playerstats.cancel()
+        # self.maintenance.cancel()
+        # self.autofriend.cancel()
 
     # General authentication manager
     async def auth_manager(
@@ -568,7 +568,7 @@ class ArkTools(commands.Cog):
                     if unfriend != "":
                         await ctx.send(box(unfriend, lang="python"))
 
-    @commands.command(name="wipegraphlogs")
+    @commands.command(name="wipe logs")
     async def wipe_graph_data(self, ctx: commands.Context):
         """Reset the player count graph"""
         async with self.config.guild(ctx.guild).all() as settings:
@@ -577,8 +577,41 @@ class ArkTools(commands.Cog):
             await ctx.tick()
 
     # STAT COMMANDS
+    @commands.command(name="init", hidden=True)
+    @commands.is_owner()
+    async def init_config(self, ctx):
+        await self.initialize()
+        await ctx.tick()
+
+    # Keeping here for reference
+    @commands.command(name="plotly", hidden=True, disabled=True)
+    async def plotly_graph(self, ctx: commands.Context):
+        """Tried plotly version of playtime graph"""
+        settings = await self.config.guild(ctx.guild).all()
+        x = []
+        y = []
+        times = settings["serverstats"]["dates"]
+        counts = settings["serverstats"]["counts"]
+        for i in range(len(times) - 1):
+            timestamp = datetime.datetime.fromisoformat(times[i])
+            x.append(timestamp)
+            y.append(counts[i])
+        x.reverse()
+        y.reverse()
+        df = pd.DataFrame(
+            {
+                "time": x,
+                "players": y
+            }
+        )
+        fig = px.line(df, x='time', y='players')
+        fig.write_image("plot.png")
+        with open("plot.png", "rb") as file:
+            file = discord.File(file, "plot.png")
+            await ctx.send(file=file)
+
     # Thanks to Vexed#3211 for help with the Matplotlib logic :)
-    @commands.command(name="servergraph", hidden=True)
+    @commands.command(name="servergraph", hidden=False)
     async def graph_player_count(self, ctx: commands.Context, hours: int = None):
         """View a graph of player count over a set time"""
         if not hours:
@@ -608,8 +641,9 @@ class ArkTools(commands.Cog):
         if hours == 1:
             title = f"Player count graph over the past {hours} hour"
         with plt.style.context("dark_background"):
+
             fig, ax = plt.subplots()
-            plt.plot(times_x, counts_y)
+            plt.plot(times_x, counts_y, color="xkcd:green")
             plt.ylim([0, max(counts_y) + 1])
             # plt.gcf().autofmt_xdate()
             plt.xlabel(f"Time ({settings['timezone']})")
@@ -617,8 +651,10 @@ class ArkTools(commands.Cog):
             plt.tight_layout()
 
             ax.xaxis.set_major_locator(MaxNLocator(10))
+
             plt.xticks(rotation=30)
             plt.subplots_adjust(bottom=0.2)
+            plt.grid(axis="y")
             # fmt = mdates.DateFormatter('%H:%M', tz=tz)
             # plt.gca().xaxis.set_major_formatter()
             result = io.BytesIO()
@@ -1861,6 +1897,12 @@ class ArkTools(commands.Cog):
                 else:
                     status += f"`{clustertotal}` players in the cluster\n\n"
 
+                # Log player counts
+                async with self.config.guild(guild).serverstats() as serverstats:
+                    if cname not in serverstats:
+                        serverstats[cname] = []
+                    serverstats[cname].append(int(totalplayers))
+
             message = settings["status"]["message"]
             channel = settings["status"]["channel"]
             if not channel:
@@ -1891,7 +1933,7 @@ class ArkTools(commands.Cog):
             counts_y.reverse()
             with plt.style.context("dark_background"):
                 fig, ax = plt.subplots()
-                plt.plot(times_x, counts_y)
+                plt.plot(times_x, counts_y, color="xkcd:green")
                 if len(counts_y) > 0:
                     plt.ylim([0, max(counts_y) + 1])
                 plt.xlabel(f"Time ({settings['timezone']})")
