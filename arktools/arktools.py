@@ -11,9 +11,6 @@ import io
 
 from rcon import Client
 
-from matplotlib import pyplot as plt
-from matplotlib.ticker import MaxNLocator
-
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core import commands, Config
 from discord.ext import tasks
@@ -48,8 +45,6 @@ FAILED = "https://i.imgur.com/TcnAyVO.png"
 SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 REDIRECT_URI = "http://localhost/auth/callback"
-
-plt.figure(figsize=(10, 6), facecolor="#134567")
 
 
 class ArkTools(commands.Cog):
