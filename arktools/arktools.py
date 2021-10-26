@@ -6,7 +6,6 @@ import json
 import re
 import aiohttp
 import pytz
-import io
 
 
 from rcon import Client
@@ -560,22 +559,22 @@ class ArkTools(commands.Cog):
                     if unfriend != "":
                         await ctx.send(box(unfriend, lang="python"))
 
-    @commands.command(name="wipelogs")
+    @commands.command(name="wipegraphdata")
     @commands.guildowner()
     async def wipe_graph_data(self, ctx: commands.Context):
-        """Reset the player count graph"""
+        """Reset the player count graph data"""
         async with self.config.guild(ctx.guild).all() as settings:
             settings["serverstats"]["dates"].clear()
             settings["serverstats"]["counts"].clear()
             await ctx.tick()
 
-    # STAT COMMANDS
     @commands.command(name="init", hidden=True)
     @commands.is_owner()
     async def init_config(self, ctx):
         await self.initialize()
         await ctx.tick()
 
+    # STAT COMMANDS
     # Thanks to Vexed#3211 for help with the Matplotlib logic :)
     @commands.command(name="servergraph", hidden=False)
     async def graph_player_count(self, ctx: commands.Context, hours: int = None):
@@ -584,7 +583,8 @@ class ArkTools(commands.Cog):
             hours = 1
         settings = await self.config.guild(ctx.guild).all()
         file = await get_graph(settings, hours)
-        await ctx.send(file=file)
+        if file:
+            await ctx.send(file=file)
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")

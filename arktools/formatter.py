@@ -332,13 +332,19 @@ async def get_graph(settings: dict, hours: int):
             if cname not in c:
                 c[cname] = []
             for i in range(start, stop, -1):
-                c[cname].append(countlist[i])
+                try:
+                    c[cname].append(countlist[i])
+                except IndexError:
+                    return None
 
     for i in range(start, stop, -1):
-        timestamp = datetime.datetime.fromisoformat(times[i])
-        timestamp = timestamp.strftime('%m/%d %I:%M %p')
-        x.append(timestamp)
-        y.append(counts[i])
+        try:
+            timestamp = datetime.datetime.fromisoformat(times[i])
+            timestamp = timestamp.strftime('%m/%d %I:%M %p')
+            x.append(timestamp)
+            y.append(counts[i])
+        except IndexError:
+            return None
 
     x.reverse()
     y.reverse()
