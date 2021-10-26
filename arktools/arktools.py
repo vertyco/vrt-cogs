@@ -590,6 +590,8 @@ class ArkTools(commands.Cog):
         counts_y = []
         times = settings["serverstats"]["dates"]
         counts = settings["serverstats"]["counts"]
+        if len(counts) == 0:
+            return await ctx.send("No data yet")
 
         if len(times) < lim:
             lim = len(times)
