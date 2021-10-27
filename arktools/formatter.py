@@ -359,6 +359,7 @@ async def get_graph(settings: dict, hours: int):
         fig, ax = plt.subplots()
         plt.plot(x, y, color="xkcd:green", label="Total")
         for cname, countlist in c.items():
+            countlist.reverse()
             if len(clist) >= cindex - 1:
                 plt.plot(x, countlist, label=cname, color=f"xkcd:{clist[cindex]}")
             else:
