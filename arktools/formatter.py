@@ -347,6 +347,8 @@ async def get_graph(settings: dict, hours: int):
         except IndexError:
             return None
 
+    if len(y) == 0:
+        return None
     x.reverse()
     y.reverse()
 
