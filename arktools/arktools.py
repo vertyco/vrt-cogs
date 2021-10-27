@@ -1887,18 +1887,18 @@ class ArkTools(commands.Cog):
                 else:
                     status += f"`{clustertotal}` players in the cluster\n\n"
 
-                # Log player counts
+                # Log player counts per cluster
                 async with self.config.guild(guild).serverstats() as serverstats:
                     if cname not in serverstats:
                         serverstats[cname] = []
-                    serverstats[cname].append(int(totalplayers))
+                    serverstats[cname].append(int(clustertotal))
 
             message = settings["status"]["message"]
             channel = settings["status"]["channel"]
             if not channel:
                 continue
 
-            # Log player counts
+            # Log total player counts
             tz = pytz.timezone(settings["timezone"])  # idk if it matters since timestamps use client time
             time = datetime.datetime.now(tz)
             async with self.config.guild(guild).serverstats() as serverstats:
