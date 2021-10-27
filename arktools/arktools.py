@@ -1717,9 +1717,12 @@ class ArkTools(commands.Cog):
                 await self.message_handler(guild, server, res)
         if command == "listplayers":
             if res:  # If server is online create list of player tuples
-                regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
-                res = re.findall(regex, res)
-                await self.player_join_leave(guild, server, res)
+                if "No Players Connected" in str(res):
+                    await self.player_join_leave(guild, server, [])
+                else:
+                    regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
+                    res = re.findall(regex, res)
+                    await self.player_join_leave(guild, server, res)
             else:  # If server is offline return None
                 await self.player_join_leave(guild, server, None)
 
