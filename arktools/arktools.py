@@ -51,7 +51,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.1.3"
+    __version__ = "2.1.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -180,7 +180,7 @@ class ArkTools(commands.Cog):
     # Hard coded item send for those tough times
     @commands.command(name="imstuck")
     @commands.cooldown(1, 1800, commands.BucketType.user)
-    async def imstuck(self, ctx: commands.Context):
+    async def im_stuck(self, ctx: commands.Context):
         """
         For those tough times when Ark is being Ark
 
