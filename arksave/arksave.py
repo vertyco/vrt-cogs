@@ -50,6 +50,13 @@ class ArkSave(commands.Cog):
                 if ctx.author.id == data["discord"]:
                     return xuid
 
+    async def get_cluster(self, ctx):
+        shop = self.bot.get_cog("ArkShop")
+        users = await shop.config.guild(ctx.guild).users()
+        if str(ctx.author.id) in users:
+            cname = users[str(ctx.author.id)]
+            return cname
+
     @commands.command(name="setsaveprice")
     @commands.admin()
     async def set_save_price(self, ctx, price: int):
@@ -67,6 +74,10 @@ class ArkSave(commands.Cog):
         if not xuid:
             return await ctx.send(f"You need to register with `{ctx.prefix}register` first")
 
+        cname = await self.get_cluster(ctx)
+        if not cname:
+            return await ctx.send(f"You need to set the cluster with `{ctx.prefix}setcluster`")
+
         shop = self.bot.get_cog("ArkShop")
         adir = await shop.config.main_path()
         cur_name = await bank.get_currency_name(ctx.guild)
@@ -79,7 +90,8 @@ class ArkSave(commands.Cog):
         if not os.path.exists(adir):
             return await ctx.send("Cant find source dir")
 
-        save_file = os.path.join(adir, "ArkSave.txt")
+        file_name = f"{cname.upper()}_ArkSave.txt"
+        save_file = os.path.join(adir, file_name)
         if not os.path.exists(save_file):
             with open(save_file, "w") as file:
                 file.write(f"{xuid}\n")
@@ -89,7 +101,8 @@ class ArkSave(commands.Cog):
 
         await bank.withdraw_credits(ctx.author, int(price))
         embed = discord.Embed(
-            description=f"You have succesfully appended your XUID to the data save list for {price} {cur_name}",
+            description=f"You have succesfully appended your XUID for {price} {cur_name}✅\n"
+                        f"Saved for the {cname.upper()} cluster.",
             color=discord.Color.green()
         )
         await ctx.send(embed=embed)
