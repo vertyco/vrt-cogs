@@ -1749,10 +1749,10 @@ class ArkTools(commands.Cog):
 
         lastplayerlist = self.playerlist[channel]
 
-        if not newplayerlist and not lastplayerlist:
+        if newplayerlist is None and lastplayerlist is None:
             return
 
-        elif not newplayerlist and lastplayerlist:
+        elif newplayerlist is None and lastplayerlist:
             for player in lastplayerlist:
                 await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = None
@@ -1865,7 +1865,7 @@ class ArkTools(commands.Cog):
                         self.downtime[channel] = 0
 
                     count = self.downtime[channel]
-                    if not playerlist:
+                    if playerlist is None:
                         thumbnail = FAILED
                         inc = "Minutes."
                         if count >= 60:
