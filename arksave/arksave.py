@@ -63,7 +63,7 @@ class ArkSave(commands.Cog):
         """Append your ark data file name to the list"""
         if not await self.check(ctx):
             return
-        xuid = self.get_xuid(ctx)
+        xuid = await self.get_xuid(ctx)
         if not xuid:
             return await ctx.send(f"You need to register with `{ctx.prefix}register` first")
 
