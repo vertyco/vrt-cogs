@@ -638,8 +638,6 @@ class ArkTools(commands.Cog):
                     if unfriend != "":
                         await ctx.send(box(unfriend, lang="python"))
 
-
-
     @commands.command(name="init", hidden=True)
     @commands.is_owner()
     async def init_config(self, ctx):
@@ -657,6 +655,8 @@ class ArkTools(commands.Cog):
         file = await get_graph(settings, hours)
         if file:
             await ctx.send(file=file)
+        else:
+            await ctx.send("Not enough data, give it some time")
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")
