@@ -51,7 +51,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.1.4"
+    __version__ = "2.1.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -700,6 +700,22 @@ class ArkTools(commands.Cog):
         if not embed:
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
         await ctx.send(embed=embed)
+
+    @commands.command(name="findplayer")
+    async def find_player_from_discord(self, ctx: commands.Context, member: discord.Member):
+        """Find out if a player has registered"""
+        settings = await self.config.guild(ctx.guild).all()
+        stats = settings["players"]
+        if not member:
+            member = self.bot.get_user(member)
+
+        if not member:
+            return await ctx.send(f"Couldnt find member.")
+        for xuid, stat in stats.items():
+            if "discord" in stat:
+                if stat["discord"] == member.id:
+                    return await ctx.send(f"User is registered as **{stat['username']}**")
+        await ctx.send("User never registered.")
 
     # Main group
     @commands.group(name="arktools")
