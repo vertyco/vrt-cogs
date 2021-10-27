@@ -248,7 +248,7 @@ class ArkTools(commands.Cog):
     async def wipe_graph_data(self, ctx: commands.Context):
         """Reset the player count graph data"""
         async with self.config.guild(ctx.guild).all() as settings:
-            for sname, slist in settings.items():
+            for sname, slist in settings["serverstats"].items():
                 if sname != "expiration":
                     slist.clear()
             await ctx.tick()
