@@ -90,7 +90,7 @@ class ArkSave(commands.Cog):
         if not os.path.exists(adir):
             return await ctx.send("Cant find source dir")
 
-        file_name = f"{cname.upper()}_ArkSave.txt"
+        file_name = f"ArkSave_{cname.upper()}.txt"
         save_file = os.path.join(adir, file_name)
         if not os.path.exists(save_file):
             with open(save_file, "w") as file:
