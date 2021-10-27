@@ -1713,11 +1713,11 @@ class ArkTools(commands.Cog):
 
         res = await self.bot.loop.run_in_executor(None, exe)
         if command == "getchat":
-            if res:
+            if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
         if command == "listplayers":
             if res:  # If server is online create list of player tuples
-                if "No Players Connected" in str(res):
+                if "No Players Connected" in res:
                     await self.player_join_leave(guild, server, [])
                 else:
                     regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
@@ -1740,7 +1740,7 @@ class ArkTools(commands.Cog):
         log.info("Listplayers loop ready")
 
     # Detect player joins/leaves and log to respective channels
-    async def player_join_leave(self, guild: discord.guild, server: dict, newplayerlist: list):
+    async def player_join_leave(self, guild: discord.guild, server: dict, newplayerlist: list = None):
         channel = server["chatchannel"]
         joinlog = guild.get_channel(server["joinchannel"])
         leavelog = guild.get_channel(server["leavechannel"])
@@ -1775,10 +1775,6 @@ class ArkTools(commands.Cog):
 
     # Sends messages from in-game chat to their designated channels
     async def message_handler(self, guild: discord.guild, server: dict, res: str):
-        if not res:
-            return
-        if "Server received, But no response!!" in res:  # Common response from an Online server with no new messages
-            return
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
