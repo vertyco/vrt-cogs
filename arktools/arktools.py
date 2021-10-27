@@ -215,9 +215,7 @@ class ArkTools(commands.Cog):
             serverlist = []
             for cname, cdata in settings["clusters"].items():
                 for sname, sdata in cdata.items():
-                    c = sdata
-                    c["cluster"] = cname
-                    serverlist.append(c)
+                    serverlist.append(sdata)
             commands = [
                 f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 5 0 0""",
                 f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 1 0 0""",
