@@ -59,7 +59,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.1.6"
+    __version__ = "2.1.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -222,7 +222,7 @@ class ArkTools(commands.Cog):
             settings = await self.config.guild(ctx.guild).all()
             serverlist = []
             for cname, cdata in settings["clusters"].items():
-                for sname, sdata in cdata.items():
+                for sname, sdata in cdata["servers"].items():
                     serverlist.append(sdata)
 
             stucktasks = []
