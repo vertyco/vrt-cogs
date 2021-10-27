@@ -850,7 +850,7 @@ class ArkShop(commands.Cog):
             items = ""
             for i in range(start, stop, 1):
                 user_id = int(sorted_items[i][0])
-                member = await self.bot.get_user(user_id)
+                member = self.bot.get_user(user_id)
                 if not member:
                     try:
                         member = await self.bot.fetch_user(user_id)
