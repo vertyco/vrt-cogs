@@ -353,7 +353,7 @@ async def get_graph(settings: dict, hours: int):
     title = f"Player Count Over the Past {int(hours)} Hours"
     if hours == 1:
         title = f"Player Count Over the Last Hour"
-    clist = ["cyan", "red", "magenta", "ghostwhite", "gold"]
+    clist = ["red", "cyan", "magenta", "ghostwhite", "gold"]
     cindex = 0
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
