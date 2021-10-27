@@ -328,6 +328,7 @@ async def get_graph(settings: dict, hours: int):
     stop = len(times) - lim
 
     for cname, countlist in settings["serverstats"].items():
+        cname = str(cname.lower())
         if cname != "dates" and cname != "counts" and cname != "expiration":
             if cname not in c:
                 c[cname] = []
