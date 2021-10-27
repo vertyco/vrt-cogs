@@ -1755,7 +1755,7 @@ class ArkTools(commands.Cog):
         elif not newplayerlist and lastplayerlist:
             for player in lastplayerlist:
                 await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
-            self.playerlist[channel] = newplayerlist
+            self.playerlist[channel] = None
 
         # Cog was probably reloaded so dont bother spamming join log with all current members
         elif len(newplayerlist) >= 0 and lastplayerlist is None:
@@ -1865,7 +1865,7 @@ class ArkTools(commands.Cog):
                         self.downtime[channel] = 0
 
                     count = self.downtime[channel]
-                    if playerlist is None:
+                    if not playerlist:
                         thumbnail = FAILED
                         inc = "Minutes."
                         if count >= 60:
