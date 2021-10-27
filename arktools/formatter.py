@@ -355,11 +355,11 @@ async def get_graph(settings: dict, hours: int):
     title = f"Player Count Over the Past {int(hours)} Hours"
     if hours == 1:
         title = f"Player Count Over the Last Hour"
-    clist = ["red", "cyan", "magenta", "ghostwhite", "gold"]
+    clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
     cindex = 0
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
-        plt.plot(x, y, color="xkcd:green", label="Total")
+
         for cname, countlist in c.items():
             countlist.reverse()
             if len(clist) >= cindex - 1:
@@ -368,12 +368,13 @@ async def get_graph(settings: dict, hours: int):
                 plt.plot(x, countlist, label=cname)
             cindex += 1
 
+        plt.plot(x, y, color="xkcd:green", label="Total")
         plt.ylim([0, max(y) + 2])
         plt.xlabel(f"Time ({settings['timezone']})")
         plt.ylabel("Player Count")
         plt.title(title)
         plt.tight_layout()
-        plt.legend()
+        plt.legend(loc=3)
         plt.xticks(rotation=30)
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
