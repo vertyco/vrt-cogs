@@ -177,6 +177,64 @@ class ArkTools(commands.Cog):
                     tokens = server["tokens"]
                     return tokens, cname, sname
 
+    # Hard coded item send for those tough times
+    @commands.command(name="imstuck")
+    @commands.cooldown(1, 1800, commands.BucketType.user)
+    async def imstuck(self, ctx: commands.Context):
+        """
+        For those tough times when Ark is being Ark
+
+        Sends you tools to get unstuck, or off yourself.
+        """
+        embed = discord.Embed(
+            description=f"**Type your Implant ID in chat.**"
+        )
+        embed.set_footer(text="Hint: your implant id can be seen by hovering over it in your inventory!")
+        embed.set_thumbnail(url="https://i.imgur.com/kfanq99.png")
+        msg = await ctx.send(embed=embed)
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
+
+        if reply.content.isdigit():
+            implant_id = reply.content
+            try:
+                await reply.delete()
+            except discord.NotFound:
+                pass
+            embed = discord.Embed(
+                description=f"Sit tight, your care package is on the way!"
+            )
+            embed.set_thumbnail(url="https://i.imgur.com/8ofOx6X.png")
+            await msg.edit(embed=embed)
+            settings = await self.config.guild(ctx.guild).all()
+            serverlist = []
+            for cname, cdata in settings["clusters"].items():
+                for sname, sdata in cdata.items():
+                    sdata["cluster"] = cname
+                    serverlist.append(sdata)
+            commands = [
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 5 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 1 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
+                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
+            ]
+            stucktasks = []
+            for server in serverlist:
+                for command in commands:
+                    stucktasks.append(self.executor(ctx.guild, server, command))
+
+            async with ctx.typing():
+                await asyncio.gather(*stucktasks)
+            return
+        else:
+            return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
+
     # Deletes all player data in the config
     @commands.command(name="wipestats")
     @commands.guildowner()
@@ -185,6 +243,15 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).all() as data:
             data["players"].clear()
             await ctx.send(embed=discord.Embed(description="All player data has been wiped."))
+
+    @commands.command(name="wipegraphdata")
+    @commands.guildowner()
+    async def wipe_graph_data(self, ctx: commands.Context):
+        """Reset the player count graph data"""
+        async with self.config.guild(ctx.guild).all() as settings:
+            settings["serverstats"]["dates"].clear()
+            settings["serverstats"]["counts"].clear()
+            await ctx.tick()
 
     @commands.command(name="unregister")
     @commands.admin()
@@ -571,14 +638,7 @@ class ArkTools(commands.Cog):
                     if unfriend != "":
                         await ctx.send(box(unfriend, lang="python"))
 
-    @commands.command(name="wipegraphdata")
-    @commands.guildowner()
-    async def wipe_graph_data(self, ctx: commands.Context):
-        """Reset the player count graph data"""
-        async with self.config.guild(ctx.guild).all() as settings:
-            settings["serverstats"]["dates"].clear()
-            settings["serverstats"]["counts"].clear()
-            await ctx.tick()
+
 
     @commands.command(name="init", hidden=True)
     @commands.is_owner()
