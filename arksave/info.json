@@ -1,0 +1,18 @@
+{
+    "author": [
+        "Vertyco"
+    ],
+    "description": "Ark data save tool",
+    "disabled" : false,
+    "end_user_data_statement" : "This cog moves data locally and is only for 1 server at a time.",
+    "hidden": false,
+    "install_msg": "This cog just moves files on the bot host server",
+    "min_bot_version" : "3.4.0",
+    "min_python_version" : [3, 8, 1],
+    "permissions" : ["administrator"],
+    "required_cogs" : {},
+    "requirements" : [],
+    "short": "Ark data save tool",
+    "tags" : ["utility", "ark", "rcon", "servermanager"],
+    "type": "COG"
+}
