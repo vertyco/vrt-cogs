@@ -7,7 +7,6 @@ import re
 import aiohttp
 import pytz
 
-
 from rcon import Client
 
 from redbot.core.utils.chat_formatting import box, pagify
@@ -45,13 +44,22 @@ SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 REDIRECT_URI = "http://localhost/auth/callback"
 
+# Hard coded item blueprint paths for the imstuck command
+IMSTUCK_BLUEPRINTS = [
+    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 5 0 0""",
+    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 1 0 0""",
+    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
+    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
+    f""""Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
+]
+
 
 class ArkTools(commands.Cog):
     """
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.1.5"
+    __version__ = "2.1.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -142,7 +150,7 @@ class ArkTools(commands.Cog):
         token = auth_mgr.xsts_token.authorization_header_value
         return xbl_client, token
 
-    # Task loop specific authentication handling
+    # Authentication handling for task loops, just same logic with no ctx yea prolly could have done it a cleaner way :p
     async def loop_auth_manager(
             self,
             guild: discord.guild,
@@ -216,17 +224,11 @@ class ArkTools(commands.Cog):
             for cname, cdata in settings["clusters"].items():
                 for sname, sdata in cdata.items():
                     serverlist.append(sdata)
-            commands = [
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 5 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 1 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
-                f"""GiveItemToPlayer {implant_id} "Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
-            ]
+
             stucktasks = []
             for server in serverlist:
-                for command in commands:
-                    stucktasks.append(self.executor(ctx.guild, server, command))
+                for path in IMSTUCK_BLUEPRINTS:
+                    stucktasks.append(self.executor(ctx.guild, server, f"GiveItemToPlayer {implant_id} {path}"))
 
             async with ctx.typing():
                 await asyncio.gather(*stucktasks)
@@ -331,7 +333,7 @@ class ArkTools(commands.Cog):
                 )
                 return await msg.edit(embed=embed)
 
-        # Make sure there's at least one server with an active API before registering
+        # If user doesnt type ID then make sure there's at least one server with an active API before registering
         apipresent = False
         clusters = await self.config.guild(ctx.guild).clusters()
         for cluster in clusters.values():
@@ -463,6 +465,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
 
+            # Iterate through server tokens and send off friend requests
             for cname, cluster in clusters.items():
                 for sname, server in cluster["servers"].items():
                     if "tokens" in server:
@@ -1710,14 +1713,15 @@ class ArkTools(commands.Cog):
 
         res = await self.bot.loop.run_in_executor(None, exe)
         if command == "getchat":
-            await self.message_handler(guild, server, res)
+            if res:
+                await self.message_handler(guild, server, res)
         if command == "listplayers":
             if res:  # If server is online create list of player tuples
                 regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
                 res = re.findall(regex, res)
                 await self.player_join_leave(guild, server, res)
             else:  # If server is offline return None
-                await self.player_join_leave(guild, server, res)
+                await self.player_join_leave(guild, server, None)
 
     @getchat.before_loop
     async def before_getchat(self):
@@ -1742,10 +1746,10 @@ class ArkTools(commands.Cog):
 
         lastplayerlist = self.playerlist[channel]
 
-        if newplayerlist is None and lastplayerlist is None:
+        if not newplayerlist and not lastplayerlist:
             return
 
-        if newplayerlist is None and lastplayerlist:
+        elif not newplayerlist and lastplayerlist:
             for player in lastplayerlist:
                 await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = newplayerlist
@@ -1760,11 +1764,9 @@ class ArkTools(commands.Cog):
         else:
             for player in newplayerlist:
                 if player not in lastplayerlist:
-                    # print(f"{player[0]} joined {mapname} {clustername}")
                     await joinlog.send(f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
             for player in lastplayerlist:
                 if player not in newplayerlist:
-                    # print(f"{player[0]} Left {mapname} {clustername}")
                     await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = newplayerlist
 
