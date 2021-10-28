@@ -2178,7 +2178,7 @@ class ArkTools(commands.Cog):
                 if token:
                     utasks.append(remove_friend(item[0], token))
             await asyncio.gather(*utasks)
-            log.info(f"**{member.display_name}** - `{member.id}` was unfriended by the host Gamertags "
+            log.info(f"{member.display_name} -{member.id} was unfriended by the host Gamertags "
                      f"for leaving the Discord.")
             if eventlog:
                 eventlog = member.guild.get_channel(eventlog)
