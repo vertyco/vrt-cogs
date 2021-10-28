@@ -243,7 +243,7 @@ def cstats_format(stats: dict, guild: discord.guild):
     return embeds
 
 
-async def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
+def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
     current_time = datetime.datetime.now(timezone)
     for xuid, data in stats.items():
         if gamertag.lower() == data["username"].lower():
