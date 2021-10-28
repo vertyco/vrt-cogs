@@ -2,6 +2,7 @@ import math
 import random
 import discord
 
+
 TIPS = [
     "Tip: The shopstats command shows how many items have been purchased!",
     "Tip: The shoplb command shows the shop leaderboard for the server!",
