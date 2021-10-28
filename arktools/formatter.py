@@ -311,11 +311,10 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             for mapname, playtime in data["playtime"].items():
                 if mapname != "total":
                     d, h, m = time_format(playtime)
-                    if playtime != 0:
-                        embed.add_field(
-                            name=mapname,
-                            value=f"`{d}d {h}h {m}m`"
-                        )
+                    embed.add_field(
+                        name=mapname,
+                        value=f"`{d}d {h}h {m}m`"
+                    )
             if position != "":
                 percent = round((time / global_time) * 100, 2)
                 embed.set_footer(text=f"Rank: {position} with {percent}% of the total playtime")
