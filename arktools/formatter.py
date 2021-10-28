@@ -244,10 +244,25 @@ def cstats_format(stats: dict, guild: discord.guild):
 
 
 def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
+    leaderboard = {}
+    global_time = 0
+    # Global cumulative time
+    for xuid, data in stats.items():
+        time = data["playtime"]["total"]
+        leaderboard[xuid] = time
+        global_time = global_time + time
+
+    position = ""
+    sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     current_time = datetime.datetime.now(timezone)
     for xuid, data in stats.items():
         if gamertag.lower() == data["username"].lower():
             time = data["playtime"]["total"]
+            for i in sorted_players:
+                if i[0] == xuid:
+                    pos = sorted_players.index(i)
+                    position = f"{pos + 1}/{len(sorted_players)}"
+
             timestamp = datetime.datetime.fromisoformat(data["lastseen"]["time"])
             timestamp = timestamp.astimezone(timezone)
             timedifference = current_time - timestamp
@@ -301,6 +316,10 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                             name=mapname,
                             value=f"`{d}d {h}h {m}m`"
                         )
+            if position != "":
+                percent = round((time / global_time) * 100, 2)
+                embed.set_footer(text=f"Rank: {position} with {percent}% of the total playtime")
+
             return embed
 
 

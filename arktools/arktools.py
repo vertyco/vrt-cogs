@@ -194,6 +194,9 @@ class ArkTools(commands.Cog):
 
         Sends you tools to get unstuck, or off yourself.
         """
+        settings = await self.config.guild(ctx.guild).all()
+        if len(settings["clusters"]) == 0:
+            return await ctx.send("No clusters have been set!")
         embed = discord.Embed(
             description=f"**Type your Implant ID in chat.**"
         )
@@ -222,7 +225,7 @@ class ArkTools(commands.Cog):
             )
             embed.set_thumbnail(url="https://i.imgur.com/8ofOx6X.png")
             await msg.edit(embed=embed)
-            settings = await self.config.guild(ctx.guild).all()
+
             serverlist = []
             for cname, cdata in settings["clusters"].items():
                 for sname, sdata in cdata["servers"].items():
@@ -265,10 +268,10 @@ class ArkTools(commands.Cog):
     async def unregister_user(self, ctx: commands.Context, member: discord.Member):
         """Unregister a user from a Gamertag"""
         async with self.config.guild(ctx.guild).players() as players:
-            for data in players.values():
+            for xuid, data in players.items():
                 if "discord" in data:
                     if data["discord"] == member.id:
-                        del data["discord"]
+                        del players[xuid]["discord"]
                         return await ctx.send(f"{member.mention} has been unregistered!")
             else:
                 await ctx.send(f"{member.mention} not found registered to any Gamertag!")
@@ -446,6 +449,8 @@ class ArkTools(commands.Cog):
                     map_options += f"**{servernum}.** `{server['gamertag']}` - `{sname} {cname}`\n"
                     serverlist.append((servernum, server['gamertag'], tokendata, cname, sname))
                     servernum += 1
+        if len(serverlist) == 0:
+            return await ctx.send("No clusters have been created yet!")
         map_options += f"**All** - `Adds All Servers`"
         embed = discord.Embed(
             title=f"Add Yourself as a Friend",
@@ -708,6 +713,8 @@ class ArkTools(commands.Cog):
                                                   f"Register with the `{ctx.prefix}register` command.")
                 embed.set_thumbnail(url=FAILED)
                 return await ctx.send(embed=embed)
+
+
         embed = player_stats(stats, tz, ctx.guild, gamertag)
         if not embed:
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
@@ -826,12 +833,23 @@ class ArkTools(commands.Cog):
         """View current permission settings."""
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
+        full_a = ctx.guild.get_role(settings['fullaccessrole'])
+        if full_a:
+            full_a = full_a.mention
+        mods = "None"
+        if len(settings['modroles']) > 0:
+            mods = ""
+            for mod in settings['modroles']:
+                mod_obj = ctx.guild.get_role(mod)
+                if mod_obj:
+                    mod = mod_obj.mention
+                mods += f"\n{mod}"
         try:
             embed = discord.Embed(
                 title=f"Permission Settings",
                 color=color,
-                description=f"**Full Access Role:** {settings['fullaccessrole']}\n"
-                            f"**Mod Roles:** {settings['modroles']}\n"
+                description=f"**Full Access Role:** {full_a}\n"
+                            f"**Mod Roles:** {mods}\n"
                             f"**Mod Commands:** {settings['modcommands']}\n"
                             f"**Blacklisted Names:** {settings['badnames']}"
             )
@@ -840,8 +858,11 @@ class ArkTools(commands.Cog):
             await ctx.send(f"Setup permissions first.")
 
     @mod_permissions.command(name="fullaccess")
-    async def set_fullaccessrole(self, ctx: commands.Context, role: discord.Role):
+    async def set_fullaccessrole(self, ctx: commands.Context, role: discord.Role = None):
         """Set a role for full RCON access."""
+        if not role:
+            await self.config.guild(ctx.guild).fullaccessrole.set(None)
+            return await ctx.send(f"Full access role set to None")
         await self.config.guild(ctx.guild).fullaccessrole.set(role.id)
         await ctx.send(f"Full access role set to {role}")
 
@@ -1528,7 +1549,7 @@ class ArkTools(commands.Cog):
                          ip: str,
                          port: int,
                          password: str,
-                         channel: discord.TextChannel):
+                         globalchatchannel: discord.TextChannel):
         """Add a server to a cluster."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername.lower() not in clusters:
@@ -1540,7 +1561,7 @@ class ArkTools(commands.Cog):
                     "ip": ip,
                     "port": port,
                     "password": password,
-                    "chatchannel": channel.id
+                    "chatchannel": globalchatchannel.id
                 }
                 await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
 
