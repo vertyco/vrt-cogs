@@ -71,7 +71,7 @@ class ArkTools(commands.Cog):
         default_guild = {
             "welcomemsg": None,
             "playerclearmessage": None,
-            "status": {"channel": None, "message": None},
+            "status": {"channel": None, "message": None, "time": 1},
             "masterlog": None,
             "eventlog": None,
             "fullaccessrole": None,
@@ -713,8 +713,6 @@ class ArkTools(commands.Cog):
                                                   f"Register with the `{ctx.prefix}register` command.")
                 embed.set_thumbnail(url=FAILED)
                 return await ctx.send(embed=embed)
-
-
         embed = player_stats(stats, tz, ctx.guild, gamertag)
         if not embed:
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
@@ -1587,6 +1585,21 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).status.channel.set(channel.id)
         await ctx.send(f"Status channel has been set to {channel.mention}")
 
+    @server_settings.command(name="statuschannelgraph")
+    async def set_statuschannel_graph(self, ctx: commands.Context, hours: int = None):
+        """
+        Set the length of time to display in the server status embed in hours.
+
+
+        Must use hours in whole numbers. If no time is given it will default back to 1 hour.
+        """
+        if hours:
+            await self.config.guild(ctx.guild).status.time.set(hours)
+            await ctx.send(f"Status channel graph has been set to display past {hours} hours.")
+        else:
+            await self.config.guild(ctx.guild).status.time.set(1)
+            await ctx.send(f"Status channel graph has defaulted to display the last hour.")
+
     @server_settings.command(name="interchat")
     async def server_to_server_toggle(self, ctx: commands.Context, clustername: str):
         """(Toggle) server to server chat for a cluster so maps can talk to eachother."""
@@ -1986,7 +1999,8 @@ class ArkTools(commands.Cog):
                 serverstats["counts"].append(int(totalplayers))
 
             # Embed setup
-            file = await get_graph(settings, 1)
+            hours = settings["status"]["time"]
+            file = await get_graph(settings, hours)
             embed = discord.Embed(
                 description=status,
                 color=discord.Color.random(),
