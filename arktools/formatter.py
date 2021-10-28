@@ -292,7 +292,6 @@ async def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.
                             value=f"`{d}d {h}h {m}m`"
                         )
             return embed
-    return None
 
 
 async def detect_friends(friends: list, followers: list):
