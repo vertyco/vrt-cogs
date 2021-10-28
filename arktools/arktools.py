@@ -705,7 +705,7 @@ class ArkTools(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="findplayer")
-    async def find_player_from_discord(self, ctx: commands.Context, member: discord.Member):
+    async def find_player_from_discord(self, ctx: commands.Context, *, member: discord.Member):
         """Find out if a player has registered"""
         settings = await self.config.guild(ctx.guild).all()
         stats = settings["players"]
