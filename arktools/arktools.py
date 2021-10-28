@@ -656,7 +656,7 @@ class ArkTools(commands.Cog):
         if not hours:
             hours = 1
         settings = await self.config.guild(ctx.guild).all()
-        async with ctx.typing:
+        async with ctx.typing():
             file = await get_graph(settings, hours)
         if file:
             await ctx.send(file=file)
