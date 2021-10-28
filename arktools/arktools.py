@@ -215,6 +215,8 @@ class ArkTools(commands.Cog):
                 await reply.delete()
             except discord.NotFound:
                 pass
+            except discord.Forbidden:
+                await ctx.send("I don't have permissions to delete your reply ¯\\_(ツ)_/¯")
             embed = discord.Embed(
                 description=f"Sit tight, your care package is on the way!"
             )
@@ -225,6 +227,8 @@ class ArkTools(commands.Cog):
             for cname, cdata in settings["clusters"].items():
                 for sname, sdata in cdata["servers"].items():
                     serverlist.append(sdata)
+            if len(serverlist) == 0:
+                return await ctx.send("I dont see any servers, make sure an admin has set them up!")
 
             stucktasks = []
             for server in serverlist:
@@ -651,13 +655,16 @@ class ArkTools(commands.Cog):
     # STAT COMMANDS
     # Thanks to Vexed#3211 for help with the Matplotlib logic :)
     @commands.command(name="servergraph", hidden=False)
-    async def graph_player_count(self, ctx: commands.Context, hours: int = None):
+    async def graph_player_count(self, ctx: commands.Context, hours=None):
         """View a graph of player count over a set time"""
         if not hours:
             hours = 1
+        # Convert to float and back to int to handle if someone types a float
+        hours = float(hours)
+        hours = int(hours)
         settings = await self.config.guild(ctx.guild).all()
         async with ctx.typing():
-            file = await get_graph(settings, hours)
+            file = await get_graph(settings, int(hours))
         if file:
             await ctx.send(file=file)
         else:
@@ -751,16 +758,16 @@ class ArkTools(commands.Cog):
         with open(f"{ctx.guild}.json", "rb") as file:
             await ctx.send(file=discord.File(file, f"{ctx.guild}_playerstats.json"))
 
-    @arktools_main.command(name="backupserverstats")
+    @arktools_main.command(name="backupgraphdata")
     @commands.guildowner()
-    async def backup_stat_settings(self, ctx: commands.Context):
-        """Sends a backup of the serverstats data for graphing as a JSON file to Discord."""
+    async def backup_graph_data(self, ctx: commands.Context):
+        """Sends a backup of the graph data for graphing as a JSON file to Discord."""
         settings = await self.config.guild(ctx.guild).serverstats()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
         with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_serverstats.json"))
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_graphdata.json"))
 
     @arktools_main.command(name="restore")
     @commands.guildowner()
@@ -792,10 +799,10 @@ class ArkTools(commands.Cog):
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
-    @arktools_main.command(name="restoreserverstats")
+    @arktools_main.command(name="restoregraphdata")
     @commands.guildowner()
-    async def restore_stats(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the server stats."""
+    async def restore_graph_data(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the graph data."""
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -803,7 +810,7 @@ class ArkTools(commands.Cog):
                     config = await resp.json()
             await self.config.guild(ctx.guild).serverstats.set(config)
             await self.initialize()
-            return await ctx.send("Server stats restored from backup file!")
+            return await ctx.send("Graph data restored from backup file!")
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
@@ -911,7 +918,11 @@ class ArkTools(commands.Cog):
         settings = await self.config.guild(ctx.guild).all()
         color = discord.Color.dark_purple()
         masterlog = settings["masterlog"] if "masterlog" in settings else None
-        masterlog = ctx.guild.get_channel(masterlog).mention if not None else "Not Set"
+        masterlog = ctx.guild.get_channel(masterlog)
+        if masterlog:
+            masterlog = masterlog.mention
+        else:
+            masterlog = "Not Set"
         tribes = settings["tribes"] if "tribes" in settings else None
         embed = discord.Embed(
             title="Tribe Settings Overview",

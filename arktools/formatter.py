@@ -264,7 +264,7 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                 if member:
                     registration = f"Registered as {member.mention}"
                 else:
-                    registration = f"Registered as ID: {data['discord']} `(No longer in server)`"
+                    registration = f"Registered as ID {data['discord']} `(No longer in server)`"
                     in_server = False
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
@@ -333,10 +333,13 @@ async def get_graph(settings: dict, hours: int):
     x = []
     y = []
     c = {}
-
+    title = f"Player Count Over the Past {int(hours)} Hours"
     if len(times) < lim:
-        hours = lim / 60
+        hours = len(times) / 60
+        title = f"Player Count Over Lifetime ({int(hours)} Hours)"
         lim = len(times)
+    if hours == 1:
+        title = f"Player Count Over the Last Hour"
     start = len(times) - 1
     stop = len(times) - lim
 
@@ -364,10 +367,6 @@ async def get_graph(settings: dict, hours: int):
         return None
     x.reverse()
     y.reverse()
-
-    title = f"Player Count Over the Past {int(hours)} Hours"
-    if hours == 1:
-        title = f"Player Count Over the Last Hour"
     clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
     cindex = 0
     with plt.style.context("dark_background"):

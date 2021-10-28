@@ -582,6 +582,8 @@ class ArkShop(commands.Cog):
         clist = ""
         for clustername in clusters:
             clist += f"`{clustername}`\n"
+        if clist == "":
+            return await ctx.send("No clusters have been created!")
 
         embed = discord.Embed(
             description=f"**Type one of the cluster names below.**\n"
