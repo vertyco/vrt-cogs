@@ -2341,7 +2341,9 @@ class ArkTools(commands.Cog):
                 following = person["is_following_caller"]
                 added = person["added_date_time_utc"]
                 added = fix_timestamp(str(added))
-                time = datetime.datetime.utcnow()
+                tz = pytz.timezone("UTC")
+                added = added.astimezone(tz)
+                time = datetime.datetime.now(tz)
                 timedifference = time - added
                 if not following and timedifference.days > 0:
                     status = await remove_friend(xuid, token)
