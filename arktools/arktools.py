@@ -1581,7 +1581,9 @@ class ArkTools(commands.Cog):
             rehashed_stats = {}
             stats = await self.config.guild(guild).players()
             for key, value in stats.items():
-                if not key.isdigit():
+                if key.isdigit():
+                    rehashed_stats[key] = value
+                else:
                     log.info(f"Fixing config for {key}")
                     xuid = value["xuid"]
                     last_seen = value["lastseen"]
@@ -1594,8 +1596,7 @@ class ArkTools(commands.Cog):
                     }
                     if "discord" in value:
                         rehashed_stats[xuid]["discord"] = value["discord"]
-                else:
-                    rehashed_stats[key] = value
+            log.info(f"Rehashed config for {len(stats.keys())} players")
             await self.config.guild(guild).players.set(rehashed_stats)
 
         log.info("Config initialized.")
