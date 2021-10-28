@@ -263,10 +263,9 @@ async def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.
             if "discord" in data:
                 member = guild.get_member(data["discord"])
                 if member:
-                    member = member.mention
+                    registration = f"Registered as {member.mention}"
                 else:
-                    member = f"Discord ID: {data['discord']}"
-                registration = f"Registered as {member}"
+                    registration = f"Registered as Discord ID: {data['discord']}"
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
                 description=f"Status: {registration}"
