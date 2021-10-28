@@ -2159,7 +2159,7 @@ class ArkTools(commands.Cog):
                     async with self.config.guild(member.guild).players() as stats:
                         stats[xuid]["leftdiscordon"] = time.isoformat()
                     for cname, cluster in settings["clusters"].items():
-                        for sname, server in cluster.items():
+                        for sname, server in cluster["servers"].items():
                             if "tokens" in server:
                                 tokendata.append((xuid, cname, sname, server["tokens"]))
         if len(tokendata) == 0:

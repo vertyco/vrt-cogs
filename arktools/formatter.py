@@ -258,12 +258,14 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             # Time played dhm
             d, h, m = time_format(time)
             registration = "Not Registered"
+            in_server = True
             if "discord" in data:
                 member = guild.get_member(data["discord"])
                 if member:
                     registration = f"Registered as {member.mention}"
                 else:
                     registration = f"Registered as ID: {data['discord']} `(No longer in server)`"
+                    in_server = False
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
                 description=f"Discord: {registration}\n"
@@ -283,7 +285,7 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                 value=last_seen,
                 inline=False
             )
-            if "leftdiscordon" in data:
+            if "leftdiscordon" in data and not in_server:
                 left_on = data["leftdiscordon"]
                 left_on = datetime.datetime.fromisoformat(left_on)
                 left_on = left_on.astimezone(timezone)
