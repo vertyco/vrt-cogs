@@ -4,13 +4,20 @@ import random
 import math
 import shutil
 import os
+import rcon
+import logging
 
 from redbot.core import commands, Config, bank
 from redbot.core.utils.chat_formatting import box, pagify
 
-import rcon
-
-import logging
+from .menus import (menu,
+                    DEFAULT_CONTROLS,
+                    next_page,
+                    prev_page,
+                    skip_ten,
+                    back_ten,
+                    close_menu)
+from .formatter import (shop_stats)
 
 log = logging.getLogger("red.vrt.arkshop")
 
@@ -26,7 +33,19 @@ TIPS = [
     "Tip: You can use the playerstats command to view playtime stats for a specific player, or yourself!",
     "Tip: You can use the clusterstats command to view the top player on each cluster!",
     "Tip: You can use the arklb command to view a global playtime leaderboard for all maps!",
+    "Tip: You can use the servergraph command to view player count over time!",
 ]
+
+SHOP_CONTROLS = {
+    "\N{LEFTWARDS ARROW WITH HOOK}\N{VARIATION SELECTOR-16}": back,
+    "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
+    "\N{CROSS MARK}": close_menu,
+    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
+    "\N{DIGIT ONE}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": select_one,
+    "\N{DIGIT TWO}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": select_two,
+    "\N{DIGIT THREE}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": select_three,
+    "\N{DIGIT FOUR}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": select_four,
+}
 
 
 class ArkShop(commands.Cog):
@@ -34,7 +53,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.3"
+    __version__ = "1.2.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -215,9 +234,7 @@ class ArkShop(commands.Cog):
         """
         destination_dir = await self.config.main_path()
         item_destination = os.path.join(destination_dir, packname)
-
         clusters = await self.config.clusters()
-
         # check if clustername exists
         if clustername not in clusters:
             clist = ""
@@ -225,18 +242,14 @@ class ArkShop(commands.Cog):
                 clist += f"`{clustername}`\n"
             return await ctx.send(f"Invalid clustername, try one of these instead:\n"
                                   f"{clist}")
-
         source_dir = clusters[clustername]
         item_source_file = os.path.join(source_dir, xuid)
-
         # check source dir
         if not os.path.exists(source_dir):
             return await ctx.send("Source path does not exist!")
-
         # check destination dir
         if not os.path.exists(destination_dir):
             return await ctx.send("Destination path does not exist!")
-
         # move/replace pack
         if os.path.exists(item_destination):
             try:
@@ -257,7 +270,6 @@ class ArkShop(commands.Cog):
         If file size is anything other than 0, then there is something in their data.
         """
         clusters = await self.config.clusters()
-
         # check if clustername exists
         if clustername not in clusters:
             clist = ""
@@ -265,7 +277,6 @@ class ArkShop(commands.Cog):
                 clist += f"`{clustername}`\n"
             return await ctx.send(f"Invalid clustername, try one of these instead:\n"
                                   f"{clist}")
-
         source_dir = clusters[clustername]
         if not os.path.exists(source_dir):
             embed = discord.Embed(
@@ -273,7 +284,6 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
-
         player_data_file = os.path.join(source_dir, xuid)
         if not os.path.exists(player_data_file):
             embed = discord.Embed(
@@ -281,7 +291,6 @@ class ArkShop(commands.Cog):
                 color=discord.Color.blue()
             )
             return await ctx.send(embed=embed)
-
         size = os.path.getsize(player_data_file)
         size = "{:,}".format(int(size))
         embed = discord.Embed(
@@ -295,9 +304,7 @@ class ArkShop(commands.Cog):
         """Send a data pack to a player manually"""
         source_dir = await self.config.main_path()
         item_source_file = os.path.join(source_dir, packname)
-
         clusters = await self.config.clusters()
-
         # check if clustername exists
         if clustername not in clusters:
             clist = ""
@@ -309,18 +316,14 @@ class ArkShop(commands.Cog):
                 color=discord.Color.orange()
             )
             return await ctx.send(embed=embed)
-
         destination_dir = clusters[clustername]
         item_destination = os.path.join(destination_dir, xuid)
-
         # check source dir
         if not os.path.exists(source_dir):
             return await ctx.send("Source path does not exist!")
-
         # check destination dir
         if not os.path.exists(destination_dir):
             return await ctx.send("Destination path does not exist!")
-
         # remove any existing data from destination
         if os.path.exists(item_destination):
             try:
@@ -333,7 +336,6 @@ class ArkShop(commands.Cog):
                 return await ctx.send(embed=embed)
             except Exception as e:
                 return await ctx.send(f"Data send failed!\nError: {e}")
-
         else:
             shutil.copyfile(item_source_file, item_destination)
             embed = discord.Embed(
@@ -371,7 +373,6 @@ class ArkShop(commands.Cog):
         directory = await self.config.main_path()
         oldfile = os.path.join(directory, current_name)
         newfile = os.path.join(directory, new_name)
-
         if os.path.exists(oldfile):
             try:
                 os.rename(oldfile, newfile)
@@ -400,11 +401,9 @@ class ArkShop(commands.Cog):
                 color=discord.Color.orange()
             )
             return await ctx.send(embed=embed)
-
         directory = clusters[clustername]
         source = os.path.join(directory, source_xuid)
         target = os.path.join(directory, destination_xuid)
-
         # check source file
         if not os.path.exists(source):
             embed = discord.Embed(
@@ -412,11 +411,9 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
-
         # check if target already exists
         if os.path.exists(target):
             os.remove(target)
-
         shutil.copyfile(source, target)
         embed = discord.Embed(
             description=f"Player data from `{source_xuid}` copied to `{destination_xuid}`",
@@ -429,7 +426,6 @@ class ArkShop(commands.Cog):
         """Delete a data pack"""
         directory = await self.config.main_path()
         file = os.path.join(directory, packname)
-
         if os.path.exists(file):
             try:
                 os.remove(file)
@@ -511,7 +507,6 @@ class ArkShop(commands.Cog):
             # check if item exists
             if item_name in shops[shop_name]:
                 return await ctx.send(f"{item_name} item already exists!")
-
             if price:
                 shops[shop_name][item_name] = {"price": price, "options": {}}
                 currency_name = await bank.get_currency_name(ctx.guild)
@@ -596,12 +591,10 @@ class ArkShop(commands.Cog):
 
         def check(message: discord.Message):
             return message.author == ctx.author and message.channel == ctx.channel
-
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
         if reply.content.lower() not in clusters:
             return await msg.edit(embed=discord.Embed(description="Cluster doesn't exist!"))
         else:
@@ -657,10 +650,8 @@ class ArkShop(commands.Cog):
             # check if item exists
             if item_name in shops[shop_name]:
                 return await ctx.send(f"{item_name} item already exists!")
-
             if price:
                 shops[shop_name][item_name] = {"price": price, "options": {}, "paths": []}
-
                 msg = await ctx.send(
                     "Type the full blueprint paths including quantity/quality/blueprint numbers below.\n"
                     "Separate each full path with a new line for multiple items in one pack.\n"
@@ -668,7 +659,6 @@ class ArkShop(commands.Cog):
 
                 def check(message: discord.Message):
                     return message.author == ctx.author and message.channel == ctx.channel
-
                 try:
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
                     if reply.content.lower() == "cancel":
@@ -677,10 +667,8 @@ class ArkShop(commands.Cog):
                         paths = reply.content.split("\n")
                         shops[shop_name][item_name]["paths"] = paths
                         return await ctx.send(f"Item paths set!")
-
                 except asyncio.TimeoutError:
                     return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
             else:
                 shops[shop_name][item_name] = {"price": False, "options": {}, "paths": []}
                 return await ctx.send(f"Item added, please add options to it with `{ctx.prefix}shopset rcon addoption`")
@@ -727,10 +715,8 @@ class ArkShop(commands.Cog):
 
                 def check(message: discord.Message):
                     return message.author == ctx.author and message.channel == ctx.channel
-
                 try:
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
-
                     if reply.content.lower() == "cancel":
                         return await ctx.send("Option add canceled.")
                     else:
@@ -791,45 +777,17 @@ class ArkShop(commands.Cog):
     async def shop_stats(self, ctx):
         """View all items purchased from all shops"""
         logs = await self.config.guild(ctx.guild).logs()
-
         if logs["items"] == {}:
             return await ctx.send("No logs yet!")
-
-        shop_logs = {}
-        for item in logs["items"]:
-            count = logs["items"][item]["count"]
-            shop_logs[item] = count
-
-        sorted_items = sorted(shop_logs.items(), key=lambda x: x[1], reverse=True)
-        pages = math.ceil(len(sorted_items) / 10)
-        embeds = []
-        start = 0
-        stop = 10
-        for page in range(int(pages)):
-            if stop > len(sorted_items):
-                stop = len(sorted_items)
-            items = ""
-            for i in range(start, stop, 1):
-                name = sorted_items[i][0]
-                purchases = sorted_items[i][1]
-                items += f"**{name}**: `{purchases} purchased`\n"
-            embed = discord.Embed(
-                title="Item Purchases",
-                description=items
-            )
-            embeds.append(embed)
-            start += 10
-            stop += 10
-        return await self.paginate(ctx, embeds)
+        embeds = await shop_stats(logs)
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command(name="shoplb")
     async def shop_leaderboard(self, ctx):
         """Open the shop leaderboard"""
         logs = await self.config.guild(ctx.guild).logs()
-
         if logs["users"] == {}:
             return await ctx.send("No logs yet!")
-
         shop_logs = {}
         for user_id in logs["users"]:
             count = 0
@@ -837,7 +795,6 @@ class ArkShop(commands.Cog):
                 purchased = logs["users"][user_id][item]["count"]
                 count += purchased
             shop_logs[user_id] = count
-
         sorted_items = sorted(shop_logs.items(), key=lambda x: x[1], reverse=True)
         pages = math.ceil(len(sorted_items) / 10)
         embeds = []
@@ -870,7 +827,7 @@ class ArkShop(commands.Cog):
             embeds.append(embed)
             start += 10
             stop += 10
-        return await self.paginate(ctx, embeds)
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command(name="playershopstats")
     async def player_shop_stats(self, ctx, member: discord.Member = None):
@@ -879,10 +836,8 @@ class ArkShop(commands.Cog):
         users = await self.config.guild(ctx.guild).users()
         arktools = self.bot.get_cog("ArkTools")
         playerstats = await arktools.config.guild(ctx.guild).players()
-
         if logs["users"] == {}:
             return await ctx.send("No purchase history yet!")
-
         if not member:
             for user in logs["users"]:
                 if str(ctx.author.id) == user:
@@ -890,16 +845,13 @@ class ArkShop(commands.Cog):
                     break
             else:
                 return await ctx.send("It appears you haven't purchased anything yet.")
-
         if str(member.id) not in logs["users"]:
             return await ctx.send("It appears that player hasn't purchased anything yet.")
-
         items = ""
         for item in logs["users"][str(member.id)]:
             itemtype = logs["users"][str(member.id)][item]["type"]
             count = logs["users"][str(member.id)][item]["count"]
             items += f"**{item}**\nType: `{itemtype}`\nPurchased: `{count}`\n\n"
-
         for player in playerstats:
             if "discord" in playerstats[player]:
                 if str(member.id) == str(playerstats[player]["discord"]):
@@ -909,7 +861,6 @@ class ArkShop(commands.Cog):
         else:
             gt = "Unknown"
             xuid = "Unknown"
-
         embed = discord.Embed(
             title=f"Shop stats for {member.name}",
             description=f"**Registered Cluster:** `{users[str(member.id)].upper()}`\n"
@@ -935,7 +886,6 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
-
         # check if player has set a cluster
         users = await self.config.guild(ctx.guild).users()
         if str(ctx.author.id) not in users:
@@ -947,14 +897,12 @@ class ArkShop(commands.Cog):
             return await ctx.send(embed=embed)
         else:
             cname = users[str(ctx.author.id)]
-
         return await self.rcon_category_compiler(ctx, xuid, cname)
 
     async def rcon_category_compiler(self, ctx, xuid, cname, message=None):
         categories = await self.config.guild(ctx.guild).shops()
         # how many categories
         category_count = len(categories.keys())
-
         # how many pages
         pages = math.ceil(category_count / 4)
         if pages == 0:
@@ -967,16 +915,13 @@ class ArkShop(commands.Cog):
                 return await message.edit(embed=embed)
             else:
                 return await ctx.send(embed=embed)
-
         # category info setup
         shop_categories = []
         for category in categories:
             num_items = len(categories[category].keys())
             shop_categories.append((category, num_items))
-
         # sort that bitch
         shop_categories = sorted(shop_categories, key=lambda x: x[0])
-
         # menu setup
         start = 0
         stop = 4
@@ -1797,33 +1742,11 @@ class ArkShop(commands.Cog):
                 except discord.NotFound:
                     return
 
-    @commands.command(name="import", hidden=True)
-    @commands.is_owner()
-    async def import_settings(self, ctx):
-        xuid = self.bot.get_cog("XUID")
-        xshop = await xuid.data.guild(ctx.guild).shops()
-        async with self.config.datashops() as shops:
-            for category in xshop:
-                shops[category] = {}
-                for item in xshop[category]["items"]:
-                    if xshop[category]["items"][item]["options"]:
-                        shops[category][item] = {"price": False, "options": {}}
-                        for option in xshop[category]["items"][item]["options"]:
-                            o = xshop[category]["items"][item]["options"][option].items()
-                            iterate = iter(o)
-                            price_pair = next(iterate)
-                            price = price_pair[1]
-                            shops[category][item]["options"][option] = price
-                    else:
-                        price = xshop[category]["items"][item]["price"]
-                        shops[category][item] = {"price": price, "options": {}}
-            await ctx.send("Finished importing the config from Papi's absolute fucking dumpster fire of a cog")
-
     @commands.command(name="dshoplist")
     async def data_status(self, ctx):
         """List all items in the data shop"""
         shops = await self.config.datashops()
-        embeds = []
+        pages = []
         for category in shops:
             category_items = ""
             for item in shops[category]:
@@ -1841,14 +1764,14 @@ class ArkShop(commands.Cog):
                 title=f"🔰 {category}",
                 description=f"{category_items}"
             )
-            embeds.append(embed)
-        await self.paginate(ctx, embeds)
+            pages.append(embed)
+        await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="rshoplist")
     async def rcon_status(self, ctx):
         """List all items in the rcon shop"""
         shops = await self.config.guild(ctx.guild).shops()
-        embeds = []
+        pages = []
         for category in shops:
             category_items = ""
             for item in shops[category]:
@@ -1866,50 +1789,5 @@ class ArkShop(commands.Cog):
                 title=f"🔰 {category}",
                 description=f"{category_items}"
             )
-            embeds.append(embed)
-        await self.paginate(ctx, embeds)
-
-    # Menu for doing menu things
-    async def paginate(self, ctx, embeds):
-        pages = len(embeds)
-        cur_page = 1
-        embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}\n"
-                                             f"{random.choice(TIPS)}")
-
-        message = await ctx.send(embed=embeds[cur_page - 1])
-
-        await message.add_reaction("◀️")
-        await message.add_reaction("❌")
-        await message.add_reaction("▶️")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["◀️", "❌", "▶️"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-
-                if str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
-                    cur_page += 1
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
-                    cur_page -= 1
-                    embeds[cur_page - 1].set_footer(text=f"Page {cur_page}/{pages}")
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "❌":
-                    await message.clear_reactions()
-                    return await message.edit(embed=discord.Embed(description="Menu closed."))
-
-                else:
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                try:
-                    return await message.clear_reactions()
-                except discord.NotFound:
-                    return
+            pages.append(embed)
+        await menu(ctx, pages, DEFAULT_CONTROLS)
