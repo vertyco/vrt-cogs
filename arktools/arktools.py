@@ -738,6 +738,17 @@ class ArkTools(commands.Cog):
         with open(f"{ctx.guild}.json", "rb") as file:
             await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
 
+    @arktools_main.command(name="fullbackup")
+    @commands.is_owner()
+    async def backup_all_settings(self, ctx: commands.Context):
+        """Sends a backup of the ENTIRE config as a JSON file to Discord."""
+        settings = await self.config.all()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_full_config.json"))
+
     @arktools_main.command(name="backupstats")
     @commands.guildowner()
     async def backup_stat_settings(self, ctx: commands.Context):
@@ -761,6 +772,21 @@ class ArkTools(commands.Cog):
             await self.config.guild(ctx.guild).set(config)
             await self.initialize()
             return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
+    @arktools_main.command(name="fullrestore")
+    @commands.is_owner()
+    async def restore_settings(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the ENTIRE config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.set(config)
+            await self.initialize()
+            return await ctx.send("FULL Config restored from backup file!")
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
