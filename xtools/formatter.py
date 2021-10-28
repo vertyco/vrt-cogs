@@ -385,9 +385,10 @@ def status(data):
                         # message = scenario["Incidents"]["Incident"]["Stage"]["Message"]
                         level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
                         actions += f"`{action}`-`{timestamp}`-`{level_of_impact} impact`\n"
-                embed.add_field(name=f"{service_name}",
-                                value=actions,
-                                inline=False)
+                if len(actions) <= 1024:
+                    embed.add_field(name=f"{service_name}",
+                                    value=actions,
+                                    inline=False)
         for title in data["ServiceStatus"]["Titles"]["Category"]:
             title_name = title["Name"]
             status = title["Status"]["Name"]
@@ -400,9 +401,10 @@ def status(data):
                         timestamp = scenario["Incidents"]["Incident"]["Begin"]
                         timestamp = fix_timestamp(timestamp).strftime("%m/%d/%Y, %H:%M:%S")
                         actions += f"`{scenario_name}`-`{timestamp}`-`{level_of_impact} impact`\n"
-                embed.add_field(name=f"{title_name}",
-                                value=actions,
-                                inline=False)
+                if len(actions) <= 1024:
+                    embed.add_field(name=f"{title_name}",
+                                    value=actions,
+                                    inline=False)
     else:
         color = discord.Color.green()
         embed = discord.Embed(description="✅ All Microsoft services are up and running!", color=color)
