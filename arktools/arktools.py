@@ -2023,8 +2023,9 @@ class ArkTools(commands.Cog):
             if self.time == "":
                 self.time = time.isoformat()
             last = datetime.datetime.fromisoformat(str(self.time))
+            last = last.astimezone(tz)
             timedifference = time - last
-            timedifference = timedifference.seconds
+            timedifference = int(timedifference.total_seconds())
 
             sname = server["name"]
             cname = server["cluster"]
@@ -2121,13 +2122,11 @@ class ArkTools(commands.Cog):
                                     else:
                                         log.warning(f"{host} FAILED to add {gamertag}")
                                         newplayermessage += f"Added by {host}: ❌\n"
-
                     if mapstring not in stats[xuid]["playtime"]:
                         stats[xuid]["playtime"][mapstring] = 0
-
                     else:
-                        stats[xuid]["playtime"][mapstring] += int(timedifference)
-                        stats[xuid]["playtime"]["total"] += int(timedifference)
+                        stats[xuid]["playtime"][mapstring] += timedifference
+                        stats[xuid]["playtime"]["total"] += timedifference
                         stats[xuid]["lastseen"] = {
                             "time": time.isoformat(),
                             "map": mapstring
@@ -2342,8 +2341,7 @@ class ArkTools(commands.Cog):
                 following = person["is_following_caller"]
                 added = person["added_date_time_utc"]
                 added = fix_timestamp(str(added))
-                tz = pytz.timezone("UTC")
-                time = datetime.datetime.now(tz)
+                time = datetime.datetime.utcnow()
                 timedifference = time - added
                 if not following and timedifference.days > 0:
                     status = await remove_friend(xuid, token)

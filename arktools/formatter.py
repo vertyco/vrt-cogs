@@ -177,9 +177,8 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
             timestamp = datetime.datetime.fromisoformat(last_seen)
             timestamp = timestamp.astimezone(tz)
             timedifference = time - timestamp
-            d = timedifference.days
-            m, s = divmod(timedifference.seconds, 60)
-            h, m = divmod(m, 60)
+            td = int(timedifference.total_seconds())
+            d, h, m = time_format(td)
             last_seen = lseen_format(d, h, m)
             embed.add_field(
                 name=f"{i + 1}. {username}",
@@ -244,7 +243,7 @@ def cstats_format(stats: dict, guild: discord.guild):
     return embeds
 
 
-def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
+async def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
     current_time = datetime.datetime.now(timezone)
     for xuid, data in stats.items():
         if gamertag.lower() == data["username"].lower():
@@ -252,8 +251,9 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             timestamp = datetime.datetime.fromisoformat(data["lastseen"]["time"])
             timestamp = timestamp.astimezone(timezone)
             timedifference = current_time - timestamp
+            td = int(timedifference.total_seconds())
             # Last seen dhm
-            ld, lh, lm = time_format(timedifference.seconds)
+            ld, lh, lm = time_format(td)
             lastmap = data["lastseen"]["map"]
             # Time played dhm
             d, h, m = time_format(time)
@@ -307,7 +307,7 @@ async def detect_friends(friends: list, followers: list):
                 date_followed = fix_timestamp(date_followed)
                 time = datetime.datetime.utcnow()
                 timedifference = time - date_followed
-                if timedifference.days == 0 and timedifference.seconds < 3600:
+                if int(timedifference.total_seconds()) < 3600:
                     people_to_add.append((follower["xuid"], follower["gamertag"]))
     return people_to_add
 
