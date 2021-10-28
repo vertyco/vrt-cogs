@@ -824,7 +824,7 @@ class ArkShop(commands.Cog):
                 title="Item Purchases",
                 description=items
             )
-            embed.set_footer(text=f"Pages: {page + 1}/{pages + 2}\n{random.choice(TIPS)}")
+            embed.set_footer(text=f"Pages: {page + 1}/{pages}\n{random.choice(TIPS)}")
             embeds.append(embed)
             start += 10
             stop += 10
