@@ -120,14 +120,12 @@ async def expired_players(stats: dict, time: datetime.datetime, unfriendtime: in
     for xuid, data in stats.items():
         user = data["username"]
         lastseen = data["lastseen"]["time"]
-        if not data["lastseen"]["map"]:
-            continue
-        timestamp = datetime.datetime.fromisoformat(lastseen)
-        timestamp = timestamp.astimezone(timezone)
-        timedifference = time - timestamp
-        timedifference = timedifference.days
-        if timedifference >= unfriendtime:
-            expired.append((xuid, user))
+        if data["lastseen"]["map"]:
+            timestamp = datetime.datetime.fromisoformat(lastseen)
+            timestamp = timestamp.astimezone(timezone)
+            timedifference = time - timestamp
+            if timedifference.days >= unfriendtime:
+                expired.append((xuid, user))
     return expired
 
 
