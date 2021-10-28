@@ -1,4 +1,17 @@
 import math
+import random
+
+TIPS = [
+    "Tip: The shopstats command shows how many items have been purchased!",
+    "Tip: The shoplb command shows the shop leaderboard for the server!",
+    "Tip: The rshoplist command shows an overview of all RCON shop categories and items!",
+    "Tip: The dshoplist command shows an overview of all DATA shop categories and items!",
+    "Tip: The playershopstats command shows shop stats for a particular member, or yourself!",
+    "Tip: You can use the playerstats command to view playtime stats for a specific player, or yourself!",
+    "Tip: You can use the clusterstats command to view the top player on each cluster!",
+    "Tip: You can use the arklb command to view a global playtime leaderboard for all maps!",
+    "Tip: You can use the servergraph command to view player count over time!",
+]
 
 
 async def shop_stats(logs: dict):
@@ -23,6 +36,7 @@ async def shop_stats(logs: dict):
             title="Item Purchases",
             description=items
         )
+        embed.set_footer(text=f"Pages: {page}/{pages}\n{random.choice(TIPS)}")
         embeds.append(embed)
         start += 10
         stop += 10
