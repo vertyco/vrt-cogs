@@ -2145,6 +2145,9 @@ class ArkTools(commands.Cog):
         if not member:
             return
         settings = await self.config.guild(member.guild).all()
+        tz = settings["timezone"]
+        tz = pytz.timezone(tz)
+        time = datetime.datetime.now(tz)
         autofriend = settings["autofriend"]
         if not autofriend:
             return
@@ -2152,7 +2155,9 @@ class ArkTools(commands.Cog):
         tokendata = []
         for xuid, data in settings["players"].items():
             if "discord" in data:
-                if str(member.id) == data["discord"]:
+                if int(member.id) == int(data["discord"]):
+                    async with self.config.guild(member.guild).players() as stats:
+                        stats[xuid]["leftdiscordon"] = time.isoformat()
                     for cname, cluster in settings["clusters"].items():
                         for sname, server in cluster.items():
                             if "tokens" in server:

@@ -263,10 +263,11 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                 if member:
                     registration = f"Registered as {member.mention}"
                 else:
-                    registration = f"Registered as Discord ID: {data['discord']}\n(No longer in server)"
+                    registration = f"Registered as ID: {data['discord']} `(No longer in server)`"
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
-                description=f"Status: {registration}"
+                description=f"Discord: {registration}\n"
+                            f"Player ID: {xuid}"
             )
             if not (d and h and m) == 0:
                 embed.add_field(
@@ -282,6 +283,14 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                 value=last_seen,
                 inline=False
             )
+            if "leftdiscordon" in data:
+                left_on = data["leftdiscordon"]
+                left_on = datetime.datetime.fromisoformat(left_on)
+                left_on = left_on.astimezone(timezone)
+                embed.add_field(
+                    name="Left Discord",
+                    value=f"`{left_on.strftime('%m/%d/%y at %I:%M %p')}`"
+                )
             for mapname, playtime in data["playtime"].items():
                 if mapname != "total":
                     d, h, m = time_format(playtime)
