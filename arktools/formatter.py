@@ -311,7 +311,7 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             for mapname, playtime in data["playtime"].items():
                 if mapname != "total":
                     d, h, m = time_format(playtime)
-                    if [d and h and m] != 0:
+                    if playtime != 0:
                         embed.add_field(
                             name=mapname,
                             value=f"`{d}d {h}h {m}m`"
