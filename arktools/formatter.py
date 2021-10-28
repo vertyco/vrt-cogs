@@ -246,7 +246,7 @@ def cstats_format(stats: dict, guild: discord.guild):
     return embeds
 
 
-def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
+async def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
     current_time = datetime.datetime.now(timezone)
     for xuid, data in stats.items():
         if gamertag.lower() == data["username"].lower():
@@ -262,7 +262,11 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             registration = "Not Registered"
             if "discord" in data:
                 member = guild.get_member(data["discord"])
-                registration = f"Registered as {member.mention}"
+                if member:
+                    member = member.mention
+                else:
+                    member = f"Discord ID: {data['discord']}"
+                registration = f"Registered as {member}"
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
                 description=f"Status: {registration}"
