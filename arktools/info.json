@@ -13,6 +13,6 @@
     "required_cogs" : {},
     "requirements" : ["rcon", "pytz", "xbox-webapi", "matplotlib"],
     "short": "RCON tools for Ark",
-    "tags" : ["utility", "ark", "rcon", "servermanager"],
+    "tags" : ["utility", "ark", "rcon", "servermanager", "server", "survival", "gameserver"],
     "type": "COG"
 }
