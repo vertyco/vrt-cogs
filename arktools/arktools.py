@@ -1371,7 +1371,7 @@ class ArkTools(commands.Cog):
             return await ctx.send(f"The welcome message cannot be formatted, because it contains an "
                                   f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
                                   f"for a list of valid placeholders.")
-        if len(welcome_message) > 256:
+        if len(welcome_message) + len(ctx.guild.name) > 256:
             return await ctx.send("Message exceeds 256 character length! Make a shorter welcome message.")
         await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
         await ctx.send(f"Welcome message set as:\n{to_send}")
@@ -1686,6 +1686,9 @@ class ArkTools(commands.Cog):
         # If message has no content for some reason?
         if not message:
             return
+        # Can i send messages in that channel
+        if not message.channel.permissions_for(message.guild.me).send_messages:
+            return
         # Check if guild id is initialized
         if message.channel.guild.id not in self.activeguilds:
             return
@@ -1826,12 +1829,14 @@ class ArkTools(commands.Cog):
         if newplayerlist is None and lastplayerlist is None:
             return
 
-        elif newplayerlist is None and lastplayerlist:
+        elif newplayerlist is None and lastplayerlist is not None:
             for player in lastplayerlist:
                 await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = None
 
         # Cog was probably reloaded so dont bother spamming join log with all current members
+        elif not newplayerlist and not lastplayerlist:
+            return  # idk why i had to do this twice to make it work plz halp
         elif len(newplayerlist) >= 0 and lastplayerlist is None:
             self.playerlist[channel] = newplayerlist
 
@@ -1861,7 +1866,10 @@ class ArkTools(commands.Cog):
                 adminmsg = msg
                 await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
             elif "Tribe" and ", ID" in msg:  # send off to tribe log channel
-                tribe_id, embed = await tribelog_format(server, msg)
+                try:
+                    tribe_id, embed = await tribelog_format(server, msg)
+                except TypeError:
+                    continue
                 if "masterlog" in settings:
                     masterlog = guild.get_channel(settings["masterlog"])
                     await masterlog.send(embed=embed)
@@ -2126,7 +2134,7 @@ class ArkTools(commands.Cog):
                                         newplayermessage += f"DM sent: ✅\n"
                                     except Exception as e:
                                         log.warning(f"New Player DM FAILED: {e}")
-                                        newplayermessage += f"DM sent: ❌\n"
+                                        newplayermessage += f"DM sent: ❌ {e}\n"
 
                                 if autofriend and xbl_client:
                                     status = await add_friend(str(xuid), token)
