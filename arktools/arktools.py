@@ -1826,22 +1826,26 @@ class ArkTools(commands.Cog):
 
         lastplayerlist = self.playerlist[channel]
 
-        if newplayerlist is None and lastplayerlist is None:
-            return
+        if not newplayerlist and not lastplayerlist:
+            self.playerlist[channel] = newplayerlist
 
-        elif newplayerlist is None and lastplayerlist is not None:
+        elif not newplayerlist and lastplayerlist == []:
+            self.playerlist[channel] = newplayerlist
+
+        elif newplayerlist == [] and not lastplayerlist:
+            self.playerlist[channel] = newplayerlist
+
+        elif not newplayerlist and len(lastplayerlist) > 0:
             for player in lastplayerlist:
                 await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
-            self.playerlist[channel] = None
+            self.playerlist[channel] = newplayerlist
 
         # Cog was probably reloaded so dont bother spamming join log with all current members
-        elif not newplayerlist and not lastplayerlist:
-            return  # idk why i had to do this twice to make it work plz halp
-        elif len(newplayerlist) >= 0 and lastplayerlist is None:
+        elif len(newplayerlist) >= 0 and not lastplayerlist:
             self.playerlist[channel] = newplayerlist
 
         elif len(newplayerlist) == 0 and len(lastplayerlist) == 0:
-            return
+            self.playerlist[channel] = newplayerlist
 
         else:
             for player in newplayerlist:
