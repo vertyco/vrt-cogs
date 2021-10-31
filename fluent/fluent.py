@@ -50,10 +50,14 @@ class Fluent(commands.Cog):
         pass
 
     @_fluent.command(name="add")
-    async def _add(self, ctx, channel: discord.TextChannel, language1, language2):
+    async def _add(self, ctx, language1, language2, channel: discord.TextChannel = None):
         """Add a channel and languages to translate between"""
-        language1 = await self._converter(language1)
-        language2 = await self._converter(language2)
+        if not channel:
+            channel = ctx.channel
+        language1 = await self._converter(language1.lower())
+        language2 = await self._converter(language2.lower())
+        if not language1 or not language2:
+            return await ctx.send(f"One of the languages were not found: lang1-{language1} lang2-{language2}")
         async with self.config.guild(ctx.guild).channels() as channels:
             if channel.id in channels.keys():
                 return await ctx.send(embed=discord.Embed(description=f"❌ {channel.mention} is already a fluent channel."))
@@ -89,7 +93,7 @@ class Fluent(commands.Cog):
         )
         for channel in channels:
             discordchannel = ctx.guild.get_channel(int(channel))
-            if discordchannel is not None:
+            if discordchannel:
                 lang1 = channels[channel]["lang1"]
                 lang2 = channels[channel]["lang2"]
                 embed.add_field(
