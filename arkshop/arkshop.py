@@ -1150,7 +1150,7 @@ class ArkShop(commands.Cog):
         except asyncio.TimeoutError:
             return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
 
-        if reply.content.lower() == "cancel":
+        if "cancel" in reply.content.lower():
             embed = discord.Embed(
                 description=f"**Purchase cancelled.**\n",
                 color=discord.Color.blue()
