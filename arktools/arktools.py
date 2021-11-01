@@ -1,5 +1,4 @@
 import math
-
 import discord
 import datetime
 import asyncio
@@ -106,8 +105,9 @@ class ArkTools(commands.Cog):
         self.downtime = {}
         self.time = ""
 
-        # Voting sessions
+        # In-Game voting/commands
         self.votes = {}
+        self.cooldowns = {}
 
         # Loops
         self.getchat.start()
@@ -1960,6 +1960,7 @@ class ArkTools(commands.Cog):
     async def ingame_cmd(self, guild: dict, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
         available_cmd = "In-Game Commands.\n" \
                         f"{prefix}rename <NewName> - Rename your character\n" \
+                        f"{prefix}imstuck <ImplantID> - Send yourself a care package if youre stuck\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
                         f"{prefix}players - see how many people are on the server"
@@ -1969,7 +1970,7 @@ class ArkTools(commands.Cog):
         elif cmd.startswith("rename"):
             c, a = self.parse_cmd(cmd)
             if not a:
-                cmd = f"serverchat Syntax is 'rename <NewName>'"
+                cmd = f"serverchat Include the new name you want after the command"
                 return await self.executor(guild, server, cmd)
             cmd = f'renameplayer "{char_name}" {a}'
             await self.executor(guild, server, cmd)
@@ -2034,7 +2035,6 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat Vote successful!")
                 await self.executor(guild, server, "settimeofday 22:00")
                 del self.votes[cid]
-
         elif cmd.startswith("players"):
             cid = server["chatchannel"]
             playerlist = self.playerlist[cid]
@@ -2042,6 +2042,42 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat You're the only person on this server :p")
             else:
                 await self.executor(guild, server, f"serverchat There are {len(playerlist)} people on this server")
+        elif cmd.startswith("imstuck"):
+            canuse = False
+            time = datetime.datetime.utcnow()
+            c, a = self.parse_cmd(cmd)
+            if not a:
+                cmd = f"serverchat Include your Implant ID after the command."
+                return await self.executor(guild, server, cmd)
+            if gamertag not in self.cooldowns:
+                self.cooldowns[gamertag] = {"imstuck": time}
+                canuse = True
+            elif "imstuck" not in self.cooldowns[gamertag]:
+                self.cooldowns[gamertag] = {"imstuck": time}
+                canuse = True
+            else:
+                lastused = self.cooldowns["imstuck"]
+                td = time - lastused
+                if td.total_seconds() > 1800:
+                    canuse = True
+
+            if canuse:
+                stasks = []
+                for path in IMSTUCK_BLUEPRINTS:
+                    stasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
+                await asyncio.gather(*stasks)
+                await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
+            else:
+                lastused = self.cooldowns[gamertag]["imstuck"]
+                td = time - lastused
+                tleft = td.total_seconds()
+                if tleft > 60:
+                    minutes = math.ceil(tleft / 60)
+                    cmd = f"serverchat {gamertag} You need to wait {minutes} minutes before using that command again"
+                    await self.executor(guild, server, cmd)
+                else:
+                    cmd = f"serverchat {gamertag} You need to wait {tleft} seconds before using that command again"
+                    await self.executor(guild, server, cmd)
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
