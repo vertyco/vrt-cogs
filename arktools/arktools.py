@@ -2008,6 +2008,8 @@ class ArkTools(commands.Cog):
             min_votes = math.ceil(len(playerlist) / 2)
             if len(playerlist) == 1:
                 min_votes = 1
+            if len(playerlist) == 2:
+                min_votes = 2
             if cid not in self.votes:
                 self.votes[cid] = {
                     "type": "votenight",
