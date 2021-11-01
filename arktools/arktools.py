@@ -1,3 +1,5 @@
+import math
+
 import discord
 import datetime
 import asyncio
@@ -59,7 +61,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.1.7"
+    __version__ = "2.2.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -104,6 +106,9 @@ class ArkTools(commands.Cog):
         self.downtime = {}
         self.time = ""
 
+        # Voting sessions
+        self.votes = {}
+
         # Loops
         self.getchat.start()
         self.listplayers.start()
@@ -111,6 +116,7 @@ class ArkTools(commands.Cog):
         self.playerstats.start()
         self.maintenance.start()
         self.autofriend.start()
+        self.vote_sessions.start()
 
     def cog_unload(self):
         self.getchat.cancel()
@@ -119,6 +125,7 @@ class ArkTools(commands.Cog):
         self.playerstats.cancel()
         self.maintenance.cancel()
         self.autofriend.cancel()
+        self.vote_sessions.cancel()
 
     # General authentication manager
     async def auth_manager(
@@ -184,6 +191,15 @@ class ArkTools(commands.Cog):
                 if "tokens" in server:
                     tokens = server["tokens"]
                     return tokens, cname, sname
+
+    # Parse in-game commands
+    @staticmethod
+    def parse_cmd(command_string: str):
+        reg = r'(\S+) (.+)'
+        cmd = re.findall(reg, command_string)
+        command = cmd[0][0]
+        argument = cmd[0][1]
+        return command, argument
 
     # Hard coded item send for those tough times
     @commands.command(name="imstuck")
@@ -1547,7 +1563,7 @@ class ArkTools(commands.Cog):
                          ip: str,
                          port: int,
                          password: str,
-                         globalchatchannel: discord.TextChannel):
+                         chatchannel: discord.TextChannel):
         """Add a server to a cluster."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername.lower() not in clusters:
@@ -1559,7 +1575,7 @@ class ArkTools(commands.Cog):
                     "ip": ip,
                     "port": port,
                     "password": password,
-                    "chatchannel": globalchatchannel.id
+                    "chatchannel": chatchannel.id
                 }
                 await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
 
@@ -1645,6 +1661,7 @@ class ArkTools(commands.Cog):
                     server["leavechannel"] = leavechannel
                     server["cluster"] = cluster
                     server["name"] = name
+                    server["guild"] = guild
                     self.servers.append((guild.id, server))
                     self.servercount += 1
                     self.channels.append(server["chatchannel"])
@@ -1862,14 +1879,24 @@ class ArkTools(commands.Cog):
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
         msgs = res.split("\n")
-        messages = []
         settings = await self.config.guild(guild).all()
         badnames = settings["badnames"]
+        # Filter messages for feedback loops and invalid strings
         for msg in msgs:
-            if msg.startswith("AdminCmd:"):  # Send off to admin log channel
-                adminmsg = msg
-                await adminlog.send(f"**{server['name'].capitalize()}**\n{box(adminmsg, lang='python')}")
-            elif "Tribe" and ", ID" in msg:  # send off to tribe log channel
+            if msg.startswith("SERVER:"):
+                continue
+            if msg == " ":
+                continue
+            if msg == "":
+                continue
+            if ":" not in msg:
+                continue
+            if not msg:
+                continue
+            if msg.startswith("AdminCmd:"):  # Admin command
+                await adminlog.send(f"**{server['name'].capitalize()}**\n{box(msg, lang='python')}")
+                continue
+            if "Tribe" and ", ID" in msg:  # Tribe log
                 try:
                     tribe_id, embed = await tribelog_format(server, msg)
                 except TypeError:
@@ -1882,48 +1909,144 @@ class ArkTools(commands.Cog):
                         if tribe_id == tribes:
                             tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
                             await tribechannel.send(embed=embed)
-            # Check if message is looped
-            elif msg.startswith('SERVER:'):
+                            break
                 continue
-            # Check for any other message that might not conform
-            elif ":" not in msg:
-                continue
-            else:
-                messages.append(msg)
-                # Check if any character has a blacklisted name and rename the character to their Gamertag if so
-                for badname in badnames:
-                    if f"({badname.lower()}): " in msg.lower():
-                        reg = r"(.+)\s\("
-                        regname = re.findall(reg, msg)
-                        gt = regname[0]
-                        await self.executor(guild, server, f'renameplayer "{badname}" {gt}')
-                        await chatchannel.send(f"A player named `{badname}` has been renamed to `{gt}`.")
-                        break
-        for msg in messages:
-            if msg == ' ':
-                continue
-            elif msg == '':
-                continue
-            elif msg is None:
-                continue
-            else:
-                # Sends Discord invite to in-game chat if the word Discord is mentioned
-                if "discord" in msg.lower() or "discordia" in msg.lower():
-                    try:
-                        link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
-                        await self.executor(guild, server, f"serverchat {link}")
-                    except Exception as e:
-                        log.exception(f"INVITE CREATION FAILED: {e}")
 
-                await chatchannel.send(msg)
-                await globalchat.send(f"{chatchannel.mention}: {msg}")
-                clustername = server["cluster"]
-                # If interchat is enabled, relay message to other servers
-                if settings["clusters"][clustername]["servertoserver"] is True:  # maps can talk to each other if true
-                    for data in self.servers:
-                        s = data[1]
-                        if s["cluster"] == server["cluster"] and s["name"] != server["name"]:
-                            await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
+            # If interchat is enabled, relay message to other servers
+            clustername = server["cluster"]
+            if settings["clusters"][clustername]["servertoserver"]:  # Maps can talk to each other if true
+                for data in self.servers:
+                    s = data[1]
+                    if s["cluster"] == server["cluster"] and s["name"] != server["name"]:
+                        await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
+
+            # Send off messages to discord channels
+            await chatchannel.send(msg)
+            await globalchat.send(f"{chatchannel.mention}: {msg}")
+
+            # Break message into groups for interpretation
+            reg = r'(.+)\s\((.+)\): (.+)'
+            msg = re.findall(reg, msg)
+            msg = msg[0]
+            gamertag = msg[0]
+            character_name = msg[1]
+            message = msg[2]
+
+            # Sends Discord invite to in-game chat if the word Discord is mentioned
+            if "discord" in message.lower() or "discordia" in message.lower():
+                try:
+                    link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
+                    await self.executor(guild, server, f"serverchat {link}")
+                except Exception as e:
+                    log.exception(f"INVITE CREATION FAILED: {e}")
+
+            # Check if any character has a blacklisted name and rename the character to their Gamertag if so
+            for badname in badnames:
+                if f"({badname.lower()}): " in character_name.lower():
+                    await self.executor(guild, server, f'renameplayer "{badname}" {gamertag}')
+                    await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
+                    break
+
+            # In-game command interpretation
+            prefixes = await self.bot.get_valid_prefixes(guild)
+            for p in prefixes:
+                if message.startswith(p):
+                    message = message.replace(p, "", 1)
+                    await self.ingame_cmd(guild, p, server, gamertag, character_name, message)
+
+    # In game command handler
+    async def ingame_cmd(self, guild: dict, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
+        available_cmd = "In-Game Commands.\n" \
+                   f"{prefix}rename <NewName> - Rename your character\n" \
+                   f"{prefix}voteday - Start a vote for daytime\n" \
+                   f"{prefix}votenight - Start a vote for night\n"
+
+        if cmd.startswith("help"):
+            await self.executor(guild, server, f"broadcast {available_cmd}")
+        elif cmd.startswith("rename"):
+            c, a = self.parse_cmd(cmd)
+            if a == "":
+                cmd = f"serverchat Syntax is 'rename <NewName>'"
+                await self.executor(guild, server, cmd)
+            cmd = f'renameplayer "{char_name}" {a}'
+            await self.executor(guild, server, cmd)
+            cmd = f"serverchat {gamertag} Your name has been changed to {a}"
+            await self.executor(guild, server, cmd)
+        elif cmd.startswith("voteday"):
+            cid = server["chatchannel"]
+            time = datetime.datetime.utcnow()
+            time = time + datetime.timedelta(minutes=1)
+            playerlist = self.playerlist[cid]
+            min_votes = math.ceil(len(playerlist) / 2)
+            if len(playerlist) == 1:
+                min_votes = 1
+            if cid not in self.votes:
+                self.votes[cid] = {
+                    "type": "voteday",
+                    "expires": time,
+                    "votes": [],
+                    "minvotes": min_votes,
+                    "server": server
+                    }
+            if gamertag not in self.votes[cid]["votes"]:
+                self.votes[cid]["votes"].append(gamertag)
+
+            min_votes = self.votes[cid]["minvotes"]
+            current = len(self.votes[cid]["votes"])
+            remaining = min_votes - current
+            if remaining > 0:
+                await self.executor(guild, server, f"serverchat Need {remaining} more votes!")
+            else:
+                await self.executor(guild, server, f"serverchat Vote successful!")
+                await self.executor(guild, server, "settimeofday 07:00")
+                del self.votes[cid]
+        elif cmd.startswith("votenight"):
+            cid = server["chatchannel"]
+            time = datetime.datetime.utcnow()
+            time = time + datetime.timedelta(minutes=1)
+            playerlist = self.playerlist[cid]
+            min_votes = math.ceil(len(playerlist) / 2)
+            if len(playerlist) == 1:
+                min_votes = 1
+            if cid not in self.votes:
+                self.votes[cid] = {
+                    "type": "votenight",
+                    "expires": time,
+                    "votes": [],
+                    "minvotes": min_votes,
+                    "server": server
+                }
+            if gamertag not in self.votes[cid]["votes"]:
+                self.votes[cid]["votes"].append(gamertag)
+
+            min_votes = self.votes[cid]["minvotes"]
+            current = len(self.votes[cid]["votes"])
+            remaining = min_votes - current
+            if remaining > 0:
+                await self.executor(guild, server, f"serverchat Need {remaining} more votes!")
+            else:
+                await self.executor(guild, server, f"serverchat Vote successful!")
+                await self.executor(guild, server, "settimeofday 22:00")
+                del self.votes[cid]
+
+    @tasks.loop(seconds=10)
+    async def vote_sessions(self):
+        expired = []
+        for cid, session in self.votes.items():
+            time = datetime.datetime.utcnow()
+            if time > session["expires"]:
+                if len(session["votes"]) < session["minvotes"]:
+                    guild = session["server"]["guild"]
+                    await self.executor(guild, session["server"], "serverchat Vote session expired")
+                    expired.append(cid)
+        for cid in expired:
+            del self.votes[cid]
+
+    @vote_sessions.before_loop
+    async def before_vote_sessions(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(10)
+        log.info("Vote session manager ready")
 
     @tasks.loop(seconds=60)
     async def status_channel(self):

@@ -34,7 +34,7 @@ async def serverchat(server: dict, message: discord.Message):
             passwd=server['password'])
     except Exception as e:
         if "semaphor" in str(e):
-            log.warning("serverchat: Server is probably offline")
+            pass
         else:
             log.warning(f"serverchat: {e}")
 
