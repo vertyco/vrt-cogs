@@ -1964,7 +1964,7 @@ class ArkTools(commands.Cog):
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
                         f"{prefix}players - see how many people are on the server"
-
+        time = datetime.datetime.utcnow()
         if cmd.startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
         elif cmd.startswith("rename"):
@@ -1978,7 +1978,6 @@ class ArkTools(commands.Cog):
             await self.executor(guild, server, cmd)
         elif cmd.startswith("voteday"):
             cid = server["chatchannel"]
-            time = datetime.datetime.utcnow()
             time = time + datetime.timedelta(minutes=1)
             playerlist = self.playerlist[cid]
             min_votes = math.ceil(len(playerlist) / 2)
@@ -2006,7 +2005,6 @@ class ArkTools(commands.Cog):
                 del self.votes[cid]
         elif cmd.startswith("votenight"):
             cid = server["chatchannel"]
-            time = datetime.datetime.utcnow()
             time = time + datetime.timedelta(minutes=1)
             playerlist = self.playerlist[cid]
             min_votes = math.ceil(len(playerlist) / 2)
@@ -2044,7 +2042,6 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat There are {len(playerlist)} people on this server")
         elif cmd.startswith("imstuck"):
             canuse = False
-            time = datetime.datetime.utcnow()
             c, a = self.parse_cmd(cmd)
             if not a:
                 cmd = f"serverchat Include your Implant ID after the command."
@@ -2060,7 +2057,6 @@ class ArkTools(commands.Cog):
                 td = time - lastused
                 if td.total_seconds() > 1800:
                     canuse = True
-
             if canuse:
                 stasks = []
                 for path in IMSTUCK_BLUEPRINTS:
@@ -2071,12 +2067,14 @@ class ArkTools(commands.Cog):
                 lastused = self.cooldowns[gamertag]["imstuck"]
                 td = time - lastused
                 tleft = td.total_seconds()
+                tleft = 1800 - tleft
+                print(tleft)
                 if tleft > 60:
                     minutes = math.ceil(tleft / 60)
                     cmd = f"serverchat {gamertag} You need to wait {minutes} minutes before using that command again"
                     await self.executor(guild, server, cmd)
                 else:
-                    cmd = f"serverchat {gamertag} You need to wait {tleft} seconds before using that command again"
+                    cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds before using that command again"
                     await self.executor(guild, server, cmd)
 
     @tasks.loop(seconds=10)
