@@ -2068,7 +2068,6 @@ class ArkTools(commands.Cog):
                 td = time - lastused
                 tleft = td.total_seconds()
                 tleft = 1800 - tleft
-                print(tleft)
                 if tleft > 60:
                     minutes = math.ceil(tleft / 60)
                     cmd = f"serverchat {gamertag} You need to wait {minutes} minutes before using that command again"
