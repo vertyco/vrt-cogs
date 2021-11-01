@@ -2016,9 +2016,10 @@ class ArkTools(commands.Cog):
                     "minvotes": min_votes,
                     "server": server
                 }
-            if gamertag not in self.votes[cid]["votes"]:
-                self.votes[cid]["votes"].append(gamertag)
+            if gamertag in self.votes[cid]["votes"]:
+                return await self.executor(guild, server, f"serverchat {gamertag} You already voted")
 
+            self.votes[cid]["votes"].append(gamertag)
             min_votes = self.votes[cid]["minvotes"]
             current = len(self.votes[cid]["votes"])
             remaining = min_votes - current
