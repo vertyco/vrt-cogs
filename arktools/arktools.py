@@ -47,11 +47,11 @@ REDIRECT_URI = "http://localhost/auth/callback"
 
 # Hard coded item blueprint paths for the imstuck command
 IMSTUCK_BLUEPRINTS = [
-    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 5 0 0""",
-    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 1 0 0""",
+    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 8 0 0""",
+    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 3 0 0""",
     f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
     f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
-    f""""Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 2 0 0"""
+    f""""Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 1 0 0"""
 ]
 
 
@@ -2056,7 +2056,7 @@ class ArkTools(commands.Cog):
                 self.cooldowns[gamertag] = {"imstuck": time}
                 canuse = True
             else:
-                lastused = self.cooldowns["imstuck"]
+                lastused = self.cooldowns[gamertag]["imstuck"]
                 td = time - lastused
                 if td.total_seconds() > 1800:
                     canuse = True
