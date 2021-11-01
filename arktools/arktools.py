@@ -1959,8 +1959,8 @@ class ArkTools(commands.Cog):
     # In game command handler
     async def ingame_cmd(self, guild: dict, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
         available_cmd = "In-Game Commands.\n" \
-                        f"{prefix}rename <NewName> - Rename your character\n" \
-                        f"{prefix}imstuck <ImplantID> - Send yourself a care package if youre stuck\n" \
+                        f"{prefix}rename NewName - Rename your character\n" \
+                        f"{prefix}imstuck ImplantID - Send yourself a care package if youre stuck\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
                         f"{prefix}players - see how many people are on the server"
