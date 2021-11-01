@@ -1957,9 +1957,10 @@ class ArkTools(commands.Cog):
     # In game command handler
     async def ingame_cmd(self, guild: dict, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
         available_cmd = "In-Game Commands.\n" \
-                   f"{prefix}rename <NewName> - Rename your character\n" \
-                   f"{prefix}voteday - Start a vote for daytime\n" \
-                   f"{prefix}votenight - Start a vote for night\n"
+                        f"{prefix}rename <NewName> - Rename your character\n" \
+                        f"{prefix}voteday - Start a vote for daytime\n" \
+                        f"{prefix}votenight - Start a vote for night\n" \
+                        f"{prefix}players - see how many people are on the server"
 
         if cmd.startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
@@ -1987,7 +1988,7 @@ class ArkTools(commands.Cog):
                     "votes": [],
                     "minvotes": min_votes,
                     "server": server
-                    }
+                }
             if gamertag not in self.votes[cid]["votes"]:
                 self.votes[cid]["votes"].append(gamertag)
 
@@ -2031,6 +2032,11 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat Vote successful!")
                 await self.executor(guild, server, "settimeofday 22:00")
                 del self.votes[cid]
+
+        elif cmd.startswith("players"):
+            cid = server["chatchannel"]
+            playerlist = self.playerlist[cid]
+            await self.executor(guild, server, f"serverchat {len(playerlist)} on this server")
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
