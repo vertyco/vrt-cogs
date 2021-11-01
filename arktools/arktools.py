@@ -2036,7 +2036,10 @@ class ArkTools(commands.Cog):
         elif cmd.startswith("players"):
             cid = server["chatchannel"]
             playerlist = self.playerlist[cid]
-            await self.executor(guild, server, f"serverchat {len(playerlist)} on this server")
+            if len(playerlist) == 1:
+                await self.executor(guild, server, f"serverchat You're the only person on this server :p")
+            else:
+                await self.executor(guild, server, f"serverchat There are {len(playerlist)} people on this server")
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
