@@ -1970,7 +1970,7 @@ class ArkTools(commands.Cog):
             c, a = self.parse_cmd(cmd)
             if not a:
                 cmd = f"serverchat Syntax is 'rename <NewName>'"
-                await self.executor(guild, server, cmd)
+                return await self.executor(guild, server, cmd)
             cmd = f'renameplayer "{char_name}" {a}'
             await self.executor(guild, server, cmd)
             cmd = f"serverchat {gamertag} Your name has been changed to {a}"
