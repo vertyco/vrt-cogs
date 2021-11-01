@@ -1771,7 +1771,7 @@ class ArkTools(commands.Cog):
         await asyncio.gather(*listplayertasks)
 
     # Initiates the GetChat loop
-    @tasks.loop(seconds=3)
+    @tasks.loop(seconds=4)
     async def getchat(self):
         chat_tasks = []
         for data in self.servers:
@@ -1787,7 +1787,7 @@ class ArkTools(commands.Cog):
         if command == "getchat" or "serverchat" in command:
             timeout = 1
         elif command == "listplayers":
-            timeout = 10
+            timeout = 5
         else:
             timeout = 3
 
@@ -1802,10 +1802,10 @@ class ArkTools(commands.Cog):
                     result = client.run(command)
                     return result
             except socket.timeout:
-                pass
+                return
             except Exception as e:
                 log.warning(f"Executor Error: {e}")
-                pass
+                return None
 
         res = await self.bot.loop.run_in_executor(None, exe)
         if command == "getchat":
