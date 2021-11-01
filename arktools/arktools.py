@@ -197,6 +197,8 @@ class ArkTools(commands.Cog):
     def parse_cmd(command_string: str):
         reg = r'(\S+) (.+)'
         cmd = re.findall(reg, command_string)
+        if len(cmd) == 0:
+            return None, None
         command = cmd[0][0]
         argument = cmd[0][1]
         return command, argument
@@ -1966,7 +1968,7 @@ class ArkTools(commands.Cog):
             await self.executor(guild, server, f"broadcast {available_cmd}")
         elif cmd.startswith("rename"):
             c, a = self.parse_cmd(cmd)
-            if a == "":
+            if not a:
                 cmd = f"serverchat Syntax is 'rename <NewName>'"
                 await self.executor(guild, server, cmd)
             cmd = f'renameplayer "{char_name}" {a}'
