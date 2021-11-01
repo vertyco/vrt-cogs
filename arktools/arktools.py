@@ -1887,14 +1887,6 @@ class ArkTools(commands.Cog):
         for msg in msgs:
             if msg.startswith("SERVER:"):
                 continue
-            if msg == " ":
-                continue
-            if msg == "":
-                continue
-            if ":" not in msg:
-                continue
-            if not msg:
-                continue
             if msg.startswith("AdminCmd:"):  # Admin command
                 await adminlog.send(f"**{server['name'].capitalize()}**\n{box(msg, lang='python')}")
                 continue
@@ -1913,7 +1905,14 @@ class ArkTools(commands.Cog):
                             await tribechannel.send(embed=embed)
                             break
                 continue
-
+            if msg == " ":
+                continue
+            if msg == "":
+                continue
+            if "):" not in msg:
+                continue
+            if not msg:
+                continue
             # If interchat is enabled, relay message to other servers
             clustername = server["cluster"]
             if settings["clusters"][clustername]["servertoserver"]:  # Maps can talk to each other if true
@@ -1926,21 +1925,23 @@ class ArkTools(commands.Cog):
             await chatchannel.send(msg)
             await globalchat.send(f"{chatchannel.mention}: {msg}")
 
-            # Break message into groups for interpretation
-            reg = r'(.+)\s\((.+)\): (.+)'
-            msg = re.findall(reg, msg)
-            msg = msg[0]
-            gamertag = msg[0]
-            character_name = msg[1]
-            message = msg[2]
-
             # Sends Discord invite to in-game chat if the word Discord is mentioned
-            if "discord" in message.lower() or "discordia" in message.lower():
+            if "discord" in msg.lower() or "discordia" in msg.lower():
                 try:
                     link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
                     await self.executor(guild, server, f"serverchat {link}")
                 except Exception as e:
                     log.exception(f"INVITE CREATION FAILED: {e}")
+
+            # Break message into groups for interpretation
+            reg = r'(.+)\s\((.+)\): (.+)'
+            msg = re.findall(reg, msg)
+            if len(msg) == 0:
+                return
+            msg = msg[0]
+            gamertag = msg[0]
+            character_name = msg[1]
+            message = msg[2]
 
             # Check if any character has a blacklisted name and rename the character to their Gamertag if so
             for badname in badnames:
