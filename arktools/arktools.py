@@ -1996,7 +1996,7 @@ class ArkTools(commands.Cog):
             current = len(self.votes[cid]["votes"])
             remaining = min_votes - current
             if remaining > 0:
-                await self.executor(guild, server, f"serverchat Need {remaining} more votes!")
+                await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it day!")
             else:
                 await self.executor(guild, server, f"serverchat Vote successful!")
                 await self.executor(guild, server, "settimeofday 07:00")
@@ -2027,7 +2027,7 @@ class ArkTools(commands.Cog):
             current = len(self.votes[cid]["votes"])
             remaining = min_votes - current
             if remaining > 0:
-                await self.executor(guild, server, f"serverchat Need {remaining} more votes!")
+                await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it night!")
             else:
                 await self.executor(guild, server, f"serverchat Vote successful!")
                 await self.executor(guild, server, "settimeofday 22:00")
