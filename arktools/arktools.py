@@ -1771,6 +1771,8 @@ class ArkTools(commands.Cog):
                         f"`Cooldown: `{cooldown}\n",
             color=discord.Color.random()
         )
+        if p == "":
+            p = "None Set!"
         embed.add_field(
             name="Blueprint Paths",
             value=box(p)
