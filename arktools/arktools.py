@@ -688,7 +688,7 @@ class ArkTools(commands.Cog):
                                 if 200 <= status <= 204:
                                     blocked += f"{host} Successfully blocked XUID: {player_id}\n"
                                 else:
-                                    blocked += f"{host} Failed to blocked XUID: {player_id}\n"
+                                    blocked += f"{host} Failed to block XUID: {player_id} - Status: {status}\n"
                     if blocked != "":
                         await ctx.send(box(blocked, lang="python"))
         if command.lower().startswith("unbanplayer"):
