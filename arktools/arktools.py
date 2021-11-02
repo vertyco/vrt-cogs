@@ -286,13 +286,16 @@ class ArkTools(commands.Cog):
     async def unregister_user(self, ctx: commands.Context, member: discord.Member):
         """Unregister a user from a Gamertag"""
         async with self.config.guild(ctx.guild).players() as players:
+            unreg = []
             for xuid, data in players.items():
                 if "discord" in data:
                     if data["discord"] == member.id:
-                        del players[xuid]["discord"]
-                        return await ctx.send(f"{member.mention} has been unregistered!")
-            else:
-                await ctx.send(f"{member.mention} not found registered to any Gamertag!")
+                        unreg.append(xuid)
+            if len(unreg) == 0:
+                return await ctx.send(f"{member.mention} not found registered to any Gamertag!")
+            for xuid in unreg:
+                del players[xuid]["discord"]
+            await ctx.send(f"{member.mention} has been unregistered!")
 
     @commands.command(name="register")
     @commands.guild_only()
