@@ -7,6 +7,7 @@ import json
 import re
 import aiohttp
 import pytz
+import random
 
 from rcon import Client
 
@@ -2082,7 +2083,8 @@ class ArkTools(commands.Cog):
                         f"{prefix}rename NewName - Rename your character\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
-                        f"{prefix}players - See how many people are on the server\n"
+                        f"{prefix}players - See how many people are on the server\n" \
+                        f"{prefix}votedinowipe - Start a vote to wipe wild dinos\n"
         payday = await self.config.guild(guild).payday.enabled()
         h = await self.config.guild(guild).payday.cooldown()
         duration = h * 60
@@ -2194,6 +2196,7 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat Vote successful!")
                 await self.executor(guild, server, "destroywilddinos")
                 del self.votes[cid]
+        # Payday command
         elif cmd.startswith("payday"):
             if not payday:
                 cmd = f"serverchat That command is disabled on this server at the moment"
@@ -2209,7 +2212,7 @@ class ArkTools(commands.Cog):
             if gamertag not in self.cooldowns:
                 self.cooldowns[gamertag] = {"payday": time}
                 canuse = True
-            elif "imstuck" not in self.cooldowns[gamertag]:
+            elif "payday" not in self.cooldowns[gamertag]:
                 self.cooldowns[gamertag] = {"payday": time}
                 canuse = True
             else:
@@ -2218,12 +2221,18 @@ class ArkTools(commands.Cog):
                 if td.total_seconds() > duration:
                     canuse = True
             if canuse:
-                ptasks = []
                 paths = await self.config.guild(guild).payday.paths()
-                for path in paths:
-                    ptasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
-                await asyncio.gather(*ptasks)
-                await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
+                rand = await self.config.guild(guild).payday.random()
+                if rand:
+                    path = random.choice(paths)
+                    await self.executor(guild, server, f"giveitemtoplayer {a} {path}")
+                    await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
+                else:
+                    ptasks = []
+                    for path in paths:
+                        ptasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
+                    await asyncio.gather(*ptasks)
+                    await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
             else:
                 lastused = self.cooldowns[gamertag]["payday"]
                 td = time - lastused
