@@ -105,7 +105,7 @@ class ArkTools(commands.Cog):
         self.downtime = {}
         self.time = ""
 
-        # In-Game voting/commands
+        # In-Game voting/command sessions
         self.votes = {}
         self.cooldowns = {}
 
@@ -202,6 +202,21 @@ class ArkTools(commands.Cog):
         command = cmd[0][0]
         argument = cmd[0][1]
         return command, argument
+
+    # Pull xuid from gamertag
+    @staticmethod
+    async def get_player(gamertag: str, players: dict):
+        for xuid, stats in players.items():
+            if gamertag.lower() == stats["username"].lower():
+                return xuid, stats
+
+    # Is player registered in-game on a server
+    @staticmethod
+    def get_implant(playerdata: dict, channel: str):
+        if "ingame" in playerdata:
+            if channel in playerdata["ingame"]:
+                return playerdata["ingame"][channel]
+
 
     # Hard coded item send for those tough times
     @commands.command(name="imstuck")
@@ -1961,25 +1976,46 @@ class ArkTools(commands.Cog):
                     await self.ingame_cmd(guild, p, server, gamertag, character_name, message)
 
     # In game command handler
-    async def ingame_cmd(self, guild: dict, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
+    async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
         available_cmd = "In-Game Commands.\n" \
                         f"{prefix}rename NewName - Rename your character\n" \
                         f"{prefix}imstuck ImplantID - Send yourself a care package if youre stuck\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
                         f"{prefix}players - see how many people are on the server"
+
+        players = await self.config.guild(guild).players()
+        xuid, playerdata = await self.get_player(gamertag, players)
+        if not xuid or not playerdata:
+            return await self.executor(guild, server, f"serverchat In-game command failed!")
         time = datetime.datetime.utcnow()
+        # Help command
         if cmd.startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
+        # Register command
+        elif cmd.startswith("register"):
+            c, a = self.parse_cmd(cmd)
+            if not a:
+                cmd = f"serverchat Include your Implant ID with the command"
+                return await self.executor(guild, server, cmd)
+            async with self.config.guild(guild).players() as players:
+                if "ingame" not in playerdata:
+                    players[xuid]["ingame"] = {server["chatchannel"]: a}
+                else:
+                    players[xuid]["ingame"][server["chatchannel"]] = a
+                cmd = f'serverchatto "{xuid}" Implant registered as {a}'
+                return await self.executor(guild, server, cmd)
+        # Rename command
         elif cmd.startswith("rename"):
             c, a = self.parse_cmd(cmd)
             if not a:
-                cmd = f"serverchat Include the new name you want after the command"
+                cmd = f"serverchatto  Include the new name you want with the command "
                 return await self.executor(guild, server, cmd)
             cmd = f'renameplayer "{char_name}" {a}'
             await self.executor(guild, server, cmd)
-            cmd = f"serverchat {gamertag} Your name has been changed to {a}"
+            cmd = f'serverchat {gamertag} Your name has been changed to {a}'
             await self.executor(guild, server, cmd)
+        # Vote day command
         elif cmd.startswith("voteday"):
             cid = server["chatchannel"]
             time = time + datetime.timedelta(minutes=1)
@@ -2007,6 +2043,7 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat Vote successful!")
                 await self.executor(guild, server, "settimeofday 07:00")
                 del self.votes[cid]
+        # Vote night command
         elif cmd.startswith("votenight"):
             cid = server["chatchannel"]
             time = time + datetime.timedelta(minutes=1)
@@ -2037,6 +2074,7 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat Vote successful!")
                 await self.executor(guild, server, "settimeofday 22:00")
                 del self.votes[cid]
+        # Player count command
         elif cmd.startswith("players"):
             cid = server["chatchannel"]
             playerlist = self.playerlist[cid]
@@ -2044,12 +2082,16 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, f"serverchat You're the only person on this server :p")
             else:
                 await self.executor(guild, server, f"serverchat There are {len(playerlist)} people on this server")
+        # Im stuck command
         elif cmd.startswith("imstuck"):
             canuse = False
             c, a = self.parse_cmd(cmd)
             if not a:
-                cmd = f"serverchat Include your Implant ID after the command."
-                return await self.executor(guild, server, cmd)
+                implant = self.get_implant(playerdata, server["chatchannel"])
+                if not implant:
+                    cmd = f"serverchat Include your Implant ID after the command."
+                    return await self.executor(guild, server, cmd)
+                a = implant
             if gamertag not in self.cooldowns:
                 self.cooldowns[gamertag] = {"imstuck": time}
                 canuse = True

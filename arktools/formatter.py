@@ -286,7 +286,7 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                 description=f"Discord: {registration}\n"
                             f"Player ID: {xuid}"
             )
-            if not (d and h and m) == 0:
+            if time != 0:
                 embed.add_field(
                     name="Total Time Played",
                     value=f"`{d}d {h}h {m}m`"
@@ -311,10 +311,22 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             for mapname, playtime in data["playtime"].items():
                 if mapname != "total":
                     d, h, m = time_format(playtime)
-                    embed.add_field(
-                        name=mapname,
-                        value=f"`{d}d {h}h {m}m`"
-                    )
+                    if playtime > 0:
+                        embed.add_field(
+                            name=mapname,
+                            value=f"`{d}d {h}h {m}m`"
+                        )
+            if "ingame" in data:
+                implant_ids = ""
+                for mapid, implant in data["ingame"].items():
+                    channel = guild.get_channel(mapid)
+                    if channel:
+                        mapid = channel.mention
+                    implant_ids += f"{mapid}: {implant}\n"
+                embed.add_field(
+                    name="Registered Implant IDs",
+                    value=implant_ids
+                )
             if position != "":
                 percent = round((time / global_time) * 100, 2)
                 embed.set_footer(text=f"Rank: {position} with {percent}% of the total playtime")
