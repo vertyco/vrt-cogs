@@ -213,12 +213,8 @@ class ArkTools(commands.Cog):
     # Is player registered in-game on a server
     @staticmethod
     def get_implant(playerdata: dict, channel: str):
-        print(playerdata)
         if "ingame" in playerdata:
-            print("ingame palyerdata")
-            print(channel)
             if channel in playerdata["ingame"]:
-                print("channel exists")
                 return playerdata["ingame"][channel]
 
     # Hard coded item send for those tough times
@@ -1981,8 +1977,9 @@ class ArkTools(commands.Cog):
     # In game command handler
     async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
         available_cmd = "In-Game Commands.\n" \
+                        f"{prefix}register ImplantID - Register your implant ID to use commands without it\n" \
+                        f"{prefix}imstuck - Send yourself a care package if youre stuck\n" \
                         f"{prefix}rename NewName - Rename your character\n" \
-                        f"{prefix}imstuck ImplantID - Send yourself a care package if youre stuck\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
                         f"{prefix}players - see how many people are on the server"
@@ -2085,9 +2082,8 @@ class ArkTools(commands.Cog):
             c, a = self.parse_cmd(cmd)
             if not a:
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
-                print(implant)
                 if not implant:
-                    cmd = f"serverchat Include your Implant ID after the command."
+                    cmd = f"serverchat Include your Implant ID after the command or use the .register command"
                     return await self.executor(guild, server, cmd)
                 a = implant
             if gamertag not in self.cooldowns:

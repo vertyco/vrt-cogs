@@ -5,9 +5,6 @@ import datetime
 import pytz
 import io
 
-from redbot.core import commands
-
-from redbot.core.utils.chat_formatting import box, pagify
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
@@ -319,7 +316,7 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             if "ingame" in data:
                 implant_ids = ""
                 for mapid, implant in data["ingame"].items():
-                    channel = guild.get_channel(mapid)
+                    channel = guild.get_channel(int(mapid))
                     if channel:
                         mapid = channel.mention
                     implant_ids += f"{mapid}: {implant}\n"
