@@ -112,6 +112,7 @@ async def unblock_player(xuid: int, token: str):
         'Authorization': token
     }
     payload = {"xuid": xuid}
+    payload = json.dumps(payload)
     async with aiohttp.ClientSession() as session:
         async with session.delete(url=url, headers=headers, data=payload) as res:
             return res.status
