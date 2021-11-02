@@ -91,12 +91,12 @@ async def remove_friend(xuid: str, token: str):
 
 # API call for blocking a gamertaga
 async def block_player(xuid: int, token: str):
-    url = f"https://privacy.xboxlive.com/users/me/people/never"
+    url = f"https://privacy.xboxlive.com/users/me/people/never/xuid({xuid})"
     headers = {
         'x-xbl-contract-version': '2',
         'Authorization': token
     }
-    payload = {"xuid": xuid}
+    payload = {}
     async with aiohttp.ClientSession() as session:
         async with session.put(url=url, headers=headers, data=payload) as res:
             return res.status
@@ -119,7 +119,7 @@ async def unblock_player(xuid: int, token: str):
 async def get_followers(token: str):
     url = "https://peoplehub.xboxlive.com/users/me/people/followers/decoration/details"
     headers = {
-        'x-xbl-contract-version': ' 2',
+        'x-xbl-contract-version': '2',
         'Authorization': token,
         "Accept-Language": "en-US",
     }
