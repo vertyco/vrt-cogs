@@ -2195,6 +2195,9 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, "destroywilddinos")
                 del self.votes[cid]
         elif cmd.startswith("payday"):
+            if not payday:
+                cmd = f"serverchat That command is disabled on this server at the moment"
+                return await self.executor(guild, server, cmd)
             canuse = False
             c, a = self.parse_cmd(cmd)
             if not a:
@@ -2248,12 +2251,13 @@ class ArkTools(commands.Cog):
             min_votes = 1
         if channel_id not in self.votes:
             self.votes[channel_id] = {}
-        self.votes[channel_id][vote_type] = {
-            "expires": time,
-            "votes": [],
-            "minvotes": min_votes,
-            "server": server
-        }
+        if vote_type not in self.votes[channel_id]:
+            self.votes[channel_id][vote_type] = {
+                "expires": time,
+                "votes": [],
+                "minvotes": min_votes,
+                "server": server
+            }
         if gamertag not in self.votes[channel_id][vote_type]["votes"]:
             self.votes[channel_id][vote_type]["votes"].append(gamertag)
         min_votes = self.votes[channel_id][vote_type]["minvotes"]
