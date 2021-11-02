@@ -90,6 +90,7 @@ class ArkTools(commands.Cog):
             "badnames": [],
             "tribes": {},
             "players": {},
+            "cooldowns": {},
             "payday": {"enabled": False, "random": False, "cooldown": 12, "paths": []},
             "serverstats": {"dates": [], "counts": [], "expiration": 30},
             "timezone": "US/Eastern"
@@ -1770,12 +1771,12 @@ class ArkTools(commands.Cog):
             title="In-Game Payday Settings",
             description=f"`Status:   `{status}\n"
                         f"`Random:   `{rand}\n"
-                        f"`Cooldown: `{cooldown}\n\n"
-                        f"**Blueprint Paths**\n"
-                        f"{box(p)}",
+                        f"`Cooldown: `{cooldown}\n",
             color=discord.Color.random()
         )
         await ctx.send(embed=embed)
+        for page in pagify(p):
+            await ctx.send(f"**Blueprint Paths**\n{page}")
 
     # Cache server data
     async def initialize(self):
@@ -2186,35 +2187,39 @@ class ArkTools(commands.Cog):
                     cmd = f"serverchat Include your Implant ID after the command or use the .register command"
                     return await self.executor(guild, server, cmd)
                 a = implant
-            if gamertag not in self.cooldowns:
-                self.cooldowns[gamertag] = {"imstuck": time}
-                canuse = True
-            elif "imstuck" not in self.cooldowns[gamertag]:
-                self.cooldowns[gamertag] = {"imstuck": time}
-                canuse = True
-            else:
-                lastused = self.cooldowns[gamertag]["imstuck"]
-                td = time - lastused
-                if td.total_seconds() > 1800:
+            async with self.config.guild(guild).cooldowns() as cooldowns:
+                if gamertag not in cooldowns:
+                    cooldowns[gamertag] = {"imstuck": time}
                     canuse = True
-            if canuse:
-                stasks = []
-                for path in IMSTUCK_BLUEPRINTS:
-                    stasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
-                await asyncio.gather(*stasks)
-                await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
-            else:
-                lastused = self.cooldowns[gamertag]["imstuck"]
-                td = time - lastused
-                tleft = td.total_seconds()
-                tleft = 1800 - tleft
-                if tleft > 60:
-                    minutes = math.ceil(tleft / 60)
-                    cmd = f"serverchat {gamertag} You need to wait {minutes} minutes before using that command again"
-                    await self.executor(guild, server, cmd)
+                elif "imstuck" not in cooldowns[gamertag]:
+                    cooldowns[gamertag]["imstuck"] = time
+                    canuse = True
                 else:
-                    cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds before using that command again"
-                    await self.executor(guild, server, cmd)
+                    lastused = cooldowns[gamertag]["imstuck"]
+                    td = time - lastused
+                    if td.total_seconds() > 1800:
+                        canuse = True
+                if canuse:
+                    stasks = []
+                    for path in IMSTUCK_BLUEPRINTS:
+                        stasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
+                    await asyncio.gather(*stasks)
+                    await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
+                    cooldowns[gamertag]["imstuck"] = time
+                else:
+                    lastused = self.cooldowns[gamertag]["imstuck"]
+                    td = time - lastused
+                    tleft = td.total_seconds()
+                    tleft = 1800 - tleft
+                    if tleft > 60:
+                        minutes = math.ceil(tleft / 60)
+                        cmd = f"serverchat {gamertag} You need to wait {minutes} minutes " \
+                              f"before using that command again"
+                        await self.executor(guild, server, cmd)
+                    else:
+                        cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
+                              f"before using that command again"
+                        await self.executor(guild, server, cmd)
         # Dino wipe command
         elif cmd.startswith("votedinowipe"):
             remaining = self.make_vote("dinowipe", cid, gamertag, server)
@@ -2237,48 +2242,54 @@ class ArkTools(commands.Cog):
                     cmd = f"serverchat Include your Implant ID after the command or use the .register command"
                     return await self.executor(guild, server, cmd)
                 a = implant
-            if gamertag not in self.cooldowns:
-                self.cooldowns[gamertag] = {"payday": time}
-                canuse = True
-            elif "payday" not in self.cooldowns[gamertag]:
-                self.cooldowns[gamertag] = {"payday": time}
-                canuse = True
-            else:
-                lastused = self.cooldowns[gamertag]["payday"]
-                td = time - lastused
-                if td.total_seconds() > duration:
+            async with self.config.guild(guild).cooldowns() as cooldowns:
+                if gamertag not in cooldowns:
+                    cooldowns[gamertag] = {"payday": time}
                     canuse = True
-            if canuse:
-                paths = await self.config.guild(guild).payday.paths()
-                rand = await self.config.guild(guild).payday.random()
-                if rand:
-                    path = random.choice(paths)
-                    await self.executor(guild, server, f"giveitemtoplayer {a} {path}")
-                    await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
+                elif "payday" not in cooldowns[gamertag]:
+                    cooldowns[gamertag]["payday"] = time
+                    canuse = True
                 else:
-                    ptasks = []
-                    for path in paths:
-                        ptasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
-                    await asyncio.gather(*ptasks)
-                    await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
-            else:
-                lastused = self.cooldowns[gamertag]["payday"]
-                td = time - lastused
-                tleft = td.total_seconds()
-                tleft = duration - tleft
-                d, h, m = time_format(tleft)
-                if d > 0:
-                    cmd = f"serverchat {gamertag} You need to wait {d} days before using that command again"
-                    await self.executor(guild, server, cmd)
-                elif d == 0 and h > 0:
-                    cmd = f"serverchat {gamertag} You need to wait {h}h {m}m before using that command again"
-                    await self.executor(guild, server, cmd)
-                elif d == 0 and h == 0 and m > 0:
-                    cmd = f"serverchat {gamertag} You need to wait {m} minutes before using that command again"
-                    await self.executor(guild, server, cmd)
+                    lastused = cooldowns[gamertag]["payday"]
+                    td = time - lastused
+                    if td.total_seconds() > duration:
+                        canuse = True
+                if canuse:
+                    paths = await self.config.guild(guild).payday.paths()
+                    rand = await self.config.guild(guild).payday.random()
+                    if rand:
+                        path = random.choice(paths)
+                        await self.executor(guild, server, f"giveitemtoplayer {a} {path}")
+                        await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
+                    else:
+                        ptasks = []
+                        for path in paths:
+                            ptasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
+                        await asyncio.gather(*ptasks)
+                        await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
+                    cooldowns[gamertag]["payday"] = time
                 else:
-                    cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds before using that command again"
-                    await self.executor(guild, server, cmd)
+                    lastused = self.cooldowns[gamertag]["payday"]
+                    td = time - lastused
+                    tleft = td.total_seconds()
+                    tleft = duration - tleft
+                    d, h, m = time_format(tleft)
+                    if d > 0:
+                        cmd = f"serverchat {gamertag} You need to wait {d} days " \
+                              f"before using that command again"
+                        await self.executor(guild, server, cmd)
+                    elif d == 0 and h > 0:
+                        cmd = f"serverchat {gamertag} You need to wait {h}h {m}m " \
+                              f"before using that command again"
+                        await self.executor(guild, server, cmd)
+                    elif d == 0 and h == 0 and m > 0:
+                        cmd = f"serverchat {gamertag} You need to wait {m} minutes " \
+                              f"before using that command again"
+                        await self.executor(guild, server, cmd)
+                    else:
+                        cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
+                              f"before using that command again"
+                        await self.executor(guild, server, cmd)
 
     def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
         time = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
