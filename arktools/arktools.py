@@ -213,10 +213,12 @@ class ArkTools(commands.Cog):
     # Is player registered in-game on a server
     @staticmethod
     def get_implant(playerdata: dict, channel: str):
+        print(playerdata)
         if "ingame" in playerdata:
+            print("ingame palyerdata")
             if channel in playerdata["ingame"]:
+                print("channel exists")
                 return playerdata["ingame"][channel]
-
 
     # Hard coded item send for those tough times
     @commands.command(name="imstuck")
@@ -1984,6 +1986,8 @@ class ArkTools(commands.Cog):
                         f"{prefix}votenight - Start a vote for night\n" \
                         f"{prefix}players - see how many people are on the server"
 
+        cid = server["chatchannel"]
+        playerlist = self.playerlist[cid]
         players = await self.config.guild(guild).players()
         xuid, playerdata = await self.get_player(gamertag, players)
         if not xuid or not playerdata:
@@ -2003,7 +2007,7 @@ class ArkTools(commands.Cog):
                     players[xuid]["ingame"] = {server["chatchannel"]: a}
                 else:
                     players[xuid]["ingame"][server["chatchannel"]] = a
-                cmd = f'serverchatto "{xuid}" Implant registered as {a}'
+                cmd = f'serverchat {gamertag} Your implant was registered as {a}'
                 return await self.executor(guild, server, cmd)
         # Rename command
         elif cmd.startswith("rename"):
@@ -2017,9 +2021,7 @@ class ArkTools(commands.Cog):
             await self.executor(guild, server, cmd)
         # Vote day command
         elif cmd.startswith("voteday"):
-            cid = server["chatchannel"]
             time = time + datetime.timedelta(minutes=1)
-            playerlist = self.playerlist[cid]
             min_votes = math.ceil(len(playerlist) / 2)
             if len(playerlist) == 1:
                 min_votes = 1
@@ -2033,7 +2035,6 @@ class ArkTools(commands.Cog):
                 }
             if gamertag not in self.votes[cid]["votes"]:
                 self.votes[cid]["votes"].append(gamertag)
-
             min_votes = self.votes[cid]["minvotes"]
             current = len(self.votes[cid]["votes"])
             remaining = min_votes - current
@@ -2045,9 +2046,7 @@ class ArkTools(commands.Cog):
                 del self.votes[cid]
         # Vote night command
         elif cmd.startswith("votenight"):
-            cid = server["chatchannel"]
             time = time + datetime.timedelta(minutes=1)
-            playerlist = self.playerlist[cid]
             min_votes = math.ceil(len(playerlist) / 2)
             if len(playerlist) == 1:
                 min_votes = 1
@@ -2063,7 +2062,6 @@ class ArkTools(commands.Cog):
                 }
             if gamertag in self.votes[cid]["votes"]:
                 return await self.executor(guild, server, f"serverchat {gamertag} You already voted")
-
             self.votes[cid]["votes"].append(gamertag)
             min_votes = self.votes[cid]["minvotes"]
             current = len(self.votes[cid]["votes"])
@@ -2076,8 +2074,6 @@ class ArkTools(commands.Cog):
                 del self.votes[cid]
         # Player count command
         elif cmd.startswith("players"):
-            cid = server["chatchannel"]
-            playerlist = self.playerlist[cid]
             if len(playerlist) == 1:
                 await self.executor(guild, server, f"serverchat You're the only person on this server :p")
             else:
@@ -2088,6 +2084,7 @@ class ArkTools(commands.Cog):
             c, a = self.parse_cmd(cmd)
             if not a:
                 implant = self.get_implant(playerdata, server["chatchannel"])
+                print(implant)
                 if not implant:
                     cmd = f"serverchat Include your Implant ID after the command."
                     return await self.executor(guild, server, cmd)

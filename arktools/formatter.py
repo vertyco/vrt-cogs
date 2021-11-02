@@ -325,7 +325,8 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                     implant_ids += f"{mapid}: {implant}\n"
                 embed.add_field(
                     name="Registered Implant IDs",
-                    value=implant_ids
+                    value=implant_ids,
+                    inline=False
                 )
             if position != "":
                 percent = round((time / global_time) * 100, 2)
