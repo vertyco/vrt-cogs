@@ -1756,26 +1756,24 @@ class ArkTools(commands.Cog):
         status = "Disabled"
         if payday["enabled"]:
             status = "Enabled"
-        rand = "Disabled"
+        rand = "Off"
         if payday["random"]:
-            rand = "Enabled"
+            rand = "On"
         cooldown = payday["cooldown"]
         paths = payday["paths"]
         p = ""
         for path in paths:
             p += f"{path}\n"
+        if p == "":
+            p = "None Set!"
         embed = discord.Embed(
             title="In-Game Payday Settings",
             description=f"`Status:   `{status}\n"
                         f"`Random:   `{rand}\n"
-                        f"`Cooldown: `{cooldown}\n",
+                        f"`Cooldown: `{cooldown}\n\n"
+                        f"**Blueprint Paths**\n"
+                        f"{box(p)}",
             color=discord.Color.random()
-        )
-        if p == "":
-            p = "None Set!"
-        embed.add_field(
-            name="Blueprint Paths",
-            value=box(p)
         )
         await ctx.send(embed=embed)
 
