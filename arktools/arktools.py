@@ -216,6 +216,7 @@ class ArkTools(commands.Cog):
         print(playerdata)
         if "ingame" in playerdata:
             print("ingame palyerdata")
+            print(channel)
             if channel in playerdata["ingame"]:
                 print("channel exists")
                 return playerdata["ingame"][channel]
@@ -2083,7 +2084,7 @@ class ArkTools(commands.Cog):
             canuse = False
             c, a = self.parse_cmd(cmd)
             if not a:
-                implant = self.get_implant(playerdata, server["chatchannel"])
+                implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 print(implant)
                 if not implant:
                     cmd = f"serverchat Include your Implant ID after the command."
