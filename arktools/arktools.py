@@ -1749,6 +1749,34 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).payday.paths.set(paths)
         await ctx.send("Paths for the in-game payday command have been set!")
 
+    @in_game.command(name="view")
+    async def view_ingame_payday(self, ctx: commands.Context):
+        """View configuration settings for in-game payday options"""
+        payday = await self.config.guild(ctx.guild).payday()
+        status = "Disabled"
+        if payday["enabled"]:
+            status = "Enabled"
+        rand = "Disabled"
+        if payday["random"]:
+            rand = "Enabled"
+        cooldown = payday["cooldown"]
+        paths = payday["paths"]
+        p = ""
+        for path in paths:
+            p += f"{path}\n"
+        embed = discord.Embed(
+            title="In-Game Payday Settings",
+            description=f"`Status:   `{status}\n"
+                        f"`Random:   `{rand}\n"
+                        f"`Cooldown: `{cooldown}\n",
+            color=discord.Color.random()
+        )
+        embed.add_field(
+            name="Blueprint Paths",
+            value=box(p)
+        )
+        await ctx.send(embed=embed)
+
     # Cache server data
     async def initialize(self):
         self.servercount = 0
