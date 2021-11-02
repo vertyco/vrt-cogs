@@ -67,7 +67,7 @@ async def manual_rcon(channel: discord.TextChannel, server: dict, command: str):
 async def add_friend(xuid: str, token: str):
     url = f"https://social.xboxlive.com/users/me/people/xuid({xuid})"
     headers = {
-        'x-xbl-contract-version': ' 2',
+        'x-xbl-contract-version': '2',
         'Authorization': token
     }
     payload = {}
@@ -80,7 +80,7 @@ async def add_friend(xuid: str, token: str):
 async def remove_friend(xuid: str, token: str):
     url = f"https://social.xboxlive.com/users/me/people/xuid({xuid})"
     headers = {
-        'x-xbl-contract-version': ' 2',
+        'x-xbl-contract-version': '2',
         'Authorization': token
     }
     payload = {}
@@ -93,7 +93,7 @@ async def remove_friend(xuid: str, token: str):
 async def block_player(xuid: int, token: str):
     url = f"https://privacy.xboxlive.com/users/me/people/never"
     headers = {
-        'x-xbl-contract-version': ' 2',
+        'x-xbl-contract-version': '2',
         'Authorization': token
     }
     payload = {"xuid": xuid}
@@ -106,7 +106,7 @@ async def block_player(xuid: int, token: str):
 async def unblock_player(xuid: int, token: str):
     url = f"https://privacy.xboxlive.com/users/me/people/never"
     headers = {
-        'x-xbl-contract-version': ' 2',
+        'x-xbl-contract-version': '2',
         'Authorization': token
     }
     payload = {"xuid": xuid}
