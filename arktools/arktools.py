@@ -2241,7 +2241,7 @@ class ArkTools(commands.Cog):
                     await self.executor(guild, server, cmd)
 
     def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
-        time = datetime.datetime.utcnow() + datetime.timedelta(minutes=1)
+        time = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
         playerlist = self.playerlist[channel_id]
         min_votes = math.ceil(len(playerlist) / 2)
         if len(playerlist) == 1:
@@ -2259,18 +2259,19 @@ class ArkTools(commands.Cog):
         min_votes = self.votes[channel_id][vote_type]["minvotes"]
         current = len(self.votes[channel_id][vote_type]["votes"])
         remaining = min_votes - current
-        return remaining
+        return int(remaining)
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
         expired = []
-        for cid, session in self.votes.items():
-            time = datetime.datetime.utcnow()
-            if time > session["expires"]:
-                if len(session["votes"]) < session["minvotes"]:
-                    guild = session["server"]["guild"]
-                    await self.executor(guild, session["server"], "serverchat Vote session expired")
-                    expired.append(cid)
+        for cid in self.votes:
+            for votetype, session in self.votes[cid].items():
+                time = datetime.datetime.utcnow()
+                if time > session["expires"]:
+                    if len(session["votes"]) < session["minvotes"]:
+                        guild = session["server"]["guild"]
+                        await self.executor(guild, session["server"], f"serverchat {votetype} session expired")
+                        expired.append(cid)
         for cid in expired:
             del self.votes[cid]
 
