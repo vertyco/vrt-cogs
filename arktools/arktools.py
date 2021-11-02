@@ -23,7 +23,9 @@ from .calls import (serverchat,
                     add_friend,
                     remove_friend,
                     manual_rcon,
-                    get_followers)
+                    get_followers,
+                    block_player,
+                    unblock_player)
 from .formatter import (tribelog_format,
                         profile_format,
                         expired_players,
@@ -605,6 +607,10 @@ class ArkTools(commands.Cog):
                     for cmd in modcmds:
                         if str(cmd.lower()) in command.lower():
                             allowed = True
+
+        if ctx.author.id == ctx.guild.owner.id:
+            allowed = True
+
         if not allowed:
             if ctx.guild.owner != ctx.author:
                 return await ctx.send("You do not have the required permissions to run that command.")
@@ -661,9 +667,9 @@ class ArkTools(commands.Cog):
                 rtasks.append(manual_rcon(ctx.channel, server, command))
             await asyncio.gather(*rtasks)
 
-        if "banplayer" in command.lower():
+        if command.lower().startswith("banplayer"):
             player_id = str(re.search(r'(\d+)', command).group(1))
-            unfriend = ""
+            blocked = ""
             async with ctx.typing():
                 async with aiohttp.ClientSession() as session:
                     for server in serverlist:
@@ -678,13 +684,37 @@ class ArkTools(commands.Cog):
                                 tokens
                             )
                             if token:
-                                status = await remove_friend(player_id, token)
+                                status = await block_player(player_id, token)
                                 if 200 <= status <= 204:
-                                    unfriend += f"{host} Successfully unfriended XUID: {player_id}\n"
+                                    blocked += f"{host} Successfully blocked XUID: {player_id}\n"
                                 else:
-                                    unfriend += f"{host} Failed to unfriend XUID: {player_id}\n"
-                    if unfriend != "":
-                        await ctx.send(box(unfriend, lang="python"))
+                                    blocked += f"{host} Failed to blocked XUID: {player_id}\n"
+                    if blocked != "":
+                        await ctx.send(box(blocked, lang="python"))
+        if command.lower().startswith("unbanplayer"):
+            player_id = str(re.search(r'(\d+)', command).group(1))
+            unblocked = ""
+            async with ctx.typing():
+                async with aiohttp.ClientSession() as session:
+                    for server in serverlist:
+                        if "tokens" in server:
+                            tokens = server["tokens"]
+                            host = server["gamertag"]
+                            xbl_client, token = await self.loop_auth_manager(
+                                ctx.guild,
+                                session,
+                                server["cluster"],
+                                server["name"],
+                                tokens
+                            )
+                            if token:
+                                status = await unblock_player(player_id, token)
+                                if 200 <= status <= 204:
+                                    unblocked += f"{host} Successfully unblocked XUID: {player_id}\n"
+                                else:
+                                    unblocked += f"{host} Failed to unblocked XUID: {player_id}\n"
+                    if unblocked != "":
+                        await ctx.send(box(unblocked, lang="python"))
 
     @commands.command(name="init", hidden=True)
     @commands.is_owner()
