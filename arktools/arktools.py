@@ -684,7 +684,7 @@ class ArkTools(commands.Cog):
                                 tokens
                             )
                             if token:
-                                status = await block_player(player_id, token)
+                                status = await block_player(int(player_id), token)
                                 if 200 <= status <= 204:
                                     blocked += f"{host} Successfully blocked XUID: {player_id}\n"
                                 else:
@@ -708,11 +708,11 @@ class ArkTools(commands.Cog):
                                 tokens
                             )
                             if token:
-                                status = await unblock_player(player_id, token)
+                                status = await unblock_player(int(player_id), token)
                                 if 200 <= status <= 204:
                                     unblocked += f"{host} Successfully unblocked XUID: {player_id}\n"
                                 else:
-                                    unblocked += f"{host} Failed to unblocked XUID: {player_id}\n"
+                                    unblocked += f"{host} Failed to unblock XUID: {player_id} - Status: {status}\n"
                     if unblocked != "":
                         await ctx.send(box(unblocked, lang="python"))
 
