@@ -2189,13 +2189,14 @@ class ArkTools(commands.Cog):
                 a = implant
             async with self.config.guild(guild).cooldowns() as cooldowns:
                 if gamertag not in cooldowns:
-                    cooldowns[gamertag] = {"imstuck": time}
+                    cooldowns[gamertag] = {"imstuck": time.isoformat()}
                     canuse = True
                 elif "imstuck" not in cooldowns[gamertag]:
-                    cooldowns[gamertag]["imstuck"] = time
+                    cooldowns[gamertag]["imstuck"] = time.isoformat()
                     canuse = True
                 else:
                     lastused = cooldowns[gamertag]["imstuck"]
+                    lastused = datetime.datetime.fromisoformat(lastused)
                     td = time - lastused
                     if td.total_seconds() > 1800:
                         canuse = True
@@ -2205,7 +2206,7 @@ class ArkTools(commands.Cog):
                         stasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
                     await asyncio.gather(*stasks)
                     await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
-                    cooldowns[gamertag]["imstuck"] = time
+                    cooldowns[gamertag]["imstuck"] = time.isoformat()
                 else:
                     lastused = self.cooldowns[gamertag]["imstuck"]
                     td = time - lastused
@@ -2244,13 +2245,14 @@ class ArkTools(commands.Cog):
                 a = implant
             async with self.config.guild(guild).cooldowns() as cooldowns:
                 if gamertag not in cooldowns:
-                    cooldowns[gamertag] = {"payday": time}
+                    cooldowns[gamertag] = {"payday": time.isoformat()}
                     canuse = True
                 elif "payday" not in cooldowns[gamertag]:
-                    cooldowns[gamertag]["payday"] = time
+                    cooldowns[gamertag]["payday"] = time.isoformat()
                     canuse = True
                 else:
                     lastused = cooldowns[gamertag]["payday"]
+                    lastused = datetime.datetime.fromisoformat(lastused)
                     td = time - lastused
                     if td.total_seconds() > duration:
                         canuse = True
@@ -2267,7 +2269,7 @@ class ArkTools(commands.Cog):
                             ptasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
                         await asyncio.gather(*ptasks)
                         await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
-                    cooldowns[gamertag]["payday"] = time
+                    cooldowns[gamertag]["payday"] = time.isoformat()
                 else:
                     lastused = self.cooldowns[gamertag]["payday"]
                     td = time - lastused
