@@ -240,7 +240,7 @@ def cstats_format(stats: dict, guild: discord.guild):
     return embeds
 
 
-def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str, avatar: str):
+def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
     kit = settings["kit"]
     stats = settings["players"]
     leaderboard = {}
@@ -334,7 +334,6 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
             if position != "":
                 percent = round((time / global_time) * 100, 2)
                 embed.set_footer(text=f"Rank: {position} with {percent}% of the total playtime")
-            embed.set_thumbnail(url=avatar)
             return embed
 
 

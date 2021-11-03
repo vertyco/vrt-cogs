@@ -782,7 +782,7 @@ class ArkTools(commands.Cog):
                                                   f"Register with the `{ctx.prefix}register` command.")
                 embed.set_thumbnail(url=FAILED)
                 return await ctx.send(embed=embed)
-        embed = player_stats(settings, tz, ctx.guild, gamertag, ctx.author.avatar_url)
+        embed = player_stats(settings, tz, ctx.guild, gamertag)
         if not embed:
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
         await ctx.send(embed=embed)
