@@ -257,9 +257,10 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
     global_time = 0
     # Global cumulative time
     for xuid, data in stats.items():
-        time = data["playtime"]["total"]
-        leaderboard[xuid] = time
-        global_time = global_time + time
+        if "playtime" in data:
+            time = data["playtime"]["total"]
+            leaderboard[xuid] = time
+            global_time = global_time + time
 
     position = ""
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
