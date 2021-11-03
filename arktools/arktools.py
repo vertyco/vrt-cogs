@@ -37,7 +37,8 @@ from .formatter import (tribelog_format,
                         detect_friends,
                         fix_timestamp,
                         get_graph,
-                        time_format)
+                        time_format,
+                        IMSTUCK_BLUEPRINTS)
 from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.arktools")
@@ -51,15 +52,6 @@ FAILED = "https://i.imgur.com/TcnAyVO.png"
 SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 REDIRECT_URI = "http://localhost/auth/callback"
-
-# Hard coded item blueprint paths for the imstuck command
-IMSTUCK_BLUEPRINTS = [
-    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 8 0 0""",
-    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 3 0 0""",
-    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
-    f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
-    f""""Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 1 0 0"""
-]
 
 
 class ArkTools(commands.Cog):
