@@ -2195,6 +2195,9 @@ class ArkTools(commands.Cog):
         duration = h * 3600
         if payday:
             available_cmd += f"{prefix}payday - Earn in-game rewards every {h} hours!\n"
+        kit = await self.config.guild(guild).kit.enabled()
+        if kit:
+            available_cmd += f"{prefix}kit - New players can claim a one-time starter kit!\n"
 
         time = datetime.datetime.utcnow()
         cid = server["chatchannel"]
@@ -2617,6 +2620,17 @@ class ArkTools(commands.Cog):
                     # New player found
                     newplayermessage = ""
                     if xuid not in stats:
+                        if autowelcome:
+                            prefixes = await self.bot.get_valid_prefixes(guild)
+                            for p in prefixes:
+                                if str(p) != "":
+                                    break
+                            cmd = f"broadcast A new player has been detected on the server!\n" \
+                                  f"Everyone say hi to {gamertag}!!!\n" \
+                                  f"Be sure to type {p}help in global chat to see a list of help commands you can use\n" \
+                                  f"If the kit command is enabled, you can use it to get your starter pack\n" \
+                                  f"Enjoy your stay on {guild.name}!"
+                            await self.executor(guild, server, cmd)
                         newplayermessage += f"**{gamertag}** added to the database.\n"
                         log.info(f"New Player - {gamertag}")
                         stats[xuid] = {
