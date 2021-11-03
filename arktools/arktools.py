@@ -2116,7 +2116,7 @@ class ArkTools(commands.Cog):
                         f"{prefix}votedinowipe - Start a vote to wipe wild dinos\n"
         payday = await self.config.guild(guild).payday.enabled()
         h = await self.config.guild(guild).payday.cooldown()
-        duration = h * 60
+        duration = h * 3600
         if payday:
             available_cmd += f"{prefix}payday - Earn in-game rewards every {h} hours!\n"
 
@@ -2276,7 +2276,6 @@ class ArkTools(commands.Cog):
                     lastused = datetime.datetime.fromisoformat(lastused)
                     td = time - lastused
                     td = td.total_seconds()
-                    duration = duration * 60
                     tleft = duration - td
                     d, h, m = time_format(int(tleft))
                     if d > 0:
