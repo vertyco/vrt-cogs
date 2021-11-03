@@ -1809,7 +1809,7 @@ class ArkTools(commands.Cog):
         Useful for periodic server wipes
         """
         settings = await self.config.guild(ctx.guild).all()
-        kits = settings["kit"]["claiemd"]
+        kits = settings["kit"]["claimed"]
         wipelist = []
         clusters = settings["clusters"]
         if clustername not in clusters:
