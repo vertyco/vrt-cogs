@@ -2278,10 +2278,7 @@ class ArkTools(commands.Cog):
                     td = td.total_seconds()
                     duration = duration * 60
                     tleft = duration - td
-                    print(td)
-                    print(duration)
-                    print(tleft)
-                    d, h, m = time_format(tleft)
+                    d, h, m = time_format(int(tleft))
                     if d > 0:
                         cmd = f"serverchat {gamertag} You need to wait {d} days " \
                               f"before using that command again"
