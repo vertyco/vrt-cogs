@@ -45,8 +45,6 @@ if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.starts
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     log.info(f"Setting EventLoopSelector For {sys.platform}")
 
-
-
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 LIVE = "https://i.imgur.com/LPzCcgU.gif"
 FAILED = "https://i.imgur.com/TcnAyVO.png"
@@ -2079,7 +2077,7 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         await self.initialize()
         await asyncio.sleep(5)
-        log.info("Chat loop ready.")
+        log.info("GetChat loop ready")
 
     @listplayers.before_loop
     async def before_listplayers(self):

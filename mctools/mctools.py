@@ -1,7 +1,7 @@
-from redbot.core import commands, Config, checks
-from redbot.core.utils.chat_formatting import box
-import aiohttp
 import discord
+
+from mcstats import mcstats
+from redbot.core import commands, Config
 
 
 class MCTools(commands.Cog):
@@ -10,7 +10,7 @@ class MCTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.2"
+    __version__ = "0.1.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -18,62 +18,73 @@ class MCTools(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.session = aiohttp.ClientSession()
         self.config = Config.get_conf(self, identifier=61564189)
         default_guild = {
-            "address": []
+            "servers": {}
         }
         self.config.register_guild(**default_guild)
 
-
-    def cog_unload(self):
-        self.bot.loop.create_task(self.session.close())
-        # close session on unload
-
-    async def getserver(self, address):
-
-        async with self.session.get(f'https://api.mcsrvstat.us/bedrock/2/{address}') as resp:
-            # make request using that session and define its output as a 'resp'
-            data = await resp.json()
-            status = resp.status
-        return data, status
-        # return the api stuff for use in the command
+    async def getserver(self, host: str, port: int):
+        def exe():
+            try:
+                with mcstats(host, port=port, timeout=10) as mc:
+                    return mc
+            except Exception as e:
+                if "timed out" in str(e):
+                    return "timeout"
+        data = await self.bot.loop.run_in_executor(None, exe)
+        return data
 
     @commands.command()
+    @commands.guild_only()
     async def mcstatus(self, ctx):
         """Check the status of your Bedrock server."""
-        address = await self.config.guild(ctx.guild).address()
-        data, status = await self.getserver(address)
-        try:
-            stat = "Online" if data['online'] == True else "Offline"
-            mp = (data['map'])
-            ip = (data['ip'])
-            port = (data['port'])
-            players = (data['players']['online'])
-            version = (data['version'])
-        except Exception as e:
-            if 'map' in str(e).lower():
-                await ctx.send("Server has either not been set or is failing to connect.")
-            else:
-                return await ctx.send("Server may be offline, please contact an admin.")
-            return
-            # command calls the thing and does the stuff
-
-        color = discord.Color.dark_purple() if status == 200 else discord.Color.dark_red()
+        servers = await self.config.guild(ctx.guild).servers()
         embed = discord.Embed(
-            title=f"**{mp} Server**",
-            color=color,
-            description=box(f"IP: {ip}\nPort: {port}\nVersion: {version}"),
+            color=discord.Color.random(),
+            description="**Minecraft Bedrock Server Status**",
         )
-        embed.add_field(name="Status", value=stat)
-        embed.add_field(name="Players", value=f"{players}/30")
+        for name, server in servers.items():
+            host = server["host"]
+            port = server["port"]
+            data = await self.getserver(host, port)
+            if data == "timeout" or not data:
+                embed.add_field(
+                    name=name,
+                    value="Timed Out (Offline)"
+                )
+            else:
+                ver = data.game_version
+                nump = data.num_players
+                maxp = data.max_players
+                motd = data.motd
+                mode = data.gamemode
+                embed.add_field(
+                    name=name,
+                    value=f"`Version: `{ver}\n"
+                          f"`Mode:    `{mode}\n"
+                          f"`MotD:    `{motd}\n"
+                          f"`Players: `{nump}/{maxp}"
+                )
         await ctx.send(embed=embed)
         # output shows the info in an embed code block box
 
     @commands.command()
     @commands.guild_only()
-    @checks.admin_or_permissions(manage_guild=True)
-    async def addmcserver(self, ctx, address):
+    @commands.admin()
+    async def addserver(self, ctx, address: str, port: int):
         """Add an MC Bedrock server. format is IP:PORT"""
-        await self.config.guild(ctx.guild).address.set(address)
-        await ctx.send("Your server has been set!")
+        async with ctx.typint():
+            data = await self.getserver(address, port)
+        if data == "timeout":
+            return await ctx.send("Unable to obtain server data, it may be offline.")
+        if not data:
+            return await ctx.send("Error: Unable to communicate with server.")
+        name = data.server_name
+        async with self.config.guild(ctx.guild).servers() as servers:
+            servers[name] = {
+                "host": address,
+                "port": port,
+            }
+        await ctx.send(f"{name} server has been added!")
+
