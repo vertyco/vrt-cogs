@@ -1816,9 +1816,9 @@ class ArkTools(commands.Cog):
             return await ctx.send("Cluster not found!")
         stats = settings["players"]
         for xuid, data in stats.items():
-            for mapn in data["playtime"].keys():
-                if clustername in mapn:
-                    if xuid in kits:
+            if xuid in kits:
+                for mapn in data["playtime"].keys():
+                    if clustername in mapn:
                         wipelist.append(xuid)
         async with self.config.guild(ctx.guild).all() as settings:
             for xuid in wipelist:
