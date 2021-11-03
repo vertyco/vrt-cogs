@@ -64,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.3.7"
+    __version__ = "2.4.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -91,6 +91,7 @@ class ArkTools(commands.Cog):
             "tribes": {},
             "players": {},
             "cooldowns": {},
+            "kit": {"enabled": False, "claimed": [], "paths": []},
             "payday": {"enabled": False, "random": False, "cooldown": 12, "paths": []},
             "serverstats": {"dates": [], "counts": [], "expiration": 30},
             "timezone": "US/Eastern"
@@ -111,9 +112,8 @@ class ArkTools(commands.Cog):
         self.downtime = {}
         self.time = ""
 
-        # In-Game voting/command sessions
+        # In-Game voting sessions
         self.votes = {}
-        self.cooldowns = {}
 
         # Loops
         self.getchat.start()
@@ -1722,6 +1722,17 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).payday.cooldown.set(hours)
         await ctx.send(f"Cooldown set for {hours} hours!")
 
+    @in_game.command(name="togglekit")
+    async def toggle_payday(self, ctx: commands.Context):
+        """Toggle the in-game starter kit command on or off"""
+        toggled = await self.config.guild(ctx.guild).kit.enabled()
+        if toggled:
+            await self.config.guild(ctx.guild).kit.enabled.set(False)
+            await ctx.send("In-game starter kit command has been **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).kit.enabled.set(True)
+            await ctx.send("In-game starter kit command has been **Enabled**")
+
     @in_game.command(name="setpaths")
     async def set_blueprint_paths(self, ctx: commands.Context):
         """
@@ -1750,10 +1761,54 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).payday.paths.set(paths)
         await ctx.send("Paths for the in-game payday command have been set!")
 
+    @in_game.command(name="setkit")
+    async def set_kit_paths(self, ctx: commands.Context):
+        """
+        Set the full blueprint paths for the in-game starter kit
+        The paths must be the FULL blueprint paths WITH the quantity, quality, and blueprint identifier
+        separated by a line break
+
+        Do NOT include "cheat" or "admincheat" or "senditemtoplayer" in front of the strings
+        """
+        msg = await ctx.send(
+            "Type the full blueprint paths including quantity/quality/blueprint numbers below.\n"
+            "Separate each full path with a new line for setting multiple items.\n"
+            "Type `cancel` to cancel.")
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        try:
+            reply = await self.bot.wait_for("message", timeout=240, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        if reply.content.lower() == "cancel":
+            return await ctx.send("Starter kit path set canceled.")
+        paths = reply.content.split("\n")
+        await self.config.guild(ctx.guild).kit.paths.set(paths)
+        await ctx.send("Paths for the in-game starter kit command have been set!")
+
+    @in_game.command(name="resetkit")
+    async def reset_player_kit(self, ctx: commands.Context, xuid: str):
+        """
+        Reset a player XUID's claim status for their starter kit,
+        just in case they used the wrong implant ID
+        """
+        async with self.config.guild(ctx.guild).kit.claimed() as claimed:
+            if xuid not in claimed:
+                return await ctx.send("I could not find that person's XUID.")
+            claimed.remove(xuid)
+            await ctx.send(f"Claim status for XUID: `{xuid}` has been reset.")
+
     @in_game.command(name="view")
-    async def view_ingame_payday(self, ctx: commands.Context):
+    async def view_ingame_settings(self, ctx: commands.Context):
         """View configuration settings for in-game payday options"""
         payday = await self.config.guild(ctx.guild).payday()
+        kit = await self.config.guild(ctx.guild).kit()
+        starter = "Disabled"
+        if kit["enabled"]:
+            starter = "Enabled"
         status = "Disabled"
         if payday["enabled"]:
             status = "Enabled"
@@ -1761,22 +1816,35 @@ class ArkTools(commands.Cog):
         if payday["random"]:
             rand = "On"
         cooldown = payday["cooldown"]
+        embed = discord.Embed(
+            title="In-Game Command Settings",
+            description=f"`Payday Status:       `{status}\n"
+                        f"`Payday Randomness:   `{rand}\n"
+                        f"`Payday Cooldown:     `{cooldown}\n"
+                        f"`Starter Kit:         `{starter}\n",
+            color=discord.Color.random()
+        )
+        await ctx.send(embed=embed)
         paths = payday["paths"]
         p = ""
         for path in paths:
             p += f"{path}\n"
         if p == "":
             p = "None Set!"
-        embed = discord.Embed(
-            title="In-Game Payday Settings",
-            description=f"`Status:   `{status}\n"
-                        f"`Random:   `{rand}\n"
-                        f"`Cooldown: `{cooldown}\n",
-            color=discord.Color.random()
-        )
-        await ctx.send(embed=embed)
+        count = 1
         for page in pagify(p):
-            await ctx.send(f"**Blueprint Paths**\n{page}")
+            await ctx.send(f"**Payday Paths Page {count}**\n{page}")
+            count += 1
+        kits = kit["paths"]
+        k = ""
+        for path in kits:
+            k += f"{path}\n"
+        if p == "":
+            k = "None Set!"
+        count = 1
+        for page in pagify(k):
+            await ctx.send(f"**Starter Kit Paths Page {count}**\n{page}")
+            count += 1
 
     # Cache server data
     async def initialize(self):
@@ -2294,6 +2362,33 @@ class ArkTools(commands.Cog):
                         cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
+        # Starter kit command
+        elif cmd.startswith("kit"):
+            kit = await self.config.guild(guild).kit()
+            if not kit["enabled"]:
+                cmd = f"serverchat That command is disabled on this server at the moment"
+                return await self.executor(guild, server, cmd)
+            if len(kit["paths"]) == 0:
+                cmd = f"serverchat Kit command has not been fully setup yet!"
+                return await self.executor(guild, server, cmd)
+            c, a = self.parse_cmd(cmd)
+            if not a:
+                implant = self.get_implant(playerdata, str(server["chatchannel"]))
+                if not implant:
+                    cmd = f"serverchat Use the .register command to register your ID first"
+                    return await self.executor(guild, server, cmd)
+                a = implant
+            async with self.config.guild(guild).kit() as kit:
+                if xuid in kit["claimed"]:
+                    cmd = f"serverchat {gamertag} You have already claimed your starter kit!"
+                    return await self.executor(guild, server, cmd)
+                ktasks = []
+                for path in kit["paths"]:
+                    ktasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
+                await asyncio.gather(*ktasks)
+                cmd = f"broadcast {gamertag} Has just claimed their starter kit, say hi everyone!"
+                await self.executor(guild, server, cmd)
+                kit["claimed"].append(xuid)
 
     def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
         time = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
