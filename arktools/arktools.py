@@ -1817,12 +1817,13 @@ class ArkTools(commands.Cog):
         stats = settings["players"]
         for xuid, data in stats.items():
             for mapn in data["playtime"].keys():
-                if clustername in mapn and xuid in kits:
-                    wipelist.append(xuid)
+                if clustername in mapn:
+                    if xuid in kits:
+                        wipelist.append(xuid)
         async with self.config.guild(ctx.guild).all() as settings:
             for xuid in wipelist:
-                settings["kit"]["claimed"].remove(xuid)
-        await ctx.send(f"All kit claim statuses have been reset for the {clustername} cluster")
+                settings["kit"]["claimed"].remove(str(xuid))
+        await ctx.send(f"{len(wipelist)} kit claim statuses have been reset for the {clustername} cluster")
 
     @in_game.command(name="view")
     async def view_ingame_settings(self, ctx: commands.Context):
