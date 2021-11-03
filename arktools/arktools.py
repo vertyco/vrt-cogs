@@ -1801,6 +1801,29 @@ class ArkTools(commands.Cog):
             claimed.remove(xuid)
             await ctx.send(f"Claim status for XUID: `{xuid}` has been reset.")
 
+    @in_game.command(name="resetkitcluster")
+    async def reset_kit_cluster_wide(self, ctx: commands.Context, clustername: str):
+        """
+        Reset all kit claim statuses for a specific cluster
+
+        Useful for periodic server wipes
+        """
+        settings = await self.config.guild(ctx.guild).all()
+        kits = settings["kit"]["claiemd"]
+        wipelist = []
+        clusters = settings["clusters"]
+        if clustername not in clusters:
+            return await ctx.send("Cluster not found!")
+        stats = settings["players"]
+        for xuid, data in stats.items():
+            for mapn in data["playtime"].keys():
+                if clustername in mapn and xuid in kits:
+                    wipelist.append(xuid)
+        async with self.config.guild(ctx.guild).all() as settings:
+            for xuid in wipelist:
+                if xuid in settings["kit"]["claimed"]:
+                    settings["kit"]["claimed"].remove(xuid)
+
     @in_game.command(name="view")
     async def view_ingame_settings(self, ctx: commands.Context):
         """View configuration settings for in-game payday options"""
