@@ -1833,17 +1833,25 @@ class ArkTools(commands.Cog):
             p = "None Set!"
         count = 1
         for page in pagify(p):
-            await ctx.send(f"**Payday Paths Page {count}**\n{page}")
+            embed = discord.Embed(
+                title=f"Payday Paths Page {count}",
+                description=page
+            )
+            await ctx.send(embed=embed)
             count += 1
         kits = kit["paths"]
         k = ""
         for path in kits:
             k += f"{path}\n"
-        if p == "":
+        if k == "":
             k = "None Set!"
         count = 1
         for page in pagify(k):
-            await ctx.send(f"**Starter Kit Paths Page {count}**\n{page}")
+            embed = discord.Embed(
+                title=f"Starter Kit Paths Page {count}",
+                description=page
+            )
+            await ctx.send(embed=embed)
             count += 1
 
     # Cache server data
