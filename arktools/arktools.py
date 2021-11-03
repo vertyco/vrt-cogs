@@ -2188,7 +2188,6 @@ class ArkTools(commands.Cog):
                         f"{prefix}rename NewName - Rename your character\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
-                        f"{prefix}players - See how many people are on the server\n" \
                         f"{prefix}votedinowipe - Start a vote to wipe wild dinos\n"
         payday = await self.config.guild(guild).payday.enabled()
         h = await self.config.guild(guild).payday.cooldown()
@@ -2209,6 +2208,8 @@ class ArkTools(commands.Cog):
         # Help command
         if cmd.startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
+            cmd = f'serverchat Other commands too long to fit in the broadcast include .players'
+            await self.executor(guild, server, cmd)
         # Register command
         elif cmd.startswith("register"):
             c, a = self.parse_cmd(cmd)
