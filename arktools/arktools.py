@@ -2209,6 +2209,7 @@ class ArkTools(commands.Cog):
                     cooldowns[gamertag]["imstuck"] = time.isoformat()
                 else:
                     lastused = cooldowns[gamertag]["imstuck"]
+                    lastused = datetime.datetime.fromisoformat(lastused)
                     td = time - lastused
                     tleft = td.total_seconds()
                     tleft = 1800 - tleft
@@ -2272,6 +2273,7 @@ class ArkTools(commands.Cog):
                     cooldowns[gamertag]["payday"] = time.isoformat()
                 else:
                     lastused = cooldowns[gamertag]["payday"]
+                    lastused = datetime.datetime.fromisoformat(lastused)
                     td = time - lastused
                     tleft = td.total_seconds()
                     tleft = duration - tleft
