@@ -14,7 +14,7 @@ def time_format(time_played: int):
     minutes, _ = divmod(time_played, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
-    return days, hours, minutes
+    return int(days), int(hours), int(minutes)
 
 
 # Microsoft's timestamp end digits are fucked up and random so we iteratively try fixing them by stripping digits
