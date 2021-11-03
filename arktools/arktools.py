@@ -2347,14 +2347,14 @@ class ArkTools(commands.Cog):
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
                         if channel:
-                            await channel.send(f"serverchat {gamertag} You need to wait {minutes} minutes "
+                            await channel.send(f"{gamertag} You need to wait {minutes} minutes "
                                                f"before using that command again")
                     else:
                         cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
                         if channel:
-                            await channel.send(f"serverchat {gamertag} You need to wait {int(tleft)} seconds "
+                            await channel.send(f"{gamertag} You need to wait {int(tleft)} seconds "
                                                f"before using that command again")
         # Dino wipe command
         elif cmd.startswith("votedinowipe"):
