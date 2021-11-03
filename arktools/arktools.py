@@ -2208,7 +2208,7 @@ class ArkTools(commands.Cog):
                     await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
                     cooldowns[gamertag]["imstuck"] = time.isoformat()
                 else:
-                    lastused = self.cooldowns[gamertag]["imstuck"]
+                    lastused = cooldowns[gamertag]["imstuck"]
                     td = time - lastused
                     tleft = td.total_seconds()
                     tleft = 1800 - tleft
@@ -2271,7 +2271,7 @@ class ArkTools(commands.Cog):
                         await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
                     cooldowns[gamertag]["payday"] = time.isoformat()
                 else:
-                    lastused = self.cooldowns[gamertag]["payday"]
+                    lastused = cooldowns[gamertag]["payday"]
                     td = time - lastused
                     tleft = td.total_seconds()
                     tleft = duration - tleft
