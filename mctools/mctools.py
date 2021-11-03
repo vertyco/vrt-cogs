@@ -62,7 +62,9 @@ class MCTools(commands.Cog):
                     mode = data.gamemode
                     embed.add_field(
                         name=name,
-                        value=f"`Version: `{ver}\n"
+                        value=f"`Address: `{host}\n"
+                              f"`Port:    `{port}\n"
+                              f"`Version: `{ver}\n"
                               f"`Mode:    `{mode}\n"
                               f"`MotD:    `{motd}\n"
                               f"`Players: `{nump}/{maxp}"
