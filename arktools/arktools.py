@@ -1821,8 +1821,8 @@ class ArkTools(commands.Cog):
                     wipelist.append(xuid)
         async with self.config.guild(ctx.guild).all() as settings:
             for xuid in wipelist:
-                if xuid in settings["kit"]["claimed"]:
-                    settings["kit"]["claimed"].remove(xuid)
+                settings["kit"]["claimed"].remove(xuid)
+        await ctx.send(f"All kit claim statuses have been reset for the {clustername} cluster")
 
     @in_game.command(name="view")
     async def view_ingame_settings(self, ctx: commands.Context):
