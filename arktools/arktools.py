@@ -782,7 +782,7 @@ class ArkTools(commands.Cog):
                                                   f"Register with the `{ctx.prefix}register` command.")
                 embed.set_thumbnail(url=FAILED)
                 return await ctx.send(embed=embed)
-        embed = player_stats(stats, tz, ctx.guild, gamertag)
+        embed = player_stats(settings, tz, ctx.guild, gamertag)
         if not embed:
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
         await ctx.send(embed=embed)
@@ -2394,7 +2394,9 @@ class ArkTools(commands.Cog):
                 for path in kit["paths"]:
                     ktasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
                 await asyncio.gather(*ktasks)
-                cmd = f"broadcast {gamertag} Has just claimed their starter kit, say hi everyone!"
+                cmd = f"serverchat Kit claimed!"
+                await self.executor(guild, server, cmd)
+                cmd = f"broadcast {gamertag} HAS JUST CLAIMED THEIR STARTER KIT, WELCOME TO THE SERVER!"
                 await self.executor(guild, server, cmd)
                 kit["claimed"].append(xuid)
 

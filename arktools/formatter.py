@@ -240,7 +240,9 @@ def cstats_format(stats: dict, guild: discord.guild):
     return embeds
 
 
-def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
+def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
+    kit = settings["kit"]
+    stats = settings["players"]
     leaderboard = {}
     global_time = 0
     # Global cumulative time
@@ -269,25 +271,29 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
             lastmap = data["lastseen"]["map"]
             # Time played dhm
             d, h, m = time_format(time)
+            t = f"{d}d {h}h {m}m"
+            if time == 0:
+                t = "None"
             registration = "Not Registered"
             in_server = True
             if "discord" in data:
                 member = guild.get_member(data["discord"])
                 if member:
-                    registration = f"Registered as {member.mention}"
+                    registration = f"{member.mention}"
                 else:
-                    registration = f"Registered as ID {data['discord']} `(No longer in server)`"
+                    registration = f"{data['discord']}"
                     in_server = False
+            claimed = "Unclaimed"
+            if xuid in kit["claimed"]:
+                claimed = "Claimed"
+
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
-                description=f"Discord: {registration}\n"
-                            f"Player ID: {xuid}"
+                description=f"`Discord:     `{registration}\n"
+                            f"`Game ID:     `{xuid}\n"
+                            f"`Time Played: `{t}\n"
+                            f"`Starter Kit: `{claimed}"
             )
-            if time != 0:
-                embed.add_field(
-                    name="Total Time Played",
-                    value=f"`{d}d {h}h {m}m`"
-                )
             if lastmap:
                 last_seen = f"{lseen_format(ld, lh, lm)} on `{lastmap}`"
             else:
@@ -310,7 +316,7 @@ def player_stats(stats: dict, timezone: datetime.timezone, guild: discord.guild,
                     d, h, m = time_format(playtime)
                     if playtime > 0:
                         embed.add_field(
-                            name=mapname,
+                            name=f"Time on {mapname.capitalize()}",
                             value=f"`{d}d {h}h {m}m`"
                         )
             if "ingame" in data:
