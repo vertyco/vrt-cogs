@@ -2275,8 +2275,11 @@ class ArkTools(commands.Cog):
                     lastused = cooldowns[gamertag]["payday"]
                     lastused = datetime.datetime.fromisoformat(lastused)
                     td = time - lastused
-                    tleft = td.total_seconds()
-                    tleft = duration - tleft
+                    td = td.total_seconds()
+                    tleft = duration - td
+                    print(td)
+                    print(duration)
+                    print(tleft)
                     d, h, m = time_format(tleft * 60)
                     if d > 0:
                         cmd = f"serverchat {gamertag} You need to wait {d} days " \
