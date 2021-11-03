@@ -44,28 +44,29 @@ class MCTools(commands.Cog):
             color=discord.Color.random(),
             description="**Minecraft Bedrock Server Status**",
         )
-        for name, server in servers.items():
-            host = server["host"]
-            port = server["port"]
-            data = await self.getserver(host, port)
-            if data == "timeout" or not data:
-                embed.add_field(
-                    name=name,
-                    value="Timed Out (Offline)"
-                )
-            else:
-                ver = data.game_version
-                nump = data.num_players
-                maxp = data.max_players
-                motd = data.motd
-                mode = data.gamemode
-                embed.add_field(
-                    name=name,
-                    value=f"`Version: `{ver}\n"
-                          f"`Mode:    `{mode}\n"
-                          f"`MotD:    `{motd}\n"
-                          f"`Players: `{nump}/{maxp}"
-                )
+        async with ctx.typing():
+            for name, server in servers.items():
+                host = server["host"]
+                port = server["port"]
+                data = await self.getserver(host, port)
+                if data == "timeout" or not data:
+                    embed.add_field(
+                        name=name,
+                        value="Timed Out (Offline)"
+                    )
+                else:
+                    ver = data.game_version
+                    nump = data.num_players
+                    maxp = data.max_players
+                    motd = data.motd
+                    mode = data.gamemode
+                    embed.add_field(
+                        name=name,
+                        value=f"`Version: `{ver}\n"
+                              f"`Mode:    `{mode}\n"
+                              f"`MotD:    `{motd}\n"
+                              f"`Players: `{nump}/{maxp}"
+                    )
         await ctx.send(embed=embed)
         # output shows the info in an embed code block box
 
@@ -74,7 +75,7 @@ class MCTools(commands.Cog):
     @commands.admin()
     async def addserver(self, ctx, address: str, port: int):
         """Add an MC Bedrock server. format is IP:PORT"""
-        async with ctx.typint():
+        async with ctx.typing():
             data = await self.getserver(address, port)
         if data == "timeout":
             return await ctx.send("Unable to obtain server data, it may be offline.")
