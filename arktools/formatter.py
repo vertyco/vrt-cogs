@@ -143,9 +143,10 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
     global_time = 0
     # Global cumulative time
     for xuid, data in stats.items():
-        time = data["playtime"]["total"]
-        leaderboard[xuid] = time
-        global_time = global_time + time
+        if "playtime" in data:
+            time = data["playtime"]["total"]
+            leaderboard[xuid] = time
+            global_time = global_time + time
     gd, gh, gm = time_format(global_time)
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     pages = math.ceil(len(sorted_players) / 10)
@@ -205,10 +206,11 @@ def cstats_format(stats: dict, guild: discord.guild):
     maps = {}
     total_playtimes = {}
     for data in stats.values():
-        for mapname, playtime in data["playtime"].items():
-            if mapname != "total":
-                total_playtimes[mapname] = {}
-                maps[mapname] = 0
+        if "playtime" in data:
+            for mapname, playtime in data["playtime"].items():
+                if mapname != "total":
+                    total_playtimes[mapname] = {}
+                    maps[mapname] = 0
     for xuid, data in stats.items():
         for mapn, playtime in data["playtime"].items():
             if mapn != "total":
