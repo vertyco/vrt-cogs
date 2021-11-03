@@ -42,9 +42,6 @@ from .formatter import (tribelog_format,
 from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.arktools")
-if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    log.info(f"Setting EventLoopSelector For {sys.platform}")
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 LIVE = "https://i.imgur.com/LPzCcgU.gif"
@@ -118,6 +115,11 @@ class ArkTools(commands.Cog):
         self.maintenance.start()
         self.autofriend.start()
         self.vote_sessions.start()
+
+        # Windows is dumb
+        if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            log.info(f"Setting EventLoopSelector For {sys.platform}")
 
     def cog_unload(self):
         self.getchat.cancel()
