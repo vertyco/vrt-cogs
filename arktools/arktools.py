@@ -1,25 +1,26 @@
-import math
-import discord
-import datetime
 import asyncio
-import socket
+import datetime
 import json
-import re
-import aiohttp
-import pytz
+import logging
+import math
 import random
+import re
+import socket
+import sys
+
+import aiohttp
+import discord
+import pytz
 
 from rcon import Client
-
-from redbot.core.utils.chat_formatting import box, pagify
-from redbot.core import commands, Config
 from discord.ext import tasks
+from redbot.core import commands, Config
+from redbot.core.utils.chat_formatting import box, pagify
 
+from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
-from xbox.webapi.api.client import XboxLiveClient
 
-from .menus import menu, DEFAULT_CONTROLS
 from .calls import (serverchat,
                     add_friend,
                     remove_friend,
@@ -37,8 +38,10 @@ from .formatter import (tribelog_format,
                         fix_timestamp,
                         get_graph,
                         time_format)
+from .menus import menu, DEFAULT_CONTROLS
 
-import logging
+if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 log = logging.getLogger("red.vrt.arktools")
 
@@ -64,7 +67,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.7"
+    __version__ = "2.4.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
