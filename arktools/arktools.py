@@ -67,7 +67,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.8"
+    __version__ = "2.4.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2227,10 +2227,16 @@ class ArkTools(commands.Cog):
 
         time = datetime.datetime.utcnow()
         cid = server["chatchannel"]
-        channel = self.bot.get_channel(cid)
+        try:
+            channel = self.bot.get_channel(cid)
+        except TypeError:
+            channel = None
         playerlist = self.playerlist[cid]
         players = await self.config.guild(guild).players()
-        xuid, playerdata = await self.get_player(gamertag, players)
+        try:
+            xuid, playerdata = await self.get_player(gamertag, players)
+        except TypeError:
+            return await self.executor(guild, server, f"serverchat In-game command failed!")
         if not xuid or not playerdata:
             return await self.executor(guild, server, f"serverchat In-game command failed!")
         # Help command
