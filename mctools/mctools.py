@@ -89,3 +89,15 @@ class MCTools(commands.Cog):
             }
         await ctx.send(f"{name} server has been added!")
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.admin()
+    async def delserver(self, ctx, name):
+        async with self.config.guild(ctx.guild).servers() as servers:
+            if name in servers:
+                del servers[name]
+                await ctx.send(f"{name} server deleted")
+            else:
+                await ctx.send("Cannot find that server name!")
+
+
