@@ -40,10 +40,12 @@ from .formatter import (tribelog_format,
                         time_format)
 from .menus import menu, DEFAULT_CONTROLS
 
+log = logging.getLogger("red.vrt.arktools")
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    log.info(f"Setting EventLoopSelector For {sys.platform}")
 
-log = logging.getLogger("red.vrt.arktools")
+
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 LIVE = "https://i.imgur.com/LPzCcgU.gif"
