@@ -2718,6 +2718,9 @@ class ArkTools(commands.Cog):
                                   f"If the kit command is enabled, you can use it to get your starter pack\n" \
                                   f"Enjoy your stay on {guild.name}!"
                             await self.executor(guild, server, cmd)
+                            welc = f"```py\nA new player has been detected on the server!\n" \
+                                   f"Everyone say hi to {gamertag}!!!\n```"
+                            await channel_obj.send(welc)
                         newplayermessage += f"**{gamertag}** added to the database.\n"
                         log.info(f"New Player - {gamertag}")
                         stats[xuid] = {
