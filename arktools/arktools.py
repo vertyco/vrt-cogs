@@ -3053,7 +3053,7 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(5)
         log.info("Autofriend loop ready")
 
-    # For whatever reason one player config item was fucked up
+    # For whatever reason one player config item was fucked up so i made this to find it
     @commands.command(name="fixconfig", hidden=True)
     @commands.is_owner()
     async def debug_stuff(self, ctx: commands.Context):
