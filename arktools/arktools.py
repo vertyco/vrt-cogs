@@ -3075,7 +3075,7 @@ class ArkTools(commands.Cog):
                     old_config.append(xuid)
             async with self.config.guild(guild).players() as players:
                 if len(no_username) > 0:
-                    await ctx.send(f"{len(no_username)} people hsd no usernames")
+                    await ctx.send(f"{len(no_username)} people had no usernames")
                     for person in no_username:
                         await ctx.send(person)
                         del players[person]
