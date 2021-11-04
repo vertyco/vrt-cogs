@@ -2247,7 +2247,7 @@ class ArkTools(commands.Cog):
             cmd = f'serverchat Other commands too long to fit in the broadcast include .players'
             await self.executor(guild, server, cmd)
             if channel:
-                await channel.send("Sending list of in-game commands!")
+                await channel.send("`Sending list of in-game commands!`")
         # Register command
         elif cmd.startswith("register"):
             c, a = self.parse_cmd(cmd)
@@ -2262,7 +2262,7 @@ class ArkTools(commands.Cog):
                 cmd = f'serverchat {gamertag} Your implant was registered as {a}'
                 await self.executor(guild, server, cmd)
                 if channel:
-                    await channel.send(f"{gamertag} Your implant was registered as {a}")
+                    await channel.send(f"`{gamertag} Your implant was registered as {a}`")
         # Rename command
         elif cmd.startswith("rename"):
             c, a = self.parse_cmd(cmd)
@@ -2274,43 +2274,43 @@ class ArkTools(commands.Cog):
             cmd = f'serverchat {gamertag} Your name has been changed to {a}'
             await self.executor(guild, server, cmd)
             if channel:
-                await channel.send(f"{gamertag} Your name has been changed to {a}")
+                await channel.send(f"`{gamertag} Your name has been changed to {a}`")
         # Vote day command
         elif cmd.startswith("voteday"):
             remaining = self.make_vote("voteday", cid, gamertag, server)
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it day!")
                 if channel:
-                    await channel.send(f"Need {remaining} more **In-game** votes to make it day!")
+                    await channel.send(f"`Need {remaining} more In-game votes to make it day!`")
             else:
                 await self.executor(guild, server, f"serverchat Vote successful, let there be light!")
                 await self.executor(guild, server, "settimeofday 07:00")
                 del self.votes[cid]
                 if channel:
-                    await channel.send(f"Vote successful, let there be light!")
+                    await channel.send(f"`Vote successful, let there be light!`")
         # Vote night command
         elif cmd.startswith("votenight"):
             remaining = self.make_vote("votenight", cid, gamertag, server)
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it night!")
                 if channel:
-                    await channel.send(f"Need {remaining} more **In-game** votes to make it night!")
+                    await channel.send(f"`Need {remaining} more In-game votes to make it night!`")
             else:
                 await self.executor(guild, server, f"serverchat Vote successful, turning off the sun!")
                 await self.executor(guild, server, "settimeofday 22:00")
                 del self.votes[cid]
                 if channel:
-                    await channel.send(f"Vote successful, turning off the sun!")
+                    await channel.send(f"`Vote successful, turning off the sun!`")
         # Player count command
         elif cmd.startswith("players"):
             if len(playerlist) == 1:
                 await self.executor(guild, server, f"serverchat You're the only person on this server :p")
                 if channel:
-                    await channel.send(f"serverchat You're the only person on this server :p")
+                    await channel.send(f"`You're the only person on this server :p`")
             else:
                 await self.executor(guild, server, f"serverchat There are {len(playerlist)} people on this server")
                 if channel:
-                    await channel.send(f"serverchat There are {len(playerlist)} people on this server")
+                    await channel.send(f"`There are {len(playerlist)} people on the server`")
         # Im stuck command
         elif cmd.startswith("imstuck"):
             canuse = False
@@ -2319,7 +2319,7 @@ class ArkTools(commands.Cog):
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
                     if channel:
-                        await channel.send(f"Include your Implant ID after the command or use the .register command")
+                        await channel.send(f"`Include your Implant ID after the command or use the .register command`")
                     cmd = f"serverchat Include your Implant ID after the command or use the .register command"
                     return await self.executor(guild, server, cmd)
                 a = implant
@@ -2344,7 +2344,7 @@ class ArkTools(commands.Cog):
                     await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
                     cooldowns[gamertag]["imstuck"] = time.isoformat()
                     if channel:
-                        await channel.send(f"{gamertag} your care package is on the way!")
+                        await channel.send(f"`{gamertag} your care package is on the way!`")
                 else:
                     lastused = cooldowns[gamertag]["imstuck"]
                     lastused = datetime.datetime.fromisoformat(lastused)
@@ -2357,33 +2357,33 @@ class ArkTools(commands.Cog):
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
                         if channel:
-                            await channel.send(f"{gamertag} You need to wait {minutes} minutes "
-                                               f"before using that command again")
+                            await channel.send(f"`{gamertag} You need to wait {minutes} minutes "
+                                               f"before using that command again`")
                     else:
                         cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
                         if channel:
-                            await channel.send(f"{gamertag} You need to wait {int(tleft)} seconds "
-                                               f"before using that command again")
+                            await channel.send(f"`{gamertag} You need to wait {int(tleft)} seconds "
+                                               f"before using that command again`")
         # Dino wipe command
         elif cmd.startswith("votedinowipe"):
             remaining = self.make_vote("dinowipe", cid, gamertag, server)
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to wipe wild dinos!")
                 if channel:
-                    await channel.send(f"Need {remaining} more **In-Game** votes to wipe wild dinos!")
+                    await channel.send(f"`Need {remaining} more In-Game votes to wipe wild dinos!`")
             else:
                 await self.executor(guild, server, f"serverchat Vote successful, wiping wild dinos!")
                 await self.executor(guild, server, "destroywilddinos")
                 del self.votes[cid]
                 if channel:
-                    await channel.send(f"Vote successful, wiping wild dinos!")
+                    await channel.send(f"`Vote successful, wiping wild dinos!`")
         # Payday command
         elif cmd.startswith("payday"):
             if not payday:
                 if channel:
-                    await channel.send(f"That command is disabled on this server at the moment")
+                    await channel.send(f"`That command is disabled on this server at the moment`")
                 cmd = f"serverchat That command is disabled on this server at the moment"
                 return await self.executor(guild, server, cmd)
             canuse = False
@@ -2392,7 +2392,7 @@ class ArkTools(commands.Cog):
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
                     if channel:
-                        await channel.send(f"Include your Implant ID after the command or use the .register command")
+                        await channel.send(f"`Include your Implant ID after the command or use the .register command`")
                     cmd = f"serverchat Include your Implant ID after the command or use the .register command"
                     return await self.executor(guild, server, cmd)
                 a = implant
@@ -2423,7 +2423,7 @@ class ArkTools(commands.Cog):
                         await asyncio.gather(*ptasks)
                         await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
                     if channel:
-                        await channel.send(f"{gamertag} Payday rewards sent!")
+                        await channel.send(f"`{gamertag} Payday rewards sent!`")
                     cooldowns[gamertag]["payday"] = time.isoformat()
                 else:
                     lastused = cooldowns[gamertag]["payday"]
@@ -2449,7 +2449,7 @@ class ArkTools(commands.Cog):
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
                     if channel:
-                        await channel.send(f"{gamertag} cant use that command yet, wait a bit.")
+                        await channel.send(f"`{gamertag} cant use that command yet, wait a bit.`")
         # Starter kit command
         elif cmd.startswith("kit"):
             kit = await self.config.guild(guild).kit()
