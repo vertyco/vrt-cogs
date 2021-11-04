@@ -3052,3 +3052,37 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(5)
         log.info("Autofriend loop ready")
+
+    # For whatever reason one player config item was fucked up
+    @commands.command(name="fixconfig", hidden=True)
+    @commands.is_owner()
+    async def debug_stuff(self, ctx: commands.Context):
+        """
+        Fix any config issues for whatever reason
+
+        Like if bot crashes while someone is registering or something idk
+        """
+        for guild in self.activeguilds:
+            no_username = []
+            old_config = []
+            guild = self.bot.get_guild(guild)
+            settings = await self.config.guild(guild).all()
+            stats = settings["players"]
+            for xuid, data in stats.items():
+                if "username" not in data:
+                    no_username.append(xuid)
+                if not xuid.isdigit():
+                    old_config.append(xuid)
+            async with self.config.guild(guild).players() as players:
+                if len(no_username) > 0:
+                    await ctx.send(f"{len(no_username)} people hsd no usernames")
+                    for person in no_username:
+                        await ctx.send(person)
+                        del players[person]
+
+                if len(old_config) > 0:
+                    await ctx.send(f"{len(old_config)} old config users found")
+                    for person in old_config:
+                        await ctx.send(person)
+                        del players[person]
+
