@@ -1603,6 +1603,7 @@ class ArkTools(commands.Cog):
                     "servertoserver": False,
                     "servers": {}
                 }
+                await self.initialize()
 
     @server_settings.command(name="delcluster")
     async def del_cluster(self, ctx: commands.Context, clustername: str):
@@ -1613,6 +1614,7 @@ class ArkTools(commands.Cog):
             else:
                 del clusters[clustername]
                 await ctx.send(f"**{clustername}** cluster has been deleted")
+                await self.initialize()
 
     @server_settings.command(name="addserver")
     async def add_server(self, ctx: commands.Context,
@@ -1636,6 +1638,7 @@ class ArkTools(commands.Cog):
                     "chatchannel": chatchannel.id
                 }
                 await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
+                await self.initialize()
 
     @server_settings.command(name="delserver")
     async def del_server(self, ctx: commands.Context, clustername: str, servername: str):
@@ -1647,6 +1650,7 @@ class ArkTools(commands.Cog):
                 return await ctx.send(f"{servername} server not found.")
             del clusters[clustername]["servers"][servername]
             await ctx.send(f"**{servername}** server has been removed from **{clustername}**")
+            await self.initialize()
 
     @server_settings.command(name="statuschannel")
     async def set_statuschannel(self, ctx: commands.Context, channel: discord.TextChannel):
@@ -2242,14 +2246,14 @@ class ArkTools(commands.Cog):
         if not xuid or not playerdata:
             return await self.executor(guild, server, f"serverchat In-game command failed!")
         # Help command
-        if cmd.startswith("help"):
+        if cmd.lower().startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
             cmd = f'serverchat Other commands too long to fit in the broadcast include .players'
             await self.executor(guild, server, cmd)
             if channel:
                 await channel.send("`Sending list of in-game commands!`")
         # Register command
-        elif cmd.startswith("register"):
+        elif cmd.lower().startswith("register"):
             c, a = self.parse_cmd(cmd)
             if not a:
                 cmd = f"serverchat Include your Implant ID with the command"
@@ -2264,7 +2268,7 @@ class ArkTools(commands.Cog):
                 if channel:
                     await channel.send(f"`{gamertag} Your implant was registered as {a}`")
         # Rename command
-        elif cmd.startswith("rename"):
+        elif cmd.lower().startswith("rename"):
             c, a = self.parse_cmd(cmd)
             if not a:
                 cmd = f"serverchatto  Include the new name you want with the command "
@@ -2276,7 +2280,7 @@ class ArkTools(commands.Cog):
             if channel:
                 await channel.send(f"`{gamertag} Your name has been changed to {a}`")
         # Vote day command
-        elif cmd.startswith("voteday"):
+        elif cmd.lower().startswith("voteday"):
             remaining = self.make_vote("voteday", cid, gamertag, server)
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it day!")
@@ -2289,7 +2293,7 @@ class ArkTools(commands.Cog):
                 if channel:
                     await channel.send(f"`Vote successful, let there be light!`")
         # Vote night command
-        elif cmd.startswith("votenight"):
+        elif cmd.lower().startswith("votenight"):
             remaining = self.make_vote("votenight", cid, gamertag, server)
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it night!")
@@ -2302,7 +2306,7 @@ class ArkTools(commands.Cog):
                 if channel:
                     await channel.send(f"`Vote successful, turning off the sun!`")
         # Player count command
-        elif cmd.startswith("players"):
+        elif cmd.lower().startswith("players"):
             if len(playerlist) == 1:
                 await self.executor(guild, server, f"serverchat You're the only person on this server :p")
                 if channel:
@@ -2312,7 +2316,7 @@ class ArkTools(commands.Cog):
                 if channel:
                     await channel.send(f"`There are {len(playerlist)} people on the server`")
         # Im stuck command
-        elif cmd.startswith("imstuck"):
+        elif cmd.lower().startswith("imstuck"):
             canuse = False
             c, a = self.parse_cmd(cmd)
             if not a:
@@ -2367,7 +2371,7 @@ class ArkTools(commands.Cog):
                             await channel.send(f"`{gamertag} You need to wait {int(tleft)} seconds "
                                                f"before using that command again`")
         # Dino wipe command
-        elif cmd.startswith("votedinowipe"):
+        elif cmd.lower().startswith("votedinowipe"):
             remaining = self.make_vote("dinowipe", cid, gamertag, server)
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to wipe wild dinos!")
@@ -2380,7 +2384,7 @@ class ArkTools(commands.Cog):
                 if channel:
                     await channel.send(f"`Vote successful, wiping wild dinos!`")
         # Payday command
-        elif cmd.startswith("payday"):
+        elif cmd.lower().startswith("payday"):
             if not payday:
                 if channel:
                     await channel.send(f"`That command is disabled on this server at the moment`")
@@ -2451,7 +2455,7 @@ class ArkTools(commands.Cog):
                     if channel:
                         await channel.send(f"`{gamertag} cant use that command yet, wait a bit.`")
         # Starter kit command
-        elif cmd.startswith("kit"):
+        elif cmd.lower().startswith("kit"):
             kit = await self.config.guild(guild).kit()
             if not kit["enabled"]:
                 if channel:
