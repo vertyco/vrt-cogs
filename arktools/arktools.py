@@ -314,6 +314,16 @@ class ArkTools(commands.Cog):
                 del players[xuid]["discord"]
             await ctx.send(f"{member.mention} has been unregistered!")
 
+    @commands.command(name="deleteplayer")
+    @commands.admin()
+    async def delete_player(self, ctx: commands.Context, xuid: str):
+        """Delete player data from the server stats"""
+        async with self.config.guild(ctx.guild).players() as players:
+            for pid, data in players.items():
+                if str(xuid) == str(pid):
+                    del players[pid]
+                    return await ctx.tick()
+
     @commands.command(name="register")
     @commands.guild_only()
     async def register_user(self, ctx: commands.Context):
