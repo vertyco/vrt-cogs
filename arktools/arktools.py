@@ -56,7 +56,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.9"
+    __version__ = "2.4.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -76,7 +76,7 @@ class ArkTools(commands.Cog):
             "autofriend": False,
             "datalogs": False,
             "unfriendafter": 30,
-            "clusters": {},
+            "clusters": {}
             "modroles": [],
             "modcommands": [],
             "badnames": [],
@@ -363,17 +363,18 @@ class ArkTools(commands.Cog):
                 except asyncio.TimeoutError:
                     return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
                 sname = reply.content
-                players[sid] = {
-                    "discord": ctx.author.id,
-                    "username": sname,
-                    "playtime": {"total": 0},
-                    "lastseen": {
-                        "time": time.isoformat(),
-                        "map": None
+                if sname not in players[sid]:
+                    players[sid] = {
+                        "discord": ctx.author.id,
+                        "username": sname,
+                        "playtime": {"total": 0},
+                        "lastseen": {
+                            "time": time.isoformat(),
+                            "map": None
+                        }
                     }
-                }
-                players[sid]["discord"] = ctx.author.id
-                players[sid]["username"] = sname
+                else:
+                    players[sid]["discord"] = ctx.author.id
                 embed = discord.Embed(
                     description=f"Your account has been registered as **{sname}**: `{sid}`"
                 )
@@ -531,7 +532,7 @@ class ArkTools(commands.Cog):
                                 embed.set_thumbnail(url=LOADING)
                             else:
                                 embed = discord.Embed(
-                                    description=f"Friend request from `{tokendata['gamertag']}` may have failed!",
+                                    description=f"Friend request from `{server['gamertag']}` may have failed!",
                                     color=discord.Color.red()
                                 )
                                 embed.set_thumbnail(url=FAILED)
