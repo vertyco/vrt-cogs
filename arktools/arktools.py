@@ -76,7 +76,7 @@ class ArkTools(commands.Cog):
             "autofriend": False,
             "datalogs": False,
             "unfriendafter": 30,
-            "clusters": {}
+            "clusters": {},
             "modroles": [],
             "modcommands": [],
             "badnames": [],
