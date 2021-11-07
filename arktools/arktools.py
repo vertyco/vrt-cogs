@@ -373,7 +373,8 @@ class ArkTools(commands.Cog):
                 except asyncio.TimeoutError:
                     return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
                 sname = reply.content
-                if sname not in players[sid]:
+
+                if len(players[sid].keys()) == 0:
                     players[sid] = {
                         "discord": ctx.author.id,
                         "username": sname,
@@ -2719,9 +2720,8 @@ class ArkTools(commands.Cog):
                 for player in self.playerlist[channel]:
                     xuid = player[1]
                     gamertag = player[0]
-                    # New player found
                     newplayermessage = ""
-                    if xuid not in stats:
+                    if xuid not in stats:  # New player found
                         if autowelcome:
                             prefixes = await self.bot.get_valid_prefixes(guild)
                             for p in prefixes:
@@ -2826,6 +2826,8 @@ class ArkTools(commands.Cog):
                             "time": time.isoformat(),
                             "map": mapstring
                         }
+                    if stats[xuid]["username"] != gamertag:
+                        stats[xuid]["username"] = gamertag
             self.time = time.isoformat()
 
     @playerstats.before_loop
