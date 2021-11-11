@@ -214,9 +214,8 @@ class ArkTools(commands.Cog):
     @staticmethod
     async def get_player(gamertag: str, players: dict):
         for xuid, stats in players.items():
-            if "username" in stats:
-                if gamertag.lower() == stats["username"].lower():
-                    return xuid, stats
+            if gamertag.lower() == stats["username"].lower():
+                return xuid, stats
 
     # Is player registered in-game on a server
     @staticmethod
@@ -2888,7 +2887,6 @@ class ArkTools(commands.Cog):
                             "time": time.isoformat(),
                             "map": mapstring
                         }
-                    if stats[xuid]["username"] != gamertag:
                         stats[xuid]["username"] = gamertag
             self.time = time.isoformat()
 
