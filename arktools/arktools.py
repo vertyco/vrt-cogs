@@ -3168,4 +3168,5 @@ class ArkTools(commands.Cog):
                     for person in old_config:
                         await ctx.send(person)
                         del players[person]
+        await self.initialize()
 
