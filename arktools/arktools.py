@@ -2566,7 +2566,7 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, cmd)
                 kit["claimed"].append(xuid)
                 if channel:
-                    await channel.send(f"`{gamertag.upper()} has just claimed their starter kit!`")
+                    await channel.send(f"`{gamertag} has just claimed their starter kit!`")
 
     def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
         time = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
