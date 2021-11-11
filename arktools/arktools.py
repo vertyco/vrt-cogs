@@ -56,7 +56,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.10"
+    __version__ = "2.4.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -827,6 +827,17 @@ class ArkTools(commands.Cog):
         """ArkTools base setting command."""
         pass
 
+    @arktools_main.command(name="fullbackup")
+    @commands.is_owner()
+    async def backup_all_settings(self, ctx: commands.Context):
+        """Sends a full backup of the config as a JSON file to Discord."""
+        settings = await self.config.all_guilds()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_full_config.json"))
+
     @arktools_main.command(name="backup")
     @commands.guildowner()
     async def backup_settings(self, ctx: commands.Context):
@@ -859,6 +870,21 @@ class ArkTools(commands.Cog):
             file.write(settings)
         with open(f"{ctx.guild}.json", "rb") as file:
             await ctx.send(file=discord.File(file, f"{ctx.guild}_graphdata.json"))
+
+    @arktools_main.command(name="fullrestore")
+    @commands.is_owner()
+    async def restore_all_settings(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the full config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.set(config)
+            await self.initialize()
+            return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
 
     @arktools_main.command(name="restore")
     @commands.guildowner()
@@ -1601,7 +1627,11 @@ class ArkTools(commands.Cog):
                           leavechannel: discord.TextChannel,
                           adminlogchannel: discord.TextChannel,
                           globalchatchannel: discord.TextChannel):
-        """Add a cluster with specified log channels."""
+        """
+        Add a cluster with specified log channels.
+
+        Make sure cluster name does NOT have any spaces
+        """
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername in clusters.keys():
                 return await ctx.send(f"**{clustername}** cluster already exists!")
@@ -1617,14 +1647,25 @@ class ArkTools(commands.Cog):
                 }
                 await self.initialize()
 
+    @server_settings.command(name="renamecluster")
+    async def rename_cluster(self, ctx: commands.Context, oldclustername: str, newname: str):
+        """Rename a cluster."""
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if oldclustername.lower() not in clusters.keys():
+                await ctx.send("Original cluster name not found")
+            else:
+                clusters[newname.lower()] = clusters.pop(oldclustername.lower())
+                await ctx.send("Cluster has been renamed")
+                await self.initialize()
+
     @server_settings.command(name="delcluster")
     async def del_cluster(self, ctx: commands.Context, clustername: str):
         """Delete a cluster."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
-            if clustername not in clusters.keys():
+            if clustername.lower() not in clusters.keys():
                 await ctx.send("Cluster name not found")
             else:
-                del clusters[clustername]
+                del clusters[clustername.lower()]
                 await ctx.send(f"**{clustername}** cluster has been deleted")
                 await self.initialize()
 
@@ -1696,11 +1737,11 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername.lower() not in clusters:
                 return await ctx.send(f"{clustername} cluster does not exist!")
-            if clusters[clustername]["servertoserver"] is False:
-                clusters[clustername]["servertoserver"] = True
+            if clusters[clustername.lower()]["servertoserver"] is False:
+                clusters[clustername.lower()]["servertoserver"] = True
                 return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Enabled**.")
-            if clusters[clustername]["servertoserver"] is True:
-                clusters[clustername]["servertoserver"] = False
+            if clusters[clustername.lower()]["servertoserver"] is True:
+                clusters[clustername.lower()]["servertoserver"] = False
                 return await ctx.send(f"Server to server chat for {clustername.upper()} has been **Disabled**.")
 
     @server_settings.group(name="ingame")
@@ -2271,6 +2312,9 @@ class ArkTools(commands.Cog):
                 cmd = f"serverchat Include your Implant ID with the command"
                 return await self.executor(guild, server, cmd)
             async with self.config.guild(guild).players() as players:
+                if not a.isdigit():
+                    cmd = f"serverchat That is not a number. Include your IMPLANT ID NUMBER with the command"
+                    return await self.executor(guild, server, cmd)
                 if "ingame" not in playerdata:
                     players[xuid]["ingame"] = {server["chatchannel"]: a}
                 else:

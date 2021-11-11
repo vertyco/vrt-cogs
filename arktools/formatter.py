@@ -149,6 +149,7 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
             global_time = global_time + time
     gd, gh, gm = time_format(global_time)
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+    # Figure out how many pages the lb menu will be
     pages = math.ceil(len(sorted_players) / 10)
     start = 0
     stop = 10
@@ -160,6 +161,7 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
             color=discord.Color.random()
         )
         embed.set_thumbnail(url=guild.icon_url)
+        # Put 10 players per page, adding 10 to the start and stop values after each loop
         if stop > len(sorted_players):
             stop = len(sorted_players)
         for i in range(start, stop, 1):
@@ -201,6 +203,7 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
     return embeds
 
 
+# Same thing as ark leaderboard but cluster specific
 def cstats_format(stats: dict, guild: discord.guild):
     embeds = []
     maps = {}
@@ -252,6 +255,7 @@ def cstats_format(stats: dict, guild: discord.guild):
     return embeds
 
 
+# Format stats for an individual player
 def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
     kit = settings["kit"]
     stats = settings["players"]
@@ -350,6 +354,7 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
             return embed
 
 
+# Detect recent followers and return list of people to add back
 async def detect_friends(friends: list, followers: list):
     people_to_add = []
     xuids = []
@@ -370,6 +375,7 @@ async def detect_friends(friends: list, followers: list):
 
 
 # Plot player count for each cluster
+# Instead of relying on matplotlibs date formatter, the data points are selected manually with set ticks
 async def get_graph(settings: dict, hours: int):
     lim = hours * 60
     times = settings["serverstats"]["dates"]
@@ -380,7 +386,7 @@ async def get_graph(settings: dict, hours: int):
     y = []
     c = {}
     title = f"Player Count Over the Past {int(hours)} Hours"
-    if len(times) < lim:
+    if len(times) < lim:  # Time input is greater of equal to available time recorded
         hours = len(times) / 60
         title = f"Player Count Over Lifetime ({int(hours)} Hours)"
         lim = len(times)
