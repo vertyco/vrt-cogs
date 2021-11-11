@@ -353,6 +353,15 @@ class ArkTools(commands.Cog):
         if reply.content.isdigit():
             sid = reply.content
             async with self.config.guild(ctx.guild).players() as players:
+                embed = discord.Embed(
+                    description=f"**Type your Steam Username in chat below(Or Gamertag).**"
+                )
+                await msg.edit(embed=embed)
+                try:
+                    reply = await self.bot.wait_for("message", timeout=60, check=check)
+                except asyncio.TimeoutError:
+                    return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                sname = reply.content
                 if sid not in players:
                     players[sid] = {}
                 if "discord" in players[sid]:
@@ -369,16 +378,6 @@ class ArkTools(commands.Cog):
                             color=discord.Color.green()
                         )
                         return await msg.edit(embed=embed)
-                embed = discord.Embed(
-                    description=f"**Type your Steam Username in chat below(Or Gamertag).**"
-                )
-                await msg.edit(embed=embed)
-                try:
-                    reply = await self.bot.wait_for("message", timeout=60, check=check)
-                except asyncio.TimeoutError:
-                    return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-                sname = reply.content
-
                 if len(players[sid].keys()) == 0:
                     players[sid] = {
                         "discord": ctx.author.id,
