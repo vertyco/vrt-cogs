@@ -2308,10 +2308,12 @@ class ArkTools(commands.Cog):
         players = await self.config.guild(guild).players()
         try:
             xuid, playerdata = await self.get_player(gamertag, players)
-        except TypeError:
-            return await self.executor(guild, server, f"serverchat In-game command failed!")
+        except TypeError as e:
+            log.warning(f"In-game command failed: {e}")
+            return await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
         if not xuid or not playerdata:
-            return await self.executor(guild, server, f"serverchat In-game command failed!")
+            cmd = f"serverchat In-game command failed! This can happen if youve recently changed your Gamertag"
+            return await self.executor(guild, server, cmd)
         # Help command
         if cmd.lower().startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
