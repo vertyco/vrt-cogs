@@ -2324,9 +2324,11 @@ class ArkTools(commands.Cog):
         elif cmd.lower().startswith("register"):
             c, a = self.parse_cmd(cmd)
             if not a:
-                cmd = f"serverchat No ID, type the command as .register YourImplantID"
-                await channel.send(f"`serverchat No ID, type the command as {prefix}register YourImplantID`")
-                return await self.executor(guild, server, cmd)
+                cmd = f"serverchat No ID, type the command as {prefix}register YourImplantID"
+                await self.executor(guild, server, cmd)
+                if channel:
+                    await channel.send(f"`serverchat No ID, type the command as {prefix}register YourImplantID`")
+                return
             async with self.config.guild(guild).players() as players:
                 if not a.isdigit():
                     cmd = f"serverchat That is not a number. Include your IMPLANT ID NUMBER after the command"
@@ -2564,7 +2566,7 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, cmd)
                 kit["claimed"].append(xuid)
                 if channel:
-                    await channel.send(f"{gamertag.upper()} HAS JUST CLAIMED THEIR STARTER KIT!")
+                    await channel.send(f"`{gamertag.upper()} has just claimed their starter kit!`")
 
     def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
         time = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
