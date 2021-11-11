@@ -214,8 +214,9 @@ class ArkTools(commands.Cog):
     @staticmethod
     async def get_player(gamertag: str, players: dict):
         for xuid, stats in players.items():
-            if gamertag.lower() == stats["username"].lower():
-                return xuid, stats
+            if "username" in stats:
+                if gamertag.lower() == stats["username"].lower():
+                    return xuid, stats
 
     # Is player registered in-game on a server
     @staticmethod
