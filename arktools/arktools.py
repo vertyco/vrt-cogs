@@ -153,7 +153,11 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"Client ID and Secret have not been authorized yet!\n"
                                f"Bot owner needs to run `{ctx.prefix}apiset authorize`")
                 return None, None
-        await auth_mgr.refresh_tokens()
+        try:
+            await auth_mgr.refresh_tokens()
+        except Exception as e:
+            if "Service Unavailable" in str(e):
+                return None, None
         async with self.config.guild(ctx.guild).clusters() as clusters:
             clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
         xbl_client = XboxLiveClient(auth_mgr)
@@ -525,6 +529,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
 
+            addstatus = ""
             # Iterate through server tokens and send off friend requests
             for cname, cluster in clusters.items():
                 for sname, server in cluster["servers"].items():
@@ -533,7 +538,8 @@ class ArkTools(commands.Cog):
                         async with aiohttp.ClientSession() as session:
                             xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokendata)
                             if not xbl_client:
-                                return
+                                addstatus += f"`{server['gamertag']}: `❌\n"
+                                continue
                             status = await add_friend(xuid, token)
                             if 200 <= status <= 204:
                                 embed = discord.Embed(
@@ -541,16 +547,20 @@ class ArkTools(commands.Cog):
                                     color=discord.Color.green()
                                 )
                                 embed.set_thumbnail(url=LOADING)
+                                addstatus += f"`{server['gamertag']}: `✅\n"
                             else:
                                 embed = discord.Embed(
                                     description=f"Friend request from `{server['gamertag']}` may have failed!",
                                     color=discord.Color.red()
                                 )
                                 embed.set_thumbnail(url=FAILED)
+                                addstatus += f"`{server['gamertag']}: `❌\n"
                             await msg.edit(embed=embed)
             embed = discord.Embed(color=discord.Color.green(),
                                   description=f"✅ Finished adding `{players[xuid]['username']}` for All Gamertags.\n"
                                               f"You should now be able to join from the Gamertags' profile page.")
+            if addstatus != "":
+                embed.add_field(name="Add Status", value=addstatus)
             embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
             embed.set_thumbnail(url=SUCCESS)
             await msg.edit(embed=embed)
