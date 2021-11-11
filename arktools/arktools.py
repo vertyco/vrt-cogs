@@ -2324,11 +2324,12 @@ class ArkTools(commands.Cog):
         elif cmd.lower().startswith("register"):
             c, a = self.parse_cmd(cmd)
             if not a:
-                cmd = f"serverchat Include your Implant ID with the command"
+                cmd = f"serverchat No ID, type the command as .register YourImplantID"
+                await channel.send(f"`serverchat No ID, type the command as {prefix}register YourImplantID`")
                 return await self.executor(guild, server, cmd)
             async with self.config.guild(guild).players() as players:
                 if not a.isdigit():
-                    cmd = f"serverchat That is not a number. Include your IMPLANT ID NUMBER with the command"
+                    cmd = f"serverchat That is not a number. Include your IMPLANT ID NUMBER after the command"
                     return await self.executor(guild, server, cmd)
                 if "ingame" not in playerdata:
                     players[xuid]["ingame"] = {server["chatchannel"]: a}
