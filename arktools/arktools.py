@@ -590,7 +590,12 @@ class ArkTools(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokendata)
                 if not xbl_client:
-                    return
+                    embed = discord.Embed(
+                        description=f"Friend request from `{tokendata['gamertag']}` may have failed!",
+                        color=discord.Color.red()
+                    )
+                    embed.set_thumbnail(url=FAILED)
+                    return await msg.edit(embed=embed)
                 status = await add_friend(xuid, token)
                 if 200 <= status <= 204:
                     embed = discord.Embed(color=discord.Color.green(),
