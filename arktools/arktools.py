@@ -56,7 +56,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.11"
+    __version__ = "2.4.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2270,6 +2270,8 @@ class ArkTools(commands.Cog):
             for badname in badnames:
                 if badname.lower() in character_name.lower():
                     await self.executor(guild, server, f'renameplayer "{badname}" {gamertag}')
+                    cmd = f"serverchat {gamertag}, the name {badname} has been blacklisted, you have been renamed"
+                    await self.executor(guild, server, cmd)
                     await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
                     break
 
