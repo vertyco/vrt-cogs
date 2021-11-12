@@ -2268,7 +2268,7 @@ class ArkTools(commands.Cog):
 
             # Check if any character has a blacklisted name and rename the character to their Gamertag if so
             for badname in badnames:
-                if f"({badname.lower()}): " in character_name.lower():
+                if badname.lower() in character_name.lower():
                     await self.executor(guild, server, f'renameplayer "{badname}" {gamertag}')
                     await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
                     break
