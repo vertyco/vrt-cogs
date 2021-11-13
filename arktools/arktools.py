@@ -762,18 +762,23 @@ class ArkTools(commands.Cog):
     @commands.command(name="servergraph", hidden=False)
     async def graph_player_count(self, ctx: commands.Context, hours=None):
         """View a graph of player count over a set time"""
+        embed = discord.Embed(color=discord.Color.green(),
+                              description=f"Gathering Data...")
+        embed.set_thumbnail(url=LOADING)
+        msg = await ctx.send(embed=embed)
         if not hours:
             hours = 1
         # Convert to float and back to int to handle if someone types a float
         hours = float(hours)
         hours = int(hours)
-        settings = await self.config.guild(ctx.guild).all()
         async with ctx.typing():
+            settings = await self.config.guild(ctx.guild).all()
             file = await get_graph(settings, int(hours))
-        if file:
-            await ctx.send(file=file)
-        else:
-            await ctx.send("Not enough data, give it some time")
+            await msg.delete()
+            if file:
+                await ctx.send(file=file)
+            else:
+                await ctx.send("Not enough data, give it some time")
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")
@@ -2549,7 +2554,7 @@ class ArkTools(commands.Cog):
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
                     if channel:
-                        await channel.send(f"Use the .register command to register your ID first")
+                        await channel.send(f"`Use the .register command to register your ID first`")
                     cmd = f"serverchat Use the .register command to register your ID first"
                     return await self.executor(guild, server, cmd)
                 a = implant
