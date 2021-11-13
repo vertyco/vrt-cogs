@@ -855,11 +855,10 @@ class ArkShop(commands.Cog):
             itemtype = logs["users"][str(member.id)][item]["type"]
             count = logs["users"][str(member.id)][item]["count"]
             items += f"**{item}**\nType: `{itemtype}`\nPurchased: `{count}`\n\n"
-        for player in playerstats:
-            if "discord" in playerstats[player]:
-                if str(member.id) == str(playerstats[player]["discord"]):
-                    gt = player
-                    xuid = playerstats[player]["xuid"]
+        for xuid, stats in playerstats.items():
+            if "discord" in stats:
+                if str(member.id) == str(stats["discord"]):
+                    gt = stats["username"]
                     break
         else:
             gt = "Unknown"
