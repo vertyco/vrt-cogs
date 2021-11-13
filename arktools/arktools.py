@@ -2621,6 +2621,12 @@ class ArkTools(commands.Cog):
             thumbnail = LIVE
             status = ""
             totalplayers = 0
+            dest_channel = settings["status"]["channel"]
+            if not dest_channel:
+                continue
+            dest_channel = guild.get_channel(dest_channel)
+            if not dest_channel:
+                continue
             for cluster in settings["clusters"]:
                 cname = cluster
                 clustertotal = 0
@@ -2631,6 +2637,7 @@ class ArkTools(commands.Cog):
                     sname = server
                     server = servers[server]
                     channel = server["chatchannel"]
+                    playercount = 0
 
                     # Get cached player count data
                     playerlist = self.playerlist[channel]
@@ -2657,12 +2664,10 @@ class ArkTools(commands.Cog):
                                 allowed_mentions=mentions
                             )
                         self.downtime[channel] += 1
-                        continue
 
                     elif len(playerlist) == 0:
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
                         self.downtime[channel] = 0
-                        continue
 
                     else:
                         playercount = len(playerlist)
@@ -2685,16 +2690,10 @@ class ArkTools(commands.Cog):
                         serverstats[cname] = []
                     serverstats[cname].append(int(clustertotal))
 
-            message = settings["status"]["message"]
-            channel = settings["status"]["channel"]
-            if not channel:
-                continue
-
             # Log total player counts
             tz = pytz.timezone(settings["timezone"])  # idk if it matters since timestamps use client time
             time = datetime.datetime.now(tz)
             async with self.config.guild(guild).serverstats() as serverstats:
-                # times = time.strftime('%I:%M %p')
                 serverstats["dates"].append(time.isoformat())
                 serverstats["counts"].append(int(totalplayers))
 
@@ -2711,36 +2710,25 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=thumbnail)
             embed.set_image(url=f"attachment://plot.png")
 
-            dest_channel = guild.get_channel(channel)
-            msgtoedit = None
-
+            msg_to_delete = None
+            message = settings["status"]["message"]
             if message:
                 try:
-                    msgtoedit = await dest_channel.fetch_message(message)
+                    msg_to_delete = await dest_channel.fetch_message(message)
                 except discord.NotFound:
                     log.info(f"Status message not found. Creating new message.")
 
-            if not msgtoedit:
-                if file:
-                    message = await dest_channel.send(embed=embed, file=file)
-                else:
-                    message = await dest_channel.send(embed=embed)
-                await self.config.guild(guild).status.message.set(message.id)
-            if msgtoedit:
+            if msg_to_delete:
                 try:
-                    if file:
-                        await msgtoedit.delete()
-                        message = await dest_channel.send(embed=embed, file=file)
-                    else:
-                        await msgtoedit.delete()
-                        message = await dest_channel.send(embed=embed)
-                    await self.config.guild(guild).status.message.set(message.id)
-                except discord.Forbidden:  # Probably imported config from another bot and cant edit the message
-                    if file:
-                        message = await dest_channel.send(embed=embed, file=file)
-                    else:
-                        message = await dest_channel.send(embed=embed, file=file)
-                    await self.config.guild(guild).status.message.set(message.id)
+                    await msg_to_delete.delete()
+                except discord.Forbidden:  # Must have imported config from another bot and doesnt have perms to delete
+                    log.warning("Status channel: Bot doesnt have perms to delete other users messages")
+                    pass
+            if file:
+                message = await dest_channel.send(embed=embed, file=file)
+            else:
+                message = await dest_channel.send(embed=embed, file=file)
+            await self.config.guild(guild).status.message.set(message.id)
 
     @status_channel.before_loop
     async def before_status_channel(self):
