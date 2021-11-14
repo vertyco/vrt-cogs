@@ -1515,18 +1515,6 @@ class ArkShop(commands.Cog):
             )
             return await message.edit(embed=embed)
 
-        # Check file size to see if player has anything in their ark data
-        player_data_file = os.path.join(dest_directory, xuid)
-        if os.path.exists(player_data_file):
-            size = os.path.getsize(player_data_file)
-            if int(size) > 0:
-                embed = discord.Embed(
-                    title="Non-Empty File Detected!",
-                    description=f"Transaction Cancelled, Empty your Ark Data first!",
-                    color=discord.Color.red()
-                )
-                return await message.edit(embed=embed)
-
         # last check to make sure user still wants to buy item
         embed = discord.Embed(
             description=f"**Are you sure you want to purchase the {name} item?**\n"
@@ -1552,9 +1540,19 @@ class ArkShop(commands.Cog):
             return await message.edit(embed=embed)
 
         destination = os.path.join(dest_directory, xuid)
-
         # remove any existing data from destination
         if os.path.exists(destination):
+            size = os.path.getsize(destination)
+            # Check file size to see if player has anything in their ark data
+            if int(size) > 0:
+                embed = discord.Embed(
+                    title="Non-Empty File Detected!",
+                    description=f"Transaction Cancelled, Empty your Ark Data first!",
+                    color=discord.Color.red()
+                )
+                size = "{:,}".format(int(size))
+                embed.set_footer(text=f"Detected {size} bytes worth of ark data")
+                return await message.edit(embed=embed)
             try:
                 os.remove(destination)
             except PermissionError:
