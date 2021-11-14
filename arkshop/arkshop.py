@@ -1551,7 +1551,7 @@ class ArkShop(commands.Cog):
                     color=discord.Color.red()
                 )
                 size = "{:,}".format(int(size))
-                embed.set_footer(text=f"Detected {size} bytes worth of ark data")
+                embed.set_footer(text=f"Detected {size} bytes worth of ark data in your upload")
                 return await message.edit(embed=embed)
             try:
                 os.remove(destination)
