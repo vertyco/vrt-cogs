@@ -1517,14 +1517,15 @@ class ArkShop(commands.Cog):
 
         # Check file size to see if player has anything in their ark data
         player_data_file = os.path.join(dest_directory, xuid)
-        size = os.path.getsize(player_data_file)
-        if int(size) > 0:
-            embed = discord.Embed(
-                title="Non-Empty File Detected!",
-                description=f"Transaction Cancelled, Empty your Ark Data first!",
-                color=discord.Color.red()
-            )
-            return await message.edit(embed=embed)
+        if os.path.exists(player_data_file):
+            size = os.path.getsize(player_data_file)
+            if int(size) > 0:
+                embed = discord.Embed(
+                    title="Non-Empty File Detected!",
+                    description=f"Transaction Cancelled, Empty your Ark Data first!",
+                    color=discord.Color.red()
+                )
+                return await message.edit(embed=embed)
 
         # last check to make sure user still wants to buy item
         embed = discord.Embed(
