@@ -1811,6 +1811,7 @@ class ArkTools(commands.Cog):
         """
         Set the cooldown (in hours) that players can use the payday command
         """
+
         await self.config.guild(ctx.guild).payday.cooldown.set(hours)
         await ctx.send(f"Cooldown set for {hours} hours!")
 
