@@ -1815,7 +1815,7 @@ class ArkTools(commands.Cog):
         await ctx.send(f"Cooldown set for {hours} hours!")
 
     @in_game.command(name="togglekit")
-    async def toggle_payday(self, ctx: commands.Context):
+    async def toggle_starter_kit(self, ctx: commands.Context):
         """Toggle the in-game starter kit command on or off"""
         toggled = await self.config.guild(ctx.guild).kit.enabled()
         if toggled:
