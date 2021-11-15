@@ -56,7 +56,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.12"
+    __version__ = "2.4.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -74,7 +74,6 @@ class ArkTools(commands.Cog):
             "fullaccessrole": None,
             "autowelcome": False,
             "autofriend": False,
-            "datalogs": False,
             "unfriendafter": 30,
             "clusters": {},
             "modroles": [],
@@ -86,7 +85,7 @@ class ArkTools(commands.Cog):
             "kit": {"enabled": False, "claimed": [], "paths": []},
             "payday": {"enabled": False, "random": False, "cooldown": 12, "paths": []},
             "serverstats": {"dates": [], "counts": [], "expiration": 30},
-            "timezone": "US/Eastern"
+            "timezone": "UTC"
         }
         default_global = {
             "clientid": None,
@@ -190,7 +189,7 @@ class ArkTools(commands.Cog):
         token = auth_mgr.xsts_token.authorization_header_value
         return xbl_client, token
 
-    # Pull the first (authorized) token data found for non-specific api use
+    # Pull the first (authorized) token data found for non-server-specific api use
     @staticmethod
     def pull_key(clusters: dict):
         for cname, cluster in clusters.items():
@@ -210,14 +209,14 @@ class ArkTools(commands.Cog):
         argument = cmd[0][1]
         return command, argument
 
-    # Pull xuid from gamertag
+    # Find xuid from gamertag
     @staticmethod
     async def get_player(gamertag: str, players: dict):
         for xuid, stats in players.items():
             if gamertag.lower() == stats["username"].lower():
                 return xuid, stats
 
-    # Is player registered in-game on a server
+    # Is player registered in-game on a server?
     @staticmethod
     def get_implant(playerdata: dict, channel: str):
         if "ingame" in playerdata:
@@ -272,6 +271,7 @@ class ArkTools(commands.Cog):
             if len(serverlist) == 0:
                 return await ctx.send("I dont see any servers, make sure an admin has set them up!")
 
+            # Just iterates through all servers so user doesnt have to select a specific server
             stucktasks = []
             for server in serverlist:
                 for path in IMSTUCK_BLUEPRINTS:
@@ -292,6 +292,7 @@ class ArkTools(commands.Cog):
             data["players"].clear()
             await ctx.send(embed=discord.Embed(description="All player data has been wiped."))
 
+    # Reset graph data
     @commands.command(name="wipegraphdata")
     @commands.guildowner()
     async def wipe_graph_data(self, ctx: commands.Context):
@@ -302,6 +303,7 @@ class ArkTools(commands.Cog):
                     slist.clear()
             await ctx.tick()
 
+    # Remove a discord user from a Gamertag
     @commands.command(name="unregister")
     @commands.admin()
     async def unregister_user(self, ctx: commands.Context, member: discord.Member):
@@ -318,6 +320,7 @@ class ArkTools(commands.Cog):
                 del players[xuid]["discord"]
             await ctx.send(f"{member.mention} has been unregistered!")
 
+    # Delete a player from the player data
     @commands.command(name="deleteplayer")
     @commands.admin()
     async def delete_player(self, ctx: commands.Context, xuid: str):
@@ -328,6 +331,7 @@ class ArkTools(commands.Cog):
                     del players[pid]
                     return await ctx.tick()
 
+    # Initializes a player to the stats section, or appends their discord ID to existing gamertag in database
     @commands.command(name="register")
     @commands.guild_only()
     async def register_user(self, ctx: commands.Context):
@@ -471,6 +475,7 @@ class ArkTools(commands.Cog):
             embed.set_footer(text="Then you can follow it back and join session from its profile page!")
             await ctx.send(embed=embed)
 
+    # Force the host Gamertag(s) to add the user as a friend using XSAPI
     @commands.command(name="addme")
     @commands.guild_only()
     async def add_user(self, ctx: commands.Context):
@@ -615,6 +620,7 @@ class ArkTools(commands.Cog):
             color = discord.Color.dark_grey()
             return await msg.edit(embed=discord.Embed(description="Incorrect Reply, menu closed.", color=color))
 
+    # Send off an RCON command to a selected server
     @commands.command(name="rcon")
     @commands.guild_only()
     async def manual_rcon(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
@@ -625,6 +631,7 @@ class ArkTools(commands.Cog):
         if not settings["fullaccessrole"]:
             return await ctx.send("Full access role has not been set!")
         allowed = False
+        # Determine if user is allowed to use the command
         for role in ctx.author.roles:
             if role.id == settings["fullaccessrole"]:
                 allowed = True
@@ -694,7 +701,7 @@ class ArkTools(commands.Cog):
                 rtasks.append(manual_rcon(ctx.channel, server, command))
             await asyncio.gather(*rtasks)
 
-        if command.lower().startswith("banplayer"):
+        if command.lower().startswith("banplayer"):  # Have the host Gamertags block the user that was banned
             player_id = str(re.search(r'(\d+)', command).group(1))
             blocked = ""
             async with ctx.typing():
@@ -722,7 +729,7 @@ class ArkTools(commands.Cog):
                                     blocked += f"{host} Failed to block XUID: {player_id} - Status: {status}\n"
                     if blocked != "":
                         await ctx.send(box(blocked, lang="python"))
-        if command.lower().startswith("unbanplayer"):
+        if command.lower().startswith("unbanplayer"):  # Have the host Gamertags unblock the user
             player_id = str(re.search(r'(\d+)', command).group(1))
             unblocked = ""
             async with ctx.typing():
@@ -751,6 +758,7 @@ class ArkTools(commands.Cog):
                     if unblocked != "":
                         await ctx.send(box(unblocked, lang="python"))
 
+    # Re-Initialize the cache, for debug purposes
     @commands.command(name="init", hidden=True)
     @commands.is_owner()
     async def init_config(self, ctx):
@@ -758,7 +766,7 @@ class ArkTools(commands.Cog):
         await ctx.tick()
 
     # STAT COMMANDS
-    # Thanks to Vexed#3211 for help with the Matplotlib logic :)
+    # Thanks Vexed#3211 for some ideas with the Matplotlib logic :)
     @commands.command(name="servergraph", hidden=False)
     async def graph_player_count(self, ctx: commands.Context, hours=None):
         """View a graph of player count over a set time"""
@@ -791,6 +799,7 @@ class ArkTools(commands.Cog):
             return await ctx.send("There are no stats available yet!")
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
+    # Displays an embed of all maps for all clusters in order of time played on each map along with top player
     @commands.command(name="clusterstats")
     async def cluster_stats(self, ctx: commands.Context):
         """View playtime data for all clusters"""
@@ -801,6 +810,7 @@ class ArkTools(commands.Cog):
             return await ctx.send(embed=embed)
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
+    # Get detailed info of an individual player on the server
     @commands.command(name="playerstats")
     async def get_player_stats(self, ctx: commands.Context, *, gamertag: str = None):
         """View stats for yourself or another gamertag"""
@@ -823,6 +833,7 @@ class ArkTools(commands.Cog):
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
         await ctx.send(embed=embed)
 
+    # Find out if a user has registered their gamertag
     @commands.command(name="findplayer")
     async def find_player_from_discord(self, ctx: commands.Context, *, member: discord.Member):
         """Find out if a player has registered"""
