@@ -2360,7 +2360,7 @@ class ArkTools(commands.Cog):
                 cmd = f"serverchat No ID, type the command as {prefix}register YourImplantID"
                 await self.executor(guild, server, cmd)
                 if channel:
-                    await channel.send(f"`serverchat No ID, type the command as {prefix}register YourImplantID`")
+                    await channel.send(f"`No ID, type the command as {prefix}register YourImplantID`")
                 return
             async with self.config.guild(guild).players() as players:
                 if not a.isdigit():
