@@ -2703,11 +2703,10 @@ class ArkTools(commands.Cog):
                         playercount = len(playerlist)
                         clustertotal += playercount
                         totalplayers += playercount
-
-                    if playercount == 1:
-                        status += f"{guild.get_channel(channel).mention}: {playercount} player\n"
-                    else:
-                        status += f"{guild.get_channel(channel).mention}: {playercount} players\n"
+                        if playercount == 1:
+                            status += f"{guild.get_channel(channel).mention}: {playercount} player\n"
+                        else:
+                            status += f"{guild.get_channel(channel).mention}: {playercount} players\n"
 
                 if clustertotal == 1:
                     status += f"`{clustertotal}` player in the cluster\n\n"
