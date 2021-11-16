@@ -6,6 +6,7 @@ import shutil
 import os
 import rcon
 import logging
+import aiohttp
 
 from redbot.core import commands, Config, bank
 from redbot.core.utils.chat_formatting import box, pagify
@@ -665,10 +666,16 @@ class ArkShop(commands.Cog):
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
                     if reply.content.lower() == "cancel":
                         return await ctx.send("Item add canceled.")
+                    if reply.attachments:
+                        attachment_url = reply.attachments[0].url
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(attachment_url) as resp:
+                                paths = await resp.text()
+                                paths = paths.split("\r\n")
                     else:
                         paths = reply.content.split("\n")
-                        shops[shop_name][item_name]["paths"] = paths
-                        return await ctx.send(f"Item paths set!")
+                    shops[shop_name][item_name]["paths"] = paths
+                    return await ctx.send(f"Item paths set!")
                 except asyncio.TimeoutError:
                     return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
             else:
@@ -721,10 +728,16 @@ class ArkShop(commands.Cog):
                     reply = await self.bot.wait_for("message", timeout=240, check=check)
                     if reply.content.lower() == "cancel":
                         return await ctx.send("Option add canceled.")
+                    if reply.attachments:
+                        attachment_url = reply.attachments[0].url
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(attachment_url) as resp:
+                                paths = await resp.text()
+                                paths = paths.split("\r\n")
                     else:
                         paths = reply.content.split("\n")
-                        shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
-                        return await ctx.send(f"Option set!")
+                    shops[shop_name][item_name]["options"][option] = {"price": price, "paths": paths}
+                    return await ctx.send(f"Option set!")
                 except asyncio.TimeoutError:
                     return await msg.edit("You took too long :yawning_face:")
 

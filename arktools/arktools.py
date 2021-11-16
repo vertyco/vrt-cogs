@@ -1811,7 +1811,6 @@ class ArkTools(commands.Cog):
         """
         Set the cooldown (in hours) that players can use the payday command
         """
-
         await self.config.guild(ctx.guild).payday.cooldown.set(hours)
         await ctx.send(f"Cooldown set for {hours} hours!")
 
@@ -1826,8 +1825,8 @@ class ArkTools(commands.Cog):
             await self.config.guild(ctx.guild).kit.enabled.set(True)
             await ctx.send("In-game starter kit command has been **Enabled**")
 
-    @in_game.command(name="setpaths")
-    async def set_blueprint_paths(self, ctx: commands.Context):
+    @in_game.command(name="setpayday")
+    async def set_payday_blueprint_paths(self, ctx: commands.Context):
         """
         Set the full blueprint paths for the in-game payday rewards to send
         The paths must be the FULL blueprint paths WITH the quantity, quality, and blueprint identifier
@@ -1850,7 +1849,14 @@ class ArkTools(commands.Cog):
 
         if reply.content.lower() == "cancel":
             return await ctx.send("Payday path set canceled.")
-        paths = reply.content.split("\n")
+        if reply.attachments:
+            attachment_url = reply.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    paths = await resp.text()
+                    paths = paths.split("\r\n")
+        else:
+            paths = reply.content.split("\n")
         await self.config.guild(ctx.guild).payday.paths.set(paths)
         await ctx.send("Paths for the in-game payday command have been set!")
 
@@ -1878,7 +1884,14 @@ class ArkTools(commands.Cog):
 
         if reply.content.lower() == "cancel":
             return await ctx.send("Starter kit path set canceled.")
-        paths = reply.content.split("\n")
+        if reply.attachments:
+            attachment_url = reply.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    paths = await resp.text()
+                    paths = paths.split("\r\n")
+        else:
+            paths = reply.content.split("\n")
         await self.config.guild(ctx.guild).kit.paths.set(paths)
         await ctx.send("Paths for the in-game starter kit command have been set!")
 
