@@ -3105,7 +3105,10 @@ class ArkTools(commands.Cog):
                         )
                         log.info(f"{sname} {cname} accepted {username}'s friend request.")
                         if eventlog:
-                            await eventlog.send(embed=embed)
+                            try:
+                                await eventlog.send(embed=embed)
+                            except discord.NotFound:
+                                pass
                         welcome = f"Friend request accepted! " \
                                   f"{username}, you can now join session from this account's profile page"
                         await xbl_client.message.send_message(str(xuid), welcome)
@@ -3116,7 +3119,10 @@ class ArkTools(commands.Cog):
                         )
                         log.info(f"{sname} {cname} failed to accept {username}'s friend request.")
                         if eventlog:
-                            await eventlog.send(embed=embed)
+                            try:
+                                await eventlog.send(embed=embed)
+                            except discord.NotFound:
+                                pass
 
             # Detecting non-following players
             for person in friends:
