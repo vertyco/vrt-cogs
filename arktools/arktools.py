@@ -657,20 +657,22 @@ class ArkTools(commands.Cog):
 
         serverlist = []
         for tup in self.servers:
+            guild = tup[0]
             server = tup[1]
-            if cname == "all" and sname == "all":
-                serverlist.append(server)
-            elif cname == "all" and sname != "all":
-                if server["name"] == sname:
+            if guild == ctx.guild.id:
+                if cname == "all" and sname == "all":
                     serverlist.append(server)
-            elif cname != "all" and sname == "all":
-                if server["cluster"] == cname:
-                    serverlist.append(server)
-            elif cname != "all" and sname != "all":
-                if server["cluster"] == cname and server["name"] == sname:
-                    serverlist.append(server)
-            else:
-                continue
+                elif cname == "all" and sname != "all":
+                    if server["name"] == sname:
+                        serverlist.append(server)
+                elif cname != "all" and sname == "all":
+                    if server["cluster"] == cname:
+                        serverlist.append(server)
+                elif cname != "all" and sname != "all":
+                    if server["cluster"] == cname and server["name"] == sname:
+                        serverlist.append(server)
+                else:
+                    continue
         if len(serverlist) == 0:
             return await ctx.send("No servers have been found")
 
@@ -1727,11 +1729,11 @@ class ArkTools(commands.Cog):
     async def del_server(self, ctx: commands.Context, clustername: str, servername: str):
         """Remove a server from a cluster."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
-            if clustername not in clusters:
+            if clustername.lower() not in clusters:
                 return await ctx.send(f"{clustername} cluster not found.")
-            if servername not in clusters[clustername]["servers"]:
+            if servername.lower() not in clusters[clustername.lower()]["servers"]:
                 return await ctx.send(f"{servername} server not found.")
-            del clusters[clustername]["servers"][servername]
+            del clusters[clustername.lower()]["servers"][servername.lower()]
             await ctx.send(f"**{servername}** server has been removed from **{clustername}**")
             await self.initialize()
 
@@ -2271,7 +2273,8 @@ class ArkTools(commands.Cog):
             if settings["clusters"][clustername]["servertoserver"]:  # Maps can talk to each other if true
                 for data in self.servers:
                     s = data[1]
-                    if s["cluster"] == server["cluster"] and s["name"] != server["name"]:
+                    g = self.bot.get_guild(data[0])
+                    if s["cluster"] == server["cluster"] and s["name"] != server["name"] and g == guild:
                         await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
 
             # Send off messages to discord channels
