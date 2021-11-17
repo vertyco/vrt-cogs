@@ -131,6 +131,7 @@ async def ships(data):
                         continue
                     if comp[0]["component_size"] == "TBD":
                         continue
+                    compname = compname.replace("_", " ")
                     info += f"**{compname.capitalize()}**\n"
                     for i in comp:
                         size = i["component_size"]
