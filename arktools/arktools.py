@@ -2690,9 +2690,13 @@ class ArkTools(commands.Cog):
                         if self.downtime[channel] == 5:
                             mentions = discord.AllowedMentions(roles=True)
                             pingrole = guild.get_role(settings["fullaccessrole"])
+                            if pingrole:
+                                pingrole = pingrole.mention
+                            else:
+                                pingrole = "Failed to Ping admin role... BUT,"
                             alertchannel = guild.get_channel(clustersettngs["adminlogchannel"])
                             await alertchannel.send(
-                                f"{pingrole.mention}\n"
+                                f"{pingrole}\n"
                                 f"The **{sname} {cname}** server has been offline for 5 minutes now!",
                                 allowed_mentions=mentions
                             )

@@ -921,7 +921,7 @@ class ArkShop(commands.Cog):
         category_count = len(categories.keys())
         # how many pages
         pages = math.ceil(category_count / 4)
-        if pages == 0:
+        if category_count == 0:
             embed = discord.Embed(
                 description="There are no categories added!",
                 color=discord.Color.red()
@@ -963,6 +963,16 @@ class ArkShop(commands.Cog):
             embedlist.append(embed)
             start += 4
             stop += 4
+        if len(embedlist) == 0:
+            embed = discord.Embed(
+                description="There are no items available yet!",
+                color=discord.Color.red()
+            )
+            if message:
+                await message.clear_reactions()
+                return await message.edit(embed=embed)
+            else:
+                return await ctx.send(embed=embed)
         if message is None:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory")
         else:
