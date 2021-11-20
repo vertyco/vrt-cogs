@@ -963,16 +963,6 @@ class ArkShop(commands.Cog):
             embedlist.append(embed)
             start += 4
             stop += 4
-        if len(embedlist) == 0:
-            embed = discord.Embed(
-                description="There are no items available yet!",
-                color=discord.Color.red()
-            )
-            if message:
-                await message.clear_reactions()
-                return await message.edit(embed=embed)
-            else:
-                return await ctx.send(embed=embed)
         if message is None:
             return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory")
         else:
@@ -1826,4 +1816,10 @@ class ArkShop(commands.Cog):
                 description=f"{category_items}"
             )
             pages.append(embed)
+            if len(pages) == 0:
+                embed = discord.Embed(
+                    description="There are no items available yet!",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
         await menu(ctx, pages, DEFAULT_CONTROLS)
