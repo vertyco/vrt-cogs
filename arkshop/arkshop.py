@@ -1771,6 +1771,7 @@ class ArkShop(commands.Cog):
     @commands.command(name="dshoplist")
     async def data_status(self, ctx):
         """List all items in the data shop"""
+
         shops = await self.config.datashops()
         pages = []
         for category in shops:
@@ -1796,6 +1797,12 @@ class ArkShop(commands.Cog):
     @commands.command(name="rshoplist")
     async def rcon_status(self, ctx):
         """List all items in the rcon shop"""
+        if ctx.guild.id != await self.config.main_server():
+            embed = discord.Embed(
+                description="This is not the main server!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
         shops = await self.config.guild(ctx.guild).shops()
         pages = []
         for category in shops:
