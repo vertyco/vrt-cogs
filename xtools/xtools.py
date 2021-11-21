@@ -526,6 +526,10 @@ class XTools(commands.Cog):
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
+            except Exception as e:
+                if "Forbidden" in str(e):
+                    embed = discord.Embed(description="Failed to gather data, Gamertag may be set to private.")
+                    return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             friend_data = json.loads((await xbl_client.people.get_friends_by_xuid(xuid)).json())
             self.cache[str(ctx.author.id)] = friend_data
