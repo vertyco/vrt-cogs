@@ -1816,10 +1816,12 @@ class ArkShop(commands.Cog):
                 description=f"{category_items}"
             )
             pages.append(embed)
-            if len(pages) == 0:
-                embed = discord.Embed(
-                    description="There are no items available yet!",
-                    color=discord.Color.red()
-                )
-                return await ctx.send(embed=embed)
+        if len(pages) == 0:
+            embed = discord.Embed(
+                description="There are no items available yet!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
         await menu(ctx, pages, DEFAULT_CONTROLS)
+
+
