@@ -2610,6 +2610,8 @@ class ArkTools(commands.Cog):
         min_votes = math.ceil(len(playerlist) / 2)
         if len(playerlist) == 1:
             min_votes = 1
+        if len(playerlist) > 10:
+            min_votes = math.ceil(math.sqrt(2 * len(playerlist)))
         if channel_id not in self.votes:
             self.votes[channel_id] = {}
         if vote_type not in self.votes[channel_id]:
