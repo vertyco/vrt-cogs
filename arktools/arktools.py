@@ -3190,20 +3190,26 @@ class ArkTools(commands.Cog):
     async def graphdata_prune(self):
         for guild in self.activeguilds:
             guild = self.bot.get_guild(guild)
+            if not guild:
+                continue
             stats = {}
             data = await self.config.guild(guild).serverstats()
             exp = data["expiration"]
+            curcounts = data["counts"]
             to_keep = exp * 1440
             stats["expiration"] = exp
             for item, dat in data.items():
                 if item != "expiration":
                     if len(dat) > to_keep:
-                        log.info(f"Pruning {item}")
                         dat.reverse()
                         newdat = dat[:to_keep]
                         newdat.reverse()
-                        stats[item] = newdat
-            await self.config.guild(guild).serverstats.set(stats)
+                        stats[str(item)] = newdat
+            if len(curcounts) > to_keep:
+                amount = len(curcounts) - len(stats["counts"])
+                msg = f"Pruned {amount} items in {guild}"
+                log.info(msg)
+                await self.config.guild(guild).serverstats.set(stats)
 
     @graphdata_prune.before_loop
     async def before_graphdata_prune(self):
