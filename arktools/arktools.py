@@ -114,6 +114,7 @@ class ArkTools(commands.Cog):
         self.maintenance.start()
         self.autofriend.start()
         self.vote_sessions.start()
+        # self.graphdata_prune.start()
 
         # Windows is dumb
         if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
@@ -128,6 +129,7 @@ class ArkTools(commands.Cog):
         self.maintenance.cancel()
         self.autofriend.cancel()
         self.vote_sessions.cancel()
+        # self.graphdata_prune.cancel()
 
     # General authentication manager
     async def auth_manager(
@@ -1515,7 +1517,8 @@ class ArkTools(commands.Cog):
             return await ctx.send(f"The welcome message cannot be formatted, because it contains an "
                                   f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
                                   f"for a list of valid placeholders.")
-        if len(welcome_message) + len(ctx.guild.name) > 256:
+        length = len(to_send) + 25
+        if length > 256:
             return await ctx.send("Message exceeds 256 character length! Make a shorter welcome message.")
         await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
         await ctx.send(f"Welcome message set as:\n{to_send}")
@@ -1542,10 +1545,16 @@ class ArkTools(commands.Cog):
                 statuschannel = statuschannel.mention
             except AttributeError:
                 statuschannel = "`#deleted-channel`"
+
+        stats = settings["serverstats"]["counts"]
+        exp = settings["serverstats"]["expiration"]
+        days = int(len(stats) / 1440)
         embed = discord.Embed(
             description=f"`Server Status Channel: `{statuschannel}\n"
-                        f"`Event Log: `{eventlog}\n"
-                        f"`Timezone:  `{tz}",
+                        f"`Event Log:    `{eventlog}\n"
+                        f"`Timezone:     `{tz}\n"
+                        f"`GraphHistory: `{days} days\n"
+                        f"`GraphStorage: `{exp} days",
             color=discord.Color.blue()
         )
         await ctx.send(embed=embed)
@@ -1585,6 +1594,14 @@ class ArkTools(commands.Cog):
                     color=discord.Color.blue()
                 )
                 await ctx.send(embed=embed)
+
+    @server_settings.command(name="graphdata")
+    async def graph_data_expiration(self, ctx: commands.Context, days: int):
+        """
+        Set how many days worth of graph data to keep saved
+        """
+        await self.config.guild(ctx.guild).serverstats.expiration.set(days)
+        await ctx.tick()
 
     @server_settings.command(name="timezone")
     async def set_timezone(self, ctx: commands.Context, timezone: str):
@@ -1991,7 +2008,6 @@ class ArkTools(commands.Cog):
         self.servercount = 0
         self.servers = []
         self.channels = []
-        self.playerlist = {}
         config = await self.config.all_guilds()
         for guild_id in config:
             guild = self.bot.get_guild(int(guild_id))
@@ -2022,7 +2038,8 @@ class ArkTools(commands.Cog):
                     self.servers.append((guild.id, server))
                     self.servercount += 1
                     self.channels.append(server["chatchannel"])
-                    self.playerlist[server["chatchannel"]] = None
+                    if server["chatchannel"] not in self.playerlist:
+                        self.playerlist[server["chatchannel"]] = None
 
             # Rehash player stats for ArkTools version < 2.0.0 config conversion
             rehashed_stats = {}
@@ -2864,7 +2881,7 @@ class ArkTools(commands.Cog):
                                         log.info("New Player DM Successful")
                                         newplayermessage += f"DM sent: ✅\n"
                                     except Exception as e:
-                                        log.warning(f"New Player DM FAILED: {e}")
+                                        log.warning(f"New Player DM FAILED in guild {guild}: {e}")
                                         newplayermessage += f"DM sent: ❌ {e}\n"
 
                                 if autofriend and xbl_client:
@@ -2873,7 +2890,7 @@ class ArkTools(commands.Cog):
                                         log.info(f"{host} Successfully added {gamertag}")
                                         newplayermessage += f"Added by {host}: ✅\n"
                                     else:
-                                        log.warning(f"{host} FAILED to add {gamertag}")
+                                        log.warning(f"{host} FAILED to add {gamertag} in guild {guild}")
                                         newplayermessage += f"Added by {host}: ❌\n"
 
                         if eventlog:
@@ -3168,6 +3185,31 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(5)
         log.info("Autofriend loop ready")
+
+    @tasks.loop(hours=5)
+    async def graphdata_prune(self):
+        for guild in self.activeguilds:
+            guild = self.bot.get_guild(guild)
+            stats = {}
+            data = await self.config.guild(guild).serverstats()
+            exp = data["expiration"]
+            to_keep = exp * 1440
+            stats["expiration"] = exp
+            for item, dat in data.items():
+                if item != "expiration":
+                    if len(dat) > to_keep:
+                        log.info(f"Pruning {item}")
+                        dat.reverse()
+                        newdat = dat[:to_keep]
+                        newdat.reverse()
+                        stats[item] = newdat
+            await self.config.guild(guild).serverstats.set(stats)
+
+    @graphdata_prune.before_loop
+    async def before_graphdata_prune(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(10)
+        log.info("Janitor ready")
 
     # For whatever reason one player config item was fucked up so i made this to find it
     @commands.command(name="fixconfig", hidden=True)

@@ -1634,14 +1634,22 @@ class ArkShop(commands.Cog):
         else:
             await message.edit(embed=embeds[cur_page - 1])
 
-        await message.add_reaction("↩️")
-        await message.add_reaction("◀️")
-        await message.add_reaction("❌")
-        await message.add_reaction("▶️")
-        await message.add_reaction("1️⃣")
-        await message.add_reaction("2️⃣")
-        await message.add_reaction("3️⃣")
-        await message.add_reaction("4️⃣")
+        try:
+            await message.add_reaction("↩️")
+            await message.add_reaction("◀️")
+            await message.add_reaction("❌")
+            await message.add_reaction("▶️")
+            await message.add_reaction("1️⃣")
+            await message.add_reaction("2️⃣")
+            await message.add_reaction("3️⃣")
+            await message.add_reaction("4️⃣")
+        except discord.NotFound:
+            embed = discord.Embed(
+                description="Discord may have encountered an error while adding reactions to the message, "
+                            "please try again.",
+                color=discord.Color.red()
+            )
+            return await message.edit(embed=embed)
 
         reactions = ["↩️", "◀️", "❌", "▶️", "1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 
