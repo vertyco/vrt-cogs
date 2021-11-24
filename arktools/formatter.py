@@ -376,7 +376,7 @@ async def detect_friends(friends: list, followers: list):
 
 # Plot player count for each cluster
 # Instead of relying on matplotlibs date formatter, the data points are selected manually with set ticks
-async def get_graph(settings: dict, hours: int):
+def get_graph(settings: dict, hours: int):
     lim = hours * 60
     times = settings["serverstats"]["dates"]
     counts = settings["serverstats"]["counts"]

@@ -778,14 +778,17 @@ class ArkTools(commands.Cog):
                               description=f"Gathering Data...")
         embed.set_thumbnail(url=LOADING)
         msg = await ctx.send(embed=embed)
+        settings = await self.config.guild(ctx.guild).all()
         if not hours:
             hours = 1
         # Convert to float and back to int to handle if someone types a float
         hours = float(hours)
-        hours = int(hours)
+
+        def exe():
+            file = get_graph(settings, int(hours))
+            return file
         async with ctx.typing():
-            settings = await self.config.guild(ctx.guild).all()
-            file = await get_graph(settings, int(hours))
+            file = await self.bot.loop.run_in_executor(None, exe)
             await msg.delete()
             if file:
                 await ctx.send(file=file)
@@ -2689,7 +2692,6 @@ class ArkTools(commands.Cog):
                     sname = server
                     server = servers[server]
                     channel = server["chatchannel"]
-                    playercount = 0
 
                     # Get cached player count data
                     playerlist = self.playerlist[channel]
@@ -2754,7 +2756,12 @@ class ArkTools(commands.Cog):
 
             # Embed setup
             hours = settings["status"]["time"]
-            file = await get_graph(settings, hours)
+
+            def exe():
+                graph = get_graph(settings, int(hours))
+                return graph
+
+            file = await self.bot.loop.run_in_executor(None, exe)
             embed = discord.Embed(
                 description=status,
                 color=discord.Color.random(),
