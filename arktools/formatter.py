@@ -4,6 +4,7 @@ import re
 import datetime
 import pytz
 import io
+import time
 
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -459,6 +460,7 @@ async def get_graph_old(settings: dict, hours: int):
 
 
 async def get_graph(settings: dict, hours: int):
+    t0 = time.time()
     lim = hours * 60
     times = settings["serverstats"]["dates"]
     counts = settings["serverstats"]["counts"]
@@ -471,9 +473,10 @@ async def get_graph(settings: dict, hours: int):
         lim = len(times)
     if hours == 1:
         title = f"Player Count Over the Last Hour"
-    dates = times[:-lim:-1]
+    stagger = math.ceil(lim * 0.001)
+    dates = times[:-lim:-stagger]
     x = []
-    y = counts[:-lim:-1]
+    y = counts[:-lim:-stagger]
     c = {}
     for d in dates:
         d = datetime.datetime.fromisoformat(d)
@@ -483,23 +486,25 @@ async def get_graph(settings: dict, hours: int):
     for cname, countlist in settings["serverstats"].items():
         cname = str(cname.lower())
         if cname != "dates" and cname != "counts" and cname != "expiration":
-            c[cname] = countlist[:-lim:-1]
-
+            c[cname] = countlist[:-lim:-stagger]
     if len(y) < 3:
         return None
     clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
     cindex = 0
     timezone = settings['timezone']
-    tz = pytz.timezone(timezone)
+    t1 = time.time()
+    sorting = t1 - t0
+    t0 = time.time()
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
         for cname, countlist in c.items():
             if len(clist) >= cindex - 1:
-                plt.plot(x, countlist, label=cname, color=f"xkcd:{clist[cindex]}")
+                color = f"xkcd:{clist[cindex]}"
+                plt.plot(x, countlist, label=cname, color=color, linewidth=0.7)
             else:
-                plt.plot(x, countlist, label=cname)
+                plt.plot(x, countlist, label=cname, linewidth=0.7)
             cindex += 1
-        plt.plot(x, y, color="xkcd:green", label="Total")
+        plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
         plt.ylim([0, max(y) + 2])
         plt.xlabel(f"Time ({timezone})")
         plt.ylabel("Player Count")
@@ -510,13 +515,15 @@ async def get_graph(settings: dict, hours: int):
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
         ax.xaxis.set_major_locator(MaxNLocator(10))
-        # ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %I:%M %p', tz=tz))
         result = io.BytesIO()
         plt.savefig(result, format="png", dpi=200)
         plt.close()
         result.seek(0)
         file = discord.File(result, filename="plot.png")
         result.close()
+        t1 = time.time()
+        plotting = t1 - t0
+        print(f"Server graph took {sorting} seconds to sort and {plotting} seconds to plot")
         return file
 
 
