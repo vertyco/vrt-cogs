@@ -404,7 +404,6 @@ async def get_graph(settings: dict, hours: int):
         d = datetime.datetime.fromisoformat(d)
         d = d.strftime('%m/%d %I:%M %p')
         x.append(d)
-    x.reverse()
     for cname, countlist in settings["serverstats"].items():
         cname = str(cname.lower())
         if cname != "dates" and cname != "counts" and cname != "expiration":
