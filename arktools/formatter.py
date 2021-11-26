@@ -376,7 +376,7 @@ async def detect_friends(friends: list, followers: list):
 
 # Plot player count for each cluster
 # Instead of relying on matplotlibs date formatter, the data points are selected manually with set ticks
-def get_graph(settings: dict, hours: int):
+async def get_graph_old(settings: dict, hours: int):
     lim = hours * 60
     times = settings["serverstats"]["dates"]
     counts = settings["serverstats"]["counts"]
@@ -454,6 +454,58 @@ def get_graph(settings: dict, hours: int):
         return file
 
 
+async def get_graph(settings: dict, hours: int):
+    lim = hours * 60
+    times = settings["serverstats"]["dates"]
+    counts = settings["serverstats"]["counts"]
+    if len(counts) == 0 or len(times) == 0:
+        return None
+    title = f"Player Count Over the Past {int(hours)} Hours"
+    if len(times) < lim:  # Time input is greater of equal to available time recorded
+        hours = len(times) / 60
+        title = f"Player Count Over Lifetime ({int(hours)} Hours)"
+        lim = len(times)
+    if hours == 1:
+        title = f"Player Count Over the Last Hour"
+    x = times[:-lim:-1]
+    y = counts[:-lim:-1]
+    c = {}
+
+    for cname, countlist in settings["serverstats"].items():
+        cname = str(cname.lower())
+        if cname != "dates" and cname != "counts" and cname != "expiration":
+            c[cname] = countlist[:-lim:-1]
+
+    if len(y) < 3:
+        return None
+    clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
+    cindex = 0
+    with plt.style.context("dark_background"):
+        fig, ax = plt.subplots()
+        for cname, countlist in c.items():
+            if len(clist) >= cindex - 1:
+                plt.plot(x, countlist, label=cname, color=f"xkcd:{clist[cindex]}")
+            else:
+                plt.plot(x, countlist, label=cname)
+            cindex += 1
+        plt.plot(x, y, color="xkcd:green", label="Total")
+        plt.ylim([0, max(y) + 2])
+        plt.xlabel(f"Time ({settings['timezone']})")
+        plt.ylabel("Player Count")
+        plt.title(title)
+        plt.tight_layout()
+        plt.legend(loc=3)
+        plt.xticks(rotation=30)
+        plt.subplots_adjust(bottom=0.2)
+        plt.grid(axis="y")
+        ax.xaxis.set_major_locator(MaxNLocator(10))
+        result = io.BytesIO()
+        plt.savefig(result, format="png", dpi=200)
+        plt.close()
+        result.seek(0)
+        file = discord.File(result, filename="plot.png")
+        result.close()
+        return file
 
 
 

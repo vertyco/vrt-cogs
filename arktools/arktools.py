@@ -783,17 +783,12 @@ class ArkTools(commands.Cog):
             hours = 1
         # Convert to float and back to int to handle if someone types a float
         hours = float(hours)
-
-        def exe():
-            file = get_graph(settings, int(hours))
-            return file
-        async with ctx.typing():
-            file = await self.bot.loop.run_in_executor(None, exe)
-            await msg.delete()
-            if file:
-                await ctx.send(file=file)
-            else:
-                await ctx.send("Not enough data, give it some time")
+        file = await get_graph(settings, int(hours))
+        await msg.delete()
+        if file:
+            await ctx.send(file=file)
+        else:
+            await ctx.send("Not enough data, give it some time")
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")
@@ -2756,12 +2751,7 @@ class ArkTools(commands.Cog):
 
             # Embed setup
             hours = settings["status"]["time"]
-
-            def exe():
-                graph = get_graph(settings, int(hours))
-                return graph
-
-            file = await self.bot.loop.run_in_executor(None, exe)
+            file = await get_graph(settings, int(hours))
             embed = discord.Embed(
                 description=status,
                 color=discord.Color.random(),
@@ -2888,7 +2878,7 @@ class ArkTools(commands.Cog):
                                         log.info("New Player DM Successful")
                                         newplayermessage += f"DM sent: ✅\n"
                                     except Exception as e:
-                                        log.warning(f"New Player DM FAILED in guild {guild}: {e}")
+                                        log.warning(f"{gamertag} Failed to DM New Player in guild {guild}: {e}")
                                         newplayermessage += f"DM sent: ❌ {e}\n"
 
                                 if autofriend and xbl_client:
