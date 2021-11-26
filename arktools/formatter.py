@@ -10,6 +10,9 @@ from matplotlib.ticker import MaxNLocator
 import matplotlib.dates as mdates
 
 
+import numpy as np
+
+
 # Hard coded item blueprint paths for the imstuck command
 IMSTUCK_BLUEPRINTS = [
     f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic'" 8 0 0""",
@@ -468,10 +471,14 @@ async def get_graph(settings: dict, hours: int):
         lim = len(times)
     if hours == 1:
         title = f"Player Count Over the Last Hour"
-    x = times[:-lim:-1]
+    dates = times[:-lim:-1]
+    x = []
     y = counts[:-lim:-1]
     c = {}
-
+    for d in dates:
+        d = datetime.datetime.fromisoformat(d)
+        d = d.strftime('%m/%d %I:%M %p')
+        x.append(d)
     for cname, countlist in settings["serverstats"].items():
         cname = str(cname.lower())
         if cname != "dates" and cname != "counts" and cname != "expiration":
