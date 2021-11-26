@@ -404,10 +404,14 @@ async def get_graph(settings: dict, hours: int):
         d = datetime.datetime.fromisoformat(d)
         d = d.strftime('%m/%d %I:%M %p')
         x.append(d)
+    x.reverse()
+    y.reverse()
     for cname, countlist in settings["serverstats"].items():
         cname = str(cname.lower())
         if cname != "dates" and cname != "counts" and cname != "expiration":
-            c[cname] = countlist[:-lim:-stagger]
+            cl = countlist[:-lim:-stagger]
+            cl.reverse()
+            c[cname] = cl
     if len(y) < 3:
         return None
     clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
