@@ -481,7 +481,8 @@ async def get_graph(settings: dict, hours: int):
         return None
     clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
     cindex = 0
-    tz = settings['timezone']
+    timezone = settings['timezone']
+    tz = pytz.timezone(timezone)
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
         for cname, countlist in c.items():
@@ -492,7 +493,7 @@ async def get_graph(settings: dict, hours: int):
             cindex += 1
         plt.plot(x, y, color="xkcd:green", label="Total")
         plt.ylim([0, max(y) + 2])
-        plt.xlabel(f"Time ({tz})")
+        plt.xlabel(f"Time ({timezone})")
         plt.ylabel("Player Count")
         plt.title(title)
         plt.tight_layout()
@@ -501,7 +502,7 @@ async def get_graph(settings: dict, hours: int):
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
         ax.xaxis.set_major_locator(MaxNLocator(10))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %I:%M %p'))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %I:%M %p', tz=tz))
         result = io.BytesIO()
         plt.savefig(result, format="png", dpi=200)
         plt.close()
