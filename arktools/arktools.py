@@ -2298,11 +2298,17 @@ class ArkTools(commands.Cog):
 
             # Sends Discord invite to in-game chat if the word Discord is mentioned
             if "discord" in msg.lower() or "discordia" in msg.lower():
+                link = None
                 try:
-                    link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
+                    link = await guild.vanity_invite()
+                except discord.Forbidden:
+                    try:
+                        link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
+                        await self.executor(guild, server, f"serverchat {link}")
+                    except Exception as e:
+                        log.exception(f"INVITE CREATION FAILED: {e}")
+                if link:
                     await self.executor(guild, server, f"serverchat {link}")
-                except Exception as e:
-                    log.exception(f"INVITE CREATION FAILED: {e}")
 
             # Break message into groups for interpretation
             reg = r'(.+)\s\((.+)\): (.+)'
