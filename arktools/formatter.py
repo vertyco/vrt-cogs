@@ -479,6 +479,7 @@ async def get_graph(settings: dict, hours: int):
         d = datetime.datetime.fromisoformat(d)
         d = d.strftime('%m/%d %I:%M %p')
         x.append(d)
+    x.reverse()
     for cname, countlist in settings["serverstats"].items():
         cname = str(cname.lower())
         if cname != "dates" and cname != "counts" and cname != "expiration":
@@ -509,7 +510,7 @@ async def get_graph(settings: dict, hours: int):
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
         ax.xaxis.set_major_locator(MaxNLocator(10))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %I:%M %p', tz=tz))
+        # ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %I:%M %p', tz=tz))
         result = io.BytesIO()
         plt.savefig(result, format="png", dpi=200)
         plt.close()
