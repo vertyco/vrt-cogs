@@ -871,7 +871,7 @@ class ArkTools(commands.Cog):
         pass
 
     @ranks_main.command(name="link")
-    async def link_level(self, ctx: commands.Context, role: discord.role, hours_played: int):
+    async def link_level(self, ctx: commands.Context, role: discord.Role, hours_played: int):
         """
         Link a role to a certain amount of playtime(in-hours)
 
