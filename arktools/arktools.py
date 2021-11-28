@@ -342,14 +342,14 @@ class ArkTools(commands.Cog):
                 for server in servers:
                     name = f"{server.lower()} {cname.lower()}"
                     current_names.append(name)
-            for player in settings["players"].values():
+            for uid, player in settings["players"].items():
                 new_playtime = {}
                 if "playtime" in player:
                     new_playtime["total"] = player["playtime"]["total"]
                     for n in current_names:
                         if n in player["playtime"]:
                             new_playtime[n] = player["playtime"][n]
-                    settings["players"][player]["playtime"] = new_playtime
+                    settings["players"][uid]["playtime"] = new_playtime
                     if len(player["playtime"]) != len(new_playtime):
                         pdata += f"{player['username']}\n"
             if gdata != "":
