@@ -12,6 +12,8 @@ import aiohttp
 import discord
 import pytz
 
+import numpy as np
+
 from rcon import Client
 from discord.ext import tasks
 from redbot.core import commands, Config
@@ -56,7 +58,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.13"
+    __version__ = "2.4.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -81,6 +83,9 @@ class ArkTools(commands.Cog):
             "badnames": [],
             "tribes": {},
             "players": {},
+            "ranks": {},
+            "autorename": False,
+            "autoremove": False,
             "cooldowns": {},
             "kit": {"enabled": False, "claimed": [], "paths": []},
             "payday": {"enabled": False, "random": False, "cooldown": 12, "paths": []},
@@ -114,7 +119,7 @@ class ArkTools(commands.Cog):
         self.maintenance.start()
         self.autofriend.start()
         self.vote_sessions.start()
-        # self.graphdata_prune.start()
+        self.graphdata_prune.start()
 
         # Windows is dumb
         if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
@@ -129,7 +134,7 @@ class ArkTools(commands.Cog):
         self.maintenance.cancel()
         self.autofriend.cancel()
         self.vote_sessions.cancel()
-        # self.graphdata_prune.cancel()
+        self.graphdata_prune.cancel()
 
     # General authentication manager
     async def auth_manager(
@@ -858,6 +863,109 @@ class ArkTools(commands.Cog):
     async def arktools_main(self, ctx: commands.Context):
         """ArkTools base setting command."""
         pass
+
+    @arktools_main.group(name="ranks")
+    @commands.admin()
+    async def ranks_main(self, ctx: commands.Context):
+        """Base command for playtime ranks"""
+        pass
+
+    @ranks_main.command(name="link")
+    async def link_level(self, ctx: commands.Context, role: discord.role, hours_played: int):
+        """Link a role to a certain amount of playtime(in-hours)"""
+        async with self.config.guild(ctx.guild).ranks() as ranks:
+            if hours_played in ranks:
+                old = ranks[hours_played]
+                old = ctx.guild.get_role(old)
+                msg = f"The role {role.mention} will now be assigned when player hits {hours_played} hours " \
+                      f"instead of {old.mention}"
+            else:
+                msg = f"The role {role.mention} will now be assigned when player hits {hours_played} hours"
+            ranks[hours_played] = role.id
+            await ctx.send(msg)
+
+    @ranks_main.command(name="unlink")
+    async def unlink_level(self, ctx: commands.Context, hours: int):
+        """Unlink a role assigned to a level"""
+        async with self.config.guild(ctx.guild).ranks() as ranks:
+            if hours in ranks:
+                del ranks[hours]
+                await ctx.tick()
+            else:
+                await ctx.send("No role assigned to that time played")
+
+    @ranks_main.command(name="view")
+    async def view_ranks(self, ctx: commands.Context):
+        ranks = await self.config.guild(ctx.guild).ranks()
+        rankmsg = ""
+        for hour in ranks:
+            role = ctx.guild.get_role(ranks[hour])
+            if role:
+                role = role.mention
+            else:
+                role = ranks[hour]
+            rankmsg += f"`Hours: {hour} - Role: {role}`\n"
+        if rankmsg != "":
+            await ctx.send(rankmsg)
+        else:
+            await ctx.send("No roles set")
+
+    @ranks_main.command(name="autorename")
+    async def auto_name(self, ctx: commands.Context):
+        """(TOGGLE)Auto rename character names to their rank"""
+        if await self.config.guild(ctx.guild).autorename():
+            await self.config.guild(ctx.guild).autorename.set(False)
+            await ctx.send("Auto rank renaming Disabled")
+        else:
+            await self.config.guild(ctx.guild).autorename.set(True)
+            await ctx.send("Auto rank renaming Enabled")
+
+    @ranks_main.command(name="autoremove")
+    async def auto_remove(self, ctx: commands.Context):
+        """(TOGGLE)Auto remove old ranks from users when they reach the next rank"""
+        if await self.config.guild(ctx.guild).autoremove():
+            await self.config.guild(ctx.guild).autoremove.set(False)
+            await ctx.send("Auto rank removal Disabled")
+        else:
+            await self.config.guild(ctx.guild).autoremove.set(True)
+            await ctx.send("Auto rank removal Enabled")
+
+    @ranks_main.command(name="initialize")
+    async def initialize_ranks(self, ctx: commands.Context):
+        """
+        Initialize created ranks to existing player database
+
+        This adds any roles and ranks to existing players that meet playtime
+        requirements
+        """
+        async with self.config.guild(ctx.guild).all() as settings:
+            stats = settings["players"]
+            ranks = settings["ranks"]
+            if not ranks:
+                return await ctx.send("There are no ranks set!")
+            a = np.array(ranks)
+            unrank = settings["autoremove"]
+            for uid, stat in stats.items():
+                hours = int(stat["playtime"]["total"] / 3600)
+                try:
+                    top = a[a <= hours].max()  # Highest rank lower or equal to hours played
+                except ValueError:
+                    continue
+                if top:
+                    to_assign = settings["ranks"][str(top)]
+                    settings["players"][uid]["rank"] = to_assign
+                if "discord" in stat:
+                    did = stat["discord"]
+                    member = ctx.guild.get_member(did)
+                    if member and top:
+                        for h, r in ranks.items():
+                            r = ctx.guild.get_role(r)
+                            if r:
+                                if h == top and r not in member.roles:
+                                    await member.add_roles(r)
+                                if unrank:
+                                    if h != top and r in member.roles:
+                                        await member.remove_roles(r)
 
     @arktools_main.command(name="fullbackup")
     @commands.is_owner()
@@ -2329,6 +2437,25 @@ class ArkTools(commands.Cog):
                     await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
                     break
 
+            # Check or apply ranks
+            if settings["autorename"]:
+                xuid, stats = await self.get_player(gamertag, settings["players"])
+                if stats:
+                    if "rank" in stats:
+                        rank = stats["rank"]
+                        rank = guild.get_role(rank)
+                        if rank and rank not in character_name:
+                            if "[" and "]" not in character_name:
+                                cmd = f'renameplayer "{character_name}" [{str(rank)}] {character_name}'
+                                await self.executor(guild, server, cmd)
+                            else:
+                                reg = r'\[.+\]\s(.+)'
+                                old = re.search(reg, character_name).group(0)
+                                cmd = f'renameplayer "{character_name}" [{str(rank)}] {old}'
+                                await self.executor(guild, server, cmd)
+                            cmd = f"serverchat Congrats {gamertag}, you have reached the rank of {str(rank)}"
+                            await self.executor(guild, server, cmd)
+
             # In-game command interpretation
             prefixes = await self.bot.get_valid_prefixes(guild)
             for p in prefixes:
@@ -2938,6 +3065,37 @@ class ArkTools(commands.Cog):
                             "map": mapstring
                         }
                         stats[xuid]["username"] = gamertag
+
+                        # Rank system
+                        ranks = settings["ranks"]
+                        hours = int(stats[xuid]["playtime"]["total"] / 3600)
+                        if str(hours) in ranks:
+                            role = ranks[str(hours)]
+                            role = guild.get_role(role)
+                            if role:
+                                stats[xuid]["rank"] = role.id
+                        if "rank" in stats[xuid] and "discord" in stats[xuid]:
+                            user = stats[xuid]["discord"]
+                            user = self.bot.get_user(user)
+                            if user:
+                                rank = stats[xuid]["rank"]
+                                rank = guild.get_role(rank)
+                                if rank not in user.roles:
+                                    try:
+                                        await user.add_roles(rank)
+                                    except Exception as e:
+                                        log.warning(f"Failed to add rank role to user: {e}")
+                                if settings["autoremove"]:
+                                    ranks = settings["ranks"]
+                                    for role in ranks:
+                                        role = ranks[role]
+                                        role = guild.get_role(role)
+                                        if role in user.roles:
+                                            if role.id != rank.id:
+                                                try:
+                                                    await user.remove_roles(role)
+                                                except Exception as e:
+                                                    log.warning(f"Failed to remove rank role to user: {e}")
             self.time = time.isoformat()
 
     @playerstats.before_loop
