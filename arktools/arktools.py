@@ -2482,7 +2482,7 @@ class ArkTools(commands.Cog):
                     break
 
             # Check or apply ranks
-            if settings["autorename"]:
+            if settings["autorename"] and gamertag and settings["players"]:
                 xuid, stats = await self.get_player(gamertag, settings["players"])
                 rank = None
                 if stats:
