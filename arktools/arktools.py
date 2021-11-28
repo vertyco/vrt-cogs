@@ -630,7 +630,7 @@ class ArkTools(commands.Cog):
     # Send off an RCON command to a selected server
     @commands.command(name="rcon")
     @commands.guild_only()
-    async def manual_rcon(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
+    async def manual_rcon_cmd(self, ctx: commands.Context, clustername: str, servername: str, *, command: str):
         """Perform an RCON command"""
         cname = clustername.lower()
         sname = servername.lower()
@@ -3098,7 +3098,7 @@ class ArkTools(commands.Cog):
                                 stats[xuid]["rank"] = role.id
                         if "rank" in stats[xuid] and "discord" in stats[xuid]:
                             user = stats[xuid]["discord"]
-                            user = self.bot.get_user(user)
+                            user = guild.get_member(user)
                             if user:
                                 rank = stats[xuid]["rank"]
                                 rank = guild.get_role(rank)
@@ -3433,4 +3433,15 @@ class ArkTools(commands.Cog):
                         await ctx.send(person)
                         del players[person]
         await self.initialize()
+
+    # Random command for testing random shit
+    @commands.command(name="test", hidden=True)
+    @commands.is_owner()
+    async def testthething(self, ctx):
+        guild = ctx.guild
+        user = ctx.author.id
+        user = guild.get_member(user)
+        for role in user.roles:
+            await ctx.send(role)
+
 
