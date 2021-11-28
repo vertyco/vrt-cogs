@@ -872,7 +872,12 @@ class ArkTools(commands.Cog):
 
     @ranks_main.command(name="link")
     async def link_level(self, ctx: commands.Context, role: discord.role, hours_played: int):
-        """Link a role to a certain amount of playtime(in-hours)"""
+        """
+        Link a role to a certain amount of playtime(in-hours)
+
+        DO NOT USE EMOJIS IN RANK ROLE NAMES! Ark doesnt support unicode or
+        emojis, so dont use them.
+        """
         async with self.config.guild(ctx.guild).ranks() as ranks:
             if hours_played in ranks:
                 old = ranks[hours_played]
@@ -896,19 +901,36 @@ class ArkTools(commands.Cog):
 
     @ranks_main.command(name="view")
     async def view_ranks(self, ctx: commands.Context):
-        ranks = await self.config.guild(ctx.guild).ranks()
+        """View current settings for the rank system"""
+        config = await self.config.guild(ctx.guild).all()
+        unrank = config["autoremove"]
+        rename = config["autorename"]
+        ranks = config["ranks"]
+        settings = f"`AutoUnrank: `{unrank}\n" \
+                   f"`AutoRename: `{rename}\n\n"
         rankmsg = ""
+        embed = discord.Embed(
+            description=settings,
+            color=discord.Color.random()
+        )
         for hour in ranks:
             role = ctx.guild.get_role(ranks[hour])
             if role:
                 role = role.mention
             else:
                 role = ranks[hour]
-            rankmsg += f"`Hours: {hour} - Role: {role}`\n"
-        if rankmsg != "":
-            await ctx.send(rankmsg)
-        else:
-            await ctx.send("No roles set")
+            if int(hour) == 1:
+                hour = f"{hour} hour played"
+            else:
+                hour = f"{hour} hours played"
+            rankmsg += f"{role} - {hour}\n"
+        if rankmsg == "":
+            rankmsg = "No roles set"
+        embed.add_field(
+            name="Ranks",
+            value=rankmsg
+        )
+        await ctx.send(embed=embed)
 
     @ranks_main.command(name="autorename")
     async def auto_name(self, ctx: commands.Context):
