@@ -961,42 +961,51 @@ class ArkTools(commands.Cog):
         requirements
         """
         added = 0
+        ad = ""
         removed = 0
-        async with self.config.guild(ctx.guild).all() as settings:
-            stats = settings["players"]
-            ranks = []
-            for rank in settings["ranks"].keys():
-                ranks.append(int(rank))
-            if not ranks:
-                return await ctx.send("There are no ranks set!")
-            a = np.array(ranks)
-            unrank = settings["autoremove"]
-            for uid, stat in stats.items():
-                hours = int(stat["playtime"]["total"] / 3600)
-                try:
-                    top = a[a <= hours].max()  # Highest rank lower or equal to hours played
-                    # await ctx.send(top)
-                except ValueError:
-                    continue
-                if top:
-                    to_assign = settings["ranks"][str(top)]
-                    settings["players"][uid]["rank"] = to_assign
-                if "discord" in stat:
-                    did = stat["discord"]
-                    member = ctx.guild.get_member(did)
-                    if member and top:
-                        for h, r in settings["ranks"].items():
-                            r = ctx.guild.get_role(r)
-                            if r:
-                                if h == top and r not in member.roles:
-                                    await member.add_roles(r)
-                                    added += 1
-                                if unrank:
-                                    if h != top and r in member.roles:
-                                        await member.remove_roles(r)
-                                        removed += 1
-        await ctx.send(f"Added ranks to {added} people\n"
-                       f"Removed ranks from {removed} people")
+        rem = ""
+        async with ctx.typing():
+            async with self.config.guild(ctx.guild).all() as settings:
+                stats = settings["players"]
+                ranks = []
+                for rank in settings["ranks"].keys():
+                    ranks.append(int(rank))
+                if not ranks:
+                    return await ctx.send("There are no ranks set!")
+                a = np.array(ranks)
+                unrank = settings["autoremove"]
+                for uid, stat in stats.items():
+                    hours = int(stat["playtime"]["total"] / 3600)
+                    try:
+                        top = a[a <= hours].max()  # Highest rank lower or equal to hours played
+                        # await ctx.send(top)
+                    except ValueError:
+                        continue
+                    if top:
+                        print(top)
+                        to_assign = settings["ranks"][str(top)]
+                        print(to_assign)
+                        settings["players"][uid]["rank"] = to_assign
+                    if "discord" in stat:
+                        did = stat["discord"]
+                        member = ctx.guild.get_member(did)
+                        if member and top:
+                            for h, r in settings["ranks"].items():
+                                r = ctx.guild.get_role(r)
+                                if r:
+                                    if h == top and r not in member.roles:
+                                        await member.add_roles(r)
+                                        added += 1
+                                        ad += f"{r} to {member.display_name}\n"
+                                    if unrank:
+                                        if h != top and r in member.roles:
+                                            await member.remove_roles(r)
+                                            removed += 1
+                                            rem += f"{r} to {member.display_name}\n"
+            await ctx.send(f"**Added ranks to {added} people**\n"
+                           f"{ad}")
+            await ctx.send(f"Removed ranks from {removed} people\n"
+                           f"{rem}")
 
     @arktools_main.command(name="fullbackup")
     @commands.is_owner()
