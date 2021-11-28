@@ -399,22 +399,22 @@ async def get_graph(settings: dict, hours: int):
     if hours == 1:
         title = f"Player Count Over the Last Hour"
     stagger = math.ceil(lim * 0.001)
-    dates = times[:-lim:-stagger]
-    x = []
-    y = counts[:-lim:-stagger]
     c = {}
-    for d in dates:
-        d = datetime.datetime.fromisoformat(d)
-        d = d.strftime('%m/%d %I:%M %p')
-        x.append(d)
-    x.reverse()
-    y.reverse()
     for cname, countlist in settings["serverstats"].items():
         cname = str(cname.lower())
         if cname != "dates" and cname != "counts" and cname != "expiration":
             cl = countlist[:-lim:-stagger]
             cl.reverse()
             c[cname] = cl
+    dates = times[:-lim:-stagger]
+    x = []
+    y = counts[:-lim:-stagger]
+    for d in dates:
+        d = datetime.datetime.fromisoformat(d)
+        d = d.strftime('%m/%d %I:%M %p')
+        x.append(d)
+    x.reverse()
+    y.reverse()
     if len(y) < 3:
         return None
     clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
@@ -423,6 +423,15 @@ async def get_graph(settings: dict, hours: int):
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
         for cname, countlist in c.items():
+            if len(countlist) < len(y):
+                countlist.reverse()
+                n = 0
+                while n == 0:
+                    countlist.append(0)
+                    if len(countlist) == len(y):
+                        countlist.reverse()
+                        n += 1
+                        break
             if len(clist) >= cindex - 1:
                 color = f"xkcd:{clist[cindex]}"
                 plt.plot(x, countlist, label=cname, color=color, linewidth=0.7)
