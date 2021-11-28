@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import matplotlib.dates as mdates
 
-
 import numpy as np
 
 

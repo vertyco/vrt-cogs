@@ -2488,7 +2488,7 @@ class ArkTools(commands.Cog):
                         rank = stats["rank"]
                         rank = guild.get_role(rank)
                         if rank and rank not in character_name:
-                            if "[" and "]" not in character_name:
+                            if "[" not in character_name and "]" not in character_name:
                                 cmd = f'renameplayer "{character_name}" [{str(rank)}] {character_name}'
                                 await self.executor(guild, server, cmd)
                             else:
@@ -3302,8 +3302,9 @@ class ArkTools(commands.Cog):
                     cname = item[0]
                     sname = item[1]
                     tokens = item[2]
-                    atasks.append(self.autofriend_session(session, guild, cname, sname, tokens, eventlog))
-                await asyncio.gather(*atasks)
+                    # atasks.append(self.autofriend_session(session, guild, cname, sname, tokens, eventlog))
+                    await self.autofriend_session(session, guild, cname, sname, tokens, eventlog)
+                # await asyncio.gather(*atasks)
 
     async def autofriend_session(self, session, guild: discord.guild, cname, sname, tokens, eventlog):
         xbl_client, token = await self.loop_auth_manager(
@@ -3314,7 +3315,11 @@ class ArkTools(commands.Cog):
             tokens
         )
         if token:
-            friends = json.loads((await xbl_client.people.get_friends_own()).json())
+            try:
+                friends = json.loads((await xbl_client.people.get_friends_own()).json())
+            except Exception as e:
+                log.warning(f"Autofriend Session Error: {e}")
+                return
             friends = friends["people"]
             followers = await get_followers(token)
             if "people" not in followers:
