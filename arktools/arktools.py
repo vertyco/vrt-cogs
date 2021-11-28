@@ -964,11 +964,13 @@ class ArkTools(commands.Cog):
         removed = 0
         async with self.config.guild(ctx.guild).all() as settings:
             stats = settings["players"]
-            ranks = settings["ranks"]
-            await ctx.send(ranks.keys())
+            ranks = []
+            for rank in settings["ranks"].keys():
+                ranks.append(rank)
+            await ctx.send(ranks)
             if not ranks:
                 return await ctx.send("There are no ranks set!")
-            a = np.array(ranks.keys())
+            a = np.array(ranks)
             await ctx.send(a)
             unrank = settings["autoremove"]
             for uid, stat in stats.items():
@@ -984,7 +986,7 @@ class ArkTools(commands.Cog):
                     did = stat["discord"]
                     member = ctx.guild.get_member(did)
                     if member and top:
-                        for h, r in ranks.items():
+                        for h, r in settings["ranks"].items():
                             r = ctx.guild.get_role(r)
                             if r:
                                 if h == top and r not in member.roles:
