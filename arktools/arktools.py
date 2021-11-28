@@ -982,9 +982,7 @@ class ArkTools(commands.Cog):
                     except ValueError:
                         continue
                     if top:
-                        print(top)
                         to_assign = settings["ranks"][str(top)]
-                        print(to_assign)
                         settings["players"][uid]["rank"] = to_assign
                     if "discord" in stat:
                         did = stat["discord"]
@@ -1005,10 +1003,12 @@ class ArkTools(commands.Cog):
                                         await member.remove_roles(r)
                                         removed += 1
                                         rem += f"{r} from {member.display_name}\n"
-            await ctx.send(f"**Added ranks to {added} people**\n"
-                           f"{ad}")
-            await ctx.send(f"**Removed ranks from {removed} people**\n"
-                           f"{rem}")
+            final = f"**Added ranks to {added} people**\n" \
+                    f"{ad}\n" \
+                    f"**Removed ranks from {removed} people**\n" \
+                    f"{rem}"
+            for p in pagify(final):
+                await ctx.send(p)
 
     @arktools_main.command(name="fullbackup")
     @commands.is_owner()
