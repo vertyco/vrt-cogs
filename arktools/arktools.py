@@ -992,19 +992,22 @@ class ArkTools(commands.Cog):
                         if member and top:
                             for h, r in settings["ranks"].items():
                                 r = ctx.guild.get_role(r)
-                                if r:
-                                    if h == top and r not in member.roles:
-                                        await member.add_roles(r)
-                                        added += 1
-                                        ad += f"{r} to {member.display_name}\n"
-                                    if unrank:
-                                        if h != top and r in member.roles:
-                                            await member.remove_roles(r)
-                                            removed += 1
-                                            rem += f"{r} to {member.display_name}\n"
+                                if not r:
+                                    continue
+                                h = str(h)
+                                top = str(top)
+                                if h == top and r not in member.roles:
+                                    await member.add_roles(r)
+                                    added += 1
+                                    ad += f"{r} to {member.display_name}\n"
+                                if unrank:
+                                    if h != top and r in member.roles:
+                                        await member.remove_roles(r)
+                                        removed += 1
+                                        rem += f"{r} from {member.display_name}\n"
             await ctx.send(f"**Added ranks to {added} people**\n"
                            f"{ad}")
-            await ctx.send(f"Removed ranks from {removed} people\n"
+            await ctx.send(f"**Removed ranks from {removed} people**\n"
                            f"{rem}")
 
     @arktools_main.command(name="fullbackup")
