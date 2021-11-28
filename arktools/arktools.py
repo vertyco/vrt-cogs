@@ -960,12 +960,16 @@ class ArkTools(commands.Cog):
         This adds any roles and ranks to existing players that meet playtime
         requirements
         """
+        added = 0
+        removed = 0
         async with self.config.guild(ctx.guild).all() as settings:
             stats = settings["players"]
             ranks = settings["ranks"]
+            await ctx.send(ranks.keys())
             if not ranks:
                 return await ctx.send("There are no ranks set!")
-            a = np.array(ranks)
+            a = np.array(ranks.keys())
+            await ctx.send(a)
             unrank = settings["autoremove"]
             for uid, stat in stats.items():
                 hours = int(stat["playtime"]["total"] / 3600)
@@ -985,9 +989,13 @@ class ArkTools(commands.Cog):
                             if r:
                                 if h == top and r not in member.roles:
                                     await member.add_roles(r)
+                                    added += 1
                                 if unrank:
                                     if h != top and r in member.roles:
                                         await member.remove_roles(r)
+                                        removed += 1
+        await ctx.send(f"Added ranks to {added} people\n"
+                       f"Removed ranks from {removed} people")
 
     @arktools_main.command(name="fullbackup")
     @commands.is_owner()
