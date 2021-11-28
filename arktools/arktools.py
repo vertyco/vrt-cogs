@@ -233,6 +233,7 @@ class ArkTools(commands.Cog):
     # Hard coded item send for those tough times
     @commands.command(name="imstuck")
     @commands.cooldown(1, 1800, commands.BucketType.user)
+    @commands.guild_only()
     async def im_stuck(self, ctx: commands.Context):
         """
         For those tough times when Ark is being Ark
@@ -293,6 +294,7 @@ class ArkTools(commands.Cog):
     # Deletes all player data in the config
     @commands.command(name="wipestats")
     @commands.guildowner()
+    @commands.guild_only()
     async def wipe_all_stats(self, ctx: commands.Context):
         """Wipe all player stats including last seen data and registration."""
         async with self.config.guild(ctx.guild).all() as data:
@@ -302,6 +304,7 @@ class ArkTools(commands.Cog):
     # Reset graph data
     @commands.command(name="wipegraphdata")
     @commands.guildowner()
+    @commands.guild_only()
     async def wipe_graph_data(self, ctx: commands.Context):
         """Reset the player count graph data"""
         async with self.config.guild(ctx.guild).all() as settings:
@@ -310,9 +313,45 @@ class ArkTools(commands.Cog):
                     slist.clear()
             await ctx.tick()
 
+    # cleanup graph and map data that no longer exist
+    @commands.command(name="dataclean")
+    @commands.guildowner()
+    @commands.guild_only()
+    async def wipe_graph_data(self, ctx: commands.Context):
+        """Delete old data that no longer exists"""
+        gdata = ""
+        pdata = ""
+        async with self.config.guild(ctx.guild).all() as settings:
+            for cname, countlist in settings["serverstats"].items():
+                if cname != "dates" and cname != "counts" and cname != "expiration":
+                    if cname not in settings["clusters"]:
+                        del settings["serverstats"][cname]
+                        gdata += f"Deleted {cname} from graph data"
+            current_names = []
+            for cname, data in settings["clusters"].items():
+                servers = data["servers"]
+                for server in servers:
+                    name = f"{server.lower()} {cname.lower()}"
+                    current_names.append(name)
+            for player in settings["players"].values():
+                new_playtime = {}
+                if "playtime" in player:
+                    new_playtime["total"] = player["playtime"]["total"]
+                    for n in current_names:
+                        if n in player["playtime"]:
+                            new_playtime[n] = player["playtime"][n]
+                    settings["players"][player]["playtime"] = new_playtime
+                    if len(player["playtime"]) != len(new_playtime):
+                        pdata += f"Deleted old data from {player['username']}\n"
+            if gdata != "":
+                await ctx.send(gdata)
+            if pdata != "":
+                await ctx.send(pdata)
+
     # Remove a discord user from a Gamertag
     @commands.command(name="unregister")
     @commands.admin()
+    @commands.guild_only()
     async def unregister_user(self, ctx: commands.Context, member: discord.Member):
         """Unregister a user from a Gamertag"""
         async with self.config.guild(ctx.guild).players() as players:
@@ -330,6 +369,7 @@ class ArkTools(commands.Cog):
     # Delete a player from the player data
     @commands.command(name="deleteplayer")
     @commands.admin()
+    @commands.guild_only()
     async def delete_player(self, ctx: commands.Context, xuid: str):
         """Delete player data from the server stats"""
         async with self.config.guild(ctx.guild).players() as players:
@@ -770,6 +810,7 @@ class ArkTools(commands.Cog):
     # Re-Initialize the cache, for debug purposes
     @commands.command(name="init", hidden=True)
     @commands.is_owner()
+    @commands.guild_only()
     async def init_config(self, ctx):
         await self.initialize()
         await ctx.tick()
@@ -777,6 +818,7 @@ class ArkTools(commands.Cog):
     # STAT COMMANDS
     # Thanks Vexed#3211 for some ideas with the Matplotlib logic :)
     @commands.command(name="servergraph", hidden=False)
+    @commands.guild_only()
     async def graph_player_count(self, ctx: commands.Context, hours=None):
         """View a graph of player count over a set time"""
         embed = discord.Embed(color=discord.Color.green(),
@@ -797,6 +839,7 @@ class ArkTools(commands.Cog):
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb")
+    @commands.guild_only()
     async def ark_leaderboard(self, ctx: commands.Context):
         """View leaderboard for time played"""
         stats = await self.config.guild(ctx.guild).players()
@@ -808,6 +851,7 @@ class ArkTools(commands.Cog):
 
     # Displays an embed of all maps for all clusters in order of time played on each map along with top player
     @commands.command(name="clusterstats")
+    @commands.guild_only()
     async def cluster_stats(self, ctx: commands.Context):
         """View playtime data for all clusters"""
         stats = await self.config.guild(ctx.guild).players()
@@ -819,6 +863,7 @@ class ArkTools(commands.Cog):
 
     # Get detailed info of an individual player on the server
     @commands.command(name="playerstats")
+    @commands.guild_only()
     async def get_player_stats(self, ctx: commands.Context, *, gamertag: str = None):
         """View stats for yourself or another gamertag"""
         settings = await self.config.guild(ctx.guild).all()
@@ -842,6 +887,7 @@ class ArkTools(commands.Cog):
 
     # Find out if a user has registered their gamertag
     @commands.command(name="findplayer")
+    @commands.guild_only()
     async def find_player_from_discord(self, ctx: commands.Context, *, member: discord.Member):
         """Find out if a player has registered"""
         settings = await self.config.guild(ctx.guild).all()
