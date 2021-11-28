@@ -386,7 +386,6 @@ async def detect_friends(friends: list, followers: list):
 # Plot player count for each cluster
 # Instead of relying on matplotlibs date formatter, the data points are selected manually with set ticks
 async def get_graph(settings: dict, hours: int):
-    t0 = time.time()
     lim = hours * 60
     times = settings["serverstats"]["dates"]
     counts = settings["serverstats"]["counts"]
@@ -421,9 +420,6 @@ async def get_graph(settings: dict, hours: int):
     clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
     cindex = 0
     timezone = settings['timezone']
-    t1 = time.time()
-    sorting = t1 - t0
-    t0 = time.time()
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
         for cname, countlist in c.items():
@@ -451,9 +447,6 @@ async def get_graph(settings: dict, hours: int):
         result.seek(0)
         file = discord.File(result, filename="plot.png")
         result.close()
-        t1 = time.time()
-        plotting = t1 - t0
-        print(f"Server graph took {sorting} seconds to sort and {plotting} seconds to plot")
         return file
 
 

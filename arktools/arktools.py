@@ -1696,7 +1696,6 @@ class ArkTools(commands.Cog):
                 statuschannel = statuschannel.mention
             except AttributeError:
                 statuschannel = "`#deleted-channel`"
-
         stats = settings["serverstats"]["counts"]
         exp = settings["serverstats"]["expiration"]
         days = int(len(stats) / 1440)
@@ -2485,21 +2484,24 @@ class ArkTools(commands.Cog):
             # Check or apply ranks
             if settings["autorename"]:
                 xuid, stats = await self.get_player(gamertag, settings["players"])
+                rank = None
                 if stats:
                     if "rank" in stats:
                         rank = stats["rank"]
                         rank = guild.get_role(rank)
-                        if rank and rank not in character_name:
-                            if "[" not in character_name and "]" not in character_name:
-                                cmd = f'renameplayer "{character_name}" [{str(rank)}] {character_name}'
-                                await self.executor(guild, server, cmd)
-                            else:
-                                reg = r'\[.+\]\s(.+)'
-                                old = re.search(reg, character_name).group(0)
-                                cmd = f'renameplayer "{character_name}" [{str(rank)}] {old}'
-                                await self.executor(guild, server, cmd)
-                            cmd = f"serverchat Congrats {gamertag}, you have reached the rank of {str(rank)}"
+                if rank:
+                    if str(rank) not in character_name:
+                        if "[" not in character_name and "]" not in character_name:
+                            cmd = f'renameplayer "{character_name}" [{str(rank)}] {character_name}'
                             await self.executor(guild, server, cmd)
+                        else:  # Update their rank
+                            reg = r'\[.+\]\s(.+)'
+                            old = re.search(reg, character_name).group(0)
+                            cmd = f'renameplayer "{character_name}" [{str(rank)}] {old}'
+                            await self.executor(guild, server, cmd)
+                        cmd = f"serverchat Congrats {gamertag}, you have reached the rank of {str(rank)}"
+                        await self.executor(guild, server, cmd)
+                        await chatchannel.send(f"`Congrats {gamertag}, you have reached the rank of {str(rank)}`")
 
             # In-game command interpretation
             prefixes = await self.bot.get_valid_prefixes(guild)
