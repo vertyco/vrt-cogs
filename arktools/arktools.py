@@ -317,16 +317,25 @@ class ArkTools(commands.Cog):
     @commands.command(name="dataclean")
     @commands.guildowner()
     @commands.guild_only()
-    async def wipe_graph_data(self, ctx: commands.Context):
+    async def cleanup_data(self, ctx: commands.Context):
         """Delete old data that no longer exists"""
-        gdata = ""
-        pdata = ""
+        gdata = "**Deleted from Graph Data:**\n"
+        pdata = "**Deleted old data from Players:**\n"
         async with self.config.guild(ctx.guild).all() as settings:
+            newdata = {}
             for cname, countlist in settings["serverstats"].items():
-                if cname != "dates" and cname != "counts" and cname != "expiration":
-                    if cname not in settings["clusters"]:
-                        del settings["serverstats"][cname]
-                        gdata += f"Deleted {cname} from graph data"
+                if cname == "dates" or cname == "counts" or cname == "expiration":
+                    newdata[cname] = countlist
+                else:
+                    if cname in settings["clusters"]:
+                        newdata[cname] = countlist
+            for c, cl in newdata.items():
+                if cname == "dates" or cname == "counts" or cname == "expiration":
+                    continue
+                else:
+                    if c not in settings["clusters"]:
+                        gdata += f"{cname}"
+            settings["serverstats"] = newdata
             current_names = []
             for cname, data in settings["clusters"].items():
                 servers = data["servers"]
@@ -342,7 +351,7 @@ class ArkTools(commands.Cog):
                             new_playtime[n] = player["playtime"][n]
                     settings["players"][player]["playtime"] = new_playtime
                     if len(player["playtime"]) != len(new_playtime):
-                        pdata += f"Deleted old data from {player['username']}\n"
+                        pdata += f"{player['username']}\n"
             if gdata != "":
                 await ctx.send(gdata)
             if pdata != "":
