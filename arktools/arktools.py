@@ -1687,7 +1687,9 @@ class ArkTools(commands.Cog):
         statuschannel = "Not Set"
         eventlog = "Not Set"
         if settings["eventlog"]:
-            eventlog = ctx.guild.get_channel(settings["eventlog"]).mention
+            eventlog = ctx.guild.get_channel(settings["eventlog"])
+            if eventlog:
+                eventlog = eventlog.mention
         if settings["status"]["channel"]:
             statuschannel = ctx.guild.get_channel(settings["status"]["channel"])
             try:
