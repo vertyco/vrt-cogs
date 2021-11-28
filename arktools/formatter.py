@@ -308,13 +308,18 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
             claimed = "Unclaimed"
             if xuid in kit["claimed"]:
                 claimed = "Claimed"
-
+            desc = f"`Discord:     `{registration}\n" \
+                   f"`Game ID:     `{xuid}\n" \
+                   f"`Time Played: `{t}\n" \
+                   f"`Starter Kit: `{claimed}"
+            if "rank" in data:
+                r = data["rank"]
+                r = guild.get_role(r)
+                if r:
+                    desc += f"\n`Player Rank: `{r.mention}"
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
-                description=f"`Discord:     `{registration}\n"
-                            f"`Game ID:     `{xuid}\n"
-                            f"`Time Played: `{t}\n"
-                            f"`Starter Kit: `{claimed}"
+                description=desc
             )
             if lastmap:
                 last_seen = f"{lseen_format(ld, lh, lm)} on `{lastmap}`"
