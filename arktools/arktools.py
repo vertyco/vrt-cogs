@@ -966,17 +966,16 @@ class ArkTools(commands.Cog):
             stats = settings["players"]
             ranks = []
             for rank in settings["ranks"].keys():
-                ranks.append(rank)
-            await ctx.send(ranks)
+                ranks.append(int(rank))
             if not ranks:
                 return await ctx.send("There are no ranks set!")
             a = np.array(ranks)
-            await ctx.send(a)
             unrank = settings["autoremove"]
             for uid, stat in stats.items():
                 hours = int(stat["playtime"]["total"] / 3600)
                 try:
                     top = a[a <= hours].max()  # Highest rank lower or equal to hours played
+                    # await ctx.send(top)
                 except ValueError:
                     continue
                 if top:
