@@ -2632,6 +2632,8 @@ class ArkTools(commands.Cog):
             if "[" in char_name and "]" in char_name:
                 reg = r'\[(.+)\]'
                 rank = re.search(reg, char_name).group(0)
+                rank = rank.strip("[")
+                rank = rank.strip("]")
                 a = f"[{rank}] {a}"
             cmd = f'renameplayer "{char_name}" {a}'
             await self.executor(guild, server, cmd)
