@@ -35,6 +35,8 @@ async def serverchat(server: dict, message: discord.Message):
     except Exception as e:
         if "semaphor" in str(e):
             pass
+        elif "Errno 110" in str(e):
+            pass
         else:
             log.warning(f"serverchat: {e}")
 
