@@ -329,11 +329,7 @@ class ArkTools(commands.Cog):
                 else:
                     if cname in settings["clusters"]:
                         newdata[cname] = countlist
-            for c, cl in newdata.items():
-                if cname == "dates" or cname == "counts" or cname == "expiration":
-                    continue
-                else:
-                    if c not in settings["clusters"]:
+                    else:
                         gdata += f"{cname}"
             settings["serverstats"] = newdata
             current_names = []
@@ -2633,6 +2629,10 @@ class ArkTools(commands.Cog):
             if not a:
                 cmd = f"serverchatto  Include the new name you want with the command "
                 return await self.executor(guild, server, cmd)
+            if "[" in char_name and "]" in char_name:
+                reg = r'\[(.+)\]'
+                rank = re.search(reg, char_name).group(0)
+                a = f"[{rank}] {a}"
             cmd = f'renameplayer "{char_name}" {a}'
             await self.executor(guild, server, cmd)
             cmd = f'serverchat {gamertag} Your name has been changed to {a}'
