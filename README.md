@@ -42,10 +42,10 @@ If you havent loaded the Downloader cog already, go ahead and do that first with
 - The Red discord coding channel for having lots of helpful cog creators!
 
 # Contact
-For support with my cogs, feel free to ping me in #support_othercogs in the [Red Cog Support](https://discord.gg/GET4DVk) server.
+For support with my cogs, feel free to hit me up in #support_othercogs in the [Red Cog Support](https://discord.gg/GET4DVk) server.
 
 # Contributing
-If you have any suggestions, or found any bugs, please let me know or [open an issue](https://github.com/vertyco/vrt-cogs/issues) on my repo!
+If you have any suggestions, or found any bugs, please ping me in Discord (Vertyco#0117) or [open an issue](https://github.com/vertyco/vrt-cogs/issues) on my repo!
 
 If you would like to contribute, please talk to me on Discord first about your ideas before opening a PR.
 
