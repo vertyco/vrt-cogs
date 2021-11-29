@@ -1837,7 +1837,10 @@ class ArkTools(commands.Cog):
         pages = []
         timezones = pytz.all_timezones
         for tz in timezones:
-            tzlist += f"{tz}\n"
+            tz = pytz.timezone(tz)
+            time = datetime.datetime.now(tz)
+            time = time.strftime('%I:%M %p')
+            tzlist += f"`{time}: `{tz}\n"
 
         cur_page = 1
         for p in pagify(tzlist):

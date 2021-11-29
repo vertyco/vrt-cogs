@@ -24,6 +24,7 @@ async def serverchat(server: dict, message: discord.Message):
         return
     if message == " ":
         return
+
     # Convert any unicode characters in member name to normal text
     normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
     try:
