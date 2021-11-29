@@ -2536,8 +2536,11 @@ class ArkTools(commands.Cog):
                     break
 
             # Check or apply ranks
-            if settings["autorename"] and gamertag and settings["players"]:
-                xuid, stats = await self.get_player(gamertag, settings["players"])
+            if settings["autorename"]:
+                try:
+                    xuid, stats = await self.get_player(gamertag, settings["players"])
+                except TypeError:
+                    stats = None
                 rank = None
                 if stats:
                     if "rank" in stats:
