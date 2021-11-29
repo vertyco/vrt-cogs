@@ -129,6 +129,31 @@ class ArkShop(commands.Cog):
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
+    @_shopset.command(name="backup")
+    @commands.guildowner()
+    async def backup_settings(self, ctx: commands.Context):
+        """Sends a backup of the config as a JSON file to Discord."""
+        settings = await self.config.guild(ctx.guild).all()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
+
+    @_shopset.command(name="restore")
+    @commands.guildowner()
+    async def restore_settings(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.guild(ctx.guild).set(config)
+            return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
     @_shopset.command(name="mainserver")
     @commands.is_owner()
     async def set_main_server(self, ctx):
@@ -1817,6 +1842,12 @@ class ArkShop(commands.Cog):
             )
             return await ctx.send(embed=embed)
         shops = await self.config.datashops()
+        if len(shops.keys()) == 0:
+            embed = discord.Embed(
+                description="There is no data for this server yet!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
         pages = []
         for category in shops:
             category_items = ""
