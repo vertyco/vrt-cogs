@@ -7,6 +7,7 @@ import os
 import rcon
 import logging
 import aiohttp
+import json
 
 from redbot.core import commands, Config, bank
 from redbot.core.utils.chat_formatting import box, pagify
@@ -81,13 +82,18 @@ class ArkShop(commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
 
+    def arktools(self):
+        arktools = self.bot.get_cog("ArkTools")
+        if arktools:
+            return True
+        else:
+            return False
+
     @commands.group(name="shopset")
     @commands.admin()
     async def _shopset(self, ctx):
         """Base Ark Shop Setup Command"""
-        arktools = self.bot.get_cog("ArkTools")
-        # check if cog is installed
-        if not arktools:
+        if not self.arktools():
             embed = discord.Embed(
                 title="ArkTools Not Installed",
                 description="The `ArkTools` cog is required for this cog to function, "
@@ -97,6 +103,31 @@ class ArkShop(commands.Cog):
             return await ctx.send(embed=embed)
         else:
             pass
+
+    @_shopset.command(name="fullbackup")
+    @commands.is_owner()
+    async def backup_all_settings(self, ctx: commands.Context):
+        """Sends a full backup of the config as a JSON file to Discord."""
+        settings = await self.config.all_guilds()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_full_config.json"))
+
+    @_shopset.command(name="fullrestore")
+    @commands.is_owner()
+    async def restore_all_settings(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the full config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.set(config)
+            return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
 
     @_shopset.command(name="mainserver")
     @commands.is_owner()
