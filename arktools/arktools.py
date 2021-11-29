@@ -3494,6 +3494,7 @@ class ArkTools(commands.Cog):
         log.info("Janitor ready")
 
     # For whatever reason one player config item was fucked up so i made this to find it
+    # only had to use once then never again. never figured out why it happened
     @commands.command(name="fixconfig", hidden=True)
     @commands.is_owner()
     async def debug_stuff(self, ctx: commands.Context):
@@ -3506,6 +3507,7 @@ class ArkTools(commands.Cog):
             no_username = []
             old_config = []
             guild = self.bot.get_guild(guild)
+            await ctx.send(f"Sorting Guild: {guild}")
             settings = await self.config.guild(guild).all()
             stats = settings["players"]
             for xuid, data in stats.items():
@@ -3515,17 +3517,16 @@ class ArkTools(commands.Cog):
                     old_config.append(xuid)
             async with self.config.guild(guild).players() as players:
                 if len(no_username) > 0:
-                    await ctx.send(f"{len(no_username)} people had no usernames")
+                    await ctx.send(f"{len(no_username)} people had no usernames in {guild}")
                     for person in no_username:
                         await ctx.send(person)
                         del players[person]
-
                 if len(old_config) > 0:
-                    await ctx.send(f"{len(old_config)} old config users found")
+                    await ctx.send(f"{len(old_config)} old config users found in {guild}")
                     for person in old_config:
                         await ctx.send(person)
                         del players[person]
-        await self.initialize()
+        await ctx.send("Sort Complete")
 
     # Random command for testing random shit
     @commands.command(name="test", hidden=True)
