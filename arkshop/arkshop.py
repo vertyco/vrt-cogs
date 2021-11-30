@@ -1816,6 +1816,13 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
+        except discord.HTTPException:
+            embed = discord.Embed(
+                description="We are being rate limited by Discord, "
+                            "please try again in a bit.",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
 
         def check(r, u):
             return u == ctx.author and str(r.emoji) in REACTIONS
