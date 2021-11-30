@@ -861,6 +861,8 @@ class ArkTools(commands.Cog):
         """View playtime data for all clusters"""
         stats = await self.config.guild(ctx.guild).players()
         pages = cstats_format(stats, ctx.guild)
+        if not pages:
+            return await ctx.send("No data to display yet!")
         if len(pages) == 1:
             embed = pages[0]
             return await ctx.send(embed=embed)

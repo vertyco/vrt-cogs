@@ -23,6 +23,7 @@ SHOP_ICON = "https://i.imgur.com/iYpszMO.jpg"
 SELECTORS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 REACTIONS = ["↩️", "◀️", "❌", "▶️", "1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 
+
 TIPS = [
     "Tip: The shopstats command shows how many items have been purchased!",
     "Tip: The shoplb command shows the shop leaderboard for the server!",
@@ -68,6 +69,23 @@ class ArkShop(commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
 
+    class MyMenu(menus.Menu):
+        async def send_initial_message(self, ctx, channel):
+            return await channel.send(f'Hello {ctx.author}')
+
+        @menus.button('\N{THUMBS UP SIGN}')
+        async def on_thumbs_up(self, payload):
+            await self.message.edit(content=f'Thanks {self.ctx.author}!')
+
+        @menus.button('\N{THUMBS DOWN SIGN}')
+        async def on_thumbs_down(self, payload):
+            await self.message.edit(content=f"That's not nice {self.ctx.author}...")
+
+        @menus.button('\N{BLACK SQUARE FOR STOP}\ufe0f')
+        async def on_stop(self, payload):
+            self.stop()
+
+
     @staticmethod
     async def clear(ctx: commands.Context, message: discord.Message, reaction: str, user: discord.Member):
         perms = message.channel.permissions_for(ctx.me)
@@ -77,15 +95,19 @@ class ArkShop(commands.Cog):
 
     async def clearall(self, ctx, message: discord.Message):
         perms = message.channel.permissions_for(ctx.me)
-        if perms.manage_messages:
-            try:
+        try:
+            if perms.manage_messages:
                 await message.clear_reactions()
-            except discord.Forbidden:
-                log.info("Failed to remove reaction")
-        else:
-            for r in REACTIONS:
-                await message.remove_reaction(r, self.bot.user)
-                await asyncio.sleep(1)
+            else:
+                for r in REACTIONS:
+                    await message.remove_reaction(r, self.bot.user)
+                    await asyncio.sleep(1)
+        except discord.Forbidden:
+            return
+        except discord.NotFound:
+            return
+        except discord.HTTPException:
+            pass
         return
 
     async def arktools(self, ctx):
@@ -1121,9 +1143,9 @@ class ArkShop(commands.Cog):
             start += 4
             stop += 4
         if message:
-            await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory", message)
+            return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory", message)
         else:
-            await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory")
+            return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory")
 
     async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname, altname=None):
         categories = await self.config.guild(ctx.guild).shops()
@@ -1214,11 +1236,11 @@ class ArkShop(commands.Cog):
 
         # if item has no options
         if price and not options:
-            return await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
+            await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
 
         # go back to menu if item contains options
         else:
-            return await self.rcon_option_compiler(ctx, message, name, xuid, cname)
+            await self.rcon_option_compiler(ctx, message, name, xuid, cname)
 
     async def rcon_option_compiler(self, ctx, message, name, xuid, cname):
         categories = await self.config.guild(ctx.guild).shops()
@@ -1283,7 +1305,7 @@ class ArkShop(commands.Cog):
                     price = categories[category][item]["options"][name]["price"]
                     paths = categories[category][item]["options"][name]["paths"]
                     break
-        return await self.make_rcon_purchase(ctx, f"{itemname}({name})", xuid, price, cname, message, paths)
+        await self.make_rcon_purchase(ctx, f"{itemname}({name})", xuid, price, cname, message, paths)
 
     async def make_rcon_purchase(self, ctx, name, xuid, price, cname, message, paths):
         # check if user can afford the item
@@ -1773,7 +1795,7 @@ class ArkShop(commands.Cog):
     ):
         pages = len(embeds)
         cur_page = 1
-        if message is None:
+        if not message:
             message = await ctx.send(embed=embeds[cur_page - 1])
         else:
             await message.edit(embed=embeds[cur_page - 1])
@@ -1814,31 +1836,30 @@ class ArkShop(commands.Cog):
 
                 elif str(reaction.emoji) == "1️⃣":
                     await self.clear(ctx, message, reaction, user)
-                    await self.handoff(embeds[cur_page - 1], 1, shoptype, ctx, message, xuid, cname, altname)
+                    return await self.handoff(embeds[cur_page - 1], 1, shoptype, ctx, message, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "2️⃣" and len(embeds[cur_page - 1].fields) > 1:
                     await self.clear(ctx, message, reaction, user)
-                    await self.handoff(embeds[cur_page - 1], 2, shoptype, ctx, message, xuid, cname, altname)
+                    return await self.handoff(embeds[cur_page - 1], 2, shoptype, ctx, message, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "3️⃣" and len(embeds[cur_page - 1].fields) > 2:
                     await self.clear(ctx, message, reaction, user)
-                    await self.handoff(embeds[cur_page - 1], 3, shoptype, ctx, message, xuid, cname, altname)
+                    return await self.handoff(embeds[cur_page - 1], 3, shoptype, ctx, message, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "4️⃣" and len(embeds[cur_page - 1].fields) > 3:
                     await self.clear(ctx, message, reaction, user)
-                    await self.handoff(embeds[cur_page - 1], 4, shoptype, ctx, message, xuid, cname, altname)
+                    return await self.handoff(embeds[cur_page - 1], 4, shoptype, ctx, message, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "↩️":
                     await self.clear(ctx, message, reaction, user)
-                    await self.handoff(embeds[cur_page - 1], 0, shoptype, ctx, message, xuid, cname, altname)
+                    return await self.handoff(embeds[cur_page - 1], 0, shoptype, ctx, message, xuid, cname, altname)
 
                 elif str(reaction.emoji) == "❌":
                     await self.clearall(ctx, message)
-                    await message.edit(embed=discord.Embed(description="Menu closed."))
+                    return await message.edit(embed=discord.Embed(description="Menu closed."))
 
                 else:
-                    await self.clear(ctx, message, reaction, user)
-
+                    return await self.clear(ctx, message, reaction, user)
             except asyncio.TimeoutError:
                 await self.clearall(ctx, message)
 
@@ -1856,31 +1877,33 @@ class ArkShop(commands.Cog):
         name = embed.fields[action - 1].name
         name = name.split(' ', 1)[-1]
 
-
         # Data shop handoffs
         if shoptype == "category":
-            await self.item_compiler(ctx, message, name, xuid, cname)
-        if shoptype == "item":
+            return await self.item_compiler(ctx, message, name, xuid, cname)
+        elif shoptype == "item":
             if action == 0:  # Action 0 is the back button, goes back to previous menu
-                await self.category_compiler(ctx, xuid, cname, message)
+                return await self.category_compiler(ctx, xuid, cname, message)
             else:
-                await self.buy_or_goto_options(ctx, message, name, xuid, cname)
-        if shoptype == "option":
+                return await self.buy_or_goto_options(ctx, message, name, xuid, cname)
+        elif shoptype == "option":
             if action == 0:
-                await self.item_compiler(ctx, message, None, xuid, cname, altname)
+                return await self.item_compiler(ctx, message, None, xuid, cname, altname)
             else:
-                await self.option_path_finder(ctx, message, name, xuid, cname)
+                return await self.option_path_finder(ctx, message, name, xuid, cname)
 
         # RCON shop handoffs
-        if shoptype == "rconcategory":
-            await self.rcon_item_compiler(ctx, message, name, xuid, cname)
-        if shoptype == "rconitem":
+        elif shoptype == "rconcategory":
+            return await self.rcon_item_compiler(ctx, message, name, xuid, cname)
+        elif shoptype == "rconitem":
             if action == 0:
-                await self.rcon_category_compiler(ctx, xuid, cname, message)
+                return await self.rcon_category_compiler(ctx, xuid, cname, message)
             else:
-                await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
-        if shoptype == "rconoption":
+                return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
+        elif shoptype == "rconoption":
             if action == 0:
-                await self.rcon_item_compiler(ctx, message, None, xuid, cname, altname)
+                return await self.rcon_item_compiler(ctx, message, None, xuid, cname, altname)
             else:
-                await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
+                return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
+        else:
+            return
+
