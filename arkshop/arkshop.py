@@ -1802,6 +1802,7 @@ class ArkShop(commands.Cog):
         try:
             for react in REACTIONS:
                 await message.add_reaction(react)
+                await asyncio.sleep(0.5)
         except discord.Forbidden:
             embed = discord.Embed(
                 description="Encountered an error while adding reactions to the menu, "
