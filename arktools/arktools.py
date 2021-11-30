@@ -115,7 +115,7 @@ class ArkTools(commands.Cog):
         self.getchat.start()
         self.listplayers.start()
         self.status_channel.start()
-        self.playerstats.start()
+        self.player_stats.start()
         self.maintenance.start()
         self.autofriend.start()
         self.vote_sessions.start()
@@ -130,7 +130,7 @@ class ArkTools(commands.Cog):
         self.getchat.cancel()
         self.listplayers.cancel()
         self.status_channel.cancel()
-        self.playerstats.cancel()
+        self.player_stats.cancel()
         self.maintenance.cancel()
         self.autofriend.cancel()
         self.vote_sessions.cancel()
@@ -2245,7 +2245,7 @@ class ArkTools(commands.Cog):
                     self.servercount += 1
                     self.channels.append(server["chatchannel"])
                     if server["chatchannel"] not in self.playerlist:
-                        self.playerlist[server["chatchannel"]] = None
+                        self.playerlist[str(server["chatchannel"])] = None
 
             # Rehash player stats for ArkTools version < 2.0.0 config conversion
             rehashed_stats = {}
@@ -3035,7 +3035,7 @@ class ArkTools(commands.Cog):
 
     # Player stat handler
     @tasks.loop(minutes=2)
-    async def playerstats(self):
+    async def player_stats(self):
         for data in self.servers:
             guild = data[0]
             server = data[1]
@@ -3044,7 +3044,7 @@ class ArkTools(commands.Cog):
             settings = await self.config.guild(guild).all()
             autofriend = settings["autofriend"]
             autowelcome = settings["autowelcome"]
-            channel = server["chatchannel"]
+            channel = str(server["chatchannel"])
             channel_obj = guild.get_channel(channel)
             eventlog = settings["eventlog"]
             if eventlog:
@@ -3210,8 +3210,8 @@ class ArkTools(commands.Cog):
                                                     log.warning(f"Failed to remove rank role to user: {e}")
             self.time = time.isoformat()
 
-    @playerstats.before_loop
-    async def before_playerstats(self):
+    @player_stats.before_loop
+    async def before_player_stats(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(7)
         log.info("Playerstats loop ready")
