@@ -2245,7 +2245,7 @@ class ArkTools(commands.Cog):
                     self.servercount += 1
                     self.channels.append(server["chatchannel"])
                     if server["chatchannel"] not in self.playerlist:
-                        self.playerlist[str(server["chatchannel"])] = None
+                        self.playerlist[server["chatchannel"]] = None
 
             # Rehash player stats for ArkTools version < 2.0.0 config conversion
             rehashed_stats = {}
@@ -3044,7 +3044,7 @@ class ArkTools(commands.Cog):
             settings = await self.config.guild(guild).all()
             autofriend = settings["autofriend"]
             autowelcome = settings["autowelcome"]
-            channel = str(server["chatchannel"])
+            channel = server["chatchannel"]
             channel_obj = guild.get_channel(channel)
             eventlog = settings["eventlog"]
             if eventlog:
