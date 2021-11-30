@@ -1879,31 +1879,31 @@ class ArkShop(commands.Cog):
 
         # Data shop handoffs
         if shoptype == "category":
-            return await self.item_compiler(ctx, message, name, xuid, cname)
+            await self.item_compiler(ctx, message, name, xuid, cname)
         elif shoptype == "item":
             if action == 0:  # Action 0 is the back button, goes back to previous menu
-                return await self.category_compiler(ctx, xuid, cname, message)
+                await self.category_compiler(ctx, xuid, cname, message)
             else:
-                return await self.buy_or_goto_options(ctx, message, name, xuid, cname)
+                await self.buy_or_goto_options(ctx, message, name, xuid, cname)
         elif shoptype == "option":
             if action == 0:
-                return await self.item_compiler(ctx, message, None, xuid, cname, altname)
+                await self.item_compiler(ctx, message, None, xuid, cname, altname)
             else:
-                return await self.option_path_finder(ctx, message, name, xuid, cname)
+                await self.option_path_finder(ctx, message, name, xuid, cname)
 
         # RCON shop handoffs
         elif shoptype == "rconcategory":
-            return await self.rcon_item_compiler(ctx, message, name, xuid, cname)
+            await self.rcon_item_compiler(ctx, message, name, xuid, cname)
         elif shoptype == "rconitem":
             if action == 0:
-                return await self.rcon_category_compiler(ctx, xuid, cname, message)
+                await self.rcon_category_compiler(ctx, xuid, cname, message)
             else:
-                return await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
+                await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
         elif shoptype == "rconoption":
             if action == 0:
-                return await self.rcon_item_compiler(ctx, message, None, xuid, cname, altname)
+                await self.rcon_item_compiler(ctx, message, None, xuid, cname, altname)
             else:
-                return await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
+                await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
         else:
             return
 
