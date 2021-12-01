@@ -12,10 +12,15 @@ import discord
 import rcon
 from redbot.core import commands, Config, bank
 from redbot.core.utils.chat_formatting import box, pagify
-from redbot.vendored.discord.ext import menus
 
 from .formatter import shop_stats
-from .menus import menu, DEFAULT_CONTROLS
+from .menus import (
+    menu,
+    prev_page,
+    close_menu,
+    next_page,
+    DEFAULT_CONTROLS
+)
 
 log = logging.getLogger("red.vrt.arkshop")
 
@@ -42,7 +47,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.3.3"
+    __version__ = "1.4.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -69,22 +74,16 @@ class ArkShop(commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
 
-    class MyMenu(menus.Menu):
-        async def send_initial_message(self, ctx, channel):
-            return await channel.send(f'Hello {ctx.author}')
-
-        @menus.button('\N{THUMBS UP SIGN}')
-        async def on_thumbs_up(self, payload):
-            await self.message.edit(content=f'Thanks {self.ctx.author}!')
-
-        @menus.button('\N{THUMBS DOWN SIGN}')
-        async def on_thumbs_down(self, payload):
-            await self.message.edit(content=f"That's not nice {self.ctx.author}...")
-
-        @menus.button('\N{BLACK SQUARE FOR STOP}\ufe0f')
-        async def on_stop(self, payload):
-            self.stop()
-
+        self.shop_controls = {
+            "\N{LEFTWARDS ARROW WITH HOOK}\N{VARIATION SELECTOR-16}": self.go_back,
+            "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
+            "\N{CROSS MARK}": close_menu,
+            "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
+            "\N{DIGIT ONE}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": self.select_one,
+            "\N{DIGIT TWO}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": self.select_two,
+            "\N{DIGIT THREE}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": self.select_three,
+            "\N{DIGIT FOUR}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": self.select_four,
+        }
 
     @staticmethod
     async def clear(ctx: commands.Context, message: discord.Message, reaction: str, user: discord.Member):
@@ -93,14 +92,15 @@ class ArkShop(commands.Cog):
             with contextlib.suppress(discord.NotFound):
                 await message.remove_reaction(reaction, user)
 
-    async def clearall(self, ctx, message: discord.Message):
+    @staticmethod
+    async def clearall(ctx, message: discord.Message):
         perms = message.channel.permissions_for(ctx.me)
         try:
             if perms.manage_messages:
                 await message.clear_reactions()
             else:
                 for r in REACTIONS:
-                    await message.remove_reaction(r, self.bot.user)
+                    await message.remove_reaction(r, ctx.me)
                     await asyncio.sleep(1)
         except discord.Forbidden:
             return
@@ -109,20 +109,6 @@ class ArkShop(commands.Cog):
         except discord.HTTPException:
             pass
         return
-
-    async def arktools(self, ctx):
-        arktools = self.bot.get_cog("ArkTools")
-        if arktools:
-            return arktools
-        else:
-            embed = discord.Embed(
-                title="ArkTools Not Installed",
-                description="The `ArkTools` cog is required for this cog to function, "
-                            "please install that first and load it.",
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed)
-            return None
 
     @staticmethod
     async def rcon(server, command):
@@ -138,6 +124,52 @@ class ArkShop(commands.Cog):
                 log.info(f"{server['cluster']} {server['name']} is offline")
             else:
                 log.warning(f"RSHOP RCON Error: {e}")
+
+    # Check if arktools is installed and loaded
+    async def arktools(self, ctx):
+        arktools = self.bot.get_cog("ArkTools")
+        if arktools:
+            return arktools
+        else:
+            embed = discord.Embed(
+                title="ArkTools Not Loaded!",
+                description="The `ArkTools` cog is required for this cog to function, "
+                            "please install that first and load it.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return None
+
+    # Iterate through arktools config and find player XUID
+    async def get_xuid_from_arktools(self, ctx):
+        arktools = await self.arktools(ctx)
+        if not arktools:
+            return None
+        playerdata = await arktools.config.guild(ctx.guild).players()
+        for xuid, data in playerdata.items():
+            if "discord" in data:
+                if ctx.author.id == data["discord"]:
+                    return xuid
+        else:
+            embed = discord.Embed(
+                description=f"Your discord ID has not been found in the database.\n"
+                            f"Please register with `{ctx.prefix}register`",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return None
+
+    async def get_types(self, ctx, shoptype):
+        if shoptype == "rcon":
+            title = "RCON Shop"
+            tip = "Make sure you are ONLINE when purchasing from the RCON shop!"
+            categories = await self.config.guild(ctx.guild).shops()
+        else:
+            title = "Data Shop"
+            tip = "Remember to empty your Ark data before purchasing stuff!"
+            categories = await self.config.datashops()
+        return title, tip, categories
+
 
     @commands.command(name="dshoplist")
     async def data_status(self, ctx):
@@ -225,7 +257,7 @@ class ArkShop(commands.Cog):
     @commands.is_owner()
     async def backup_all_settings(self, ctx: commands.Context):
         """Sends a full backup of the config as a JSON file to Discord."""
-        settings = await self.config.all_guilds()
+        settings = await self.config.all()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
@@ -245,6 +277,17 @@ class ArkShop(commands.Cog):
             return await ctx.send("Config restored from backup file!")
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
+
+    @_shopset.command(name="databackup")
+    @commands.is_owner()
+    async def backup_data_settings(self, ctx: commands.Context):
+        """Sends a full backup of the DATA shop config as a JSON file to Discord."""
+        settings = await self.config.all_guilds()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_datashop_config.json"))
 
     @_shopset.command(name="backup")
     @commands.guildowner()
@@ -952,17 +995,6 @@ class ArkShop(commands.Cog):
                 pathmsg += f"`{path}`\n"
             return await ctx.send(pathmsg)
 
-    # Iterate through arktools config and find player XUID
-    async def get_xuid_from_arktools(self, ctx):
-        arktools = await self.arktools(ctx)
-        if not arktools:
-            return None
-        playerdata = await arktools.config.guild(ctx.guild).players()
-        for xuid, data in playerdata.items():
-            if "discord" in data:
-                if ctx.author.id == data["discord"]:
-                    return xuid
-
     # USER COMMANDS
     @commands.command(name="shopstats")
     async def shop_stats(self, ctx):
@@ -1073,13 +1105,8 @@ class ArkShop(commands.Cog):
         """
         # check if player is registered in arktools config and get their xuid if they are
         xuid = await self.get_xuid_from_arktools(ctx)
-        if xuid is None:
-            embed = discord.Embed(
-                description=f"Your discord ID has not been found in the database.\n"
-                            f"Please register with `{ctx.prefix}register`",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
+        if not xuid:
+            return
         # check if player has set a cluster
         users = await self.config.guild(ctx.guild).users()
         if str(ctx.author.id) not in users:
@@ -1089,317 +1116,7 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
-        else:
-            cname = users[str(ctx.author.id)]
-        await self.rcon_category_compiler(ctx, xuid, cname)
-
-    async def rcon_category_compiler(self, ctx, xuid, cname, message=None):
-        categories = await self.config.guild(ctx.guild).shops()
-        # how many categories
-        category_count = len(categories.keys())
-        # how many pages
-        pages = math.ceil(category_count / 4)
-        if category_count == 0:
-            embed = discord.Embed(
-                description="There are no categories added!",
-                color=discord.Color.red()
-            )
-            if message:
-                return await message.edit(embed=embed)
-            else:
-                return await ctx.send(embed=embed)
-        # category info setup
-        shop_categories = []
-        for category in categories:
-            num_items = len(categories[category].keys())
-            shop_categories.append((category, num_items))
-        # sort that bitch
-        shop_categories = sorted(shop_categories, key=lambda x: x[0])
-        # menu setup
-        start = 0
-        stop = 4
-        embedlist = []
-        for page in range(int(pages)):
-            embed = discord.Embed(
-                title="RCON Shop",
-                description="Category list"
-            )
-            embed.set_thumbnail(url=SHOP_ICON)
-            count = 0
-            if stop > len(shop_categories):
-                stop = len(shop_categories)
-            for i in range(start, stop, 1):
-                category_name = shop_categories[i][0]
-                item_count = shop_categories[i][1]
-                embed.add_field(
-                    name=f"{SELECTORS[count]} {category_name}",
-                    value=f"Items: {item_count}",
-                    inline=False
-                )
-                count += 1
-            embed.set_footer(text=f"Page {page + 1}/{pages}\n"
-                                  f"Make sure you are ONLINE when purchasing from the RCON shop!")
-            embedlist.append(embed)
-            start += 4
-            stop += 4
-        if message:
-            return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory", message)
-        else:
-            return await self.shop_menu(ctx, xuid, cname, embedlist, "rconcategory")
-
-    async def rcon_item_compiler(self, ctx, message, category_name, xuid, cname, altname=None):
-        categories = await self.config.guild(ctx.guild).shops()
-        category = {}
-        if altname:
-            for cat in categories:
-                for item in categories[cat]:
-                    if altname == item:
-                        category = categories[cat]
-                        category_name = cat
-                        break
-        else:
-            category = categories[category_name]
-
-        # how many items
-        item_count = len(category.keys())
-
-        # how many pages
-        pages = math.ceil(item_count / 4)
-        if pages == 0:
-            await self.clearall(ctx, message)
-            embed = discord.Embed(
-                description="Category has no items in it!",
-                color=discord.Color.red()
-            )
-            return await message.edit(embed=embed)
-
-        # item info setup
-        items = []
-        for item in category:
-            num_options = len(category[item]["options"].keys())
-            if num_options == 0:
-                price = category[item]["price"]
-            else:
-                price = None
-            items.append((item, num_options, price))
-
-        # sort that bitch
-        items = sorted(items, key=lambda x: x[0])
-
-        # menu setup
-        start = 0
-        stop = 4
-        embedlist = []
-        for page in range(int(pages)):
-            embed = discord.Embed(
-                title="RCON Shop",
-                description=f"{category_name} Item list"
-            )
-            embed.set_thumbnail(url=SHOP_ICON)
-            count = 0
-            if stop > len(items):
-                stop = len(items)
-            for i in range(start, stop, 1):
-                item_name = items[i][0]
-                option_count = items[i][1]
-                price = items[i][2]
-                if option_count == 0:
-                    embed.add_field(
-                        name=f"{SELECTORS[count]} {item_name}",
-                        value=f"Price: {price}",
-                        inline=False
-                    )
-                else:
-                    embed.add_field(
-                        name=f"{SELECTORS[count]} {item_name}",
-                        value=f"Options: {option_count}",
-                        inline=False
-                    )
-                count += 1
-            embed.set_footer(text=f"Page {page + 1}/{pages}\nMake sure you are ONLINE when purchasing from the RCON shop!")
-            embedlist.append(embed)
-            start += 4
-            stop += 4
-        return await self.shop_menu(ctx, xuid, cname, embedlist, "rconitem", message)
-
-    async def rcon_buy_or_goto_options(self, ctx, message, name, xuid, cname):
-        categories = await self.config.guild(ctx.guild).shops()
-        full_item = {}
-        for category in categories:
-            for item in categories[category]:
-                if name == item:
-                    full_item = categories[category][name]
-                    break
-        options = full_item["options"]
-        price = full_item["price"]
-        paths = full_item["paths"]
-
-        # if item has no options
-        if price and not options:
-            await self.make_rcon_purchase(ctx, name, xuid, price, cname, message, paths)
-
-        # go back to menu if item contains options
-        else:
-            await self.rcon_option_compiler(ctx, message, name, xuid, cname)
-
-    async def rcon_option_compiler(self, ctx, message, name, xuid, cname):
-        categories = await self.config.guild(ctx.guild).shops()
-        full_item = {}
-        for category in categories:
-            for item in categories[category]:
-                if name == item:
-                    full_item = categories[category][name]
-                    break
-        options = full_item["options"]
-
-        # how many options
-        option_count = len(options.keys())
-
-        # how many pages
-        pages = math.ceil(option_count / 4)
-
-        # option info setup
-        optionlist = []
-        for option in options:
-            option_price = options[option]["price"]
-            optionlist.append((option, option_price))
-
-        # sort that bitch
-        optionlist = sorted(optionlist, key=lambda x: x[0])
-
-        # menu setup
-        start = 0
-        stop = 4
-        embedlist = []
-        for page in range(int(pages)):
-            embed = discord.Embed(
-                title="RCON Shop",
-                description=f"{name} options"
-            )
-            embed.set_thumbnail(url=SHOP_ICON)
-            count = 0
-            if stop > len(optionlist):
-                stop = len(optionlist)
-            for i in range(start, stop, 1):
-                oname = optionlist[i][0]
-                oprice = optionlist[i][1]
-                embed.add_field(
-                    name=f"{SELECTORS[count]} {oname}",
-                    value=f"Price: {oprice}",
-                    inline=False
-                )
-                count += 1
-            embed.set_footer(text=f"Page {page + 1}/{pages}\nMake sure you are ONLINE when purchasing from the RCON shop!")
-            embedlist.append(embed)
-            start += 4
-            stop += 4
-        return await self.shop_menu(ctx, xuid, cname, embedlist, "rconoption", message, altname=name)
-
-    async def rcon_option_path_finder(self, ctx, message, name, xuid, cname, itemname):
-        categories = await self.config.guild(ctx.guild).shops()
-        price = 0
-        paths = []
-        for category in categories:
-            for item in categories[category]:
-                if itemname == item:
-                    price = categories[category][item]["options"][name]["price"]
-                    paths = categories[category][item]["options"][name]["paths"]
-                    break
-        await self.make_rcon_purchase(ctx, f"{itemname}({name})", xuid, price, cname, message, paths)
-
-    async def make_rcon_purchase(self, ctx, name, xuid, price, cname, message, paths):
-        # check if user can afford the item
-        currency_name = await bank.get_currency_name(ctx.guild)
-        await self.clearall(ctx, message)
-        if not await bank.can_spend(ctx.author, int(price)):
-            embed = discord.Embed(
-                description=f"You don't have enough {currency_name} to buy this :smiling_face_with_tear:",
-                color=discord.Color.red()
-            )
-            return await message.edit(embed=embed)
-
-        # gather server data
-        arktools = await self.arktools(ctx)
-        if not arktools:
-            return
-        clusters = await arktools.config.guild(ctx.guild).clusters()
-        serverlist = []
-        for server in clusters[cname]["servers"]:
-            serverlist.append(clusters[cname]["servers"][server])
-
-        # ask for implant ID
-        embed = discord.Embed(
-            description=f"**Type your implant ID below.**\n",
-            color=discord.Color.blue()
-        )
-        embed.set_footer(text="Type 'cancel' to cancel the purchase.")
-        embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
-        await message.edit(embed=embed)
-
-        def check(message: discord.Message):
-            return message.author == ctx.author and message.channel == ctx.channel
-
-        try:
-            reply = await self.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-        if "cancel" in reply.content.lower():
-            embed = discord.Embed(
-                description=f"**Purchase cancelled.**\n",
-                color=discord.Color.blue()
-            )
-            embed.set_footer(text=random.choice(TIPS))
-            return await message.edit(embed=embed)
-
-        commandlist = []
-        for path in paths:
-            commandlist.append(f"giveitemtoplayer {reply.content} {path}")
-
-        tasks = []
-        for server in serverlist:
-            for command in commandlist:
-                tasks.append(self.rcon(server, command))
-        await asyncio.gather(*tasks)
-
-        # withdraw credits and send purchase message
-        await bank.withdraw_credits(ctx.author, int(price))
-        embed = discord.Embed(
-            description=f"You have purchased the {name} item for {price} {currency_name}!",
-            color=discord.Color.green()
-        )
-        embed.set_footer(text=random.choice(TIPS))
-        embed.set_thumbnail(url=SHOP_ICON)
-        await message.edit(embed=embed)
-
-        logchannel = await self.config.guild(ctx.guild).logchannel()
-        logchannel = ctx.guild.get_channel(logchannel)
-        embed = discord.Embed(
-            title="RCON Purchase",
-            description=f"**{ctx.author.name}** has purchased the {name} item.\n"
-                        f"**Price:** {price} {currency_name}\n"
-                        f"**XUID:** {xuid}"
-        )
-        await logchannel.send(embed=embed)
-
-        async with self.config.guild(ctx.guild).logs() as logs:
-            member = str(ctx.author.id)
-
-            # shop logs
-            if name not in logs["items"]:
-                logs["items"][name] = {"type": "rcon", "count": 1}
-            else:
-                logs["items"][name]["count"] += 1
-
-            # individual user logs
-            user = logs["users"].get(member)
-            if not user:
-                logs["users"][member] = {}
-            item = logs["users"][member].get(name)
-            if not item:
-                logs["users"][member][name] = {"type": "rcon", "count": 1}
-            else:
-                logs["users"][member][name]["count"] += 1
+        await self.cat_compiler(ctx, "rcon")
 
     @commands.command(name="dshop")
     async def _datashop(self, ctx):
@@ -1425,13 +1142,8 @@ class ArkShop(commands.Cog):
 
         # check if player is registered in arktools config and get their xuid if they are
         xuid = await self.get_xuid_from_arktools(ctx)
-        if xuid is None:
-            embed = discord.Embed(
-                description=f"Your discord ID has not been found in the database.\n"
-                            f"Please register with `{ctx.prefix}register`",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
+        if not xuid:
+            return
 
         # check if player has set a cluster
         users = await self.config.guild(ctx.guild).users()
@@ -1442,19 +1154,15 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
-        else:
-            cname = users[str(ctx.author.id)]
+        await self.cat_compiler(ctx, "data")
 
-        return await self.category_compiler(ctx, xuid, cname)
-
-    async def category_compiler(self, ctx, xuid, cname, message=None):
-        categories = await self.config.datashops()
+    async def cat_compiler(self, ctx, shoptype: str, message: discord.Message = None):
+        title, tip, categories = await self.get_types(ctx, shoptype)
         # how many categories
         category_count = len(categories.keys())
-
         # how many pages
         pages = math.ceil(category_count / 4)
-        if pages == 0:
+        if category_count == 0:
             embed = discord.Embed(
                 description="There are no categories added!",
                 color=discord.Color.red()
@@ -1464,24 +1172,21 @@ class ArkShop(commands.Cog):
                 return await message.edit(embed=embed)
             else:
                 return await ctx.send(embed=embed)
-
         # category info setup
         shop_categories = []
         for category in categories:
             num_items = len(categories[category].keys())
             shop_categories.append((category, num_items))
-
         # sort that bitch
         shop_categories = sorted(shop_categories, key=lambda x: x[0])
-
         # menu setup
         start = 0
         stop = 4
         embedlist = []
         for page in range(int(pages)):
             embed = discord.Embed(
-                title="Data Shop",
-                description="Category list"
+                title=title,
+                description=f"Categories"
             )
             embed.set_thumbnail(url=SHOP_ICON)
             count = 0
@@ -1496,30 +1201,29 @@ class ArkShop(commands.Cog):
                     inline=False
                 )
                 count += 1
-            embed.set_footer(text=f"Page {page + 1}/{pages}\nRemember to empty your Ark data before purchasing stuff!")
+            embed.set_footer(text=f"Page {page + 1}/{pages}\n{tip}")
             embedlist.append(embed)
             start += 4
             stop += 4
-        if message is None:
-            return await self.shop_menu(ctx, xuid, cname, embedlist, "category")
+        if message:
+            await menu(ctx, embedlist, self.shop_controls, message)
         else:
-            return await self.shop_menu(ctx, xuid, cname, embedlist, "category", message)
+            await menu(ctx, embedlist, self.shop_controls)
 
-    async def item_compiler(self, ctx, message, category_name, xuid, cname, altname=None):
-        categories = await self.config.datashops()
+    async def item_compiler(self, ctx, message, shoptype, category_name, altname=None,):
+        title, tip, categories = await self.get_types(ctx, shoptype)
         category = {}
-        if altname:
+        if altname:  # Category name is None, back button was pressed
             for cat in categories:
                 for item in categories[cat]:
                     if altname == item:
                         category = categories[cat]
+                        category_name = cat
                         break
         else:
             category = categories[category_name]
-
         # how many items
         item_count = len(category.keys())
-
         # how many pages
         pages = math.ceil(item_count / 4)
         if pages == 0:
@@ -1529,7 +1233,6 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await message.edit(embed=embed)
-
         # item info setup
         items = []
         for item in category:
@@ -1539,18 +1242,16 @@ class ArkShop(commands.Cog):
             else:
                 price = None
             items.append((item, num_options, price))
-
         # sort that bitch
         items = sorted(items, key=lambda x: x[0])
-
         # menu setup
         start = 0
         stop = 4
         embedlist = []
         for page in range(int(pages)):
             embed = discord.Embed(
-                title="Data Shop",
-                description=f"{category_name} Item list"
+                title=title,
+                description=f"{category_name} items"
             )
             embed.set_thumbnail(url=SHOP_ICON)
             count = 0
@@ -1573,14 +1274,14 @@ class ArkShop(commands.Cog):
                         inline=False
                     )
                 count += 1
-            embed.set_footer(text=f"Page {page + 1}/{pages}\nRemember to empty your Ark data before purchasing stuff!")
+            embed.set_footer(text=f"Page {page + 1}/{pages}\n{tip}")
             embedlist.append(embed)
             start += 4
             stop += 4
-        return await self.shop_menu(ctx, xuid, cname, embedlist, "item", message)
+        await menu(ctx, embedlist, self.shop_controls, message)
 
-    async def buy_or_goto_options(self, ctx, message, name, xuid, cname):
-        categories = await self.config.datashops()
+    async def buy_or_nah(self, ctx, message, name, shoptype):
+        title, tip, categories = await self.get_types(ctx, shoptype)
         full_item = {}
         for category in categories:
             for item in categories[category]:
@@ -1589,17 +1290,18 @@ class ArkShop(commands.Cog):
                     break
         options = full_item["options"]
         price = full_item["price"]
-
+        paths = None
+        if shoptype == "rcon":
+            paths = full_item["paths"]
         # if item has no options
         if price and not options:
-            return await self.make_purchase(ctx, name, xuid, price, cname, message)
-
+            await self.purchase(ctx, shoptype, name, price, message, paths)
         # go back to menu if item contains options
         else:
-            return await self.option_compiler(ctx, message, name, xuid, cname)
+            await self.op_compiler(ctx, message, name, shoptype)
 
-    async def option_compiler(self, ctx, message, name, xuid, cname):
-        categories = await self.config.datashops()
+    async def op_compiler(self, ctx, message, name, shoptype):
+        title, tip, categories = await self.get_types(ctx, shoptype)
         full_item = {}
         for category in categories:
             for item in categories[category]:
@@ -1607,30 +1309,24 @@ class ArkShop(commands.Cog):
                     full_item = categories[category][name]
                     break
         options = full_item["options"]
-
         # how many options
         option_count = len(options.keys())
-
         # how many pages
         pages = math.ceil(option_count / 4)
-
         # option info setup
         optionlist = []
-        for key, value in options.items():
-            option_name = key
-            option_price = value
-            optionlist.append((option_name, option_price))
-
+        print(options)
+        for option, price in options.items():
+            optionlist.append((option, price))
         # sort that bitch
         optionlist = sorted(optionlist, key=lambda x: x[0])
-
         # menu setup
         start = 0
         stop = 4
         embedlist = []
         for page in range(int(pages)):
             embed = discord.Embed(
-                title="Data Shop",
+                title=title,
                 description=f"{name} options"
             )
             embed.set_thumbnail(url=SHOP_ICON)
@@ -1646,30 +1342,40 @@ class ArkShop(commands.Cog):
                     inline=False
                 )
                 count += 1
-            embed.set_footer(text=f"Page {page + 1}/{pages}\nRemember to empty your Ark data before purchasing stuff!")
+            embed.set_footer(
+                text=f"Page {page + 1}/{pages}\n{tip}")
             embedlist.append(embed)
             start += 4
             stop += 4
-        return await self.shop_menu(ctx, xuid, cname, embedlist, "option", message, name)
+        await menu(ctx, embedlist, self.shop_controls, message)
 
-    async def option_path_finder(self, ctx, message, name, xuid, cname):
-        categories = await self.config.datashops()
+    async def pathfinder(self, ctx, message, shoptype, name, itemname=None):
+        title, tip, categories = await self.get_types(ctx, shoptype)
         price = 0
+        paths = []
         for category in categories:
-            for item in categories[category]:
-                if categories[category][item]["options"]:
-                    for key, value in categories[category][item]["options"].items():
-                        if name == key:
-                            price = value
-                            break
-        return await self.make_purchase(ctx, name, xuid, price, cname, message)
+            if shoptype == "rcon":
+                for item, data in categories[category].items():
+                    if itemname == item:
+                        price = data["options"][name]["price"]
+                        paths = data["options"][name]["paths"]
+                        break
+            else:
+                for item, data in categories[category].items():
+                    if data["options"]:
+                        for k, price in categories[category][item]["options"].items():
+                            if name == k:
+                                break
+        await self.purchase(ctx, shoptype, f"{itemname}({name})", price, message, paths)
 
-    async def make_purchase(self, ctx, name, xuid, price, cname, message):
-        source_directory = await self.config.main_path()
-        clusters = await self.config.clusters()
-        dest_directory = clusters[cname]
+    async def purchase(self, ctx, shoptype, name, price, message, paths=None):
+        users = await self.config.guild(ctx.guild).users()
+        cname = users[str(ctx.author.id)]
+        xuid = await self.get_xuid_from_arktools(ctx)
         currency_name = await bank.get_currency_name(ctx.guild)
         await self.clearall(ctx, message)
+        logchannel = await self.config.guild(ctx.guild).logchannel()
+        logchannel = ctx.guild.get_channel(logchannel)
         if not await bank.can_spend(ctx.author, int(price)):
             embed = discord.Embed(
                 description=f"You don't have enough {currency_name} to buy this :smiling_face_with_tear:",
@@ -1677,85 +1383,145 @@ class ArkShop(commands.Cog):
             )
             return await message.edit(embed=embed)
 
-        # check source path
-        if not os.path.exists(source_directory):
-            embed = discord.Embed(
-                description=f"Source path does not exist!",
-                color=discord.Color.red()
-            )
-            return await message.edit(embed=embed)
-
-        # check destination path
-        if not os.path.exists(dest_directory):
-            embed = discord.Embed(
-                description=f"Destination path does not exist!",
-                color=discord.Color.red()
-            )
-            return await message.edit(embed=embed)
-
-        # last check to make sure user still wants to buy item
-        embed = discord.Embed(
-            description=f"**Are you sure you want to purchase the {name} item?**\n"
-                        f"Type **yes** or **no**",
-            color=discord.Color.blue()
-        )
-        await message.edit(embed=embed)
-
         def check(message: discord.Message):
             return message.author == ctx.author and message.channel == ctx.channel
 
-        try:
-            reply = await self.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-        if reply.content.lower() == "no" or reply.content.lower() == "cancel":
+        # RCON shop purchase
+        if shoptype == "rcon":
+            # gather server data
+            arktools = await self.arktools(ctx)
+            if not arktools:
+                return
+            clusters = await arktools.config.guild(ctx.guild).clusters()
+            if len(clusters.keys()) == 0:
+                await message.delete()
+                embed = discord.Embed(
+                    description=f"There are no set clusters configured!",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
+            serverlist = []
+            for server in clusters[cname]["servers"]:
+                serverlist.append(clusters[cname]["servers"][server])
+            # ask for implant ID
             embed = discord.Embed(
-                description=f"**Purchase cancelled.**\n",
+                description=f"**Type your implant ID below.**\n",
                 color=discord.Color.blue()
             )
-            embed.set_footer(text=random.choice(TIPS))
-            return await message.edit(embed=embed)
+            embed.set_footer(text="Type 'cancel' to cancel the purchase.")
+            embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
+            await message.edit(embed=embed)
 
-        destination = os.path.join(dest_directory, xuid)
-        # remove any existing data from destination
-        if os.path.exists(destination):
-            size = os.path.getsize(destination)
-            # Check file size to see if player has anything in their ark data
-            if int(size) > 0:
-                embed = discord.Embed(
-                    title="Non-Empty File Detected!",
-                    description=f"Transaction Cancelled, Empty your Ark Data first!",
-                    color=discord.Color.red()
-                )
-                size = "{:,}".format(int(size))
-                embed.set_footer(text=f"Detected {size} bytes worth of ark data in your upload")
-                return await message.edit(embed=embed)
             try:
-                os.remove(destination)
-            except PermissionError:
+                reply = await self.bot.wait_for("message", timeout=60, check=check)
+            except asyncio.TimeoutError:
+                return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+            if "cancel" in reply.content.lower() or "no" in reply.content.lower():
                 embed = discord.Embed(
-                    description=f"Failed to clean source file!\n",
+                    description=f"**Purchase cancelled.**\n",
+                    color=discord.Color.blue()
+                )
+                embed.set_footer(text=random.choice(TIPS))
+                return await message.edit(embed=embed)
+
+            commandlist = []
+            for path in paths:
+                commandlist.append(f"giveitemtoplayer {reply.content} {path}")
+
+            tasks = []
+            for server in serverlist:
+                for command in commandlist:
+                    tasks.append(self.rcon(server, command))
+            await asyncio.gather(*tasks)
+
+            # withdraw credits and send purchase message
+            await bank.withdraw_credits(ctx.author, int(price))
+            embed = discord.Embed(
+                description=f"You have purchased the {name} item for {price} {currency_name}!",
+                color=discord.Color.green()
+            )
+            embed.set_footer(text=random.choice(TIPS))
+            embed.set_thumbnail(url=SHOP_ICON)
+            await message.edit(embed=embed)
+
+        # Data shop purchase
+        else:
+            clusters = await self.config.clusters()
+            source_directory = await self.config.main_path()
+            dest_directory = clusters[cname]
+            # check source path
+            if not os.path.exists(source_directory):
+                embed = discord.Embed(
+                    description=f"Source path does not exist!",
                     color=discord.Color.red()
                 )
                 return await message.edit(embed=embed)
+            # check destination path
+            if not os.path.exists(dest_directory):
+                embed = discord.Embed(
+                    description=f"Destination path does not exist!",
+                    color=discord.Color.red()
+                )
+                return await message.edit(embed=embed)
+            # last check to make sure user still wants to buy item
+            embed = discord.Embed(
+                description=f"**Are you sure you want to purchase the {name} item?**\n"
+                            f"Type **yes** or **no**",
+                color=discord.Color.blue()
+            )
+            await message.edit(embed=embed)
 
-        item_source_file = os.path.join(source_directory, name)
-        shutil.copyfile(item_source_file, destination)
-        await bank.withdraw_credits(ctx.author, int(price))
-        embed = discord.Embed(
-            description=f"You have purchased the {name} item for {price} {currency_name}!\n"
-                        f"**Make sure to wait 30 seconds before accessing your Ark data!**",
-            color=discord.Color.green()
-        )
-        embed.set_footer(text=random.choice(TIPS))
-        embed.set_thumbnail(url=SHOP_ICON)
-        await message.edit(embed=embed)
+            try:
+                reply = await self.bot.wait_for("message", timeout=60, check=check)
+            except asyncio.TimeoutError:
+                return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
 
-        logchannel = await self.config.guild(ctx.guild).logchannel()
-        logchannel = ctx.guild.get_channel(logchannel)
+            if reply.content.lower() == "no" or reply.content.lower() == "cancel":
+                embed = discord.Embed(
+                    description=f"**Purchase cancelled.**\n",
+                    color=discord.Color.blue()
+                )
+                embed.set_footer(text=random.choice(TIPS))
+                return await message.edit(embed=embed)
+
+            destination = os.path.join(dest_directory, xuid)
+            # remove any existing data from destination
+            if os.path.exists(destination):
+                size = os.path.getsize(destination)
+                # Check file size to see if player has anything in their ark data
+                if int(size) > 0:
+                    embed = discord.Embed(
+                        title="Non-Empty File Detected!",
+                        description=f"Transaction Cancelled, Empty your Ark Data first!",
+                        color=discord.Color.red()
+                    )
+                    size = "{:,}".format(int(size))
+                    embed.set_footer(text=f"Detected {size} bytes worth of ark data in your upload")
+                    return await message.edit(embed=embed)
+                try:
+                    os.remove(destination)
+                except PermissionError:
+                    embed = discord.Embed(
+                        description=f"Failed to clean source file!\n",
+                        color=discord.Color.red()
+                    )
+                    return await message.edit(embed=embed)
+
+            item_source_file = os.path.join(source_directory, name)
+            shutil.copyfile(item_source_file, destination)
+            await bank.withdraw_credits(ctx.author, int(price))
+            embed = discord.Embed(
+                description=f"You have purchased the {name} item for {price} {currency_name}!\n"
+                            f"**Make sure to wait 30 seconds before accessing your Ark data!**",
+                color=discord.Color.green()
+            )
+            embed.set_footer(text=random.choice(TIPS))
+            embed.set_thumbnail(url=SHOP_ICON)
+            await message.edit(embed=embed)
+
         embed = discord.Embed(
-            title="DATA Purchase",
+            title=f"{shoptype.upper()} Purchase",
             description=f"**{ctx.author.name}** has purchased the {name} item.\n"
                         f"**Price:** {price} {currency_name}\n"
                         f"**XUID:** {xuid}"
@@ -1783,135 +1549,118 @@ class ArkShop(commands.Cog):
             else:
                 logs["users"][member][name]["count"] += 1
 
-    async def shop_menu(
+    # MENU ITEMS
+    async def select_one(
             self,
             ctx: commands.Context,
-            xuid: str,
-            cname: str,
-            embeds: list,
-            shoptype: str,
-            message=None,
-            altname=None
-    ):
-        pages = len(embeds)
-        cur_page = 1
-        if not message:
-            message = await ctx.send(embed=embeds[cur_page - 1])
-        else:
-            await message.edit(embed=embeds[cur_page - 1])
-        try:
-            for react in REACTIONS:
-                await message.add_reaction(react)
-                await asyncio.sleep(0.5)
-        except discord.Forbidden:
-            embed = discord.Embed(
-                description="Encountered an error while adding reactions to the menu, "
-                            "make sure the bot has proper permissions.",
-                color=discord.Color.red()
-            )
-            return await message.edit(embed=embed)
-        except discord.NotFound:
-            embed = discord.Embed(
-                description="Encountered an error while adding reactions to the menu, "
-                            "please try again.",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
-        except discord.HTTPException:
-            embed = discord.Embed(
-                description="We are being rate limited by Discord, "
-                            "please try again in a bit.",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
+            pages: list,
+            controls: dict,
+            msg: discord.Message,
+            page: int,
+            timeout: float,
+            emoji: str,
+            ):
+        await self.clear(ctx, msg, emoji, ctx.author)
+        shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
+        level = pages[page].description
+        if len(pages[page].fields) < 1:
+            return await menu(ctx, pages, controls, msg, page, timeout)
+        name = pages[page].fields[0].name.split(' ', 1)[-1]
+        await self.handler(ctx, msg, shoptype, level, name)
 
-        def check(r, u):
-            return u == ctx.author and str(r.emoji) in REACTIONS
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60, check=check)
-
-                if str(reaction.emoji) == "▶️" and cur_page + 1 <= pages:
-                    cur_page += 1
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await self.clear(ctx, message, reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and cur_page > 1:
-                    cur_page -= 1
-                    await message.edit(embed=embeds[cur_page - 1])
-                    await self.clear(ctx, message, reaction, user)
-
-                elif str(reaction.emoji) == "1️⃣":
-                    await self.clear(ctx, message, reaction, user)
-                    return await self.handoff(embeds[cur_page - 1], 1, shoptype, ctx, message, xuid, cname, altname)
-
-                elif str(reaction.emoji) == "2️⃣" and len(embeds[cur_page - 1].fields) > 1:
-                    await self.clear(ctx, message, reaction, user)
-                    return await self.handoff(embeds[cur_page - 1], 2, shoptype, ctx, message, xuid, cname, altname)
-
-                elif str(reaction.emoji) == "3️⃣" and len(embeds[cur_page - 1].fields) > 2:
-                    await self.clear(ctx, message, reaction, user)
-                    return await self.handoff(embeds[cur_page - 1], 3, shoptype, ctx, message, xuid, cname, altname)
-
-                elif str(reaction.emoji) == "4️⃣" and len(embeds[cur_page - 1].fields) > 3:
-                    await self.clear(ctx, message, reaction, user)
-                    return await self.handoff(embeds[cur_page - 1], 4, shoptype, ctx, message, xuid, cname, altname)
-
-                elif str(reaction.emoji) == "↩️":
-                    await self.clear(ctx, message, reaction, user)
-                    return await self.handoff(embeds[cur_page - 1], 0, shoptype, ctx, message, xuid, cname, altname)
-
-                elif str(reaction.emoji) == "❌":
-                    await self.clearall(ctx, message)
-                    return await message.edit(embed=discord.Embed(description="Menu closed."))
-
-                else:
-                    return await self.clear(ctx, message, reaction, user)
-            except asyncio.TimeoutError:
-                await self.clearall(ctx, message)
-
-    async def handoff(
+    async def select_two(
             self,
-            embed: discord.Embed,
-            action: int,
-            shoptype: str,
             ctx: commands.Context,
-            message: discord.Message,
-            xuid: str,
-            cname: str,
-            altname: str = None
+            pages: list,
+            controls: dict,
+            msg: discord.Message,
+            page: int,
+            timeout: float,
+            emoji: str,
+            ):
+        await self.clear(ctx, msg, emoji, ctx.author)
+        shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
+        level = pages[page].description
+        if len(pages[page].fields) < 2:
+            return await menu(ctx, pages, controls, msg, page, timeout)
+        name = pages[page].fields[1].name.split(' ', 1)[-1]
+        await self.handler(ctx, msg, shoptype, level, name)
+
+    async def select_three(
+            self,
+            ctx: commands.Context,
+            pages: list,
+            controls: dict,
+            msg: discord.Message,
+            page: int,
+            timeout: float,
+            emoji: str,
+            ):
+        await self.clear(ctx, msg, emoji, ctx.author)
+        shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
+        level = pages[page].description
+        if len(pages[page].fields) < 3:
+            return await menu(ctx, pages, controls, msg, page, timeout)
+        name = pages[page].fields[2].name.split(' ', 1)[-1]
+        await self.handler(ctx, msg, shoptype, level, name)
+
+    async def select_four(
+            self,
+            ctx: commands.Context,
+            pages: list,
+            controls: dict,
+            msg: discord.Message,
+            page: int,
+            timeout: float,
+            emoji: str,
+            ):
+        await self.clear(ctx, msg, emoji, ctx.author)
+        shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
+        level = pages[page].description
+        if len(pages[page].fields) < 4:
+            return await menu(ctx, pages, controls, msg, page, timeout)
+        name = pages[page].fields[3].name.split(' ', 1)[-1]
+        await self.handler(ctx, msg, shoptype, level, name)
+
+    async def go_back(
+            self,
+            ctx: commands.Context,
+            pages: list,
+            controls: dict,
+            msg: discord.Message,
+            page: int,
+            timeout: float,
+            emoji: str,
+            ):
+        await self.clear(ctx, msg, emoji, ctx.author)
+        shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
+        level = pages[page].description
+        await self.handler(ctx, msg, shoptype, level)
+
+    async def handler(
+            self,
+            ctx: commands.Context,
+            msg: discord.Message,
+            shoptype: str,
+            level: str,
+            name: str = None,
     ):
-        name = embed.fields[action - 1].name
-        name = name.split(' ', 1)[-1]
-
-        # Data shop handoffs
-        if shoptype == "category":
-            await self.item_compiler(ctx, message, name, xuid, cname)
-        elif shoptype == "item":
-            if action == 0:  # Action 0 is the back button, goes back to previous menu
-                await self.category_compiler(ctx, xuid, cname, message)
+        if level == "Categories":
+            if name:
+                await self.item_compiler(ctx, msg, shoptype, name)
             else:
-                await self.buy_or_goto_options(ctx, message, name, xuid, cname)
-        elif shoptype == "option":
-            if action == 0:
-                await self.item_compiler(ctx, message, None, xuid, cname, altname)
+                await self.cat_compiler(ctx, shoptype, msg)
+        elif level.endswith("items"):
+            if name:
+                await self.buy_or_nah(ctx, msg, name, shoptype)
             else:
-                await self.option_path_finder(ctx, message, name, xuid, cname)
-
-        # RCON shop handoffs
-        elif shoptype == "rconcategory":
-            await self.rcon_item_compiler(ctx, message, name, xuid, cname)
-        elif shoptype == "rconitem":
-            if action == 0:
-                await self.rcon_category_compiler(ctx, xuid, cname, message)
+                await self.cat_compiler(ctx, shoptype)
+        elif level.endswith("options"):
+            item = level.replace(" options", "")
+            print(item)
+            if name:
+                await self.pathfinder(ctx, msg, shoptype, name, item)
             else:
-                await self.rcon_buy_or_goto_options(ctx, message, name, xuid, cname)
-        elif shoptype == "rconoption":
-            if action == 0:
-                await self.rcon_item_compiler(ctx, message, None, xuid, cname, altname)
-            else:
-                await self.rcon_option_path_finder(ctx, message, name, xuid, cname, altname)
+                await self.item_compiler(ctx, msg, shoptype, None, item)
         else:
-            return
-
+            return  # idk somethings fucked up
