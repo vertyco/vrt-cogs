@@ -1507,6 +1507,7 @@ class ArkShop(commands.Cog):
             embed.set_thumbnail(url=SHOP_ICON)
             await message.edit(embed=embed)
 
+        # Add the purchase to logs
         embed = discord.Embed(
             title=f"{shoptype.upper()} Purchase",
             description=f"**{ctx.author.name}** has purchased the {shopname} item.\n"
@@ -1514,10 +1515,10 @@ class ArkShop(commands.Cog):
                         f"**XUID:** {xuid}"
         )
         await logchannel.send(embed=embed)
-
         async with self.config.guild(ctx.guild).logs() as logs:
             member = str(ctx.author.id)
-
+            if shoptype == "data":
+                shopname = filename
             # shop logs
             if shopname not in logs["items"]:
                 logs["items"][shopname] = {"type": "data", "count": 1}
