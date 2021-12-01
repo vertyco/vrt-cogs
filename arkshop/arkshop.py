@@ -1359,6 +1359,7 @@ class ArkShop(commands.Cog):
                         return await self.purchase(
                             ctx,
                             shoptype,
+                            name,
                             f"{itemname}({name})",
                             price,
                             message,
@@ -1372,12 +1373,13 @@ class ArkShop(commands.Cog):
                             return await self.purchase(
                                 ctx,
                                 shoptype,
+                                name,
                                 f"{itemname}({name})",
                                 price,
                                 message
                             )
 
-    async def purchase(self, ctx, shoptype, name, price, message, paths=None):
+    async def purchase(self, ctx, shoptype, filename, shopname, price, message, paths=None):
         print(shoptype)
         print(price)
 
@@ -1450,7 +1452,7 @@ class ArkShop(commands.Cog):
             # withdraw credits and send purchase message
             await bank.withdraw_credits(ctx.author, int(price))
             embed = discord.Embed(
-                description=f"You have purchased the {name} item for {price} {currency_name}!",
+                description=f"You have purchased the {shopname} item for {price} {currency_name}!",
                 color=discord.Color.green()
             )
             embed.set_footer(text=random.choice(TIPS))
@@ -1476,9 +1478,16 @@ class ArkShop(commands.Cog):
                     color=discord.Color.red()
                 )
                 return await message.edit(embed=embed)
+            item_source_file = os.path.join(source_directory, filename)
+            if not os.path.exists(item_source_file):
+                embed = discord.Embed(
+                    description=f"Data file does not exist!",
+                    color=discord.Color.red()
+                )
+                return await message.edit(embed=embed)
             # last check to make sure user still wants to buy item
             embed = discord.Embed(
-                description=f"**Are you sure you want to purchase the {name} item?**\n"
+                description=f"**Are you sure you want to purchase the {shopname} item?**\n"
                             f"Type **yes** or **no**",
                 color=discord.Color.blue()
             )
@@ -1520,11 +1529,10 @@ class ArkShop(commands.Cog):
                     )
                     return await message.edit(embed=embed)
 
-            item_source_file = os.path.join(source_directory, name)
             shutil.copyfile(item_source_file, destination)
             await bank.withdraw_credits(ctx.author, int(price))
             embed = discord.Embed(
-                description=f"You have purchased the {name} item for {price} {currency_name}!\n"
+                description=f"You have purchased the {shopname} item for {price} {currency_name}!\n"
                             f"**Make sure to wait 30 seconds before accessing your Ark data!**",
                 color=discord.Color.green()
             )
@@ -1534,7 +1542,7 @@ class ArkShop(commands.Cog):
 
         embed = discord.Embed(
             title=f"{shoptype.upper()} Purchase",
-            description=f"**{ctx.author.name}** has purchased the {name} item.\n"
+            description=f"**{ctx.author.name}** has purchased the {shopname} item.\n"
                         f"**Price:** {price} {currency_name}\n"
                         f"**XUID:** {xuid}"
         )
@@ -1544,22 +1552,22 @@ class ArkShop(commands.Cog):
             member = str(ctx.author.id)
 
             # shop logs
-            if name not in logs["items"]:
-                logs["items"][name] = {"type": "data", "count": 1}
+            if shopname not in logs["items"]:
+                logs["items"][shopname] = {"type": "data", "count": 1}
             else:
-                logs["items"][name]["count"] += 1
+                logs["items"][shopname]["count"] += 1
 
             # individual user logs
             user = logs["users"].get(member)
             if not user:
                 logs["users"][member] = {}
 
-            item = logs["users"][member].get(name)
+            item = logs["users"][member].get(shopname)
             if not item:
-                logs["users"][member][name] = {"type": "data", "count": 1}
+                logs["users"][member][shopname] = {"type": "data", "count": 1}
 
             else:
-                logs["users"][member][name]["count"] += 1
+                logs["users"][member][shopname]["count"] += 1
 
     # MENU ITEMS
     async def select_one(
