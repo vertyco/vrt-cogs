@@ -1295,7 +1295,7 @@ class ArkShop(commands.Cog):
             paths = full_item["paths"]
         # if item has no options
         if price and not options:
-            await self.purchase(ctx, shoptype, name, price, message, paths)
+            await self.purchase(ctx, shoptype, name, name, price, message, paths)
         # go back to menu if item contains options
         else:
             await self.op_compiler(ctx, message, name, shoptype)
