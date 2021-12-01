@@ -1356,7 +1356,7 @@ class ArkShop(commands.Cog):
         for category in categories:
             if shoptype == "rcon":
                 for item, data in categories[category].items():
-                    if itemname == item:
+                    if itemname == item:  # RCON item will have itemname
                         price = data["options"][name]["price"]
                         paths = data["options"][name]["paths"]
                         break
@@ -1369,6 +1369,10 @@ class ArkShop(commands.Cog):
         await self.purchase(ctx, shoptype, f"{itemname}({name})", price, message, paths)
 
     async def purchase(self, ctx, shoptype, name, price, message, paths=None):
+        print(shoptype)
+        print(name)
+        print(price)
+
         users = await self.config.guild(ctx.guild).users()
         cname = users[str(ctx.author.id)]
         xuid = await self.get_xuid_from_arktools(ctx)
