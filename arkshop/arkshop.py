@@ -47,7 +47,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.3"
+    __version__ = "1.4.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1315,7 +1315,6 @@ class ArkShop(commands.Cog):
         pages = math.ceil(option_count / 4)
         # option info setup
         optionlist = []
-        print(options)
         for option, price in options.items():
             optionlist.append((option, price))
         # sort that bitch
@@ -1351,26 +1350,35 @@ class ArkShop(commands.Cog):
 
     async def pathfinder(self, ctx, message, shoptype, name, itemname=None):
         title, tip, categories = await self.get_types(ctx, shoptype)
-        price = 0
-        paths = []
-        for category in categories:
-            if shoptype == "rcon":
-                for item, data in categories[category].items():
-                    if itemname == item:  # RCON item will have itemname
+        if shoptype == "rcon":
+            for cname, cat in categories.items():
+                for item, data in cat.items():
+                    if item == itemname:
                         price = data["options"][name]["price"]
                         paths = data["options"][name]["paths"]
-                        break
-            else:
-                for item, data in categories[category].items():
-                    if data["options"]:
-                        for k, price in categories[category][item]["options"].items():
-                            if name == k:
-                                break
-        await self.purchase(ctx, shoptype, f"{itemname}({name})", price, message, paths)
+                        return await self.purchase(
+                            ctx,
+                            shoptype,
+                            f"{itemname}({name})",
+                            price,
+                            message,
+                            paths
+                        )
+        else:
+            for cname, cat in categories.items():
+                for item, data in cat.items():
+                    for k, price in data["options"].items():
+                        if k == name:
+                            return await self.purchase(
+                                ctx,
+                                shoptype,
+                                f"{itemname}({name})",
+                                price,
+                                message
+                            )
 
     async def purchase(self, ctx, shoptype, name, price, message, paths=None):
         print(shoptype)
-        print(name)
         print(price)
 
         users = await self.config.guild(ctx.guild).users()
@@ -1662,6 +1670,7 @@ class ArkShop(commands.Cog):
         elif level.endswith("options"):
             item = level.replace(" options", "")
             print(item)
+            print(name)
             if name:
                 await self.pathfinder(ctx, msg, shoptype, name, item)
             else:
