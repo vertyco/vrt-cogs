@@ -1315,8 +1315,12 @@ class ArkShop(commands.Cog):
         pages = math.ceil(option_count / 4)
         # option info setup
         optionlist = []
-        for option, price in options.items():
-            optionlist.append((option, price))
+        if shoptype == "rcon":
+            for option, data in options.items():
+                optionlist.append((option, data["price"]))
+        else:
+            for option, price in options.items():
+                optionlist.append((option, price))
         # sort that bitch
         optionlist = sorted(optionlist, key=lambda x: x[0])
         # menu setup
