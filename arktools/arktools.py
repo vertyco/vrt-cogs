@@ -3345,7 +3345,7 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(5)
         log.info("Maintenance loop ready")
 
-    @tasks.loop(seconds=15)
+    @tasks.loop(seconds=20)
     async def autofriend(self):
         cid = await self.config.clientid()
         if not cid:
@@ -3365,15 +3365,13 @@ class ArkTools(commands.Cog):
                         tokendata.append((cname, sname, server["tokens"]))
             if len(tokendata) == 0:
                 continue
-            atasks = []
+
             async with aiohttp.ClientSession() as session:
                 for item in tokendata:
                     cname = item[0]
                     sname = item[1]
                     tokens = item[2]
-                    # atasks.append(self.autofriend_session(session, guild, cname, sname, tokens, eventlog))
                     await self.autofriend_session(session, guild, cname, sname, tokens, eventlog)
-                # await asyncio.gather(*atasks)
 
     async def autofriend_session(self, session, guild: discord.guild, cname, sname, tokens, eventlog):
         xbl_client, token = await self.loop_auth_manager(
