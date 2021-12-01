@@ -105,7 +105,12 @@ class XTools(commands.Cog):
             if "validation error" in str(e):
                 await ctx.send(f"Tokens have not been authorized by bot owner yet!")
                 return None
-        await auth_mgr.refresh_tokens()
+        try:
+            await auth_mgr.refresh_tokens()
+        except Exception as e:
+            if "Bad Request" in str(e):
+                return await ctx.send("Your tokens have failed to refresh.\n"
+                                      "Try clearing your tokens and re-authorizing them")
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
         xbl_client = XboxLiveClient(auth_mgr)
         return xbl_client
@@ -239,6 +244,12 @@ class XTools(commands.Cog):
             await ctx.send("I do not have permissions to delete your message!")
         except discord.NotFound:
             print("Where dafuq did the message go?")
+
+    @api_settings.command(name="reset")
+    async def reset_cog(self, ctx):
+        """Reset the cog to defaults and wipe all data"""
+        await self.config.clear_all_globals()
+        await ctx.send("Tokens have been wiped!")
 
     @commands.command(name="setgt")
     async def set_gamertag(self, ctx: commands, *, gamertag):
