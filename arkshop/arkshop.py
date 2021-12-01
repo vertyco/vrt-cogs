@@ -13,7 +13,15 @@ import rcon
 from redbot.core import commands, Config, bank
 from redbot.core.utils.chat_formatting import box, pagify
 
-from .formatter import shop_stats
+from .formatter import (
+    shop_stats,
+    dlist,
+    rlist,
+    TIPS,
+    SHOP_ICON,
+    SELECTORS,
+    REACTIONS
+)
 from .menus import (
     menu,
     prev_page,
@@ -23,23 +31,6 @@ from .menus import (
 )
 
 log = logging.getLogger("red.vrt.arkshop")
-
-SHOP_ICON = "https://i.imgur.com/iYpszMO.jpg"
-SELECTORS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
-REACTIONS = ["↩️", "◀️", "❌", "▶️", "1️⃣", "2️⃣", "3️⃣", "4️⃣"]
-
-
-TIPS = [
-    "Tip: The shopstats command shows how many items have been purchased!",
-    "Tip: The shoplb command shows the shop leaderboard for the server!",
-    "Tip: The rshoplist command shows an overview of all RCON shop categories and items!",
-    "Tip: The dshoplist command shows an overview of all DATA shop categories and items!",
-    "Tip: The playershopstats command shows shop stats for a particular member, or yourself!",
-    "Tip: You can use the playerstats command to view playtime stats for a specific player, or yourself!",
-    "Tip: You can use the clusterstats command to view the top player on each cluster!",
-    "Tip: You can use the arklb command to view a global playtime leaderboard for all maps!",
-    "Tip: You can use the servergraph command to view player count over time!",
-]
 
 
 class ArkShop(commands.Cog):
@@ -73,7 +64,6 @@ class ArkShop(commands.Cog):
         }
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
-
         self.shop_controls = {
             "\N{LEFTWARDS ARROW WITH HOOK}\N{VARIATION SELECTOR-16}": self.go_back,
             "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
@@ -170,7 +160,6 @@ class ArkShop(commands.Cog):
             categories = await self.config.datashops()
         return title, tip, categories
 
-
     @commands.command(name="dshoplist")
     async def data_status(self, ctx):
         """List all items in the data shop"""
@@ -187,25 +176,7 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
-        pages = []
-        for category in shops:
-            category_items = ""
-            for item in shops[category]:
-                if shops[category][item]["options"] == {}:
-                    price = shops[category][item]["price"]
-                    category_items += f"🔸 {item}: `{price}`\n"
-                else:
-                    category_items += f"🔸 {item}\n```py\n"
-                    for k, v in shops[category][item]["options"].items():
-                        price = v
-                        option = k
-                        category_items += f"• {option}: {price}\n"
-                    category_items += "```"
-            embed = discord.Embed(
-                title=f"🔰 {category}",
-                description=f"{category_items}"
-            )
-            pages.append(embed)
+        pages = await dlist(shops)
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="rshoplist")
@@ -218,32 +189,13 @@ class ArkShop(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
-        pages = []
-        for category in shops:
-            category_items = ""
-            for item in shops[category]:
-                if "options" in shops[category][item]:
-                    if shops[category][item]["options"] == {}:
-                        price = shops[category][item]["price"]
-                        category_items += f"🔸 {item}: `{price}`\n"
-                    else:
-                        category_items += f"🔸 {item}\n```py\n"
-                        for k, v in shops[category][item]["options"].items():
-                            price = v["price"]
-                            option = k
-                            category_items += f"• {option}: {price}\n"
-                        category_items += "```"
-            embed = discord.Embed(
-                title=f"🔰 {category}",
-                description=f"{category_items}"
-            )
-            pages.append(embed)
-        if len(pages) == 0:
+        if len(shops.keys()) == 0:
             embed = discord.Embed(
                 description="There are no items available yet!",
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
+        pages = await rlist(shops)
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.group(name="shopset")
@@ -257,7 +209,7 @@ class ArkShop(commands.Cog):
     @commands.is_owner()
     async def backup_all_settings(self, ctx: commands.Context):
         """Sends a full backup of the config as a JSON file to Discord."""
-        settings = await self.config.all()
+        settings = await self.config.all_guilds()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
@@ -278,32 +230,46 @@ class ArkShop(commands.Cog):
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
-    @_shopset.command(name="databackup")
+    @_shopset.command(name="dbackup")
     @commands.is_owner()
     async def backup_data_settings(self, ctx: commands.Context):
         """Sends a full backup of the DATA shop config as a JSON file to Discord."""
-        settings = await self.config.all_guilds()
+        settings = await self.config.all()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
         with open(f"{ctx.guild}.json", "rb") as file:
             await ctx.send(file=discord.File(file, f"{ctx.guild}_datashop_config.json"))
 
-    @_shopset.command(name="backup")
+    @_shopset.command(name="drestore")
+    @commands.is_owner()
+    async def restore_data_settings(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the data shop config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.set(config)
+            return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
+    @_shopset.command(name="rbackup")
     @commands.guildowner()
     async def backup_settings(self, ctx: commands.Context):
-        """Sends a backup of the config as a JSON file to Discord."""
+        """Sends a backup of the RCON shop config as a JSON file to Discord."""
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
         with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_RCON_config.json"))
 
-    @_shopset.command(name="restore")
+    @_shopset.command(name="rrestore")
     @commands.guildowner()
     async def restore_settings(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the config."""
+        """Upload an RCON shop backup JSON file attached to this command to restore the config."""
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -1384,16 +1350,13 @@ class ArkShop(commands.Cog):
                             )
 
     async def purchase(self, ctx, shoptype, filename, shopname, price, message, paths=None):
-        print(shoptype)
-        print(price)
-
+        await self.clearall(ctx, message)
         users = await self.config.guild(ctx.guild).users()
-        cname = users[str(ctx.author.id)]
         xuid = await self.get_xuid_from_arktools(ctx)
         currency_name = await bank.get_currency_name(ctx.guild)
-        await self.clearall(ctx, message)
         logchannel = await self.config.guild(ctx.guild).logchannel()
         logchannel = ctx.guild.get_channel(logchannel)
+        cname = users[str(ctx.author.id)]
         if not await bank.can_spend(ctx.author, int(price)):
             embed = discord.Embed(
                 description=f"You don't have enough {currency_name} to buy this :smiling_face_with_tear:",
@@ -1401,8 +1364,8 @@ class ArkShop(commands.Cog):
             )
             return await message.edit(embed=embed)
 
-        def check(message: discord.Message):
-            return message.author == ctx.author and message.channel == ctx.channel
+        def check(msg: discord.Message):
+            return msg.author == ctx.author and msg.channel == ctx.channel
 
         # RCON shop purchase
         if shoptype == "rcon":
@@ -1681,8 +1644,6 @@ class ArkShop(commands.Cog):
                 await self.cat_compiler(ctx, shoptype)
         elif level.endswith("options"):
             item = level.replace(" options", "")
-            print(item)
-            print(name)
             if name:
                 await self.pathfinder(ctx, msg, shoptype, name, item)
             else:

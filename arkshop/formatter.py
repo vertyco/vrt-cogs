@@ -2,7 +2,6 @@ import math
 import random
 import discord
 
-
 TIPS = [
     "Tip: The shopstats command shows how many items have been purchased!",
     "Tip: The shoplb command shows the shop leaderboard for the server!",
@@ -14,6 +13,9 @@ TIPS = [
     "Tip: You can use the arklb command to view a global playtime leaderboard for all maps!",
     "Tip: You can use the servergraph command to view player count over time!",
 ]
+SHOP_ICON = "https://i.imgur.com/iYpszMO.jpg"
+SELECTORS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
+REACTIONS = ["↩️", "◀️", "❌", "▶️", "1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 
 
 async def shop_stats(logs: dict):
@@ -42,5 +44,52 @@ async def shop_stats(logs: dict):
         embeds.append(embed)
         start += 10
         stop += 10
+    return embeds
+
+
+async def dlist(shops: dict):
+    embeds = []
+    for category in shops:
+        category_items = ""
+        for item in shops[category]:
+            if shops[category][item]["options"] == {}:
+                price = shops[category][item]["price"]
+                category_items += f"🔸 {item}: `{price}`\n"
+            else:
+                category_items += f"🔸 {item}\n```py\n"
+                for k, v in shops[category][item]["options"].items():
+                    price = v
+                    option = k
+                    category_items += f"• {option}: {price}\n"
+                category_items += "```"
+        embed = discord.Embed(
+            title=f"🔰 {category}",
+            description=f"{category_items}"
+        )
+        embeds.append(embed)
+    return embeds
+
+
+async def rlist(shops):
+    embeds = []
+    for category in shops:
+        category_items = ""
+        for item in shops[category]:
+            if "options" in shops[category][item]:
+                if shops[category][item]["options"] == {}:
+                    price = shops[category][item]["price"]
+                    category_items += f"🔸 {item}: `{price}`\n"
+                else:
+                    category_items += f"🔸 {item}\n```py\n"
+                    for k, v in shops[category][item]["options"].items():
+                        price = v["price"]
+                        option = k
+                        category_items += f"• {option}: {price}\n"
+                    category_items += "```"
+        embed = discord.Embed(
+            title=f"🔰 {category}",
+            description=f"{category_items}"
+        )
+        embeds.append(embed)
     return embeds
 
