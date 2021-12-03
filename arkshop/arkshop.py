@@ -1381,6 +1381,13 @@ class ArkShop(commands.Cog):
                     color=discord.Color.red()
                 )
                 return await ctx.send(embed=embed)
+            if cname not in clusters:
+                await message.delete()
+                embed = discord.Embed(
+                    description=f"Cluster no longer exists, please re-set your cluster with `{ctx.prefix}setcluster`",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
             serverlist = []
             for server in clusters[cname]["servers"]:
                 serverlist.append(clusters[cname]["servers"][server])

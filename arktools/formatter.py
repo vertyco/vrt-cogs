@@ -268,16 +268,16 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
     # Global cumulative time
     for xuid, data in stats.items():
         if "playtime" in data:
-            time = data["playtime"]["total"]
-            leaderboard[xuid] = time
-            global_time = global_time + time
+            ptime = data["playtime"]["total"]
+            leaderboard[xuid] = ptime
+            global_time = global_time + ptime
 
     position = ""
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     current_time = datetime.datetime.now(timezone)
     for xuid, data in stats.items():
         if gamertag.lower() == data["username"].lower():
-            time = data["playtime"]["total"]
+            ptime = data["playtime"]["total"]
             for i in sorted_players:
                 if i[0] == xuid:
                     pos = sorted_players.index(i)
@@ -291,9 +291,9 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
             ld, lh, lm = time_format(td)
             lastmap = data["lastseen"]["map"]
             # Time played dhm
-            d, h, m = time_format(time)
+            d, h, m = time_format(ptime)
             t = f"{d}d {h}h {m}m"
-            if time == 0:
+            if ptime == 0:
                 t = "None"
             registration = "Not Registered"
             in_server = True
@@ -358,7 +358,7 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
                     inline=False
                 )
             if position != "":
-                percent = round((time / global_time) * 100, 2)
+                percent = round((ptime / global_time) * 100, 2)
                 embed.set_footer(text=f"Rank: {position} with {percent}% of the total playtime")
             return embed
 

@@ -3074,7 +3074,6 @@ class ArkTools(commands.Cog):
                         log.warning(f"Player_Stats: {sname} {cname} not found in playerlist!")
                         continue
                     if not self.playerlist[channel]:
-                        log.warning(f"No playerlist for {sname} {cname}, {self.playerlist[channel]}")
                         continue
                     for player in self.playerlist[channel]:
                         xuid = player[1]
@@ -3182,7 +3181,7 @@ class ArkTools(commands.Cog):
                             stats[xuid]["playtime"][mapstring] += timedifference
                             stats[xuid]["playtime"]["total"] += timedifference
                             stats[xuid]["lastseen"] = {
-                                "time": time.isoformat(),
+                                "time": current_time.isoformat(),
                                 "map": mapstring
                             }
                             stats[xuid]["username"] = gamertag
