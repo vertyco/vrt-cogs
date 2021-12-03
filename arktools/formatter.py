@@ -126,15 +126,17 @@ def profile_format(data: dict):
 
 
 # Returns players that havent been on any server in X days
-async def expired_players(stats: dict, time: datetime.datetime, unfriendtime: int, timezone: datetime.timezone):
+async def expired_players(stats: dict, unfriendtime: int):
     expired = []
+    tz = pytz.timezone("UTC")
+    now = datetime.datetime.now(tz)
     for xuid, data in stats.items():
         user = data["username"]
         lastseen = data["lastseen"]["time"]
         if data["lastseen"]["map"]:
             timestamp = datetime.datetime.fromisoformat(lastseen)
-            timestamp = timestamp.astimezone(timezone)
-            timedifference = time - timestamp
+            timestamp = timestamp.astimezone(tz)
+            timedifference = now - timestamp
             if timedifference.days >= unfriendtime:
                 expired.append((xuid, user))
     return expired
@@ -260,7 +262,7 @@ def cstats_format(stats: dict, guild: discord.guild):
 
 
 # Format stats for an individual player
-def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.guild, gamertag: str):
+def player_stats(settings: dict, guild: discord.guild, gamertag: str):
     kit = settings["kit"]
     stats = settings["players"]
     leaderboard = {}
@@ -274,7 +276,7 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
 
     position = ""
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
-    current_time = datetime.datetime.now(timezone)
+    current_time = datetime.datetime.now(pytz.timezone("UTC"))
     for xuid, data in stats.items():
         if gamertag.lower() == data["username"].lower():
             ptime = data["playtime"]["total"]
@@ -284,9 +286,10 @@ def player_stats(settings: dict, timezone: datetime.timezone, guild: discord.gui
                     position = f"{pos + 1}/{len(sorted_players)}"
 
             timestamp = datetime.datetime.fromisoformat(data["lastseen"]["time"])
-            timestamp = timestamp.astimezone(timezone)
+            timestamp = timestamp.astimezone(pytz.timezone("UTC"))
             timedifference = current_time - timestamp
             td = int(timedifference.total_seconds())
+            td = abs(td)
             # Last seen dhm
             ld, lh, lm = time_format(td)
             lastmap = data["lastseen"]["map"]
@@ -389,6 +392,8 @@ async def get_graph(settings: dict, hours: int):
     lim = hours * 60
     times = settings["serverstats"]["dates"]
     counts = settings["serverstats"]["counts"]
+    timezone = settings['timezone']
+    tz = pytz.timezone(timezone)
     if len(counts) == 0 or len(times) == 0:
         return None
     title = f"Player Count Over the Past {int(hours)} Hours"
@@ -411,6 +416,7 @@ async def get_graph(settings: dict, hours: int):
     y = counts[:-lim:-stagger]
     for d in dates:
         d = datetime.datetime.fromisoformat(d)
+        d = d.astimezone(tz)
         d = d.strftime('%m/%d %I:%M %p')
         x.append(d)
     x.reverse()
@@ -419,7 +425,6 @@ async def get_graph(settings: dict, hours: int):
         return None
     clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
     cindex = 0
-    timezone = settings['timezone']
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
         for cname, countlist in c.items():
@@ -445,11 +450,11 @@ async def get_graph(settings: dict, hours: int):
         plt.title(title)
         plt.tight_layout()
         plt.legend(loc=3)
-        plt.xticks(rotation=30, fontsize=10)
+        plt.xticks(rotation=30, fontsize=9)
         plt.yticks(fontsize=10)
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
-        ax.xaxis.set_major_locator(MaxNLocator(15))
+        ax.xaxis.set_major_locator(MaxNLocator(10))
         result = io.BytesIO()
         plt.savefig(result, format="png", dpi=200)
         plt.close()

@@ -247,8 +247,10 @@ class XTools(commands.Cog):
 
     @api_settings.command(name="reset")
     async def reset_cog(self, ctx):
-        """Reset the cog to defaults and wipe all data"""
-        await self.config.clear_all_globals()
+        """Reset the all token data"""
+        await self.config.tokens.clear()
+        await self.config.clientid.set(None)
+        await self.config.clientsecret.set(None)
         await ctx.send("Tokens have been wiped!")
 
     @commands.command(name="setgt")

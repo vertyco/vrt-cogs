@@ -193,7 +193,12 @@ class ArkTools(commands.Cog):
         async with self.config.guild(guild).clusters() as clusters:
             clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
         xbl_client = XboxLiveClient(auth_mgr)
-        token = auth_mgr.xsts_token.authorization_header_value
+        try:
+            token = auth_mgr.xsts_token.authorization_header_value
+        except AttributeError:
+            await ctx.send(f"Failed to authorize tokens!\n"
+                           f"Try re-authorizing your host gamertags")
+            return None, None
         return xbl_client, token
 
     # Pull the first (authorized) token data found for non-server-specific api use
@@ -875,7 +880,6 @@ class ArkTools(commands.Cog):
         """View stats for yourself or another gamertag"""
         settings = await self.config.guild(ctx.guild).all()
         stats = settings["players"]
-        tz = pytz.timezone(settings["timezone"])
         if not gamertag:
             for xuid, data in stats.items():
                 if "discord" in data:
@@ -887,7 +891,7 @@ class ArkTools(commands.Cog):
                                                   f"Register with the `{ctx.prefix}register` command.")
                 embed.set_thumbnail(url=FAILED)
                 return await ctx.send(embed=embed)
-        embed = player_stats(settings, tz, ctx.guild, gamertag)
+        embed = player_stats(settings, ctx.guild, gamertag)
         if not embed:
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
         await ctx.send(embed=embed)
@@ -2585,7 +2589,7 @@ class ArkTools(commands.Cog):
         h = settings["payday"]["cooldown"]
         players = settings["players"]
         kit = settings["kit"]["enabled"]
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now()
         duration = h * 3600
         if payday:
             available_cmd += f"{prefix}payday - Earn in-game rewards every {h} hours!\n"
@@ -2867,7 +2871,7 @@ class ArkTools(commands.Cog):
                     await channel.send(f"`{gamertag} has just claimed their starter kit!`")
 
     def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
-        time = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
+        time = datetime.datetime.now() + datetime.timedelta(minutes=2)
         playerlist = self.playerlist[channel_id]
         min_votes = math.ceil(len(playerlist) / 2)
         if len(playerlist) == 1:
@@ -2895,7 +2899,7 @@ class ArkTools(commands.Cog):
         expired = []
         for cid in self.votes:
             for votetype, session in self.votes[cid].items():
-                time = datetime.datetime.utcnow()
+                time = datetime.datetime.now()
                 if time > session["expires"]:
                     if len(session["votes"]) < session["minvotes"]:
                         guild = session["server"]["guild"]
@@ -2990,19 +2994,20 @@ class ArkTools(commands.Cog):
                     serverstats[cname].append(int(clustertotal))
 
             # Log total player counts
-            tz = pytz.timezone(settings["timezone"])  # idk if it matters since timestamps use client time
-            time = datetime.datetime.now(tz)
+            time = datetime.datetime.now(pytz.timezone("UTC"))
             async with self.config.guild(guild).serverstats() as serverstats:
                 serverstats["dates"].append(time.isoformat())
                 serverstats["counts"].append(int(totalplayers))
 
             # Embed setup
+            tz = settings["timezone"]
+            tz = pytz.timezone(tz)
             hours = settings["status"]["time"]
             file = await get_graph(settings, int(hours))
             embed = discord.Embed(
                 description=status,
                 color=discord.Color.random(),
-                timestamp=time
+                timestamp=time.astimezone(tz)
             )
             embed.set_author(name="Server Status", icon_url=guild.icon_url)
             embed.add_field(name="Total Players", value=f"`{totalplayers}`")
@@ -3038,9 +3043,12 @@ class ArkTools(commands.Cog):
     # Player stat handler
     @tasks.loop(minutes=2)
     async def player_stats(self):
-        current_time = datetime.datetime.utcnow()
+        current_time = datetime.datetime.now(pytz.timezone("UTC"))
         if self.time == "":
             self.time = current_time.isoformat()
+        last = datetime.datetime.fromisoformat(str(self.time))
+        timedifference = current_time - last
+        timedifference = int(timedifference.total_seconds())
         config = await self.config.all_guilds()
         for guild_id in config:
             guild = self.bot.get_guild(int(guild_id))
@@ -3050,12 +3058,6 @@ class ArkTools(commands.Cog):
             autofriend = settings["autofriend"]
             autowelcome = settings["autowelcome"]
             eventlog = settings["eventlog"]
-            tz = pytz.timezone(settings["timezone"])
-            time = current_time.astimezone(tz)
-            last = datetime.datetime.fromisoformat(str(self.time))
-            last = last.astimezone(tz)
-            timedifference = time - last
-            timedifference = int(timedifference.total_seconds())
             if eventlog:
                 eventlog = guild.get_channel(eventlog)
             for data in self.servers:
@@ -3099,7 +3101,7 @@ class ArkTools(commands.Cog):
                             stats[xuid] = {
                                 "playtime": {"total": 0},
                                 "username": gamertag,
-                                "lastseen": {"time": time.isoformat(), "map": mapstring}
+                                "lastseen": {"time": current_time.isoformat(), "map": mapstring}
                             }
                             if "tokens" in server and (autowelcome or autofriend):
                                 async with aiohttp.ClientSession() as session:
@@ -3289,11 +3291,8 @@ class ArkTools(commands.Cog):
             eventlog = guild.get_channel(eventlog)
             stats = settings["players"]
             unfriendtime = int(settings["unfriendafter"])
-            tz = pytz.timezone(settings["timezone"])
-            time = datetime.datetime.now(tz)
-
             # List of users who havent been detected on the servers in X amount of time
-            expired = await expired_players(stats, time, unfriendtime, tz)
+            expired = await expired_players(stats, unfriendtime)
             if len(expired) == 0:
                 continue
 
