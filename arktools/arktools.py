@@ -167,7 +167,12 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).clusters() as clusters:
             clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
         xbl_client = XboxLiveClient(auth_mgr)
-        token = auth_mgr.xsts_token.authorization_header_value
+        try:
+            token = auth_mgr.xsts_token.authorization_header_value
+        except AttributeError:
+            await ctx.send(f"Failed to authorize tokens!\n"
+                           f"Try re-authorizing your host gamertags")
+            return None, None
         return xbl_client, token
 
     # Authentication handling for task loops, just same logic with no ctx yea prolly could have done it a cleaner way :p
@@ -193,12 +198,7 @@ class ArkTools(commands.Cog):
         async with self.config.guild(guild).clusters() as clusters:
             clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
         xbl_client = XboxLiveClient(auth_mgr)
-        try:
-            token = auth_mgr.xsts_token.authorization_header_value
-        except AttributeError:
-            await ctx.send(f"Failed to authorize tokens!\n"
-                           f"Try re-authorizing your host gamertags")
-            return None, None
+        token = auth_mgr.xsts_token.authorization_header_value
         return xbl_client, token
 
     # Pull the first (authorized) token data found for non-server-specific api use
@@ -2848,8 +2848,8 @@ class ArkTools(commands.Cog):
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
                     if channel:
-                        await channel.send(f"`Use the .register command to register your ID first`")
-                    cmd = f"serverchat Use the .register command to register your ID first"
+                        await channel.send(f"`Use the {prefix}register command to register your ID first`")
+                    cmd = f"serverchat Use the {prefix}register command to register your ID first"
                     return await self.executor(guild, server, cmd)
                 a = implant
             async with self.config.guild(guild).kit() as kit:
@@ -3541,5 +3541,8 @@ class ArkTools(commands.Cog):
         user = guild.get_member(user)
         for role in user.roles:
             await ctx.send(role)
+        prefixes = await self.bot.get_valid_prefixes(guild)
+        for p in prefixes:
+            await ctx.send(p)
 
 
