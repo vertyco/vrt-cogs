@@ -1,4 +1,4 @@
-from redbot.core import commands, Config, checks
+from redbot.core import commands, Config
 import discord
 import googletrans
 
@@ -9,11 +9,11 @@ class Fluent(commands.Cog):
     """
     Seamless translation between two languages in one channel.
 
-    Inspired by Obi-Wan3's translation cog.
+    Inspired by Obi-Wan3#0003's translation cog.
     """
-
+    # This could almost be a PR, since its purpose was to fulfil the one feature that Obi's cog didn't have
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "1.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -27,35 +27,38 @@ class Fluent(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
-    # Gets lang identifier from string
-    async def _converter(self, language):
+    # Gets language identifier from string
+    @staticmethod
+    async def converter(language):
         for key, value in googletrans.LANGUAGES.items():
             if language == "chinese":
                 language = "chinese (simplified)"
             if language == value:
                 return key
 
-    async def _detector(self, msg):
-        source = translator.detect(str(msg))
-        return source.lang
-
-    async def _translator(self, msg, dest):
+    @staticmethod
+    async def translator(msg, dest):
         translated_msg = translator.translate(msg, dest=str(dest))
         return translated_msg
 
-    @commands.group(name="fluent")
+    @commands.group()
     @commands.guildowner()
-    async def _fluent(self, ctx):
+    async def fluent(self, ctx):
         """Base command"""
         pass
 
-    @_fluent.command(name="add")
-    async def _add(self, ctx, language1, language2, channel: discord.TextChannel = None):
-        """Add a channel and languages to translate between"""
+    @fluent.command()
+    async def add(self, ctx, language1, language2, channel: discord.TextChannel = None):
+        """
+        Add a channel and languages to translate between
+
+        Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be
+        in english, then make english language 2 to use less api calls.
+        """
         if not channel:
             channel = ctx.channel
-        language1 = await self._converter(language1.lower())
-        language2 = await self._converter(language2.lower())
+        language1 = await self.converter(language1.lower())
+        language2 = await self.converter(language2.lower())
         if not language1 or not language2:
             return await ctx.send(f"One of the languages were not found: lang1-{language1} lang2-{language2}")
         async with self.config.guild(ctx.guild).channels() as channels:
@@ -69,8 +72,8 @@ class Fluent(commands.Cog):
                 color = discord.Color.green()
                 return await ctx.send(embed=discord.Embed(description=f"✅ Fluent channel has been set!", color=color))
 
-    @_fluent.command(name="remove")
-    async def _remove(self, ctx, channel: discord.TextChannel):
+    @fluent.command()
+    async def remove(self, ctx, channel: discord.TextChannel):
         """Remove a channel from Fluent"""
         async with self.config.guild(ctx.guild).channels() as channels:
             for channel_id in channels:
@@ -83,8 +86,8 @@ class Fluent(commands.Cog):
             else:
                 return await ctx.send(embed=discord.Embed(description=f"❌ {channel.mention} isn't a fluent channel."))
 
-    @_fluent.command(name="view")
-    async def _view(self, ctx):
+    @fluent.command()
+    async def view(self, ctx):
         """View all fluent channels"""
         channels = await self.config.guild(ctx.guild).channels()
         embed = discord.Embed(
@@ -103,7 +106,7 @@ class Fluent(commands.Cog):
         return await ctx.send(embed=embed)
 
     @commands.Cog.listener("on_message")
-    async def _message_handler(self, message: discord.Message):
+    async def message_handler(self, message: discord.Message):
         if message.author.bot:
             return
         if not message.guild:
@@ -114,7 +117,7 @@ class Fluent(commands.Cog):
                 lang1 = channels[channel_id]["lang1"]
                 lang2 = channels[channel_id]["lang2"]
                 channel = message.channel
-                trans = await self._translator(message.content, lang1)
+                trans = await self.translator(message.content, lang1)
                 if trans is None:
                     return await channel.send(embed=discord.Embed(description=f"❌ API seems to be down at the moment."))
                 elif trans.src == lang2:
@@ -124,7 +127,7 @@ class Fluent(commands.Cog):
                     if hasattr(message, "reply"):
                         return await message.reply(embed=embed, mention_author=False)
                 elif trans.src == lang1:
-                    trans = await self._translator(message.content, lang2)
+                    trans = await self.translator(message.content, lang2)
                     embed = discord.Embed(
                         description=f"{trans.text}"
                     )
