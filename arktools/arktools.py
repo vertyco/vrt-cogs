@@ -3021,13 +3021,18 @@ class ArkTools(commands.Cog):
                     msg_to_delete = await dest_channel.fetch_message(message)
                 except discord.NotFound:
                     log.info(f"Status message not found. Creating new message.")
+                    msg_to_delete = None
+                except Exception as e:
+                    log.warning(f"Unknown error in server status msg: {e}")
+                    msg_to_delete = None
 
             if msg_to_delete:
                 try:
                     await msg_to_delete.delete()
                 except discord.Forbidden:  # Must have imported config from another bot and doesnt have perms to delete
                     log.warning("Status channel: Bot doesnt have perms to delete other users messages")
-                    pass
+                except Exception as e:
+                    log.warning(f"Unknown error in server status deletion: {e}")
             if file:
                 message = await dest_channel.send(embed=embed, file=file)
             else:
@@ -3392,8 +3397,11 @@ class ArkTools(commands.Cog):
             try:
                 friends = json.loads((await xbl_client.people.get_friends_own()).json())
             except Exception as e:
-                log.warning(f"Autofriend Session Error: {e}")
-                return
+                if "Too Many Requests" in str(e):
+                    return
+                else:
+                    log.warning(f"Autofriend Session Error: {e}")
+                    return
             friends = friends["people"]
             followers = await get_followers(token)
             if "people" not in followers:
