@@ -4,13 +4,10 @@ import re
 import datetime
 import pytz
 import io
-import time
+import unicodedata
 
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
-import matplotlib.dates as mdates
-
-import numpy as np
 
 
 # Hard coded item blueprint paths for the imstuck command
@@ -21,6 +18,27 @@ IMSTUCK_BLUEPRINTS = [
     f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
     f""""Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 1 0 0"""
 ]
+
+
+# Filter unicode, emojis, and links out of messages and user names
+async def decode(message: discord.Message):
+    # Strip links, emojis, and unicode characters from message content before sending to server
+    nolinks = re.sub(r'https?:\/\/[^\s]+', '', message.content)
+    noemojis = re.sub(r'<:\w*:\d*>', '', nolinks)
+    nocustomemojis = re.sub(r'<a:\w*:\d*>', '', noemojis)
+    msg = unicodedata.normalize('NFKD', nocustomemojis).encode('ascii', 'ignore').decode()
+    if msg == "":
+        return
+    if msg == " ":
+        return
+
+    # Convert any unicode characters in member name to normal text
+    author = message.author
+    normalizedname = unicodedata.normalize('NFKD', author.name).encode('ascii', 'ignore').decode()
+    validname = normalizedname.strip()
+    if not validname:
+        normalizedname = unicodedata.normalize('NFKD', author.nick).encode('ascii', 'ignore').decode()
+    return normalizedname, msg
 
 
 # Format time from total seconds
@@ -335,6 +353,8 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             if "leftdiscordon" in data and not in_server:
                 left_on = data["leftdiscordon"]
                 left_on = datetime.datetime.fromisoformat(left_on)
+                timezone = settings["timezone"]
+                timezone = pytz.timezone(timezone)
                 left_on = left_on.astimezone(timezone)
                 embed.add_field(
                     name="Left Discord",

@@ -23,14 +23,14 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
-from .calls import (serverchat,
-                    add_friend,
+from .calls import (add_friend,
                     remove_friend,
                     manual_rcon,
                     get_followers,
                     block_player,
                     unblock_player)
-from .formatter import (tribelog_format,
+from .formatter import (decode,
+                        tribelog_format,
                         profile_format,
                         expired_players,
                         lb_format,
@@ -58,7 +58,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.15"
+    __version__ = "2.4.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2315,13 +2315,16 @@ class ArkTools(commands.Cog):
 
         if not allservers and not servermap:
             return
+
+        name, msg = await decode(message)
+        guild = message.guild
         rtasks = []
         if message.channel.id in clusterchannels:
             for server in allservers:
-                rtasks.append(serverchat(server, message))
+                rtasks.append(self.executor(guild, server, f"serverchat {name}: {msg}"))
             await asyncio.gather(*rtasks)
         elif int(message.channel.id) == int(chatchannel):
-            await serverchat(servermap, message)
+            await self.executor(guild, servermap, f"serverchat {name}: {msg}")
         else:
             return
 
@@ -2427,36 +2430,52 @@ class ArkTools(commands.Cog):
         mapname = server["name"].capitalize()
         clustername = server["cluster"].upper()
 
+        can_send = False
+        jperms = joinlog.permissions_for(guild.me).send_messages
+        lperms = leavelog.permissions_for(guild.me).send_messages
+        if jperms and lperms:
+            can_send = True
+        else:
+            log.warning(f"Missing send message perms in {guild} for Join/Leave channel")
+
         lastplayerlist = self.playerlist[channel]
 
+        # ArkTools just loaded
         if not newplayerlist and not lastplayerlist:
             self.playerlist[channel] = newplayerlist
 
+        # Went from offline to empty server
         elif not newplayerlist and lastplayerlist == []:
             self.playerlist[channel] = newplayerlist
 
+        # Went from empty to offline
         elif newplayerlist == [] and not lastplayerlist:
             self.playerlist[channel] = newplayerlist
 
+        # Went from online and populated to offline
         elif not newplayerlist and len(lastplayerlist) > 0:
             for player in lastplayerlist:
-                await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
+                if can_send:
+                    await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = newplayerlist
 
         # Cog was probably reloaded so dont bother spamming join log with all current members
         elif len(newplayerlist) >= 0 and not lastplayerlist:
             self.playerlist[channel] = newplayerlist
 
+        # No changes
         elif len(newplayerlist) == 0 and len(lastplayerlist) == 0:
             self.playerlist[channel] = newplayerlist
 
+        # Change in pop since last check so figure out if they joined or left
         else:
-            for player in newplayerlist:
-                if player not in lastplayerlist:
-                    await joinlog.send(f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
-            for player in lastplayerlist:
-                if player not in newplayerlist:
-                    await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
+            if can_send:
+                for player in newplayerlist:
+                    if player not in lastplayerlist:
+                        await joinlog.send(f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
+                for player in lastplayerlist:
+                    if player not in newplayerlist:
+                        await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
             self.playerlist[channel] = newplayerlist
 
     # Sends messages from in-game chat to their designated channels
@@ -2873,11 +2892,15 @@ class ArkTools(commands.Cog):
     def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
         time = datetime.datetime.now() + datetime.timedelta(minutes=2)
         playerlist = self.playerlist[channel_id]
-        min_votes = math.ceil(len(playerlist) / 2)
-        if len(playerlist) == 1:
+        if playerlist:
+            count = len(playerlist)
+        else:
+            count = 1
+        min_votes = math.ceil(count / 2)
+        if count == 1:
             min_votes = 1
-        if len(playerlist) > 10:
-            min_votes = math.ceil(math.sqrt(2 * len(playerlist)))
+        if count > 10:
+            min_votes = math.ceil(math.sqrt(2 * count))
         if channel_id not in self.votes:
             self.votes[channel_id] = {}
         if vote_type not in self.votes[channel_id]:

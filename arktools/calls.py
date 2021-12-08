@@ -12,36 +12,6 @@ import logging
 log = logging.getLogger("red.vrt.arktools")
 
 
-# Send chat to servers(filters any unicode characters or custom discord emojis before hand since Ark doesnt like that)
-async def serverchat(server: dict, message: discord.Message):
-    author = message.author.name
-    # Strip links, emojis, and unicode characters from message content before sending to server
-    nolinks = re.sub(r'https?:\/\/[^\s]+', '', message.content)
-    noemojis = re.sub(r'<:\w*:\d*>', '', nolinks)
-    nocustomemojis = re.sub(r'<a:\w*:\d*>', '', noemojis)
-    message = unicodedata.normalize('NFKD', nocustomemojis).encode('ascii', 'ignore').decode()
-    if message == "":
-        return
-    if message == " ":
-        return
-
-    # Convert any unicode characters in member name to normal text
-    normalizedname = unicodedata.normalize('NFKD', author).encode('ascii', 'ignore').decode()
-    try:
-        await rcon(
-            command=f"serverchat {normalizedname}: {message}",
-            host=server['ip'],
-            port=server['port'],
-            passwd=server['password'])
-    except Exception as e:
-        if "semaphor" in str(e):
-            pass
-        elif "Errno 110" in str(e):
-            pass
-        else:
-            log.warning(f"serverchat: {e}")
-
-
 # Manual RCON commands
 async def manual_rcon(channel: discord.TextChannel, server: dict, command: str):
     try:
