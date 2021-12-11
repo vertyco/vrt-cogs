@@ -914,6 +914,19 @@ class ArkTools(commands.Cog):
                     return await ctx.send(f"User is registered as **{stat['username']}**")
         await ctx.send("User never registered.")
 
+    # Find out if a user has registered their gamertag
+    @commands.command(name="findbyid")
+    @commands.guild_only()
+    async def find_player_from_by_id(self, ctx: commands.Context, *, uid: int):
+        """Find out if a player has registered by their discord ID"""
+        settings = await self.config.guild(ctx.guild).all()
+        stats = settings["players"]
+        for xuid, stat in stats.items():
+            if "discord" in stat:
+                if stat["discord"] == uid:
+                    return await ctx.send(f"User is registered as **{stat['username']}**")
+        await ctx.send("User never registered.")
+
     # Main group
     @commands.group(name="arktools")
     @commands.guild_only()

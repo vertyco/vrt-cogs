@@ -161,6 +161,7 @@ class ArkShop(commands.Cog):
         return title, tip, categories
 
     @commands.command(name="dshoplist")
+    @commands.guild_only()
     async def data_status(self, ctx):
         """List all items in the data shop"""
         if ctx.guild.id != await self.config.main_server():
@@ -180,6 +181,7 @@ class ArkShop(commands.Cog):
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="rshoplist")
+    @commands.guild_only()
     async def rcon_status(self, ctx):
         """List all items in the rcon shop"""
         shops = await self.config.guild(ctx.guild).shops()
@@ -200,6 +202,7 @@ class ArkShop(commands.Cog):
 
     @commands.group(name="shopset")
     @commands.admin()
+    @commands.guild_only()
     async def _shopset(self, ctx):
         """Base Ark Shop Setup Command"""
         await self.arktools(ctx)
@@ -1063,6 +1066,7 @@ class ArkShop(commands.Cog):
         return await ctx.send(embed=embed)
 
     @commands.command(name="rshop")
+    @commands.guild_only()
     async def _rconshop(self, ctx):
         """
         Open up the rcon shop
