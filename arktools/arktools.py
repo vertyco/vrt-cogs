@@ -578,10 +578,14 @@ class ArkTools(commands.Cog):
         def check(message: discord.Message):
             return message.author == ctx.author and message.channel == ctx.channel
 
+        reply = None
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+            try:
+                await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+            except discord.NotFound:
+                return
 
         if reply.content.lower() == "all":
             embed = discord.Embed(
