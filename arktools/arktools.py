@@ -87,6 +87,7 @@ class ArkTools(commands.Cog):
             "autorename": False,
             "autoremove": False,
             "cooldowns": {},
+            "votecooldown": 120,
             "kit": {"enabled": False, "claimed": [], "paths": []},
             "payday": {"enabled": False, "random": False, "cooldown": 12, "paths": []},
             "serverstats": {"dates": [], "counts": [], "expiration": 30},
@@ -110,6 +111,7 @@ class ArkTools(commands.Cog):
 
         # In-Game voting sessions
         self.votes = {}
+        self.lastran = {}
 
         # Loops
         self.getchat.start()
@@ -1969,7 +1971,7 @@ class ArkTools(commands.Cog):
                     "chatchannel": chatchannel.id
                 }
                 await ctx.send(f"The **{servername}** server has been added to the **{clustername}** cluster!")
-                await self.initialize()
+        await self.initialize()
 
     @server_settings.command(name="delserver")
     async def del_server(self, ctx: commands.Context, clustername: str, servername: str):
@@ -2054,13 +2056,28 @@ class ArkTools(commands.Cog):
             await self.config.guild(ctx.guild).payday.random.set(True)
             await ctx.send("In-game payday will now give a random item from the list")
 
-    @in_game.command(name="cooldown")
+    @in_game.group(name="cooldowns")
+    async def cooldown_group(self, ctx: commands.Context):
+        """In-Game cooldown settings"""
+        pass
+
+    @cooldown_group.command(name="payday")
     async def payday_cooldown(self, ctx: commands.Context, hours: int):
         """
-        Set the cooldown (in hours) that players can use the payday command
+        Set the payday cooldown (in hours)
         """
         await self.config.guild(ctx.guild).payday.cooldown.set(hours)
         await ctx.send(f"Cooldown set for {hours} hours!")
+
+    @cooldown_group.command(name="voting")
+    async def vote_cooldowns(self, ctx: commands.Context, minutes: int):
+        """
+        Set the cooldown for in-game votes (In minutes)
+        """
+        cooldown = minutes * 60
+        cooldown = int(cooldown)
+        await self.config.guild(ctx.guild).votecooldown.set(cooldown)
+        await ctx.send(f"Cooldown set for {minutes} minutes!")
 
     @in_game.command(name="togglekit")
     async def toggle_starter_kit(self, ctx: commands.Context):
@@ -2332,8 +2349,11 @@ class ArkTools(commands.Cog):
 
         if not allservers and not servermap:
             return
-
-        name, msg = await decode(message)
+        try:
+            name, msg = await decode(message)
+        except TypeError:
+            log.info(f"Message to server failed from {message.author}")
+            return
         guild = message.guild
         rtasks = []
         if message.channel.id in clusterchannels:
@@ -2625,15 +2645,16 @@ class ArkTools(commands.Cog):
         h = settings["payday"]["cooldown"]
         players = settings["players"]
         kit = settings["kit"]["enabled"]
+        cid = server["chatchannel"]
+        channel = guild.get_channel(cid)
+        playerlist = self.playerlist[cid]
+
         time = datetime.datetime.now()
         duration = h * 3600
         if payday:
             available_cmd += f"{prefix}payday - Earn in-game rewards every {h} hours!\n"
         if kit:
             available_cmd += f"{prefix}kit - New players can claim a one-time starter kit!\n"
-        cid = server["chatchannel"]
-        channel = guild.get_channel(cid)
-        playerlist = self.playerlist[cid]
         try:
             xuid, playerdata = await self.get_player(gamertag, players)
         except TypeError as e:
@@ -2654,10 +2675,12 @@ class ArkTools(commands.Cog):
         elif cmd.lower().startswith("register"):
             c, a = self.parse_cmd(cmd)
             if not a:
-                cmd = f"serverchat No ID, type the command as {prefix}register YourImplantID"
+                cmd = f"serverchat Please include your implant ID, " \
+                      f"type the command as {prefix}register YourImplantID"
                 await self.executor(guild, server, cmd)
                 if channel:
-                    await channel.send(f"`No ID, type the command as {prefix}register YourImplantID`")
+                    await channel.send(f"`Please include your implant ID, "
+                                       f"type the command as {prefix}register YourImplantID`")
                 return
             async with self.config.guild(guild).players() as players:
                 if not a.isdigit():
@@ -2683,8 +2706,6 @@ class ArkTools(commands.Cog):
                 return await self.executor(guild, server, cmd)
             if rank:
                 a = f"[{rank}] {a}"
-            print(rank)
-            print(a)
             cmd = f'renameplayer "{char_name}" {a}'
             await self.executor(guild, server, cmd)
             cmd = f'serverchat {gamertag} Your name has been changed to {a}'
@@ -2693,8 +2714,10 @@ class ArkTools(commands.Cog):
                 await channel.send(f"`{gamertag} Your name has been changed to {a}`")
         # Vote day command
         elif cmd.lower().startswith("voteday"):
-            remaining = self.make_vote("voteday", cid, gamertag, server)
-            if remaining > 0:
+            remaining = await self.vote_handler(guild, cid, server, gamertag, "voteday")
+            if remaining is None:
+                return
+            elif remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it day!")
                 if channel:
                     await channel.send(f"`Need {remaining} more In-game votes to make it day!`")
@@ -2706,7 +2729,9 @@ class ArkTools(commands.Cog):
                     await channel.send(f"`Vote successful, let there be light!`")
         # Vote night command
         elif cmd.lower().startswith("votenight"):
-            remaining = self.make_vote("votenight", cid, gamertag, server)
+            remaining = await self.vote_handler(guild, cid, server, gamertag, "votenight")
+            if remaining is None:
+                return
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it night!")
                 if channel:
@@ -2717,6 +2742,21 @@ class ArkTools(commands.Cog):
                 del self.votes[cid]
                 if channel:
                     await channel.send(f"`Vote successful, turning off the sun!`")
+        # Dino wipe command
+        elif cmd.lower().startswith("votedinowipe"):
+            remaining = await self.vote_handler(guild, cid, server, gamertag, "votedinowipe")
+            if remaining is None:
+                return
+            if remaining > 0:
+                await self.executor(guild, server, f"serverchat Need {remaining} more votes to wipe wild dinos!")
+                if channel:
+                    await channel.send(f"`Need {remaining} more In-Game votes to wipe wild dinos!`")
+            else:
+                await self.executor(guild, server, f"serverchat Vote successful, wiping wild dinos!")
+                await self.executor(guild, server, "destroywilddinos")
+                del self.votes[cid]
+                if channel:
+                    await channel.send(f"`Vote successful, wiping wild dinos!`")
         # Player count command
         elif cmd.lower().startswith("players"):
             if len(playerlist) == 1:
@@ -2782,19 +2822,6 @@ class ArkTools(commands.Cog):
                         if channel:
                             await channel.send(f"`{gamertag} You need to wait {int(tleft)} seconds "
                                                f"before using that command again`")
-        # Dino wipe command
-        elif cmd.lower().startswith("votedinowipe"):
-            remaining = self.make_vote("dinowipe", cid, gamertag, server)
-            if remaining > 0:
-                await self.executor(guild, server, f"serverchat Need {remaining} more votes to wipe wild dinos!")
-                if channel:
-                    await channel.send(f"`Need {remaining} more In-Game votes to wipe wild dinos!`")
-            else:
-                await self.executor(guild, server, f"serverchat Vote successful, wiping wild dinos!")
-                await self.executor(guild, server, "destroywilddinos")
-                del self.votes[cid]
-                if channel:
-                    await channel.send(f"`Vote successful, wiping wild dinos!`")
         # Payday command
         elif cmd.lower().startswith("payday"):
             if not payday:
@@ -2906,33 +2933,60 @@ class ArkTools(commands.Cog):
                 if channel:
                     await channel.send(f"`{gamertag} has just claimed their starter kit!`")
 
-    def make_vote(self, vote_type: str, channel_id: str, gamertag: str, server: dict):
-        time = datetime.datetime.now() + datetime.timedelta(minutes=2)
-        playerlist = self.playerlist[channel_id]
-        if playerlist:
-            count = len(playerlist)
+    async def vote_handler(self, guild, channel_id, server, gamertag, vote_type):
+        can_run = False
+        time = datetime.datetime.now()
+        if channel_id not in self.lastran:
+            self.lastran[channel_id] = {}
+            can_run = True
+        if vote_type not in self.lastran[channel_id]:
+            self.lastran[channel_id][vote_type] = time
+            can_run = True
+        if channel_id in self.votes:
+            can_run = True
+        last_ran = self.lastran[channel_id][vote_type]
+        td = time - last_ran
+        td = td.total_seconds()
+        td = int(td)
+        cooldown = await self.config.guild(guild).votecooldown()
+        cooldown = int(cooldown)
+        if td > cooldown:
+            can_run = True
+
+        if can_run:
+            time_till_expired = time + datetime.timedelta(minutes=2)
+            playerlist = self.playerlist[channel_id]
+            if playerlist:
+                count = len(playerlist)
+            else:
+                count = 1
+            min_votes = math.ceil(count / 2)
+            if count == 1:
+                min_votes = 1
+            if count > 10:
+                min_votes = math.ceil(math.sqrt(2 * count))
+            if channel_id not in self.votes:
+                self.votes[channel_id] = {}
+            if vote_type not in self.votes[channel_id]:
+                self.votes[channel_id][vote_type] = {
+                    "expires": time_till_expired,
+                    "votes": [],
+                    "minvotes": min_votes,
+                    "server": server
+                }
+            if gamertag not in self.votes[channel_id][vote_type]["votes"]:
+                self.votes[channel_id][vote_type]["votes"].append(gamertag)
+            min_votes = self.votes[channel_id][vote_type]["minvotes"]
+            current = len(self.votes[channel_id][vote_type]["votes"])
+            remaining = min_votes - current
+            return int(remaining)
         else:
-            count = 1
-        min_votes = math.ceil(count / 2)
-        if count == 1:
-            min_votes = 1
-        if count > 10:
-            min_votes = math.ceil(math.sqrt(2 * count))
-        if channel_id not in self.votes:
-            self.votes[channel_id] = {}
-        if vote_type not in self.votes[channel_id]:
-            self.votes[channel_id][vote_type] = {
-                "expires": time,
-                "votes": [],
-                "minvotes": min_votes,
-                "server": server
-            }
-        if gamertag not in self.votes[channel_id][vote_type]["votes"]:
-            self.votes[channel_id][vote_type]["votes"].append(gamertag)
-        min_votes = self.votes[channel_id][vote_type]["minvotes"]
-        current = len(self.votes[channel_id][vote_type]["votes"])
-        remaining = min_votes - current
-        return int(remaining)
+            msg = f"Command is in cooldown, wait {cooldown - td} seconds"
+            await self.executor(guild, server, f"serverchat {msg}")
+            channel = guild.get_channel(channel_id)
+            if channel:
+                await channel.send(f"`{msg}`")
+            return None
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
