@@ -111,7 +111,7 @@ class ArkShop(commands.Cog):
             )
         except Exception as e:
             if "semaphore" in str(e):
-                log.info(f"{server['cluster']} {server['name']} is offline")
+                log.info(f"Server {server['ip']} is offline")
             else:
                 log.warning(f"RSHOP RCON Error: {e}")
 
