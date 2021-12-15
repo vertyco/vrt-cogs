@@ -588,7 +588,8 @@ class ArkTools(commands.Cog):
                 await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
             except discord.NotFound:
                 return
-
+        if not reply:
+            return
         if reply.content.lower() == "all":
             embed = discord.Embed(
                 description="Gathering Data..."
