@@ -755,6 +755,8 @@ class XTools(commands.Cog):
             await msg.edit(embed=embed)
             most_played = {}
             async with ctx.typing():
+                cant_find = "Couldn't find playtime data for:\n"
+                not_found = False
                 for title in titles:
                     title_id = title["titleId"]
                     apptype = title["titleType"]
@@ -764,7 +766,15 @@ class XTools(commands.Cog):
                             data = await res.json(content_type=None)
                         most_played[title["name"]] = 0
                         if len(data["statlistscollection"][0]["stats"]) > 0:
-                            most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
+                            if "value" in data["statlistscollection"][0]["stats"][0]:
+                                most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
+                            else:
+                                not_found = True
+                                cant_find += f"`{title['name']}`\n"
             pages = mostplayed(most_played, gt)
-            await msg.delete()
+            if not_found:
+                embed = discord.Embed(description=cant_find)
+                await msg.edit(embed=embed)
+            else:
+                await msg.delete()
             return await menu(ctx, pages, DEFAULT_CONTROLS)
