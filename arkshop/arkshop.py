@@ -687,7 +687,7 @@ class ArkShop(commands.Cog):
                 return await ctx.send(f"{current_name} shop doesn't exist!")
 
     @_datashopset.command(name="additem")
-    async def add_data_item(self, ctx, shop_name, item_name, price=None):
+    async def add_data_item(self, ctx, category, item_name, price=None):
         """
         Add an item to the data shop
 
@@ -697,23 +697,40 @@ class ArkShop(commands.Cog):
         """
         async with self.config.datashops() as shops:
             # check if shop exists
-            if shop_name not in shops:
-                return await ctx.send(f"{shop_name} shop not found!")
+            if category not in shops:
+                return await ctx.send(f"{category} category not found!")
             # check if item exists
-            if item_name in shops[shop_name]:
+            if item_name in shops[category]:
                 return await ctx.send(f"{item_name} item already exists!")
             if price:
-                shops[shop_name][item_name] = {"price": price, "options": {}}
+                shops[category][item_name] = {"price": price, "options": {}}
                 currency_name = await bank.get_currency_name(ctx.guild)
                 return await ctx.send(
-                    f"{item_name} has been added to the {shop_name} shop for {price} {currency_name}"
+                    f"{item_name} has been added to the {category} shop for {price} {currency_name}"
                 )
             else:
-                shops[shop_name][item_name] = {"price": False, "options": {}}
+                shops[category][item_name] = {"price": False, "options": {}}
                 return await ctx.send(
-                    f"{item_name} has been added to the {shop_name} shop with options.\n"
+                    f"{item_name} has been added to the {category} shop with options.\n"
                     f"You will need to add options to it with `{ctx.prefix}shopset data addoption`"
                 )
+
+    @_datashopset.command(name="description")
+    async def add_data_description(self, ctx, category, item_name, *, description: str):
+        """Add a descriptin to a data shop item"""
+        async with self.config.datashops() as shops:
+            # check if shop exists
+            if category not in shops:
+                return await ctx.send(f"{category} category not found!")
+                # check if item exists
+            if item_name not in shops[category]:
+                return await ctx.send(f"{item_name} item not found!")
+            if "desc" in shops[category][item_name]:
+                overwrite = "overwritten"
+            else:
+                overwrite = "set"
+            shops[category][item_name]["desc"] = description
+            await ctx.send(f"Description has been {overwrite} for {item_name} in the {category} category")
 
     @_datashopset.command(name="delitem")
     async def delete_data_item(self, ctx, shop_name, item_name):
@@ -835,7 +852,7 @@ class ArkShop(commands.Cog):
                 return await ctx.send(f"{current_name} shop doesn't exist!")
 
     @_rconshopset.command(name="additem")
-    async def add_rcon_item(self, ctx, shop_name, item_name, price=None):
+    async def add_rcon_item(self, ctx, category, item_name, price=None):
         """
         Add an item to an rcon shop category
 
@@ -843,13 +860,13 @@ class ArkShop(commands.Cog):
         """
         async with self.config.guild(ctx.guild).shops() as shops:
             # check if shop exists
-            if shop_name not in shops:
-                return await ctx.send(f"{shop_name} shop not found!")
+            if category not in shops:
+                return await ctx.send(f"{category} category not found!")
             # check if item exists
-            if item_name in shops[shop_name]:
+            if item_name in shops[category]:
                 return await ctx.send(f"{item_name} item already exists!")
             if price:
-                shops[shop_name][item_name] = {"price": price, "options": {}, "paths": []}
+                shops[category][item_name] = {"price": price, "options": {}, "paths": []}
                 msg = await ctx.send(
                     "Type the full blueprint paths including quantity/quality/blueprint numbers below.\n"
                     "Separate each full path with a new line for multiple items in one pack.\n"
@@ -870,13 +887,30 @@ class ArkShop(commands.Cog):
                                 paths = paths.split("\r\n")
                     else:
                         paths = reply.content.split("\n")
-                    shops[shop_name][item_name]["paths"] = paths
+                    shops[category][item_name]["paths"] = paths
                     return await ctx.send(f"Item paths set!")
                 except asyncio.TimeoutError:
                     return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
             else:
-                shops[shop_name][item_name] = {"price": False, "options": {}, "paths": []}
+                shops[category][item_name] = {"price": False, "options": {}, "paths": []}
                 return await ctx.send(f"Item added, please add options to it with `{ctx.prefix}shopset rcon addoption`")
+
+    @_rconshopset.command(name="description")
+    async def add_rcon_description(self, ctx, category, item_name, *, description: str):
+        """Add a description to an RCON shop item"""
+        async with self.config.guild(ctx.guild).shops() as shops:
+            # check if shop exists
+            if category not in shops:
+                return await ctx.send(f"{category} category not found!")
+                # check if item exists
+            if item_name not in shops[category]:
+                return await ctx.send(f"{item_name} item not found!")
+            if "desc" in shops[category][item_name]:
+                overwrite = "overwritten"
+            else:
+                overwrite = "set"
+            shops[category][item_name]["desc"] = description
+            await ctx.send(f"Description has been {overwrite} for {item_name} in the {category} category")
 
     @_rconshopset.command(name="delitem")
     async def delete_rcon_item(self, ctx, shop_name, item_name):
@@ -1286,6 +1320,10 @@ class ArkShop(commands.Cog):
                     full_item = categories[category][name]
                     break
         options = full_item["options"]
+        if "desc" in full_item:
+            desc = full_item["desc"]
+        else:
+            desc = None
         # how many options
         option_count = len(options.keys())
         # how many pages
@@ -1322,8 +1360,10 @@ class ArkShop(commands.Cog):
                     inline=False
                 )
                 count += 1
-            embed.set_footer(
-                text=f"Page {page + 1}/{pages}\n{tip}")
+            if desc:
+                embed.set_footer(text=f"Description: {desc}\nPage {page + 1}/{pages}\n{tip}")
+            else:
+                embed.set_footer(text=f"Page {page + 1}/{pages}\n{tip}")
             embedlist.append(embed)
             start += 4
             stop += 4
