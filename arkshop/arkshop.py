@@ -512,6 +512,13 @@ class ArkShop(commands.Cog):
         # check destination dir
         if not os.path.exists(destination_dir):
             return await ctx.send("Destination path does not exist!")
+        # check source file
+        if not os.path.exists(item_source_file):
+            embed = discord.Embed(
+                description=f"Data file does not exist!",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
         # remove any existing data from destination
         if os.path.exists(item_destination):
             try:
@@ -1442,14 +1449,14 @@ class ArkShop(commands.Cog):
             clusters = await self.config.clusters()
             source_directory = await self.config.main_path()
             dest_directory = clusters[cname]
-            # check source path
+            # check source dir
             if not os.path.exists(source_directory):
                 embed = discord.Embed(
                     description=f"Source path does not exist!",
                     color=discord.Color.red()
                 )
                 return await message.edit(embed=embed)
-            # check destination path
+            # check destination dir
             if not os.path.exists(dest_directory):
                 embed = discord.Embed(
                     description=f"Destination path does not exist!",
@@ -1457,6 +1464,7 @@ class ArkShop(commands.Cog):
                 )
                 return await message.edit(embed=embed)
             item_source_file = os.path.join(source_directory, filename)
+            # check source file
             if not os.path.exists(item_source_file):
                 embed = discord.Embed(
                     description=f"Data file does not exist!",
