@@ -1306,7 +1306,11 @@ class ArkShop(commands.Cog):
             paths = full_item["paths"]
         # if item has no options
         if price and not options:
-            await self.purchase(ctx, shoptype, name, name, price, message, paths)
+            if "desc" in full_item:
+                desc = full_item["desc"]
+            else:
+                desc = None
+            await self.purchase(ctx, shoptype, name, name, price, message, desc, paths)
         # go back to menu if item contains options
         else:
             await self.op_compiler(ctx, message, name, shoptype)
@@ -1361,7 +1365,7 @@ class ArkShop(commands.Cog):
                 )
                 count += 1
             if desc:
-                embed.set_footer(text=f"Description: {desc}\nPage {page + 1}/{pages}\n{tip}")
+                embed.set_footer(text=f"{desc}\nPage {page + 1}/{pages}\n{tip}")
             else:
                 embed.set_footer(text=f"Page {page + 1}/{pages}\n{tip}")
             embedlist.append(embed)
@@ -1377,6 +1381,10 @@ class ArkShop(commands.Cog):
                     if item == itemname:
                         price = data["options"][name]["price"]
                         paths = data["options"][name]["paths"]
+                        if "desc" in data:
+                            desc = data["desc"]
+                        else:
+                            desc = None
                         return await self.purchase(
                             ctx,
                             shoptype,
@@ -1384,6 +1392,7 @@ class ArkShop(commands.Cog):
                             f"{itemname}({name})",
                             price,
                             message,
+                            desc,
                             paths
                         )
         else:
@@ -1391,16 +1400,21 @@ class ArkShop(commands.Cog):
                 for item, data in cat.items():
                     for k, price in data["options"].items():
                         if k == name:
+                            if "desc" in data:
+                                desc = data["desc"]
+                            else:
+                                desc = None
                             return await self.purchase(
                                 ctx,
                                 shoptype,
                                 name,
                                 f"{itemname}({name})",
                                 price,
-                                message
+                                message,
+                                desc
                             )
 
-    async def purchase(self, ctx, shoptype, filename, shopname, price, message, paths=None):
+    async def purchase(self, ctx, shoptype, filename, item_name, price, message, desc=None, paths=None):
         await self.clearall(ctx, message)
         users = await self.config.guild(ctx.guild).users()
         xuid = await self.get_xuid_from_arktools(ctx)
@@ -1447,7 +1461,10 @@ class ArkShop(commands.Cog):
                 description=f"**Type your implant ID below.**\n",
                 color=discord.Color.blue()
             )
-            embed.set_footer(text="Type 'cancel' to cancel the purchase.")
+            if desc:
+                embed.set_footer(text=f"{desc}\n\nType 'cancel' to cancel the purchase.")
+            else:
+                embed.set_footer(text="Type 'cancel' to cancel the purchase.")
             embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
             await message.edit(embed=embed)
 
@@ -1477,7 +1494,7 @@ class ArkShop(commands.Cog):
             # withdraw credits and send purchase message
             await bank.withdraw_credits(ctx.author, int(price))
             embed = discord.Embed(
-                description=f"You have purchased the {shopname} item for {price} {currency_name}!",
+                description=f"You have purchased the {item_name} item for {price} {currency_name}!",
                 color=discord.Color.green()
             )
             embed.set_footer(text=random.choice(TIPS))
@@ -1513,10 +1530,12 @@ class ArkShop(commands.Cog):
                 return await message.edit(embed=embed)
             # last check to make sure user still wants to buy item
             embed = discord.Embed(
-                description=f"**Are you sure you want to purchase the {shopname} item?**\n"
+                description=f"**Are you sure you want to purchase the {item_name} item?**\n"
                             f"Type **yes** or **no**",
                 color=discord.Color.blue()
             )
+            if desc:
+                embed.set_footer(text=desc)
             await message.edit(embed=embed)
 
             try:
@@ -1558,7 +1577,7 @@ class ArkShop(commands.Cog):
             shutil.copyfile(item_source_file, destination)
             await bank.withdraw_credits(ctx.author, int(price))
             embed = discord.Embed(
-                description=f"You have purchased the {shopname} item for {price} {currency_name}!\n"
+                description=f"You have purchased the {item_name} item for {price} {currency_name}!\n"
                             f"**Make sure to wait 30 seconds before accessing your Ark data!**",
                 color=discord.Color.green()
             )
@@ -1569,7 +1588,7 @@ class ArkShop(commands.Cog):
         # Add the purchase to logs
         embed = discord.Embed(
             title=f"{shoptype.upper()} Purchase",
-            description=f"**{ctx.author.name}** has purchased the {shopname} item.\n"
+            description=f"**{ctx.author.name}** has purchased the {item_name} item.\n"
                         f"**Price:** {price} {currency_name}\n"
                         f"**XUID:** {xuid}"
         )
@@ -1577,24 +1596,24 @@ class ArkShop(commands.Cog):
         async with self.config.guild(ctx.guild).logs() as logs:
             member = str(ctx.author.id)
             if shoptype == "data":
-                shopname = filename
+                item_name = filename
             # shop logs
-            if shopname not in logs["items"]:
-                logs["items"][shopname] = {"type": "data", "count": 1}
+            if item_name not in logs["items"]:
+                logs["items"][item_name] = {"type": "data", "count": 1}
             else:
-                logs["items"][shopname]["count"] += 1
+                logs["items"][item_name]["count"] += 1
 
             # individual user logs
             user = logs["users"].get(member)
             if not user:
                 logs["users"][member] = {}
 
-            item = logs["users"][member].get(shopname)
+            item = logs["users"][member].get(item_name)
             if not item:
-                logs["users"][member][shopname] = {"type": "data", "count": 1}
+                logs["users"][member][item_name] = {"type": "data", "count": 1}
 
             else:
-                logs["users"][member][shopname]["count"] += 1
+                logs["users"][member][item_name]["count"] += 1
 
     # MENU ITEMS
     async def select_one(
