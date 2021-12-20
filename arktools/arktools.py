@@ -659,7 +659,7 @@ class ArkTools(commands.Cog):
                 xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokendata)
                 if not xbl_client:
                     embed = discord.Embed(
-                        description=f"Friend request from `{tokendata['gamertag']}` may have failed!",
+                        description=f"Friend request from `{gt}` may have failed!",
                         color=discord.Color.red()
                     )
                     embed.set_thumbnail(url=FAILED)
@@ -675,7 +675,7 @@ class ArkTools(commands.Cog):
                     embed.set_thumbnail(url=SUCCESS)
                 else:
                     embed = discord.Embed(
-                        description=f"Friend request from `{tokendata['gamertag']}` may have failed!",
+                        description=f"Friend request from `{gt}` may have failed!",
                         color=discord.Color.red()
                     )
                     embed.set_thumbnail(url=FAILED)
@@ -2569,17 +2569,19 @@ class ArkTools(commands.Cog):
 
             # Sends Discord invite to in-game chat if the word Discord is mentioned
             if "discord" in msg.lower() or "discordia" in msg.lower():
-                link = None
+                inv = None
+                link = False
                 try:
-                    link = await guild.vanity_invite()
+                    inv = await guild.vanity_invite()
+                    link = True
                 except discord.Forbidden:
                     try:
-                        link = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
-                        await self.executor(guild, server, f"serverchat {link}")
+                        inv = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
+                        link = True
                     except Exception as e:
                         log.exception(f"INVITE CREATION FAILED: {e}")
                 if link:
-                    await self.executor(guild, server, f"serverchat {link}")
+                    await self.executor(guild, server, f"serverchat {inv}")
 
             # Break message into groups for interpretation
             reg = r'(.+)\s\((.+)\): (.+)'
@@ -2716,9 +2718,9 @@ class ArkTools(commands.Cog):
         # Vote day command
         elif cmd.lower().startswith("voteday"):
             remaining = await self.vote_handler(guild, cid, server, gamertag, "voteday")
-            if remaining is None:
+            if remaining == "cooldown":
                 return
-            elif remaining > 0:
+            if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it day!")
                 if channel:
                     await channel.send(f"`Need {remaining} more In-game votes to make it day!`")
@@ -2731,7 +2733,7 @@ class ArkTools(commands.Cog):
         # Vote night command
         elif cmd.lower().startswith("votenight"):
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votenight")
-            if remaining is None:
+            if remaining == "cooldown":
                 return
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it night!")
@@ -2746,7 +2748,7 @@ class ArkTools(commands.Cog):
         # Dino wipe command
         elif cmd.lower().startswith("votedinowipe"):
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votedinowipe")
-            if remaining is None:
+            if remaining == "cooldown":
                 return
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to wipe wild dinos!")
@@ -2987,7 +2989,7 @@ class ArkTools(commands.Cog):
             channel = guild.get_channel(channel_id)
             if channel:
                 await channel.send(f"`{msg}`")
-            return None
+            return "cooldown"
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
@@ -3426,7 +3428,8 @@ class ArkTools(commands.Cog):
                                 if 200 <= status <= 204:
                                     ustatus = "Successfuly"
                                     # Set last seen to None
-                                    msg = "AUTOMATED MESSAGE\n\nYou have been unfriended by this Gamertag.\n" \
+                                    msg = "This is an automated message:\n\n" \
+                                          "You have been unfriended by this Gamertag.\n" \
                                           f"Reason: No activity in any server over the last {unfriendtime} days\n" \
                                           f"To play this map again simply friend the account and join session."
                                     await xbl_client.message.send_message(str(xuid), msg)
