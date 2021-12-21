@@ -1911,13 +1911,13 @@ class ArkTools(commands.Cog):
                         f"`Send Warning Msg:   `{warning}\n"
         )
         if msg:
-            embed.add_field(name="Warning Message", value=box(msg))
+            embed.add_field(name="Warning Message", value=box(msg), inline=False)
         else:
-            embed.add_field(name="Warning Message", value="None Set")
+            embed.add_field(name="Warning Message", value="None Set", inline=False)
         if whitelist:
-            embed.add_field(name="Ignore List", value=whitelist)
+            embed.add_field(name="Ignore List", value=whitelist, inline=False)
         else:
-            embed.add_field(name="Ignore List", value="No one added")
+            embed.add_field(name="Ignore List", value="No one added", inline=False)
         await ctx.send(embed=embed)
 
     # Arktools-Server subgroup
