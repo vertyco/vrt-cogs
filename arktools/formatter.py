@@ -419,8 +419,8 @@ def detect_sus(alt: dict, profile: dict, friends: dict):
         if setting["id"] == "Gamerscore":
             gs = int(setting["value"])
 
-    following = int(friends["friends"]["target_following_count"])
-    followers = int(friends["friends"]["target_follower_count"])
+    following = int(friends["target_following_count"])
+    followers = int(friends["target_follower_count"])
     if alt["silver"]:
         if tier == "Silver":
             sus = True
