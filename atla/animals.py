@@ -3,12 +3,12 @@
 Pet ideas and info
 
 STATUSES        |       chance to find
--find nothing           62%
--common                 20
--uncommon               10
--rare                   5%
--endangered             2.5%
--critically endangered  0.5%
+-find nothing           49%
+-common                 26
+-uncommon               14
+-rare                   7%
+-endangered             3%
+-critically endangered  1%
 
 ROLES
 -predator

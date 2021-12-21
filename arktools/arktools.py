@@ -1838,7 +1838,7 @@ class ArkTools(commands.Cog):
 
         If the user has less followers than the threshold, they will be flagged as sus
         """
-        await self.config.guild(ctx.guild).alt.mingamerscore.set(minimum_followers)
+        await self.config.guild(ctx.guild).alt.minfollowers.set(minimum_followers)
         await ctx.send(f"Minimum followers threshold has been set to `{minimum_followers}`")
 
     @alt_settings.command(name="minfollowing")
