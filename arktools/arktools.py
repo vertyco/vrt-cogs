@@ -3449,7 +3449,8 @@ class ArkTools(commands.Cog):
                                                 if eventlog:
                                                     embed = discord.Embed(
                                                         description=f"**Suspicious account detected!**\n"
-                                                                    f"User has been flagged for the following reasons\n"
+                                                                    f"User {gamertag}: `{xuid}` has been flagged for "
+                                                                    f"the following reasons\n"
                                                                     f"{reasons}"
                                                     )
                                                     try:
