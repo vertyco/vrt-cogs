@@ -406,6 +406,37 @@ async def detect_friends(friends: list, followers: list):
     return people_to_add
 
 
+# Detect if a user account is suspicious based on owner's settings
+def detect_sus(alt: dict, profile: dict, friends: dict):
+    reasons = ""
+    sus = False
+    tier = None
+    gs = None
+    user = profile["profile_users"][0]
+    for setting in user["settings"]:
+        if setting["id"] == "AccountTier":
+            tier = setting["value"]
+        if setting["id"] == "Gamerscore":
+            gs = int(setting["value"])
+
+    following = int(friends["friends"]["target_following_count"])
+    followers = int(friends["friends"]["target_follower_count"])
+    if alt["silver"]:
+        if tier == "Silver":
+            sus = True
+            reasons += "Player has a silver account\n"
+    if gs < alt["mings"]:
+        sus = True
+        reasons += f"Minimum Gamerscore is {alt['mings']}, player only has {gs}\n"
+    if following < alt["minfollowing"]:
+        sus = True
+        reasons += f"Player is only following {following} users\n"
+    if followers < alt["minfollowers"]:
+        sus = True
+        reasons += f"Player only has {followers} followers"
+    return sus, reasons
+
+
 # Plot player count for each cluster
 # Instead of relying on matplotlibs date formatter, the data points are selected manually with set ticks
 async def get_graph(settings: dict, hours: int):

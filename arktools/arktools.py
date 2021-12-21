@@ -40,6 +40,7 @@ from .formatter import (decode,
                         fix_timestamp,
                         get_graph,
                         time_format,
+                        detect_sus,
                         IMSTUCK_BLUEPRINTS)
 from .menus import menu, DEFAULT_CONTROLS
 
@@ -58,7 +59,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.4.21"
+    __version__ = "2.5.22"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -68,6 +69,17 @@ class ArkTools(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 117117117117117117, force_registration=True)
         default_guild = {
+            "alt": {  # System for detecting suspicious Xbox accounts
+                "on": False,  # Alt-detection system toggle
+                "autoban": False,  # Auto ban suspicious users toggle
+                "silver": False,  # Xbox silver account detection toggle
+                "msgtoggle": False,  # Whether to send warning message or not
+                "mings": 1000,  # Minimum gamerscore threshold
+                "minfollowers": 5,  # Minimum follower threshold
+                "minfollowing": 10,  # Minimum following threshold
+                "msg": None,  # Message to send users if their account is sus
+                "whitelist": []
+            },
             "welcomemsg": None,
             "playerclearmessage": None,
             "status": {"channel": None, "message": None, "time": 1},
@@ -1751,6 +1763,163 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).welcomemsg.set(welcome_message)
         await ctx.send(f"Welcome message set as:\n{to_send}")
 
+    @api_settings.group(name="altdetector")
+    async def alt_settings(self, ctx: commands.Context):
+        """
+        Alt account detection
+
+        Get alerts in the event log when a suspicious account joins a server,
+        and optionally Auto-ban them or send a warning message based on customizable settings
+        """
+        pass
+
+    @alt_settings.command(name="toggle")
+    async def toggle_alt_detection(self, ctx: commands.Context):
+        """Toggle the alt detection system on or off"""
+        on = await self.config.guild(ctx.guild).alt.on()
+        if on:
+            await self.config.guild(ctx.guild).alt.on.set(False)
+            await ctx.send("Alt detection system **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).alt.on.set(True)
+            await ctx.send("Alt detection system **Enabled**")
+
+    @alt_settings.command(name="autoban")
+    async def toggle_autoban(self, ctx: commands.Context):
+        """Toggle Auto-Banning of suspicious accounts on or off"""
+        on = await self.config.guild(ctx.guild).alt.autoban()
+        if on:
+            await self.config.guild(ctx.guild).alt.autoban.set(False)
+            await ctx.send("Auto-Banning **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).alt.autoban.set(True)
+            await ctx.send("Auto-Banning **Enabled**")
+
+    @alt_settings.command(name="silver")
+    async def toggle_silver(self, ctx: commands.Context):
+        """Toggle whether to include Silver accounts as suspicious"""
+        on = await self.config.guild(ctx.guild).alt.silver()
+        if on:
+            await self.config.guild(ctx.guild).alt.silver.set(False)
+            await ctx.send("Silver account detection **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).alt.silver.set(True)
+            await ctx.send("Silver account detection **Enabled**")
+
+    @alt_settings.command(name="warning")
+    async def toggle_warning(self, ctx: commands.Context):
+        """
+        Toggle whether to send a warning message to the user
+
+        Warning message must also be configured before this can work!
+        """
+        on = await self.config.guild(ctx.guild).alt.msgtoggle()
+        if on:
+            await self.config.guild(ctx.guild).alt.msgtoggle.set(False)
+            await ctx.send("Warning message **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).alt.msgtoggle.set(True)
+            await ctx.send("Warning message **Enabled**")
+
+    @alt_settings.command(name="mingamerscore")
+    async def set_min_gamerscore(self, ctx: commands.Context, minimum_gamerscore: int):
+        """
+        Set the minimum Gamerscore a user must have to be considered not suspicious
+
+        If the user has a Gamerscore below the threshold, they will be flagged as sus
+        """
+        await self.config.guild(ctx.guild).alt.mings.set(minimum_gamerscore)
+        await ctx.send(f"Minimum Gamerscore theshold has been set to `{minimum_gamerscore}`")
+
+    @alt_settings.command(name="minfollowers")
+    async def set_min_followers(self, ctx: commands.Context, minimum_followers: int):
+        """
+        Set the minimum followers a user must have to be considered not suspicious
+
+        If the user has less followers than the threshold, they will be flagged as sus
+        """
+        await self.config.guild(ctx.guild).alt.mingamerscore.set(minimum_followers)
+        await ctx.send(f"Minimum followers theshold has been set to `{minimum_followers}`")
+
+    @alt_settings.command(name="minfollowing")
+    async def set_min_followers(self, ctx: commands.Context, minimum_followers: int):
+        """
+        Set the minimum accounts a user is following for them to be considered not suspicious
+
+        If the user is following less users than the threshold, they will be flagged as sus
+        """
+        await self.config.guild(ctx.guild).alt.minfollowing.set(minimum_followers)
+        await ctx.send(f"Minimum following theshold has been set to `{minimum_followers}`")
+
+    @alt_settings.command(name="warningmessage")
+    async def set_warning_msg(self, ctx: commands.Context, *, warning_message: str):
+        """Set the warning message a user would receive upon being flagged as an alt"""
+        if len(warning_message) > 256:
+            return await ctx.send("Warning message exceeds 256 characters, please make a shorter one.")
+        else:
+            await self.config.guild(ctx.guild).alt.msg.set(warning_message)
+            await ctx.send("Warning message has been set!")
+
+    @alt_settings.command(name="ignore")
+    async def ingore_player(self, ctx: commands.Context, xuid: int):
+        """Add a player to the alt detection whitelist, they will be ignored by the alt detection"""
+        async with self.config.guild(ctx.guild).alt.whitelist() as whitelist:
+            if xuid not in whitelist:
+                whitelist.append(xuid)
+                await ctx.send("User has been added to the alt detection ignore list")
+            else:
+                await ctx.send("User is already in the whitelist")
+
+    @alt_settings.command(name="unignore")
+    async def unignore_player(self, ctx: commands.Context, xuid: int):
+        """Remove a player's XUID from the alt detection whitelist"""
+        async with self.config.guild(ctx.guild).alt.whitelist() as whitelist:
+            if xuid not in whitelist:
+                await ctx.send("User is not in the ignore list")
+            else:
+                whitelist.remove(xuid)
+                await ctx.send("User has been removed from the alt detection ingore list")
+
+    @alt_settings.command(name="view")
+    async def view_alt_settings(self, ctx: commands.Context):
+        """View the current Alt Detection settings"""
+        alt = await self.config.guild(ctx.guild).alt()
+        on = alt["on"]
+        if on:
+            system = "On"
+        else:
+            system = "Off"
+        autoban = alt["autoban"]
+        silver = alt["silver"]
+        warning = alt["msgtoggle"]
+        min_gs = alt["mings"]
+        min_followers = alt["minfollowers"]
+        min_following = alt["minfollowing"]
+        msg = alt["msg"]
+        ignore = alt["whitelist"]
+        whitelist = ""
+        for xuid in ignore:
+            whitelist += f"{xuid}\n"
+        embed = discord.Embed(
+            title="Alt Detection Settings",
+            description=f"`Detection System:   `{system}\n"
+                        f"`Auto Ban User:      `{autoban}\n"
+                        f"`Flag Silver Users:  `{silver}\n"
+                        f"`Minimum Gamerscore: `{min_gs}\n"
+                        f"`Minimum Followers:  `{min_followers}\n"
+                        f"`Minimum Following:  `{min_following}\n"
+                        f"`Send Warning Msg:   `{warning}\n"
+        )
+        if msg:
+            embed.add_field(name="Warning Message", value=box(msg))
+        else:
+            embed.add_field(name="Warning Message", value="None Set")
+        if whitelist:
+            embed.add_field(name="Ignore List", value=whitelist)
+        else:
+            embed.add_field(name="Ignore List", value="No one added")
+        await ctx.send(embed=embed)
+
     # Arktools-Server subgroup
     @arktools_main.group(name="server")
     @commands.guildowner()
@@ -3246,6 +3415,48 @@ class ArkTools(commands.Cog):
                                         else:
                                             log.warning(f"{host} FAILED to add {gamertag} in guild {guild}")
                                             newplayermessage += f"Added by {host}: ❌\n"
+
+                                    alt = settings["alt"]
+                                    if alt["on"] and xbl_client:  # If alt detection is on
+                                        try:
+                                            profile = json.loads(
+                                                (
+                                                    await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                                                ).json()
+                                            )
+                                            friends = json.loads(
+                                                (
+                                                    await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
+                                                 ).json()
+                                            )
+                                        except aiohttp.ClientResponseError:
+                                            profile = None
+                                            friends = None
+                                        if profile and friends:
+                                            sus, reasons = detect_sus(alt, profile, friends)
+                                            if sus:
+                                                if alt["autoban"] and xuid not in alt["whitelist"]:
+                                                    command = f"banplayer {xuid}"
+                                                    bantasks = []
+                                                    for tup in self.servers:
+                                                        sguild = tup[0]
+                                                        server = tup[1]
+                                                        if sguild == guild:
+                                                            bantasks.append(self.executor(guild, server, command))
+                                                    await asyncio.gather(*bantasks)
+                                                if alt["msgtoggle"] and alt["msg"]:
+                                                    await xbl_client.message.send_message(str(xuid), alt["msg"])
+                                                if eventlog:
+                                                    embed = discord.Embed(
+                                                        description=f"**Suspicious account detected!**\n"
+                                                                    f"User has been flagged for the following reasons\n"
+                                                                    f"{reasons}"
+                                                    )
+                                                    try:
+                                                        await eventlog.send(embed=embed)
+                                                    except discord.HTTPException:
+                                                        log.warning("Sus account message failed.")
+                                                        pass
 
                             if eventlog:
                                 embed = discord.Embed(
