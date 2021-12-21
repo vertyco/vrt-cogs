@@ -474,7 +474,18 @@ async def get_graph(settings: dict, hours: int):
     y.reverse()
     if len(y) < 3:
         return None
-    clist = ["red", "cyan", "gold", "white", "magenta", "wheat", "yellow", "salmon"]
+    clist = ["red",
+             "cyan",
+             "gold",
+             "white",
+             "magenta",
+             "wheat",
+             "yellow",
+             "salmon",
+             "darkblue",
+             "aqua",
+             "plum",
+             "purple"]
     cindex = 0
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
