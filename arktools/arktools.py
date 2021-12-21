@@ -3360,7 +3360,8 @@ class ArkTools(commands.Cog):
                                         break
                                 cmd = f"broadcast A new player has been detected on the server!\n" \
                                       f"Everyone say hi to {gamertag}!!!\n" \
-                                      f"Be sure to type {p}help in global chat to see a list of help commands you can use\n" \
+                                      f"Be sure to type {p}help in global chat to see a list of help commands " \
+                                      f"you can use\n" \
                                       f"If the kit command is enabled, you can use it to get your starter pack\n" \
                                       f"Enjoy your stay on {guild.name}!"
                                 await self.executor(guild, server, cmd)
@@ -3449,9 +3450,10 @@ class ArkTools(commands.Cog):
                                                 if eventlog:
                                                     embed = discord.Embed(
                                                         description=f"**Suspicious account detected!**\n"
-                                                                    f"User {gamertag}: `{xuid}` has been flagged for "
-                                                                    f"the following reasons\n"
-                                                                    f"{reasons}"
+                                                                    f"{gamertag} - `{xuid}` was flagged for "
+                                                                    f"the following reasons.\n"
+                                                                    f"{reasons}",
+                                                        color=discord.Color.red()
                                                     )
                                                     try:
                                                         await eventlog.send(embed=embed)

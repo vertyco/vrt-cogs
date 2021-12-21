@@ -424,16 +424,16 @@ def detect_sus(alt: dict, profile: dict, friends: dict):
     if alt["silver"]:
         if tier == "Silver":
             sus = True
-            reasons += "Player has a silver account\n"
+            reasons += "Player is using a Silver account\n"
     if gs < alt["mings"]:
         sus = True
         reasons += f"Minimum Gamerscore is {alt['mings']}, player only has {gs}\n"
     if following < alt["minfollowing"]:
         sus = True
-        reasons += f"Player is only following {following} users\n"
+        reasons += f"Only following {following} users\n"
     if followers < alt["minfollowers"]:
         sus = True
-        reasons += f"Player only has {followers} followers"
+        reasons += f"Only has {followers} followers"
     return sus, reasons
 
 
