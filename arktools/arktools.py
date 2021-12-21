@@ -2137,6 +2137,8 @@ class ArkTools(commands.Cog):
                          password: str,
                          chatchannel: discord.TextChannel):
         """Add a server to a cluster."""
+        if port > 65535 or port < 0:
+            return await ctx.send("Invalid port, must be between 0-65535")
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername.lower() not in clusters:
                 return await ctx.send(f"The cluster {clustername} does not exist!")
