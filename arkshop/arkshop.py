@@ -1130,6 +1130,7 @@ class ArkShop(commands.Cog):
         await self.cat_compiler(ctx, "rcon")
 
     @commands.command(name="dshop")
+    @commands.guild_only()
     async def _datashop(self, ctx):
         """
         Open up the data shop
