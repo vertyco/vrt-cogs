@@ -1755,7 +1755,7 @@ class ArkTools(commands.Cog):
             to_send = welcome_message.format(**params)
         except KeyError as e:
             return await ctx.send(f"The welcome message cannot be formatted, because it contains an "
-                                  f"invalid placeholder `{{{e.args[0]}}}`. See `{ctx.prefix}arktools api setwelcome` "
+                                  f"invalid placeholder `{e.args[0]}`. See `{ctx.prefix}arktools api setwelcome` "
                                   f"for a list of valid placeholders.")
         length = len(to_send) + 25
         if length > 256:
@@ -1851,14 +1851,23 @@ class ArkTools(commands.Cog):
         await self.config.guild(ctx.guild).alt.minfollowing.set(minimum_following)
         await ctx.send(f"Minimum following threshold has been set to `{minimum_following}`")
 
-    @alt_settings.command(name="warningmessage")
+    @alt_settings.command(name="warningmsg")
     async def set_warning_msg(self, ctx: commands.Context, *, warning_message: str):
-        """Set the warning message a user would receive upon being flagged as an alt"""
+        """
+        Set the warning message a user would receive upon being flagged as an alt
+
+        You can include the reasons with the warning by including the {reasons}
+        placeholder in your warning message
+        """
+        if "{reasons}" in warning_message and len(warning_message) + 80 > 256:
+            return await ctx.send("Warning message might exceed 256 characters with the reasons included, "
+                                  "please make a shorter one.")
+
         if len(warning_message) > 256:
             return await ctx.send("Warning message exceeds 256 characters, please make a shorter one.")
-        else:
-            await self.config.guild(ctx.guild).alt.msg.set(warning_message)
-            await ctx.send("Warning message has been set!")
+
+        await self.config.guild(ctx.guild).alt.msg.set(warning_message)
+        await ctx.send("Warning message has been set!")
 
     @alt_settings.command(name="ignore")
     async def ingore_player(self, ctx: commands.Context, xuid: int):
@@ -3446,7 +3455,9 @@ class ArkTools(commands.Cog):
                                                             bantasks.append(self.executor(guild, server, command))
                                                     await asyncio.gather(*bantasks)
                                                 if alt["msgtoggle"] and alt["msg"]:
-                                                    await xbl_client.message.send_message(str(xuid), alt["msg"])
+                                                    params = {"reasons": reasons}
+                                                    msg = alt["msg"].format(**params)
+                                                    await xbl_client.message.send_message(str(xuid), msg)
                                                 if eventlog:
                                                     embed = discord.Embed(
                                                         description=f"**Suspicious account detected!**\n"
