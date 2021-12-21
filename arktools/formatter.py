@@ -474,10 +474,15 @@ async def get_graph(settings: dict, hours: int):
     y.reverse()
     if len(y) < 3:
         return None
-    clist = ["red", "cyan", "gold", "ghostwhite", "magenta"]
+    clist = ["red", "cyan", "gold", "white", "magenta", "wheat", "yellow", "salmon"]
     cindex = 0
     with plt.style.context("dark_background"):
         fig, ax = plt.subplots()
+        clusters = len(c.keys())
+        if len(clist) >= clusters:
+            usecolors = True
+        else:
+            usecolors = False
         for cname, countlist in c.items():
             if len(countlist) < len(y):
                 countlist.reverse()
@@ -488,7 +493,7 @@ async def get_graph(settings: dict, hours: int):
                         countlist.reverse()
                         n += 1
                         break
-            if len(clist) >= cindex - 1:
+            if len(clist) >= cindex - 1 and usecolors:
                 color = f"xkcd:{clist[cindex]}"
                 plt.plot(x, countlist, label=cname, color=color, linewidth=0.7)
             else:
