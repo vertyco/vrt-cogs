@@ -1834,7 +1834,7 @@ class ArkTools(commands.Cog):
     @alt_settings.command(name="minfollowers")
     async def set_min_followers(self, ctx: commands.Context, minimum_followers: int):
         """
-        Set the minimum followers a user must have to be considered not suspicious
+        Set the minimum followers a user must have to be considered not sus
 
         If the user has less followers than the threshold, they will be flagged as sus
         """
@@ -1844,7 +1844,7 @@ class ArkTools(commands.Cog):
     @alt_settings.command(name="minfollowing")
     async def set_min_following(self, ctx: commands.Context, minimum_following: int):
         """
-        Set the minimum accounts a user is following for them to be considered not suspicious
+        Set the minimum accounts a user is following for them to be considered not sus
 
         If the user is following less users than the threshold, they will be flagged as sus
         """
