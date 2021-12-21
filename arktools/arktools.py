@@ -1839,17 +1839,17 @@ class ArkTools(commands.Cog):
         If the user has less followers than the threshold, they will be flagged as sus
         """
         await self.config.guild(ctx.guild).alt.mingamerscore.set(minimum_followers)
-        await ctx.send(f"Minimum followers theshold has been set to `{minimum_followers}`")
+        await ctx.send(f"Minimum followers threshold has been set to `{minimum_followers}`")
 
     @alt_settings.command(name="minfollowing")
-    async def set_min_followers(self, ctx: commands.Context, minimum_followers: int):
+    async def set_min_following(self, ctx: commands.Context, minimum_following: int):
         """
         Set the minimum accounts a user is following for them to be considered not suspicious
 
         If the user is following less users than the threshold, they will be flagged as sus
         """
-        await self.config.guild(ctx.guild).alt.minfollowing.set(minimum_followers)
-        await ctx.send(f"Minimum following theshold has been set to `{minimum_followers}`")
+        await self.config.guild(ctx.guild).alt.minfollowing.set(minimum_following)
+        await ctx.send(f"Minimum following threshold has been set to `{minimum_following}`")
 
     @alt_settings.command(name="warningmessage")
     async def set_warning_msg(self, ctx: commands.Context, *, warning_message: str):
