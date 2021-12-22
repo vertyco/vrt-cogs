@@ -3348,7 +3348,6 @@ class ArkTools(commands.Cog):
                 await self.config.guild(guild).status.message.set(message.id)
 
             else:  # Person must have a fuck ton of servers for the bot to have use this ugh
-                log.warning(f"Status channel embed for {guild} is too large! ({len(status)} characters)")
                 strings = pagify(status)
                 new_message_list = []
                 count = 1
@@ -3536,7 +3535,7 @@ class ArkTools(commands.Cog):
                                                     embed = discord.Embed(
                                                         description=f"**Suspicious account detected!**\n"
                                                                     f"**{gamertag}** - `{xuid}`\n"
-                                                                    f"`Auto-Banned: `{banned}\n"
+                                                                    f"`Auto-Banned:  `{banned}\n"
                                                                     f"`Sent Warning: `{warning}\n"
                                                                     f"**Reasons**\n"
                                                                     f"{box(reasons)}",
