@@ -215,6 +215,44 @@ class ArkTools(commands.Cog):
         token = auth_mgr.xsts_token.authorization_header_value
         return xbl_client, token
 
+    @staticmethod
+    async def status_cleaner(status, dest_channel):
+        message = status["message"]
+        if message:
+            try:
+                msg_to_delete = await dest_channel.fetch_message(message)
+            except discord.NotFound:
+                log.info("Couldnt find status message, creating a new one.")
+                msg_to_delete = None
+            except Exception as e:
+                log.warning(f"Unknown error in server status msg: {e}")
+                msg_to_delete = None
+            if msg_to_delete:
+                try:
+                    await msg_to_delete.delete()
+                except discord.Forbidden:  # Must have imported config from another bot
+                    log.warning("Status channel: Bot doesnt have perms to delete other users messages")
+                except Exception as e:
+                    log.warning(f"Unknown error in server status deletion: {e}")
+        multi = status["multi"]
+        if multi:
+            for msg in multi:
+                try:
+                    msg_to_delete = await dest_channel.fetch_message(msg)
+                except discord.NotFound:
+                    log.info("Couldnt find a multi status message, creating a new one.")
+                    msg_to_delete = None
+                except Exception as e:
+                    log.warning(f"Unknown error in server status msg: {e}")
+                    msg_to_delete = None
+                if msg_to_delete:
+                    try:
+                        await msg_to_delete.delete()
+                    except discord.Forbidden:  # Must have imported config from another bot
+                        log.warning("Status channel multi: Bot doesnt have perms to delete other users messages")
+                    except Exception as e:
+                        log.warning(f"Unknown error in server status multi deletion: {e}")
+
     # Pull the first (authorized) token data found for non-server-specific api use
     @staticmethod
     def pull_key(clusters: dict):
@@ -3302,36 +3340,17 @@ class ArkTools(commands.Cog):
                 embed.add_field(name="Total Players", value=f"`{totalplayers}`")
                 embed.set_thumbnail(url=thumbnail)
                 embed.set_image(url=img)
-                msg_to_delete = None
-                message = settings["status"]["message"]
-                if message:
-                    try:
-                        msg_to_delete = await dest_channel.fetch_message(message)
-                    except discord.NotFound:
-                        log.info(f"Status message not found. Creating new message.")
-                        msg_to_delete = None
-                    except Exception as e:
-                        log.warning(f"Unknown error in server status msg: {e}")
-                        msg_to_delete = None
-
                 if file:
                     message = await dest_channel.send(embed=embed, file=file)
                 else:
                     message = await dest_channel.send(embed=embed)
+                await self.status_cleaner(settings["status"], dest_channel)
                 await self.config.guild(guild).status.message.set(message.id)
 
-                if msg_to_delete:
-                    try:
-                        await msg_to_delete.delete()
-                    except discord.Forbidden:  # Must have imported config from another bot and doesnt have perms to delete
-                        log.warning("Status channel: Bot doesnt have perms to delete other users messages")
-                    except Exception as e:
-                        log.warning(f"Unknown error in server status deletion: {e}")
             else:  # Person must have a fuck ton of servers for the bot to have use this ugh
                 log.warning(f"Status channel embed for {guild} is too large! ({len(status)} characters)")
                 strings = pagify(status)
                 new_message_list = []
-                embeds = []
                 count = 1
                 for p in strings:
                     if count == len(strings):
@@ -3350,35 +3369,14 @@ class ArkTools(commands.Cog):
                         embed.set_thumbnail(url=thumbnail)
                     if count == len(strings):
                         embed.set_image(url=img)
-                    count += 1
-                    embeds.append(embed)
-
-                count = 1
-                for embed in embeds:
-                    if count == len(embeds):
+                    if count == len(strings):
                         msg = await dest_channel.send(embed=embed, file=file)
                     else:
                         msg = await dest_channel.send(embed=embed)
+                    count += 1
                     new_message_list.append(msg)
 
-                messages = settings["status"]["multi"]
-                if messages:
-                    for msg in messages:
-                        try:
-                            msg_to_delete = await dest_channel.fetch_message(msg)
-                        except discord.NotFound:
-                            log.info(f"Status message not found. Creating new message.")
-                            msg_to_delete = None
-                        except Exception as e:
-                            log.warning(f"Unknown error in server status msg: {e}")
-                            msg_to_delete = None
-                        if msg_to_delete:
-                            try:
-                                await msg_to_delete.delete()
-                            except discord.Forbidden:  # Must have imported config from another bot
-                                log.warning("Status channel: Bot doesnt have perms to delete other users messages")
-                            except Exception as e:
-                                log.warning(f"Unknown error in server status deletion: {e}")
+                await self.status_cleaner(settings["status"], dest_channel)
                 await self.config.guild(guild).status.multi.set(new_message_list)
 
     @status_channel.before_loop
