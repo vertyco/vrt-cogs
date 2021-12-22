@@ -59,7 +59,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.5.25"
+    __version__ = "2.5.27"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -82,7 +82,7 @@ class ArkTools(commands.Cog):
             },
             "welcomemsg": None,
             "playerclearmessage": None,
-            "status": {"channel": None, "message": None, "time": 1},
+            "status": {"channel": None, "message": None, "multi": [], "time": 1},
             "masterlog": None,
             "eventlog": None,
             "fullaccessrole": None,
@@ -2590,6 +2590,7 @@ class ArkTools(commands.Cog):
         if not server:
             return
         if server["port"] > 65535 or server["port"] < 0:
+            log.warning(f"Server with ip {server['ip']} has an out of range port 0-65535 (server: {server['port']}")
             return
         if command == "getchat" or "serverchat" in command:
             timeout = 0.5
@@ -2611,15 +2612,18 @@ class ArkTools(commands.Cog):
             except socket.timeout:
                 return
             except Exception as e:
-                log.warning(f"Executor Error: {e}")
-                return None
+                if "WinError 10054" in str(e):
+                    log.info(f"Server with ip {server['ip']} timed out too quickly")
+                else:
+                    log.warning(f"Executor Error: {e}")
 
         res = await self.bot.loop.run_in_executor(None, exe)
         if command == "getchat":
             if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
         if command == "listplayers":
-            if res:  # If server is online create list of player tuples
+            # If server is online create list of player tuples
+            if res:
                 if "No Players Connected" in res:
                     await self.player_join_leave(guild, server, [])
                 else:
@@ -2660,7 +2664,11 @@ class ArkTools(commands.Cog):
 
         lastplayerlist = self.playerlist[channel]
 
-        # ArkTools just loaded
+        # If newplayerlist is None it is offline
+        # If an empty list, it is online but has no players
+        # If it is online and populated it will be a list of player tuples
+
+        # ArkTools just loaded so neither will be populated
         if not newplayerlist and not lastplayerlist:
             self.playerlist[channel] = newplayerlist
 
@@ -3262,9 +3270,9 @@ class ArkTools(commands.Cog):
                             status += f"{guild.get_channel(channel).mention}: {playercount} players\n"
 
                 if clustertotal == 1:
-                    status += f"`{clustertotal}` player in the cluster\n\n"
+                    status += f"`{clustertotal}` player cluster wide\n\n"
                 else:
-                    status += f"`{clustertotal}` players in the cluster\n\n"
+                    status += f"`{clustertotal}` players cluster wide\n\n"
 
                 # Log player counts per cluster
                 async with self.config.guild(guild).serverstats() as serverstats:
@@ -3282,8 +3290,9 @@ class ArkTools(commands.Cog):
             tz = settings["timezone"]
             tz = pytz.timezone(tz)
             hours = settings["status"]["time"]
+            file = await get_graph(settings, int(hours))
+            img = "attachment://plot.png"
             if len(status) <= 4096:
-                file = await get_graph(settings, int(hours))
                 embed = discord.Embed(
                     description=status,
                     color=discord.Color.random(),
@@ -3292,36 +3301,85 @@ class ArkTools(commands.Cog):
                 embed.set_author(name="Server Status", icon_url=guild.icon_url)
                 embed.add_field(name="Total Players", value=f"`{totalplayers}`")
                 embed.set_thumbnail(url=thumbnail)
-                embed.set_image(url=f"attachment://plot.png")
-            else:
+                embed.set_image(url=img)
+                msg_to_delete = None
+                message = settings["status"]["message"]
+                if message:
+                    try:
+                        msg_to_delete = await dest_channel.fetch_message(message)
+                    except discord.NotFound:
+                        log.info(f"Status message not found. Creating new message.")
+                        msg_to_delete = None
+                    except Exception as e:
+                        log.warning(f"Unknown error in server status msg: {e}")
+                        msg_to_delete = None
+
+                if file:
+                    message = await dest_channel.send(embed=embed, file=file)
+                else:
+                    message = await dest_channel.send(embed=embed)
+                await self.config.guild(guild).status.message.set(message.id)
+
+                if msg_to_delete:
+                    try:
+                        await msg_to_delete.delete()
+                    except discord.Forbidden:  # Must have imported config from another bot and doesnt have perms to delete
+                        log.warning("Status channel: Bot doesnt have perms to delete other users messages")
+                    except Exception as e:
+                        log.warning(f"Unknown error in server status deletion: {e}")
+            else:  # Person must have a fuck ton of servers for the bot to have use this ugh
                 log.warning(f"Status channel embed for {guild} is too large! ({len(status)} characters)")
-                continue
+                strings = pagify(status)
+                new_message_list = []
+                embeds = []
+                count = 1
+                for p in strings:
+                    if count == len(strings):
+                        embed = discord.Embed(
+                            description=p,
+                            color=discord.Color.random(),
+                            timestamp=time.astimezone(tz)
+                        )
+                    else:
+                        embed = discord.Embed(
+                            description=p,
+                            color=discord.Color.random()
+                        )
+                    if count == 1:
+                        embed.set_author(name="Server Status", icon_url=guild.icon_url)
+                        embed.set_thumbnail(url=thumbnail)
+                    if count == len(strings):
+                        embed.set_image(url=img)
+                    count += 1
+                    embeds.append(embed)
 
-            msg_to_delete = None
-            message = settings["status"]["message"]
-            if message:
-                try:
-                    msg_to_delete = await dest_channel.fetch_message(message)
-                except discord.NotFound:
-                    log.info(f"Status message not found. Creating new message.")
-                    msg_to_delete = None
-                except Exception as e:
-                    log.warning(f"Unknown error in server status msg: {e}")
-                    msg_to_delete = None
+                count = 1
+                for embed in embeds:
+                    if count == len(embeds):
+                        msg = await dest_channel.send(embed=embed, file=file)
+                    else:
+                        msg = await dest_channel.send(embed=embed)
+                    new_message_list.append(msg)
 
-            if file:
-                message = await dest_channel.send(embed=embed, file=file)
-            else:
-                message = await dest_channel.send(embed=embed)
-            await self.config.guild(guild).status.message.set(message.id)
-
-            if msg_to_delete:
-                try:
-                    await msg_to_delete.delete()
-                except discord.Forbidden:  # Must have imported config from another bot and doesnt have perms to delete
-                    log.warning("Status channel: Bot doesnt have perms to delete other users messages")
-                except Exception as e:
-                    log.warning(f"Unknown error in server status deletion: {e}")
+                messages = settings["status"]["multi"]
+                if messages:
+                    for msg in messages:
+                        try:
+                            msg_to_delete = await dest_channel.fetch_message(msg)
+                        except discord.NotFound:
+                            log.info(f"Status message not found. Creating new message.")
+                            msg_to_delete = None
+                        except Exception as e:
+                            log.warning(f"Unknown error in server status msg: {e}")
+                            msg_to_delete = None
+                        if msg_to_delete:
+                            try:
+                                await msg_to_delete.delete()
+                            except discord.Forbidden:  # Must have imported config from another bot
+                                log.warning("Status channel: Bot doesnt have perms to delete other users messages")
+                            except Exception as e:
+                                log.warning(f"Unknown error in server status deletion: {e}")
+                await self.config.guild(guild).status.multi.set(new_message_list)
 
     @status_channel.before_loop
     async def before_status_channel(self):
