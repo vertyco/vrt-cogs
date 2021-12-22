@@ -59,7 +59,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.5.29"
+    __version__ = "2.5.30"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -3372,7 +3372,6 @@ class ArkTools(commands.Cog):
                     pages += 1
                 new_message_list = []
                 count = 1
-                log.info(f"{pages} pages")
                 for p in pagify(status):
                     log.info(p)
                     if count == pages:
@@ -3387,21 +3386,16 @@ class ArkTools(commands.Cog):
                             color=discord.Color.random()
                         )
                     if count == 1:
-                        log.info(f"adding author")
                         embed.set_author(name="Server Status", icon_url=guild.icon_url)
                         embed.set_thumbnail(url=thumbnail)
                     if count == pages:
-                        log.info(f"setting image and sending")
                         embed.set_image(url=img)
                         message = await dest_channel.send(embed=embed, file=file)
                     else:
-                        log.info(f"trying to send the shit")
                         message = await dest_channel.send(embed=embed)
                     count += 1
                     new_message_list.append(message.id)
-                log.info(f"trying to cleanup old messages")
                 await self.status_cleaner(settings["status"], dest_channel)
-                log.info(f"set the fucking list")
                 await self.config.guild(guild).status.multi.set(new_message_list)
 
     @status_channel.before_loop
