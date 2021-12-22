@@ -3465,6 +3465,7 @@ class ArkTools(commands.Cog):
                                                         server = tup[1]
                                                         if sguild == guild:
                                                             bantasks.append(self.executor(guild, server, command))
+                                                    log.info(f"Banning {gamertag} - {xuid} from all servers")
                                                     await asyncio.gather(*bantasks)
                                                 else:
                                                     banned = no
