@@ -3375,10 +3375,13 @@ class ArkTools(commands.Cog):
 
             else:  # Person must have a fuck ton of servers for the bot to have use this ugh
                 strings = pagify(status)
+                pages = 0
+                for _ in strings:
+                    pages += 1
                 new_message_list = []
                 count = 1
                 for p in strings:
-                    if count == len(strings):
+                    if count == pages:
                         embed = discord.Embed(
                             description=p,
                             color=discord.Color.random(),
@@ -3392,7 +3395,7 @@ class ArkTools(commands.Cog):
                     if count == 1:
                         embed.set_author(name="Server Status", icon_url=guild.icon_url)
                         embed.set_thumbnail(url=thumbnail)
-                    if count == len(strings):
+                    if count == pages:
                         embed.set_image(url=img)
                         msg = await dest_channel.send(embed=embed, file=file)
                     else:
