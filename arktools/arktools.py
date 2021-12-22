@@ -3397,11 +3397,11 @@ class ArkTools(commands.Cog):
                         embed.set_thumbnail(url=thumbnail)
                     if count == pages:
                         embed.set_image(url=img)
-                        msg = await dest_channel.send(embed=embed, file=file)
+                        message = await dest_channel.send(embed=embed, file=file)
                     else:
-                        msg = await dest_channel.send(embed=embed)
+                        message = await dest_channel.send(embed=embed)
                     count += 1
-                    new_message_list.append(msg)
+                    new_message_list.append(message.id)
 
                 await self.status_cleaner(settings["status"], dest_channel)
                 await self.config.guild(guild).status.multi.set(new_message_list)
