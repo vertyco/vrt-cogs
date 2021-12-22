@@ -3350,8 +3350,6 @@ class ArkTools(commands.Cog):
             file = await get_graph(settings, int(hours))
             img = "attachment://plot.png"
             if len(status) <= 4096:
-                # Not using multi message so set to None to avoid log spam
-                await self.config.guild(guild).status.multi.set(None)
                 embed = discord.Embed(
                     description=status,
                     color=discord.Color.random(),
@@ -3366,11 +3364,12 @@ class ArkTools(commands.Cog):
                 else:
                     message = await dest_channel.send(embed=embed)
                 await self.status_cleaner(settings["status"], dest_channel)
+                if settings["status"]["multi"]:
+                    # Not using multi message so set to None to avoid log spam
+                    await self.config.guild(guild).status.multi.set(None)
                 await self.config.guild(guild).status.message.set(message.id)
 
             else:  # Person must have a fuck ton of servers for the bot to have use this ugh
-                # Not using single message anymore so set to None to avoid log spam
-                await self.config.guild(guild).status.message.set(None)
                 pages = 0
                 for _ in pagify(status):
                     pages += 1
@@ -3401,6 +3400,9 @@ class ArkTools(commands.Cog):
                     count += 1
                     new_message_list.append(message.id)
                 await self.status_cleaner(settings["status"], dest_channel)
+                if settings["status"]["message"]:
+                    # Not using single message anymore so set to None to avoid log spam
+                    await self.config.guild(guild).status.message.set(None)
                 await self.config.guild(guild).status.multi.set(new_message_list)
 
     @status_channel.before_loop
