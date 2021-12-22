@@ -60,7 +60,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.5.27"
+    __version__ = "2.5.28"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2680,7 +2680,7 @@ class ArkTools(commands.Cog):
         res = await self.bot.loop.run_in_executor(None, exe)
         if not res and server["chatchannel"] not in self.queue:
             self.queue[server["chatchannel"]] = datetime.datetime.now()
-            log.info(f"Server with ip {server['ip']} is offline, reconnecting in 60 seconds")
+            log.info(f"Server ip {server['ip']} port {server['port']} is offline, reconnecting in 60 seconds")
         if command == "getchat":
             if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
@@ -3345,9 +3345,9 @@ class ArkTools(commands.Cog):
                     serverstats[cname].append(int(clustertotal))
 
             # Log total player counts
-            time = datetime.datetime.now(pytz.timezone("UTC"))
+            now = datetime.datetime.now(pytz.timezone("UTC"))
             async with self.config.guild(guild).serverstats() as serverstats:
-                serverstats["dates"].append(time.isoformat())
+                serverstats["dates"].append(now.isoformat())
                 serverstats["counts"].append(int(totalplayers))
 
             # Embed setup
@@ -3360,7 +3360,7 @@ class ArkTools(commands.Cog):
                 embed = discord.Embed(
                     description=status,
                     color=discord.Color.random(),
-                    timestamp=time.astimezone(tz)
+                    timestamp=now.astimezone(tz)
                 )
                 embed.set_author(name="Server Status", icon_url=guild.icon_url)
                 embed.add_field(name="Total Players", value=f"`{totalplayers}`")
@@ -3382,7 +3382,7 @@ class ArkTools(commands.Cog):
                         embed = discord.Embed(
                             description=p,
                             color=discord.Color.random(),
-                            timestamp=time.astimezone(tz)
+                            timestamp=now.astimezone(tz)
                         )
                     else:
                         embed = discord.Embed(
@@ -3406,7 +3406,7 @@ class ArkTools(commands.Cog):
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(10)
+        await asyncio.sleep(15)
         log.info("Status Channel loop ready")
 
     # Player stat handler
