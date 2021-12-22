@@ -2680,6 +2680,7 @@ class ArkTools(commands.Cog):
         res = await self.bot.loop.run_in_executor(None, exe)
         if not res and server["chatchannel"] not in self.queue:
             self.queue[server["chatchannel"]] = datetime.datetime.now()
+            log.info(f"Server with ip {server['ip']} is offline, reconnecting in 60 seconds")
         if command == "getchat":
             if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
