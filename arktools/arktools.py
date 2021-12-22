@@ -59,7 +59,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.5.30"
+    __version__ = "2.5.31"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -810,23 +810,20 @@ class ArkTools(commands.Cog):
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
                     await mapchannel.send(f"Reboot in {i}")
-                    if not self.in_queue(server["chatchannel"]):
-                        await self.executor(ctx.guild, server, f"serverchat Reboot in {i}")
+                    await self.executor(ctx.guild, server, f"serverchat Reboot in {i}")
                 await asyncio.sleep(1)
             await ctx.send("Saving maps...")
             save = []
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
                 await mapchannel.send(f"Saving map...")
-                if not self.in_queue(server["chatchannel"]):
-                    save.append(self.executor(ctx.guild, server, "saveworld"))
+                save.append(self.executor(ctx.guild, server, "saveworld"))
             await asyncio.gather(*save)
             await asyncio.sleep(5)
             await ctx.send("Running DoExit...")
             exiting = []
             for server in serverlist:
-                if not self.in_queue(server["chatchannel"]):
-                    exiting.append(self.executor(ctx.guild, server, "doexit"))
+                exiting.append(self.executor(ctx.guild, server, "doexit"))
             await asyncio.gather(*exiting)
         else:
             rtasks = []
@@ -2652,11 +2649,11 @@ class ArkTools(commands.Cog):
             log.warning(f"Server with ip {server['ip']} has an out of range port 0-65535 (server: {server['port']}")
             return
         if command == "getchat" or "serverchat" in command:
-            timeout = 0.5
+            timeout = 1
         elif command == "listplayers":
-            timeout = 3
+            timeout = 5
         else:
-            timeout = 2
+            timeout = 3
 
         def exe():
             try:
@@ -2725,10 +2722,6 @@ class ArkTools(commands.Cog):
             log.warning(f"Missing send message perms in {guild} for Join/Leave channel")
 
         lastplayerlist = self.playerlist[channel]
-
-        # If newplayerlist is None it is offline
-        # If an empty list, it is online but has no players
-        # If it is online and populated it will be a list of player tuples
 
         # If new and last are both strings then just update them, nothing to log
         if isinstance(newplayerlist, str) and isinstance(lastplayerlist, str):
@@ -3547,7 +3540,7 @@ class ArkTools(commands.Cog):
                                                     for tup in self.servers:
                                                         sguild = tup[0]
                                                         server = tup[1]
-                                                        if sguild == guild:
+                                                        if sguild == guild.id:
                                                             bantasks.append(self.executor(guild, server, command))
                                                     log.info(f"Banning {gamertag} - {xuid} from all servers")
                                                     await asyncio.gather(*bantasks)

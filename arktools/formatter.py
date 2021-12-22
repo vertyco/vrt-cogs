@@ -530,7 +530,7 @@ async def get_graph(settings: dict, hours: int):
         plt.ylim([0, max(y) + 2])
         plt.xlabel(f"Time ({timezone})", fontsize=10)
         maxplayers = max(y)
-        plt.ylabel(f"Player Count (Max - {maxplayers})", fontsize=10)
+        plt.ylabel(f"Player Count (Max: {maxplayers})", fontsize=10)
         plt.title(title)
         plt.tight_layout()
         plt.legend(loc=3)
