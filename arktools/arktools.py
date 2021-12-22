@@ -2576,7 +2576,7 @@ class ArkTools(commands.Cog):
         await asyncio.gather(*listplayertasks)
 
     # Initiates the GetChat loop
-    @tasks.loop(seconds=4)
+    @tasks.loop(seconds=5)
     async def getchat(self):
         chat_tasks = []
         for data in self.servers:
@@ -2589,12 +2589,14 @@ class ArkTools(commands.Cog):
     async def executor(self, guild: discord.guild, server: dict, command: str):
         if not server:
             return
+        if server["port"] > 65535 or server["port"] < 0:
+            return
         if command == "getchat" or "serverchat" in command:
-            timeout = 1
+            timeout = 0.5
         elif command == "listplayers":
-            timeout = 5
-        else:
             timeout = 3
+        else:
+            timeout = 2
 
         def exe():
             try:
@@ -3280,16 +3282,20 @@ class ArkTools(commands.Cog):
             tz = settings["timezone"]
             tz = pytz.timezone(tz)
             hours = settings["status"]["time"]
-            file = await get_graph(settings, int(hours))
-            embed = discord.Embed(
-                description=status,
-                color=discord.Color.random(),
-                timestamp=time.astimezone(tz)
-            )
-            embed.set_author(name="Server Status", icon_url=guild.icon_url)
-            embed.add_field(name="Total Players", value=f"`{totalplayers}`")
-            embed.set_thumbnail(url=thumbnail)
-            embed.set_image(url=f"attachment://plot.png")
+            if len(status) <= 4096:
+                file = await get_graph(settings, int(hours))
+                embed = discord.Embed(
+                    description=status,
+                    color=discord.Color.random(),
+                    timestamp=time.astimezone(tz)
+                )
+                embed.set_author(name="Server Status", icon_url=guild.icon_url)
+                embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+                embed.set_thumbnail(url=thumbnail)
+                embed.set_image(url=f"attachment://plot.png")
+            else:
+                log.warning(f"Status channel embed for {guild} is too large! ({len(status)} characters)")
+                continue
 
             msg_to_delete = None
             message = settings["status"]["message"]
@@ -3303,6 +3309,12 @@ class ArkTools(commands.Cog):
                     log.warning(f"Unknown error in server status msg: {e}")
                     msg_to_delete = None
 
+            if file:
+                message = await dest_channel.send(embed=embed, file=file)
+            else:
+                message = await dest_channel.send(embed=embed)
+            await self.config.guild(guild).status.message.set(message.id)
+
             if msg_to_delete:
                 try:
                     await msg_to_delete.delete()
@@ -3310,11 +3322,6 @@ class ArkTools(commands.Cog):
                     log.warning("Status channel: Bot doesnt have perms to delete other users messages")
                 except Exception as e:
                     log.warning(f"Unknown error in server status deletion: {e}")
-            if file:
-                message = await dest_channel.send(embed=embed, file=file)
-            else:
-                message = await dest_channel.send(embed=embed, file=file)
-            await self.config.guild(guild).status.message.set(message.id)
 
     @status_channel.before_loop
     async def before_status_channel(self):
@@ -3447,7 +3454,10 @@ class ArkTools(commands.Cog):
                                         if profile and friends:
                                             sus, reasons = detect_sus(alt, profile, friends)
                                             if sus:
+                                                yes = "✅"
+                                                no = "❌"
                                                 if alt["autoban"] and xuid not in alt["whitelist"]:
+                                                    banned = yes
                                                     command = f"banplayer {xuid}"
                                                     bantasks = []
                                                     for tup in self.servers:
@@ -3456,17 +3466,24 @@ class ArkTools(commands.Cog):
                                                         if sguild == guild:
                                                             bantasks.append(self.executor(guild, server, command))
                                                     await asyncio.gather(*bantasks)
+                                                else:
+                                                    banned = no
                                                 if alt["msgtoggle"] and alt["msg"]:
+                                                    warning = yes
                                                     params = {"reasons": reasons}
                                                     msg = alt["msg"].format(**params)
                                                     await xbl_client.message.send_message(str(xuid), msg)
+                                                else:
+                                                    warning = no
                                                 if eventlog:
                                                     embed = discord.Embed(
                                                         description=f"**Suspicious account detected!**\n"
-                                                                    f"{gamertag} - `{xuid}` was flagged for "
-                                                                    f"the following reasons.\n"
-                                                                    f"{reasons}",
-                                                        color=discord.Color.red()
+                                                                    f"**{gamertag}** - `{xuid}`\n"
+                                                                    f"`Auto-Banned: `{banned}\n"
+                                                                    f"`Sent Warning: `{warning}\n"
+                                                                    f"**Reasons**\n"
+                                                                    f"{box(reasons)}",
+                                                        color=discord.Color.orange()
                                                     )
                                                     try:
                                                         await eventlog.send(embed=embed)

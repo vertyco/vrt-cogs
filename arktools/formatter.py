@@ -441,6 +441,7 @@ def detect_sus(alt: dict, profile: dict, friends: dict):
 # Instead of relying on matplotlibs date formatter, the data points are selected manually with set ticks
 async def get_graph(settings: dict, hours: int):
     lim = hours * 60
+    days = int(hours / 24)
     times = settings["serverstats"]["dates"]
     counts = settings["serverstats"]["counts"]
     timezone = settings['timezone']
@@ -448,9 +449,15 @@ async def get_graph(settings: dict, hours: int):
     if len(counts) == 0 or len(times) == 0:
         return None
     title = f"Player Count Over the Past {int(hours)} Hours"
+    if days > 5:
+        title = f"Player Count Over the Past {days} Days"
     if len(times) < lim:  # Time input is greater of equal to available time recorded
-        hours = len(times) / 60
-        title = f"Player Count Over Lifetime ({int(hours)} Hours)"
+        hours = int(len(times) / 60)
+        days = int(hours / 24)
+        if days > 5:
+            title = f"Player Count Over Lifetime ({days} Days)"
+        else:
+            title = f"Player Count Over Lifetime ({hours} Hours)"
         lim = len(times)
     if hours == 1:
         title = f"Player Count Over the Last Hour"
@@ -468,8 +475,17 @@ async def get_graph(settings: dict, hours: int):
     for d in dates:
         d = datetime.datetime.fromisoformat(d)
         d = d.astimezone(tz)
-        d = d.strftime('%m/%d %I:%M %p')
+        if days > 1:
+            d = d.strftime('%m/%d %I:%M %p')
+        else:
+            d = d.strftime('%I:%M %p')
         x.append(d)
+
+    if days > 20:
+        locator = 20
+    else:
+        locator = "auto"
+
     x.reverse()
     y.reverse()
     if len(y) < 3:
@@ -514,7 +530,7 @@ async def get_graph(settings: dict, hours: int):
         plt.ylim([0, max(y) + 2])
         plt.xlabel(f"Time ({timezone})", fontsize=10)
         maxplayers = max(y)
-        plt.ylabel(f"Player Count (Max: {maxplayers})", fontsize=10)
+        plt.ylabel(f"Player Count (Max - {maxplayers})", fontsize=10)
         plt.title(title)
         plt.tight_layout()
         plt.legend(loc=3)
@@ -522,7 +538,7 @@ async def get_graph(settings: dict, hours: int):
         plt.yticks(fontsize=10)
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
-        ax.xaxis.set_major_locator(MaxNLocator(10))
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=locator, integer=True, min_n_ticks=10))
         result = io.BytesIO()
         plt.savefig(result, format="png", dpi=200)
         plt.close()
