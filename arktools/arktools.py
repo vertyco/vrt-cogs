@@ -3367,14 +3367,13 @@ class ArkTools(commands.Cog):
                 await self.config.guild(guild).status.message.set(message.id)
 
             else:  # Person must have a fuck ton of servers for the bot to have use this ugh
-                strings = pagify(status)
                 pages = 0
-                for _ in strings:
+                for _ in pagify(status):
                     pages += 1
                 new_message_list = []
                 count = 1
                 log.info(f"{pages} pages")
-                for p in strings:
+                for p in pagify(status):
                     log.info(p)
                     if count == pages:
                         embed = discord.Embed(
