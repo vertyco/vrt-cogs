@@ -3376,12 +3376,13 @@ class ArkTools(commands.Cog):
                     pages += 1
                 new_message_list = []
                 count = 1
+                color = discord.Color.random()
                 for p in pagify(status):
                     log.info(p)
                     if count == pages:
                         embed = discord.Embed(
                             description=p,
-                            color=discord.Color.random(),
+                            color=color,
                             timestamp=now.astimezone(tz)
                         )
                     else:
