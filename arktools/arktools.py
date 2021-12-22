@@ -7,7 +7,6 @@ import random
 import re
 import socket
 import sys
-import time
 
 import aiohttp
 import discord
@@ -60,7 +59,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.5.28"
+    __version__ = "2.5.29"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2522,7 +2521,7 @@ class ArkTools(commands.Cog):
                     self.servercount += 1
                     self.channels.append(server["chatchannel"])
                     if server["chatchannel"] not in self.playerlist:
-                        self.playerlist[server["chatchannel"]] = None
+                        self.playerlist[server["chatchannel"]] = "offline"
 
             # Rehash player stats for ArkTools version < 2.0.0 config conversion
             rehashed_stats = {}
@@ -2688,13 +2687,13 @@ class ArkTools(commands.Cog):
             # If server is online create list of player tuples
             if res:
                 if "No Players Connected" in res:
-                    await self.player_join_leave(guild, server, [])
+                    await self.player_join_leave(guild, server, "empty")
                 else:
                     regex = r"(?:[0-9]+\. )(.+), ([0-9]+)"
                     res = re.findall(regex, res)
                     await self.player_join_leave(guild, server, res)
             else:  # If server is offline return None
-                await self.player_join_leave(guild, server, None)
+                await self.player_join_leave(guild, server, "offline")
 
     @getchat.before_loop
     async def before_getchat(self):
@@ -2710,7 +2709,7 @@ class ArkTools(commands.Cog):
         log.info("Listplayers loop ready")
 
     # Detect player joins/leaves and log to respective channels
-    async def player_join_leave(self, guild: discord.guild, server: dict, newplayerlist: list = None):
+    async def player_join_leave(self, guild: discord.guild, server: dict, newplayerlist):
         channel = server["chatchannel"]
         joinlog = guild.get_channel(server["joinchannel"])
         leavelog = guild.get_channel(server["leavechannel"])
@@ -2731,43 +2730,37 @@ class ArkTools(commands.Cog):
         # If an empty list, it is online but has no players
         # If it is online and populated it will be a list of player tuples
 
-        # ArkTools just loaded so neither will be populated
-        if not newplayerlist and not lastplayerlist:
+        # If new and last are both strings then just update them, nothing to log
+        if isinstance(newplayerlist, str) and isinstance(lastplayerlist, str):
             self.playerlist[channel] = newplayerlist
-
-        # Went from offline to empty server
-        elif not newplayerlist and lastplayerlist == []:
-            self.playerlist[channel] = newplayerlist
-
-        # Went from empty to offline
-        elif newplayerlist == [] and not lastplayerlist:
-            self.playerlist[channel] = newplayerlist
-
-        # Went from online and populated to offline
-        elif not newplayerlist and len(lastplayerlist) > 0:
-            for player in lastplayerlist:
+        else:  # Either new playerlist, last playerlist, or neither is a string so now we narrow it down
+            # If both are lists then detect change in population
+            if isinstance(newplayerlist, list) and isinstance(lastplayerlist, list):
                 if can_send:
-                    await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
-            self.playerlist[channel] = newplayerlist
-
-        # Cog was probably reloaded so dont bother spamming join log with all current members
-        elif len(newplayerlist) >= 0 and not lastplayerlist:
-            self.playerlist[channel] = newplayerlist
-
-        # No changes
-        elif len(newplayerlist) == 0 and len(lastplayerlist) == 0:
-            self.playerlist[channel] = newplayerlist
-
-        # Change in pop since last check so figure out if they joined or left
-        else:
-            if can_send:
-                for player in newplayerlist:
-                    if player not in lastplayerlist:
-                        await joinlog.send(f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
+                    for player in newplayerlist:
+                        if player not in lastplayerlist:
+                            await joinlog.send(
+                                f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
+                    for player in lastplayerlist:
+                        if player not in newplayerlist:
+                            await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
+                self.playerlist[channel] = newplayerlist
+            # Went from online and populated to either offline or empty, so just dump the users into leave log
+            elif isinstance(newplayerlist, str) and isinstance(lastplayerlist, list):
                 for player in lastplayerlist:
-                    if player not in newplayerlist:
+                    if can_send:
                         await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
-            self.playerlist[channel] = newplayerlist
+                self.playerlist[channel] = newplayerlist
+            # Went from empty to populated so add everyone in the server to the join log
+            elif isinstance(newplayerlist, list) and isinstance(lastplayerlist, str):
+                if lastplayerlist == "empty":
+                    for player in newplayerlist:
+                        await joinlog.send(
+                            f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
+                self.playerlist[channel] = newplayerlist
+            else:
+                # If a server goes from offline to populated its probably cause the cog was reloaded, so ignore
+                self.playerlist[channel] = newplayerlist
 
     # Sends messages from in-game chat to their designated channels
     async def message_handler(self, guild: discord.guild, server: dict, res: str):
@@ -3297,7 +3290,7 @@ class ArkTools(commands.Cog):
                         self.downtime[channel] = 0
 
                     count = self.downtime[channel]
-                    if playerlist is None:
+                    if playerlist == "offline":
                         thumbnail = FAILED
                         inc = "Minutes."
                         if count >= 60:
@@ -3320,7 +3313,7 @@ class ArkTools(commands.Cog):
                             )
                         self.downtime[channel] += 1
 
-                    elif len(playerlist) == 0:
+                    elif playerlist == "empty":
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
                         self.downtime[channel] = 0
 
@@ -3448,6 +3441,8 @@ class ArkTools(commands.Cog):
                         log.warning(f"Player_Stats: {sname} {cname} not found in playerlist!")
                         continue
                     if not self.playerlist[channel]:
+                        continue
+                    if self.playerlist[channel] == "offline":
                         continue
                     for player in self.playerlist[channel]:
                         xuid = player[1]
