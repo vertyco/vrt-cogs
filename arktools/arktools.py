@@ -7,6 +7,7 @@ import random
 import re
 import socket
 import sys
+import time
 
 import aiohttp
 import discord
@@ -121,6 +122,9 @@ class ArkTools(commands.Cog):
         self.downtime = {}
         self.time = ""
 
+        # Offline server wait list before trying to reconnect
+        self.queue = {}
+
         # In-Game voting sessions
         self.votes = {}
         self.lastran = {}
@@ -214,6 +218,17 @@ class ArkTools(commands.Cog):
         xbl_client = XboxLiveClient(auth_mgr)
         token = auth_mgr.xsts_token.authorization_header_value
         return xbl_client, token
+
+    # If a server goes offline it will be added to the queue and task loops will wait before trying to call it again
+    def in_queue(self, channel):
+        now = datetime.datetime.now()
+        if channel in self.queue:
+            td = now - self.queue[channel]
+            td = td.total_seconds()
+            if td < 60:
+                return True
+            else:
+                del self.queue[channel]
 
     @staticmethod
     async def status_cleaner(status, dest_channel):
@@ -796,20 +811,23 @@ class ArkTools(commands.Cog):
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
                     await mapchannel.send(f"Reboot in {i}")
-                    await self.executor(ctx.guild, server, f"serverchat Reboot in {i}")
+                    if not self.in_queue(server["chatchannel"]):
+                        await self.executor(ctx.guild, server, f"serverchat Reboot in {i}")
                 await asyncio.sleep(1)
             await ctx.send("Saving maps...")
             save = []
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
                 await mapchannel.send(f"Saving map...")
-                save.append(self.executor(ctx.guild, server, "saveworld"))
+                if not self.in_queue(server["chatchannel"]):
+                    save.append(self.executor(ctx.guild, server, "saveworld"))
             await asyncio.gather(*save)
             await asyncio.sleep(5)
             await ctx.send("Running DoExit...")
             exiting = []
             for server in serverlist:
-                exiting.append(self.executor(ctx.guild, server, "doexit"))
+                if not self.in_queue(server["chatchannel"]):
+                    exiting.append(self.executor(ctx.guild, server, "doexit"))
             await asyncio.gather(*exiting)
         else:
             rtasks = []
@@ -2577,10 +2595,12 @@ class ArkTools(commands.Cog):
         rtasks = []
         if message.channel.id in clusterchannels:
             for server in allservers:
-                rtasks.append(self.executor(guild, server, f"serverchat {name}: {msg}"))
+                if not self.in_queue(server["chatchannel"]):
+                    rtasks.append(self.executor(guild, server, f"serverchat {name}: {msg}"))
             await asyncio.gather(*rtasks)
         elif int(message.channel.id) == int(chatchannel):
-            await self.executor(guild, servermap, f"serverchat {name}: {msg}")
+            if not self.in_queue(servermap["chatchannel"]):
+                await self.executor(guild, servermap, f"serverchat {name}: {msg}")
         else:
             return
 
@@ -2610,7 +2630,8 @@ class ArkTools(commands.Cog):
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            listplayertasks.append(self.executor(guild, server, "listplayers"))
+            if not self.in_queue(server["chatchannel"]):
+                listplayertasks.append(self.executor(guild, server, "listplayers"))
         await asyncio.gather(*listplayertasks)
 
     # Initiates the GetChat loop
@@ -2620,7 +2641,8 @@ class ArkTools(commands.Cog):
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            chat_tasks.append(self.executor(guild, server, "getchat"))
+            if not self.in_queue(server["chatchannel"]):
+                chat_tasks.append(self.executor(guild, server, "getchat"))
         await asyncio.gather(*chat_tasks)
 
     # Non-blocking sync executor for rcon task loops
@@ -2656,6 +2678,8 @@ class ArkTools(commands.Cog):
                     log.warning(f"Executor Error: {e}")
 
         res = await self.bot.loop.run_in_executor(None, exe)
+        if not res and server["chatchannel"] not in self.queue:
+            self.queue[server["chatchannel"]] = datetime.datetime.now()
         if command == "getchat":
             if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
@@ -2789,7 +2813,8 @@ class ArkTools(commands.Cog):
                     s = data[1]
                     g = self.bot.get_guild(data[0])
                     if s["cluster"] == server["cluster"] and s["name"] != server["name"] and g == guild:
-                        await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
+                        if not self.in_queue(s["chatchannel"]):
+                            await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
 
             # Send off messages to discord channels
             await chatchannel.send(msg)
@@ -3368,7 +3393,6 @@ class ArkTools(commands.Cog):
                         embed.set_thumbnail(url=thumbnail)
                     if count == len(strings):
                         embed.set_image(url=img)
-                    if count == len(strings):
                         msg = await dest_channel.send(embed=embed, file=file)
                     else:
                         msg = await dest_channel.send(embed=embed)
