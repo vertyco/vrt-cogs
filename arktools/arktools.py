@@ -153,70 +153,76 @@ class ArkTools(commands.Cog):
         self.vote_sessions.cancel()
         self.graphdata_prune.cancel()
 
-    # General authentication manager
-    async def auth_manager(
-            self,
-            ctx: commands.Context,
-            session: aiohttp.ClientSession,
-            cname: str,
-            sname: str,
-            tokens: dict,
-    ):
+    async def get_azure_credentials(self):
         client_id = await self.config.clientid()
         client_secret = await self.config.secret()
-        if not client_id:
-            await ctx.send(f"Client ID and Secret have not been set yet!\n"
-                           f"Bot owner needs to run `{ctx.prefix}arktools api addtokens`")
-            return None, None
-        auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
+        return client_id, client_secret
+
+    @staticmethod
+    async def refresh_tokens(session, client_id, client_secret, tokens, redirect_uri):
+        auth_mgr = AuthenticationManager(session, client_id, client_secret, redirect_uri)
         try:
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
             if "validation error" in str(e):
-                await ctx.send(f"Client ID and Secret have not been authorized yet!\n"
-                               f"Bot owner needs to run `{ctx.prefix}apiset authorize`")
-                return None, None
+                return "validation error", None, None
         try:
             await auth_mgr.refresh_tokens()
         except Exception as e:
             if "Service Unavailable" in str(e):
-                return None, None
-        async with self.config.guild(ctx.guild).clusters() as clusters:
-            clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
+                return "unavailable", None, None
         xbl_client = XboxLiveClient(auth_mgr)
         try:
-            token = auth_mgr.xsts_token.authorization_header_value
+            xsts_token = auth_mgr.xsts_token.authorization_header_value
         except AttributeError:
-            await ctx.send(f"Failed to authorize tokens!\n"
-                           f"Try re-authorizing your host gamertags")
-            return None, None
-        return xbl_client, token
+            return "unauthorized", None, None
+        refreshed_tokens = json.loads(auth_mgr.oauth.json())
+        return xbl_client, xsts_token, refreshed_tokens
 
-    # Authentication handling for task loops, just same logic with no ctx yea prolly could have done it a cleaner way :p
-    async def loop_auth_manager(
+    # General authentication manager
+    async def auth_manager(
             self,
-            guild: discord.guild,
             session: aiohttp.ClientSession,
             cname: str,
             sname: str,
             tokens: dict,
+            ctx: commands.Context = None,
+            guild: discord.guild = None
     ):
-        client_id = await self.config.clientid()
-        client_secret = await self.config.secret()
-        if not client_id:
+        client_id, client_secret = await self.get_azure_credentials()
+        if not client_id:  # Owner hasnt set client id yet
+            await ctx.send(f"Client ID and Secret have not been set yet!\n"
+                           f"Bot owner needs to run `{ctx.prefix}arktools api addtokens`")
             return None, None
-        auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
-        try:
-            auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
-        except Exception as e:
-            if "validation error" in str(e):
-                return None, None
-        await auth_mgr.refresh_tokens()
-        async with self.config.guild(guild).clusters() as clusters:
-            clusters[cname]["servers"][sname]["tokens"] = json.loads(auth_mgr.oauth.json())
-        xbl_client = XboxLiveClient(auth_mgr)
-        token = auth_mgr.xsts_token.authorization_header_value
-        return xbl_client, token
+        xbl_client, xsts_token, refreshed_tokens = await self.refresh_tokens(
+            session,
+            client_id,
+            client_secret,
+            tokens,
+            REDIRECT_URI
+        )
+        if xbl_client == "validation error":
+            if ctx:
+                await ctx.send(
+                    f"Client ID and Secret have not been authorized yet!\n"
+                    f"Bot owner needs to run `{ctx.prefix}apiset authorize`"
+                )
+            return None, None
+        elif xbl_client == "Service Unavailable":
+            return None, None
+        elif xbl_client == "unauthorized":
+            if ctx:
+                await ctx.send(
+                    "Failed to authorize tokens!\n"
+                    "Try re-authorizing your host gamertags"
+                )
+            return None, None
+        else:
+            if not guild:
+                guild = ctx.guild
+            async with self.config.guild(guild).clusters() as clusters:
+                clusters[cname]["servers"][sname]["tokens"] = refreshed_tokens
+        return xbl_client, xsts_token
 
     # If a server goes offline it will be added to the queue and task loops will wait before trying to call it again
     def in_queue(self, channel):
@@ -282,10 +288,17 @@ class ArkTools(commands.Cog):
         reg = r'(\S+) (.+)'
         cmd = re.findall(reg, command_string)
         if len(cmd) == 0:
-            return None, None
-        command = cmd[0][0]
-        argument = cmd[0][1]
-        return command, argument
+            reg = r'(\S)'
+            cmd = re.findall(reg, command_string)
+            if len(cmd) > 0:
+                command = cmd[0]
+                return command, None
+            else:
+                return None, None
+        else:
+            command = cmd[0][0]
+            argument = cmd[0][1]
+            return command, argument
 
     # Find xuid from gamertag
     @staticmethod
@@ -543,7 +556,7 @@ class ArkTools(commands.Cog):
         await msg.edit(embed=embed)
         async with aiohttp.ClientSession() as session:
             tokens, cname, sname = self.pull_key(clusters)
-            xbl_client, _ = await self.auth_manager(ctx, session, cname, sname, tokens)
+            xbl_client, _ = await self.auth_manager(session, cname, sname, tokens, ctx)
             if not xbl_client:
                 return
             try:
@@ -668,7 +681,7 @@ class ArkTools(commands.Cog):
                     if "tokens" in server:
                         tokendata = server["tokens"]
                         async with aiohttp.ClientSession() as session:
-                            xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokendata)
+                            xbl_client, token = await self.auth_manager(session, cname, sname, tokendata, ctx)
                             if not xbl_client:
                                 addstatus += f"`{server['gamertag']}: `❌\n"
                                 continue
@@ -720,7 +733,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
             async with aiohttp.ClientSession() as session:
-                xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokendata)
+                xbl_client, token = await self.auth_manager(session, cname, sname, tokendata, ctx)
                 if not xbl_client:
                     embed = discord.Embed(
                         description=f"Friend request from `{gt}` may have failed!",
@@ -840,12 +853,12 @@ class ArkTools(commands.Cog):
                         if "tokens" in server:
                             tokens = server["tokens"]
                             host = server["gamertag"]
-                            xbl_client, token = await self.loop_auth_manager(
-                                ctx.guild,
+                            xbl_client, token = await self.auth_manager(
                                 session,
                                 server["cluster"],
                                 server["name"],
-                                tokens
+                                tokens,
+                                ctx
                             )
                             if token:
                                 try:
@@ -868,12 +881,12 @@ class ArkTools(commands.Cog):
                         if "tokens" in server:
                             tokens = server["tokens"]
                             host = server["gamertag"]
-                            xbl_client, token = await self.loop_auth_manager(
-                                ctx.guild,
+                            xbl_client, token = await self.auth_manager(
                                 session,
                                 server["cluster"],
                                 server["name"],
-                                tokens
+                                tokens,
+                                ctx
                             )
                             if token:
                                 try:
@@ -1573,7 +1586,7 @@ class ArkTools(commands.Cog):
                     for sname, server in cluster["servers"].items():
                         if "tokens" in server:
                             tokens = server["tokens"]
-                            xbl_client, token = await self.auth_manager(ctx, session, cname, sname, tokens)
+                            xbl_client, token = await self.auth_manager(session, cname, sname, tokens, ctx)
                             if xbl_client:
                                 authorized = "True"
                                 friends = json.loads((await xbl_client.people.get_friends_summary_own()).json())
@@ -2885,28 +2898,33 @@ class ArkTools(commands.Cog):
                         f"{prefix}votedinowipe - Start a vote to wipe wild dinos\n"
         settings = await self.config.guild(guild).all()
         payday = settings["payday"]["enabled"]
-        h = settings["payday"]["cooldown"]
         players = settings["players"]
         kit = settings["kit"]["enabled"]
+        autorename = settings["autorename"]
         cid = server["chatchannel"]
         channel = guild.get_channel(cid)
         playerlist = self.playerlist[cid]
 
         time = datetime.datetime.now()
+        h = settings["payday"]["cooldown"]
         duration = h * 3600
         if payday:
             available_cmd += f"{prefix}payday - Earn in-game rewards every {h} hours!\n"
         if kit:
             available_cmd += f"{prefix}kit - New players can claim a one-time starter kit!\n"
-        try:
-            xuid, playerdata = await self.get_player(gamertag, players)
-        except TypeError as e:
-            log.warning(f"In-game command failed: {e}")
-            return await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
-        if not xuid or not playerdata:
-            cmd = f"serverchat In-game command failed! This can happen if you've recently changed your Gamertag"
-            return await self.executor(guild, server, cmd)
-
+        xuid = None
+        playerdata = None
+        c, a = self.parse_cmd(cmd)
+        if c:
+            if c.lower() in ["register", "payday", "kit", "rename", "imstuck"]:
+                try:
+                    xuid, playerdata = await self.get_player(gamertag, players)
+                except TypeError as e:
+                    log.warning(f"In-game command failed: {e}")
+                    return await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
+                if not xuid or not playerdata:
+                    cmd = f"serverchat In-game command failed! This can happen if you recently changed your Gamertag"
+                    return await self.executor(guild, server, cmd)
         # Help command
         if cmd.lower().startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
@@ -2916,7 +2934,6 @@ class ArkTools(commands.Cog):
                 await channel.send("`Sending list of in-game commands!`")
         # Register command
         elif cmd.lower().startswith("register"):
-            c, a = self.parse_cmd(cmd)
             if not a:
                 cmd = f"serverchat Please include your implant ID, " \
                       f"type the command as {prefix}register YourImplantID"
@@ -2924,31 +2941,29 @@ class ArkTools(commands.Cog):
                 if channel:
                     await channel.send(f"`Please include your implant ID, "
                                        f"type the command as {prefix}register YourImplantID`")
-                return
-            async with self.config.guild(guild).players() as players:
-                if not a.isdigit():
-                    cmd = f"serverchat That is not a number. Include your IMPLANT ID NUMBER after the command"
-                    return await self.executor(guild, server, cmd)
-                if "ingame" not in playerdata:
-                    players[xuid]["ingame"] = {server["chatchannel"]: a}
-                else:
-                    players[xuid]["ingame"][server["chatchannel"]] = a
-                cmd = f'serverchat {gamertag} Your implant was registered as {a}'
-                await self.executor(guild, server, cmd)
-                if channel:
-                    await channel.send(f"`{gamertag} Your implant was registered as {a}`")
+            else:
+                async with self.config.guild(guild).players() as players:
+                    if not a.isdigit():
+                        cmd = f"serverchat That's not a number. Include your implant ID NUMBER in the command"
+                        return await self.executor(guild, server, cmd)
+                    if "ingame" not in playerdata:
+                        players[xuid]["ingame"] = {server["chatchannel"]: a}
+                    else:
+                        players[xuid]["ingame"][server["chatchannel"]] = a
+                    cmd = f'serverchat {gamertag} Your implant was registered as {a}'
+                    await self.executor(guild, server, cmd)
+                    if channel:
+                        await channel.send(f"`{gamertag} Your implant was registered as {a}`")
         # Rename command
         elif cmd.lower().startswith("rename"):
-            rank = None
-            if "rank" in players[xuid]:
-                rank = players[xuid]["rank"]
-                rank = guild.get_role(rank)
-            c, a = self.parse_cmd(cmd)
             if not a:
-                cmd = f"serverchatto  Include the new name you want with the command "
+                cmd = f"serverchat You need to include the new name you want with the command"
                 return await self.executor(guild, server, cmd)
-            if rank:
-                a = f"[{rank}] {a}"
+            if autorename:
+                if "rank" in players[xuid]:
+                    rank = players[xuid]["rank"]
+                    rank = guild.get_role(rank)
+                    a = f"[{rank}] {a}"
             cmd = f'renameplayer "{char_name}" {a}'
             await self.executor(guild, server, cmd)
             cmd = f'serverchat {gamertag} Your name has been changed to {a}'
@@ -3013,7 +3028,6 @@ class ArkTools(commands.Cog):
         # Im stuck command
         elif cmd.lower().startswith("imstuck"):
             canuse = False
-            c, a = self.parse_cmd(cmd)
             if not a:
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
@@ -3073,7 +3087,6 @@ class ArkTools(commands.Cog):
                 cmd = f"serverchat That command is disabled on this server at the moment"
                 return await self.executor(guild, server, cmd)
             canuse = False
-            c, a = self.parse_cmd(cmd)
             if not a:
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
@@ -3149,7 +3162,6 @@ class ArkTools(commands.Cog):
                     await channel.send(f"Kit command has not been fully setup yet!")
                 cmd = f"serverchat Kit command has not been fully setup yet!"
                 return await self.executor(guild, server, cmd)
-            c, a = self.parse_cmd(cmd)
             if not a:
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
@@ -3195,7 +3207,6 @@ class ArkTools(commands.Cog):
         cooldown = int(cooldown)
         if td > cooldown:
             can_run = True
-
         if can_run:
             time_till_expired = time + datetime.timedelta(minutes=2)
             playerlist = self.playerlist[channel_id]
@@ -3474,12 +3485,13 @@ class ArkTools(commands.Cog):
                                 async with aiohttp.ClientSession() as session:
                                     host = server["gamertag"]
                                     tokens = server["tokens"]
-                                    xbl_client, token = await self.loop_auth_manager(
-                                        guild,
+                                    xbl_client, token = await self.auth_manager(
                                         session,
                                         cname,
                                         sname,
-                                        tokens
+                                        tokens,
+                                        ctx=None,
+                                        guild=guild
                                     )
                                     if autowelcome and xbl_client:
                                         link = await channel_obj.create_invite(unique=False, reason="New Player")
@@ -3586,12 +3598,13 @@ class ArkTools(commands.Cog):
                                 async with aiohttp.ClientSession() as session:
                                     host = server["gamertag"]
                                     tokens = server["tokens"]
-                                    xbl_client, token = await self.loop_auth_manager(
-                                        guild,
+                                    xbl_client, token = await self.auth_manager(
                                         session,
                                         cname,
                                         sname,
-                                        tokens
+                                        tokens,
+                                        ctx=None,
+                                        guild=guild
                                     )
                                     if autofriend and xbl_client:
                                         status = await add_friend(str(xuid), token)
@@ -3678,12 +3691,13 @@ class ArkTools(commands.Cog):
         async with aiohttp.ClientSession() as session:
             utasks = []
             for item in tokendata:
-                xbl_client, token = await self.loop_auth_manager(
-                    member.guild,
+                xbl_client, token = await self.auth_manager(
                     session,
                     item[1],
                     item[2],
-                    item[3]
+                    item[3],
+                    ctx=None,
+                    guild=member.guild
                 )
                 if token:
                     utasks.append(remove_friend(item[0], token))
@@ -3731,12 +3745,13 @@ class ArkTools(commands.Cog):
             # Remove players from host Gamertags' friends list
             async with aiohttp.ClientSession() as session:
                 for item in tokendata:
-                    xbl_client, token = await self.loop_auth_manager(
-                        guild,
+                    xbl_client, token = await self.auth_manager(
                         session,
                         item[0],
                         item[1],
-                        item[2]
+                        item[2],
+                        ctx=None,
+                        guild=guild
                     )
                     if token:
                         host = f"{item[1].capitalize()} {item[0].upper()}"
@@ -3806,12 +3821,13 @@ class ArkTools(commands.Cog):
                     await self.autofriend_session(session, guild, cname, sname, tokens, eventlog)
 
     async def autofriend_session(self, session, guild: discord.guild, cname, sname, tokens, eventlog):
-        xbl_client, token = await self.loop_auth_manager(
-            guild,
+        xbl_client, token = await self.auth_manager(
             session,
             cname,
             sname,
-            tokens
+            tokens,
+            ctx=None,
+            guild=guild
         )
         if token:
             try:
