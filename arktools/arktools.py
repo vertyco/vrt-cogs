@@ -310,10 +310,16 @@ class ArkTools(commands.Cog):
     # Is player registered in-game on a server?
     @staticmethod
     def get_implant(playerdata: dict, channel: str):
-        if playerdata:
-            if "ingame" in playerdata:
-                if channel in playerdata["ingame"]:
-                    return playerdata["ingame"][channel]
+        print(playerdata)
+        print(channel)
+        if not playerdata:
+            return False
+        if "ingame" not in playerdata:
+            return False
+        for chan, implant in playerdata["ingame"].items():
+            if str(chan) == channel:
+                print(implant)
+                return implant
 
     # Hard coded item send for those tough times
     @commands.command(name="imstuck")
@@ -2895,11 +2901,14 @@ class ArkTools(commands.Cog):
                         messages += resp
         # Send off messages to discord channels
         if messages:
-            await chatchannel.send(messages)
+            for p in pagify(messages):
+                await chatchannel.send(p)
         if globalmessages:
-            await globalchat.send(globalmessages)
+            for p in pagify(globalmessages):
+                await globalchat.send(p)
         if admin_commands:
-            await adminlog.send(admin_commands)
+            for p in pagify(admin_commands):
+                await adminlog.send(p)
         if tribe_logs:
             await self.tribelog_sendoff(guild, settings, server, tribe_logs)
 
@@ -2930,18 +2939,16 @@ class ArkTools(commands.Cog):
         xuid = None
         playerdata = None
         c, a = self.parse_cmd(cmd)
-        if c:
-            if c.lower() in ["register", "payday", "kit", "rename", "imstuck"]:
-                try:
-                    xuid, playerdata = await self.get_player(gamertag, players)
-                except TypeError as e:
-                    log.warning(f"In-game command failed: {e}")
-                    await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
-                    return None
-                if not xuid or not playerdata:
-                    cmd = f"serverchat In-game command failed! This can happen if you recently changed your Gamertag"
-                    await self.executor(guild, server, cmd)
-                    return None
+        try:
+            xuid, playerdata = await self.get_player(gamertag, players)
+        except TypeError as e:
+            log.warning(f"In-game command failed: {e}")
+            await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
+            return None
+        if not xuid or not playerdata:
+            cmd = f"serverchat In-game command failed! This can happen if you recently changed your Gamertag"
+            await self.executor(guild, server, cmd)
+            return None
         # Help command
         if cmd.lower().startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
@@ -3445,6 +3452,8 @@ class ArkTools(commands.Cog):
                         continue
                     if self.playerlist[channel] == "offline":
                         continue
+                    if self.playerlist[channel] == "empty":
+                        continue
                     for player in self.playerlist[channel]:
                         xuid = player[1]
                         gamertag = player[0]
@@ -3597,10 +3606,8 @@ class ArkTools(commands.Cog):
                                     if autofriend and xbl_client:
                                         status = await add_friend(str(xuid), token)
                                         if 200 <= status <= 204:
-                                            log.info(f"{host} Successfully added {gamertag}")
                                             newplayermessage += f"Added by {host}: ✅\n"
                                         else:
-                                            log.warning(f"{host} FAILED to add {gamertag}")
                                             newplayermessage += f"Added by {host}: ❌\n"
                         if mapstring not in stats[xuid]["playtime"]:
                             stats[xuid]["playtime"][mapstring] = 0
@@ -3882,8 +3889,6 @@ class ArkTools(commands.Cog):
                         await xbl_client.message.send_message(str(xuid), msg)
                     else:
                         ustatus = "unsuccessfully"
-                    log.info(f"{username} - {xuid} was {ustatus} removed by {sname} {cname} "
-                             f"for unfollowing.")
                     if eventlog:
                         embed = discord.Embed(
                             description=f"**{username}** - `{xuid}` was {ustatus} removed by **{sname} {cname}**"
