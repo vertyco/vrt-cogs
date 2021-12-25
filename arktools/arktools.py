@@ -2900,6 +2900,8 @@ class ArkTools(commands.Cog):
             await globalchat.send(globalmessages)
         if admin_commands:
             await adminlog.send(admin_commands)
+        if tribe_logs:
+            await self.tribelog_sendoff(guild, settings, server, tribe_logs)
 
     # In game command handler
     async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
@@ -2916,7 +2918,6 @@ class ArkTools(commands.Cog):
         kit = settings["kit"]["enabled"]
         autorename = settings["autorename"]
         cid = server["chatchannel"]
-        channel = guild.get_channel(cid)
         playerlist = self.playerlist[cid]
 
         time = datetime.datetime.now()
