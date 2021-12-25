@@ -59,7 +59,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.5.31"
+    __version__ = "2.5.32"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -310,9 +310,10 @@ class ArkTools(commands.Cog):
     # Is player registered in-game on a server?
     @staticmethod
     def get_implant(playerdata: dict, channel: str):
-        if "ingame" in playerdata:
-            if channel in playerdata["ingame"]:
-                return playerdata["ingame"][channel]
+        if playerdata:
+            if "ingame" in playerdata:
+                if channel in playerdata["ingame"]:
+                    return playerdata["ingame"][channel]
 
     # Hard coded item send for those tough times
     @commands.command(name="imstuck")
@@ -2639,8 +2640,7 @@ class ArkTools(commands.Cog):
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            if not self.in_queue(server["chatchannel"]):
-                listplayertasks.append(self.executor(guild, server, "listplayers"))
+            listplayertasks.append(self.executor(guild, server, "listplayers"))
         await asyncio.gather(*listplayertasks)
 
     # Initiates the GetChat loop
@@ -2650,13 +2650,14 @@ class ArkTools(commands.Cog):
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            if not self.in_queue(server["chatchannel"]):
-                chat_tasks.append(self.executor(guild, server, "getchat"))
+            chat_tasks.append(self.executor(guild, server, "getchat"))
         await asyncio.gather(*chat_tasks)
 
     # Non-blocking sync executor for rcon task loops
     async def executor(self, guild: discord.guild, server: dict, command: str):
         if not server:
+            return
+        if self.in_queue(server["chatchannel"]):
             return
         if server["port"] > 65535 or server["port"] < 0:
             log.warning(f"Server with ip {server['ip']} has an out of range port 0-65535 (server: {server['port']}")
@@ -2687,7 +2688,7 @@ class ArkTools(commands.Cog):
                     log.warning(f"Executor Error: {e}")
 
         res = await self.bot.loop.run_in_executor(None, exe)
-        if not res and server["chatchannel"] not in self.queue:
+        if not res:
             self.queue[server["chatchannel"]] = datetime.datetime.now()
             log.info(f"Server ip {server['ip']} port {server['port']} is offline, reconnecting in 60 seconds")
         if command == "getchat":
@@ -2768,6 +2769,23 @@ class ArkTools(commands.Cog):
                 # If a server goes from offline to populated its probably cause the cog was reloaded, so ignore
                 self.playerlist[channel] = newplayerlist
 
+    @staticmethod
+    async def tribelog_sendoff(guild, settings, server, logs):
+        for msg in logs:
+            try:
+                tribe_id, embed = await tribelog_format(server, msg)
+            except TypeError:
+                continue
+            if "masterlog" in settings:
+                masterlog = guild.get_channel(settings["masterlog"])
+                await masterlog.send(embed=embed)
+            if "tribes" in settings:
+                for tribes in settings["tribes"]:
+                    if tribe_id == tribes:
+                        tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
+                        await tribechannel.send(embed=embed)
+                        break
+
     # Sends messages from in-game chat to their designated channels
     async def message_handler(self, guild: discord.guild, server: dict, res: str):
         adminlog = guild.get_channel(server["adminlogchannel"])
@@ -2776,36 +2794,44 @@ class ArkTools(commands.Cog):
         msgs = res.split("\n")
         settings = await self.config.guild(guild).all()
         badnames = settings["badnames"]
+        admin_commands = ""
+        globalmessages = ""
+        messages = ""
+        tribe_logs = []
+        chats = []
         # Filter messages for feedback loops and invalid strings
         for msg in msgs:
-            if msg.startswith("SERVER:"):
-                continue
-            if msg.startswith("AdminCmd:"):  # Admin command
-                await adminlog.send(f"**{server['name'].capitalize()}**\n{box(msg, lang='python')}")
-                continue
-            if "Tribe" and ", ID" in msg:  # Tribe log
-                try:
-                    tribe_id, embed = await tribelog_format(server, msg)
-                except TypeError:
-                    continue
-                if "masterlog" in settings:
-                    masterlog = guild.get_channel(settings["masterlog"])
-                    await masterlog.send(embed=embed)
-                if "tribes" in settings:
-                    for tribes in settings["tribes"]:
-                        if tribe_id == tribes:
-                            tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
-                            await tribechannel.send(embed=embed)
-                            break
+            if not msg:
                 continue
             if msg == " ":
                 continue
-            if msg == "":
-                continue
             if "):" not in msg:
                 continue
-            if not msg:
+            if msg.startswith("SERVER:"):
                 continue
+            if msg.startswith("AdminCmd:"):  # Admin command
+                admin_commands += f"**{server['name'].capitalize()}**\n{box(msg, lang='python')}\n"
+            elif "Tribe" and ", ID" in msg:  # Tribe log
+                tribe_logs.append(msg)
+            else:
+                chats.append(msg)
+        for msg in chats:
+            # Append messages to be sent to discord
+            globalmessages += f"{chatchannel.mention}: {msg}\n"
+            messages += f"{msg}\n"
+            # Sends Discord invite to in-game chat if the word Discord is mentioned
+            if "discord" in msg.lower() or "discordia" in msg.lower():
+                inv = None
+                try:
+                    inv = await guild.vanity_invite()
+                except discord.Forbidden:
+                    try:
+                        inv = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
+                    except Exception as e:
+                        log.exception(f"INVITE CREATION FAILED: {e}")
+                if inv:
+                    await self.executor(guild, server, f"serverchat {inv}")
+
             # If interchat is enabled, relay message to other servers
             clustername = server["cluster"]
             if settings["clusters"][clustername]["servertoserver"]:  # Maps can talk to each other if true
@@ -2813,34 +2839,13 @@ class ArkTools(commands.Cog):
                     s = data[1]
                     g = self.bot.get_guild(data[0])
                     if s["cluster"] == server["cluster"] and s["name"] != server["name"] and g == guild:
-                        if not self.in_queue(s["chatchannel"]):
-                            await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
-
-            # Send off messages to discord channels
-            await chatchannel.send(msg)
-            await globalchat.send(f"{chatchannel.mention}: {msg}")
-
-            # Sends Discord invite to in-game chat if the word Discord is mentioned
-            if "discord" in msg.lower() or "discordia" in msg.lower():
-                inv = None
-                link = False
-                try:
-                    inv = await guild.vanity_invite()
-                    link = True
-                except discord.Forbidden:
-                    try:
-                        inv = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
-                        link = True
-                    except Exception as e:
-                        log.exception(f"INVITE CREATION FAILED: {e}")
-                if link:
-                    await self.executor(guild, server, f"serverchat {inv}")
+                        await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
 
             # Break message into groups for interpretation
             reg = r'(.+)\s\((.+)\): (.+)'
             msg = re.findall(reg, msg)
-            if len(msg) == 0:
-                return
+            if len(msg) == 0:  # Weird this shouldnt happen but
+                continue
             msg = msg[0]
             gamertag = msg[0]
             character_name = msg[1]
@@ -2885,7 +2890,16 @@ class ArkTools(commands.Cog):
             for p in prefixes:
                 if message.startswith(p):
                     message = message.replace(p, "", 1)
-                    await self.ingame_cmd(guild, p, server, gamertag, character_name, message)
+                    resp = await self.ingame_cmd(guild, p, server, gamertag, character_name, message)
+                    if resp:
+                        messages += resp
+        # Send off messages to discord channels
+        if messages:
+            await chatchannel.send(messages)
+        if globalmessages:
+            await globalchat.send(globalmessages)
+        if admin_commands:
+            await adminlog.send(admin_commands)
 
     # In game command handler
     async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
@@ -2921,26 +2935,25 @@ class ArkTools(commands.Cog):
                     xuid, playerdata = await self.get_player(gamertag, players)
                 except TypeError as e:
                     log.warning(f"In-game command failed: {e}")
-                    return await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
+                    await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
+                    return None
                 if not xuid or not playerdata:
                     cmd = f"serverchat In-game command failed! This can happen if you recently changed your Gamertag"
-                    return await self.executor(guild, server, cmd)
+                    await self.executor(guild, server, cmd)
+                    return None
         # Help command
         if cmd.lower().startswith("help"):
             await self.executor(guild, server, f"broadcast {available_cmd}")
             cmd = f'serverchat Other commands too long to fit in the broadcast include .players'
             await self.executor(guild, server, cmd)
-            if channel:
-                await channel.send("`Sending list of in-game commands!`")
+            return "`Sending list of in-game commands!`\n"
         # Register command
         elif cmd.lower().startswith("register"):
             if not a:
                 cmd = f"serverchat Please include your implant ID, " \
                       f"type the command as {prefix}register YourImplantID"
                 await self.executor(guild, server, cmd)
-                if channel:
-                    await channel.send(f"`Please include your implant ID, "
-                                       f"type the command as {prefix}register YourImplantID`")
+                return f"`Please include your implant ID, type the command as {prefix}register YourImplantID`\n"
             else:
                 async with self.config.guild(guild).players() as players:
                     if not a.isdigit():
@@ -2952,8 +2965,7 @@ class ArkTools(commands.Cog):
                         players[xuid]["ingame"][server["chatchannel"]] = a
                     cmd = f'serverchat {gamertag} Your implant was registered as {a}'
                     await self.executor(guild, server, cmd)
-                    if channel:
-                        await channel.send(f"`{gamertag} Your implant was registered as {a}`")
+                    return f"`{gamertag} Your implant was registered as {a}`\n"
         # Rename command
         elif cmd.lower().startswith("rename"):
             if not a:
@@ -2968,38 +2980,33 @@ class ArkTools(commands.Cog):
             await self.executor(guild, server, cmd)
             cmd = f'serverchat {gamertag} Your name has been changed to {a}'
             await self.executor(guild, server, cmd)
-            if channel:
-                await channel.send(f"`{gamertag} Your name has been changed to {a}`")
+            return f"`{gamertag} Your name has been changed to {a}`\n"
         # Vote day command
         elif cmd.lower().startswith("voteday"):
             remaining = await self.vote_handler(guild, cid, server, gamertag, "voteday")
             if remaining == "cooldown":
-                return
+                return None
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it day!")
-                if channel:
-                    await channel.send(f"`Need {remaining} more In-game votes to make it day!`")
+                return f"`Need {remaining} more In-game votes to make it day!`\n"
             else:
                 await self.executor(guild, server, f"serverchat Vote successful, let there be light!")
                 await self.executor(guild, server, "settimeofday 07:00")
                 del self.votes[cid]
-                if channel:
-                    await channel.send(f"`Vote successful, let there be light!`")
+                return f"`Vote successful, let there be light!`\n"
         # Vote night command
         elif cmd.lower().startswith("votenight"):
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votenight")
             if remaining == "cooldown":
-                return
+                return None
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it night!")
-                if channel:
-                    await channel.send(f"`Need {remaining} more In-game votes to make it night!`")
+                return f"`Need {remaining} more In-game votes to make it night!`\n"
             else:
                 await self.executor(guild, server, f"serverchat Vote successful, turning off the sun!")
                 await self.executor(guild, server, "settimeofday 22:00")
                 del self.votes[cid]
-                if channel:
-                    await channel.send(f"`Vote successful, turning off the sun!`")
+                return f"`Vote successful, turning off the sun!`\n"
         # Dino wipe command
         elif cmd.lower().startswith("votedinowipe"):
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votedinowipe")
@@ -3007,34 +3014,29 @@ class ArkTools(commands.Cog):
                 return
             if remaining > 0:
                 await self.executor(guild, server, f"serverchat Need {remaining} more votes to wipe wild dinos!")
-                if channel:
-                    await channel.send(f"`Need {remaining} more In-Game votes to wipe wild dinos!`")
+                return f"`Need {remaining} more In-Game votes to wipe wild dinos!`\n"
             else:
                 await self.executor(guild, server, f"serverchat Vote successful, wiping wild dinos!")
                 await self.executor(guild, server, "destroywilddinos")
                 del self.votes[cid]
-                if channel:
-                    await channel.send(f"`Vote successful, wiping wild dinos!`")
+                return f"`Vote successful, wiping wild dinos!`\n"
         # Player count command
         elif cmd.lower().startswith("players"):
             if len(playerlist) == 1:
                 await self.executor(guild, server, f"serverchat You're the only person on this server :p")
-                if channel:
-                    await channel.send(f"`You're the only person on this server :p`")
+                return f"`You're the only person on this server :p`\n"
             else:
                 await self.executor(guild, server, f"serverchat There are {len(playerlist)} people on this server")
-                if channel:
-                    await channel.send(f"`There are {len(playerlist)} people on the server`")
+                return f"`There are {len(playerlist)} people on the server`\n"
         # Im stuck command
         elif cmd.lower().startswith("imstuck"):
             canuse = False
             if not a:
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
-                    if channel:
-                        await channel.send(f"`Include your Implant ID after the command or use the .register command`")
                     cmd = f"serverchat Include your Implant ID after the command or use the .register command"
-                    return await self.executor(guild, server, cmd)
+                    await self.executor(guild, server, cmd)
+                    return f"`Include your Implant ID after the command or use the .register command`\n"
                 a = implant
             async with self.config.guild(guild).cooldowns() as cooldowns:
                 if gamertag not in cooldowns:
@@ -3056,8 +3058,7 @@ class ArkTools(commands.Cog):
                     await asyncio.gather(*stasks)
                     await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
                     cooldowns[gamertag]["imstuck"] = time.isoformat()
-                    if channel:
-                        await channel.send(f"`{gamertag} your care package is on the way!`")
+                    return f"`{gamertag} your care package is on the way!`\n"
                 else:
                     lastused = cooldowns[gamertag]["imstuck"]
                     lastused = datetime.datetime.fromisoformat(lastused)
@@ -3069,31 +3070,24 @@ class ArkTools(commands.Cog):
                         cmd = f"serverchat {gamertag} You need to wait {minutes} minutes " \
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
-                        if channel:
-                            await channel.send(f"`{gamertag} You need to wait {minutes} minutes "
-                                               f"before using that command again`")
+                        return f"`{gamertag} You need to wait {minutes} minutes before using that command again`\n"
                     else:
                         cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
-                        if channel:
-                            await channel.send(f"`{gamertag} You need to wait {int(tleft)} seconds "
-                                               f"before using that command again`")
+                        return f"`{gamertag} You need to wait {int(tleft)} seconds before using that command again`\n"
         # Payday command
         elif cmd.lower().startswith("payday"):
             if not payday:
-                if channel:
-                    await channel.send(f"`That command is disabled on this server at the moment`")
                 cmd = f"serverchat That command is disabled on this server at the moment"
-                return await self.executor(guild, server, cmd)
+                await self.executor(guild, server, cmd)
+                return "`That command is disabled on this server at the moment`\n"
             canuse = False
-            if not a:
+            if not a and playerdata:
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
-                    if channel:
-                        await channel.send(f"`Include your Implant ID after the command or use the .register command`")
-                    cmd = f"serverchat Include your Implant ID after the command or use the .register command"
-                    return await self.executor(guild, server, cmd)
+                    await self.executor(guild, server, cmd)
+                    return "`Include your Implant ID after the command or use the .register command`\n"
                 a = implant
             async with self.config.guild(guild).cooldowns() as cooldowns:
                 if gamertag not in cooldowns:
@@ -3121,9 +3115,8 @@ class ArkTools(commands.Cog):
                             ptasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
                         await asyncio.gather(*ptasks)
                         await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
-                    if channel:
-                        await channel.send(f"`{gamertag} Payday rewards sent!`")
                     cooldowns[gamertag]["payday"] = time.isoformat()
+                    return f"`{gamertag} Payday rewards sent!`\n"
                 else:
                     lastused = cooldowns[gamertag]["payday"]
                     lastused = datetime.datetime.fromisoformat(lastused)
@@ -3147,35 +3140,30 @@ class ArkTools(commands.Cog):
                         cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
                               f"before using that command again"
                         await self.executor(guild, server, cmd)
-                    if channel:
-                        await channel.send(f"`{gamertag} cant use that command yet, wait a bit.`")
+                    return f"`{gamertag} cant use that command yet, wait a bit.`\n"
         # Starter kit command
         elif cmd.lower().startswith("kit"):
             kit = await self.config.guild(guild).kit()
             if not kit["enabled"]:
-                if channel:
-                    await channel.send(f"That command is disabled on this server at the moment")
                 cmd = f"serverchat That command is disabled on this server at the moment"
-                return await self.executor(guild, server, cmd)
+                await self.executor(guild, server, cmd)
+                return "`That command is disabled on this server at the moment`\n"
             if len(kit["paths"]) == 0:
-                if channel:
-                    await channel.send(f"Kit command has not been fully setup yet!")
                 cmd = f"serverchat Kit command has not been fully setup yet!"
-                return await self.executor(guild, server, cmd)
+                await self.executor(guild, server, cmd)
+                return "`Kit command has not been fully setup yet!`\n"
             if not a:
                 implant = self.get_implant(playerdata, str(server["chatchannel"]))
                 if not implant:
-                    if channel:
-                        await channel.send(f"`Use the {prefix}register command to register your ID first`")
                     cmd = f"serverchat Use the {prefix}register command to register your ID first"
-                    return await self.executor(guild, server, cmd)
+                    await self.executor(guild, server, cmd)
+                    return f"`Use the {prefix}register command to register your ID first`\n"
                 a = implant
             async with self.config.guild(guild).kit() as kit:
                 if xuid in kit["claimed"]:
-                    if channel:
-                        await channel.send(f"{gamertag} You have already claimed your starter kit!")
                     cmd = f"serverchat {gamertag} You have already claimed your starter kit!"
-                    return await self.executor(guild, server, cmd)
+                    await self.executor(guild, server, cmd)
+                    return f"`{gamertag} You have already claimed your starter kit!`\n"
                 ktasks = []
                 for path in kit["paths"]:
                     ktasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
@@ -3185,8 +3173,7 @@ class ArkTools(commands.Cog):
                 cmd = f"broadcast {gamertag.upper()} HAS JUST CLAIMED THEIR STARTER KIT!"
                 await self.executor(guild, server, cmd)
                 kit["claimed"].append(xuid)
-                if channel:
-                    await channel.send(f"`{gamertag} has just claimed their starter kit!`")
+                return f"`{gamertag} has just claimed their starter kit!`\n"
 
     async def vote_handler(self, guild, channel_id, server, gamertag, vote_type):
         can_run = False
@@ -3194,11 +3181,14 @@ class ArkTools(commands.Cog):
         if channel_id not in self.lastran:
             self.lastran[channel_id] = {}
             can_run = True
+            log.info(f"Channel ID not in lastran, CanRun {vote_type}")
         if vote_type not in self.lastran[channel_id]:
             self.lastran[channel_id][vote_type] = time
             can_run = True
+            log.info(f"Vote type not in channel id, CanRun {vote_type}")
         if channel_id in self.votes:
             can_run = True
+            log.info(f"In an active vote session {vote_type}")
         last_ran = self.lastran[channel_id][vote_type]
         td = time - last_ran
         td = td.total_seconds()
@@ -3475,7 +3465,6 @@ class ArkTools(commands.Cog):
                                        f"Everyone say hi to {gamertag}!!!\n```"
                                 await channel_obj.send(welc)
                             newplayermessage += f"**{gamertag}** added to the database.\n"
-                            log.info(f"New Player - {gamertag}")
                             stats[xuid] = {
                                 "playtime": {"total": 0},
                                 "username": gamertag,
@@ -3509,7 +3498,6 @@ class ArkTools(commands.Cog):
                                                       f"here is an invite to the Discord server:\n\n{link}"
                                         try:
                                             await xbl_client.message.send_message(str(xuid), welcome)
-                                            log.info("New Player DM Successful")
                                             newplayermessage += f"DM sent: ✅\n"
                                         except Exception as e:
                                             log.warning(f"{gamertag} Failed to DM New Player in guild {guild}: {e}")
@@ -3518,7 +3506,6 @@ class ArkTools(commands.Cog):
                                     if autofriend and xbl_client:
                                         status = await add_friend(str(xuid), token)
                                         if 200 <= status <= 204:
-                                            log.info(f"{host} Successfully added {gamertag}")
                                             newplayermessage += f"Added by {host}: ✅\n"
                                         else:
                                             log.warning(f"{host} FAILED to add {gamertag} in guild {guild}")
@@ -3702,8 +3689,6 @@ class ArkTools(commands.Cog):
                 if token:
                     utasks.append(remove_friend(item[0], token))
             await asyncio.gather(*utasks)
-            log.info(f"{member.display_name} -{member.id} was unfriended by the host Gamertags "
-                     f"for leaving the Discord.")
             if eventlog:
                 eventlog = member.guild.get_channel(eventlog)
                 embed = discord.Embed(
@@ -3763,7 +3748,6 @@ class ArkTools(commands.Cog):
                                 player = user[1]
                                 status = await remove_friend(xuid, token)
                                 if 200 <= status <= 204:
-                                    ustatus = "Successfuly"
                                     # Set last seen to None
                                     msg = "This is an automated message:\n\n" \
                                           "You have been unfriended by this Gamertag.\n" \
@@ -3771,9 +3755,8 @@ class ArkTools(commands.Cog):
                                           f"To play this map again simply friend the account and join session."
                                     await xbl_client.message.send_message(str(xuid), msg)
                                 else:
-                                    ustatus = "Unsuccessfuly"
-                                log.info(f"{player} - {xuid} was {ustatus} unfriended by the host {host} "
-                                         f"for exceeding {unfriendtime} days of inactivity.")
+                                    log.info(f"Failed to unfriend {player} - {xuid} by the host {host} "
+                                             f"for exceeding {unfriendtime} days of inactivity.")
 
             if eventlog:
                 for user in expired:
@@ -3835,6 +3818,8 @@ class ArkTools(commands.Cog):
             except Exception as e:
                 if "Too Many Requests" in str(e):
                     return
+                elif "validation error" in str(e):
+                    return
                 else:
                     log.warning(f"Autofriend Session Error: {e}")
                     return
@@ -3856,7 +3841,6 @@ class ArkTools(commands.Cog):
                             description=f"**{sname} {cname}** accepted **{username}**'s friend request.",
                             color=discord.Color.green()
                         )
-                        log.info(f"{sname} {cname} accepted {username}'s friend request.")
                         if eventlog:
                             try:
                                 await eventlog.send(embed=embed)
