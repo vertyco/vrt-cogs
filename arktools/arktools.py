@@ -8,6 +8,7 @@ import re
 import socket
 import sys
 
+import typing
 import aiohttp
 import discord
 import pytz
@@ -23,25 +24,29 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
-from .calls import (add_friend,
-                    remove_friend,
-                    manual_rcon,
-                    get_followers,
-                    block_player,
-                    unblock_player)
-from .formatter import (decode,
-                        tribelog_format,
-                        profile_format,
-                        expired_players,
-                        lb_format,
-                        cstats_format,
-                        player_stats,
-                        detect_friends,
-                        fix_timestamp,
-                        get_graph,
-                        time_format,
-                        detect_sus,
-                        IMSTUCK_BLUEPRINTS)
+from .calls import (
+    add_friend,
+    remove_friend,
+    manual_rcon,
+    get_followers,
+    block_player,
+    unblock_player
+)
+from .formatter import (
+    decode,
+    tribelog_format,
+    profile_format,
+    expired_players,
+    lb_format,
+    cstats_format,
+    player_stats,
+    detect_friends,
+    fix_timestamp,
+    get_graph,
+    time_format,
+    detect_sus,
+    IMSTUCK_BLUEPRINTS
+)
 from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.arktools")
@@ -59,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.5.32"
+    __version__ = "2.6.32"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -78,33 +83,33 @@ class ArkTools(commands.Cog):
                 "minfollowers": 5,  # Minimum follower threshold
                 "minfollowing": 10,  # Minimum following threshold
                 "msg": None,  # Message to send users if their account is sus
-                "whitelist": []
+                "whitelist": []  # Ignore list for the alt detector
             },
-            "welcomemsg": None,
-            "playerclearmessage": None,
-            "status": {"channel": None, "message": None, "multi": [], "time": 1},
-            "masterlog": None,
-            "eventlog": None,
-            "fullaccessrole": None,
-            "autowelcome": False,
-            "autofriend": False,
-            "unfriendafter": 30,
-            "clusters": {},
-            "modroles": [],
-            "modcommands": [],
-            "badnames": [],
-            "tribes": {},
-            "players": {},
-            "ranks": {},
-            "autorename": False,
-            "autoremove": False,
-            "cooldowns": {},
-            "votecooldown": 120,
-            "kit": {"enabled": False, "claimed": [], "paths": []},
-            "payday": {"enabled": False, "random": False, "cooldown": 12, "paths": []},
-            "serverstats": {"dates": [], "counts": [], "expiration": 30},
-            "timezone": "UTC"
+            "welcomemsg": None,  # When a new player is detected this is the welcome message it will send
+            "status": {"channel": None, "message": None, "multi": [], "time": 1},  # Server status live-embed stuff
+            "masterlog": None,  # (Steam Only) - Discord channel for all tribe logs
+            "eventlog": None,  # All in-game events will be logged to this discord channel
+            "fullaccessrole": None,  # Discord role for full rcon command access
+            "autowelcome": False,  # Toggle for whether to send a welcome message to new users
+            "autofriend": False,  # Toggle for whether to auto add new players as a friend by the host gamertags
+            "unfriendafter": 30,  # Unfriend players after X days of inactivity
+            "clusters": {},  # All server data gets stored here
+            "modroles": [],  # All mod role ID's get stored here
+            "modcommands": [],  # All commands that the mods are allowed to use go here
+            "badnames": [],  # Blacklist for bad character names
+            "tribes": {},  # Personal tribe settings(steam only)
+            "players": {},  # All player data stored here(playtime, gamertag, xuid, implant ID's ect)
+            "ranks": {},  # Rank data for timeplayed <-> Discord role ID is stored here
+            "autorename": False,  # Automatically rename players to their ranks
+            "autoremove": False,  # Automatically remove old rank roles from discord users when they rank up
+            "cooldowns": {},  # Cooldowns for in-game commands like payday and imstuck
+            "votecooldown": 120,  # Cooldown for in-game voting commands so people dont spam the shit
+            "kit": {"enabled": False, "claimed": [], "paths": []},  # Starter kit settings for new players
+            "payday": {"enabled": False, "random": False, "cooldown": 12, "paths": []},  # in-game Payday settings
+            "serverstats": {"dates": [], "counts": [], "expiration": 30},  # Playercount data for graphing
+            "timezone": "UTC"  # Default timezone for player count graph
         }
+        # Microsoft Azure application Client ID and Secret for accessing the Xbox API
         default_global = {
             "clientid": None,
             "secret": None
@@ -112,7 +117,7 @@ class ArkTools(commands.Cog):
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
 
-        # Cache on cog load
+        # Cache on cog load/core setting changes to reduce config reads
         self.activeguilds = []
         self.servers = []
         self.channels = []
@@ -121,14 +126,14 @@ class ArkTools(commands.Cog):
         self.downtime = {}
         self.time = ""
 
-        # Offline server wait list before trying to reconnect
+        # Offline servers go into a queue to wait a minute before bot attempts to reconnect
         self.queue = {}
 
         # In-Game voting sessions
         self.votes = {}
         self.lastran = {}
 
-        # Loops
+        # Task Loops. Yeah theres a lot, sue me.
         self.getchat.start()
         self.listplayers.start()
         self.status_channel.start()
@@ -138,7 +143,7 @@ class ArkTools(commands.Cog):
         self.vote_sessions.start()
         self.graphdata_prune.start()
 
-        # Windows is dumb
+        # Windows is dumb, set asyncio event loop selector policy for it, not even sure if this helps tbh
         if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
             log.info(f"Setting EventLoopSelector For {sys.platform}")
@@ -153,11 +158,13 @@ class ArkTools(commands.Cog):
         self.vote_sessions.cancel()
         self.graphdata_prune.cancel()
 
+    # Just grab azure credentials from the config, only bot owner needs to set this and its optional
     async def get_azure_credentials(self):
         client_id = await self.config.clientid()
         client_secret = await self.config.secret()
         return client_id, client_secret
 
+    # Validate/refresh the user tokens and obtain XSTS token for api calls
     @staticmethod
     async def refresh_tokens(session, client_id, client_secret, tokens, redirect_uri):
         auth_mgr = AuthenticationManager(session, client_id, client_secret, redirect_uri)
@@ -179,7 +186,7 @@ class ArkTools(commands.Cog):
         refreshed_tokens = json.loads(auth_mgr.oauth.json())
         return xbl_client, xsts_token, refreshed_tokens
 
-    # General authentication manager
+    # Handles token renewal and returns xbox client session with xsts token
     async def auth_manager(
             self,
             session: aiohttp.ClientSession,
@@ -235,8 +242,10 @@ class ArkTools(commands.Cog):
             else:
                 del self.queue[channel]
 
+    # Cleans up the most recent live embed posted in the status channel
     @staticmethod
     async def status_cleaner(status, dest_channel):
+        # Person doesnt have a shit ton of servers so its just a single message to clean
         message = status["message"]
         if message:
             try:
@@ -254,6 +263,7 @@ class ArkTools(commands.Cog):
                     log.warning("Status channel: Bot doesnt have perms to delete other users messages")
                 except Exception as e:
                     log.warning(f"Unknown error in server status deletion: {e}")
+        # Person has a fuck ton of servers so bot needs to account for a multi-message status embed
         multi = status["multi"]
         if multi:
             for msg in multi:
@@ -273,7 +283,7 @@ class ArkTools(commands.Cog):
                     except Exception as e:
                         log.warning(f"Unknown error in server status multi deletion: {e}")
 
-    # Pull the first (authorized) token data found for non-server-specific api use
+    # Pull the first (authorized) token found (for api calls where the token owner doesnt matter)
     @staticmethod
     def pull_key(clusters: dict):
         for cname, cluster in clusters.items():
@@ -282,25 +292,32 @@ class ArkTools(commands.Cog):
                     tokens = server["tokens"]
                     return tokens, cname, sname
 
-    # Parse in-game commands
+    # Parse in-game commands as efficiently as possible
+    # only command that can have multiple words as an arg is "rename"
     @staticmethod
     def parse_cmd(command_string: str):
-        reg = r'(\S+) (.+)'
-        cmd = re.findall(reg, command_string)
-        if len(cmd) == 0:
-            reg = r'(\S)'
-            cmd = re.findall(reg, command_string)
-            if len(cmd) > 0:
-                command = cmd[0]
-                return command, None
-            else:
-                return None, None
+        cmd = command_string.split()
+        # Sent an empty string for some reason so just return
+        if not cmd:
+            return None, None
+        command = cmd[0].lower()
+        # Command has no arguments so return arg as None
+        if len(cmd) == 1:
+            return command, None
+        # Pull command name and append the rest to a string for the rename
+        if command == "rename":
+            args = cmd[1:]
+            newname = ""
+            for i in args:
+                newname += f"{i} "
+            newname = newname.strip()
+            arg = newname
+        # All other commands just have 1 arg
         else:
-            command = cmd[0][0]
-            argument = cmd[0][1]
-            return command, argument
+            arg = cmd[1]
+        return command, arg
 
-    # Find xuid from gamertag
+    # Find xuid from given gamertag
     @staticmethod
     async def get_player(gamertag: str, players: dict):
         for xuid, stats in players.items():
@@ -310,18 +327,19 @@ class ArkTools(commands.Cog):
     # Is player registered in-game on a server?
     @staticmethod
     def get_implant(playerdata: dict, channel: str):
-        print(playerdata)
-        print(channel)
+        # idk why playerdata would be none, but eh
         if not playerdata:
             return False
+        # Person hasnt registered their implant ID on any maps
         if "ingame" not in playerdata:
             return False
+        # See if the person has registered their implant for that channel id
         for chan, implant in playerdata["ingame"].items():
             if str(chan) == channel:
-                print(implant)
                 return implant
 
-    # Hard coded item send for those tough times
+    # Hard coded item send for those hard times
+    # Sends some in-game items that can help get a player unstuck, or just kill themselves
     @commands.command(name="imstuck")
     @commands.cooldown(1, 1800, commands.BucketType.user)
     @commands.guild_only()
@@ -343,13 +361,13 @@ class ArkTools(commands.Cog):
 
         def check(message: discord.Message):
             return message.author == ctx.author and message.channel == ctx.channel
-
+        # Wait for the person to reply with their implant ID
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
             return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
 
-        if reply.content.isdigit():
+        if reply.content.isdigit():  # check if player is retarded or not
             implant_id = reply.content
             try:
                 await reply.delete()
@@ -363,6 +381,7 @@ class ArkTools(commands.Cog):
             embed.set_thumbnail(url="https://i.imgur.com/8ofOx6X.png")
             await msg.edit(embed=embed)
 
+            # Gather current servers into a list
             serverlist = []
             for cname, cdata in settings["clusters"].items():
                 for sname, sdata in cdata["servers"].items():
@@ -409,40 +428,71 @@ class ArkTools(commands.Cog):
     @commands.guildowner()
     @commands.guild_only()
     async def cleanup_data(self, ctx: commands.Context):
-        """Delete old data that no longer exists"""
+        """
+        Delete old data that no longer exists
+
+        If you have old deleted maps still showing up in clusterstats or graph data, this should remove them
+        """
+        oldgraphdata = False
+        oldplayerdata = False
         gdata = "**Deleted from Graph Data:**\n"
         pdata = "**Deleted old data from Players:**\n"
-        async with self.config.guild(ctx.guild).all() as settings:
-            newdata = {}
-            for cname, countlist in settings["serverstats"].items():
-                if cname == "dates" or cname == "counts" or cname == "expiration":
+        settings = await self.config.guild(ctx.guild).all()
+        # First off, fix any old cluster data for the server graph
+        newdata = {}
+        for cname, countlist in settings["serverstats"].items():
+            # Just add these to the newdata dict
+            if cname == "dates" or cname == "counts" or cname == "expiration":
+                newdata[cname] = countlist
+            # Only adds the player count list to the newdata if the cluster exists in main settings still
+            else:
+                if cname in settings["clusters"]:
                     newdata[cname] = countlist
                 else:
-                    if cname in settings["clusters"]:
-                        newdata[cname] = countlist
+                    oldgraphdata = True
+                    gdata += f"{cname}"  # Log it to gdata string
+        # Set the newdict as the new serverstats dict
+        await self.config.guild(ctx.guild).serverstats.set(newdata)
+
+        # Next is fixing players that have old map data in their player stats
+        current_names = []
+        for cname, data in settings["clusters"].items():  # Go through all clusters
+            servers = data["servers"]
+            for server in servers:  # Then go through all servers in that cluster
+                name = f"{server.lower()} {cname.lower()}"
+                current_names.append(name)  # Append that name to the current names list
+
+        updated_players = {}
+        for uid, player in settings["players"].items():  # NOW go through every player in the database
+            if "playtime" in player:  # If the player actually has playtime logged
+                updated_player = {}
+                for k, v in player.items():
+                    if k == "playtime":
+                        new_playtime = {"total": player["playtime"]["total"]}
+                        # Iterate through the existing map names and only add the ones that still exist
+                        for n in current_names:
+                            if n in player["playtime"]:  # If the map string still exists, add it to the new dict
+                                new_playtime[n] = player["playtime"][n]
+                        updated_player["playtime"] = new_playtime
+                        if len(player["playtime"]) != len(new_playtime):  # See if old and new data is different
+                            oldplayerdata = True
+                            pdata += f"{player['username']}\n"  # Log usernames that had old data
                     else:
-                        gdata += f"{cname}"
-            settings["serverstats"] = newdata
-            current_names = []
-            for cname, data in settings["clusters"].items():
-                servers = data["servers"]
-                for server in servers:
-                    name = f"{server.lower()} {cname.lower()}"
-                    current_names.append(name)
-            for uid, player in settings["players"].items():
-                new_playtime = {}
-                if "playtime" in player:
-                    new_playtime["total"] = player["playtime"]["total"]
-                    for n in current_names:
-                        if n in player["playtime"]:
-                            new_playtime[n] = player["playtime"][n]
-                    settings["players"][uid]["playtime"] = new_playtime
-                    if len(player["playtime"]) != len(new_playtime):
-                        pdata += f"{player['username']}\n"
-            if gdata != "":
-                await ctx.send(gdata)
-            if pdata != "":
-                await ctx.send(pdata)
+                        updated_player[k] = v  # Add other not relevant data back to the updated player by default
+                updated_players[uid] = updated_player  # Add the single updated player to the updated players dict
+            else:
+                updated_players[uid] = player  # If they dont have playtime data just add them to the new dict
+        # Update the config with the refreshed player data
+        await self.config.guild(ctx.guild).players.set(updated_players)
+
+        # Send whatever has been updated to the ctx channel so user can see what has happened
+        # Pagify just in case
+        if oldgraphdata:
+            for p in pagify(gdata):
+                await ctx.send(p)
+        if oldplayerdata:
+            for p in pagify(pdata):
+                await ctx.send(p)
 
     # Remove a discord user from a Gamertag
     @commands.command(name="unregister")
@@ -2666,7 +2716,7 @@ class ArkTools(commands.Cog):
         if self.in_queue(server["chatchannel"]):
             return
         if server["port"] > 65535 or server["port"] < 0:
-            log.warning(f"Server with ip {server['ip']} has an out of range port 0-65535 (server: {server['port']}")
+            log.warning(f"Server {server['ip']}:{server['port']} has an out of range port 0-65535")
             return
         if command == "getchat" or "serverchat" in command:
             timeout = 1
@@ -2689,14 +2739,14 @@ class ArkTools(commands.Cog):
                 return
             except Exception as e:
                 if "WinError 10054" in str(e):
-                    log.info(f"Server with ip {server['ip']} timed out too quickly")
+                    log.info(f"Server {server['ip']}:{server['port']} timed out too quickly")
                 else:
                     log.warning(f"Executor Error: {e}")
 
         res = await self.bot.loop.run_in_executor(None, exe)
         if not res:
             self.queue[server["chatchannel"]] = datetime.datetime.now()
-            log.info(f"Server ip {server['ip']} port {server['port']} is offline, reconnecting in 60 seconds")
+            log.info(f"Server {server['ip']}:{server['port']} is offline, reconnecting in 60 seconds")
         if command == "getchat":
             if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
@@ -2726,7 +2776,7 @@ class ArkTools(commands.Cog):
         log.info("Listplayers loop ready")
 
     # Detect player joins/leaves and log to respective channels
-    async def player_join_leave(self, guild: discord.guild, server: dict, newplayerlist):
+    async def player_join_leave(self, guild: discord.guild, server: dict, newplayerlist: typing.Union[str, list]):
         channel = server["chatchannel"]
         joinlog = guild.get_channel(server["joinchannel"])
         leavelog = guild.get_channel(server["leavechannel"])
@@ -2898,7 +2948,7 @@ class ArkTools(commands.Cog):
                     message = message.replace(p, "", 1)
                     resp = await self.ingame_cmd(guild, p, server, gamertag, character_name, message)
                     if resp:
-                        messages += resp
+                        messages += f"```xml\n<{resp}>\n```\n"
         # Send off messages to discord channels
         if messages:
             for p in pagify(messages):
@@ -2914,6 +2964,7 @@ class ArkTools(commands.Cog):
 
     # In game command handler
     async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
+        settings = await self.config.guild(guild).all()
         available_cmd = "In-Game Commands.\n" \
                         f"{prefix}register ImplantID - Register your implant ID to use commands without it\n" \
                         f"{prefix}imstuck - Send yourself a care package if youre stuck\n" \
@@ -2921,131 +2972,165 @@ class ArkTools(commands.Cog):
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
                         f"{prefix}votedinowipe - Start a vote to wipe wild dinos\n"
-        settings = await self.config.guild(guild).all()
-        payday = settings["payday"]["enabled"]
-        players = settings["players"]
-        kit = settings["kit"]["enabled"]
-        autorename = settings["autorename"]
-        cid = server["chatchannel"]
-        playerlist = self.playerlist[cid]
-
-        time = datetime.datetime.now()
         h = settings["payday"]["cooldown"]
         duration = h * 3600
-        if payday:
+        extras = 0
+        if settings["payday"]["enabled"]:
             available_cmd += f"{prefix}payday - Earn in-game rewards every {h} hours!\n"
-        if kit:
+            extras += 1
+        if settings["kit"]["enabled"]:
             available_cmd += f"{prefix}kit - New players can claim a one-time starter kit!\n"
-        xuid = None
-        playerdata = None
-        c, a = self.parse_cmd(cmd)
-        try:
-            xuid, playerdata = await self.get_player(gamertag, players)
-        except TypeError as e:
-            log.warning(f"In-game command failed: {e}")
-            await self.executor(guild, server, f"serverchat In-game command failed unexpectedly!")
+            extras += 1
+        players = settings["players"]
+        cid = server["chatchannel"]
+        playerlist = self.playerlist[cid]
+        time = datetime.datetime.now()
+        com, arg = self.parse_cmd(cmd)
+        if not com:
             return None
-        if not xuid or not playerdata:
-            cmd = f"serverchat In-game command failed! This can happen if you recently changed your Gamertag"
-            await self.executor(guild, server, cmd)
-            return None
+        xuid, stats = await self.get_player(gamertag, players)
+        if not xuid or not stats:
+            resp = "In-game command failed! This can happen if you recently changed your Gamertag"
+            com = f"serverchat {resp}"
+            await self.executor(guild, server, com)
+            return resp
         # Help command
-        if cmd.lower().startswith("help"):
+        elif com == "help":
+            if extras < 2:
+                available_cmd += f"{prefix}players - returns current player count"
+            else:
+                com = f'serverchat Other commands too long to fit in the broadcast include .players'
+                await self.executor(guild, server, com)
             await self.executor(guild, server, f"broadcast {available_cmd}")
-            cmd = f'serverchat Other commands too long to fit in the broadcast include .players'
-            await self.executor(guild, server, cmd)
-            return "`Sending list of in-game commands!`\n"
+            resp = "Sending list of in-game commands!"
+            return resp
         # Register command
-        elif cmd.lower().startswith("register"):
-            if not a:
-                cmd = f"serverchat Please include your implant ID, " \
-                      f"type the command as {prefix}register YourImplantID"
-                await self.executor(guild, server, cmd)
-                return f"`Please include your implant ID, type the command as {prefix}register YourImplantID`\n"
+        elif com == "register":
+            if not arg:
+                resp = "You must include your implant ID in the command!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             else:
                 async with self.config.guild(guild).players() as players:
-                    if not a.isdigit():
-                        cmd = f"serverchat That's not a number. Include your implant ID NUMBER in the command"
-                        return await self.executor(guild, server, cmd)
-                    if "ingame" not in playerdata:
-                        players[xuid]["ingame"] = {server["chatchannel"]: a}
+                    if not arg.isdigit():
+                        resp = "That's not a number. Include your implant ID NUMBER in the command"
+                        com = f"serverchat {resp}"
+                        await self.executor(guild, server, com)
+                        return resp
+                    if "ingame" not in stats:
+                        players[xuid]["ingame"] = {server["chatchannel"]: arg}
                     else:
-                        players[xuid]["ingame"][server["chatchannel"]] = a
-                    cmd = f'serverchat {gamertag} Your implant was registered as {a}'
-                    await self.executor(guild, server, cmd)
-                    return f"`{gamertag} Your implant was registered as {a}`\n"
+                        players[xuid]["ingame"][server["chatchannel"]] = arg
+                    resp = f"{gamertag}, Your implant was registered as {arg}"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
         # Rename command
-        elif cmd.lower().startswith("rename"):
-            if not a:
-                cmd = f"serverchat You need to include the new name you want with the command"
-                return await self.executor(guild, server, cmd)
-            if autorename:
+        elif com == "rename":
+            if not arg:
+                resp = "You need to include the new name you want in the command"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            if settings["autorename"]:
                 if "rank" in players[xuid]:
                     rank = players[xuid]["rank"]
                     rank = guild.get_role(rank)
-                    a = f"[{rank}] {a}"
-            cmd = f'renameplayer "{char_name}" {a}'
-            await self.executor(guild, server, cmd)
-            cmd = f'serverchat {gamertag} Your name has been changed to {a}'
-            await self.executor(guild, server, cmd)
-            return f"`{gamertag} Your name has been changed to {a}`\n"
+                    arg = f"[{rank}] {arg}"
+            com = f'renameplayer "{char_name}" {arg}'
+            await self.executor(guild, server, com)
+            resp = f"{gamertag} Your name has been changed to {arg}"
+            com = f"serverchat {resp}"
+            await self.executor(guild, server, com)
+            return resp
         # Vote day command
-        elif cmd.lower().startswith("voteday"):
+        elif com == "voteday":
             remaining = await self.vote_handler(guild, cid, server, gamertag, "voteday")
-            if remaining == "cooldown":
-                return None
-            if remaining > 0:
-                await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it day!")
-                return f"`Need {remaining} more In-game votes to make it day!`\n"
+            if isinstance(remaining, str):
+                resp = remaining
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            elif remaining > 0:
+                resp = f"Need {remaining} more In-game votes to make it day!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             else:
-                await self.executor(guild, server, f"serverchat Vote successful, let there be light!")
-                await self.executor(guild, server, "settimeofday 07:00")
+                resp = "Vote successful, let there be light!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                com = "settimeofday 07:00"
+                await self.executor(guild, server, com)
                 del self.votes[cid]
-                return f"`Vote successful, let there be light!`\n"
+                return resp
         # Vote night command
-        elif cmd.lower().startswith("votenight"):
+        elif com == "votenight":
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votenight")
-            if remaining == "cooldown":
-                return None
-            if remaining > 0:
-                await self.executor(guild, server, f"serverchat Need {remaining} more votes to make it night!")
-                return f"`Need {remaining} more In-game votes to make it night!`\n"
+            if isinstance(remaining, str):
+                resp = remaining
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            elif remaining > 0:
+                resp = f"Need {remaining} more In-game votes to make it night!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             else:
-                await self.executor(guild, server, f"serverchat Vote successful, turning off the sun!")
-                await self.executor(guild, server, "settimeofday 22:00")
+                resp = "Vote successful, turning off the sun!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                com = "settimeofday 22:00"
+                await self.executor(guild, server, com)
                 del self.votes[cid]
-                return f"`Vote successful, turning off the sun!`\n"
+                return resp
         # Dino wipe command
-        elif cmd.lower().startswith("votedinowipe"):
+        elif com == "votedinowipe":
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votedinowipe")
-            if remaining == "cooldown":
-                return
-            if remaining > 0:
-                await self.executor(guild, server, f"serverchat Need {remaining} more votes to wipe wild dinos!")
-                return f"`Need {remaining} more In-Game votes to wipe wild dinos!`\n"
+            if isinstance(remaining, str):
+                resp = remaining
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            elif remaining > 0:
+                resp = f"Need {remaining} more votes to wipe wild dinos!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             else:
-                await self.executor(guild, server, f"serverchat Vote successful, wiping wild dinos!")
-                await self.executor(guild, server, "destroywilddinos")
+                resp = "Vote successful, asteroids inbound! All wild dinos will be wiped."
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                com = "destroywilddinos"
+                await self.executor(guild, server, com)
                 del self.votes[cid]
-                return f"`Vote successful, wiping wild dinos!`\n"
+                return resp
         # Player count command
-        elif cmd.lower().startswith("players"):
+        elif com == "players":
             if len(playerlist) == 1:
-                await self.executor(guild, server, f"serverchat You're the only person on this server :p")
-                return f"`You're the only person on this server :p`\n"
+                resp = "You're the only person on this server :p"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             else:
-                await self.executor(guild, server, f"serverchat There are {len(playerlist)} people on this server")
-                return f"`There are {len(playerlist)} people on the server`\n"
+                resp = f"There are {len(playerlist)} people on this server"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
         # Im stuck command
-        elif cmd.lower().startswith("imstuck"):
+        elif com == "imstuck":
             canuse = False
-            if not a:
-                implant = self.get_implant(playerdata, str(server["chatchannel"]))
+            if not arg:
+                implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
-                    cmd = f"serverchat Include your Implant ID after the command or use the .register command"
-                    await self.executor(guild, server, cmd)
-                    return f"`Include your Implant ID after the command or use the .register command`\n"
-                a = implant
+                    resp = "Include your Implant ID in the command or use the .register command to save it"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
+                else:
+                    arg = implant
             async with self.config.guild(guild).cooldowns() as cooldowns:
                 if gamertag not in cooldowns:
                     cooldowns[gamertag] = {"imstuck": time.isoformat()}
@@ -3060,13 +3145,15 @@ class ArkTools(commands.Cog):
                     if td.total_seconds() > 1800:
                         canuse = True
                 if canuse:
+                    cooldowns[gamertag]["imstuck"] = time.isoformat()
                     stasks = []
                     for path in IMSTUCK_BLUEPRINTS:
-                        stasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
+                        stasks.append(self.executor(guild, server, f"giveitemtoplayer {arg} {path}"))
                     await asyncio.gather(*stasks)
-                    await self.executor(guild, server, f"serverchat {gamertag} your care package is on the way!")
-                    cooldowns[gamertag]["imstuck"] = time.isoformat()
-                    return f"`{gamertag} your care package is on the way!`\n"
+                    resp = f"{gamertag}, your care package is on the way!"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
                 else:
                     lastused = cooldowns[gamertag]["imstuck"]
                     lastused = datetime.datetime.fromisoformat(lastused)
@@ -3075,28 +3162,32 @@ class ArkTools(commands.Cog):
                     tleft = 1800 - tleft
                     if tleft > 60:
                         minutes = math.ceil(tleft / 60)
-                        cmd = f"serverchat {gamertag} You need to wait {minutes} minutes " \
-                              f"before using that command again"
-                        await self.executor(guild, server, cmd)
-                        return f"`{gamertag} You need to wait {minutes} minutes before using that command again`\n"
+                        resp = f"{gamertag}, You need to wait {minutes} minutes before using that command again"
+                        com = f"serverchat {resp}"
+                        await self.executor(guild, server, com)
+                        return resp
                     else:
-                        cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
-                              f"before using that command again"
-                        await self.executor(guild, server, cmd)
-                        return f"`{gamertag} You need to wait {int(tleft)} seconds before using that command again`\n"
+                        resp = f"{gamertag}, You need to wait {int(tleft)} seconds before using that command again"
+                        com = f"serverchat {resp}"
+                        await self.executor(guild, server, com)
+                        return resp
         # Payday command
-        elif cmd.lower().startswith("payday"):
-            if not payday:
-                cmd = f"serverchat That command is disabled on this server at the moment"
-                await self.executor(guild, server, cmd)
-                return "`That command is disabled on this server at the moment`\n"
+        elif com == "payday":
+            if not settings["payday"]["enabled"]:
+                resp = f"{gamertag}, That command is disabled on this server at the moment"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             canuse = False
-            if not a and playerdata:
-                implant = self.get_implant(playerdata, str(server["chatchannel"]))
+            if not arg and stats:
+                implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
-                    await self.executor(guild, server, cmd)
-                    return "`Include your Implant ID after the command or use the .register command`\n"
-                a = implant
+                    resp = "Include your Implant ID in the command or use the .register command to save it"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
+                else:
+                    arg = implant
             async with self.config.guild(guild).cooldowns() as cooldowns:
                 if gamertag not in cooldowns:
                     cooldowns[gamertag] = {"payday": time.isoformat()}
@@ -3111,20 +3202,21 @@ class ArkTools(commands.Cog):
                     if td.total_seconds() > duration:
                         canuse = True
                 if canuse:
+                    cooldowns[gamertag]["payday"] = time.isoformat()
                     paths = await self.config.guild(guild).payday.paths()
                     rand = await self.config.guild(guild).payday.random()
                     if rand:
                         path = random.choice(paths)
-                        await self.executor(guild, server, f"giveitemtoplayer {a} {path}")
-                        await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
+                        await self.executor(guild, server, f"giveitemtoplayer {arg} {path}")
                     else:
                         ptasks = []
                         for path in paths:
-                            ptasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
+                            ptasks.append(self.executor(guild, server, f"giveitemtoplayer {arg} {path}"))
                         await asyncio.gather(*ptasks)
-                        await self.executor(guild, server, f"serverchat {gamertag} Payday rewards sent!")
-                    cooldowns[gamertag]["payday"] = time.isoformat()
-                    return f"`{gamertag} Payday rewards sent!`\n"
+                    resp = f"{gamertag}, your payday rewards have been sent!"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
                 else:
                     lastused = cooldowns[gamertag]["payday"]
                     lastused = datetime.datetime.fromisoformat(lastused)
@@ -3133,55 +3225,59 @@ class ArkTools(commands.Cog):
                     tleft = duration - td
                     d, h, m = time_format(int(tleft))
                     if d > 0:
-                        cmd = f"serverchat {gamertag} You need to wait {d} days " \
-                              f"before using that command again"
-                        await self.executor(guild, server, cmd)
+                        interval = f"{d} days"
                     elif d == 0 and h > 0:
-                        cmd = f"serverchat {gamertag} You need to wait {h}h {m}m " \
-                              f"before using that command again"
-                        await self.executor(guild, server, cmd)
+                        interval = f"{h}h {m}m"
                     elif d == 0 and h == 0 and m > 0:
-                        cmd = f"serverchat {gamertag} You need to wait {m} minutes " \
-                              f"before using that command again"
-                        await self.executor(guild, server, cmd)
+                        interval = f"{m} minutes"
                     else:
-                        cmd = f"serverchat {gamertag} You need to wait {int(tleft)} seconds " \
-                              f"before using that command again"
-                        await self.executor(guild, server, cmd)
-                    return f"`{gamertag} cant use that command yet, wait a bit.`\n"
+                        interval = f"{int(tleft)} seconds"
+                    resp = f"{gamertag}, You need to wait {interval} before using that command again"
+                    com = f"serverchat  {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
         # Starter kit command
-        elif cmd.lower().startswith("kit"):
+        elif com == "kit":
             kit = await self.config.guild(guild).kit()
             if not kit["enabled"]:
-                cmd = f"serverchat That command is disabled on this server at the moment"
-                await self.executor(guild, server, cmd)
-                return "`That command is disabled on this server at the moment`\n"
+                resp = f"{gamertag}, That command is disabled on this server at the moment"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             if len(kit["paths"]) == 0:
-                cmd = f"serverchat Kit command has not been fully setup yet!"
-                await self.executor(guild, server, cmd)
-                return "`Kit command has not been fully setup yet!`\n"
-            if not a:
-                implant = self.get_implant(playerdata, str(server["chatchannel"]))
+                resp = "The Kit command has not been fully setup yet!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            if not arg:
+                implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
-                    cmd = f"serverchat Use the {prefix}register command to register your ID first"
-                    await self.executor(guild, server, cmd)
-                    return f"`Use the {prefix}register command to register your ID first`\n"
-                a = implant
+                    resp = f"Use the {prefix}register command to register your ID first " \
+                           f"or include your implant ID in the command"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
+                else:
+                    arg = implant
             async with self.config.guild(guild).kit() as kit:
                 if xuid in kit["claimed"]:
-                    cmd = f"serverchat {gamertag} You have already claimed your starter kit!"
-                    await self.executor(guild, server, cmd)
-                    return f"`{gamertag} You have already claimed your starter kit!`\n"
-                ktasks = []
-                for path in kit["paths"]:
-                    ktasks.append(self.executor(guild, server, f"giveitemtoplayer {a} {path}"))
-                await asyncio.gather(*ktasks)
-                cmd = f"serverchat Kit claimed!"
-                await self.executor(guild, server, cmd)
-                cmd = f"broadcast {gamertag.upper()} HAS JUST CLAIMED THEIR STARTER KIT!"
-                await self.executor(guild, server, cmd)
-                kit["claimed"].append(xuid)
-                return f"`{gamertag} has just claimed their starter kit!`\n"
+                    resp = f"{gamertag}, You have already claimed your starter kit!"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
+                else:
+                    kit["claimed"].append(xuid)
+                    ktasks = []
+                    for path in kit["paths"]:
+                        ktasks.append(self.executor(guild, server, f"giveitemtoplayer {arg} {path}"))
+                    await asyncio.gather(*ktasks)
+                    resp = f"{gamertag}, you have successfully claimed your starter kit!"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
+        # If a player tries a command that doesnt exist
+        else:
+            return None
 
     async def vote_handler(self, guild, channel_id, server, gamertag, vote_type):
         can_run = False
@@ -3234,11 +3330,7 @@ class ArkTools(commands.Cog):
             return int(remaining)
         else:
             msg = f"Command is in cooldown, wait {cooldown - td} seconds"
-            await self.executor(guild, server, f"serverchat {msg}")
-            channel = guild.get_channel(channel_id)
-            if channel:
-                await channel.send(f"`{msg}`")
-            return "cooldown"
+            return msg
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
