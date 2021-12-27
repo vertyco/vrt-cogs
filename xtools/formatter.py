@@ -98,10 +98,12 @@ def profile_embed(data):
     def device_check(device):
         if device == "Durango":
             device = "1st Gen XboxOne"
-        if device == "Scarlett":
+        elif device == "Scarlett":
             device = "Xbox Series S"
-        if device == "WindowsOneCore":
+        elif device == "WindowsOneCore":
             device = "Windows"
+        elif device == "Win32":
+            device = "Steam"
         return device
 
     # Format field depending if user is offline or not
