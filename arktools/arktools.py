@@ -2075,22 +2075,12 @@ class ArkTools(commands.Cog):
             if xuid not in whitelist:
                 whitelist.append(xuid)
                 await ctx.send("User has been added to the alt detection ignore list")
-            else:
-                await ctx.send("User is already in the whitelist")
-
-    @alt_settings.command(name="unignore")
-    async def unignore_player(self, ctx: commands.Context, xuid: int):
-        """Remove a player's XUID from the alt detection whitelist"""
-        async with self.config.guild(ctx.guild).alt.whitelist() as whitelist:
-            if xuid not in whitelist:
-                await ctx.send("User is not in the ignore list")
-                unban = False
-            else:
-                whitelist.remove(xuid)
-                await ctx.send("User has been removed from the alt detection ignore list")
                 on = await self.config.guild(ctx.guild).alt.autoban()
                 if on:
                     unban = True
+            else:
+                await ctx.send("User is already in the whitelist")
+                unban = False
             if unban:
                 async with ctx.typing():
                     serverlist = []
@@ -2105,6 +2095,34 @@ class ArkTools(commands.Cog):
                             unignore_tasks.append(self.executor(guild, server, f"unbanplayer {xuid}"))
                         await asyncio.gather(*unignore_tasks)
                         await ctx.send("User has been unbanned from all servers")
+
+    @alt_settings.command(name="unignore")
+    async def unignore_player(self, ctx: commands.Context, xuid: int):
+        """Remove a player's XUID from the alt detection whitelist"""
+        async with self.config.guild(ctx.guild).alt.whitelist() as whitelist:
+            if xuid not in whitelist:
+                await ctx.send("User is not in the ignore list")
+                ban = False
+            else:
+                whitelist.remove(xuid)
+                await ctx.send("User has been removed from the alt detection ignore list")
+                on = await self.config.guild(ctx.guild).alt.autoban()
+                if on:
+                    ban = True
+            if ban:
+                async with ctx.typing():
+                    serverlist = []
+                    for tup in self.servers:
+                        guild = tup[0]
+                        server = tup[1]
+                        if guild == ctx.guild.id:
+                            serverlist.append(server)
+                    unignore_tasks = []
+                    if len(unignore_tasks) > 0:
+                        for server in serverlist:
+                            unignore_tasks.append(self.executor(guild, server, f"banplayer {xuid}"))
+                        await asyncio.gather(*unignore_tasks)
+                        await ctx.send("User has been banned from all servers")
 
     @alt_settings.command(name="view")
     async def view_alt_settings(self, ctx: commands.Context):
