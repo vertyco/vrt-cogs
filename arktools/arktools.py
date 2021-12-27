@@ -2694,7 +2694,8 @@ class ArkTools(commands.Cog):
             guild = self.bot.get_guild(int(guild_id))
             if not guild:
                 continue
-            clusters = await self.config.guild(guild).clusters()
+            settings = await self.config.guild(guild).all()
+            clusters = settings["clusters"]
             if clusters == {}:
                 continue
             self.activeguilds.append(guild_id)
@@ -2716,6 +2717,7 @@ class ArkTools(commands.Cog):
                     server["cluster"] = cluster
                     server["name"] = name
                     server["guild"] = guild
+                    server["eventlog"] = settings["eventlog"]
                     self.servers.append((guild.id, server))
                     self.servercount += 1
                     self.channels.append(server["chatchannel"])
@@ -2825,7 +2827,13 @@ class ArkTools(commands.Cog):
         if self.in_queue(server["chatchannel"]):
             return
         if server["port"] > 65535 or server["port"] < 0:
-            log.warning(f"Server {server['name']} {server['cluster']} has an out of range port 0-65535")
+            eventlog = guild.get_channel(server["eventlog"])
+            if eventlog:
+                embed = discord.Embed(
+                    description=f"Server {server['name']} {server['cluster']} has an out of range port 0-65535",
+                    color=discord.Color.from_rgb(140, 7, 0)  # dark red
+                )
+                await eventlog.send(embed=embed)
             return
         if command == "getchat" or "serverchat" in command:
             timeout = 2
@@ -2855,7 +2863,14 @@ class ArkTools(commands.Cog):
         res = await self.bot.loop.run_in_executor(None, exe)
         if not res:
             self.queue[server["chatchannel"]] = datetime.datetime.now()
-            log.info(f"{server['name']} {server['cluster']} is offline from {command}, reconnecting in 60 seconds")
+            msg = f"{server['name']} {server['cluster']} is offline from {command}, reconnecting in 60 seconds"
+            eventlog = guild.get_channel(server["eventlog"])
+            if eventlog:
+                embed = discord.Embed(
+                    description=msg,
+                    color=discord.Color.from_rgb(255, 0, 225)  # pink
+                )
+                await eventlog.send(embed=embed)
         if command == "getchat":
             if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
