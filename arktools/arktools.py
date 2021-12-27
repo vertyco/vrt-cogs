@@ -64,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.6.32"
+    __version__ = "2.7.32"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -94,6 +94,7 @@ class ArkTools(commands.Cog):
             "autofriend": False,  # Toggle for whether to auto add new players as a friend by the host gamertags
             "unfriendafter": 30,  # Unfriend players after X days of inactivity
             "clusters": {},  # All server data gets stored here
+            "clustertypes": "both",  # If cluster types available are either Xbox, Steam, or both
             "modroles": [],  # All mod role ID's get stored here
             "modcommands": [],  # All commands that the mods are allowed to use go here
             "badnames": [],  # Blacklist for bad character names
@@ -323,6 +324,8 @@ class ArkTools(commands.Cog):
         for xuid, stats in players.items():
             if gamertag.lower() == stats["username"].lower():
                 return xuid, stats
+        else:
+            return None, None
 
     # Is player registered in-game on a server?
     @staticmethod
@@ -530,10 +533,33 @@ class ArkTools(commands.Cog):
     async def register_user(self, ctx: commands.Context):
         """Register your Gamertag or steam ID in the database."""
         timezone = await self.config.guild(ctx.guild).timezone()
+        ctype = await self.config.guild(ctx.guild).clustertypes()
+        xsapi_available = False
+        clusters = await self.config.guild(ctx.guild).clusters()
+        for cluster in clusters.values():
+            for server in cluster["servers"].values():
+                if "tokens" in server:
+                    xsapi_available = True
+                    break
+        if ctype == "xbox":
+            if not xsapi_available:
+                prompt = "**Type your Xbox User ID (XUID) in chat below.**"
+            else:
+                prompt = "**Type your XBOX GAMERTAG chat below.**"
+            prompt2 = "**Type your GAMERTAG in chat below.**"
+        elif ctype == "steam":
+            prompt = "**Type your STEAM ID in chat below.**"
+            prompt2 = "**Type your Steam Username in chat below.**"
+        else:  # Both steam and xbox servers available
+            if not xsapi_available:
+                prompt = "Type your **Xbox User ID**(XUID) or **Steam ID** in chat below"
+            else:
+                prompt = "Type your **Xbox Gamertag** or **Steam ID** in chat below."
+            prompt2 = "**Type your Gamertag or Steam Username in chat below.**"
         tz = pytz.timezone(timezone)
         time = datetime.datetime.now(tz)
         embed = discord.Embed(
-            description=f"**Type your Xbox Gamertag or Steam ID in chat below.**"
+            description=prompt
         )
         msg = await ctx.send(embed=embed)
 
@@ -550,7 +576,7 @@ class ArkTools(commands.Cog):
             sid = reply.content
             async with self.config.guild(ctx.guild).players() as players:
                 embed = discord.Embed(
-                    description=f"**Type your Steam Username in chat below(Or Gamertag).**"
+                    description=prompt2
                 )
                 await msg.edit(embed=embed)
                 try:
@@ -592,81 +618,76 @@ class ArkTools(commands.Cog):
                 return await msg.edit(embed=embed)
 
         # If user doesnt type ID then make sure there's at least one server with an active API before registering
-        apipresent = False
-        clusters = await self.config.guild(ctx.guild).clusters()
-        for cluster in clusters.values():
-            for server in cluster["servers"].values():
-                if "tokens" in server:
-                    apipresent = True
-                    break
-        if not apipresent:
-            embed = discord.Embed(
-                description="❌ API keys have not been set!."
-            )
-            embed.set_thumbnail(url=FAILED)
-            return await ctx.send(embed=embed)
-
-        gamertag = reply.content
-        embed = discord.Embed(color=discord.Color.green(),
-                              description=f"Searching...")
-        embed.set_thumbnail(url=LOADING)
-        await msg.edit(embed=embed)
-        async with aiohttp.ClientSession() as session:
-            tokens, cname, sname = self.pull_key(clusters)
-            xbl_client, _ = await self.auth_manager(session, cname, sname, tokens, ctx)
-            if not xbl_client:
-                return
-            try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except aiohttp.ClientResponseError:
+        else:
+            if not xsapi_available:
                 embed = discord.Embed(
-                    description=f"Invalid Gamertag. Try again.",
-                    color=discord.Color.red()
+                    description="❌ API keys have not been set! Try registering manually by entering your ID first "
+                                "and then your username"
                 )
-                return await msg.edit(embed=embed)
-            # Format json data
-            gt, xuid, gs, pfp = profile_format(profile_data)
-            async with self.config.guild(ctx.guild).players() as players:
-                if xuid not in players:
-                    players[xuid] = {}
-                if "discord" in players[xuid]:
-                    if players[xuid]["discord"] != ctx.author.id:
-                        claimed = ctx.guild.get_member(players[xuid]["discord"])
-                        embed = discord.Embed(
-                            description=f"{claimed.mention} has already claimed this Gamertag",
-                            color=discord.Color.orange()
-                        )
-                        return await msg.edit(embed=embed)
-                    if players[xuid]["discord"] == ctx.author.id:
-                        embed = discord.Embed(
-                            description=f"You have already claimed this Gamertag",
-                            color=discord.Color.green()
-                        )
-                        return await msg.edit(embed=embed)
-                players[xuid] = {
-                    "discord": ctx.author.id,
-                    "username": gt,
-                    "playtime": {"total": 0},
-                    "lastseen": {
-                        "time": time.isoformat(),
-                        "map": None
-                    }
-                }
-            embed = discord.Embed(
-                color=discord.Color.green(),
-                description=f"✅ Gamertag set to `{gamertag}`\n"
-                            f"XUID: `{xuid}`\n"
-                            f"Gamerscore: `{gs}`\n\n"
-            )
-            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-            embed.set_thumbnail(url=pfp)
+                embed.set_thumbnail(url=FAILED)
+                return await ctx.send(embed=embed)
+
+            gamertag = reply.content
+            embed = discord.Embed(color=discord.Color.green(),
+                                  description=f"Searching...")
+            embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
-            embed = discord.Embed(
-                description=f"You can now type `{ctx.prefix}addme` to have a host Gamertag add you.",
-                color=discord.Color.magenta()
-            )
-            embed.set_footer(text="Then you can follow it back and join session from its profile page!")
-            await ctx.send(embed=embed)
+            async with aiohttp.ClientSession() as session:
+                tokens, cname, sname = self.pull_key(clusters)
+                xbl_client, _ = await self.auth_manager(session, cname, sname, tokens, ctx)
+                if not xbl_client:
+                    return
+                try:
+                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                except aiohttp.ClientResponseError:
+                    embed = discord.Embed(
+                        description=f"Invalid Gamertag. Try again.",
+                        color=discord.Color.red()
+                    )
+                    return await msg.edit(embed=embed)
+                # Format json data
+                gt, xuid, gs, pfp = profile_format(profile_data)
+                async with self.config.guild(ctx.guild).players() as players:
+                    if xuid not in players:
+                        players[xuid] = {}
+                    if "discord" in players[xuid]:
+                        if players[xuid]["discord"] != ctx.author.id:
+                            claimed = ctx.guild.get_member(players[xuid]["discord"])
+                            embed = discord.Embed(
+                                description=f"{claimed.mention} has already claimed this Gamertag",
+                                color=discord.Color.orange()
+                            )
+                            return await msg.edit(embed=embed)
+                        if players[xuid]["discord"] == ctx.author.id:
+                            embed = discord.Embed(
+                                description=f"You have already claimed this Gamertag",
+                                color=discord.Color.green()
+                            )
+                            return await msg.edit(embed=embed)
+                    players[xuid] = {
+                        "discord": ctx.author.id,
+                        "username": gt,
+                        "playtime": {"total": 0},
+                        "lastseen": {
+                            "time": time.isoformat(),
+                            "map": None
+                        }
+                    }
+                embed = discord.Embed(
+                    color=discord.Color.green(),
+                    description=f"✅ Gamertag set to `{gamertag}`\n"
+                                f"XUID: `{xuid}`\n"
+                                f"Gamerscore: `{gs}`\n\n"
+                )
+                embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+                embed.set_thumbnail(url=pfp)
+                await msg.edit(embed=embed)
+                embed = discord.Embed(
+                    description=f"You can now type `{ctx.prefix}addme` to have a host Gamertag add you.",
+                    color=discord.Color.magenta()
+                )
+                embed.set_footer(text="Then you can follow it back and join session from its profile page!")
+                await ctx.send(embed=embed)
 
     # Force the host Gamertag(s) to add the user as a friend using XSAPI
     @commands.command(name="addme")
@@ -2078,12 +2099,14 @@ class ArkTools(commands.Cog):
         stats = settings["serverstats"]["counts"]
         exp = settings["serverstats"]["expiration"]
         days = int(len(stats) / 1440)
+        clustertype = settings["clustertypes"]
         embed = discord.Embed(
             description=f"`Server Status Channel: `{statuschannel}\n"
                         f"`Event Log:    `{eventlog}\n"
                         f"`Timezone:     `{tz}\n"
                         f"`GraphHistory: `{days} days\n"
-                        f"`GraphStorage: `{exp} days",
+                        f"`GraphStorage: `{exp} days\n"
+                        f"`ClusterType:  `{clustertype}",
             color=discord.Color.blue()
         )
         await ctx.send(embed=embed)
@@ -2227,6 +2250,21 @@ class ArkTools(commands.Cog):
                     "servers": {}
                 }
                 await self.initialize()
+
+    @server_settings.command(name="setclustertype")
+    async def set_cluster_type(self, ctx: commands.Context, cluster_type: str):
+        """
+        Set the type of clusters you have available on your discord
+
+        Available options are:
+        `xbox` - Register command will only prompt user to enter their Gamertag
+        `steam` - Register command will only prompt user to enter their Steam ID
+        `both` - Register message will prompt user to enter either their gamertag or steam ID
+        """
+        if cluster_type.lower() not in ["xbox", "steam", "both"]:
+            return await ctx.send(f"{cluster_type} is not a valid cluster type")
+        await self.config.guild(ctx.guild).clustertypes.set(cluster_type)
+        await ctx.send(f"Cluster type has been set to {cluster_type}")
 
     @server_settings.command(name="renamecluster")
     async def rename_cluster(self, ctx: commands.Context, oldclustername: str, newname: str):
@@ -2716,10 +2754,10 @@ class ArkTools(commands.Cog):
         if self.in_queue(server["chatchannel"]):
             return
         if server["port"] > 65535 or server["port"] < 0:
-            log.warning(f"Server {server['ip']}:{server['port']} has an out of range port 0-65535")
+            log.warning(f"Server {server['name']} {server['cluster']} has an out of range port 0-65535")
             return
         if command == "getchat" or "serverchat" in command:
-            timeout = 1
+            timeout = 1.5
         elif command == "listplayers":
             timeout = 5
         else:
@@ -2739,14 +2777,14 @@ class ArkTools(commands.Cog):
                 return
             except Exception as e:
                 if "WinError 10054" in str(e):
-                    log.info(f"Server {server['ip']}:{server['port']} timed out too quickly")
+                    log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
                 else:
                     log.warning(f"Executor Error: {e}")
 
         res = await self.bot.loop.run_in_executor(None, exe)
         if not res:
             self.queue[server["chatchannel"]] = datetime.datetime.now()
-            log.info(f"Server {server['ip']}:{server['port']} is offline, reconnecting in 60 seconds")
+            log.info(f"{server['name']} {server['cluster']} is offline from {command}, reconnecting in 60 seconds")
         if command == "getchat":
             if res and "Server received, But no response!!" not in res:
                 await self.message_handler(guild, server, res)
@@ -2948,7 +2986,7 @@ class ArkTools(commands.Cog):
                     message = message.replace(p, "", 1)
                     resp = await self.ingame_cmd(guild, p, server, gamertag, character_name, message)
                     if resp:
-                        messages += f"```xml\n<{resp}>\n```\n"
+                        messages += f"`{resp}`\n"
         # Send off messages to discord channels
         if messages:
             for p in pagify(messages):
@@ -2993,6 +3031,7 @@ class ArkTools(commands.Cog):
             resp = "In-game command failed! This can happen if you recently changed your Gamertag"
             com = f"serverchat {resp}"
             await self.executor(guild, server, com)
+            log.info(f"In-Game command failed for: {gamertag}, {com}")
             return resp
         # Help command
         elif com == "help":
@@ -3014,7 +3053,8 @@ class ArkTools(commands.Cog):
             else:
                 async with self.config.guild(guild).players() as players:
                     if not arg.isdigit():
-                        resp = "That's not a number. Include your implant ID NUMBER in the command"
+                        resp = "That's not a number. Include your implant ID NUMBER in the command, " \
+                               "your Implant is in the top left of your inventory, look for the 'specimen' number"
                         com = f"serverchat {resp}"
                         await self.executor(guild, server, com)
                         return resp
