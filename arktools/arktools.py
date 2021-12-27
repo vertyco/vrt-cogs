@@ -43,7 +43,7 @@ from .formatter import (
     detect_friends,
     fix_timestamp,
     get_graph,
-    time_format,
+    time_formatter,
     detect_sus,
     IMSTUCK_BLUEPRINTS
 )
@@ -64,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.7.32"
+    __version__ = "2.7.33"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -426,94 +426,41 @@ class ArkTools(commands.Cog):
                     slist.clear()
             await ctx.tick()
 
-    # cleanup graph and map data that no longer exist
-    @commands.command(name="dataclean")
-    @commands.guildowner()
-    @commands.guild_only()
-    async def cleanup_data(self, ctx: commands.Context):
-        """
-        Delete old data that no longer exists
-
-        If you have old deleted maps still showing up in clusterstats or graph data, this should remove them
-        """
-        oldgraphdata = False
-        oldplayerdata = False
-        gdata = "**Deleted from Graph Data:**\n"
-        pdata = "**Deleted old data from Players:**\n"
-        settings = await self.config.guild(ctx.guild).all()
-        # First off, fix any old cluster data for the server graph
-        newdata = {}
-        for cname, countlist in settings["serverstats"].items():
-            # Just add these to the newdata dict
-            if cname == "dates" or cname == "counts" or cname == "expiration":
-                newdata[cname] = countlist
-            # Only adds the player count list to the newdata if the cluster exists in main settings still
-            else:
-                if cname in settings["clusters"]:
-                    newdata[cname] = countlist
-                else:
-                    oldgraphdata = True
-                    gdata += f"{cname}"  # Log it to gdata string
-        # Set the newdict as the new serverstats dict
-        await self.config.guild(ctx.guild).serverstats.set(newdata)
-
-        # Next is fixing players that have old map data in their player stats
-        current_names = []
-        for cname, data in settings["clusters"].items():  # Go through all clusters
-            servers = data["servers"]
-            for server in servers:  # Then go through all servers in that cluster
-                name = f"{server.lower()} {cname.lower()}"
-                current_names.append(name)  # Append that name to the current names list
-
-        updated_players = {}
-        for uid, player in settings["players"].items():  # NOW go through every player in the database
-            if "playtime" in player:  # If the player actually has playtime logged
-                updated_player = {}
-                for k, v in player.items():
-                    if k == "playtime":
-                        new_playtime = {"total": player["playtime"]["total"]}
-                        # Iterate through the existing map names and only add the ones that still exist
-                        for n in current_names:
-                            if n in player["playtime"]:  # If the map string still exists, add it to the new dict
-                                new_playtime[n] = player["playtime"][n]
-                        updated_player["playtime"] = new_playtime
-                        if len(player["playtime"]) != len(new_playtime):  # See if old and new data is different
-                            oldplayerdata = True
-                            pdata += f"{player['username']}\n"  # Log usernames that had old data
-                    else:
-                        updated_player[k] = v  # Add other not relevant data back to the updated player by default
-                updated_players[uid] = updated_player  # Add the single updated player to the updated players dict
-            else:
-                updated_players[uid] = player  # If they dont have playtime data just add them to the new dict
-        # Update the config with the refreshed player data
-        await self.config.guild(ctx.guild).players.set(updated_players)
-
-        # Send whatever has been updated to the ctx channel so user can see what has happened
-        # Pagify just in case
-        if oldgraphdata:
-            for p in pagify(gdata):
-                await ctx.send(p)
-        if oldplayerdata:
-            for p in pagify(pdata):
-                await ctx.send(p)
-
     # Remove a discord user from a Gamertag
     @commands.command(name="unregister")
     @commands.admin()
     @commands.guild_only()
     async def unregister_user(self, ctx: commands.Context, member: discord.Member):
-        """Unregister a user from a Gamertag"""
+        """Unregister a discord user from any gamertags theyre associated with"""
         async with self.config.guild(ctx.guild).players() as players:
             unreg = []
             for xuid, data in players.items():
                 if "discord" in data:
                     if data["discord"] == member.id:
-                        unreg.append(xuid)
+                        unreg.append((xuid, data["username"]))
             if len(unreg) == 0:
                 return await ctx.send(f"{member.mention} not found registered to any Gamertag!")
-            for xuid in unreg:
+            for xuid, gamertag in unreg:
+                await ctx.send(f"{member.mention} has been unregistered from the Gamertag {gamertag}")
                 del players[xuid]["discord"]
-            await ctx.send(f"{member.mention} has been unregistered!")
+
+    @commands.command(name="unregistergt")
+    @commands.admin()
+    @commands.guild_only()
+    async def unregister_gamertag(self, ctx: commands.Context, gamertag: str):
+        """Unregister any discord account associated with a specific gamertag"""
+        async with self.config.guild(ctx.guild).players() as players:
+            unreg = []
+            for xuid, data in players.items():
+                if "discord" in data:
+                    if data["username"].lower() == gamertag.lower():
+                        unreg.append((xuid, data["discord"]))
+            if len(unreg) == 0:
+                return await ctx.send(f"{gamertag} not found registered to any Gamertag!")
+            for xuid, user in unreg:
+                user = ctx.guild.get_member(user)
+                await ctx.send(f"Removed {user} from {gamertag}")
+                del players[xuid]["discord"]
 
     # Delete a player from the player data
     @commands.command(name="deleteplayer")
@@ -571,8 +518,13 @@ class ArkTools(commands.Cog):
         except asyncio.TimeoutError:
             return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
 
+        if reply.content.lower() == "cancel":
+            embed = discord.Embed(
+                description=f"Registration cancelled"
+            )
+            return await msg.edit(embed=embed)
         # Check if user entered ID instead of Gamertag and go that route instead
-        if reply.content.isdigit():
+        elif reply.content.isdigit():
             sid = reply.content
             async with self.config.guild(ctx.guild).players() as players:
                 embed = discord.Embed(
@@ -583,6 +535,11 @@ class ArkTools(commands.Cog):
                     reply = await self.bot.wait_for("message", timeout=60, check=check)
                 except asyncio.TimeoutError:
                     return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                if reply.content.lower() == "cancel":
+                    embed = discord.Embed(
+                        description=f"Registration cancelled"
+                    )
+                    return await msg.edit(embed=embed)
                 sname = reply.content
                 if sid not in players:
                     players[sid] = {}
@@ -1346,6 +1303,105 @@ class ArkTools(commands.Cog):
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
+    # cleanup graph and map data that no longer exist
+    @arktools_main.command(name="cleanup")
+    @commands.guildowner()
+    @commands.guild_only()
+    async def cleanup_data(self, ctx: commands.Context):
+        """
+        Delete old data that no longer exists
+
+        If you have old deleted maps still showing up in clusterstats or graph data, this should remove them.
+        This will also fix your config if you have player data from the Pre-V2 era of ArkTools
+        """
+        gdata = 0
+        settings = await self.config.guild(ctx.guild).all()
+        # First off, fix any old cluster data for the server graph
+        newdata = {}
+        for cname, countlist in settings["serverstats"].items():
+            # Just add these to the newdata dict
+            if cname == "dates" or cname == "counts" or cname == "expiration":
+                newdata[cname] = countlist
+            # Only adds the player count list to the newdata if the cluster exists in main settings still
+            else:
+                if cname in settings["clusters"]:
+                    newdata[cname] = countlist
+                else:
+                    log.info(f"removing {cname} from graph data")
+                    gdata += 1
+        # Set the newdict as the new serverstats dict
+        await self.config.guild(ctx.guild).serverstats.set(newdata)
+
+        # Next is fixing players that have old map data in their player stats
+        current_names = []
+        for cname, data in settings["clusters"].items():  # Go through all clusters
+            servers = data["servers"]
+            for server in servers:  # Then go through all servers in that cluster
+                name = f"{server.lower()} {cname.lower()}"
+                current_names.append(name)  # Append that name to the current names list
+        pdata = 0
+        updated_players = {}
+        for uid, player in settings["players"].items():  # NOW go through every player in the database
+            if "playtime" in player:  # If the player actually has playtime logged
+                updated_player = {}
+                for k, v in player.items():
+                    if k == "playtime":
+                        new_playtime = {"total": player["playtime"]["total"]}
+                        # Iterate through the existing map names and only add the ones that still exist
+                        for n in current_names:
+                            if n in player["playtime"]:  # If the map string still exists, add it to the new dict
+                                new_playtime[n] = player["playtime"][n]
+                        updated_player["playtime"] = new_playtime
+                        if len(player["playtime"]) != len(new_playtime):  # See if old and new data is different
+                            log.info(f"Cleaned up old maps from {player['username']}")
+                            pdata += 1
+                    else:
+                        updated_player[k] = v  # Add other not relevant data back to the updated player by default
+                updated_players[uid] = updated_player  # Add the single updated player to the updated players dict
+            else:
+                updated_players[uid] = player  # If they dont have playtime data just add them to the new dict
+        # Update the config with the refreshed player data
+        await self.config.guild(ctx.guild).players.set(updated_players)
+
+        # Rehash player stats for ArkTools version < 2.0.0 config conversion
+        rehashed_stats = {}
+        stats = settings["players"]
+        for key, value in stats.items():
+            if key.isdigit():
+                rehashed_stats[key] = value
+            else:
+                log.info(f"Fixing config for {key}")
+                xuid = value["xuid"]
+                last_seen = value["lastseen"]
+                if last_seen["map"] == "None":
+                    last_seen["map"] = None
+                rehashed_stats[xuid] = {
+                    "playtime": value["playtime"],
+                    "lastseen": last_seen,
+                    "username": key
+                }
+                if "discord" in value:
+                    rehashed_stats[xuid]["discord"] = value["discord"]
+        await self.config.guild(ctx.guild).players.set(rehashed_stats)
+
+        no_username = []
+        for xuid, data in stats.items():
+            if "username" not in data:
+                no_username.append(xuid)
+        async with self.config.guild(ctx.guild).players() as players:
+            if len(no_username) > 0:
+                await ctx.send(f"{len(no_username)} people had no usernames")
+                for person in no_username:
+                    await ctx.send(person)
+                    del players[person]
+
+        # Send whatever has been updated to the ctx channel so user can see what has happened
+        result = f"Deleted {gdata} old clusters from graph data\n" \
+                 f"Removed old maps from {pdata} players\n" \
+                 f"Found and removed {len(no_username)} players with messed up configs\n" \
+                 f"Rehashed config for {len(stats.keys())} players"
+        await ctx.send(result)
+
     # Arktools-Mod subgroup
     @arktools_main.group(name="mod")
     @commands.guildowner()
@@ -2028,9 +2084,27 @@ class ArkTools(commands.Cog):
         async with self.config.guild(ctx.guild).alt.whitelist() as whitelist:
             if xuid not in whitelist:
                 await ctx.send("User is not in the ignore list")
+                unban = False
             else:
                 whitelist.remove(xuid)
-                await ctx.send("User has been removed from the alt detection ingore list")
+                await ctx.send("User has been removed from the alt detection ignore list")
+                on = await self.config.guild(ctx.guild).alt.autoban()
+                if on:
+                    unban = True
+            if unban:
+                async with ctx.typing():
+                    serverlist = []
+                    for tup in self.servers:
+                        guild = tup[0]
+                        server = tup[1]
+                        if guild == ctx.guild.id:
+                            serverlist.append(server)
+                    unignore_tasks = []
+                    if len(unignore_tasks) > 0:
+                        for server in serverlist:
+                            unignore_tasks.append(self.executor(guild, server, f"unbanplayer {xuid}"))
+                        await asyncio.gather(*unignore_tasks)
+                        await ctx.send("User has been unbanned from all servers")
 
     @alt_settings.command(name="view")
     async def view_alt_settings(self, ctx: commands.Context):
@@ -2101,12 +2175,12 @@ class ArkTools(commands.Cog):
         days = int(len(stats) / 1440)
         clustertype = settings["clustertypes"]
         embed = discord.Embed(
-            description=f"`Server Status Channel: `{statuschannel}\n"
-                        f"`Event Log:    `{eventlog}\n"
-                        f"`Timezone:     `{tz}\n"
-                        f"`GraphHistory: `{days} days\n"
-                        f"`GraphStorage: `{exp} days\n"
-                        f"`ClusterType:  `{clustertype}",
+            description=f"`Status Channel: `{statuschannel}\n"
+                        f"`Event Log:      `{eventlog}\n"
+                        f"`Timezone:       `{tz}\n"
+                        f"`GraphHistory:   `{days} days\n"
+                        f"`GraphStorage:   `{exp} days\n"
+                        f"`ClusterType:    `{clustertype.capitalize()}",
             color=discord.Color.blue()
         )
         await ctx.send(embed=embed)
@@ -2251,10 +2325,12 @@ class ArkTools(commands.Cog):
                 }
                 await self.initialize()
 
-    @server_settings.command(name="setclustertype")
+    @server_settings.command(name="clustertype")
     async def set_cluster_type(self, ctx: commands.Context, cluster_type: str):
         """
-        Set the type of clusters you have available on your discord
+        Set the type of clusters you have available on your discord.
+        This is a global setting for all your servers that will affect the wording of
+        the register command prompts
 
         Available options are:
         `xbox` - Register command will only prompt user to enter their Gamertag
@@ -2627,29 +2703,6 @@ class ArkTools(commands.Cog):
                     self.channels.append(server["chatchannel"])
                     if server["chatchannel"] not in self.playerlist:
                         self.playerlist[server["chatchannel"]] = "offline"
-
-            # Rehash player stats for ArkTools version < 2.0.0 config conversion
-            rehashed_stats = {}
-            stats = await self.config.guild(guild).players()
-            for key, value in stats.items():
-                if key.isdigit():
-                    rehashed_stats[key] = value
-                else:
-                    log.info(f"Fixing config for {key}")
-                    xuid = value["xuid"]
-                    last_seen = value["lastseen"]
-                    if last_seen["map"] == "None":
-                        last_seen["map"] = None
-                    rehashed_stats[xuid] = {
-                        "playtime": value["playtime"],
-                        "lastseen": last_seen,
-                        "username": key
-                    }
-                    if "discord" in value:
-                        rehashed_stats[xuid]["discord"] = value["discord"]
-            log.info(f"Rehashed config for {len(stats.keys())} players")
-            await self.config.guild(guild).players.set(rehashed_stats)
-
         log.info("Config initialized.")
 
     # Sends ServerChat command to designated server if message is in the server chat channel
@@ -2757,7 +2810,7 @@ class ArkTools(commands.Cog):
             log.warning(f"Server {server['name']} {server['cluster']} has an out of range port 0-65535")
             return
         if command == "getchat" or "serverchat" in command:
-            timeout = 1.5
+            timeout = 2
         elif command == "listplayers":
             timeout = 5
         else:
@@ -3199,18 +3252,11 @@ class ArkTools(commands.Cog):
                     lastused = datetime.datetime.fromisoformat(lastused)
                     td = time - lastused
                     tleft = td.total_seconds()
-                    tleft = 1800 - tleft
-                    if tleft > 60:
-                        minutes = math.ceil(tleft / 60)
-                        resp = f"{gamertag}, You need to wait {minutes} minutes before using that command again"
-                        com = f"serverchat {resp}"
-                        await self.executor(guild, server, com)
-                        return resp
-                    else:
-                        resp = f"{gamertag}, You need to wait {int(tleft)} seconds before using that command again"
-                        com = f"serverchat {resp}"
-                        await self.executor(guild, server, com)
-                        return resp
+                    tleft = time_formatter(int(tleft))
+                    resp = f"{gamertag}, You need to wait {tleft} before using that command again"
+                    com = f"serverchat {resp}"
+                    await self.executor(guild, server, com)
+                    return resp
         # Payday command
         elif com == "payday":
             if not settings["payday"]["enabled"]:
@@ -3263,16 +3309,8 @@ class ArkTools(commands.Cog):
                     td = time - lastused
                     td = td.total_seconds()
                     tleft = duration - td
-                    d, h, m = time_format(int(tleft))
-                    if d > 0:
-                        interval = f"{d} days"
-                    elif d == 0 and h > 0:
-                        interval = f"{h}h {m}m"
-                    elif d == 0 and h == 0 and m > 0:
-                        interval = f"{m} minutes"
-                    else:
-                        interval = f"{int(tleft)} seconds"
-                    resp = f"{gamertag}, You need to wait {interval} before using that command again"
+                    time_left = time_formatter(tleft)
+                    resp = f"{gamertag}, You need to wait {time_left} before using that command again"
                     com = f"serverchat  {resp}"
                     await self.executor(guild, server, com)
                     return resp
@@ -3325,14 +3363,11 @@ class ArkTools(commands.Cog):
         if channel_id not in self.lastran:
             self.lastran[channel_id] = {}
             can_run = True
-            log.info(f"Channel ID not in lastran, CanRun {vote_type}")
         if vote_type not in self.lastran[channel_id]:
             self.lastran[channel_id][vote_type] = time
             can_run = True
-            log.info(f"Vote type not in channel id, CanRun {vote_type}")
         if channel_id in self.votes:
             can_run = True
-            log.info(f"In an active vote session {vote_type}")
         last_ran = self.lastran[channel_id][vote_type]
         td = time - last_ran
         td = td.total_seconds()
@@ -3369,7 +3404,9 @@ class ArkTools(commands.Cog):
             remaining = min_votes - current
             return int(remaining)
         else:
-            msg = f"Command is in cooldown, wait {cooldown - td} seconds"
+            tleft = cooldown - td
+            tleft = time_formatter(tleft)
+            msg = f"Command is in cooldown, wait {tleft}"
             return msg
 
     @tasks.loop(seconds=10)
@@ -4062,53 +4099,3 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(10)
         log.info("Janitor ready")
-
-    # For whatever reason one player config item was fucked up so i made this to find it
-    # only had to use once then never again. never figured out why it happened
-    @commands.command(name="fixconfig", hidden=True)
-    @commands.is_owner()
-    async def debug_stuff(self, ctx: commands.Context):
-        """
-        Fix any config issues for whatever reason
-
-        Like if bot crashes while someone is registering or something idk
-        """
-        for guild in self.activeguilds:
-            no_username = []
-            old_config = []
-            guild = self.bot.get_guild(guild)
-            await ctx.send(f"Sorting Guild: {guild}")
-            settings = await self.config.guild(guild).all()
-            stats = settings["players"]
-            for xuid, data in stats.items():
-                if "username" not in data:
-                    no_username.append(xuid)
-                if not xuid.isdigit():
-                    old_config.append(xuid)
-            async with self.config.guild(guild).players() as players:
-                if len(no_username) > 0:
-                    await ctx.send(f"{len(no_username)} people had no usernames in {guild}")
-                    for person in no_username:
-                        await ctx.send(person)
-                        del players[person]
-                if len(old_config) > 0:
-                    await ctx.send(f"{len(old_config)} old config users found in {guild}")
-                    for person in old_config:
-                        await ctx.send(person)
-                        del players[person]
-        await ctx.send("Sort Complete")
-
-    # Random command for testing random shit
-    @commands.command(name="test", hidden=True)
-    @commands.is_owner()
-    async def testthething(self, ctx):
-        guild = ctx.guild
-        user = ctx.author.id
-        user = guild.get_member(user)
-        for role in user.roles:
-            await ctx.send(role)
-        prefixes = await self.bot.get_valid_prefixes(guild)
-        for p in prefixes:
-            await ctx.send(p)
-
-

@@ -27,7 +27,7 @@ async def decode(message: discord.Message):
     noemojis = re.sub(r'<:\w*:\d*>', '', nolinks)
     nocustomemojis = re.sub(r'<a:\w*:\d*>', '', noemojis)
     msg = unicodedata.normalize('NFKD', nocustomemojis).encode('ascii', 'ignore').decode()
-    if not msg:
+    if msg == "":
         return
     if msg == " ":
         return
@@ -41,12 +41,31 @@ async def decode(message: discord.Message):
     return normalizedname, msg
 
 
-# Format time from total seconds
-def time_format(time_played: int):
-    minutes, _ = divmod(time_played, 60)
+# Format time from total seconds and format into readable string
+def time_formatter(time_in_seconds: int):
+    minutes, seconds = divmod(time_in_seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
-    return int(days), int(hours), int(minutes)
+    years, days = divmod(days, 365)
+    if not any([seconds, minutes, hours, days, years]):
+        tstring = "None"
+    elif not any([minutes, hours, days, years]):
+        if seconds == 1:
+            tstring = f"{seconds} second"
+        else:
+            tstring = f"{seconds} seconds"
+    elif not any([hours, days, years]):
+        if minutes == 1:
+            tstring = f"{minutes} minute"
+        else:
+            tstring = f"{minutes} minutes"
+    elif hours and not days and not years:
+        tstring = f"{hours}h {minutes}m"
+    elif days and not years:
+        tstring = f"{days}d {hours}h {minutes}m"
+    else:
+        tstring = f"{years}y {days}d {hours}h {minutes}m"
+    return tstring
 
 
 # Microsoft's timestamp end digits are fucked up and random so we iteratively try fixing them by stripping digits
@@ -65,20 +84,6 @@ def fix_timestamp(time: str):
                 if strip < -10:
                     stripping_that_shit = False  # idfk then
     return time
-
-
-def lseen_format(d: int, h: int, m: int):
-    if int(d) == 0 and h == 0 and m == 0:
-        last_seen = f"Last Seen: `Just now`"
-    elif int(d) == 0 and h == 0:
-        last_seen = f"Last Seen: `{m} minutes ago`"
-    elif int(d) == 0 and h >= 0:
-        last_seen = f"Last Seen: `{h}h {m}m ago`"
-    elif int(d) > 5:
-        last_seen = f"Last Seen: `{d} days ago`"
-    else:
-        last_seen = f"Last Seen: `{d}d {h}h {m}m ago`"
-    return last_seen
 
 
 # Handles tribe log formatting/itemizing
@@ -171,7 +176,7 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
             time = data["playtime"]["total"]
             leaderboard[xuid] = time
             global_time = global_time + time
-    gd, gh, gm = time_format(global_time)
+    global_playtime = time_formatter(global_time)
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     # Figure out how many pages the lb menu will be
     pages = math.ceil(len(sorted_players) / 10)
@@ -180,7 +185,7 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
     for p in range(pages):
         embed = discord.Embed(
             title="Playtime Leaderboard",
-            description=f"Global Cumulative Playtime: `{gd}d {gh}h {gm}m`\n\n"
+            description=f"Global Cumulative Playtime: `{global_playtime}`\n\n"
                         f"**Top Players by Playtime** - `{len(sorted_players)} in Database`\n",
             color=discord.Color.random()
         )
@@ -194,15 +199,10 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
             username = stats[xuid]["username"]
             for mapname, timeplayed in stats[xuid]["playtime"].items():
                 if mapname != "total":
-                    d, h, m = time_format(timeplayed)
-                    if d == 0 and h == 0:
-                        maps += f"{mapname.capitalize()}: `{m}m`\n"
-                    elif d == 0 and h > 0:
-                        maps += f"{mapname.capitalize()}: `{h}h {m}m`\n"
-                    else:
-                        maps += f"{mapname.capitalize()}: `{d}d {h}h {m}m`\n"
+                    playtime = time_formatter(timeplayed)
+                    maps += f"{mapname.capitalize()}: `{playtime}`\n"
             total = sorted_players[i][1]
-            days, hours, minutes = time_format(total)
+            total_playtime = time_formatter(total)
             tz = pytz.timezone(timezone)
             time = datetime.datetime.now(tz)
             last_seen = stats[xuid]['lastseen']["time"]
@@ -212,13 +212,12 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
             timestamp = timestamp.astimezone(tz)
             timedifference = time - timestamp
             td = int(timedifference.total_seconds())
-            d, h, m = time_format(td)
-            last_seen = lseen_format(d, h, m)
+            lseen = time_formatter(td)
             embed.add_field(
                 name=f"{i + 1}. {username}",
-                value=f"Total: `{days}d {hours}h {minutes}m`\n"
+                value=f"Total: `{total_playtime}`\n"
                       f"{maps}"
-                      f"{last_seen}"
+                      f"Last Seen: `{lseen} ago`"
             )
         embed.set_footer(text=f"Pages {p + 1}/{pages}")
         embeds.append(embed)
@@ -260,15 +259,17 @@ def cstats_format(stats: dict, guild: discord.guild):
             stop = len(sorted_maps)
         for i in range(start, stop, 1):
             mapname = sorted_maps[i][0]
-            playtime = sorted_maps[i][1]
+            total_playtime = sorted_maps[i][1]
+            total_time_played = time_formatter(total_playtime)
+
             top_player = max(total_playtimes[mapname], key=total_playtimes[mapname].get)
             top_player_time = total_playtimes[mapname][top_player]
-            md, mh, mm = time_format(top_player_time)
-            d, h, m = time_format(playtime)
+            top_player_playtime = time_formatter(top_player_time)
+
             embed.add_field(
                 name=f"{count}. {mapname.capitalize()} - {len(total_playtimes[mapname].keys())} Players",
-                value=f"Total Time Played: `{d}d {h}h {m}m`\n"
-                      f"Top Player: `{top_player}` - `{md}d {mh}h {mm}m`",
+                value=f"Total Time Played: `{total_time_played}`\n"
+                      f"Top Player: `{top_player}` - `{top_player_playtime}`",
                 inline=False
             )
             count += 1
@@ -307,15 +308,16 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             timestamp = timestamp.astimezone(pytz.timezone("UTC"))
             timedifference = current_time - timestamp
             td = int(timedifference.total_seconds())
-            td = abs(td)
+            td = abs(td)  # shouldnt matter any more since config setup was changed
             # Last seen dhm
-            ld, lh, lm = time_format(td)
+            last_seen = time_formatter(td)
             lastmap = data["lastseen"]["map"]
+            if lastmap:
+                last_seen = f"{last_seen} ago on `{lastmap}`"
+            else:
+                last_seen = f"{last_seen} ago"
             # Time played dhm
-            d, h, m = time_format(ptime)
-            t = f"{d}d {h}h {m}m"
-            if ptime == 0:
-                t = "None"
+            playtime = time_formatter(ptime)
             registration = "Not Registered"
             in_server = True
             if "discord" in data:
@@ -330,7 +332,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 claimed = "Claimed"
             desc = f"`Discord:     `{registration}\n" \
                    f"`Game ID:     `{xuid}\n" \
-                   f"`Time Played: `{t}\n" \
+                   f"`Time Played: `{playtime}\n" \
                    f"`Starter Kit: `{claimed}"
             if "rank" in data:
                 r = data["rank"]
@@ -341,10 +343,6 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 title=f"Player Stats for {data['username']}",
                 description=desc
             )
-            if lastmap:
-                last_seen = f"{lseen_format(ld, lh, lm)} on `{lastmap}`"
-            else:
-                last_seen = f"{lseen_format(ld, lh, lm)}"
             embed.add_field(
                 name="Last Seen",
                 value=last_seen,
@@ -362,11 +360,11 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 )
             for mapname, playtime in data["playtime"].items():
                 if mapname != "total":
-                    d, h, m = time_format(playtime)
+                    ptime = time_formatter(ptime)
                     if playtime > 0:
                         embed.add_field(
                             name=f"Time on {mapname.capitalize()}",
-                            value=f"`{d}d {h}h {m}m`"
+                            value=f"`{ptime}`"
                         )
             if "ingame" in data:
                 implant_ids = ""
