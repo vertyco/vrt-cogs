@@ -242,6 +242,7 @@ class ArkTools(commands.Cog):
                 return True
             else:
                 del self.queue[channel]
+                return False
 
     # Cleans up the most recent live embed posted in the status channel
     @staticmethod
@@ -340,6 +341,26 @@ class ArkTools(commands.Cog):
         for chan, implant in playerdata["ingame"].items():
             if str(chan) == channel:
                 return implant
+
+    @staticmethod
+    async def tribelog_sendoff(guild, settings, server, logs):
+        for msg in logs:
+            try:
+                tribe_id, embed = await tribelog_format(server, msg)
+            except TypeError:
+                continue
+            if "masterlog" in settings:
+                masterlog = guild.get_channel(settings["masterlog"])
+                await masterlog.send(embed=embed)
+            if "tribes" in settings:
+                for tribes in settings["tribes"]:
+                    if tribe_id == tribes:
+                        tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
+                        try:
+                            await tribechannel.send(embed=embed)
+                        except discord.Forbidden:
+                            log.warning("Cant sendoff msg to tribe log channel")
+                        break
 
     # Hard coded item send for those hard times
     # Sends some in-game items that can help get a player unstuck, or just kill themselves
@@ -2804,12 +2825,10 @@ class ArkTools(commands.Cog):
         rtasks = []
         if message.channel.id in clusterchannels:
             for server in allservers:
-                if not self.in_queue(server["chatchannel"]):
-                    rtasks.append(self.executor(guild, server, f"serverchat {name}: {msg}"))
+                rtasks.append(self.executor(guild, server, f"serverchat {name}: {msg}"))
             await asyncio.gather(*rtasks)
         elif int(message.channel.id) == int(chatchannel):
-            if not self.in_queue(servermap["chatchannel"]):
-                await self.executor(guild, servermap, f"serverchat {name}: {msg}")
+            await self.executor(guild, servermap, f"serverchat {name}: {msg}")
         else:
             return
 
@@ -2868,11 +2887,11 @@ class ArkTools(commands.Cog):
                 await eventlog.send(embed=embed)
             return
         if command == "getchat" or "serverchat" in command:
-            timeout = 2
-        elif command == "listplayers":
-            timeout = 5
-        else:
             timeout = 3
+        elif command == "listplayers":
+            timeout = 6
+        else:
+            timeout = 4
 
         if "serverchat" in command and "extrcon" in server:
             if server["extrcon"]:
@@ -2901,16 +2920,11 @@ class ArkTools(commands.Cog):
         if not res:
             self.queue[server["chatchannel"]] = datetime.datetime.now()
             msg = f"{server['name']} {server['cluster']} is offline from {command}, reconnecting in 60 seconds"
-            eventlog = guild.get_channel(server["eventlog"])
-            if eventlog:
-                embed = discord.Embed(
-                    description=msg,
-                    color=discord.Color.from_rgb(255, 0, 225)  # pink
-                )
-                await eventlog.send(embed=embed)
+            log.info(msg)
         if command == "getchat":
-            if res and "Server received, But no response!!" not in res:
-                await self.message_handler(guild, server, res)
+            if res:
+                if "Server received, But no response!!" not in res:
+                    await self.message_handler(guild, server, res)
         if command == "listplayers":
             # If server is online create list of player tuples
             if res:
@@ -2986,23 +3000,6 @@ class ArkTools(commands.Cog):
                 # If a server goes from offline to populated its probably cause the cog was reloaded, so ignore
                 self.playerlist[channel] = newplayerlist
 
-    @staticmethod
-    async def tribelog_sendoff(guild, settings, server, logs):
-        for msg in logs:
-            try:
-                tribe_id, embed = await tribelog_format(server, msg)
-            except TypeError:
-                continue
-            if "masterlog" in settings:
-                masterlog = guild.get_channel(settings["masterlog"])
-                await masterlog.send(embed=embed)
-            if "tribes" in settings:
-                for tribes in settings["tribes"]:
-                    if tribe_id == tribes:
-                        tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
-                        await tribechannel.send(embed=embed)
-                        break
-
     # Sends messages from in-game chat to their designated channels
     async def message_handler(self, guild: discord.guild, server: dict, res: str):
         adminlog = guild.get_channel(server["adminlogchannel"])
@@ -3074,7 +3071,10 @@ class ArkTools(commands.Cog):
                     await self.executor(guild, server, f'renameplayer "{badname}" {gamertag}')
                     cmd = f"serverchat {gamertag}, the name {badname} has been blacklisted, you have been renamed"
                     await self.executor(guild, server, cmd)
-                    await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
+                    try:
+                        await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
+                    except discord.Forbidden:
+                        pass
                     break
 
             # Check or apply ranks
@@ -3100,7 +3100,10 @@ class ArkTools(commands.Cog):
                             await self.executor(guild, server, cmd)
                         cmd = f"serverchat Congrats {gamertag}, you have reached the rank of {str(rank)}"
                         await self.executor(guild, server, cmd)
-                        await chatchannel.send(f"`Congrats {gamertag}, you have reached the rank of {str(rank)}`")
+                        try:
+                            await chatchannel.send(f"`Congrats {gamertag}, you have reached the rank of {str(rank)}`")
+                        except discord.Forbidden:
+                            pass
 
             # In-game command interpretation
             prefixes = await self.bot.get_valid_prefixes(guild)
@@ -3111,15 +3114,18 @@ class ArkTools(commands.Cog):
                     if resp:
                         messages += f"`{resp}`\n"
         # Send off messages to discord channels
-        if messages:
-            for p in pagify(messages):
-                await chatchannel.send(p)
-        if globalmessages:
-            for p in pagify(globalmessages):
-                await globalchat.send(p)
-        if admin_commands:
-            for p in pagify(admin_commands):
-                await adminlog.send(p)
+        try:
+            if messages:
+                for p in pagify(messages):
+                    await chatchannel.send(p)
+            if globalmessages:
+                for p in pagify(globalmessages):
+                    await globalchat.send(p)
+            if admin_commands:
+                for p in pagify(admin_commands):
+                    await adminlog.send(p)
+        except discord.Forbidden:
+            log.warning(f"MessageHandler: Cant send message in one of the channels")
         if tribe_logs:
             await self.tribelog_sendoff(guild, settings, server, tribe_logs)
 
