@@ -64,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.7.33"
+    __version__ = "2.7.34"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -364,6 +364,7 @@ class ArkTools(commands.Cog):
 
         def check(message: discord.Message):
             return message.author == ctx.author and message.channel == ctx.channel
+
         # Wait for the person to reply with their implant ID
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
@@ -2214,6 +2215,12 @@ class ArkTools(commands.Cog):
             else:
                 settings += "`Interchat:  `Disabled\n"
 
+            if "extrcon" in cluster.keys():
+                extrcon = cluster["extrcon"]
+                if extrcon:
+                    settings += "`Ext RCON:   `Enabled\n"
+                else:
+                    settings += "`Ext RCON:   `Disabled\n"
             settings += f"`GlobalChat: `{ctx.guild.get_channel(cluster['globalchatchannel']).mention}\n" \
                         f"`AdminLog:   `{ctx.guild.get_channel(cluster['adminlogchannel']).mention}\n" \
                         f"`JoinLog:    `{ctx.guild.get_channel(cluster['joinchannel']).mention}\n" \
@@ -2359,6 +2366,29 @@ class ArkTools(commands.Cog):
             return await ctx.send(f"{cluster_type} is not a valid cluster type")
         await self.config.guild(ctx.guild).clustertypes.set(cluster_type)
         await ctx.send(f"Cluster type has been set to {cluster_type}")
+
+    @server_settings.command(name="extendedrcon")
+    async def toggle_extendedrcon(self, ctx: commands.Context, cluster_name: str):
+        """
+        Toggle ExtendedRCON for a cluster(STEAM ONLY)
+
+        This toggle is ONLY compatible for steam servers with the extendedRCON plugin,
+        view the link below for more info.
+        https://arkserverapi.com/index.php?resources/extended-rcon.5/
+        """
+        async with self.config.guild(ctx.guild).clusters() as clusters:
+            if cluster_name.lower() not in clusters.keys():
+                return await ctx.send("Cluster name does not exist!")
+            else:
+                cluster = cluster_name.lower()
+                if "extrcon" not in clusters[cluster].keys():
+                    clusters[cluster]["extrcon"] = True
+                else:
+                    extrcon = clusters[cluster]["extrcon"]
+                    if extrcon:
+                        clusters[cluster]["extrcon"] = False
+                    else:
+                        clusters[cluster]["extrcon"] = True
 
     @server_settings.command(name="renamecluster")
     async def rename_cluster(self, ctx: commands.Context, oldclustername: str, newname: str):
@@ -2718,6 +2748,8 @@ class ArkTools(commands.Cog):
                     server["name"] = name
                     server["guild"] = guild
                     server["eventlog"] = settings["eventlog"]
+                    if "extrcon" in clusters[cluster]:
+                        server["extrcon"] = clusters[cluster]["extrcon"]
                     self.servers.append((guild.id, server))
                     self.servercount += 1
                     self.channels.append(server["chatchannel"])
@@ -2841,6 +2873,11 @@ class ArkTools(commands.Cog):
             timeout = 5
         else:
             timeout = 3
+
+        if "serverchat" in command and "extrcon" in server:
+            if server["extrcon"]:
+                msg = command.split(" ", 1)[1]
+                command = f"clientchat {msg}"
 
         def exe():
             try:
@@ -3087,7 +3124,8 @@ class ArkTools(commands.Cog):
             await self.tribelog_sendoff(guild, settings, server, tribe_logs)
 
     # In game command handler
-    async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str, cmd: str):
+    async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str,
+                         cmd: str):
         settings = await self.config.guild(guild).all()
         available_cmd = "In-Game Commands.\n" \
                         f"{prefix}register ImplantID - Register your implant ID to use commands without it\n" \
@@ -3734,7 +3772,7 @@ class ArkTools(commands.Cog):
                                             friends = json.loads(
                                                 (
                                                     await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
-                                                 ).json()
+                                                ).json()
                                             )
                                         except aiohttp.ClientResponseError:
                                             profile = None
