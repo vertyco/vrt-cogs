@@ -61,6 +61,7 @@ class XTools(commands.Cog):
 
         # Caching friend list for searching
         self.cache = {}
+        self.tlist = [1, 2, 3, "test"]
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
