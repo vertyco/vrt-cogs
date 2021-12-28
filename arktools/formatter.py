@@ -42,7 +42,8 @@ async def decode(message: discord.Message):
 
 
 # Format time from total seconds and format into readable string
-def time_formatter(time_in_seconds: int):
+def time_formatter(time_in_seconds):
+    time_in_seconds = int(time_in_seconds)  # Some time differences get sent as a float so just handle it the dumb way
     minutes, seconds = divmod(time_in_seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
