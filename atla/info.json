@@ -6,7 +6,7 @@
     "description": "WIP",
     "disabled" : false,
     "end_user_data_statement" : "WIP",
-    "hidden": false,
+    "hidden": true,
     "install_msg": "WIP",
     "min_bot_version" : "3.4.0",
     "min_python_version" : [3, 8, 1],
