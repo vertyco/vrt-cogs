@@ -298,7 +298,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
     current_time = datetime.datetime.now(pytz.timezone("UTC"))
     for xuid, data in stats.items():
         if gamertag.lower() == data["username"].lower():
-            ptime = data["playtime"]["total"]
+            total_playtime = data["playtime"]["total"]
             for i in sorted_players:
                 if i[0] == xuid:
                     pos = sorted_players.index(i)
@@ -317,7 +317,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             else:
                 last_seen = f"{last_seen} ago"
             # Time played dhm
-            playtime = time_formatter(ptime)
+            total_playtime_string = time_formatter(total_playtime)
             registration = "Not Registered"
             in_server = True
             if "discord" in data:
@@ -332,7 +332,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 claimed = "Claimed"
             desc = f"`Discord:     `{registration}\n" \
                    f"`Game ID:     `{xuid}\n" \
-                   f"`Time Played: `{playtime}\n" \
+                   f"`Time Played: `{total_playtime_string}\n" \
                    f"`Starter Kit: `{claimed}"
             if "rank" in data:
                 r = data["rank"]
@@ -360,7 +360,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 )
             for mapname, playtime in data["playtime"].items():
                 if mapname != "total":
-                    ptime = time_formatter(ptime)
+                    ptime = time_formatter(playtime)
                     if playtime > 0:
                         embed.add_field(
                             name=f"Time on {mapname.capitalize()}",
@@ -379,8 +379,8 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                     inline=False
                 )
             if position != "":
-                percent = round((ptime / global_time) * 100, 2)
-                embed.set_footer(text=f"Rank: {position} with {percent}% of the total playtime")
+                percent = round((total_playtime / global_time) * 100, 2)
+                embed.set_footer(text=f"Rank: {position} with {percent}% of global playtime")
             return embed
 
 

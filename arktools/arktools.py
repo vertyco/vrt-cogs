@@ -563,23 +563,24 @@ class ArkTools(commands.Cog):
                     )
                     return await msg.edit(embed=embed)
                 sname = reply.content
-                if sid not in players:
-                    players[sid] = {}
-                if "discord" in players[sid]:
-                    if players[sid]["discord"] != ctx.author.id:
-                        claimed = ctx.guild.get_member(players[sid]["discord"])
-                        embed = discord.Embed(
-                            description=f"{claimed.mention} has already claimed this Steam ID",
-                            color=discord.Color.orange()
-                        )
-                        return await msg.edit(embed=embed)
-                    if players[sid]["discord"] == ctx.author.id:
-                        embed = discord.Embed(
-                            description=f"You have already claimed this Steam ID",
-                            color=discord.Color.green()
-                        )
-                        return await msg.edit(embed=embed)
-                if len(players[sid].keys()) == 0:
+                if sid in players:
+                    if "discord" in players[sid]:
+                        if players[sid]["discord"] != ctx.author.id:
+                            claimed = ctx.guild.get_member(players[sid]["discord"])
+                            embed = discord.Embed(
+                                description=f"{claimed.mention} has already claimed this ID",
+                                color=discord.Color.orange()
+                            )
+                            return await msg.edit(embed=embed)
+                        if players[sid]["discord"] == ctx.author.id:
+                            embed = discord.Embed(
+                                description=f"You have already claimed this ID",
+                                color=discord.Color.green()
+                            )
+                            return await msg.edit(embed=embed)
+                    players[sid]["discord"] = ctx.author.id
+                    players[sid]["username"] = sname
+                else:
                     players[sid] = {
                         "discord": ctx.author.id,
                         "username": sname,
@@ -589,10 +590,8 @@ class ArkTools(commands.Cog):
                             "map": None
                         }
                     }
-                else:
-                    players[sid]["discord"] = ctx.author.id
                 embed = discord.Embed(
-                    description=f"Your account has been registered as **{sname}**: `{sid}`"
+                    description=f"Your account has been registered to **{sname}**: `{sid}`"
                 )
                 return await msg.edit(embed=embed)
 
@@ -627,31 +626,32 @@ class ArkTools(commands.Cog):
                 # Format json data
                 gt, xuid, gs, pfp = profile_format(profile_data)
                 async with self.config.guild(ctx.guild).players() as players:
-                    if xuid not in players:
-                        players[xuid] = {}
-                    if "discord" in players[xuid]:
-                        if players[xuid]["discord"] != ctx.author.id:
-                            claimed = ctx.guild.get_member(players[xuid]["discord"])
-                            embed = discord.Embed(
-                                description=f"{claimed.mention} has already claimed this Gamertag",
-                                color=discord.Color.orange()
-                            )
-                            return await msg.edit(embed=embed)
-                        if players[xuid]["discord"] == ctx.author.id:
-                            embed = discord.Embed(
-                                description=f"You have already claimed this Gamertag",
-                                color=discord.Color.green()
-                            )
-                            return await msg.edit(embed=embed)
-                    players[xuid] = {
-                        "discord": ctx.author.id,
-                        "username": gt,
-                        "playtime": {"total": 0},
-                        "lastseen": {
-                            "time": time.isoformat(),
-                            "map": None
+                    if xuid in players:
+                        if "discord" in players[xuid]:
+                            if players[xuid]["discord"] != ctx.author.id:
+                                claimed = ctx.guild.get_member(players[xuid]["discord"])
+                                embed = discord.Embed(
+                                    description=f"{claimed.mention} has already claimed this Gamertag",
+                                    color=discord.Color.orange()
+                                )
+                                return await msg.edit(embed=embed)
+                            if players[xuid]["discord"] == ctx.author.id:
+                                embed = discord.Embed(
+                                    description=f"You have already claimed this Gamertag",
+                                    color=discord.Color.green()
+                                )
+                                return await msg.edit(embed=embed)
+                        players[xuid]["discord"] = ctx.author.id
+                    else:
+                        players[xuid] = {
+                            "discord": ctx.author.id,
+                            "username": gt,
+                            "playtime": {"total": 0},
+                            "lastseen": {
+                                "time": time.isoformat(),
+                                "map": None
+                            }
                         }
-                    }
                 embed = discord.Embed(
                     color=discord.Color.green(),
                     description=f"✅ Gamertag set to `{gamertag}`\n"
