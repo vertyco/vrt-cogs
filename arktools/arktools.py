@@ -64,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.7.34"
+    __version__ = "2.7.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -826,26 +826,8 @@ class ArkTools(commands.Cog):
         cname = clustername.lower()
         sname = servername.lower()
         settings = await self.config.guild(ctx.guild).all()
-        if not settings["fullaccessrole"]:
-            return await ctx.send("Full access role has not been set!")
-        allowed = False
-        # Determine if user is allowed to use the command
-        for role in ctx.author.roles:
-            if role.id == settings["fullaccessrole"]:
-                allowed = True
-            for modrole in settings["modroles"]:
-                if role.id == modrole:
-                    modcmds = settings["modcommands"]
-                    for cmd in modcmds:
-                        if str(cmd.lower()) in command.lower():
-                            allowed = True
-
-        if ctx.author.id == ctx.guild.owner.id:
-            allowed = True
-
-        if not allowed:
-            if ctx.guild.owner != ctx.author:
-                return await ctx.send("You do not have the required permissions to run that command.")
+        if not self.allowed_to_run(ctx, settings, command):
+            return await ctx.send("You do not have the required permissions to run that command.")
 
         clusters = settings["clusters"]
         if cname != "all" and cname not in clusters:
@@ -853,24 +835,8 @@ class ArkTools(commands.Cog):
         if cname != "all" and sname != "all" and sname not in clusters[cname]["servers"]:
             return await ctx.send(f"Server not found in {cname} cluster")
 
-        serverlist = []
-        for tup in self.servers:
-            guild = tup[0]
-            server = tup[1]
-            if guild == ctx.guild.id:
-                if cname == "all" and sname == "all":
-                    serverlist.append(server)
-                elif cname == "all" and sname != "all":
-                    if server["name"] == sname:
-                        serverlist.append(server)
-                elif cname != "all" and sname == "all":
-                    if server["cluster"] == cname:
-                        serverlist.append(server)
-                elif cname != "all" and sname != "all":
-                    if server["cluster"] == cname and server["name"] == sname:
-                        serverlist.append(server)
-                else:
-                    continue
+        serverlist = self.compile_servers(ctx.guild, cname, sname)
+
         if len(serverlist) == 0:
             return await ctx.send("No servers have been found")
 
@@ -957,6 +923,97 @@ class ArkTools(commands.Cog):
                                     unblocked += f"{host} Failed to unblock XUID: {player_id} - Status: {status}\n"
                     if unblocked != "":
                         await ctx.send(box(unblocked, lang="python"))
+
+    @commands.command(name="bulksend")
+    @commands.guild_only()
+    async def bulk_send_item(
+            self,
+            ctx: commands.Context,
+            clustername: str,
+            servername: str,
+            implant_id: str,
+            count: int,
+            *,
+            blueprint_string: str
+    ):
+        """
+        Bulk send an item to a player
+
+        The `count` specifies how many times to run the command,
+        this is useful for filling an inventory of an item with a small stack size
+        the blueprint string should include the amount, quality, and blueprint numbers at the end too
+        """
+        cname = clustername.lower()
+        sname = servername.lower()
+        settings = await self.config.guild(ctx.guild).all()
+        if not self.allowed_to_run(ctx, settings, "giveitemtoplayer"):
+            return await ctx.send("You do not have the required permissions to run that command.")
+        clusters = settings["clusters"]
+        if cname not in clusters:
+            return await ctx.send(f"{cname} cluster not found")
+        if sname not in clusters[cname]["servers"]:
+            return await ctx.send(f"Server not found in {cname} cluster")
+        server = self.compile_servers(ctx.guild, cname, sname)
+        server = server[0]
+        await ctx.send("Sending items in bulk")
+        command = f"giveitemtoplayer {implant_id} {blueprint_string}"
+
+        def sender():
+            try:
+                with Client(
+                        host=server['ip'],
+                        port=server['port'],
+                        passwd=server['password'],
+                        timeout=10
+                ) as client:
+                    for i in range(count):
+                        client.run(command)
+            except socket.timeout:
+                return
+            except Exception as e:
+                log.warning(f"Bulksend Error: {e}")
+        async with ctx.typing():
+            await self.bot.loop.run_in_executor(None, sender)
+        await ctx.send("Bulk send complete")
+
+    @staticmethod
+    def allowed_to_run(ctx: commands.Context, settings: dict, command: str):
+        allowed = False
+        # Determine if user is allowed to use the command
+        for role in ctx.author.roles:
+            if role.id == settings["fullaccessrole"]:
+                allowed = True
+            for modrole in settings["modroles"]:
+                if role.id == modrole:
+                    modcmds = settings["modcommands"]
+                    for cmd in modcmds:
+                        if str(cmd.lower()) in command.lower():
+                            allowed = True
+        if ctx.author.id == ctx.guild.owner.id:
+            allowed = True
+        if allowed:
+            return True
+
+    def compile_servers(self, guild: discord.guild, cname: str, sname: str):
+        serverlist = []
+        for tup in self.servers:
+            sguild = tup[0]
+            server = tup[1]
+            if sguild == guild.id:
+                if cname == "all" and sname == "all":
+                    serverlist.append(server)
+                elif cname == "all" and sname != "all":
+                    if server["name"] == sname:
+                        serverlist.append(server)
+                elif cname != "all" and sname == "all":
+                    if server["cluster"] == cname:
+                        serverlist.append(server)
+                elif cname != "all" and sname != "all":
+                    if server["cluster"] == cname and server["name"] == sname:
+                        serverlist.append(server)
+                else:
+                    continue
+        return serverlist
 
     # Re-Initialize the cache, for debug purposes
     @commands.command(name="init", hidden=True)
@@ -1680,6 +1737,7 @@ class ArkTools(commands.Cog):
         pass
 
     @api_settings.command(name="help")
+    @commands.is_owner()
     async def get_help(self, ctx):
         """Tutorial for getting your ClientID and Secret"""
         embed = discord.Embed(
@@ -1822,6 +1880,7 @@ class ArkTools(commands.Cog):
         await ctx.send(f"API keys removed.")
 
     @api_settings.command(name="auth")
+    @commands.is_owner()
     async def authorize_tokens(self, ctx: commands.Context, clustername: str, servername: str):
         """
         Authorize your tokens for a server
@@ -1907,6 +1966,7 @@ class ArkTools(commands.Cog):
             await author.send(f"Tokens have been Authorized for **{servername.capitalize()} {clustername.upper()}**✅")
 
     @api_settings.command(name="welcome")
+    @commands.admin()
     async def welcome_toggle(self, ctx):
         """
         (Toggle) Automatic server welcome messages when a new player is detected on the servers
@@ -1923,6 +1983,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Auto Welcome Message **Enabled**")
 
     @api_settings.command(name="smartmanage")
+    @commands.admin()
     async def autofriend_toggle(self, ctx: commands.Context):
         """
         (Toggle) Automatic maintenance of host Gamertag friend lists.
@@ -1941,6 +2002,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Smart management **Enabled**")
 
     @api_settings.command(name="unfriendtime")
+    @commands.admin()
     async def unfriend_time(self, ctx: commands.Context, days: int):
         """
         Set number of days of inactivity for the host Gamertags to unfriend a player.
@@ -1951,6 +2013,7 @@ class ArkTools(commands.Cog):
         await ctx.send(f"Inactivity days till auto unfriend is {days} days.")
 
     @api_settings.command(name="welcomemsg")
+    @commands.admin()
     async def welcome_message(self, ctx: commands.Context, *, welcome_message: str):
         """
         Set a welcome message to be used instead of the default.
@@ -1995,6 +2058,7 @@ class ArkTools(commands.Cog):
         pass
 
     @alt_settings.command(name="toggle")
+    @commands.admin()
     async def toggle_alt_detection(self, ctx: commands.Context):
         """Toggle the alt detection system on or off"""
         on = await self.config.guild(ctx.guild).alt.on()
@@ -2006,6 +2070,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Alt detection system **Enabled**")
 
     @alt_settings.command(name="autoban")
+    @commands.admin()
     async def toggle_autoban(self, ctx: commands.Context):
         """Toggle Auto-Banning of suspicious accounts on or off"""
         on = await self.config.guild(ctx.guild).alt.autoban()
@@ -2017,6 +2082,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Auto-Banning **Enabled**")
 
     @alt_settings.command(name="silver")
+    @commands.admin()
     async def toggle_silver(self, ctx: commands.Context):
         """Toggle whether to include Silver accounts as suspicious"""
         on = await self.config.guild(ctx.guild).alt.silver()
@@ -2028,6 +2094,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Silver account detection **Enabled**")
 
     @alt_settings.command(name="warning")
+    @commands.admin()
     async def toggle_warning(self, ctx: commands.Context):
         """
         Toggle whether to send a warning message to the user
@@ -2043,6 +2110,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Warning message **Enabled**")
 
     @alt_settings.command(name="mingamerscore")
+    @commands.admin()
     async def set_min_gamerscore(self, ctx: commands.Context, minimum_gamerscore: int):
         """
         Set the minimum Gamerscore a user must have to be considered not suspicious
@@ -2053,6 +2121,7 @@ class ArkTools(commands.Cog):
         await ctx.send(f"Minimum Gamerscore theshold has been set to `{minimum_gamerscore}`")
 
     @alt_settings.command(name="minfollowers")
+    @commands.admin()
     async def set_min_followers(self, ctx: commands.Context, minimum_followers: int):
         """
         Set the minimum followers a user must have to be considered not sus
@@ -2063,6 +2132,7 @@ class ArkTools(commands.Cog):
         await ctx.send(f"Minimum followers threshold has been set to `{minimum_followers}`")
 
     @alt_settings.command(name="minfollowing")
+    @commands.admin()
     async def set_min_following(self, ctx: commands.Context, minimum_following: int):
         """
         Set the minimum accounts a user is following for them to be considered not sus
@@ -2073,6 +2143,7 @@ class ArkTools(commands.Cog):
         await ctx.send(f"Minimum following threshold has been set to `{minimum_following}`")
 
     @alt_settings.command(name="warningmsg")
+    @commands.admin()
     async def set_warning_msg(self, ctx: commands.Context, *, warning_message: str):
         """
         Set the warning message a user would receive upon being flagged as an alt
@@ -2091,6 +2162,7 @@ class ArkTools(commands.Cog):
         await ctx.send("Warning message has been set!")
 
     @alt_settings.command(name="ignore")
+    @commands.mod()
     async def ingore_player(self, ctx: commands.Context, xuid: int):
         """Add a player to the alt detection whitelist, they will be ignored by the alt detection"""
         async with self.config.guild(ctx.guild).alt.whitelist() as whitelist:
@@ -2119,32 +2191,15 @@ class ArkTools(commands.Cog):
                         await ctx.send("User has been unbanned from all servers")
 
     @alt_settings.command(name="unignore")
+    @commands.mod()
     async def unignore_player(self, ctx: commands.Context, xuid: int):
         """Remove a player's XUID from the alt detection whitelist"""
         async with self.config.guild(ctx.guild).alt.whitelist() as whitelist:
             if xuid not in whitelist:
                 await ctx.send("User is not in the ignore list")
-                ban = False
             else:
                 whitelist.remove(xuid)
                 await ctx.send("User has been removed from the alt detection ignore list")
-                on = await self.config.guild(ctx.guild).alt.autoban()
-                if on:
-                    ban = True
-            if ban:
-                async with ctx.typing():
-                    serverlist = []
-                    for tup in self.servers:
-                        guild = tup[0]
-                        server = tup[1]
-                        if guild == ctx.guild.id:
-                            serverlist.append(server)
-                    unignore_tasks = []
-                    if len(unignore_tasks) > 0:
-                        for server in serverlist:
-                            unignore_tasks.append(self.executor(guild, server, f"banplayer {xuid}"))
-                        await asyncio.gather(*unignore_tasks)
-                        await ctx.send("User has been banned from all servers")
 
     @alt_settings.command(name="view")
     async def view_alt_settings(self, ctx: commands.Context):
@@ -2875,7 +2930,14 @@ class ArkTools(commands.Cog):
     async def executor(self, guild: discord.guild, server: dict, command: str):
         if not server:
             return
-        if self.in_queue(server["chatchannel"]):
+        priority_commands = ["banplayer", "unbanplayer", "doexit", "saveworld"]
+        for cmd in priority_commands:
+            if cmd in command:
+                priority = True
+                break
+        else:
+            priority = False
+        if not priority and self.in_queue(server["chatchannel"]):
             return
         if server["port"] > 65535 or server["port"] < 0:
             eventlog = guild.get_channel(server["eventlog"])
@@ -3182,11 +3244,8 @@ class ArkTools(commands.Cog):
                 return resp
             else:
                 async with self.config.guild(guild).players() as players:
-                    if not arg.isdigit():
-                        resp = "That's not a number. Include your implant ID NUMBER in the command, " \
-                               "your Implant is in the top left of your inventory, look for the 'specimen' number"
-                        com = f"serverchat {resp}"
-                        await self.executor(guild, server, com)
+                    resp = await self.check_implant(guild, server, arg)
+                    if resp:
                         return resp
                     if "ingame" not in stats:
                         players[xuid]["ingame"] = {server["chatchannel"]: arg}
@@ -3292,7 +3351,11 @@ class ArkTools(commands.Cog):
         # Im stuck command
         elif com == "imstuck":
             canuse = False
-            if not arg:
+            if arg:
+                resp = await self.check_implant(guild, server, arg)
+                if resp:
+                    return resp
+            else:
                 implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
                     resp = "Include your Implant ID in the command or use the .register command to save it"
@@ -3342,7 +3405,11 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, com)
                 return resp
             canuse = False
-            if not arg and stats:
+            if arg:
+                resp = await self.check_implant(guild, server, arg)
+                if resp:
+                    return resp
+            else:
                 implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
                     resp = "Include your Implant ID in the command or use the .register command to save it"
@@ -3404,7 +3471,11 @@ class ArkTools(commands.Cog):
                 com = f"serverchat {resp}"
                 await self.executor(guild, server, com)
                 return resp
-            if not arg:
+            if arg:
+                resp = await self.check_implant(guild, server, arg)
+                if resp:
+                    return resp
+            else:
                 implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
                     resp = f"Use the {prefix}register command to register your ID first " \
@@ -3414,6 +3485,12 @@ class ArkTools(commands.Cog):
                     return resp
                 else:
                     arg = implant
+            if int(arg) != 9:
+                resp = "Incorrect implant ID, your implant should be 9 digits, " \
+                       "your Implant is in the top left of your inventory, look for the 'specimen' number"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
             async with self.config.guild(guild).kit() as kit:
                 if xuid in kit["claimed"]:
                     resp = f"{gamertag}, You have already claimed your starter kit!"
@@ -3431,6 +3508,22 @@ class ArkTools(commands.Cog):
                     await self.executor(guild, server, com)
                     return resp
         # If a player tries a command that doesnt exist
+        else:
+            return None
+
+    async def check_implant(self, guild: discord.guild, server: dict, arg: str):
+        if not arg.isdigit():
+            resp = "That is not a number. Include your implant ID NUMBER in the command, " \
+                   "your Implant is in the top left of your inventory, look for the 'specimen' number"
+            com = f"serverchat {resp}"
+            await self.executor(guild, server, com)
+            return resp
+        elif int(arg) != 9:
+            resp = "Incorrect ID, your implant ID should be 9 digits, " \
+                   "your Implant is in the top left of your inventory, look for the 'specimen' number"
+            com = f"serverchat {resp}"
+            await self.executor(guild, server, com)
+            return resp
         else:
             return None
 
