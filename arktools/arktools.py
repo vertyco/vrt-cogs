@@ -844,7 +844,7 @@ class ArkTools(commands.Cog):
             await ctx.send("Beginning reboot countdown...")
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                msg = "Reboot starting, make sure your character is in a bed to avoid your character dying!"
+                msg = "Reboot starting, make sure you are in a bed to avoid your character dying!"
                 await mapchannel.send(f"**{msg}**")
                 await self.executor(ctx.guild, server, f'broadcast <RichColor Color="1,0,0,1">{msg.upper()}</>')
             for i in range(10, 0, -1):
