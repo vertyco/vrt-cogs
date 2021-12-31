@@ -842,12 +842,17 @@ class ArkTools(commands.Cog):
 
         if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
             await ctx.send("Beginning reboot countdown...")
+            for server in serverlist:
+                mapchannel = ctx.guild.get_channel(server["chatchannel"])
+                msg = "Reboot starting, make sure your character is in a bed to avoid your character dying!"
+                await mapchannel.send(f"**{msg}**")
+                await self.executor(ctx.guild, server, f'broadcast <RichColor Color="1,0,0,1">{msg.upper()}</>')
             for i in range(10, 0, -1):
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
                     await mapchannel.send(f"Reboot in {i}")
                     await self.executor(ctx.guild, server, f"serverchat Reboot in {i}")
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.6)
             await ctx.send("Saving maps...")
             save = []
             for server in serverlist:
@@ -3519,7 +3524,7 @@ class ArkTools(commands.Cog):
             await self.executor(guild, server, com)
             return resp
         elif len(arg) > 9 or len(arg) < 8:
-            resp = "Incorrect ID, your implant ID should be 9 digits, " \
+            resp = "Incorrect ID, Implant ID's are 8 or 9 digits long, " \
                    "your Implant is in the top left of your inventory, look for the 'specimen' number"
             com = f"serverchat {resp}"
             await self.executor(guild, server, com)
