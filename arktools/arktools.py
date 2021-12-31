@@ -3490,12 +3490,6 @@ class ArkTools(commands.Cog):
                     return resp
                 else:
                     arg = implant
-            if int(arg) != 9:
-                resp = "Incorrect implant ID, your implant should be 9 digits, " \
-                       "your Implant is in the top left of your inventory, look for the 'specimen' number"
-                com = f"serverchat {resp}"
-                await self.executor(guild, server, com)
-                return resp
             async with self.config.guild(guild).kit() as kit:
                 if xuid in kit["claimed"]:
                     resp = f"{gamertag}, You have already claimed your starter kit!"
