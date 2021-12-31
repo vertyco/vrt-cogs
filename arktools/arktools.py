@@ -3269,7 +3269,7 @@ class ArkTools(commands.Cog):
                     arg = f"[{rank}] {arg}"
             com = f'renameplayer "{char_name}" {arg}'
             await self.executor(guild, server, com)
-            resp = f"{gamertag} Your name has been changed to {arg}"
+            resp = f"{gamertag}, Your name has been changed to {arg}"
             com = f"serverchat {resp}"
             await self.executor(guild, server, com)
             return resp
