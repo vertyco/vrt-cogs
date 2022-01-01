@@ -2738,7 +2738,7 @@ class ArkTools(commands.Cog):
                     if clustername in mapn:
                         if xuid not in wipelist:
                             wipelist.append(xuid)
-        await ctx.send(f"{len(wipelist)} xuids resettings")
+        await ctx.send(f"{len(wipelist)} xuids to reset")
         async with self.config.guild(ctx.guild).kit.claimed() as claimed:
             for xuid in wipelist:
                 claimed.remove(xuid)
