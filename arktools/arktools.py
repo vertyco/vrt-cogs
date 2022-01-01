@@ -2718,7 +2718,7 @@ class ArkTools(commands.Cog):
             claimed.remove(xuid)
             await ctx.send(f"Claim status for XUID: `{xuid}` has been reset.")
 
-    @in_game.command(name="resetkitcluster")
+    @in_game.command(name="resetclusterkits")
     async def reset_kit_cluster_wide(self, ctx: commands.Context, clustername: str):
         """
         Reset all kit claim statuses for a specific cluster
@@ -2737,9 +2737,9 @@ class ArkTools(commands.Cog):
                 for mapn in data["playtime"].keys():
                     if clustername in mapn:
                         wipelist.append(xuid)
-        async with self.config.guild(ctx.guild).all() as settings:
+        async with self.config.guild(ctx.guild).kit.claimed() as claimed:
             for xuid in wipelist:
-                settings["kit"]["claimed"].remove(str(xuid))
+                claimed.remove(xuid)
         await ctx.send(f"{len(wipelist)} kit claim statuses have been reset for the {clustername} cluster")
 
     @in_game.command(name="view")
