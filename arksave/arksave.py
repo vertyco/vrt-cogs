@@ -12,7 +12,7 @@ class ArkSave(commands.Cog):
     Ark data save plugin for ArkShop
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -24,7 +24,11 @@ class ArkSave(commands.Cog):
         default_global = {
             "price": 1000
         }
+        default_guild = {
+            "clusters": {}
+        }
         self.config.register_global(**default_global)
+        self.config.register_guild(**default_guild)
 
     # Make sure arktools and arkshop are both installed
     async def check(self, ctx):
@@ -57,12 +61,30 @@ class ArkSave(commands.Cog):
             cname = users[str(ctx.author.id)]
             return cname
 
+    @commands.command(name="viewarksave")
+    async def view_arksave_settings(self, ctx):
+        clusters = await self.config.guild(ctx.guild).clusters()
+        msg = ""
+        for cluster, price in clusters.items():
+            msg += f"`{cluster}: `{price}\n"
+        if msg:
+            embed = discord.Embed(
+                title="ArkSave Settings",
+                description=f"Cost to backup Ark data per cluster:\n{msg}"
+            )
+            await ctx.send(embed=embed)
+
     @commands.command(name="setsaveprice")
     @commands.admin()
-    async def set_save_price(self, ctx, price: int):
-        """Set the price for ark data saves"""
+    async def set_save_price(self, ctx, cluster_name: str, price: int):
+        """Set the price for ark data saves PER cluster, default is 1000 credits"""
         if await self.check(ctx):
-            await self.config.price.set(price)
+            arktools = self.bot.get_cog("ArkTools")
+            clusters = await arktools.config.guild(ctx.guild).clusters()
+            if cluster_name.lower() not in clusters:
+                return await ctx.send("Cannot find that cluster name")
+            async with self.config.guild(ctx.guild).clusters() as clusters:
+                clusters[cluster_name] = price
             await ctx.tick()
 
     @commands.command(name="savemydata")
@@ -82,6 +104,9 @@ class ArkSave(commands.Cog):
         adir = await shop.config.main_path()
         cur_name = await bank.get_currency_name(ctx.guild)
         price = await self.config.price()
+        clusters = await self.config.guild(ctx.guild)
+        if cname in clusters:
+            price = clusters[cname]
 
         if not await bank.can_spend(ctx.author, int(price)):
             return await ctx.send(f"You are too poor to buy that :smiling_face_with_tear:\n"
