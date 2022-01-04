@@ -64,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.7.35"
+    __version__ = "2.7.36"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -3209,10 +3209,10 @@ class ArkTools(commands.Cog):
         available_cmd = "In-Game Commands.\n" \
                         f"{prefix}register ImplantID - Register your implant ID to use commands without it\n" \
                         f"{prefix}imstuck - Send yourself a care package if youre stuck\n" \
-                        f"{prefix}rename NewName - Rename your character\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
-                        f"{prefix}votedinowipe - Start a vote to wipe wild dinos\n"
+                        f"{prefix}votedinowipe - Start a vote to wipe wild dinos\n" \
+                        f"{prefix}votecleanup - Start a vote to wipe beaver dams and spoiled eggs\n"
         h = settings["payday"]["cooldown"]
         duration = h * 3600
         extras = 0
@@ -3238,12 +3238,19 @@ class ArkTools(commands.Cog):
             return resp
         # Help command
         elif com == "help":
-            if extras < 2:
-                available_cmd += f"{prefix}players - returns current player count"
+            if extras == 0:
+                available_cmd += f"{prefix}rename NewName - Rename your character\n" \
+                                 f"{prefix}players - returns current player count"
+                extra_commands = None
+            elif extras == 1:
+                available_cmd += f"{prefix}rename NewName - Rename your character"
+                extra_commands = f"{prefix}players"
             else:
-                com = f'serverchat Other commands too long to fit in the broadcast include .players'
-                await self.executor(guild, server, com)
+                extra_commands = f"'{prefix}players' and '{prefix}rename'"
             await self.executor(guild, server, f"broadcast {available_cmd}")
+            if extra_commands:
+                com = f"serverchat Other commands too long to fit in the broadcast include {extra_commands}"
+                await self.executor(guild, server, com)
             resp = "Sending list of in-game commands!"
             return resp
         # Register command
@@ -3345,6 +3352,34 @@ class ArkTools(commands.Cog):
                 await self.executor(guild, server, com)
                 com = "destroywilddinos"
                 await self.executor(guild, server, com)
+                del self.votes[cid]
+                return resp
+        # Vote server cleanup command, wipes beaver dams and spoiled eggs
+        elif com == "votecleanup":
+            remaining = await self.vote_handler(guild, cid, server, gamertag, "votecleanup")
+            if isinstance(remaining, str):
+                resp = remaining
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            elif remaining > 0:
+                resp = f"Need {remaining} more In-game votes to wipe beaver dams and spoiled eggs!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            else:
+                resp = "Vote successful, wiping dams and spoiled eggs!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                cleanup_commands = [
+                    "destroyall BeaverDam_C",
+                    "destroyall DroppedItemGeneric_FertilizedEgg_RockDrake_NoPhysics_C",
+                    "destroyall DroppedItemGeneric_FertilizedEgg_NoPhysicsWyvern_C",
+                    "destroyall DroppedItemGeneric_FertilizedEgg_NoPhysicsDeinonychus_C",
+                    "destroyall DroppedItemGeneric_FertilizedEgg_NoPhysicsCherufe_C"
+                ]
+                for cleanup_command in cleanup_commands:
+                    await self.executor(guild, server, cleanup_command)
                 del self.votes[cid]
                 return resp
         # Player count command
