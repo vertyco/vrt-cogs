@@ -2881,7 +2881,7 @@ class ArkTools(commands.Cog):
         try:
             name, msg = await decode(message)
         except TypeError:
-            log.info(f"Message to server failed from {message.author}")
+            log.info(f"Message to server failed from {message.author}: {message}")
             return
         guild = message.guild
         rtasks = []
@@ -3082,22 +3082,26 @@ class ArkTools(commands.Cog):
         messages = ""
         tribe_logs = []
         chats = []
+        servername = server["name"].capitalize()
+        clustername = server["cluster"].upper()
         # Filter messages for feedback loops and invalid strings
         for msg in msgs:
             if not msg:
                 continue
             if msg == " ":
                 continue
-            if "):" not in msg:
-                continue
             if msg.startswith("SERVER:"):
                 continue
             if msg.startswith("AdminCmd:"):  # Admin command
-                admin_commands += f"**{server['name'].capitalize()}**\n{box(msg, lang='python')}\n"
+                admin_commands += f"**{servername} {clustername}**\n{box(msg, lang='python')}\n"
+                continue
             elif "Tribe" and ", ID" in msg:  # Tribe log
                 tribe_logs.append(msg)
             else:
-                chats.append(msg)
+                if "):" not in msg:
+                    continue
+                else:
+                    chats.append(msg)
         for msg in chats:
             # Append messages to be sent to discord
             globalmessages += f"{chatchannel.mention}: {msg}\n"
