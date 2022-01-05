@@ -739,7 +739,8 @@ class ArkTools(commands.Cog):
                 }
         embed = discord.Embed(
             description=f"Your {nametype} has been set to `{username}`\n"
-                        f"{id_type}: `{uid}`"
+                        f"{id_type}: `{uid}`",
+            color=discord.Color.green()
         )
         embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
         await msg.edit(embed=embed)
@@ -1194,7 +1195,7 @@ class ArkTools(commands.Cog):
                     return await ctx.send(f"User is registered as **{stat['username']}**")
         await ctx.send("User never registered.")
 
-    # Find out if a user has registered their gamertag
+    # Find out if a user has registered their discord id
     @commands.command(name="findbyid")
     @commands.guild_only()
     async def find_player_from_by_id(self, ctx: commands.Context, uid: int):
@@ -2843,7 +2844,6 @@ class ArkTools(commands.Cog):
         log.info("Config initialized.")
 
     # Sends ServerChat command to designated server if message is in the server chat channel
-    # noinspection PyTypeChecker
     @commands.Cog.listener("on_message")
     async def to_server_chat(self, message: discord.Message):
         # If message was from a bot
