@@ -12,7 +12,7 @@ class ArkSave(commands.Cog):
     Ark data save plugin for ArkShop
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
