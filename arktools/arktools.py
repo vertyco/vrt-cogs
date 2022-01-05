@@ -4318,19 +4318,3 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(10)
         log.info("Janitor ready")
-
-    # Test command for debug purposes
-    @commands.command(name="uidlengths", hidden=True)
-    async def xuid_length(self, ctx):
-        lengths = {}
-        players = await self.config.guild(ctx.guild).players()
-        for xuid in players:
-            number = len(xuid)
-            if number not in lengths:
-                lengths[number] = 1
-            else:
-                lengths[number] += 1
-        data = ""
-        for num, times in lengths.items():
-            data += f"`{num}: `{times}\n"
-        await ctx.send(data)
