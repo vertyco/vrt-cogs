@@ -687,7 +687,16 @@ class ArkTools(commands.Cog):
             desc = "That is **NOT** a number... Registration cancelled :expressionless:"
             embed = discord.Embed(description=desc)
             return await msg.edit(embed=embed)
-
+        length = len(reply.content)
+        if ctype == "xbox" and length != 16:
+            desc = "Incorrect number of digits for a valid XUID, Try again."
+            embed = discord.Embed(description=desc)
+            return await msg.edit(embed=embed)
+        if ctype == "steam":
+            if length > 19 or length < 17:
+                desc = "Incorrect number of digits for a valid Steam ID, Try again."
+                embed = discord.Embed(description=desc)
+                return await msg.edit(embed=embed)
 
         uid = reply.content
         players = await self.config.guild(ctx.guild).players()
@@ -4381,14 +4390,15 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(10)
         log.info("Janitor ready")
 
-    @commands.command()
-    async def test1(self, ctx):
+    # Test command for debug purposes
+    @commands.command(name="uidlengths", hidden=True)
+    async def xuid_length(self, ctx):
         lengths = {}
         players = await self.config.guild(ctx.guild).players()
         for xuid in players:
             number = len(xuid)
             if number not in lengths:
-                lengths[number] = 0
+                lengths[number] = 1
             else:
                 lengths[number] += 1
         data = ""
