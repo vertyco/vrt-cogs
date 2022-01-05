@@ -104,7 +104,7 @@ class ArkSave(commands.Cog):
         adir = await shop.config.main_path()
         cur_name = await bank.get_currency_name(ctx.guild)
         price = await self.config.price()
-        clusters = await self.config.guild(ctx.guild)
+        clusters = await self.config.guild(ctx.guild).clusters()
         if cname in clusters:
             price = clusters[cname]
 
