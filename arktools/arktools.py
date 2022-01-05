@@ -57,6 +57,7 @@ SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 REDIRECT_URI = "http://localhost/auth/callback"
 
 
+# noinspection PyTypeChecker
 class ArkTools(commands.Cog):
     """
     RCON/API tools and cross-chat for Ark: Survival Evolved!
@@ -1075,7 +1076,7 @@ class ArkTools(commands.Cog):
         if allowed:
             return True
 
-    def compile_servers(self, guild: discord.guild, cname: str, sname: str):
+    def compile_servers(self, guild: discord.guild, cname: str, sname: str) -> list:
         serverlist = []
         for tup in self.servers:
             sguild = tup[0]
@@ -2842,6 +2843,7 @@ class ArkTools(commands.Cog):
         log.info("Config initialized.")
 
     # Sends ServerChat command to designated server if message is in the server chat channel
+    # noinspection PyTypeChecker
     @commands.Cog.listener("on_message")
     async def to_server_chat(self, message: discord.Message):
         # If message was from a bot
