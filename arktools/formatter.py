@@ -27,11 +27,6 @@ async def decode(message: discord.Message):
     noemojis = re.sub(r'<:\w*:\d*>', '', nolinks)
     nocustomemojis = re.sub(r'<a:\w*:\d*>', '', noemojis)
     msg = unicodedata.normalize('NFKD', nocustomemojis).encode('ascii', 'ignore').decode()
-    if msg == "":
-        return
-    if msg == " ":
-        return
-
     # Convert any unicode characters in member name to normal text
     author = message.author
     normalizedname = unicodedata.normalize('NFKD', author.name).encode('ascii', 'ignore').decode()

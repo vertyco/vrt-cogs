@@ -65,7 +65,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.8.37"
+    __version__ = "2.8.39"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2884,7 +2884,11 @@ class ArkTools(commands.Cog):
         try:
             name, msg = await decode(message)
         except TypeError:
-            log.info(f"Message to server failed from {message.author}: {message}")
+            log.info(f"TypeError, Message to server failed from {message.author}: {message.content}")
+            return
+        if not msg:
+            return
+        if msg == " ":
             return
         guild = message.guild
         rtasks = []
@@ -2939,6 +2943,8 @@ class ArkTools(commands.Cog):
     # Non-blocking sync executor for rcon task loops
     async def executor(self, guild: discord.guild, server: dict, command: str):
         if not server:
+            return
+        if not guild:
             return
         priority_commands = ["banplayer", "unbanplayer", "doexit", "saveworld"]
         for cmd in priority_commands:
