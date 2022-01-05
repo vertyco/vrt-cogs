@@ -57,7 +57,6 @@ SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 REDIRECT_URI = "http://localhost/auth/callback"
 
 
-# noinspection PyTypeChecker
 class ArkTools(commands.Cog):
     """
     RCON/API tools and cross-chat for Ark: Survival Evolved!
@@ -1036,7 +1035,7 @@ class ArkTools(commands.Cog):
         if sname not in clusters[cname]["servers"]:
             return await ctx.send(f"Server not found in {cname} cluster")
         server = self.compile_servers(ctx.guild, cname, sname)
-        server = server[0]
+        server = dict(server[0])  # was getting incorrect type inspection idk
         await ctx.send("Sending items in bulk")
         command = f"giveitemtoplayer {implant_id} {blueprint_string}"
 
