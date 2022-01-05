@@ -436,6 +436,86 @@ def detect_sus(alt: dict, profile: dict, friends: dict):
     return sus, reasons
 
 
+# Takes config and removes funky stuff from it
+async def cleanup_config(settings: dict):
+    cleanup_status = ""
+    # First off, fix any old cluster data for the server graph
+    newgraphdata = {}
+    count = 0
+    for cname, countlist in settings["serverstats"].items():
+        # Just add these to the newdata dict
+        if cname == "dates" or cname == "counts" or cname == "expiration":
+            newgraphdata[cname] = countlist
+        # Only adds the player count list to the newdata if the cluster exists in main settings still
+        else:
+            if cname in settings["clusters"]:
+                newgraphdata[cname] = countlist
+            else:
+                count += 1
+    if count > 0:
+        cleanup_status += f"Deleted {count} old clusters from graph data\n"
+    count = 0
+    settings["serverstats"] = newgraphdata
+
+    # Next is fixing players that have old map data in their player stats
+    current_names = []
+    for cname, data in settings["clusters"].items():  # Go through all clusters
+        servers = data["servers"]
+        for server in servers:  # Then go through all servers in that cluster
+            name = f"{server.lower()} {cname.lower()}"
+            current_names.append(name)  # Append that name to the current names list
+    updated_players = {}
+    for uid, player in settings["players"].items():  # NOW go through every player in the database
+        if "playtime" in player:  # If the player actually has playtime logged
+            updated_player = {}
+            for k, v in player.items():
+                if k == "playtime":
+                    new_playtime = {"total": player["playtime"]["total"]}
+                    # Iterate through the existing map names and only add the ones that still exist
+                    for n in current_names:
+                        if n in player["playtime"]:  # If the map string still exists, add it to the new dict
+                            new_playtime[n] = player["playtime"][n]
+                    updated_player["playtime"] = new_playtime
+                    if len(player["playtime"]) != len(new_playtime):  # See if old and new data is different
+                        count += 1
+                else:
+                    updated_player[k] = v  # Add other not relevant data back to the updated player by default
+            updated_players[uid] = updated_player  # Add the single updated player to the updated players dict
+        else:
+            updated_players[uid] = player  # If they dont have playtime data just add them to the new dict
+    if count > 0:
+        cleanup_status += f"Removed old maps from {count} players\n"
+    count = 0
+    settings["players"] = updated_players
+
+    # Rehash player data to make sure user ID's are valid
+    rehashed_players = {}
+    for xuid, playerdata in settings["players"].items():
+        if xuid.isdigit():
+            if 20 > len(xuid) > 15:
+                rehashed_players[xuid] = playerdata
+            else:
+                count += 1
+        else:
+            count += 1
+    if count > 0:
+        cleanup_status += f"Removed {count} players from the database due to invalid user ID's\n"
+    count = 0
+    settings["players"] = rehashed_players
+
+    # Make sure players have a username for whatever reason they wouldnt maybe bot crash while registering idk
+    no_username = []
+    for xuid, data in settings["players"].items():
+        if "username" not in data:
+            no_username.append(xuid)
+            count += 1
+    for xuid in no_username:
+        del settings["players"][xuid]
+    if count > 0:
+        cleanup_status += f"Removed {count} players that for whatever reason had no username attached to their ID"
+    return settings, cleanup_status
+
+
 # Plot player count for each cluster
 # Instead of relying on matplotlibs date formatter, the data points are selected manually with set ticks
 async def get_graph(settings: dict, hours: int):

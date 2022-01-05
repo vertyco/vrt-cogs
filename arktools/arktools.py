@@ -45,6 +45,7 @@ from .formatter import (
     get_graph,
     time_formatter,
     detect_sus,
+    cleanup_config,
     IMSTUCK_BLUEPRINTS
 )
 from .menus import menu, DEFAULT_CONTROLS
@@ -64,7 +65,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.7.37"
+    __version__ = "2.8.37"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1478,93 +1479,15 @@ class ArkTools(commands.Cog):
         If you have old deleted maps still showing up in clusterstats or graph data, this should remove them.
         This will also fix your config if you have player data from the Pre-V2 era of ArkTools
         """
-        gdata = 0
-        settings = await self.config.guild(ctx.guild).all()
-        # First off, fix any old cluster data for the server graph
-        newdata = {}
-        for cname, countlist in settings["serverstats"].items():
-            # Just add these to the newdata dict
-            if cname == "dates" or cname == "counts" or cname == "expiration":
-                newdata[cname] = countlist
-            # Only adds the player count list to the newdata if the cluster exists in main settings still
-            else:
-                if cname in settings["clusters"]:
-                    newdata[cname] = countlist
-                else:
-                    log.info(f"removing {cname} from graph data")
-                    gdata += 1
-        # Set the newdict as the new serverstats dict
-        await self.config.guild(ctx.guild).serverstats.set(newdata)
+        async with ctx.typing():
+            settings = await self.config.guild(ctx.guild).all()
+            new_settings, results = await cleanup_config(settings)
 
-        # Next is fixing players that have old map data in their player stats
-        current_names = []
-        for cname, data in settings["clusters"].items():  # Go through all clusters
-            servers = data["servers"]
-            for server in servers:  # Then go through all servers in that cluster
-                name = f"{server.lower()} {cname.lower()}"
-                current_names.append(name)  # Append that name to the current names list
-        pdata = 0
-        updated_players = {}
-        for uid, player in settings["players"].items():  # NOW go through every player in the database
-            if "playtime" in player:  # If the player actually has playtime logged
-                updated_player = {}
-                for k, v in player.items():
-                    if k == "playtime":
-                        new_playtime = {"total": player["playtime"]["total"]}
-                        # Iterate through the existing map names and only add the ones that still exist
-                        for n in current_names:
-                            if n in player["playtime"]:  # If the map string still exists, add it to the new dict
-                                new_playtime[n] = player["playtime"][n]
-                        updated_player["playtime"] = new_playtime
-                        if len(player["playtime"]) != len(new_playtime):  # See if old and new data is different
-                            log.info(f"Cleaned up old maps from {player['username']}")
-                            pdata += 1
-                    else:
-                        updated_player[k] = v  # Add other not relevant data back to the updated player by default
-                updated_players[uid] = updated_player  # Add the single updated player to the updated players dict
-            else:
-                updated_players[uid] = player  # If they dont have playtime data just add them to the new dict
-        # Update the config with the refreshed player data
-        await self.config.guild(ctx.guild).players.set(updated_players)
-
-        # Rehash player stats for ArkTools version < 2.0.0 config conversion
-        rehashed_stats = {}
-        stats = settings["players"]
-        for key, value in stats.items():
-            if key.isdigit():
-                rehashed_stats[key] = value
-            else:
-                log.info(f"Fixing config for {key}")
-                xuid = value["xuid"]
-                last_seen = value["lastseen"]
-                if last_seen["map"] == "None":
-                    last_seen["map"] = None
-                rehashed_stats[xuid] = {
-                    "playtime": value["playtime"],
-                    "lastseen": last_seen,
-                    "username": key
-                }
-                if "discord" in value:
-                    rehashed_stats[xuid]["discord"] = value["discord"]
-        await self.config.guild(ctx.guild).players.set(rehashed_stats)
-
-        no_username = []
-        for xuid, data in stats.items():
-            if "username" not in data:
-                no_username.append(xuid)
-        async with self.config.guild(ctx.guild).players() as players:
-            if len(no_username) > 0:
-                await ctx.send(f"{len(no_username)} people had no usernames")
-                for person in no_username:
-                    await ctx.send(person)
-                    del players[person]
-
-        # Send whatever has been updated to the ctx channel so user can see what has happened
-        result = f"Deleted {gdata} old clusters from graph data\n" \
-                 f"Removed old maps from {pdata} players\n" \
-                 f"Found and removed {len(no_username)} players with messed up configs\n" \
-                 f"Rehashed config for {len(stats.keys())} players"
-        await ctx.send(result)
+        if results:
+            await self.config.guild(ctx.guild).set(new_settings)
+            await ctx.send(results)
+        else:
+            await ctx.send("Nothing to clean, config looks healthy :thumbsup:")
 
     # Arktools-Mod subgroup
     @arktools_main.group(name="mod")
