@@ -4393,7 +4393,7 @@ class ArkTools(commands.Cog):
                 lengths[number] += 1
         data = ""
         for num, times in lengths.items():
-            data += f"`{num}: `{times}"
+            data += f"`{num}: `{times}\n"
         await ctx.send(data)
 
 
