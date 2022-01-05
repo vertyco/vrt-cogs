@@ -150,7 +150,6 @@ class NoBot(commands.Cog):
                 try:
                     await message.delete()
                 except discord.Forbidden:
-                    print("Insufficient permissions")
                     pass
 
         # Check if message contains an embed
@@ -162,7 +161,6 @@ class NoBot(commands.Cog):
                             try:
                                 await message.delete()
                             except discord.Forbidden:
-                                print("Insufficient permissions")
                                 pass
                 # Iterate through embed fields
                 for field in embed.fields:
@@ -171,7 +169,6 @@ class NoBot(commands.Cog):
                             try:
                                 await message.delete()
                             except discord.Forbidden:
-                                print("Insufficient permissions")
                                 pass
 
 
