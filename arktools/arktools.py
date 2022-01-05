@@ -64,7 +64,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.7.36"
+    __version__ = "2.7.37"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -362,6 +362,14 @@ class ArkTools(commands.Cog):
                             log.warning("Cant sendoff msg to tribe log channel")
                         break
 
+    @staticmethod
+    async def check_reg_status(settings: dict, uid: int):
+        stats = settings["players"]
+        for xuid, stat in stats.items():
+            if "discord" in stat:
+                if stat["discord"] == uid:
+                    return stat["username"]
+
     # Hard coded item send for those hard times
     # Sends some in-game items that can help get a player unstuck, or just kill themselves
     @commands.command(name="imstuck")
@@ -466,6 +474,24 @@ class ArkTools(commands.Cog):
                 await ctx.send(f"{member.mention} has been unregistered from the Gamertag {gamertag}")
                 del players[xuid]["discord"]
 
+    # Lets a player unregister themselves
+    @commands.command(name="unregisterme")
+    @commands.guild_only()
+    async def unregister_user_self(self, ctx: commands.Context):
+        """Unregister a yourself from any gamertags you have registered to"""
+        myself = ctx.author.id
+        async with self.config.guild(ctx.guild).players() as players:
+            unreg = []
+            for xuid, data in players.items():
+                if "discord" in data:
+                    if data["discord"] == myself:
+                        unreg.append((xuid, data["username"]))
+            if len(unreg) == 0:
+                return await ctx.send(f"You arent registered to any Gamertag!")
+            for xuid, gamertag in unreg:
+                await ctx.send(f"Unregistered you from {gamertag}!")
+                del players[xuid]["discord"]
+
     @commands.command(name="unregistergt")
     @commands.admin()
     @commands.guild_only()
@@ -501,110 +527,67 @@ class ArkTools(commands.Cog):
     @commands.guild_only()
     async def register_user(self, ctx: commands.Context):
         """Register your Gamertag or steam ID in the database."""
-        timezone = await self.config.guild(ctx.guild).timezone()
-        ctype = await self.config.guild(ctx.guild).clustertypes()
-        xsapi_available = False
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        settings = await self.config.guild(ctx.guild).all()
+        user = await self.check_reg_status(settings, ctx.author.id)
+        if user:
+            return await ctx.send(f"You are already registered as {user}")
+
+        ctype = settings["clustertypes"]
+        if ctype == "xbox":
+            # do xbox method
+            await self.xbox_reg(ctx)
+        elif ctype == "steam":
+            await self.manual_or_steam_reg(ctx, "steam")
+        else:  # Both steam and xbox servers available
+            title = "Xbox or Steam?"
+            desc = "Type what type of server you want to register for in chat below."
+            embed = discord.Embed(
+                title=title,
+                description=desc
+            )
+            msg = await ctx.send(embed=embed)
+            try:
+                reply = await self.bot.wait_for("message", timeout=60, check=check)
+            except asyncio.TimeoutError:
+                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+            if "x" in reply.content.lower():
+                await self.xbox_reg(ctx)
+            elif "s" in reply.content.lower():
+                await self.manual_or_steam_reg(ctx, "steam")
+            else:
+                desc = "Registration Cancelled"
+                embed = discord.Embed(description=desc)
+                return await msg.edit(embed=embed)
+
+    async def xbox_reg(self, ctx: commands.Context):
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
         clusters = await self.config.guild(ctx.guild).clusters()
+        xsapi_available = False
         for cluster in clusters.values():
             for server in cluster["servers"].values():
                 if "tokens" in server:
                     xsapi_available = True
                     break
-        if ctype == "xbox":
-            if not xsapi_available:
-                prompt = "**Type your Xbox User ID (XUID) in chat below.**"
-            else:
-                prompt = "**Type your XBOX GAMERTAG chat below.**"
-            prompt2 = "**Type your GAMERTAG in chat below.**"
-        elif ctype == "steam":
-            prompt = "**Type your STEAM ID in chat below.**"
-            prompt2 = "**Type your Steam Username in chat below.**"
-        else:  # Both steam and xbox servers available
-            if not xsapi_available:
-                prompt = "Type your **Xbox User ID**(XUID) or **Steam ID** in chat below"
-            else:
-                prompt = "Type your **Xbox Gamertag** or **Steam ID** in chat below."
-            prompt2 = "**Type your Gamertag or Steam Username in chat below.**"
-        tz = pytz.timezone(timezone)
-        time = datetime.datetime.now(tz)
-        embed = discord.Embed(
-            description=prompt
-        )
-        msg = await ctx.send(embed=embed)
 
-        def check(message: discord.Message):
-            return message.author == ctx.author and message.channel == ctx.channel
-
-        try:
-            reply = await self.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-        if reply.content.lower() == "cancel":
+        if xsapi_available:
             embed = discord.Embed(
-                description=f"Registration cancelled"
+                description="**Type your Xbox Gamertag chat below.**"
             )
-            return await msg.edit(embed=embed)
-        # Check if user entered ID instead of Gamertag and go that route instead
-        elif reply.content.isdigit():
-            sid = reply.content
-            async with self.config.guild(ctx.guild).players() as players:
-                embed = discord.Embed(
-                    description=prompt2
-                )
-                await msg.edit(embed=embed)
-                try:
-                    reply = await self.bot.wait_for("message", timeout=60, check=check)
-                except asyncio.TimeoutError:
-                    return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-                if reply.content.lower() == "cancel":
-                    embed = discord.Embed(
-                        description=f"Registration cancelled"
-                    )
-                    return await msg.edit(embed=embed)
-                sname = reply.content
-                if sid in players:
-                    if "discord" in players[sid]:
-                        if players[sid]["discord"] != ctx.author.id:
-                            claimed = ctx.guild.get_member(players[sid]["discord"])
-                            embed = discord.Embed(
-                                description=f"{claimed.mention} has already claimed this ID",
-                                color=discord.Color.orange()
-                            )
-                            return await msg.edit(embed=embed)
-                        if players[sid]["discord"] == ctx.author.id:
-                            embed = discord.Embed(
-                                description=f"You have already claimed this ID",
-                                color=discord.Color.green()
-                            )
-                            return await msg.edit(embed=embed)
-                    players[sid]["discord"] = ctx.author.id
-                    players[sid]["username"] = sname
-                else:
-                    players[sid] = {
-                        "discord": ctx.author.id,
-                        "username": sname,
-                        "playtime": {"total": 0},
-                        "lastseen": {
-                            "time": time.isoformat(),
-                            "map": None
-                        }
-                    }
-                embed = discord.Embed(
-                    description=f"Your account has been registered to **{sname}**: `{sid}`"
-                )
-                return await msg.edit(embed=embed)
-
-        # If user doesnt type ID then make sure there's at least one server with an active API before registering
-        else:
-            if not xsapi_available:
-                embed = discord.Embed(
-                    description="❌ API keys have not been set! Try registering manually by entering your ID first "
-                                "and then your username"
-                )
-                embed.set_thumbnail(url=FAILED)
-                return await ctx.send(embed=embed)
-
+            msg = await ctx.send(embed=embed)
+            try:
+                reply = await self.bot.wait_for("message", timeout=60, check=check)
+            except asyncio.TimeoutError:
+                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+            rpl = reply.content.lower()
+            if rpl == "no" or rpl == "cancel":
+                return await msg.edit(embed=discord.Embed(description="Registration Cancelled"))
             gamertag = reply.content
             embed = discord.Embed(color=discord.Color.green(),
                                   description=f"Searching...")
@@ -648,25 +631,107 @@ class ArkTools(commands.Cog):
                             "username": gt,
                             "playtime": {"total": 0},
                             "lastseen": {
-                                "time": time.isoformat(),
+                                "time": datetime.datetime.now(pytz.timezone("UTC")).isoformat(),
                                 "map": None
                             }
                         }
+            embed = discord.Embed(
+                color=discord.Color.green(),
+                description=f"✅ Gamertag set to `{gamertag}`\n"
+                            f"XUID: `{xuid}`\n"
+                            f"Gamerscore: `{gs}`\n\n"
+            )
+            embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+            embed.set_thumbnail(url=pfp)
+            await msg.edit(embed=embed)
+            embed = discord.Embed(
+                description=f"You can now type `{ctx.prefix}addme` to have a host Gamertag add you.",
+                color=discord.Color.magenta()
+            )
+            embed.set_footer(text="Then you can follow it back and join session from its profile page!")
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("No API tokens found. Switching to manual registration.")
+            await self.manual_or_steam_reg(ctx, "xbox")
+
+    async def manual_or_steam_reg(self, ctx: commands.Context, ctype: str):
+
+        def check(message: discord.Message):
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        if ctype == "xbox":
+            prompt1 = "**Type your Xbox User ID (XUID) in chat below.**"
+            prompt2 = "**Type your Xbox Gamertag chat below.**"
+            nametype = "Gamertag"
+            id_type = "XUID"
+        else:
+            prompt1 = "**Type your STEAM ID in chat below.**"
+            prompt2 = "**Type your Steam Username in chat below.**"
+            nametype = "Username"
+            id_type = "Steam ID"
+
+        embed = discord.Embed(
+            description=prompt1
+        )
+        msg = await ctx.send(embed=embed)
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+        rpl = reply.content.lower()
+        if rpl == "no" or rpl == "cancel":
+            return await msg.edit(embed=discord.Embed(description="Registration Cancelled"))
+        if not reply.content.isdigit():
+            desc = "That is **NOT** a number... Registration cancelled :expressionless:"
+            embed = discord.Embed(description=desc)
+            return await msg.edit(embed=embed)
+
+        uid = reply.content
+        players = await self.config.guild(ctx.guild).players()
+        if uid in players and "discord" in players[uid]:
+            if players[uid]["discord"] != ctx.author.id:
+                claimed = ctx.guild.get_member(players[uid]["discord"])
                 embed = discord.Embed(
-                    color=discord.Color.green(),
-                    description=f"✅ Gamertag set to `{gamertag}`\n"
-                                f"XUID: `{xuid}`\n"
-                                f"Gamerscore: `{gs}`\n\n"
+                    description=f"{claimed.mention} has already claimed this ID",
+                    color=discord.Color.orange()
                 )
-                embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-                embed.set_thumbnail(url=pfp)
-                await msg.edit(embed=embed)
+                return await msg.edit(embed=embed)
+            if players[uid]["discord"] == ctx.author.id:
                 embed = discord.Embed(
-                    description=f"You can now type `{ctx.prefix}addme` to have a host Gamertag add you.",
-                    color=discord.Color.magenta()
+                    description=f"You have already claimed this ID",
+                    color=discord.Color.green()
                 )
-                embed.set_footer(text="Then you can follow it back and join session from its profile page!")
-                await ctx.send(embed=embed)
+                return await msg.edit(embed=embed)
+
+        embed = discord.Embed(
+            description=prompt2
+        )
+        await msg.edit(embed=embed)
+        try:
+            reply = await self.bot.wait_for("message", timeout=60, check=check)
+        except asyncio.TimeoutError:
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+
+        username = reply.content
+        async with self.config.guild(ctx.guild).players() as players:
+            if uid in players:
+                players[uid]["discord"] = ctx.author.id
+            else:
+                players[uid] = {
+                    "discord": ctx.author.id,
+                    "username": username,
+                    "playtime": {"total": 0},
+                    "lastseen": {
+                        "time": datetime.datetime.now(pytz.timezone("UTC")).isoformat(),
+                        "map": None
+                    }
+                }
+        embed = discord.Embed(
+            description=f"Your {nametype} has been set to `{username}`\n"
+                        f"{id_type}: `{uid}`"
+        )
+        embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
+        await msg.edit(embed=embed)
 
     # Force the host Gamertag(s) to add the user as a friend using XSAPI
     @commands.command(name="addme")
@@ -1120,8 +1185,11 @@ class ArkTools(commands.Cog):
     # Find out if a user has registered their gamertag
     @commands.command(name="findbyid")
     @commands.guild_only()
-    async def find_player_from_by_id(self, ctx: commands.Context, *, uid: int):
-        """Find out if a player has registered by their discord ID"""
+    async def find_player_from_by_id(self, ctx: commands.Context, uid: int):
+        """Find out if a player has registered by their discord ID
+
+        This is a manual method for if the member has left the discord
+        """
         settings = await self.config.guild(ctx.guild).all()
         stats = settings["players"]
         for xuid, stat in stats.items():
