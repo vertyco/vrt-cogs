@@ -534,7 +534,9 @@ class ArkTools(commands.Cog):
         settings = await self.config.guild(ctx.guild).all()
         user = await self.check_reg_status(settings, ctx.author.id)
         if user:
-            return await ctx.send(f"You are already registered as {user}")
+            return await ctx.send(f"You are already registered as {user}\n"
+                                  f"If you want to re-register, type `{ctx.prefix}unregisterme` "
+                                  f"and then try again.")
 
         ctype = settings["clustertypes"]
         if ctype == "xbox":
@@ -685,6 +687,7 @@ class ArkTools(commands.Cog):
             desc = "That is **NOT** a number... Registration cancelled :expressionless:"
             embed = discord.Embed(description=desc)
             return await msg.edit(embed=embed)
+
 
         uid = reply.content
         players = await self.config.guild(ctx.guild).players()
@@ -4377,3 +4380,20 @@ class ArkTools(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(10)
         log.info("Janitor ready")
+
+    @commands.command()
+    async def test1(self, ctx):
+        lengths = {}
+        players = await self.config.guild(ctx.guild).players()
+        for xuid in players:
+            number = len(xuid)
+            if number not in lengths:
+                lengths[number] = 0
+            else:
+                lengths[number] += 1
+        data = ""
+        for num, times in lengths.items():
+            data += f"`{num}: `{times}"
+        await ctx.send(data)
+
+
