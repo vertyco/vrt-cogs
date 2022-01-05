@@ -2868,6 +2868,7 @@ class ArkTools(commands.Cog):
             for mention in message.mentions:
                 message.content = message.content.replace(f"<@!{mention.id}>", f"@{mention.name}")
         if message.channel_mentions:
+            # noinspection PyTypeChecker
             for mention in message.channel_mentions:
                 message.content = message.content.replace(f"<#{mention.id}>", f"#{mention.name}")
         if message.role_mentions:
