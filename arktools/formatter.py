@@ -1,14 +1,13 @@
-import math
-import discord
-import re
 import datetime
-import pytz
 import io
+import math
+import re
 import unicodedata
 
+import discord
+import pytz
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
-
 
 # Hard coded item blueprint paths for the imstuck command
 IMSTUCK_BLUEPRINTS = [
@@ -620,8 +619,3 @@ async def get_graph(settings: dict, hours: int):
         file = discord.File(result, filename="plot.png")
         result.close()
         return file
-
-
-
-
-

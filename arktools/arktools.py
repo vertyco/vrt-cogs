@@ -7,19 +7,16 @@ import random
 import re
 import socket
 import sys
-
 import typing
+
 import aiohttp
 import discord
-import pytz
-
 import numpy as np
-
-from rcon import Client
+import pytz
 from discord.ext import tasks
+from rcon import Client
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify
-
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
@@ -1055,6 +1052,7 @@ class ArkTools(commands.Cog):
                 return
             except Exception as e:
                 log.warning(f"Bulksend Error: {e}")
+
         async with ctx.typing():
             await self.bot.loop.run_in_executor(None, sender)
         await ctx.send("Bulk send complete")
@@ -4334,5 +4332,3 @@ class ArkTools(commands.Cog):
         for num, times in lengths.items():
             data += f"`{num}: `{times}\n"
         await ctx.send(data)
-
-

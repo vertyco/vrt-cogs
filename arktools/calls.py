@@ -1,14 +1,11 @@
-import unicodedata
-import re
+import json
+import logging
+
 import aiohttp
 import discord
-import json
-
 from rcon.asyncio import rcon
-
 from redbot.core.utils.chat_formatting import box
 
-import logging
 log = logging.getLogger("red.vrt.arktools")
 
 
@@ -102,8 +99,3 @@ async def get_followers(token: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(url=url, headers=headers) as res:
             return await res.json()
-
-
-
-
-
