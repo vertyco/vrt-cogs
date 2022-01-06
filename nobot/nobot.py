@@ -1,7 +1,10 @@
 import discord
 import asyncio
+import logging
 
 from redbot.core import commands, Config
+
+log = logging.getLogger("red.vrt.nobot")
 
 
 class NoBot(commands.Cog):
@@ -9,11 +12,11 @@ class NoBot(commands.Cog):
     Filter messages from other bots
 
     Some "Free" bots spam ads and links when using their commands, this cog fixes that.
-    Vertyco#0117 is in no way liable for how this cog is used
-    or any ToS it may violate for the bot it blocks messages from.
+    Add a bot to the watchlist and add phrases to look for and if that phrase is found in the other bot's
+    message, this cog will delete them.
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.2"
+    __version__ = "1.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -79,9 +82,9 @@ class NoBot(commands.Cog):
             description=f"**NoBot Setting Overview**",
             color=discord.Color.random()
         )
-        if botlist != "":
+        if botlist:
             embed.add_field(name="Bots", value=botlist, inline=False)
-        if filters != "":
+        if filters:
             embed.add_field(name="Filters", value=filters, inline=False)
         await ctx.send(embed=embed)
 
@@ -91,10 +94,10 @@ class NoBot(commands.Cog):
         async with self.config.guild(ctx.guild).content() as content:
             count = 1
             strlist = ""
-            for filter in content:
-                strlist += f"{count}. {filter}\n"
+            for phrase_filter in content:
+                strlist += f"{count}. {phrase_filter}\n"
                 count += 1
-            if strlist == "":
+            if not strlist:
                 return await ctx.send("There are no filters set")
             msg = await ctx.send(f"Type the number of the filter you want to delete\n"
                                  f"{strlist}")
@@ -124,51 +127,38 @@ class NoBot(commands.Cog):
         # Make sure message IS from a bot
         if not message.author.bot:
             return
-
         # Check if message author is itself
         if str(message.author) == str(self.bot.user):
             return
-
         # Make sure message is from a guild
         if not message.guild:
             return
-
         # Make sure its a message?
         if not message:
             return
-
         # Pull config
         config = await self.config.guild(message.guild).all()
-
         # Check if message author is in the config
         if str(message.author.id) not in config["bots"]:
             return
-
+        # Get perms
+        allowed = message.channel.permissions_for(message.guild.me).manage_messages
+        if not allowed:
+            log.warning(f"Insufficient permissions to delete message: {message.content}")
+            return
         # Check if filter is contained in message content
         for msg in config["content"]:
             if msg.lower() in message.content.lower():
-                try:
-                    await message.delete()
-                except discord.Forbidden:
-                    pass
-
+                await message.delete()
         # Check if message contains an embed
         if message.embeds:
             for embed in message.embeds:
                 for msg in config["content"]:
                     if embed.description:  # Make sure embed actually has a description
                         if msg.lower() in embed.description.lower():
-                            try:
-                                await message.delete()
-                            except discord.Forbidden:
-                                pass
+                            await message.delete()
                 # Iterate through embed fields
                 for field in embed.fields:
                     for msg in config["content"]:
                         if msg.lower() in field.value.lower():
-                            try:
-                                await message.delete()
-                            except discord.Forbidden:
-                                pass
-
-
+                            await message.delete()
