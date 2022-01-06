@@ -3017,7 +3017,8 @@ class ArkTools(commands.Cog):
                     description=f"Server {server['name']} {server['cluster']} has an out of range port 0-65535",
                     color=discord.Color.from_rgb(140, 7, 0)  # dark red
                 )
-                await eventlog.send(embed=embed)
+                if eventlog.permissions_for(guild.me).send_messages:
+                    await eventlog.send(embed=embed)
             return
         if command == "getchat" or "serverchat" in command:
             timeout = 3
