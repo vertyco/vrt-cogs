@@ -2999,7 +2999,7 @@ class ArkTools(commands.Cog):
             return
         if not guild:
             return
-        priority_commands = ["banplayer", "unbanplayer", "doexit", "saveworld"]
+        priority_commands = ["serverchat", "banplayer", "unbanplayer", "doexit", "saveworld"]
         for cmd in priority_commands:
             if cmd in command:
                 priority = True
@@ -3052,7 +3052,7 @@ class ArkTools(commands.Cog):
             res = None
         else:
             res = await self.bot.loop.run_in_executor(None, exe)
-        if not res:
+        if not res and not skip:
             # Put server in queue, loops will ignore that server for 2 minutes and then try again
             self.queue[server["chatchannel"]] = datetime.datetime.now()
         if command == "getchat":
