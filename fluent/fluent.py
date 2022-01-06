@@ -1,6 +1,6 @@
-from redbot.core import commands, Config
 import discord
 import googletrans
+from redbot.core import commands, Config
 
 translator = googletrans.Translator()
 
@@ -11,9 +11,8 @@ class Fluent(commands.Cog):
 
     Inspired by Obi-Wan3#0003's translation cog.
     """
-    # This could almost be a PR, since its purpose was to fulfil the one feature that Obi's cog didn't have
     __author__ = "Vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -63,7 +62,8 @@ class Fluent(commands.Cog):
             return await ctx.send(f"One of the languages were not found: lang1-{language1} lang2-{language2}")
         async with self.config.guild(ctx.guild).channels() as channels:
             if channel.id in channels.keys():
-                return await ctx.send(embed=discord.Embed(description=f"❌ {channel.mention} is already a fluent channel."))
+                return await ctx.send(
+                    embed=discord.Embed(description=f"❌ {channel.mention} is already a fluent channel."))
             else:
                 channels[channel.id] = {
                     "lang1": language1,
@@ -135,6 +135,3 @@ class Fluent(commands.Cog):
                         return await message.reply(embed=embed, mention_author=False)
                 else:
                     return
-
-
-
