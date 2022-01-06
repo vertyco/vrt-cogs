@@ -62,7 +62,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.8.39"
+    __version__ = "2.8.40"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -236,7 +236,7 @@ class ArkTools(commands.Cog):
         if channel in self.queue:
             td = now - self.queue[channel]
             td = td.total_seconds()
-            if td < 60:
+            if td < 120:
                 return True
             else:
                 del self.queue[channel]
@@ -244,7 +244,7 @@ class ArkTools(commands.Cog):
 
     # Cleans up the most recent live embed posted in the status channel
     @staticmethod
-    async def status_cleaner(status, dest_channel):
+    async def status_cleaner(status: dict, dest_channel: discord.TextChannel):
         # Person doesnt have a shit ton of servers so its just a single message to clean
         message = status["message"]
         if message:
@@ -357,7 +357,7 @@ class ArkTools(commands.Cog):
                         try:
                             await tribechannel.send(embed=embed)
                         except discord.Forbidden:
-                            log.warning("Cant sendoff msg to tribe log channel")
+                            log.warning("Bot doesnt have permissions to send to tribe logs")
                         break
 
     @staticmethod
@@ -1385,6 +1385,21 @@ class ArkTools(commands.Cog):
         with open(f"{ctx.guild}.json", "rb") as file:
             await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
 
+    @arktools_main.command(name="backupcluster")
+    @commands.guildowner()
+    async def backup_cluster(self, ctx: commands.Context, clustername: str):
+        """Sends a backup of a cluster config as a JSON file to Discord."""
+        settings = await self.config.guild(ctx.guild).all()
+        clusters = settings["clusters"]
+        if clustername not in clusters:
+            return await ctx.send("Cluster not found!")
+        cluster = clusters[clustername]
+        cluster = json.dumps(cluster)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(cluster)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_{clustername}_config.json"))
+
     @arktools_main.command(name="backupstats")
     @commands.guildowner()
     async def backup_stat_settings(self, ctx: commands.Context):
@@ -1434,6 +1449,22 @@ class ArkTools(commands.Cog):
             await self.config.guild(ctx.guild).set(config)
             await self.initialize()
             return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
+    @arktools_main.command(name="restorecluster")
+    @commands.guildowner()
+    async def restore_cluster(self, ctx: commands.Context, clustername: str):
+        """Upload a backup JSON file attached to this command to restore the config for a specific cluster."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            async with self.config.guild(ctx.guild).clusters() as clusters:
+                clusters[clustername] = config
+            await self.initialize()
+            return await ctx.send("Cluster restored from backup file!")
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
@@ -2271,7 +2302,7 @@ class ArkTools(commands.Cog):
             try:
                 statuschannel = statuschannel.mention
             except AttributeError:
-                statuschannel = "`#deleted-channel`"
+                statuschannel = "#deleted-channel"
         stats = settings["serverstats"]["counts"]
         exp = settings["serverstats"]["expiration"]
         days = int(len(stats) / 1440)
@@ -2304,16 +2335,30 @@ class ArkTools(commands.Cog):
                     settings += "`Ext RCON:   `Enabled\n"
                 else:
                     settings += "`Ext RCON:   `Disabled\n"
-            settings += f"`GlobalChat: `{ctx.guild.get_channel(cluster['globalchatchannel']).mention}\n" \
-                        f"`AdminLog:   `{ctx.guild.get_channel(cluster['adminlogchannel']).mention}\n" \
-                        f"`JoinLog:    `{ctx.guild.get_channel(cluster['joinchannel']).mention}\n" \
-                        f"`LeaveLog:   `{ctx.guild.get_channel(cluster['leavechannel']).mention}\n\n"
+            chat = ctx.guild.get_channel(cluster['globalchatchannel'])
+            adminlog = ctx.guild.get_channel(cluster['adminlogchannel'])
+            join = ctx.guild.get_channel(cluster['joinchannel'])
+            leave = ctx.guild.get_channel(cluster['leavechannel'])
+            if all([chat, adminlog, join, leave]):
+                settings += f"`GlobalChat: `{chat.mention}\n" \
+                            f"`AdminLog:   `{adminlog.mention}\n" \
+                            f"`JoinLog:    `{join.mention}\n" \
+                            f"`LeaveLog:   `{leave.mention}\n\n"
+            else:
+                settings += f"`GlobalChat: `{cluster['globalchatchannel']}\n" \
+                            f"`AdminLog:   `{cluster['adminlogchannel']}\n" \
+                            f"`JoinLog:    `{cluster['joinchannel']}\n" \
+                            f"`LeaveLog:   `{cluster['leavechannel']}\n\n"
 
             for server in cluster["servers"]:
                 name = server
                 server = cluster["servers"][server]
                 channel = ctx.guild.get_channel(server['chatchannel'])
-                settings += f"{channel.mention}\n" \
+                if channel:
+                    channel = channel.mention
+                else:
+                    channel = server['chatchannel']
+                settings += f"{channel}\n" \
                             f"`Map:  `{name}\n" \
                             f"`ip:   `{server['ip']}\n" \
                             f"`Port: `{server['port']}\n" \
@@ -2801,6 +2846,7 @@ class ArkTools(commands.Cog):
 
     # Cache server data
     async def initialize(self):
+        self.activeguilds = []
         self.servercount = 0
         self.servers = []
         self.channels = []
@@ -2811,9 +2857,16 @@ class ArkTools(commands.Cog):
                 continue
             settings = await self.config.guild(guild).all()
             clusters = settings["clusters"]
-            if clusters == {}:
+            if not clusters:
                 continue
-            self.activeguilds.append(guild_id)
+            servers_present = False
+            for clusterdata in clusters.values():
+                if clusterdata["servers"]:
+                    servers_present = True
+            if not servers_present:
+                continue
+            if guild_id not in self.activeguilds:
+                self.activeguilds.append(guild_id)
             for cluster in clusters:
                 if clusters[cluster] == {}:
                     continue
@@ -2987,7 +3040,7 @@ class ArkTools(commands.Cog):
                     result = client.run(command)
                     return result
             except socket.timeout:
-                return
+                return None
             except Exception as e:
                 if "WinError 10054" in str(e):
                     log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
@@ -2996,9 +3049,8 @@ class ArkTools(commands.Cog):
 
         res = await self.bot.loop.run_in_executor(None, exe)
         if not res:
+            # Put server in queue, loops will ignore that server for 2 minutes and then try again
             self.queue[server["chatchannel"]] = datetime.datetime.now()
-            msg = f"{server['name']} {server['cluster']} is offline from {command}, reconnecting in 60 seconds"
-            log.info(msg)
         if command == "getchat":
             if res:
                 if "Server received, But no response!!" not in res:
@@ -3037,12 +3089,14 @@ class ArkTools(commands.Cog):
         clustername = server["cluster"].upper()
 
         can_send = False
-        jperms = joinlog.permissions_for(guild.me).send_messages
-        lperms = leavelog.permissions_for(guild.me).send_messages
+        if joinlog and leavelog:
+            jperms = joinlog.permissions_for(guild.me).send_messages
+            lperms = leavelog.permissions_for(guild.me).send_messages
+        else:
+            jperms = None
+            lperms = None
         if jperms and lperms:
             can_send = True
-        else:
-            log.warning(f"Missing send message perms in {guild} for Join/Leave channel")
 
         lastplayerlist = self.playerlist[channel]
 
@@ -3083,6 +3137,7 @@ class ArkTools(commands.Cog):
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
+        perms = chatchannel.permissions_for(guild.me).send_messages
         msgs = res.split("\n")
         settings = await self.config.guild(guild).all()
         badnames = settings["badnames"]
@@ -3146,18 +3201,14 @@ class ArkTools(commands.Cog):
             gamertag = msg[0]
             character_name = msg[1]
             message = msg[2]
-
             # Check if any character has a blacklisted name and rename the character to their Gamertag if so
             for badname in badnames:
                 if badname.lower() == character_name.lower():
                     await self.executor(guild, server, f'renameplayer "{badname}" {gamertag}')
                     cmd = f"serverchat {gamertag}, the name {badname} has been blacklisted, you have been renamed"
                     await self.executor(guild, server, cmd)
-                    try:
+                    if perms:
                         await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
-                    except discord.Forbidden:
-                        pass
-                    break
 
             # Check or apply ranks
             if settings["autorename"]:
@@ -3182,10 +3233,8 @@ class ArkTools(commands.Cog):
                             await self.executor(guild, server, cmd)
                         cmd = f"serverchat Congrats {gamertag}, you have reached the rank of {str(rank)}"
                         await self.executor(guild, server, cmd)
-                        try:
+                        if perms:
                             await chatchannel.send(f"`Congrats {gamertag}, you have reached the rank of {str(rank)}`")
-                        except discord.Forbidden:
-                            pass
 
             # In-game command interpretation
             prefixes = await self.bot.get_valid_prefixes(guild)
@@ -3195,8 +3244,9 @@ class ArkTools(commands.Cog):
                     resp = await self.ingame_cmd(guild, p, server, gamertag, character_name, message)
                     if resp:
                         messages += f"`{resp}`\n"
+                    break
         # Send off messages to discord channels
-        try:
+        if perms:
             if messages:
                 for p in pagify(messages):
                     await chatchannel.send(p)
@@ -3206,14 +3256,12 @@ class ArkTools(commands.Cog):
             if admin_commands:
                 for p in pagify(admin_commands):
                     await adminlog.send(p)
-        except discord.Forbidden:
-            log.warning(f"MessageHandler: Cant send message in one of the channels")
         if tribe_logs:
             await self.tribelog_sendoff(guild, settings, server, tribe_logs)
 
     # In game command handler
     async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str,
-                         cmd: str):
+                         cmd: str) -> str:
         settings = await self.config.guild(guild).all()
         available_cmd = "In-Game Commands.\n" \
                         f"{prefix}register ImplantID - Register your implant ID to use commands without it\n" \
@@ -3237,7 +3285,7 @@ class ArkTools(commands.Cog):
         time = datetime.datetime.now()
         com, arg = self.parse_cmd(cmd)
         if not com:
-            return None
+            return ""
         xuid, stats = await self.get_player(gamertag, players)
         if not xuid or not stats:
             resp = "In-game command failed! This can happen if you recently changed your Gamertag"
@@ -3558,7 +3606,7 @@ class ArkTools(commands.Cog):
                     return resp
         # If a player tries a command that doesnt exist
         else:
-            return None
+            return ""
 
     async def check_implant(self, guild: discord.guild, server: dict, arg: str):
         if not arg.isdigit():
@@ -3567,7 +3615,7 @@ class ArkTools(commands.Cog):
             com = f"serverchat {resp}"
             await self.executor(guild, server, com)
             return resp
-        elif len(arg) > 9 or len(arg) < 8:
+        elif len(arg) > 9 or len(arg) < 7:
             resp = "Incorrect ID, Implant ID's are 8 or 9 digits long, " \
                    "your Implant is in the top left of your inventory, look for the 'specimen' number"
             com = f"serverchat {resp}"
@@ -3648,10 +3696,12 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(10)
         log.info("Vote session manager ready")
 
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=30)
     async def status_channel(self):
         for guild in self.activeguilds:
             guild = self.bot.get_guild(guild)
+            if not guild:
+                continue
             settings = await self.config.guild(guild).all()
             thumbnail = LIVE
             status = ""
@@ -3662,6 +3712,13 @@ class ArkTools(commands.Cog):
             dest_channel = guild.get_channel(dest_channel)
             if not dest_channel:
                 continue
+            view_perms = dest_channel.permissions_for(guild.me).view_channel
+            if not view_perms:
+                continue
+            send_perms = dest_channel.permissions_for(guild.me).send_messages
+            if not send_perms:
+                continue
+
             for cluster in settings["clusters"]:
                 cname = cluster
                 clustertotal = 0
@@ -3687,7 +3744,12 @@ class ArkTools(commands.Cog):
                             count = count / 60
                             inc = "Hours."
                             count = int(count)
-                        status += f"{guild.get_channel(channel).mention}: Offline for {count} {inc}\n"
+                        schannel = guild.get_channel(channel)
+                        if schannel:
+                            schannel = schannel.mention
+                        else:
+                            schannel = channel
+                        status += f"{schannel}: Offline for {count} {inc}\n"
                         if self.downtime[channel] == 5:
                             mentions = discord.AllowedMentions(roles=True)
                             pingrole = guild.get_role(settings["fullaccessrole"])
@@ -3696,11 +3758,15 @@ class ArkTools(commands.Cog):
                             else:
                                 pingrole = "Failed to Ping admin role... BUT,"
                             alertchannel = guild.get_channel(clustersettngs["adminlogchannel"])
-                            await alertchannel.send(
-                                f"{pingrole}\n"
-                                f"The **{sname} {cname}** server has been offline for 5 minutes now!",
-                                allowed_mentions=mentions
-                            )
+                            perms = None
+                            if alertchannel:
+                                perms = alertchannel.permissions_for(guild.me).send_messages
+                            if perms:
+                                await alertchannel.send(
+                                    f"{pingrole}\n"
+                                    f"The **{sname} {cname}** server has been offline for 5 minutes now!",
+                                    allowed_mentions=mentions
+                                )
                         self.downtime[channel] += 1
 
                     elif playerlist == "empty":
@@ -3739,6 +3805,7 @@ class ArkTools(commands.Cog):
             hours = settings["status"]["time"]
             file = await get_graph(settings, int(hours))
             img = "attachment://plot.png"
+            await self.status_cleaner(settings["status"], dest_channel)
             if len(status) <= 4096:
                 embed = discord.Embed(
                     description=status,
@@ -3753,13 +3820,11 @@ class ArkTools(commands.Cog):
                     message = await dest_channel.send(embed=embed, file=file)
                 else:
                     message = await dest_channel.send(embed=embed)
-                await self.status_cleaner(settings["status"], dest_channel)
-                if settings["status"]["multi"]:
-                    # Not using multi message so set to None to avoid log spam
-                    await self.config.guild(guild).status.multi.set(None)
+                await self.config.guild(guild).status.multi.set([])
                 await self.config.guild(guild).status.message.set(message.id)
 
             else:  # Person must have a fuck ton of servers for the bot to have use this ugh
+                # Embed is too dummy thicc and needs multiple embeds
                 pages = 0
                 for _ in pagify(status):
                     pages += 1
@@ -3767,7 +3832,6 @@ class ArkTools(commands.Cog):
                 count = 1
                 color = discord.Color.random()
                 for p in pagify(status):
-                    log.info(p)
                     if count == pages:
                         embed = discord.Embed(
                             description=p,
@@ -3777,7 +3841,7 @@ class ArkTools(commands.Cog):
                     else:
                         embed = discord.Embed(
                             description=p,
-                            color=discord.Color.random()
+                            color=color
                         )
                     if count == 1:
                         embed.set_author(name="Server Status", icon_url=guild.icon_url)
@@ -3789,10 +3853,7 @@ class ArkTools(commands.Cog):
                         message = await dest_channel.send(embed=embed)
                     count += 1
                     new_message_list.append(message.id)
-                await self.status_cleaner(settings["status"], dest_channel)
-                if settings["status"]["message"]:
-                    # Not using single message anymore so set to None to avoid log spam
-                    await self.config.guild(guild).status.message.set(None)
+                await self.config.guild(guild).status.message.set(None)
                 await self.config.guild(guild).status.multi.set(new_message_list)
 
     @status_channel.before_loop
