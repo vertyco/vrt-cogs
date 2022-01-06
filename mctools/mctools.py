@@ -32,6 +32,7 @@ class MCTools(commands.Cog):
             except Exception as e:
                 if "timed out" in str(e):
                     return "timeout"
+
         data = await self.bot.loop.run_in_executor(None, exe)
         return data
 
@@ -101,5 +102,3 @@ class MCTools(commands.Cog):
                 await ctx.send(f"{name} server deleted")
             else:
                 await ctx.send("Cannot find that server name!")
-
-
