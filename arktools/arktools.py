@@ -2999,7 +2999,7 @@ class ArkTools(commands.Cog):
             return
         if not guild:
             return
-        priority_commands = ["serverchat", "banplayer", "unbanplayer", "doexit", "saveworld"]
+        priority_commands = ["banplayer", "unbanplayer", "doexit", "saveworld"]
         for cmd in priority_commands:
             if cmd in command:
                 priority = True
