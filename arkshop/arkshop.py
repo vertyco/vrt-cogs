@@ -38,7 +38,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.5"
+    __version__ = "1.4.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1222,7 +1222,7 @@ class ArkShop(commands.Cog):
         else:
             await menu(ctx, embedlist, self.shop_controls)
 
-    async def item_compiler(self, ctx, message, shoptype, category_name, altname=None,):
+    async def item_compiler(self, ctx, message, shoptype, category_name, altname=None, ):
         title, tip, categories = await self.get_types(ctx, shoptype)
         category = {}
         if altname:  # Category name is None, back button was pressed
@@ -1626,7 +1626,7 @@ class ArkShop(commands.Cog):
             page: int,
             timeout: float,
             emoji: str,
-            ):
+    ):
         await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
@@ -1644,7 +1644,7 @@ class ArkShop(commands.Cog):
             page: int,
             timeout: float,
             emoji: str,
-            ):
+    ):
         await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
@@ -1662,7 +1662,7 @@ class ArkShop(commands.Cog):
             page: int,
             timeout: float,
             emoji: str,
-            ):
+    ):
         await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
@@ -1680,7 +1680,7 @@ class ArkShop(commands.Cog):
             page: int,
             timeout: float,
             emoji: str,
-            ):
+    ):
         await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
@@ -1698,7 +1698,7 @@ class ArkShop(commands.Cog):
             page: int,
             timeout: float,
             emoji: str,
-            ):
+    ):
         await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description

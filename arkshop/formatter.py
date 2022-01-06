@@ -1,5 +1,6 @@
 import math
 import random
+
 import discord
 
 TIPS = [
@@ -92,4 +93,3 @@ async def rlist(shops):
         )
         embeds.append(embed)
     return embeds
-
