@@ -1,12 +1,13 @@
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box, pagify
-from discord.ext import tasks
-import datetime
-import aiohttp
-import discord
 import asyncio
+import datetime
 import json
 import re
+
+import aiohttp
+import discord
+from discord.ext import tasks
+from redbot.core import commands, Config
+from redbot.core.utils.chat_formatting import box
 
 
 class DayZTools(commands.Cog):
@@ -155,7 +156,7 @@ class DayZTools(commands.Cog):
                       f"Location: `{location}`\n"
                       f"Memory: `{memory} MB`",
                 inline=False
-                )
+            )
         channel = guild.get_channel(channeldata)
 
         msgtoedit = None
