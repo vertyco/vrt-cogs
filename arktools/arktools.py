@@ -3040,7 +3040,7 @@ class ArkTools(commands.Cog):
                     result = client.run(command)
                     return result
             except socket.timeout:
-                return None
+                return
             except Exception as e:
                 if "WinError 10054" in str(e):
                     log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
@@ -3696,7 +3696,7 @@ class ArkTools(commands.Cog):
         await asyncio.sleep(10)
         log.info("Vote session manager ready")
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(seconds=60)
     async def status_channel(self):
         for guild in self.activeguilds:
             guild = self.bot.get_guild(guild)
