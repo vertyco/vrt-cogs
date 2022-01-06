@@ -62,7 +62,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.8.40"
+    __version__ = "2.8.41"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -3007,7 +3007,9 @@ class ArkTools(commands.Cog):
         else:
             priority = False
         if not priority and self.in_queue(server["chatchannel"]):
-            return
+            skip = True
+        else:
+            skip = False
         if server["port"] > 65535 or server["port"] < 0:
             eventlog = guild.get_channel(server["eventlog"])
             if eventlog:
@@ -3046,8 +3048,10 @@ class ArkTools(commands.Cog):
                     log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
                 else:
                     log.warning(f"Executor Error: {e}")
-
-        res = await self.bot.loop.run_in_executor(None, exe)
+        if skip:
+            res = None
+        else:
+            res = await self.bot.loop.run_in_executor(None, exe)
         if not res:
             # Put server in queue, loops will ignore that server for 2 minutes and then try again
             self.queue[server["chatchannel"]] = datetime.datetime.now()
