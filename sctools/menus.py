@@ -2,22 +2,21 @@ import asyncio
 import contextlib
 import functools
 from typing import Iterable, List, Union
-import discord
 
+import discord
 from redbot.core import commands
 from redbot.core.utils.predicates import ReactionPredicate
-
 
 _ReactableEmoji = Union[str, discord.Emoji]
 
 
 async def menu(
-    ctx: commands.Context,
-    pages: Union[List[str], List[discord.Embed]],
-    controls: dict,
-    message: discord.Message = None,
-    page: int = 0,
-    timeout: float = 60.0,
+        ctx: commands.Context,
+        pages: Union[List[str], List[discord.Embed]],
+        controls: dict,
+        message: discord.Message = None,
+        page: int = 0,
+        timeout: float = 60.0,
 ):
     """
     Parameters
@@ -45,7 +44,7 @@ async def menu(
     if not isinstance(pages[0], (discord.Embed, str)):
         raise RuntimeError("Pages must be of type discord.Embed or str")
     if not all(isinstance(x, discord.Embed) for x in pages) and not all(
-        isinstance(x, str) for x in pages
+            isinstance(x, str) for x in pages
     ):
         raise RuntimeError("All pages must be of the same type")
     for key, value in controls.items():
@@ -104,13 +103,13 @@ async def menu(
 
 
 async def next_page(
-    ctx: commands.Context,
-    pages: list,
-    controls: dict,
-    message: discord.Message,
-    page: int,
-    timeout: float,
-    emoji: str,
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+        emoji: str,
 ):
     perms = message.channel.permissions_for(ctx.me)
     if perms.manage_messages:  # Can manage messages, so remove react
@@ -124,13 +123,13 @@ async def next_page(
 
 
 async def skip_ten(
-    ctx: commands.Context,
-    pages: list,
-    controls: dict,
-    message: discord.Message,
-    page: int,
-    timeout: float,
-    emoji: str,
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+        emoji: str,
 ):
     perms = message.channel.permissions_for(ctx.me)
     if perms.manage_messages:  # Can manage messages, so remove react
@@ -146,13 +145,13 @@ async def skip_ten(
 
 
 async def prev_page(
-    ctx: commands.Context,
-    pages: list,
-    controls: dict,
-    message: discord.Message,
-    page: int,
-    timeout: float,
-    emoji: str,
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+        emoji: str,
 ):
     perms = message.channel.permissions_for(ctx.me)
     if perms.manage_messages:  # Can manage messages, so remove react
@@ -166,13 +165,13 @@ async def prev_page(
 
 
 async def back_ten(
-    ctx: commands.Context,
-    pages: list,
-    controls: dict,
-    message: discord.Message,
-    page: int,
-    timeout: float,
-    emoji: str,
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+        emoji: str,
 ):
     perms = message.channel.permissions_for(ctx.me)
     if perms.manage_messages:  # Can manage messages, so remove react
@@ -188,22 +187,21 @@ async def back_ten(
 
 
 async def close_menu(
-    ctx: commands.Context,
-    pages: list,
-    controls: dict,
-    message: discord.Message,
-    page: int,
-    timeout: float,
-    emoji: str,
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+        emoji: str,
 ):
     with contextlib.suppress(discord.NotFound):
         await message.delete()
 
 
 def start_adding_reactions(
-    message: discord.Message, emojis: Iterable[_ReactableEmoji]
+        message: discord.Message, emojis: Iterable[_ReactableEmoji]
 ) -> asyncio.Task:
-
     async def task():
         # The task should exit silently if the message is deleted
         with contextlib.suppress(discord.NotFound):

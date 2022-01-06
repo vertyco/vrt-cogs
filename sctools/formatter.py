@@ -152,13 +152,3 @@ async def ships(data):
         page += 1
         embeds.append(embed)
     return embeds
-
-
-
-
-
-
-
-
-
-

@@ -1,10 +1,11 @@
-import aiohttp
 import asyncio
+
+import aiohttp
 import discord
 from redbot.core import commands, Config
 
-from .menus import menu, DEFAULT_CONTROLS
 from .formatter import ships
+from .menus import menu, DEFAULT_CONTROLS
 
 LOADING = "https://i.gifer.com/4eta.gif"
 
@@ -14,7 +15,7 @@ class SCTools(commands.Cog):
     Star Citizen info tools
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -36,7 +37,7 @@ class SCTools(commands.Cog):
                 return await res.json(content_type=None)
 
     @commands.command(name="sckey")
-    async def add_key(self, ctx, api_key = None):
+    async def add_key(self, ctx, api_key=None):
         """
         Add your api key from the star citizen api discord
 
@@ -99,6 +100,7 @@ class SCTools(commands.Cog):
 
                     def mcheck(message: discord.Message):
                         return message.author == ctx.author and message.channel == ctx.channel
+
                     try:
                         reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
                     except asyncio.TimeoutError:
@@ -122,15 +124,3 @@ class SCTools(commands.Cog):
                 page = await ships(s)
                 page = page[0]
                 await msg.edit(embed=page)
-
-
-
-
-
-
-
-
-
-
-
-
