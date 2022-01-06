@@ -231,7 +231,7 @@ class ArkTools(commands.Cog):
         return xbl_client, xsts_token
 
     # If a server goes offline it will be added to the queue and task loops will wait before trying to call it again
-    def in_queue(self, channel):
+    def in_queue(self, channel: str):
         now = datetime.datetime.now()
         if channel in self.queue:
             td = now - self.queue[channel]
@@ -239,7 +239,6 @@ class ArkTools(commands.Cog):
             if td < 120:
                 return True
             else:
-                del self.queue[channel]
                 return False
 
     # Cleans up the most recent live embed posted in the status channel
@@ -2999,7 +2998,7 @@ class ArkTools(commands.Cog):
             return
         if not guild:
             return
-        priority_commands = ["banplayer", "unbanplayer", "doexit", "saveworld"]
+        priority_commands = ["listplayers", "banplayer", "unbanplayer", "doexit", "saveworld"]
         for cmd in priority_commands:
             if cmd in command:
                 priority = True
@@ -3021,11 +3020,11 @@ class ArkTools(commands.Cog):
                     await eventlog.send(embed=embed)
             return
         if command == "getchat" or "serverchat" in command:
-            timeout = 3
+            timeout = 2
         elif command == "listplayers":
-            timeout = 6
+            timeout = 5
         else:
-            timeout = 4
+            timeout = 3
 
         if "serverchat" in command and "extrcon" in server:
             if server["extrcon"]:
@@ -3041,6 +3040,7 @@ class ArkTools(commands.Cog):
                         timeout=timeout
                 ) as client:
                     result = client.run(command)
+                    client.close()
                     return result
             except socket.timeout:
                 return
@@ -3054,8 +3054,10 @@ class ArkTools(commands.Cog):
         else:
             res = await self.bot.loop.run_in_executor(None, exe)
         if not res and not skip:
-            # Put server in queue, loops will ignore that server for 2 minutes and then try again
-            self.queue[server["chatchannel"]] = datetime.datetime.now()
+            channel = server["chatchannel"]
+            if channel not in self.queue:
+                # Put server in queue, loops will ignore that server for 2 minutes and then try again
+                self.queue[channel] = datetime.datetime.now()
         if command == "getchat":
             if res:
                 if "Server received, But no response!!" not in res:
