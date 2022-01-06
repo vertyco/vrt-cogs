@@ -1,8 +1,8 @@
-import discord
 import datetime
-import math
 import json
+import math
 
+import discord
 from redbot.core.utils.chat_formatting import box
 
 
@@ -184,10 +184,10 @@ def screenshot_embeds(data, gamertag):
         embed.set_image(url=ss)
         embed.add_field(name="Info",
                         value=f"Game: `{check(game)}`\n"
-                        f"Screenshot Name: `{check(name)}`\n"
-                        f"Views: `{views}`\n"
-                        f"Taken on: `{check(timestamp)}`\n"
-                        f"Caption: `{check(caption)}`\n")
+                              f"Screenshot Name: `{check(name)}`\n"
+                              f"Views: `{views}`\n"
+                              f"Taken on: `{check(timestamp)}`\n"
+                              f"Caption: `{check(caption)}`\n")
         embed.set_footer(text=f"Pages: {cur_page}/{length}")
         cur_page += 1
         pages.append(embed)
@@ -286,7 +286,7 @@ def friend_embeds(friend_data, main_gamertag):
                        f"AccountTier: `{tier}`\n" \
                        f"Player Rep: `{rep}`\n" \
                        f"XUID: `{xuid}`\n" \
-                       # f"Is Following {main_gamertag}: `{followed_by}`" guess this only works for token owner
+            # f"Is Following {main_gamertag}: `{followed_by}`" guess this only works for token owner
 
         game = None
         color = discord.Color.random()
@@ -438,7 +438,8 @@ def gwg_embeds(products):
             categories += f"{category}\n"
         if categories == "":
             categories = "--"
-        price = game["display_sku_availabilities"][0]["availabilities"][0]["order_management_data"]["price"]["list_price"]
+        price = game["display_sku_availabilities"][0]["availabilities"][0]["order_management_data"]["price"][
+            "list_price"]
         release_date = game["display_sku_availabilities"][0]["availabilities"][0]["properties"]["original_release_date"]
         timestamp = fix_timestamp(release_date).strftime("%m/%d/%Y")
         embed = discord.Embed(
@@ -531,7 +532,3 @@ def stats_api_format(token, title_id, xuid):
         ]
     })
     return url, header, payload
-
-
-
-

@@ -1,23 +1,13 @@
-import discord
 import asyncio
 import json
-import xmltojson
-
-from redbot.core import commands, Config
 
 import aiohttp
-
+import discord
+import xmltojson
+from redbot.core import commands, Config
+from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
-from xbox.webapi.api.client import XboxLiveClient
-
-from .menus import (menu,
-                    DEFAULT_CONTROLS,
-                    next_page,
-                    prev_page,
-                    skip_ten,
-                    back_ten,
-                    close_menu)
 
 from .formatter import (profile,
                         profile_embed,
@@ -29,6 +19,13 @@ from .formatter import (profile,
                         gwg_embeds,
                         mostplayed,
                         stats_api_format)
+from .menus import (menu,
+                    DEFAULT_CONTROLS,
+                    next_page,
+                    prev_page,
+                    skip_ten,
+                    back_ten,
+                    close_menu)
 
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -40,7 +37,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.3.7"
+    __version__ = "3.3.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
