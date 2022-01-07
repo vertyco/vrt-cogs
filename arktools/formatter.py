@@ -320,9 +320,9 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             last_seen = time_formatter(td)
             lastmap = data["lastseen"]["map"]
             if lastmap:
-                last_seen = f"{last_seen} ago on `{lastmap}`"
+                last_seen = f"`{last_seen} ago on {lastmap}`"
             else:
-                last_seen = f"{last_seen} ago"
+                last_seen = f"`{last_seen} ago`"
             # Time played dhm
             total_playtime_string = time_formatter(total_playtime)
             registration = "Not Registered"
