@@ -182,9 +182,8 @@ def tribe_lb_format(tribes: dict, guild: discord.guild):
     global_kills = 0
     for tribe_id, data in tribes.items():
         if "kills" in data:  # Just in case
-            if data["kills"]:
-                global_kills += data["kills"]
-                leaderboard[tribe_id] = data["kills"]
+            global_kills += data["kills"]
+            leaderboard[tribe_id] = data["kills"]
 
     sorted_tribes = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     pages = math.ceil(len(sorted_tribes) / 10)

@@ -244,7 +244,7 @@ class ArkTools(commands.Cog):
     async def tribelog_sendoff(self, guild, settings, server, logs):
         for msg in logs:
             try:
-                tribe_id, embed = await self.tribelog_format(server, msg)
+            tribe_id, embed = await self.tribelog_format(server, msg)
             except TypeError:
                 continue
             if "masterlog" in settings:
