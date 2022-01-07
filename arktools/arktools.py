@@ -254,11 +254,10 @@ class ArkTools(commands.Cog):
                 for tribes in settings["tribes"]:
                     if tribe_id == tribes:
                         tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
-                        try:
-                            await tribechannel.send(embed=embed)
-                        except discord.Forbidden:
-                            log.warning("Bot doesnt have permissions to send to tribe logs")
-                        break
+                        if tribechannel:
+                            perms = tribechannel.permissions_for(guild.me).send_messages
+                            if perms:
+                                await tribechannel.send(embed=embed)
 
     # Handles tribe log formatting/itemizing
     async def tribelog_format(self, server: dict, msg: str):
