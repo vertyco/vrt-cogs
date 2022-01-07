@@ -31,10 +31,10 @@ from .calls import (
 )
 from .formatter import (
     decode,
-    tribelog_format,
     profile_format,
     expired_players,
     lb_format,
+    tribe_lb_format,
     cstats_format,
     player_stats,
     detect_friends,
@@ -62,7 +62,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.8.41"
+    __version__ = "2.9.41"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -241,6 +241,142 @@ class ArkTools(commands.Cog):
             else:
                 return False
 
+    async def tribelog_sendoff(self, guild, settings, server, logs):
+        for msg in logs:
+            try:
+                tribe_id, embed = await self.tribelog_format(server, msg)
+            except TypeError:
+                continue
+            if "masterlog" in settings:
+                masterlog = guild.get_channel(settings["masterlog"])
+                await masterlog.send(embed=embed)
+            if "tribes" in settings:
+                for tribes in settings["tribes"]:
+                    if tribe_id == tribes:
+                        tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
+                        try:
+                            await tribechannel.send(embed=embed)
+                        except discord.Forbidden:
+                            log.warning("Bot doesnt have permissions to send to tribe logs")
+                        break
+
+    # Handles tribe log formatting/itemizing
+    async def tribelog_format(self, server: dict, msg: str):
+        if "froze" in msg:
+            regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): (.+)\)'
+        else:
+            regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
+        tribe = re.findall(regex, msg)
+        if not tribe:
+            return
+        name = tribe[0][0]
+        tribe_id = tribe[0][1]
+        time = tribe[0][2]
+        action = tribe[0][3]
+        guild = server["guild"]
+        servername = f"{server['name']} {server['cluster']}"
+        async with self.config.guild(guild).all() as settings:
+            tribes = settings["tribes"]
+            players = settings["players"]
+            if tribe_id not in tribes:
+                tribes[tribe_id] = {
+                    "tribename": None,
+                    "owner": None,
+                    "channel": None,
+                    "allowed": [],
+                    "kills": 0,
+                    "servername": servername
+                }
+            if "was killed" in action.lower():  # Player or dino was killed
+                if action.lower().startswith("tribemember"):  # Player was killed by something
+                    braces = action.count("(")
+                    # PVE DEATH
+                    if braces == 0:  # player killed by wild dino so pve death
+                        reg = r'Tribemember (.+) -.+was'
+                        victim = re.search(reg, action).group(1)
+                        uid = await self.get_uid(players, victim)
+                        if uid:
+                            players[uid]["ingame"]["stats"]["pvedeaths"] += 1
+                    # PVP DEATH AND PVP KILL
+                    if braces == 1:  # player killed by another player so pvp death and kill
+                        reg = r'Tribemember (.+) - .+ was .+ by (.+) -'
+                        data = re.findall(reg, action)
+                        victim = data[0]  # PVP DEATH
+                        uid = await self.get_uid(players, victim)
+                        if uid:
+                            players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
+                        killer = data[1]  # PVP KILL
+                        uid = await self.get_uid(players, killer)
+                        if uid:
+                            players[uid]["ingame"]["stats"]["pvpkills"] += 1
+                    # PVP DEATH
+                    if braces == 2:  # player killed by a tribe's dino so pvp death
+                        reg = r'Tribemember (.+) -.+was'
+                        victim = re.search(reg, action).group(1)
+                        uid = await self.get_uid(players, victim)
+                        if uid:
+                            players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
+                if action.lower().startswith("Your"):
+                    braces = action.count("(")
+                    # TRIBE KILL
+                    if braces == 3:  # Tribe dino killed by enemy tribe dino, so tribe kill
+                        reg = r'.+\((.+)\)'
+                        tribename = re.search(reg, action).group(1)
+                        if tribes[tribe_id]["tribename"] != name:
+                            tribes[tribe_id]["tribename"] = name
+                        if tribename != name:
+                            if not any(["Baby", "Juvenile", "Adolescent"]) in action:
+                                tribes[tribe_id]["kills"] += 1
+                color = discord.Color.from_rgb(255, 13, 0)  # bright red
+            elif "tribe killed" in action.lower():
+                # add to tribe kills
+                color = discord.Color.from_rgb(246, 255, 0)  # gold
+            elif "starved" in action.lower():
+                color = discord.Color.from_rgb(140, 7, 0)  # dark red
+            elif "demolished" in action.lower():
+                color = discord.Color.from_rgb(133, 86, 5)  # brown
+            elif "destroyed" in action.lower():
+                color = discord.Color.from_rgb(115, 114, 112)  # grey
+            elif "tamed" in action.lower():
+                reg = r'(.+) T'
+                tamer = re.search(reg, action).group(1)
+                uid = await self.get_uid(players, tamer)
+                if uid:
+                    if "tamed" not in players[uid]["ingame"]["stats"]:
+                        players[uid]["ingame"]["stats"]["tamed"] = 1
+                    else:
+                        players[uid]["ingame"]["stats"]["tamed"] += 1
+                color = discord.Color.from_rgb(0, 242, 117)  # lime
+            elif "froze" in action.lower():
+                color = discord.Color.from_rgb(0, 247, 255)  # cyan
+            elif "claimed" in action.lower():
+                color = discord.Color.from_rgb(255, 0, 225)  # pink
+            elif "unclaimed" in action.lower():
+                color = discord.Color.from_rgb(102, 0, 90)  # dark purple
+            elif "uploaded" in action.lower():
+                color = discord.Color.from_rgb(255, 255, 255)  # white
+            elif "downloaded" in action.lower():
+                color = discord.Color.from_rgb(2, 2, 117)  # dark blue
+            else:
+                color = discord.Color.purple()
+        embed = discord.Embed(
+            title=f"{server['cluster'].upper()} {server['name'].capitalize()}: {name}",
+            color=color,
+            description=f"```py\n{action}\n```"
+        )
+        embed.set_footer(text=f"{time} | Tribe ID: {tribe_id}")
+        return tribe_id, embed
+
+    # Fetch a user ID from a given character name if it exists
+    @staticmethod
+    async def get_uid(players: dict, character_name: str) -> str:
+        for uid, data in players.items():
+            ig = data["ingame"]
+            for channel, details in ig.items():
+                name = details["name"]
+                if name == character_name:
+                    return uid
+
     # Cleans up the most recent live embed posted in the status channel
     @staticmethod
     async def status_cleaner(status: dict, dest_channel: discord.TextChannel):
@@ -330,34 +466,16 @@ class ArkTools(commands.Cog):
     def get_implant(playerdata: dict, channel: str):
         # idk why playerdata would be none, but eh
         if not playerdata:
-            return False
+            return None
         # Person hasnt registered their implant ID on any maps
         if "ingame" not in playerdata:
-            return False
+            return None
         # See if the person has registered their implant for that channel id
-        for chan, implant in playerdata["ingame"].items():
-            if str(chan) == channel:
-                return implant
-
-    @staticmethod
-    async def tribelog_sendoff(guild, settings, server, logs):
-        for msg in logs:
-            try:
-                tribe_id, embed = await tribelog_format(server, msg)
-            except TypeError:
-                continue
-            if "masterlog" in settings:
-                masterlog = guild.get_channel(settings["masterlog"])
-                await masterlog.send(embed=embed)
-            if "tribes" in settings:
-                for tribes in settings["tribes"]:
-                    if tribe_id == tribes:
-                        tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
-                        try:
-                            await tribechannel.send(embed=embed)
-                        except discord.Forbidden:
-                            log.warning("Bot doesnt have permissions to send to tribe logs")
-                        break
+        if channel not in playerdata["ingame"]:
+            return None
+        implant = playerdata["ingame"][channel]["implant"]
+        if implant:
+            return implant
 
     @staticmethod
     async def check_reg_status(settings: dict, uid: int):
@@ -632,7 +750,8 @@ class ArkTools(commands.Cog):
                             "lastseen": {
                                 "time": datetime.datetime.now(pytz.timezone("UTC")).isoformat(),
                                 "map": None
-                            }
+                            },
+                            "ingame": {}
                         }
             embed = discord.Embed(
                 color=discord.Color.green(),
@@ -733,7 +852,8 @@ class ArkTools(commands.Cog):
                     "lastseen": {
                         "time": datetime.datetime.now(pytz.timezone("UTC")).isoformat(),
                         "map": None
-                    }
+                    },
+                    "ingame": {}
                 }
         embed = discord.Embed(
             description=f"Your {nametype} has been set to `{username}`\n"
@@ -1136,6 +1256,17 @@ class ArkTools(commands.Cog):
         pages = lb_format(stats, ctx.guild, tz)
         if len(pages) == 0:
             return await ctx.send("There are no stats available yet!")
+        await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    # Get the top 10 players in the cluster, browse pages to see them all
+    @commands.command(name="tribelb")
+    @commands.guild_only()
+    async def tribe_leaderboard(self, ctx: commands.Context):
+        """View leaderboard for all tribes"""
+        tribes = await self.config.guild(ctx.guild).tribes()
+        pages = tribe_lb_format(tribes, ctx.guild)
+        if len(pages) == 0:
+            return await ctx.send("There are no tribes available yet!")
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
     # Displays an embed of all maps for all clusters in order of time played on each map along with top player
@@ -1668,12 +1799,14 @@ class ArkTools(commands.Cog):
         await ctx.send(embed=embed)
 
     @tribe_settings.command(name="setmasterlog")
+    @commands.guildowner()
     async def set_masterlog(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set global channel for all tribe logs."""
         await self.config.guild(ctx.guild).masterlog.set(channel.id)
         await ctx.send(f"Master tribe log channel has been set to {channel.mention}")
 
     @tribe_settings.command(name="assign")
+    @commands.guildowner()
     async def assign_tribe(self,
                            ctx: commands.Context,
                            tribe_id: str,
@@ -1681,17 +1814,23 @@ class ArkTools(commands.Cog):
                            channel: discord.TextChannel):
         """Assign a tribe to an owner to be managed by ithem."""
         async with self.config.guild(ctx.guild).tribes() as tribes:
+            msg = f"Tribe ID `{tribe_id}` has been assigned to {owner.mention} in {channel.mention}."
             if tribe_id in tribes:
-                return await ctx.send("Tribe ID already exists!")
-            tribes[tribe_id] = {
-                "owner": owner.id,
-                "channel": channel.id,
-                "allowed": []
-            }
+                tribes[tribe_id]["owner"] = owner.id
+                tribes[tribe_id]["channel"] = channel.id
+            else:
+                tribes[tribe_id] = {
+                    "tribename": None,
+                    "owner": owner.id,
+                    "channel": channel.id,
+                    "allowed": [],
+                    "kills": 0
+                }
             await channel.set_permissions(owner, read_messages=True)
-            await ctx.send(f"Tribe ID `{tribe_id}` has been assigned to {owner.mention} in {channel.mention}.")
+            await ctx.send(msg)
 
     @tribe_settings.command(name="unassign")
+    @commands.guildowner()
     async def unassign_tribe(self, ctx: commands.Context, tribe_id: str):
         """Unassign a tribe owner from a tribe."""
         async with self.config.guild(ctx.guild).tribes() as tribes:
@@ -1705,7 +1844,7 @@ class ArkTools(commands.Cog):
         """View your tribe(if you've been granted ownership of one."""
         async with self.config.guild(ctx.guild).tribes() as tribes:
             if tribes == {}:
-                return await ctx.send(f"There are no tribes set for this server.")
+                return await ctx.send(f"No tribes found.")
             for tribe in tribes:
                 if str(ctx.author.id) == tribes[tribe]["owner"] or str(ctx.author.id) in tribes[tribe]["allowed"]:
                     owner = ctx.guild.get_member(tribes[tribe]['owner']).mention
@@ -1722,6 +1861,11 @@ class ArkTools(commands.Cog):
                         name=f"Tribe Members",
                         value=f"{members}"
                     )
+                    if tribes[tribe]["kills"]:
+                        embed.add_field(
+                            name="Tribe Kills",
+                            value=tribes[tribe]["kills"]
+                        )
                     await ctx.send(embed=embed)
                     break
             else:
@@ -2855,6 +2999,13 @@ class ArkTools(commands.Cog):
             if not guild:
                 continue
             settings = await self.config.guild(guild).all()
+            log.info(f"Checking {guild} config")
+            newsettings, results = await cleanup_config(settings)
+            if results:
+                log.info(results)
+                await self.config.guild(guild).set(newsettings)
+            else:
+                log.info("Config health: Good")
             clusters = settings["clusters"]
             if not clusters:
                 continue
@@ -3049,6 +3200,8 @@ class ArkTools(commands.Cog):
                     log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
                 else:
                     log.warning(f"Executor Error: {e}")
+                return
+
         if skip:
             res = None
         else:
@@ -3216,13 +3369,37 @@ class ArkTools(commands.Cog):
                     await self.executor(guild, server, cmd)
                     if perms:
                         await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
+            try:
+                xuid, stats = await self.get_player(gamertag, settings["players"])
+            except TypeError:
+                stats = None
+                xuid = None
+            # In game player name sync
+            if stats:
+                server_id = str(server["chatchannel"])
+                async with self.config.guild(guild).players() as players:
+                    ig = players[xuid]["ingame"]
+                    if server_id not in stats["ingame"]:
+                        ig[server_id] = {
+                            "implant": None,
+                            "name": character_name,
+                            "previous_names": [],
+                            "stats": {
+                                "pvpkills": 0,
+                                "pvpdeaths": 0,
+                                "pvedeaths": 0,
+                                "tamed": 0
+                            }
+                        }
+                    else:
+                        saved_name = ig[server_id]["name"]
+                        if saved_name != character_name:
+                            if saved_name and saved_name not in ig[server_id]["previous_names"]:
+                                ig[server_id]["previous_names"].append(saved_name)
+                            ig[server_id]["name"] = character_name
 
             # Check or apply ranks
             if settings["autorename"]:
-                try:
-                    xuid, stats = await self.get_player(gamertag, settings["players"])
-                except TypeError:
-                    stats = None
                 rank = None
                 if stats:
                     if "rank" in stats:
@@ -3270,8 +3447,19 @@ class ArkTools(commands.Cog):
     async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str,
                          cmd: str) -> str:
         settings = await self.config.guild(guild).all()
-        available_cmd = "In-Game Commands.\n" \
-                        f"{prefix}register ImplantID - Register your implant ID to use commands without it\n" \
+        colors = [
+            '<RichColor Color="1,0,0,1">',  # Red
+            '<RichColor Color="0,1,0,1">',  # Green
+            '<RichColor Color="1,0.65,0,1">',  # Orange
+            '<RichColor Color="0,0,0,1">',  # Black
+            '<RichColor Color "1,1,0,1">',  # Yellow
+            '<RichColor Color="1,0,1,1">',  # Fuchsia
+            '<RichColor Color="0.5,0,0.5,1">',  # Purple
+            '<RichColor Color="0,0.5,0.5,1">'  # Blue
+        ]
+        color = random.choice(colors)
+        available_cmd = f"{color}IN GAME COMMANDS</>\n" \
+                        f"{prefix}register <ID> - Register your implantID to use commands without it\n" \
                         f"{prefix}imstuck - Send yourself a care package if youre stuck\n" \
                         f"{prefix}voteday - Start a vote for daytime\n" \
                         f"{prefix}votenight - Start a vote for night\n" \
@@ -3330,9 +3518,22 @@ class ArkTools(commands.Cog):
                     if resp:
                         return resp
                     if "ingame" not in stats:
-                        players[xuid]["ingame"] = {server["chatchannel"]: arg}
+                        players[xuid]["ingame"] = {}
                     else:
-                        players[xuid]["ingame"][server["chatchannel"]] = arg
+                        if server["chatchannel"] not in players[xuid]["ingame"]:
+                            players[xuid][server["chatchannel"]] = {
+                                "implant": arg,
+                                "name": char_name,
+                                "previous_names": [],
+                                "stats": {
+                                    "pvpkills": 0,
+                                    "pvpdeaths": 0,
+                                    "pvedeaths": 0,
+                                    "tamed": 0
+                                }
+                            }
+                        else:
+                            players[xuid]["ingame"][server["chatchannel"]]["implant"] = arg
                     resp = f"{gamertag}, Your implant was registered as {arg}"
                     com = f"serverchat {resp}"
                     await self.executor(guild, server, com)
@@ -3934,7 +4135,20 @@ class ArkTools(commands.Cog):
                             stats[xuid] = {
                                 "playtime": {"total": 0},
                                 "username": gamertag,
-                                "lastseen": {"time": current_time.isoformat(), "map": mapstring}
+                                "lastseen": {"time": current_time.isoformat(), "map": mapstring},
+                                "ingame": {
+                                    channel: {
+                                        "implant": None,
+                                        "name": None,
+                                        "previous_names": [],
+                                        "stats": {
+                                            "pvpkills": 0,
+                                            "pvpdeaths": 0,
+                                            "pvedeaths": 0,
+                                            "tamed": 0
+                                        }
+                                    }
+                                }
                             }
                             if "tokens" in server and (autowelcome or autofriend):
                                 async with aiohttp.ClientSession() as session:
@@ -4075,7 +4289,6 @@ class ArkTools(commands.Cog):
                                 "map": mapstring
                             }
                             stats[xuid]["username"] = gamertag
-
                             # Rank system
                             ranks = settings["ranks"]
                             hours = int(stats[xuid]["playtime"]["total"] / 3600)

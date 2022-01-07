@@ -81,52 +81,6 @@ def fix_timestamp(time: str):
     return time
 
 
-# Handles tribe log formatting/itemizing
-async def tribelog_format(server: dict, msg: str):
-    if "froze" in msg:
-        regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): (.+)\)'
-    else:
-        regex = r'(?i)Tribe (.+), ID (.+): (Day .+, ..:..:..): .+>(.+)<'
-    tribe = re.findall(regex, msg)
-    if not tribe:
-        return
-    name = tribe[0][0]
-    tribe_id = tribe[0][1]
-    time = tribe[0][2]
-    action = tribe[0][3]
-    if "was killed" in action.lower():
-        color = discord.Color.from_rgb(255, 13, 0)  # bright red
-    elif "tribe killed" in action.lower():
-        color = discord.Color.from_rgb(246, 255, 0)  # gold
-    elif "starved" in action.lower():
-        color = discord.Color.from_rgb(140, 7, 0)  # dark red
-    elif "demolished" in action.lower():
-        color = discord.Color.from_rgb(133, 86, 5)  # brown
-    elif "destroyed" in action.lower():
-        color = discord.Color.from_rgb(115, 114, 112)  # grey
-    elif "tamed" in action.lower():
-        color = discord.Color.from_rgb(0, 242, 117)  # lime
-    elif "froze" in action.lower():
-        color = discord.Color.from_rgb(0, 247, 255)  # cyan
-    elif "claimed" in action.lower():
-        color = discord.Color.from_rgb(255, 0, 225)  # pink
-    elif "unclaimed" in action.lower():
-        color = discord.Color.from_rgb(102, 0, 90)  # dark purple
-    elif "uploaded" in action.lower():
-        color = discord.Color.from_rgb(255, 255, 255)  # white
-    elif "downloaded" in action.lower():
-        color = discord.Color.from_rgb(2, 2, 117)  # dark blue
-    else:
-        color = discord.Color.purple()
-    embed = discord.Embed(
-        title=f"{server['cluster'].upper()} {server['name'].capitalize()}: {name}",
-        color=color,
-        description=f"```py\n{action}\n```"
-    )
-    embed.set_footer(text=f"{time} | Tribe ID: {tribe_id}")
-    return tribe_id, embed
-
-
 # Format profile data
 def profile_format(data: dict):
     gt, gs, pfp = None, None, None
@@ -213,6 +167,64 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
                 value=f"Total: `{total_playtime}`\n"
                       f"{maps}"
                       f"Last Seen: `{lseen} ago`"
+            )
+        embed.set_footer(text=f"Pages {p + 1}/{pages}")
+        embeds.append(embed)
+        start += 10
+        stop += 10
+    return embeds
+
+
+# Leaderboard embed tribe formatter
+def tribe_lb_format(tribes: dict, guild: discord.guild):
+    embeds = []
+    leaderboard = {}
+    global_kills = 0
+    for tribe_id, data in tribes.items():
+        if data["kills"]:
+            global_kills += data["kills"]
+            leaderboard[tribe_id] = data["kills"]
+
+    sorted_tribes = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+    pages = math.ceil(len(sorted_tribes) / 10)
+    start = 0
+    stop = 10
+    for p in range(pages):
+        embed = discord.Embed(
+            title="Tribe Leaderboard",
+            description=f"Global Cumulative Kills: `{global_kills}`\n\n",
+            color=discord.Color.random()
+        )
+        embed.set_thumbnail(url=guild.icon_url)
+        # Put 10 players per page, adding 10 to the start and stop values after each loop
+        if stop > len(sorted_tribes):
+            stop = len(sorted_tribes)
+        for i in range(start, stop, 1):
+            tribe_id = sorted_tribes[i][0]
+            kills = sorted_tribes[i][1]
+            tribename = tribes[tribe_id]["tribename"]
+            servername = tribes[tribe_id]["servername"]
+            owner = guild.get_member(tribes[tribe_id]["owner"])
+            if owner:
+                owner = owner.mention
+            else:
+                owner = tribes[tribe_id]["owner"]
+                if not owner:
+                    owner = "Unknown/Not Set"
+            members = tribes[tribe_id]["allowed"]
+            tribe_members = ""
+            if members:
+                for member in members:
+                    if guild.get_member(member):
+                        tribe_members += f"{guild.get_member(member).mention}\n"
+            msg = f"`Server: `{servername}\n" \
+                  f"`Owner:  `{owner}\n" \
+                  f"`Kills:  `{kills}"
+            if tribe_members:
+                msg += f"\n`Members:  `{tribe_members}"
+            embed.add_field(
+                name=f"{i + 1}. {tribename}",
+                value=msg
             )
         embed.set_footer(text=f"Pages {p + 1}/{pages}")
         embeds.append(embed)
@@ -361,16 +373,45 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                             name=f"Time on {mapname.capitalize()}",
                             value=f"`{ptime}`"
                         )
-            if "ingame" in data:
-                implant_ids = ""
-                for mapid, implant in data["ingame"].items():
-                    channel = guild.get_channel(int(mapid))
-                    if channel:
-                        mapid = channel.mention
-                    implant_ids += f"{mapid}: {implant}\n"
+            pstats = ""
+            for mapid, stats in data["ingame"].items():
+                channel = guild.get_channel(int(mapid))
+                if channel:
+                    mapid = channel.mention
+                implant = stats["implant"]
+                name = stats["name"]
+                if not implant and not name:
+                    continue
+                pk = stats["stats"]["pvpkills"]
+                pd = stats["stats"]["pvpdeaths"]
+                ped = stats["stats"]["pvedeaths"]
+                tamed = stats["stats"]["tamed"]
+                prev_names = stats["previous_names"]
+                pstats += f"{mapid}\n" \
+                          f"`Implant:        `{implant}\n"
+                if name:
+                    pstats += f"`Character Name: `{name}\n"
+                if any([pk, pd, ped]):
+                    pstats += f"`PvE Deaths:  `{ped}\n" \
+                              f"`PvP Kills:   `{pk}\n" \
+                              f"`PVP Deaths:  `{pd}\n"
+                    if pk > 0 and pd > 0:
+                        kd_ratio = round(pk / pd, 2)
+                        pstats += f"`PvP K/D:     `{kd_ratio}\n"
+                if tamed:
+                    pstats += f"`Dinos Tamed: `{tamed}\n"
+                if prev_names:
+                    names = ""
+                    for name in prev_names:
+                        if name:
+                            names += f"{name}, "
+                    if names:
+                        names = names.rstrip(", ")
+                        pstats += f"`Previous Names: `{names}\n"
+            if pstats:
                 embed.add_field(
-                    name="Registered Implant IDs",
-                    value=implant_ids,
+                    name="In-Game Stats",
+                    value=pstats,
                     inline=False
                 )
             if position != "":
@@ -482,18 +523,45 @@ async def cleanup_config(settings: dict):
     count = 0
     settings["players"] = updated_players
 
-    # Rehash player data to make sure user ID's are valid
+    # Rehash player data to make sure user ID's are valid and config is up-to-data
     rehashed_players = {}
+    fixed = 0
     for xuid, playerdata in settings["players"].items():
         if xuid.isdigit():
             if 20 > len(xuid) > 15:
+                if "ingame" not in playerdata:
+                    playerdata["ingame"] = {}
+                    fixed += 1
+                else:
+                    if playerdata["ingame"]:
+                        old = True
+                        for value in playerdata["ingame"].values():
+                            if isinstance(value, dict):  # Only newer config has dict in it, so config is not old
+                                old = False
+                                break
+                        if old:
+                            fixed_stats = {}
+                            for channel, implant in playerdata["ingame"].items():
+                                fixed_stats[channel] = {
+                                    "implant": implant,
+                                    "name": None,
+                                    "previous_names": [],
+                                    "stats": {
+                                        "pvpkills": 0,
+                                        "pvpdeaths": 0,
+                                        "pvedeaths": 0,
+                                        "tamed": 0
+                                    }
+                                }
+                            playerdata["ingame"] = fixed_stats
+                            fixed += 1
                 rehashed_players[xuid] = playerdata
             else:
                 count += 1
         else:
             count += 1
-    if count > 0:
-        cleanup_status += f"Removed {count} players from the database due to invalid user ID's\n"
+    if count > 0 or fixed > 0:
+        cleanup_status += f"Removed {count} players from the database with invalid ID's and fixed {fixed} of them\n"
     count = 0
     settings["players"] = rehashed_players
 
@@ -507,6 +575,8 @@ async def cleanup_config(settings: dict):
         del settings["players"][xuid]
     if count > 0:
         cleanup_status += f"Removed {count} players that for whatever reason had no username attached to their ID"
+    else:
+        cleanup_status = cleanup_status.rstrip("\n")
     return settings, cleanup_status
 
 
