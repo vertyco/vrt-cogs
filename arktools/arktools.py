@@ -304,7 +304,15 @@ class ArkTools(commands.Cog):
 
                         uid = await self.get_uid(players, victim)
                         if uid:
-                            players[uid]["ingame"]["stats"]["pvedeaths"] += 1
+                            if "stats" not in players[uid]["ingame"]:
+                                players[uid]["ingame"]["stats"] = {
+                                "pvpkills": 0,
+                                "pvpdeaths": 0,
+                                "pvedeaths": 1,
+                                "tamed": 0
+                                }
+                            else:
+                                players[uid]["ingame"]["stats"]["pvedeaths"] += 1
                     # PVP DEATH AND PVP KILL
                     if braces == 1:  # player killed by another player so pvp death and kill
                         reg = r'Tribemember (.+) - .+ was .+ by (.+) -'
@@ -3506,6 +3514,7 @@ class ArkTools(commands.Cog):
         players = settings["players"]
         cid = server["chatchannel"]
         playerlist = self.playerlist[cid]
+        server_id = str(cid)
         time = datetime.datetime.now()
         com, arg = self.parse_cmd(cmd)
         if not com:
@@ -3546,23 +3555,20 @@ class ArkTools(commands.Cog):
                     resp = await self.check_implant(guild, server, arg)
                     if resp:
                         return resp
-                    if "ingame" not in stats:
-                        players[xuid]["ingame"] = {}
-                    else:
-                        if server["chatchannel"] not in players[xuid]["ingame"]:
-                            players[xuid][server["chatchannel"]] = {
-                                "implant": arg,
-                                "name": char_name,
-                                "previous_names": [],
-                                "stats": {
-                                    "pvpkills": 0,
-                                    "pvpdeaths": 0,
-                                    "pvedeaths": 0,
-                                    "tamed": 0
-                                }
+                    if server_id not in players[xuid]["ingame"]:
+                        players[xuid]["ingame"][server_id] = {
+                            "implant": arg,
+                            "name": char_name,
+                            "previous_names": [],
+                            "stats": {
+                                "pvpkills": 0,
+                                "pvpdeaths": 0,
+                                "pvedeaths": 0,
+                                "tamed": 0
                             }
-                        else:
-                            players[xuid]["ingame"][server["chatchannel"]]["implant"] = arg
+                        }
+                    else:
+                        players[xuid]["ingame"][server_id]["implant"] = arg
                     resp = f"{gamertag}, Your implant was registered as {arg}"
                     com = f"serverchat {resp}"
                     await self.executor(guild, server, com)
