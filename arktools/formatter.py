@@ -216,12 +216,21 @@ def tribe_lb_format(tribes: dict, guild: discord.guild):
             if members:
                 for member in members:
                     if guild.get_member(member):
-                        tribe_members += f"{guild.get_member(member).mention}\n"
+                        tribe_members += f"{guild.get_member(member).mention}, "
             msg = f"`Server: `{servername}\n" \
                   f"`Owner:  `{owner}\n" \
                   f"`Kills:  `{kills}"
             if tribe_members:
+                tribe_members.rstrip(", ")
                 msg += f"\n`Members:  `{tribe_members}"
+            if "members" in tribes[tribe_id]:
+                if tribes[tribe_id]["members"]:
+                    members = ""
+                    for member in tribes[tribe_id]["members"]:
+                        members += f"{member}\n"
+                    if members:
+                        members.rstrip(", ")
+                        msg += f"`In-Game:  `{members}"
             embed.add_field(
                 name=f"{i + 1}. {tribename}",
                 value=msg

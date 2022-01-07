@@ -283,9 +283,11 @@ class ArkTools(commands.Cog):
                     "owner": None,
                     "channel": None,
                     "allowed": [],
+                    "members": [],
                     "kills": 0,
                     "servername": servername
                 }
+            tr = tribes[tribe_id]
             if "servername" not in tribes[tribe_id]:
                 tribes[tribe_id]["servername"] = servername
             if not tribes[tribe_id]["servername"]:
@@ -297,6 +299,8 @@ class ArkTools(commands.Cog):
                     if braces == 0:  # player killed by wild dino so pve death
                         reg = r'Tribemember (.+) -.+was'
                         victim = re.search(reg, action).group(1)
+                        if victim not in tr["members"]:
+                            tr["members"].append(victim)
                         uid = await self.get_uid(players, victim)
                         if uid:
                             players[uid]["ingame"]["stats"]["pvedeaths"] += 1
@@ -305,6 +309,8 @@ class ArkTools(commands.Cog):
                         reg = r'Tribemember (.+) - .+ was .+ by (.+) -'
                         data = re.findall(reg, action)
                         victim = data[0]  # PVP DEATH
+                        if victim not in tr["members"]:
+                            tr["members"].append(victim)
                         uid = await self.get_uid(players, victim)
                         if uid:
                             players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
@@ -316,6 +322,8 @@ class ArkTools(commands.Cog):
                     if braces == 2:  # player killed by a tribe's dino so pvp death
                         reg = r'Tribemember (.+) -.+was'
                         victim = re.search(reg, action).group(1)
+                        if victim not in tr["members"]:
+                            tr["members"].append(victim)
                         uid = await self.get_uid(players, victim)
                         if uid:
                             if "stats" in players[uid]["ingame"]:
@@ -329,7 +337,14 @@ class ArkTools(commands.Cog):
                         if tribes[tribe_id]["tribename"] != name:
                             tribes[tribe_id]["tribename"] = name
                         if tribename != name:
-                            if not any(["Baby", "Juvenile", "Adolescent"]) in action:
+                            valid = True
+                            if "Baby" in action:
+                                valid = False
+                            if "Juvenile" in action:
+                                valid = False
+                            if "Adolescent" in action:
+                                valid = False
+                            if valid:
                                 tribes[tribe_id]["kills"] += 1
                 color = discord.Color.from_rgb(255, 13, 0)  # bright red
             elif "tribe killed" in action.lower():
