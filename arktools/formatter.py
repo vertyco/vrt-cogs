@@ -181,9 +181,10 @@ def tribe_lb_format(tribes: dict, guild: discord.guild):
     leaderboard = {}
     global_kills = 0
     for tribe_id, data in tribes.items():
-        if data["kills"]:
-            global_kills += data["kills"]
-            leaderboard[tribe_id] = data["kills"]
+        if "kills" in data:  # Just in case
+            if data["kills"]:
+                global_kills += data["kills"]
+                leaderboard[tribe_id] = data["kills"]
 
     sorted_tribes = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     pages = math.ceil(len(sorted_tribes) / 10)
@@ -569,6 +570,26 @@ async def cleanup_config(settings: dict):
         cleanup_status += f"Removed {count} players from the database with invalid ID's and fixed {fixed} of them\n"
     count = 0
     settings["players"] = rehashed_players
+
+    # Fix any tribe issues
+    tribes = settings["tribes"]
+    newtribedata = {}
+    for tribe_id, data in tribes.items():
+        if "kills" not in data:
+            newtribedata[tribe_id] = {
+                "tribename": None,
+                "owner": data["owner"],
+                "channel": data["channel"],
+                "allowed": data["allowed"],
+                "kills": 0,
+                "servername": None
+            }
+            count += 1
+        else:
+            newtribedata[tribe_id] = data
+    if count:
+        cleanup_status += f"Fixed {count} Tribe configs with old data\n"
+        count = 0
 
     # Make sure players have a username for whatever reason they wouldnt maybe bot crash while registering idk
     no_username = []

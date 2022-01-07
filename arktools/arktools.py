@@ -287,6 +287,10 @@ class ArkTools(commands.Cog):
                     "kills": 0,
                     "servername": servername
                 }
+            if "servername" not in tribes[tribe_id]:
+                tribes[tribe_id]["servername"] = servername
+            if not tribes[tribe_id]["servername"]:
+                tribes[tribe_id]["servername"] = servername
             if "was killed" in action.lower():  # Player or dino was killed
                 if action.lower().startswith("tribemember"):  # Player was killed by something
                     braces = action.count("(")
