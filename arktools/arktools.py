@@ -318,7 +318,8 @@ class ArkTools(commands.Cog):
                         victim = re.search(reg, action).group(1)
                         uid = await self.get_uid(players, victim)
                         if uid:
-                            players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
+                            if "stats" in players[uid]["ingame"]:
+                                players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
                 if action.lower().startswith("Your"):
                     braces = action.count("(")
                     # TRIBE KILL
