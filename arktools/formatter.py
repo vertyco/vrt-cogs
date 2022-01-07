@@ -555,7 +555,7 @@ async def cleanup_config(settings: dict):
                                 }
                             playerdata["ingame"] = fixed_stats
                             fixed += 1
-                        else:
+                        else:  # added "tamed" after everything else so check for that
                             for channel, implant in playerdata["ingame"].items():
                                 if "tamed" not in playerdata["ingame"][channel]["stats"]:
                                     playerdata["ingame"][channel]["stats"]["tamed"] = 0
