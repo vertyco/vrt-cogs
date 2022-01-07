@@ -555,6 +555,11 @@ async def cleanup_config(settings: dict):
                                 }
                             playerdata["ingame"] = fixed_stats
                             fixed += 1
+                        else:
+                            for channel, implant in playerdata["ingame"].items():
+                                if "tamed" not in playerdata["ingame"][channel]["stats"]:
+                                    playerdata["ingame"][channel]["stats"]["tamed"] = 0
+                                    fixed += 1
                 rehashed_players[xuid] = playerdata
             else:
                 count += 1
