@@ -230,7 +230,7 @@ def tribe_lb_format(tribes: dict, guild: discord.guild):
                         members += f"{member}\n"
                     if members:
                         members.rstrip(", ")
-                        msg += f"`In-Game:  `{members}"
+                        msg += f"\n`In-Game:  `{members}"
             embed.add_field(
                 name=f"{i + 1}. {tribename}",
                 value=msg
