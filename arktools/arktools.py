@@ -279,7 +279,7 @@ class ArkTools(commands.Cog):
             players = settings["players"]
             if tribe_id not in tribes:
                 tribes[tribe_id] = {
-                    "tribename": None,
+                    "tribename": name,
                     "owner": None,
                     "channel": None,
                     "allowed": [],
@@ -573,6 +573,16 @@ class ArkTools(commands.Cog):
             for sname, slist in settings["serverstats"].items():
                 if sname != "expiration":
                     slist.clear()
+            await ctx.tick()
+
+    # Reset tribe data
+    @commands.command(name="wipegraphdata")
+    @commands.guildowner()
+    @commands.guild_only()
+    async def wipe_tribe_data(self, ctx: commands.Context):
+        """Reset all tribe data"""
+        async with self.config.guild(ctx.guild).tribes() as tribes:
+            tribes = {}
             await ctx.tick()
 
     # Remove a discord user from a Gamertag
