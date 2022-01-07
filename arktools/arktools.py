@@ -62,7 +62,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.9.41"
+    __version__ = "2.9.42"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -301,6 +301,7 @@ class ArkTools(commands.Cog):
                         victim = re.search(reg, action).group(1)
                         if victim not in tr["members"]:
                             tr["members"].append(victim)
+
                         uid = await self.get_uid(players, victim)
                         if uid:
                             players[uid]["ingame"]["stats"]["pvedeaths"] += 1
@@ -320,6 +321,7 @@ class ArkTools(commands.Cog):
                             players[uid]["ingame"]["stats"]["pvpkills"] += 1
                     # PVP DEATH
                     if braces == 2:  # player killed by a tribe's dino so pvp death
+                        log.info(msg)  # Still trying to figure out possible strings to parse
                         reg = r'Tribemember (.+) -.+was'
                         victim = re.search(reg, action).group(1)
                         if victim not in tr["members"]:
@@ -328,26 +330,24 @@ class ArkTools(commands.Cog):
                         if uid:
                             if "stats" in players[uid]["ingame"]:
                                 players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
-                if action.lower().startswith("Your"):
-                    braces = action.count("(")
-                    # TRIBE KILL
-                    if braces == 3:  # Tribe dino killed by enemy tribe dino, so tribe kill
-                        reg = r'.+\((.+)\)'
-                        tribename = re.search(reg, action).group(1)
-                        if tribes[tribe_id]["tribename"] != name:
-                            tribes[tribe_id]["tribename"] = name
-                        if tribename != name:
-                            valid = True
-                            if "Baby" in action:
-                                valid = False
-                            if "Juvenile" in action:
-                                valid = False
-                            if "Adolescent" in action:
-                                valid = False
-                            if valid:
-                                tribes[tribe_id]["kills"] += 1
                 color = discord.Color.from_rgb(255, 13, 0)  # bright red
             elif "tribe killed" in action.lower():
+                reg = r'.+\((.+)\)'
+                tribename = re.search(reg, action).group(1)
+                braces = action.count("(")
+                # TRIBE KILL
+                if tribename and tribes[tribe_id]["tribename"] != name and braces == 2:
+                    tribes[tribe_id]["tribename"] = name
+                    if tribename != name:
+                        valid = True
+                        if "Baby" in action:
+                            valid = False
+                        if "Juvenile" in action:
+                            valid = False
+                        if "Adolescent" in action:
+                            valid = False
+                        if valid:
+                            tribes[tribe_id]["kills"] += 1
                 # add to tribe kills
                 color = discord.Color.from_rgb(246, 255, 0)  # gold
             elif "starved" in action.lower():
@@ -357,7 +357,7 @@ class ArkTools(commands.Cog):
             elif "destroyed" in action.lower():
                 color = discord.Color.from_rgb(115, 114, 112)  # grey
             elif "tamed" in action.lower():
-                reg = r'(.+) T'
+                reg = r'(.+) Tamed'
                 tamer = re.search(reg, action).group(1)
                 uid = await self.get_uid(players, tamer)
                 if uid:
