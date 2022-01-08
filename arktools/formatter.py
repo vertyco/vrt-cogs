@@ -566,6 +566,15 @@ async def cleanup_config(settings: dict):
                             fixed += 1
                         else:  # added "tamed" after everything else so check for that
                             for channel, implant in playerdata["ingame"].items():
+                                if "stats" not in playerdata["ingame"][channel]:
+                                    playerdata["ingame"][channel]["stats"] = {
+                                        "pvpkills": 0,
+                                        "pvpdeaths": 0,
+                                        "pvedeaths": 0,
+                                        "tamed": 0
+                                    }
+                                    fixed += 1
+                            for channel, implant in playerdata["ingame"].items():
                                 if "tamed" not in playerdata["ingame"][channel]["stats"]:
                                     playerdata["ingame"][channel]["stats"]["tamed"] = 0
                                     fixed += 1

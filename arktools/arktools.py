@@ -340,22 +340,20 @@ class ArkTools(commands.Cog):
                                 players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
                 color = discord.Color.from_rgb(255, 13, 0)  # bright red
             elif "tribe killed" in action.lower():
-                reg = r'.+\((.+)\)'
-                tribename = re.search(reg, action).group(1)
-                braces = action.count("(")
                 # TRIBE KILL
-                if tribename and tribes[tribe_id]["tribename"] != name and braces == 2:
+                if tribes[tribe_id]["tribename"] != name:
                     tribes[tribe_id]["tribename"] = name
-                    if tribename != name:
-                        valid = True
-                        if "Baby" in action:
-                            valid = False
-                        if "Juvenile" in action:
-                            valid = False
-                        if "Adolescent" in action:
-                            valid = False
-                        if valid:
-                            tribes[tribe_id]["kills"] += 1
+                valid = True
+                if "Baby" in action:
+                    valid = False
+                if "Juvenile" in action:
+                    valid = False
+                if "Adolescent" in action:
+                    valid = False
+                if name in action:
+                    valid = False
+                if valid:
+                    tribes[tribe_id]["kills"] += 1
                 # add to tribe kills
                 color = discord.Color.from_rgb(246, 255, 0)  # gold
             elif "starved" in action.lower():
