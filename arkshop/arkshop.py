@@ -1482,6 +1482,20 @@ class ArkShop(commands.Cog):
                 embed.set_footer(text=random.choice(TIPS))
                 return await message.edit(embed=embed)
 
+            resp = None
+            if not reply.isdigit():
+                resp = "That is not a number. Include your implant ID NUMBER in the command, " \
+                       "your Implant is in the top left of your inventory, look for the 'specimen' number"
+            if len(reply) > 9 or len(reply) < 7:
+                resp = "Incorrect ID, Implant ID's are 7 or 9 digits long, " \
+                       "your Implant is in the top left of your inventory, look for the 'specimen' number"
+            if resp:
+                embed = discord.Embed(
+                    description=resp,
+                    color=discord.Color.red()
+                )
+                return await message.edit(embed=embed)
+
             commandlist = []
             for path in paths:
                 commandlist.append(f"giveitemtoplayer {reply.content} {path}")
