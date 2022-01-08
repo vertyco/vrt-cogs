@@ -3857,7 +3857,7 @@ class ArkTools(commands.Cog):
             await self.executor(guild, server, com)
             return resp
         elif len(arg) > 9 or len(arg) < 7:
-            resp = "Incorrect ID, Implant ID's are 8 or 9 digits long, " \
+            resp = "Incorrect ID, Implant ID's are 7 or 9 digits long, " \
                    "your Implant is in the top left of your inventory, look for the 'specimen' number"
             com = f"serverchat {resp}"
             await self.executor(guild, server, com)
