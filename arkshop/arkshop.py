@@ -39,6 +39,7 @@ class ArkShop(commands.Cog):
     """
     __author__ = "Vertyco"
     __version__ = "1.4.7"
+    __version__ = "1.4.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1483,10 +1484,10 @@ class ArkShop(commands.Cog):
                 return await message.edit(embed=embed)
 
             resp = None
-            if not reply.isdigit():
+            if not reply.isdigit():  # Check if user is stupid
                 resp = "That is not a number. Include your implant ID NUMBER in the command, " \
                        "your Implant is in the top left of your inventory, look for the 'specimen' number"
-            if len(reply) > 9 or len(reply) < 7:
+            if len(reply) > 9 or len(reply) < 7:  # Check if user is blind
                 resp = "Incorrect ID, Implant ID's are 7 or 9 digits long, " \
                        "your Implant is in the top left of your inventory, look for the 'specimen' number"
             if resp:
