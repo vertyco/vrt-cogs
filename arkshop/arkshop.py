@@ -1484,10 +1484,10 @@ class ArkShop(commands.Cog):
                 return await message.edit(embed=embed)
 
             resp = None
-            if not reply.isdigit():  # Check if user is stupid
+            if not reply.content.isdigit():  # Check if user is stupid
                 resp = "That is not a number. Include your implant ID NUMBER in the command, " \
                        "your Implant is in the top left of your inventory, look for the 'specimen' number"
-            if len(reply) > 9 or len(reply) < 7:  # Check if user is blind
+            if len(reply.content) > 9 or len(reply.content) < 7:  # Check if user is blind
                 resp = "Incorrect ID, Implant ID's are 7 or 9 digits long, " \
                        "your Implant is in the top left of your inventory, look for the 'specimen' number"
             if resp:
