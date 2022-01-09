@@ -405,43 +405,25 @@ class ArkTools(commands.Cog):
     # Cleans up the most recent live embed posted in the status channel
     @staticmethod
     async def status_cleaner(status: dict, dest_channel: discord.TextChannel):
-        # Person doesnt have a shit ton of servers so its just a single message to clean
         message = status["message"]
-        if message:
-            try:
-                msg_to_delete = await dest_channel.fetch_message(message)
-            except discord.NotFound:
-                log.info("Couldnt find status message, creating a new one.")
-                msg_to_delete = None
-            except Exception as e:
-                log.warning(f"Unknown error in server status msg: {e}")
-                msg_to_delete = None
-            if msg_to_delete:
-                try:
-                    await msg_to_delete.delete()
-                except discord.Forbidden:  # Must have imported config from another bot
-                    log.warning("Status channel: Bot doesnt have perms to delete other users messages")
-                except Exception as e:
-                    log.warning(f"Unknown error in server status deletion: {e}")
-        # Person has a fuck ton of servers so bot needs to account for a multi-message status embed
         multi = status["multi"]
-        if multi:
-            for msg in multi:
-                try:
-                    msg_to_delete = await dest_channel.fetch_message(msg)
-                except discord.NotFound:
-                    log.info("Couldnt find a multi status message, creating a new one.")
-                    msg_to_delete = None
-                except Exception as e:
-                    log.warning(f"Unknown error in server status msg: {e}")
-                    msg_to_delete = None
+        try:
+            if message:
+                msg_to_delete = await dest_channel.fetch_message(message)
                 if msg_to_delete:
-                    try:
+                    await msg_to_delete.delete()
+            else:
+                for msg in multi:
+                    msg_to_delete = await dest_channel.fetch_message(msg)
+                    if msg_to_delete:
                         await msg_to_delete.delete()
-                    except discord.Forbidden:  # Must have imported config from another bot
-                        log.warning("Status channel multi: Bot doesnt have perms to delete other users messages")
-                    except Exception as e:
-                        log.warning(f"Unknown error in server status multi deletion: {e}")
+        except discord.NotFound:
+            pass
+        except discord.Forbidden:
+            pass
+        except Exception as e:
+            cleanup_type = "Status" if message else "Multi-Status"
+            log.warning(f"{cleanup_type} Cleanup: {e}")
 
     # Pull the first (authorized) token found (for api calls where the token owner doesnt matter)
     @staticmethod
