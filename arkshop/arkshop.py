@@ -1424,6 +1424,9 @@ class ArkShop(commands.Cog):
         currency_name = await bank.get_currency_name(ctx.guild)
         logchannel = await self.config.guild(ctx.guild).logchannel()
         logchannel = ctx.guild.get_channel(logchannel)
+        perms = None
+        if logchannel:
+            perms = logchannel.permissions_for(ctx.guild.me).send_messages
         cname = users[str(ctx.author.id)]
         if not await bank.can_spend(ctx.author, int(price)):
             embed = discord.Embed(
@@ -1609,7 +1612,8 @@ class ArkShop(commands.Cog):
                         f"**Price:** {price} {currency_name}\n"
                         f"**XUID:** {xuid}"
         )
-        await logchannel.send(embed=embed)
+        if perms:
+            await logchannel.send(embed=embed)
         async with self.config.guild(ctx.guild).logs() as logs:
             member = str(ctx.author.id)
             if shoptype == "data":

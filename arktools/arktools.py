@@ -308,6 +308,7 @@ class ArkTools(commands.Cog):
                 tribes[tribe_id]["servername"] = servername
             if "was killed" in action.lower():  # Player or dino was killed
                 if action.lower().startswith("tribemember"):  # Player was killed by something
+                    # Amount of parenthesis in the action was a quick and easy way to determine kill/death type
                     braces = action.count("(")
                     # PVE DEATH
                     if braces == 0:  # player killed by wild dino so pve death
