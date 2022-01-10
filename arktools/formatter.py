@@ -8,6 +8,9 @@ import discord
 import pytz
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
+import logging
+
+log = logging.getLogger("red.vrt.arktools")
 
 # Hard coded item blueprint paths for the imstuck command
 IMSTUCK_BLUEPRINTS = [
@@ -182,8 +185,9 @@ def tribe_lb_format(tribes: dict, guild: discord.guild):
     global_kills = 0
     for tribe_id, data in tribes.items():
         if "kills" in data:  # Just in case
-            global_kills += data["kills"]
-            leaderboard[tribe_id] = data["kills"]
+            if data["kills"]:
+                global_kills += data["kills"]
+                leaderboard[tribe_id] = data["kills"]
 
     sorted_tribes = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     pages = math.ceil(len(sorted_tribes) / 10)
@@ -221,15 +225,15 @@ def tribe_lb_format(tribes: dict, guild: discord.guild):
                   f"`Owner:  `{owner}\n" \
                   f"`Kills:  `{kills}"
             if tribe_members:
-                tribe_members.rstrip(", ")
+                tribe_members.rstrip(",")
                 msg += f"\n`Members:  `{tribe_members}"
             if "members" in tribes[tribe_id]:
                 if tribes[tribe_id]["members"]:
                     members = ""
                     for member in tribes[tribe_id]["members"]:
-                        members += f"{member}\n"
+                        members += f"{member}, "
                     if members:
-                        members.rstrip(", ")
+                        members.rstrip(",")
                         msg += f"\n`In-Game:  `{members}"
             embed.add_field(
                 name=f"{i + 1}. {tribename}",
@@ -383,19 +387,20 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                             value=f"`{ptime}`"
                         )
             pstats = ""
-            for mapid, stats in data["ingame"].items():
+            for mapid, info in data["ingame"].items():
                 channel = guild.get_channel(int(mapid))
                 if channel:
                     mapid = channel.mention
-                implant = stats["implant"]
-                name = stats["name"]
+
+                implant = info["implant"]
+                name = info["name"]
                 if not implant and not name:
                     continue
-                pk = stats["stats"]["pvpkills"]
-                pd = stats["stats"]["pvpdeaths"]
-                ped = stats["stats"]["pvedeaths"]
-                tamed = stats["stats"]["tamed"]
-                prev_names = stats["previous_names"]
+                pk = info["stats"]["pvpkills"]
+                pd = info["stats"]["pvpdeaths"]
+                ped = info["stats"]["pvedeaths"]
+                tamed = info["stats"]["tamed"]
+                prev_names = info["previous_names"]
                 pstats += f"{mapid}\n" \
                           f"`Implant:        `{implant}\n"
                 if name:
@@ -541,43 +546,37 @@ async def cleanup_config(settings: dict):
                 if "ingame" not in playerdata:
                     playerdata["ingame"] = {}
                     fixed += 1
-                else:
-                    if playerdata["ingame"]:
-                        old = True
-                        for value in playerdata["ingame"].values():
-                            if isinstance(value, dict):  # Only newer config has dict in it, so config is not old
-                                old = False
-                                break
-                        if old:
-                            fixed_stats = {}
-                            for channel, implant in playerdata["ingame"].items():
-                                fixed_stats[channel] = {
-                                    "implant": implant,
-                                    "name": None,
-                                    "previous_names": [],
-                                    "stats": {
-                                        "pvpkills": 0,
-                                        "pvpdeaths": 0,
-                                        "pvedeaths": 0,
-                                        "tamed": 0
-                                    }
+                if playerdata["ingame"]:
+                    old = True
+                    for value in playerdata["ingame"].values():
+                        if isinstance(value, dict):  # Only newer config has dict in it, so config is not old
+                            old = False
+                            break
+                    if old:
+                        fixed_stats = {}
+                        for channel, implant in playerdata["ingame"].items():
+                            fixed_stats[channel] = {
+                                "implant": implant,
+                                "name": None,
+                                "previous_names": [],
+                                "stats": {
+                                    "pvpkills": 0,
+                                    "pvpdeaths": 0,
+                                    "pvedeaths": 0,
+                                    "tamed": 0
                                 }
-                            playerdata["ingame"] = fixed_stats
-                            fixed += 1
-                        else:  # added "tamed" after everything else so check for that
-                            for channel, implant in playerdata["ingame"].items():
-                                if "stats" not in playerdata["ingame"][channel]:
-                                    playerdata["ingame"][channel]["stats"] = {
-                                        "pvpkills": 0,
-                                        "pvpdeaths": 0,
-                                        "pvedeaths": 0,
-                                        "tamed": 0
-                                    }
-                                    fixed += 1
-                            for channel, implant in playerdata["ingame"].items():
-                                if "tamed" not in playerdata["ingame"][channel]["stats"]:
-                                    playerdata["ingame"][channel]["stats"]["tamed"] = 0
-                                    fixed += 1
+                            }
+                        playerdata["ingame"] = fixed_stats
+                        fixed += 1
+                    else:  # Make sure everything else is straight
+                        keys_to_delete = []
+                        for channel, data in playerdata["ingame"].items():
+                            if channel == "stats":  # Supposed to be channel ID's not channel, cleanup from oopsie
+                                keys_to_delete.append(channel)
+                        if keys_to_delete:
+                            for key in keys_to_delete:
+                                del playerdata["ingame"][key]
+                                fixed += 1
                 rehashed_players[xuid] = playerdata
             else:
                 count += 1
@@ -593,6 +592,7 @@ async def cleanup_config(settings: dict):
     newtribedata = {}
     for tribe_id, data in tribes.items():
         if "kills" not in data:
+            log.warning(f"TribeID {tribe_id}: {data}")
             newtribedata[tribe_id] = {
                 "tribename": None,
                 "owner": data["owner"],
@@ -604,6 +604,7 @@ async def cleanup_config(settings: dict):
             count += 1
         else:
             newtribedata[tribe_id] = data
+    settings["tribes"] = newtribedata
     if count:
         cleanup_status += f"Fixed {count} Tribe configs with old data\n"
         count = 0

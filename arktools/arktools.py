@@ -62,7 +62,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.9.42"
+    __version__ = "2.9.43"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -247,17 +247,17 @@ class ArkTools(commands.Cog):
                 tribe_id, embed = await self.tribelog_format(server, msg)
             except TypeError:
                 continue
-            if "masterlog" in settings:
-                masterlog = guild.get_channel(settings["masterlog"])
-                await masterlog.send(embed=embed)
-            if "tribes" in settings:
-                for tribes in settings["tribes"]:
-                    if tribe_id == tribes:
-                        tribechannel = guild.get_channel(settings["tribes"][tribes]["channel"])
-                        if tribechannel:
-                            perms = tribechannel.permissions_for(guild.me).send_messages
-                            if perms:
-                                await tribechannel.send(embed=embed)
+            masterlog = guild.get_channel(settings["masterlog"])
+            if masterlog:
+                perms = masterlog.permissions_for(guild.me).send_messages
+                if perms:
+                    await masterlog.send(embed=embed)
+            if tribe_id in settings["tribes"]:
+                tribechannel = guild.get_channel(settings["tribes"][tribe_id]["channel"])
+                if tribechannel:
+                    perms = tribechannel.permissions_for(guild.me).send_messages
+                    if perms:
+                        await tribechannel.send(embed=embed)
 
     # Handles tribe log formatting/itemizing
     async def tribelog_format(self, server: dict, msg: str):
@@ -274,6 +274,7 @@ class ArkTools(commands.Cog):
         action = tribe[0][3]
         guild = server["guild"]
         servername = f"{server['name']} {server['cluster']}"
+        server_id = str(server["chatchannel"])
         async with self.config.guild(guild).all() as settings:
             tribes = settings["tribes"]
             players = settings["players"]
@@ -287,6 +288,8 @@ class ArkTools(commands.Cog):
                     "kills": 0,
                     "servername": servername
                 }
+            if tribes[tribe_id]["tribename"] != name:
+                tribes[tribe_id]["tribename"] = name
             tr = tribes[tribe_id]
             if "servername" not in tribes[tribe_id]:
                 tribes[tribe_id]["servername"] = servername
@@ -304,15 +307,7 @@ class ArkTools(commands.Cog):
 
                         uid = await self.get_uid(players, victim)
                         if uid:
-                            if "stats" not in players[uid]["ingame"]:
-                                players[uid]["ingame"]["stats"] = {
-                                "pvpkills": 0,
-                                "pvpdeaths": 0,
-                                "pvedeaths": 1,
-                                "tamed": 0
-                                }
-                            else:
-                                players[uid]["ingame"]["stats"]["pvedeaths"] += 1
+                            players[uid]["ingame"][server_id]["stats"]["pvedeaths"] += 1
                     # PVP DEATH AND PVP KILL
                     if braces == 1:  # player killed by another player so pvp death and kill
                         reg = r'Tribemember (.+) - .+ was .+ by (.+) -'
@@ -322,11 +317,11 @@ class ArkTools(commands.Cog):
                             tr["members"].append(victim)
                         uid = await self.get_uid(players, victim)
                         if uid:
-                            players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
+                            players[uid]["ingame"][server_id]["stats"]["pvpdeaths"] += 1
                         killer = data[1]  # PVP KILL
                         uid = await self.get_uid(players, killer)
                         if uid:
-                            players[uid]["ingame"]["stats"]["pvpkills"] += 1
+                            players[uid]["ingame"][server_id]["stats"]["pvpkills"] += 1
                     # PVP DEATH
                     if braces == 2:  # player killed by a tribe's dino so pvp death
                         log.info(msg)  # Still trying to figure out possible strings to parse
@@ -336,13 +331,11 @@ class ArkTools(commands.Cog):
                             tr["members"].append(victim)
                         uid = await self.get_uid(players, victim)
                         if uid:
-                            if "stats" in players[uid]["ingame"]:
-                                players[uid]["ingame"]["stats"]["pvpdeaths"] += 1
+                            if "stats" in players[uid]["ingame"][server_id]:
+                                players[uid]["ingame"][server_id]["stats"]["pvpdeaths"] += 1
                 color = discord.Color.from_rgb(255, 13, 0)  # bright red
             elif "tribe killed" in action.lower():
                 # TRIBE KILL
-                if tribes[tribe_id]["tribename"] != name:
-                    tribes[tribe_id]["tribename"] = name
                 valid = True
                 if "Baby" in action:
                     valid = False
@@ -353,8 +346,8 @@ class ArkTools(commands.Cog):
                 if name in action:
                     valid = False
                 if valid:
+                    # Add to tribe kills
                     tribes[tribe_id]["kills"] += 1
-                # add to tribe kills
                 color = discord.Color.from_rgb(246, 255, 0)  # gold
             elif "starved" in action.lower():
                 color = discord.Color.from_rgb(140, 7, 0)  # dark red
@@ -367,10 +360,8 @@ class ArkTools(commands.Cog):
                 tamer = re.search(reg, action).group(1)
                 uid = await self.get_uid(players, tamer)
                 if uid:
-                    if "tamed" not in players[uid]["ingame"]["stats"]:
-                        players[uid]["ingame"]["stats"]["tamed"] = 1
-                    else:
-                        players[uid]["ingame"]["stats"]["tamed"] += 1
+                    # Add to player tame count
+                    players[uid]["ingame"][server_id]["stats"]["tamed"] += 1
                 color = discord.Color.from_rgb(0, 242, 117)  # lime
             elif "froze" in action.lower():
                 color = discord.Color.from_rgb(0, 247, 255)  # cyan
@@ -395,12 +386,15 @@ class ArkTools(commands.Cog):
     # Fetch a user ID from a given character name if it exists
     @staticmethod
     async def get_uid(players: dict, character_name: str) -> str:
+        if character_name.lower() in ["human", "humano"]:
+            return ""  # Dont bother logging players that dont name their character
         for uid, data in players.items():
             ig = data["ingame"]
             for channel, details in ig.items():
-                name = details["name"]
-                if name == character_name:
-                    return uid
+                if "name" in details:
+                    name = details["name"]
+                    if name == character_name:
+                        return uid
 
     # Cleans up the most recent live embed posted in the status channel
     @staticmethod
@@ -1340,6 +1334,31 @@ class ArkTools(commands.Cog):
                 if stat["discord"] == member.id:
                     return await ctx.send(f"User is registered as **{stat['username']}**")
         await ctx.send("User never registered.")
+
+    @commands.command(name="findcharname")
+    @commands.guild_only()
+    async def find_player_by_character(self, ctx: commands.Context, *, character_name: str):
+        """Find any players associated with a specified character name"""
+        players = await self.config.guild(ctx.guild).players()
+        matches = ""
+        uids = []
+        for uid, data in players.items():
+            ig = data["ingame"]
+            for channel, details in ig.items():
+                name = details["name"]
+                if name.lower() == character_name.lower():
+                    gt = data["username"]
+                    if uid not in uids:
+                        matches += f"`{gt}: `{uid}\n"
+                        uids.append(uid)
+        if matches:
+            embed = discord.Embed(
+                title="Found Matches",
+                description=f"`Gamertag: `Player ID\n{matches}"
+            )
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("No matches found")
 
     # Find out if a user has registered their discord id
     @commands.command(name="findbyid")
