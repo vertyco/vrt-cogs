@@ -275,6 +275,17 @@ class ArkTools(commands.Cog):
         guild = server["guild"]
         servername = f"{server['name']} {server['cluster']}"
         server_id = str(server["chatchannel"])
+        playerdata = {
+            "implant": None,
+            "name": None,
+            "previous_names": [],
+            "stats": {
+                "pvpkills": 0,
+                "pvpdeaths": 0,
+                "pvedeaths": 0,
+                "tamed": 0
+            }
+        }
         async with self.config.guild(guild).all() as settings:
             tribes = settings["tribes"]
             players = settings["players"]
@@ -304,9 +315,10 @@ class ArkTools(commands.Cog):
                         victim = re.search(reg, action).group(1)
                         if victim not in tr["members"]:
                             tr["members"].append(victim)
-
                         uid = await self.get_uid(players, victim)
                         if uid:
+                            if server_id not in players[uid]["ingame"]:
+                                players[uid]["ingame"][server_id] = playerdata
                             players[uid]["ingame"][server_id]["stats"]["pvedeaths"] += 1
                     # PVP DEATH AND PVP KILL
                     if braces == 1:  # player killed by another player so pvp death and kill
@@ -317,10 +329,14 @@ class ArkTools(commands.Cog):
                             tr["members"].append(victim)
                         uid = await self.get_uid(players, victim)
                         if uid:
+                            if server_id not in players[uid]["ingame"]:
+                                players[uid]["ingame"][server_id] = playerdata
                             players[uid]["ingame"][server_id]["stats"]["pvpdeaths"] += 1
                         killer = data[1]  # PVP KILL
                         uid = await self.get_uid(players, killer)
                         if uid:
+                            if server_id not in players[uid]["ingame"]:
+                                players[uid]["ingame"][server_id] = playerdata
                             players[uid]["ingame"][server_id]["stats"]["pvpkills"] += 1
                     # PVP DEATH
                     if braces == 2:  # player killed by a tribe's dino so pvp death
@@ -331,6 +347,8 @@ class ArkTools(commands.Cog):
                             tr["members"].append(victim)
                         uid = await self.get_uid(players, victim)
                         if uid:
+                            if server_id not in players[uid]["ingame"]:
+                                players[uid]["ingame"][server_id] = playerdata
                             if "stats" in players[uid]["ingame"][server_id]:
                                 players[uid]["ingame"][server_id]["stats"]["pvpdeaths"] += 1
                 color = discord.Color.from_rgb(255, 13, 0)  # bright red
@@ -360,6 +378,8 @@ class ArkTools(commands.Cog):
                 tamer = re.search(reg, action).group(1)
                 uid = await self.get_uid(players, tamer)
                 if uid:
+                    if server_id not in players[uid]["ingame"]:
+                        players[uid]["ingame"][server_id] = playerdata
                     # Add to player tame count
                     players[uid]["ingame"][server_id]["stats"]["tamed"] += 1
                 color = discord.Color.from_rgb(0, 242, 117)  # lime
@@ -4314,6 +4334,18 @@ class ArkTools(commands.Cog):
                                             newplayermessage += f"Added by {host}: ✅\n"
                                         else:
                                             newplayermessage += f"Added by {host}: ❌\n"
+                        if channel not in stats[xuid]["ingame"]:
+                            stats[xuid]["ingame"][channel] = {
+                                "implant": None,
+                                "name": None,
+                                "previous_names": [],
+                                "stats": {
+                                    "pvpkills": 0,
+                                    "pvpdeaths": 0,
+                                    "pvedeaths": 0,
+                                    "tamed": 0
+                                }
+                            }
                         if mapstring not in stats[xuid]["playtime"]:
                             stats[xuid]["playtime"][mapstring] = 0
                         else:
