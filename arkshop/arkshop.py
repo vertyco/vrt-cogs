@@ -782,6 +782,7 @@ class ArkShop(commands.Cog):
                 return await ctx.tick()
 
     @commands.command(name="setcluster")
+    @commands.guild_only()
     async def set_cluster(self, ctx):
         """
         Set the cluster you play on
