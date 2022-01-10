@@ -1346,11 +1346,12 @@ class ArkTools(commands.Cog):
             ig = data["ingame"]
             for channel, details in ig.items():
                 name = details["name"]
-                if name.lower() == character_name.lower():
-                    gt = data["username"]
-                    if uid not in uids:
-                        matches += f"`{gt}: `{uid}\n"
-                        uids.append(uid)
+                if name:
+                    if name.lower() == character_name.lower():
+                        gt = data["username"]
+                        if uid not in uids:
+                            matches += f"`{gt}: `{uid}\n"
+                            uids.append(uid)
         if matches:
             embed = discord.Embed(
                 title="Found Matches",
