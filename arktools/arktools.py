@@ -3435,9 +3435,9 @@ class ArkTools(commands.Cog):
             # In game player name sync
             if stats:
                 server_id = str(server["chatchannel"])
-                async with self.config.guild(guild).players() as players:
-                    ig = players[xuid]["ingame"]
-                    if server_id not in stats["ingame"]:
+                async with self.config.guild(guild).players() as playerconf:
+                    ig = playerconf[xuid]["ingame"]
+                    if server_id not in playerconf[xuid]["ingame"]:
                         ig[server_id] = {
                             "implant": None,
                             "name": character_name,
@@ -3449,10 +3449,12 @@ class ArkTools(commands.Cog):
                                 "tamed": 0
                             }
                         }
+                    saved_name = playerconf[xuid]["ingame"][server_id]["name"]
+                    if not saved_name:
+                        ig[server_id]["name"] = character_name
                     else:
-                        saved_name = ig[server_id]["name"]
                         if saved_name != character_name:
-                            if saved_name and saved_name not in ig[server_id]["previous_names"]:
+                            if saved_name not in ig[server_id]["previous_names"]:
                                 ig[server_id]["previous_names"].append(saved_name)
                             ig[server_id]["name"] = character_name
 
