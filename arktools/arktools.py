@@ -3436,9 +3436,8 @@ class ArkTools(commands.Cog):
             if stats:
                 server_id = str(server["chatchannel"])
                 async with self.config.guild(guild).players() as playerconf:
-                    ig = playerconf[xuid]["ingame"]
                     if server_id not in playerconf[xuid]["ingame"]:
-                        ig[server_id] = {
+                        playerconf[xuid]["ingame"][server_id] = {
                             "implant": None,
                             "name": character_name,
                             "previous_names": [],
@@ -3449,14 +3448,15 @@ class ArkTools(commands.Cog):
                                 "tamed": 0
                             }
                         }
-                    saved_name = playerconf[xuid]["ingame"][server_id]["name"]
-                    if not saved_name:
-                        ig[server_id]["name"] = character_name
                     else:
-                        if saved_name != character_name:
-                            if saved_name not in ig[server_id]["previous_names"]:
-                                ig[server_id]["previous_names"].append(saved_name)
-                            ig[server_id]["name"] = character_name
+                        saved_name = playerconf[xuid]["ingame"][server_id]["name"]
+                        if not saved_name:
+                            playerconf[xuid]["ingame"][server_id]["name"] = character_name
+                        else:
+                            if saved_name != character_name:
+                                if saved_name not in playerconf[xuid]["ingame"][server_id]["previous_names"]:
+                                    playerconf[xuid]["ingame"][server_id]["previous_names"].append(saved_name)
+                                playerconf[xuid]["ingame"][server_id]["name"] = character_name
 
             # Check or apply ranks
             if settings["autorename"]:
@@ -4194,19 +4194,7 @@ class ArkTools(commands.Cog):
                                 "playtime": {"total": 0},
                                 "username": gamertag,
                                 "lastseen": {"time": current_time.isoformat(), "map": mapstring},
-                                "ingame": {
-                                    channel: {
-                                        "implant": None,
-                                        "name": None,
-                                        "previous_names": [],
-                                        "stats": {
-                                            "pvpkills": 0,
-                                            "pvpdeaths": 0,
-                                            "pvedeaths": 0,
-                                            "tamed": 0
-                                        }
-                                    }
-                                }
+                                "ingame": {}
                             }
                             if "tokens" in server and (autowelcome or autofriend):
                                 async with aiohttp.ClientSession() as session:
@@ -4337,8 +4325,8 @@ class ArkTools(commands.Cog):
                                             newplayermessage += f"Added by {host}: ✅\n"
                                         else:
                                             newplayermessage += f"Added by {host}: ❌\n"
-                        if channel not in stats[xuid]["ingame"]:
-                            stats[xuid]["ingame"][channel] = {
+                        if str(channel) not in stats[xuid]["ingame"]:
+                            stats[xuid]["ingame"][str(channel)] = {
                                 "implant": None,
                                 "name": None,
                                 "previous_names": [],

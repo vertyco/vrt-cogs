@@ -323,7 +323,6 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 if i[0] == xuid:
                     pos = sorted_players.index(i)
                     position = f"{pos + 1}/{len(sorted_players)}"
-
             timestamp = datetime.datetime.fromisoformat(data["lastseen"]["time"])
             timestamp = timestamp.astimezone(pytz.timezone("UTC"))
             timedifference = current_time - timestamp
@@ -340,9 +339,13 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             total_playtime_string = time_formatter(total_playtime)
             registration = "Not Registered"
             in_server = True
+            color = discord.Color.random()
+            pfp = None
             if "discord" in data:
                 member = guild.get_member(data["discord"])
                 if member:
+                    color = member.colour
+                    pfp = member.avatar_url
                     registration = f"{member.mention}"
                 else:
                     registration = f"{data['discord']}"
@@ -361,8 +364,11 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                     desc += f"\n`Player Rank: `{r.mention}"
             embed = discord.Embed(
                 title=f"Player Stats for {data['username']}",
-                description=desc
+                description=desc,
+                color=color
             )
+            if pfp:
+                embed.set_thumbnail(url=pfp)
             embed.add_field(
                 name="Last Seen",
                 value=last_seen,
@@ -401,8 +407,9 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 ped = info["stats"]["pvedeaths"]
                 tamed = info["stats"]["tamed"]
                 prev_names = info["previous_names"]
-                pstats += f"{mapid}\n" \
-                          f"`Implant:        `{implant}\n"
+                pstats += f"{mapid}\n"
+                if implant:
+                    pstats += f"`Implant:        `{implant}\n"
                 if name:
                     pstats += f"`Character Name: `{name}\n"
                 if any([pk, pd, ped]):
