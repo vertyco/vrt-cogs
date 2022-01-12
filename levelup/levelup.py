@@ -12,12 +12,14 @@ from redbot.core.utils.chat_formatting import box
 from matplotlib import pyplot as plt
 from .menus import menu, DEFAULT_CONTROLS
 import io
-from disrank.generator import Generator
+from .generator import Generator
 from .formatter import (
+    hex_to_rgb,
     get_level,
     get_xp,
     get_user_position,
     get_user_stats,
+    profile_embed,
 )
 
 log = logging.getLogger("red.vrt.levelup")
@@ -94,6 +96,39 @@ class LevelUp(commands.Cog):
             "emoji": None
         }
 
+    # Hacky way to get user banner, generate backdrop based on users color if they dont have one
+    async def get_banner(self, user: discord.Member) -> str:
+        req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
+        banner_id = req["banner"]
+        if banner_id:
+            banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
+        else:
+            color = str(user.colour).strip("#")
+            banner_url = f"https://singlecolorimage.com/get/{color}/400x100"
+        return banner_url
+
+    # Generate rinky dink profile image
+    async def gen_profile_img(self, args: dict):
+
+        def exe():
+            image = Generator().generate_profile(**args)
+            file = discord.File(fp=image, filename="image.png")
+            return file
+
+        profile = await self.bot.loop.run_in_executor(None, exe)
+        return profile
+
+    # Generate rinky dink level up image
+    async def gen_levelup_img(self, args: dict):
+
+        def exe():
+            image = Generator().generate_levelup(**args)
+            file = discord.File(fp=image, filename="image.png")
+            return file
+
+        lvlup = await self.bot.loop.run_in_executor(None, exe)
+        return lvlup
+
     # Dump cache to config
     async def dump_cache(self):
         for guild in self.bot.guilds:
@@ -130,33 +165,61 @@ class LevelUp(commands.Cog):
         dm = conf["notifydm"]
         mention = conf["mention"]
         channel = conf["notifylog"]
+        usepics = conf["usepics"]
         member = guild.get_member(int(user))
         if not member:
             return
-
         # Send levelup messages
-        if dm:
-            await member.send(f"You have just reached level {new_level} in {guild.name}!")
-        if channel:
-            channel = guild.get_channel(channel)
-            if not channel:
-                return
-            if mention:
-                person = member.mention
-            else:
-                person = member.name
-            color = member.colour
-            pfp = member.avatar_url
-            embed = discord.Embed(
-                description=f"**{person} has just reached level {new_level}!**",
-                color=color
-            )
-            embed.set_thumbnail(url=pfp)
-            send = channel.permissions_for(guild.me).send_messages
-            if send:
-                await channel.send(embed=embed)
-            else:
-                log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
+        if not usepics:
+            if dm:
+                await member.send(f"You have just reached level {new_level} in {guild.name}!")
+            if channel:
+                channel = guild.get_channel(channel)
+                if mention:
+                    person = member.mention
+                else:
+                    person = member.name
+                color = member.colour
+                pfp = member.avatar_url
+                embed = discord.Embed(
+                    description=f"**{person} has just reached level {new_level}!**",
+                    color=color
+                )
+                embed.set_thumbnail(url=pfp)
+                if channel:
+                    send = channel.permissions_for(guild.me).send_messages
+                    if send:
+                        await channel.send(embed=embed)
+                    else:
+                        log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
+        else:
+            # Generate LevelUP Image
+            banner = await self.get_banner(member)
+            color = str(member.colour)
+            color = hex_to_rgb(color)
+            args = {
+                'bg_image': banner,
+                'profile_image': member.avatar_url,
+                'level': new_level,
+                'color': color,
+            }
+            file = await self.gen_levelup_img(args)
+            if dm:
+                await member.send(f"You just leveled up in {guild.name}!", file=file)
+            if channel:
+                channel = guild.get_channel(channel)
+                if mention:
+                    person = member.mention
+                else:
+                    person = member.name
+                if channel:
+                    send = channel.permissions_for(guild.me).send_messages
+                    if send:
+                        await channel.send(f"**{person} just leveled up!**", file=file)
+                    else:
+                        log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
+
+
 
         # Role adding/removal
         if roleperms and levelroles:
@@ -575,7 +638,7 @@ class LevelUp(commands.Cog):
             await ctx.send("LevelUp will now use embeds instead of generated images")
         else:
             await self.config.guild(ctx.guild).usepics.set(True)
-            await ctx.send("LevelUp will now use generated images instead of pics")
+            await ctx.send("LevelUp will now use generated images instead of embeds")
         await self.init_settings()
 
     @lvl_group.command(name="autoremove")
@@ -774,7 +837,7 @@ class LevelUp(commands.Cog):
         await self.init_settings()
 
     @commands.command(name="mybanner")
-    async def get_banner(self, ctx, *, user: discord.Member = None):
+    async def get_ban_test(self, ctx, *, user: discord.Member = None):
         """get banner"""
         if not user:
             user = ctx.author
@@ -806,27 +869,50 @@ class LevelUp(commands.Cog):
         level = stats["l"]
         messages = stats["m"]
         voice = stats["v"]
-        progress = stats["p"]
+        xp = stats["xp"]
+        goal = stats["goal"]
+        progress = f'{"{:,}".format(xp)}/{"{:,}".format(goal)}'
         lvlbar = stats["lb"]
         lvlpercent = stats["lp"]
         emoji = stats["e"]
         prestige = stats["pr"]
-        msg = f"🎖｜Level {level}\n"
-        if prestige:
-            msg += f"🏆｜Prestige {prestige} {emoji}\n"
-        msg += f"💬｜{messages} messages sent\n" \
-               f"🎙｜{voice} minutes in voice\n" \
-               f"💡｜{progress} XP"
-        embed = discord.Embed(
-            title=f"{user.name}'s Profile",
-            description=msg,
-            color=ctx.author.colour
-        )
-        embed.add_field(name="Progress", value=box(f"{lvlbar} {lvlpercent} %", lang="python"))
-        embed.set_thumbnail(url=user.avatar_url)
-        if position:
-            embed.set_footer(text=f"Rank: {position} with {percentage}% of global server XP")
-        await ctx.send(embed=embed)
+        if not conf["usepics"]:
+            embed = await profile_embed(
+                user,
+                position,
+                percentage,
+                level,
+                messages,
+                voice,
+                progress,
+                lvlbar,
+                lvlpercent,
+                emoji,
+                prestige
+            )
+            await ctx.send(embed=embed)
+        else:
+            async with ctx.typing():
+                banner = await self.get_banner(user)
+                color = str(user.colour)
+                color = hex_to_rgb(color)
+                args = {
+                    'bg_image': banner,  # Background image link
+                    'profile_image': user.avatar_url,  # User profile picture link
+                    'level': level,  # User current level
+                    'current_xp': 0,  # Current level minimum xp
+                    'user_xp': xp,  # User current xp
+                    'next_xp': goal,  # xp required for next level
+                    'user_position': position,  # User position in leaderboard
+                    'user_name': user.name,  # user name with descriminator
+                    'user_status': user.status.name,  # User status eg. online, offline, idle, streaming, dnd
+                    'color': color,  # User's color
+                    'messages': messages,
+                    'voice': voice,
+                    'prestige': prestige,
+                }
+                file = await self.gen_profile_img(args)
+                await ctx.send(file=file)
 
     @commands.command(name="prestige")
     @commands.guild_only()
@@ -931,20 +1017,16 @@ class LevelUp(commands.Cog):
                     you = f"You: {i + 1}/{len(sorted_users)}\n"
                 user = ctx.guild.get_member(int(uid))
                 if user:
-                    user = user.mention
-                    if str(uid) == str(ctx.author.id):
-                        user = f"{user}**(You)**"
+                    user = user.name
                 else:
                     user = uid
-                    if str(uid) == str(ctx.author.id):
-                        user = f"{user}(You)"
                 xp = sorted_users[i][1]
                 level = get_level(xp, base, exp)
                 emoji = conf["users"][uid]["emoji"]
                 if emoji:
-                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp: `{user} {emoji}\n"
+                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp｜{user}`{emoji}\n"
                 else:
-                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp: `{user}\n"
+                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp｜{user}`\n"
             embed = discord.Embed(
                 title="LevelUp Leaderboard",
                 description=msg,
