@@ -16,6 +16,8 @@
     "arktools": "https://github.com/vertyco/vrt-cogs"
   },
   "requirements": [
+    "matplotlib",
+    "disrank"
   ],
   "short": "Leveling System",
   "tags": [

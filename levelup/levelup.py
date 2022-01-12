@@ -12,6 +12,13 @@ from redbot.core.utils.chat_formatting import box
 from matplotlib import pyplot as plt
 from .menus import menu, DEFAULT_CONTROLS
 import io
+from disrank.generator import Generator
+from .formatter import (
+    get_level,
+    get_xp,
+    get_user_position,
+    get_user_stats,
+)
 
 log = logging.getLogger("red.vrt.levelup")
 
@@ -43,10 +50,11 @@ class LevelUp(commands.Cog):
             "prestigedata": {},  # Prestige tiers, the role associated with them, and emoji for them
             "xp": [3, 6],  # Min/Max XP per message
             "voicexp": 2,  # XP per minute in voice
-            "cooldown": 60,  # Only gives XP every 60 seconds
+            "cooldown": 60,  # Only gives XP every 30 seconds
             "base": 100,  # Base denominator for level algorithm, higher takes longer to level
             "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve
-            "length": 0,  # Minimum length of message to be considered eligible for XP gain
+            "length": 0,  # Minimum length of message to be considered eligible for XP gain,
+            "usepics": False,  # Use Pics instead of embeds for leveling, Embeds are default
             "autoremove": False,  # Remove previous role on level up
             "stackprestigeroles": True,  # Toggle whether to stack prestige roles
             "muted": True,  # Ignore XP while being muted in voice
@@ -72,16 +80,6 @@ class LevelUp(commands.Cog):
     def cog_unload(self):
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
-
-    # Get level from XP
-    @staticmethod
-    def level(xp: int, base: int, exp: typing.Union[int, float]) -> int:
-        return int((xp / base) ** (1 / exp))
-
-    # Get XP from level
-    @staticmethod
-    def xp(level: int, base: int, exp: typing.Union[int, float]) -> int:
-        return math.ceil(base * (level ** exp))
 
     # Add a user to cache
     async def cache_user(self, guild: str, user: str):
@@ -115,7 +113,7 @@ class LevelUp(commands.Cog):
                             users[user]["voice"] += data["voice"]
                             users[user]["messages"] += data["messages"]
                         saved_level = users[user]["level"]
-                        new_level = self.level(users[user]["xp"], base, exp)
+                        new_level = get_level(users[user]["xp"], base, exp)
                         if new_level > saved_level:
                             await self.level_up(guild, user, new_level)
                             users[user]["level"] = new_level
@@ -125,9 +123,7 @@ class LevelUp(commands.Cog):
     async def level_up(self, guild: discord.guild, user: str, new_level: int):
         conf = self.settings[str(guild.id)]
         levelroles = conf["levelroles"]
-        if not levelroles:
-            return
-        roleperms = guild.permissions_for(guild.me).manage_roles
+        roleperms = guild.me.guild_permissions.manage_roles
         if not roleperms:
             log.warning(f"Bot can't manage roles in {guild.name}")
         autoremove = conf["autoremove"]
@@ -152,7 +148,7 @@ class LevelUp(commands.Cog):
             color = member.colour
             pfp = member.avatar_url
             embed = discord.Embed(
-                description=f"{person} has just reached level {new_level}!",
+                description=f"**{person} has just reached level {new_level}!**",
                 color=color
             )
             embed.set_thumbnail(url=pfp)
@@ -163,7 +159,7 @@ class LevelUp(commands.Cog):
                 log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
 
         # Role adding/removal
-        if roleperms:
+        if roleperms and levelroles:
             if str(new_level) in levelroles:
                 role_id = levelroles[str(new_level)]
                 role = guild.get_role(int(role_id))
@@ -181,6 +177,7 @@ class LevelUp(commands.Cog):
     async def init_settings(self):
         for guild in self.bot.guilds:
             settings = await self.config.guild(guild).all()
+            # Some of these dont get used yet in cache, just adding em for future sake
             self.settings[str(guild.id)] = {
                 "levelroles": settings["levelroles"],
                 "ignoredchannels": settings["ignoredchannels"],
@@ -192,6 +189,7 @@ class LevelUp(commands.Cog):
                 "base": settings["base"],
                 "exp": settings["exp"],
                 "length": settings["length"],
+                "usepics": settings["usepics"],
                 "voicexp": settings["voicexp"],
                 "cooldown": settings["cooldown"],
                 "autoremove": settings["autoremove"],
@@ -225,7 +223,7 @@ class LevelUp(commands.Cog):
         guild = message.guild
         guild_id = str(guild.id)
         if guild_id not in self.cache:
-            self.cache[guild_id] = {}
+            return
         user = str(message.author.id)
         conf = self.settings[guild_id]
         xpmin = int(conf["xp"][0])
@@ -334,7 +332,7 @@ class LevelUp(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(10)
 
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=30)
     async def cache_dumper(self):
         await self.dump_cache()
 
@@ -361,7 +359,7 @@ class LevelUp(commands.Cog):
         x = []
         y = []
         for i in range(21):
-            xp = self.xp(i, base, exp)
+            xp = get_xp(i, base, exp)
             msg += f"`Level {i}: `{xp} XP Needed\n"
             x.append(i)
             y.append(xp)
@@ -568,6 +566,18 @@ class LevelUp(commands.Cog):
         await ctx.tick()
         await self.init_settings()
 
+    @lvl_group.command(name="embeds")
+    async def toggle_embeds(self, ctx: commands.Context):
+        """Toggle whether to use embeds or generated pics for leveling"""
+        usepics = await self.config.guild(ctx.guild).usepics()
+        if usepics:
+            await self.config.guild(ctx.guild).usepics.set(False)
+            await ctx.send("LevelUp will now use embeds instead of generated images")
+        else:
+            await self.config.guild(ctx.guild).usepics.set(True)
+            await ctx.send("LevelUp will now use generated images instead of pics")
+        await self.init_settings()
+
     @lvl_group.command(name="autoremove")
     async def toggle_autoremove(self, ctx: commands.Context):
         """Toggle automatic removal of previous level roles"""
@@ -763,89 +773,59 @@ class LevelUp(commands.Cog):
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
 
+    @commands.command(name="mybanner")
+    async def get_banner(self, ctx, *, user: discord.Member = None):
+        """get banner"""
+        if not user:
+            user = ctx.author
+        req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
+        banner_id = req["banner"]
+        # If statement because the user may not have a banner
+        if banner_id:
+            banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
+        else:
+            color = str(user.colour).strip("#")
+            banner_url = f"https://singlecolorimage.com/get/{color}/400x100"
+        await ctx.send(banner_url)
+
     @commands.command(name="pf")
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile info"""
         conf = await self.config.guild(ctx.guild).all()
-        base = conf["base"]
-        exp = conf["exp"]
-        prestige_req = conf["prestige"]
-        leaderboard = {}
-        total_xp = 0
-        user_xp = 0
-        if user:
-            user_id = str(user.id)
-            person = user
-        else:
-            user_id = str(ctx.author.id)
-            person = ctx.author
-        for user, data in conf["users"].items():
-            xp = int(data["xp"])
-            prestige = data["prestige"]
-            if prestige:
-                add_xp = self.xp(prestige_req, base, exp)
-                xp = int(xp + (prestige * add_xp))
-            if xp > 0:
-                leaderboard[user] = xp
-                total_xp += xp
-            if user == user_id:
-                user_xp = xp
-        if not leaderboard:
-            return await ctx.send("No user data yet!")
-        sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
-
-        position = ""
         users = conf["users"]
-        for i in sorted_users:
-            if i[0] == user_id:
-                pos = sorted_users.index(i)
-                position = f"{pos + 1}/{len(sorted_users)}"
-
+        if not user:
+            user = ctx.author
+        user_id = str(user.id)
         if user_id not in users:
-            if not user:
-                return await ctx.send("No information available for that user yet!")
-            else:
-                return await ctx.send("No information available for you yet!")
-        user = users[user_id]
-        xp = int(user["xp"])
-        xpstring = "{:,}".format(xp)
-        messages = user["messages"]
-        voice = user["voice"]
-        voice = int(voice / 60)
-        level = user["level"]
-        prestige = user["prestige"]
-        emoji = user["emoji"]
-        next_level = level + 1
-        xp_needed = self.xp(next_level, base, exp)
-        xp_neededstring = "{:,}".format(xp_needed)
-        ratio = xp / xp_needed
-        percent = int(ratio * 100)
-        blocks = int(30 * ratio)
-        blanks = int(30 - blocks)
-        lvlbar = "〘"
-        for _ in range(blocks):
-            lvlbar += "█"
-        for _ in range(blanks):
-            lvlbar += "-"
-        lvlbar += "〙"
+            return await ctx.send("No information available yet!")
+        pos = await get_user_position(conf, user_id)
+        position = pos["p"]
+        percentage = pos["pr"]
+        stats = await get_user_stats(conf, user_id)
+        level = stats["l"]
+        messages = stats["m"]
+        voice = stats["v"]
+        progress = stats["p"]
+        lvlbar = stats["lb"]
+        lvlpercent = stats["lp"]
+        emoji = stats["e"]
+        prestige = stats["pr"]
         msg = f"🎖｜Level {level}\n"
         if prestige:
             msg += f"🏆｜Prestige {prestige} {emoji}\n"
         msg += f"💬｜{messages} messages sent\n" \
-               f"🎙｜{voice} minutes\n" \
-               f"💡｜{xpstring}/{xp_neededstring} XP"
-
+               f"🎙｜{voice} minutes in voice\n" \
+               f"💡｜{progress} XP"
         embed = discord.Embed(
-            title=f"{person.name}'s Profile",
+            title=f"{user.name}'s Profile",
             description=msg,
             color=ctx.author.colour
         )
-        embed.add_field(name="Progress", value=box(f"{lvlbar} {percent} %", lang="python"))
-        embed.set_thumbnail(url=person.avatar_url)
+        embed.add_field(name="Progress", value=box(f"{lvlbar} {lvlpercent} %", lang="python"))
+        embed.set_thumbnail(url=user.avatar_url)
         if position:
-            percent = round((user_xp / total_xp) * 100, 2)
-            embed.set_footer(text=f"Rank: {position} with {percent}% of global server XP")
+            embed.set_footer(text=f"Rank: {position} with {percentage}% of global server XP")
         await ctx.send(embed=embed)
 
     @commands.command(name="prestige")
@@ -924,7 +904,7 @@ class LevelUp(commands.Cog):
             prestige = data["prestige"]
             xp = int(data["xp"])
             if prestige:
-                add_xp = self.xp(prestige_req, base, exp)
+                add_xp = get_xp(prestige_req, base, exp)
                 xp = int(xp + (prestige * add_xp))
             if xp > 0:
                 leaderboard[user] = xp
@@ -959,7 +939,7 @@ class LevelUp(commands.Cog):
                     if str(uid) == str(ctx.author.id):
                         user = f"{user}(You)"
                 xp = sorted_users[i][1]
-                level = self.level(xp, base, exp)
+                level = get_level(xp, base, exp)
                 emoji = conf["users"][uid]["emoji"]
                 if emoji:
                     msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp: `{user} {emoji}\n"
@@ -979,6 +959,10 @@ class LevelUp(commands.Cog):
             start += 10
             stop += 10
         if embeds:
-            await menu(ctx, embeds, DEFAULT_CONTROLS)
+            if len(embeds) == 1:
+                embed = embeds[0]
+                await ctx.send(embed=embed)
+            else:
+                await menu(ctx, embeds, DEFAULT_CONTROLS)
         else:
             return await ctx.send("No user data yet!")
