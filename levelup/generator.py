@@ -177,7 +177,7 @@ class Generator:
                 x1 = 0
                 y1 = 0
                 x2 = width
-                nh = math.ceil(width * 0.264444)
+                nh = math.ceil(width * 0.3)
                 y2 = 0
 
                 if nh < height:
@@ -188,7 +188,7 @@ class Generator:
 
         profile_bytes = BytesIO(requests.get(profile_image).content)
         profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((80, 80))
+        profile = profile.convert('RGBA').resize((70, 70))
 
         # Is used as a blank image for mask
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
