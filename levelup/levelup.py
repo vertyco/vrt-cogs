@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import io
 import logging
 import math
 import random
@@ -8,9 +7,11 @@ import typing
 
 import discord
 from discord.ext import tasks
-from matplotlib import pyplot as plt
 from redbot.core import commands, Config
-
+from matplotlib import pyplot as plt
+from .menus import menu, DEFAULT_CONTROLS
+import io
+from .generator import Generator
 from .formatter import (
     hex_to_rgb,
     get_level,
@@ -19,8 +20,6 @@ from .formatter import (
     get_user_stats,
     profile_embed,
 )
-from .generator import Generator
-from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.levelup")
 
@@ -834,6 +833,23 @@ class LevelUp(commands.Cog):
                 ignored.append(member.id)
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
+
+    @commands.command(name="mocklvl")
+    async def get_lvl_test(self, ctx, *, user: discord.Member = None):
+        """get lvl"""
+        if not user:
+            user = ctx.author
+        banner = await self.get_banner(user)
+        color = str(user.colour)
+        color = hex_to_rgb(color)
+        args = {
+            'bg_image': banner,
+            'profile_image': user.avatar_url,
+            'level': 4,
+            'color': color,
+        }
+        file = await self.gen_levelup_img(args)
+        await ctx.send(file=file)
 
     @commands.command(name="pf")
     @commands.guild_only()

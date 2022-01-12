@@ -213,7 +213,7 @@ class Generator:
         draw.text((80, 15), level, MAINCOLOR, font=font_normal)
 
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
-        profile_pic_holder.paste(profile, (1, 1))
+        profile_pic_holder.paste(profile, (0, 0))
 
         pre = Image.composite(profile_pic_holder, card, mask)
         pre = Image.alpha_composite(pre, blank)
