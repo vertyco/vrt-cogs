@@ -498,7 +498,7 @@ class LevelUp(commands.Cog):
               f"`LevelUp Channel:  `{notifylog}\n"
         if levelroles:
             msg += "**Levels**\n"
-            for level, role_id in levelroles:
+            for level, role_id in levelroles.items():
                 role = ctx.guild.get_role(role_id)
                 if role:
                     role = role.mention
