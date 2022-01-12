@@ -913,20 +913,23 @@ class LevelUp(commands.Cog):
     async def leaderboard(self, ctx: commands.Context):
         """View the Leaderboard"""
         conf = await self.config.guild(ctx.guild).all()
+        base = conf["base"]
+        exp = conf["exp"]
         embeds = []
         prestige_req = conf["prestige"]
         leaderboard = {}
         total_messages = 0
         total_voice = 0
         for user, data in conf["users"].items():
-            level = int(data["level"])
             prestige = data["prestige"]
+            xp = int(data["xp"])
             if prestige:
-                level = int(level + (prestige * prestige_req))
+                add_xp = self.xp(prestige_req, base, exp)
+                xp = int(xp + (prestige * add_xp))
+            if xp > 0:
+                leaderboard[user] = xp
             messages = data["messages"]
             voice = data["voice"]
-            if level > 0:
-                leaderboard[user] = level
             total_voice += voice
             total_messages += messages
         if not leaderboard:
@@ -955,12 +958,13 @@ class LevelUp(commands.Cog):
                     user = uid
                     if str(uid) == str(ctx.author.id):
                         user = f"{user}(You)"
-                level = sorted_users[i][1]
+                xp = sorted_users[i][1]
+                level = self.level(xp, base, exp)
                 emoji = conf["users"][uid]["emoji"]
                 if emoji:
-                    msg += f"`{i + 1} ➤ Level {level}: `{user} {emoji}\n"
+                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp: `{user} {emoji}\n"
                 else:
-                    msg += f"`{i + 1} ➤ Level {level}: `{user}\n"
+                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp: `{user}\n"
             embed = discord.Embed(
                 title="LevelUp Leaderboard",
                 description=msg,
