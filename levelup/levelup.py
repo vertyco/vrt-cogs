@@ -937,11 +937,18 @@ class LevelUp(commands.Cog):
                 stop = len(sorted_users)
             for i in range(start, stop, 1):
                 uid = sorted_users[i][0]
+                if str(uid) == str(ctx.author.id):
+                    pos = sorted_users.index(i)
+                    msg += f"**Your Rank:** `{pos + 1}/{len(sorted_users)}"
                 user = ctx.guild.get_member(int(uid))
                 if user:
                     user = user.mention
+                    if str(uid) == str(ctx.author.id):
+                        user = f"{user}(You)"
                 else:
                     user = uid
+                    if str(uid) == str(ctx.author.id):
+                        user = f"{user}(You)"
                 level = sorted_users[i][1]
                 emoji = conf["users"][uid]["emoji"]
                 if emoji:
