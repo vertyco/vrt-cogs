@@ -1,0 +1,29 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "A local discord leveling system",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores Discord ID's",
+  "hidden": false,
+  "install_msg": "Thank you for installing LevelUp! type `[p]help LevelUp` to see all commands.",
+  "min_bot_version": "3.4.0",
+  "permissions": [
+    "send_messages",
+    "manage_roles"
+  ],
+  "required_cogs": {
+    "arktools": "https://github.com/vertyco/vrt-cogs"
+  },
+  "requirements": [
+  ],
+  "short": "Leveling System",
+  "tags": [
+    "utility",
+    "leveler",
+    "level",
+    "levelup",
+    "leveling"
+  ],
+  "type": "COG"
+}
