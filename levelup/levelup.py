@@ -747,7 +747,7 @@ class LevelUp(commands.Cog):
             else:
                 overwrite = "Set"
             roles[level] = role.id
-            await ctx.send(f"Level {level} has ben {overwrite} as {role.mention}")
+            await ctx.send(f"Level {level} has been {overwrite} as {role.mention}")
 
     @level_roles.command(name="del")
     async def del_level_role(self, ctx: commands.Context, level: str):
