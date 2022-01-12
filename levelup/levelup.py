@@ -938,7 +938,7 @@ class LevelUp(commands.Cog):
             for i in range(start, stop, 1):
                 uid = sorted_users[i][0]
                 if str(uid) == str(ctx.author.id):
-                    msg += f"**Your Rank:** `{i + 1}/{len(sorted_users)}"
+                    msg += f"**Your Rank:** `{i + 1}/{len(sorted_users)}\n"
                 user = ctx.guild.get_member(int(uid))
                 if user:
                     user = user.mention
