@@ -172,6 +172,9 @@ class Generator:
         blank = Image.new("RGBA", pre.size, (255, 255, 255, 0))
         blank.paste(status, (169, 169))
 
+        test = Image.new("RGBA", pre.size, (255, 255, 255, 0))
+        blank.paste(rep_icon, (600, 60))
+
         final = Image.alpha_composite(pre, blank)
         final_bytes = BytesIO()
         final.save(final_bytes, 'png')
