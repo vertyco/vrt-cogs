@@ -834,7 +834,7 @@ class LevelUp(commands.Cog):
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
 
-    @commands.command(name="mocklvl")
+    @commands.command(name="mocklvl", hidden=True)
     async def get_lvl_test(self, ctx, *, user: discord.Member = None):
         """get lvl"""
         if not user:
