@@ -380,7 +380,10 @@ class LevelUp(commands.Cog):
             img = "attachment://lvlexample.png"
         embed = discord.Embed(
             title="Level Example",
-            description=msg,
+            description=f"**Base Multiplier:** {base}\n"
+                        f"**Exp Multiplier:** {exp}\n"
+                        f"XPForALevel = Base * Level^Exp, Level = Inverse of that\n"
+                        f"{msg}",
             color=discord.Color.random()
         )
         embed.set_image(url=img)
