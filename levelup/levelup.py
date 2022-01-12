@@ -930,6 +930,7 @@ class LevelUp(commands.Cog):
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
+        you = ""
         for p in range(pages):
             msg = f"**Total Messages:** `{total_messages}`\n" \
                   f"**Total VoiceMinutes:** `{voice}`\n"
@@ -938,7 +939,7 @@ class LevelUp(commands.Cog):
             for i in range(start, stop, 1):
                 uid = sorted_users[i][0]
                 if str(uid) == str(ctx.author.id):
-                    msg += f"**Your Rank:** `{i + 1}/{len(sorted_users)}\n"
+                    you = f"Your Rank: {i + 1}/{len(sorted_users)}\n"
                 user = ctx.guild.get_member(int(uid))
                 if user:
                     user = user.mention
@@ -960,7 +961,10 @@ class LevelUp(commands.Cog):
                 color=discord.Color.random()
             )
             embed.set_thumbnail(url=ctx.guild.icon_url)
-            embed.set_footer(text=f"Pages {p + 1}/{pages}")
+            if you:
+                embed.set_footer(text=f"Pages {p + 1}/{pages} - {you}")
+            else:
+                embed.set_footer(text=f"Pages {p + 1}/{pages}")
             embeds.append(embed)
             start += 10
             stop += 10
