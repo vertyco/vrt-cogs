@@ -101,10 +101,7 @@ class LevelUp(commands.Cog):
         banner_id = req["banner"]
         if banner_id:
             banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
-        else:
-            color = str(user.colour).strip("#")
-            banner_url = f"https://singlecolorimage.com/get/{color}/400x100"
-        return banner_url
+            return banner_url
 
     # Generate rinky dink profile image
     async def gen_profile_img(self, args: dict):
@@ -843,7 +840,7 @@ class LevelUp(commands.Cog):
         await self.init_settings()
 
     @ignore_group.command(name="member")
-    async def ignore_role(self, ctx: commands.Context, member: discord.Member):
+    async def ignore_member(self, ctx: commands.Context, member: discord.Member):
         """
         Add/Remove a member from the ignore list
         Members in the ignore list dont gain XP
@@ -858,6 +855,20 @@ class LevelUp(commands.Cog):
                 ignored.append(member.id)
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
+
+    @commands.command(name="rep", aliases=["tip"])
+    @commands.cooldown(1, 21600, commands.BucketType.user)
+    @commands.guild_only()
+    async def rep_user(self, ctx: commands.Context, *, user: discord.Member):
+        """Add rep to a user"""
+        user_id = str(user.id)
+        async with self.config.guild(ctx.guild).users() as users:
+            if user_id not in users:
+                return await ctx.send("No data available for that user yet!")
+            if "rep" not in users[user_id]:
+                users[user_id]["rep"] = 1
+            else:
+                users[user_id]["rep"] += 1
 
     @commands.command(name="mocklvl", hidden=True)
     async def get_lvl_test(self, ctx, *, user: discord.Member = None):

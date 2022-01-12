@@ -9,6 +9,7 @@ import os
 
 class Generator:
     def __init__(self):
+        self.rep = os.path.join(os.path.dirname(__file__), 'assets', 'rep.png')
         self.default_bg = os.path.join(os.path.dirname(__file__), 'assets', 'card.png')
         self.online = os.path.join(os.path.dirname(__file__), 'assets', 'online.png')
         self.offline = os.path.join(os.path.dirname(__file__), 'assets', 'offline.png')
@@ -33,28 +34,44 @@ class Generator:
             messages: int = 0,
             voice: int = 0,
             prestige: int = 0,
+            rep: int = 0,
     ):
         if not bg_image:
             card = Image.open(self.default_bg).convert("RGBA")
-        else:
-            bg_bytes = BytesIO(requests.get(bg_image).content)
-            card = Image.open(bg_bytes).convert("RGBA")
-
             width, height = card.size
-            if width == 900 and height == 238:
+            if width == 900 and height == 220:
                 pass
             else:
                 x1 = 0
                 y1 = 0
                 x2 = width
-                nh = math.ceil(width * 0.264444)
+                nh = math.ceil(width * 0.245)
                 y2 = 0
 
                 if nh < height:
                     y1 = (height / 2) - 119
                     y2 = nh + y1
 
-                card = card.crop((x1, y1, x2, y2)).resize((900, 238))
+                card = card.crop((x1, y1, x2, y2)).resize((900, 240))
+        else:
+            bg_bytes = BytesIO(requests.get(bg_image).content)
+            card = Image.open(bg_bytes).convert("RGBA")
+
+            width, height = card.size
+            if width == 900 and height == 220:
+                pass
+            else:
+                x1 = 0
+                y1 = 0
+                x2 = width
+                nh = math.ceil(width * 0.245)
+                y2 = 0
+
+                if nh < height:
+                    y1 = (height / 2) - 119
+                    y2 = nh + y1
+
+                card = card.crop((x1, y1, x2, y2)).resize((900, 240))
 
         profile_bytes = BytesIO(requests.get(profile_image).content)
         profile = Image.open(profile_bytes)
@@ -73,11 +90,12 @@ class Generator:
         else:  # Eh just make it offline then
             status = Image.open(self.offline)
 
+        rep_icon = Image.open(self.rep)
+        # card.paste(rep_icon, (450, 30), rep_icon)
+
         status = status.convert("RGBA").resize((40, 40))
 
-        profile_pic_holder = Image.new(
-            "RGBA", card.size, (255, 255, 255, 0)
-        )  # Is used for a blank image so that i can mask
+        profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
 
         # Mask to crop image
         mask = Image.new("RGBA", card.size, 0)
@@ -139,12 +157,15 @@ class Generator:
 
         blank_draw.rectangle((248, 203, length_of_bar, 212), fill=MAINCOLOR)
         # Pfp border
-        blank_draw.ellipse((20, 20, 218, 218), fill=(255, 255, 255, 0), outline=MAINCOLOR, width=2)
+        blank_draw.ellipse((20, 20, 218, 218), fill=(255, 255, 255, 0), outline=MAINCOLOR, width=3)
 
         profile_pic_holder.paste(profile, (29, 29, 209, 209))
 
         pre = Image.composite(profile_pic_holder, card, mask)
         pre = Image.alpha_composite(pre, blank)
+
+        blank = Image.new("RGBA", pre.size, (255, 255, 255, 0))
+        blank.paste(status, (500, 50))
 
         # Status badge
         # Another blank
@@ -199,7 +220,7 @@ class Generator:
         # Profile pic border
         mask_draw.ellipse((1, 1, 69, 69), fill=(255, 25, 255, 255))
 
-        font_normal = ImageFont.truetype(self.font1, 30)
+        font_normal = ImageFont.truetype(self.font1, 25)
 
         MAINCOLOR = color
         BORDER = (0, 0, 0)
@@ -208,9 +229,9 @@ class Generator:
         level = f"Level {level}"
 
         # Drawing borders
-        draw.text((80, 13), level, BORDER, font=font_normal, stroke_width=1)
+        draw.text((75, 13), level, BORDER, font=font_normal, stroke_width=1)
         # Filling text
-        draw.text((80, 13), level, MAINCOLOR, font=font_normal)
+        draw.text((75, 13), level, MAINCOLOR, font=font_normal)
 
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
         profile_pic_holder.paste(profile, (0, 0))
