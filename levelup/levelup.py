@@ -944,7 +944,7 @@ class LevelUp(commands.Cog):
                 if user:
                     user = user.mention
                     if str(uid) == str(ctx.author.id):
-                        user = f"{user}(You)"
+                        user = f"{user}**(You)**"
                 else:
                     user = uid
                     if str(uid) == str(ctx.author.id):
@@ -962,7 +962,7 @@ class LevelUp(commands.Cog):
             )
             embed.set_thumbnail(url=ctx.guild.icon_url)
             if you:
-                embed.set_footer(text=f"Pages {p + 1}/{pages} - {you}")
+                embed.set_footer(text=f"Pages {p + 1}/{pages} ｜ {you}")
             else:
                 embed.set_footer(text=f"Pages {p + 1}/{pages}")
             embeds.append(embed)
