@@ -732,6 +732,7 @@ async def get_graph(settings: dict, hours: int):
         plt.yticks(fontsize=10)
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
+        plt.grid(axis="x")
         ax.xaxis.set_major_locator(MaxNLocator(nbins=locator, integer=True, min_n_ticks=10))
         result = io.BytesIO()
         plt.savefig(result, format="png", dpi=200)

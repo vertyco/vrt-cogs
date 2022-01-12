@@ -370,6 +370,8 @@ class LevelUp(commands.Cog):
             plt.xlabel(f"Level", fontsize=10)
             plt.ylabel(f"Experience", fontsize=10)
             plt.title("XP Curve")
+            plt.grid(axis="y")
+            plt.grid(axis="x")
             result = io.BytesIO()
             plt.savefig(result, format="png", dpi=200)
             plt.close()
