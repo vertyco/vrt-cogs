@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import io
 import logging
 import math
 import random
@@ -7,12 +8,9 @@ import typing
 
 import discord
 from discord.ext import tasks
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box
 from matplotlib import pyplot as plt
-from .menus import menu, DEFAULT_CONTROLS
-import io
-from .generator import Generator
+from redbot.core import commands, Config
+
 from .formatter import (
     hex_to_rgb,
     get_level,
@@ -21,6 +19,8 @@ from .formatter import (
     get_user_stats,
     profile_embed,
 )
+from .generator import Generator
+from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.levelup")
 
@@ -203,8 +203,8 @@ class LevelUp(commands.Cog):
                 'level': new_level,
                 'color': color,
             }
-            file = await self.gen_levelup_img(args)
             if dm:
+                file = await self.gen_levelup_img(args)
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
             if channel:
                 channel = guild.get_channel(channel)
@@ -215,11 +215,10 @@ class LevelUp(commands.Cog):
                 if channel:
                     send = channel.permissions_for(guild.me).send_messages
                     if send:
+                        file = await self.gen_levelup_img(args)
                         await channel.send(f"**{person} just leveled up!**", file=file)
                     else:
                         log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
-
-
 
         # Role adding/removal
         if roleperms and levelroles:
@@ -835,21 +834,6 @@ class LevelUp(commands.Cog):
                 ignored.append(member.id)
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
-
-    @commands.command(name="mybanner")
-    async def get_ban_test(self, ctx, *, user: discord.Member = None):
-        """get banner"""
-        if not user:
-            user = ctx.author
-        req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
-        banner_id = req["banner"]
-        # If statement because the user may not have a banner
-        if banner_id:
-            banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
-        else:
-            color = str(user.colour).strip("#")
-            banner_url = f"https://singlecolorimage.com/get/{color}/400x100"
-        await ctx.send(banner_url)
 
     @commands.command(name="pf")
     @commands.guild_only()
