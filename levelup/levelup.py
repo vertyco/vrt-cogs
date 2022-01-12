@@ -703,7 +703,7 @@ class LevelUp(commands.Cog):
                 return await ctx.send("That prestige level doesnt exist!")
         await ctx.tick()
 
-    @lvl_group.group(name="ingored")
+    @lvl_group.group(name="ignored")
     async def ignore_group(self, ctx: commands.Context):
         """Base command for all ignore lists"""
         pass
