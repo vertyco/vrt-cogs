@@ -856,11 +856,11 @@ class LevelUp(commands.Cog):
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
 
-    @commands.command(name="rep", aliases=["tip"])
+    @commands.command(name="tip")
     @commands.cooldown(1, 21600, commands.BucketType.user)
     @commands.guild_only()
     async def rep_user(self, ctx: commands.Context, *, user: discord.Member):
-        """Add rep to a user"""
+        """Add tips/rep to a user"""
         user_id = str(user.id)
         async with self.config.guild(ctx.guild).users() as users:
             if user_id not in users:
