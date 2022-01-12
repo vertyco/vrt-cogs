@@ -42,8 +42,8 @@ class LevelUp(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         default_guild = {
-            "users": {},
-            "levelroles": {},
+            "users": {},  # All user level data
+            "levelroles": {},  # Roles associated with levels
             "ignoredchannels": [],  # Channels that dont gain XP
             "ignoredroles": [],  # Roles that dont gain XP
             "ignoredusers": [],  # Ignored users wont gain XP
