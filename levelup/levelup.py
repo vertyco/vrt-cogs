@@ -734,6 +734,31 @@ class LevelUp(commands.Cog):
             await ctx.send(f"LevelUp channel has been set to {levelup_channel.mention}")
         await self.init_settings()
 
+    @lvl_group.group(name="roles")
+    async def level_roles(self, ctx: commands.Context):
+        """Level role assignment"""
+
+    @level_roles.command(name="add")
+    async def add_level_role(self, ctx: commands.Context, level: str, role: discord.Role):
+        """Assign a role to a level"""
+        async with self.config.guild(ctx.guild).levelroles() as roles:
+            if level in roles:
+                overwrite = "Overwritten"
+            else:
+                overwrite = "Set"
+            roles[level] = role.id
+            await ctx.send(f"Level {level} has ben {overwrite} as {role.mention}")
+
+    @level_roles.command(name="del")
+    async def del_level_role(self, ctx: commands.Context, level: str):
+        """Assign a role to a level"""
+        async with self.config.guild(ctx.guild).levelroles() as roles:
+            if level in roles:
+                del roles[level]
+                await ctx.send("Level role has been deleted!")
+            else:
+                await ctx.send("Level doesnt exist!")
+
     @lvl_group.group(name="prestige")
     async def prestige_settings(self, ctx: commands.Context):
         """Level Prestige Settings"""
