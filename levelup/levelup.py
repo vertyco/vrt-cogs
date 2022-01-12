@@ -382,7 +382,8 @@ class LevelUp(commands.Cog):
             title="Level Example",
             description=f"**Base Multiplier:** {base}\n"
                         f"**Exp Multiplier:** {exp}\n"
-                        f"XPForALevel = Base * Level^Exp, Level = Inverse of that\n"
+                        f"XPForALevel = Base * Level^Exp\n"
+                        f"Level = Inverse of that\n"
                         f"{msg}",
             color=discord.Color.random()
         )
