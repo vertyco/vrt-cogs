@@ -12,9 +12,7 @@
     "send_messages",
     "manage_roles"
   ],
-  "required_cogs": {
-    "arktools": "https://github.com/vertyco/vrt-cogs"
-  },
+  "required_cogs": {},
   "requirements": [
     "matplotlib",
     "disrank"
