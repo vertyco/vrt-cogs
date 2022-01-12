@@ -8,11 +8,6 @@
   "hidden": false,
   "install_msg": "Thank you for installing! Use `[p]arktools` and `[p]help ArkTools` for more info.\\n**Disclosure:** This cog is pretty optimized for how much it does, however it IS more I/O heavy than the average cog and uses more network traffic than most as well. It also stores user data, mainly gamertags, Xbox IDs and Discord IDs. Do **NOT** try to run this cog with a ton of servers on a really small device/VM. This cog also does NOT work for Nitrado servers, only Self-Hosted Steam/Crossplay servers",
   "min_bot_version": "3.4.0",
-  "min_python_version": [
-    3,
-    8,
-    1
-  ],
   "permissions": [
     "administrator"
   ],
