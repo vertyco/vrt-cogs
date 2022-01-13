@@ -90,9 +90,11 @@ class Generator:
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
 
         # Mask to crop image
-        mask = Image.new("RGBA", card.size, 0)
+        # draw at 4x size and resample down to 1x for a nice smooth circle
+        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((29, 29, 209, 209), fill=(255, 25, 255, 255))
+        mask_draw.ellipse((116, 116, 836, 836), fill=(255, 255, 255, 255))
+        mask = mask.resize(card.size, Image.ANTIALIAS)
 
         # Editing stuff here
 
@@ -150,8 +152,14 @@ class Generator:
         length_of_bar = (current_percentage * 4.9) + 248
 
         blank_draw.rectangle((248, 203, length_of_bar, 212), fill=MAINCOLOR)
+
         # Pfp border
-        blank_draw.ellipse((20, 20, 218, 218), fill=(255, 255, 255, 0), outline=MAINCOLOR, width=3)
+        # draw at 4x and resample down to 1x for nice smooth circles
+        circle_img = Image.new("RGBA", (800, 800))
+        pfp_border = ImageDraw.Draw(circle_img)
+        pfp_border.ellipse([4, 4, 796, 796], fill=(255, 255, 255, 0), outline=MAINCOLOR, width=12)
+        circle_img = circle_img.resize((200, 200), Image.ANTIALIAS)
+        card.paste(circle_img, (19, 19), circle_img)
 
         profile_pic_holder.paste(profile, (29, 29, 209, 209))
 
