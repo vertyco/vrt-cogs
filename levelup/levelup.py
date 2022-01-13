@@ -1208,7 +1208,7 @@ class LevelUp(commands.Cog):
             total_messages += messages
         if not leaderboard:
             return await ctx.send("No user data yet!")
-        voice = int(total_voice / 60)
+        voice = time_formatter(total_voice)
         sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
@@ -1218,7 +1218,7 @@ class LevelUp(commands.Cog):
         longestlvl = 1
         for p in range(pages):
             title = f"**Total Messages:** `{'{:,}'.format(total_messages)}`\n" \
-                    f"**Total VoiceMinutes:** `{'{:,}'.format(voice)}`\n"
+                    f"**Total VoiceTime:** `{voice}`\n"
             msg = ""
             if stop > len(sorted_users):
                 stop = len(sorted_users)
