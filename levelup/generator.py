@@ -216,9 +216,9 @@ class Generator:
         level = f"Level {level}"
 
         # Drawing borders
-        draw.text((75, 15), level, BORDER, font=font_normal, stroke_width=1)
+        draw.text((73, 16), level, BORDER, font=font_normal, stroke_width=1)
         # Filling text
-        draw.text((75, 15), level, MAINCOLOR, font=font_normal)
+        draw.text((73, 16), level, MAINCOLOR, font=font_normal)
 
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
         profile_pic_holder.paste(profile, (5, 5))
