@@ -215,7 +215,7 @@ def lb_format(stats: dict, guild: discord.guild):
         embed = discord.Embed(
             title="Playtime Leaderboard",
             description=f"Global Cumulative Playtime: `{global_playtime}`\n"
-                        f"Top Players by in Database: `{len(sorted_players)}`\n"
+                        f"Players in Database: `{len(sorted_players)}`\n"
                         f"{box(players, lang='python')}",
             color=discord.Color.random()
         )
