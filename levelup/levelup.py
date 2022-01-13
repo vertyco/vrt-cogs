@@ -1131,7 +1131,7 @@ class LevelUp(commands.Cog):
         else:
             return await ctx.send("No user data yet!")
 
-    @commands.command(name="starlb")
+    @commands.command(name="startop", aliases=["starlb", "stars"])
     @commands.guild_only()
     async def star_leaderboard(self, ctx: commands.Context):
         """View the star leaderboard"""
