@@ -180,7 +180,7 @@ class Generator:
             if width == 180 and height == 70:
                 pass
             else:
-                x1 = -17
+                x1 = -24
                 y1 = 0
                 x2 = width
                 nh = math.ceil(width * 0.24)  # 0.24 for default bg
