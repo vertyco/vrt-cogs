@@ -861,7 +861,7 @@ class LevelUp(commands.Cog):
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
 
-    @commands.command(name="star")
+    @commands.command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
     async def give_star(self, ctx: commands.Context, *, user: discord.Member):
         """Give a user a star"""
@@ -1074,8 +1074,8 @@ class LevelUp(commands.Cog):
         longestxp = 1
         longestlvl = 1
         for p in range(pages):
-            title = f"**Total Messages:** `{total_messages}`\n" \
-                  f"**Total VoiceMinutes:** `{voice}`\n"
+            title = f"**Total Messages:** `{'{:,}'.format(total_messages)}`\n" \
+                  f"**Total VoiceMinutes:** `{'{:,}'.format(voice)}`\n"
             msg = ""
             if stop > len(sorted_users):
                 stop = len(sorted_users)
@@ -1131,7 +1131,7 @@ class LevelUp(commands.Cog):
         else:
             return await ctx.send("No user data yet!")
 
-    @commands.command(name="startop", aliases=["starlb", "stars"])
+    @commands.command(name="startop", aliases=["starlb"])
     @commands.guild_only()
     async def star_leaderboard(self, ctx: commands.Context):
         """View the star leaderboard"""
