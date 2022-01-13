@@ -6,10 +6,13 @@ import unicodedata
 
 import discord
 import pytz
+import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import logging
 
+matplotlib.use("agg")
+plt.switch_backend("agg")
 log = logging.getLogger("red.vrt.arktools")
 
 # Hard coded item blueprint paths for the imstuck command
