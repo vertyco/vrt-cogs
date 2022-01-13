@@ -13,6 +13,7 @@ from .menus import menu, DEFAULT_CONTROLS
 import io
 from .generator import Generator
 from .formatter import (
+    time_formatter,
     hex_to_rgb,
     get_level,
     get_xp,
@@ -54,7 +55,8 @@ class LevelUp(commands.Cog):
             "cooldown": 60,  # Only gives XP every 30 seconds
             "base": 100,  # Base denominator for level algorithm, higher takes longer to level
             "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve
-            "length": 0,  # Minimum length of message to be considered eligible for XP gain,
+            "length": 0,  # Minimum length of message to be considered eligible for XP gain
+            "starcooldown": 3600,  # Cooldown in seconds for users to give eachother stars
             "usepics": False,  # Use Pics instead of embeds for leveling, Embeds are default
             "autoremove": False,  # Remove previous role on level up
             "stackprestigeroles": True,  # Toggle whether to stack prestige roles
@@ -73,6 +75,7 @@ class LevelUp(commands.Cog):
         self.cache = {}  # Dumps to config every 60 seconds
         self.lastmsg = {}  # Last sent message for users
         self.voice = {}  # Voice channel info
+        self.stars = {}  # Keep track of star cooldowns
 
         # Cachey wakey dumpy wumpy loopy woopy
         self.cache_dumper.start()
@@ -247,6 +250,7 @@ class LevelUp(commands.Cog):
                 "base": settings["base"],
                 "exp": settings["exp"],
                 "length": settings["length"],
+                "starcooldown": settings["starcooldown"],
                 "usepics": settings["usepics"],
                 "voicexp": settings["voicexp"],
                 "cooldown": settings["cooldown"],
@@ -262,6 +266,8 @@ class LevelUp(commands.Cog):
             }
             if str(guild.id) not in self.cache:
                 self.cache[str(guild.id)] = {}
+            if str(guild.id) not in self.stars:
+                self.stars[str(guild.id)] = {}
 
     @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
@@ -856,19 +862,37 @@ class LevelUp(commands.Cog):
                 await ctx.send("Member added to ignore list")
         await self.init_settings()
 
-    @commands.command(name="tip")
-    @commands.cooldown(1, 21600, commands.BucketType.user)
+    @commands.command(name="star")
     @commands.guild_only()
-    async def rep_user(self, ctx: commands.Context, *, user: discord.Member):
-        """Add tips/rep to a user"""
+    async def give_star(self, ctx: commands.Context, *, user: discord.Member):
+        """Give a user a star"""
+        now = datetime.datetime.now()
         user_id = str(user.id)
-        async with self.config.guild(ctx.guild).users() as users:
+        if ctx.author == user:
+            return await ctx.send("**You can't give stars to yourself!**")
+        if user.bot:
+            return await ctx.send("**You can't give stars to a bot!**")
+        if user_id not in self.stars[str(ctx.guild.id)]:
+            self.stars[str(ctx.guild.id)][user_id] = now
+        else:
+            lastused = self.stars[str(ctx.guild.id)][user_id]
+            td = now - lastused
+            td = td.total_seconds()
+            if td > self.settings[str(ctx.guild.id)]["starcooldown"]:
+                self.stars[str(ctx.guild.id)][user_id] = now
+            else:
+                tstring = time_formatter(td)
+                msg = f"**You need to wait {tstring} before you can give more stars!**"
+                return await ctx.send(msg)
+        async with self.config.guild(ctx.guild).all() as conf:
+            users = conf["users"]
             if user_id not in users:
                 return await ctx.send("No data available for that user yet!")
-            if "rep" not in users[user_id]:
-                users[user_id]["rep"] = 1
+            if "stars" not in users[user_id]:
+                users[user_id]["stars"] = 1
             else:
-                users[user_id]["rep"] += 1
+                users[user_id]["stars"] += 1
+            await ctx.send(f"**You just gave a star to {user.mention}!**")
 
     @commands.command(name="mocklvl", hidden=True)
     async def get_lvl_test(self, ctx, *, user: discord.Member = None):
@@ -912,6 +936,10 @@ class LevelUp(commands.Cog):
         lvlpercent = stats["lp"]
         emoji = stats["e"]
         prestige = stats["pr"]
+        if "stars" in stats:
+            stars = stats["stars"]
+        else:
+            stars = 0
         if not conf["usepics"]:
             embed = await profile_embed(
                 user,
@@ -924,7 +952,8 @@ class LevelUp(commands.Cog):
                 lvlbar,
                 lvlpercent,
                 emoji,
-                prestige
+                prestige,
+                stars
             )
             await ctx.send(embed=embed)
         else:
@@ -946,6 +975,7 @@ class LevelUp(commands.Cog):
                     'messages': messages,
                     'voice': voice,
                     'prestige': prestige,
+                    'stars': stars
                 }
                 file = await self.gen_profile_img(args)
                 await ctx.send(file=file)

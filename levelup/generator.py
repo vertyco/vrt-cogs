@@ -9,7 +9,7 @@ import os
 
 class Generator:
     def __init__(self):
-        self.rep = os.path.join(os.path.dirname(__file__), 'assets', 'rep.png')
+        self.star = os.path.join(os.path.dirname(__file__), 'assets', 'star.png')
         self.default_bg = os.path.join(os.path.dirname(__file__), 'assets', 'card.png')
         self.online = os.path.join(os.path.dirname(__file__), 'assets', 'online.png')
         self.offline = os.path.join(os.path.dirname(__file__), 'assets', 'offline.png')
@@ -34,7 +34,7 @@ class Generator:
             messages: int = 0,
             voice: int = 0,
             prestige: int = 0,
-            rep: int = 0,
+            stars: int = 0,
     ):
         if not bg_image:
             card = Image.open(self.default_bg).convert("RGBA")
@@ -89,11 +89,10 @@ class Generator:
             status = Image.open(self.dnd)
         else:  # Eh just make it offline then
             status = Image.open(self.offline)
-
-        rep_icon = Image.open(self.rep)
-        # card.paste(rep_icon, (450, 30), rep_icon)
-
         status = status.convert("RGBA").resize((40, 40))
+
+        rep_icon = Image.open(self.star)
+        rep_icon = rep_icon.convert("RGBA").resize((40, 40))
 
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
 
@@ -108,7 +107,6 @@ class Generator:
         font_normal = ImageFont.truetype(self.font1, 40)
         font_small = ImageFont.truetype(self.font1, 25)
         font_signa = ImageFont.truetype(self.font2, 25)
-
         # ======== Colors ========================
         MAINCOLOR = color
         BORDER = (0, 0, 0)
@@ -117,14 +115,15 @@ class Generator:
             return "{:,}".format(xp)
 
         draw = ImageDraw.Draw(card)
-        rank = f"Rank #{user_position}"
-        level = f"Level {level}"
-        exp = f"Exp {get_str(user_xp)}/{get_str(next_xp)}"
+        rank = f"Rank: #{user_position}"
+        level = f"Level: {level}"
+        exp = f"Exp: {get_str(user_xp)}/{get_str(next_xp)}"
         messages = f"Messages: {messages}"
         voice = f"Voice Minutes: {voice}"
         name = f"{user_name}"
         if prestige:
             name += f" - Prestige {prestige}"
+        rep = str(stars)
 
         # Drawing borders
         draw.text((245, 22), name, BORDER, font=font_normal, stroke_width=1)
@@ -142,6 +141,9 @@ class Generator:
         # Filling text for 2nd column
         draw.text((450, 95), messages, MAINCOLOR, font=font_small)
         draw.text((450, 125), voice, MAINCOLOR, font=font_small)
+
+        draw.text((747, 16), rep, BORDER, font=font_normal, stroke_width=1)
+        draw.text((747, 16), rep, MAINCOLOR, font=font_normal)
 
         # Adding another blank layer for the progress bar
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -172,8 +174,8 @@ class Generator:
         blank = Image.new("RGBA", pre.size, (255, 255, 255, 0))
         blank.paste(status, (169, 169))
 
-        test = Image.new("RGBA", pre.size, (255, 255, 255, 0))
-        blank.paste(rep_icon, (600, 60))
+        # Add rep star
+        blank.paste(rep_icon, (700, 22))
 
         final = Image.alpha_composite(pre, blank)
         final_bytes = BytesIO()
@@ -190,6 +192,21 @@ class Generator:
     ):
         if not bg_image:
             card = Image.open(self.default_bg).convert("RGBA")
+            width, height = card.size
+            if width == 180 and height == 70:
+                pass
+            else:
+                x1 = 0
+                y1 = 0
+                x2 = width
+                nh = math.ceil(width * 0.3)
+                y2 = 0
+
+                if nh < height:
+                    y1 = (height / 2) - 119
+                    y2 = nh + y1
+
+                card = card.crop((x1, y1, x2, y2)).resize((180, 70))
         else:
             bg_bytes = BytesIO(requests.get(bg_image).content)
             card = Image.open(bg_bytes).convert("RGBA")
@@ -223,7 +240,7 @@ class Generator:
         # Profile pic border
         mask_draw.ellipse((1, 1, 69, 69), fill=(255, 25, 255, 255))
 
-        font_normal = ImageFont.truetype(self.font1, 25)
+        font_normal = ImageFont.truetype(self.font1, 24)
 
         MAINCOLOR = color
         BORDER = (0, 0, 0)
@@ -232,9 +249,9 @@ class Generator:
         level = f"Level {level}"
 
         # Drawing borders
-        draw.text((75, 13), level, BORDER, font=font_normal, stroke_width=1)
+        draw.text((75, 15), level, BORDER, font=font_normal, stroke_width=1)
         # Filling text
-        draw.text((75, 13), level, MAINCOLOR, font=font_normal)
+        draw.text((75, 15), level, MAINCOLOR, font=font_normal)
 
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
         profile_pic_holder.paste(profile, (0, 0))
