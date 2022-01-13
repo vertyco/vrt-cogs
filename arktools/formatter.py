@@ -141,7 +141,7 @@ def overview_format(stats: dict, guild: discord.guild, timezone: str):
     stop = 10
     for p in range(pages):
         embed = discord.Embed(
-            title="Playtime Leaderboard",
+            title="Player Overview",
             description=f"Global Cumulative Playtime: `{global_playtime}`\n\n"
                         f"**Top Players by Playtime** - `{len(sorted_players)} in Database`\n",
             color=discord.Color.random()
