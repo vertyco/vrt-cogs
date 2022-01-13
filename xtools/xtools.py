@@ -9,7 +9,6 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 from redbot.core.utils.chat_formatting import box
-import tabulate
 
 from .formatter import (profile,
                         profile_embed,

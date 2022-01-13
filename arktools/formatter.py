@@ -10,6 +10,8 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import logging
+import tabulate
+from redbot.core.utils.chat_formatting import box
 
 matplotlib.use("agg")
 plt.switch_backend("agg")
@@ -120,8 +122,8 @@ async def expired_players(stats: dict, unfriendtime: int):
     return expired
 
 
-# Leaderboard embed formatter
-def lb_format(stats: dict, guild: discord.guild, timezone: str):
+# overview embed formatter
+def overview_format(stats: dict, guild: discord.guild, timezone: str):
     embeds = []
     leaderboard = {}
     global_time = 0
@@ -174,6 +176,50 @@ def lb_format(stats: dict, guild: discord.guild, timezone: str):
                       f"{maps}"
                       f"Last Seen: `{lseen} ago`"
             )
+        embed.set_footer(text=f"Pages {p + 1}/{pages}")
+        embeds.append(embed)
+        start += 10
+        stop += 10
+    return embeds
+
+
+# Leaderboard embed formatter
+def lb_format(stats: dict, guild: discord.guild):
+    embeds = []
+    leaderboard = {}
+    global_time = 0
+    # Global cumulative time
+    for xuid, data in stats.items():
+        if "playtime" in data:
+            time = data["playtime"]["total"]
+            leaderboard[xuid] = time
+            global_time = global_time + time
+    global_playtime = time_formatter(global_time)
+    sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+    # Figure out how many pages the lb menu will be
+    pages = math.ceil(len(sorted_players) / 10)
+    start = 0
+    stop = 10
+    for p in range(pages):
+        # Put 10 players per page, adding 10 to the start and stop values after each loop
+        if stop > len(sorted_players):
+            stop = len(sorted_players)
+        table = []
+        for i in range(start, stop, 1):
+            xuid = sorted_players[i][0]
+            username = stats[xuid]["username"]
+            total = sorted_players[i][1]
+            total_playtime = time_formatter(total)
+            table.append([i + 1, total_playtime, username])
+        players = tabulate.tabulate(table, tablefmt="presto")
+        embed = discord.Embed(
+            title="Playtime Leaderboard",
+            description=f"Global Cumulative Playtime: `{global_playtime}`\n"
+                        f"Top Players by in Database: `{len(sorted_players)}`\n"
+                        f"{box(players, lang='python')}",
+            color=discord.Color.random()
+        )
+        embed.set_thumbnail(url=guild.icon_url)
         embed.set_footer(text=f"Pages {p + 1}/{pages}")
         embeds.append(embed)
         start += 10

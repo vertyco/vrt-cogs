@@ -33,6 +33,7 @@ from .formatter import (
     decode,
     profile_format,
     expired_players,
+    overview_format,
     lb_format,
     tribe_lb_format,
     cstats_format,
@@ -1279,13 +1280,25 @@ class ArkTools(commands.Cog):
             await ctx.send("Not enough data, give it some time")
 
     # Get the top 10 players in the cluster, browse pages to see them all
-    @commands.command(name="arklb")
+    @commands.command(name="playtimeoverview", aliases=["pto"])
     @commands.guild_only()
-    async def ark_leaderboard(self, ctx: commands.Context):
-        """View leaderboard for time played"""
+    async def ark_playtime_overview(self, ctx: commands.Context):
+        """View overview of players playtimes"""
         stats = await self.config.guild(ctx.guild).players()
         tz = await self.config.guild(ctx.guild).timezone()
-        pages = lb_format(stats, ctx.guild, tz)
+        pages = overview_format(stats, ctx.guild, tz)
+        if len(pages) == 0:
+            return await ctx.send("There are no stats available yet!")
+        await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    # Get the top 10 players in the cluster, browse pages to see them all
+    @commands.command(name="arklb", aliases=["arktop"])
+    @commands.guild_only()
+    async def ark_leaderboard(self, ctx: commands.Context):
+        """View the playtime leaderboard"""
+        stats = await self.config.guild(ctx.guild).players()
+        tz = await self.config.guild(ctx.guild).timezone()
+        pages = lb_format(stats, ctx.guild)
         if len(pages) == 0:
             return await ctx.send("There are no stats available yet!")
         await menu(ctx, pages, DEFAULT_CONTROLS)
