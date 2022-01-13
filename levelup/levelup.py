@@ -30,6 +30,7 @@ from .menus import menu, DEFAULT_CONTROLS
 matplotlib.use("agg")
 plt.switch_backend("agg")
 log = logging.getLogger("red.vrt.levelup")
+LOADING = "https://i.imgur.com/l3p6EMX.gif"
 
 
 # CREDITS
@@ -1049,6 +1050,16 @@ class LevelUp(commands.Cog):
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
         conf = await self.config.guild(ctx.guild).all()
+        usepics = conf["usepics"]
+        if usepics:
+            embed = discord.Embed(
+                description="Gathering Data...",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
+        else:
+            msg = None
         users = conf["users"]
         if not user:
             user = ctx.author
@@ -1076,7 +1087,7 @@ class LevelUp(commands.Cog):
             stars = stats["stars"]
         else:
             stars = 0
-        if not conf["usepics"]:
+        if not usepics:
             embed = await profile_embed(
                 user,
                 position,
@@ -1119,6 +1130,8 @@ class LevelUp(commands.Cog):
                     'stars': stars
                 }
                 file = await self.gen_profile_img(args)
+                if msg:
+                    await msg.delete()
                 await ctx.send(file=file)
 
     @commands.command(name="prestige")

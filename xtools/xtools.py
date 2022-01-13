@@ -8,6 +8,8 @@ from redbot.core import commands, Config
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
+from redbot.core.utils.chat_formatting import box
+import tabulate
 
 from .formatter import (profile,
                         profile_embed,
@@ -753,7 +755,7 @@ class XTools(commands.Cog):
             await msg.edit(embed=embed)
             most_played = {}
             async with ctx.typing():
-                cant_find = "Couldn't find playtime data for:\n"
+                cant_find = ""
                 not_found = False
                 for title in titles:
                     title_id = title["titleId"]
@@ -768,10 +770,13 @@ class XTools(commands.Cog):
                                 most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
                             else:
                                 not_found = True
-                                cant_find += f"`{title['name']}`\n"
+                                cant_find += f"{title['name']}\n"
             pages = mostplayed(most_played, gt)
             if not_found:
-                embed = discord.Embed(description=cant_find)
+                embed = discord.Embed(
+                    description=f"Couldn't find playtime data for:\n"
+                                f"{box(cant_find)}"
+                )
                 await msg.edit(embed=embed)
             else:
                 await msg.delete()

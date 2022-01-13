@@ -1,6 +1,8 @@
 import datetime
 import json
 import math
+import tabulate
+
 
 import discord
 from redbot.core.utils.chat_formatting import box
@@ -18,6 +20,34 @@ def time_format(time):
     minutes, _ = divmod(time, 60)
     hours, minutes = divmod(minutes, 60)
     return hours, minutes
+
+
+# Format time from total seconds and format into readable string
+def time_formatter(time_in_seconds) -> str:
+    time_in_seconds = int(time_in_seconds)  # Some time differences get sent as a float so just handle it the dumb way
+    minutes, seconds = divmod(time_in_seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    years, days = divmod(days, 365)
+    if not any([seconds, minutes, hours, days, years]):
+        tstring = "None"
+    elif not any([minutes, hours, days, years]):
+        if seconds == 1:
+            tstring = f"{seconds} second"
+        else:
+            tstring = f"{seconds} seconds"
+    elif not any([hours, days, years]):
+        if minutes == 1:
+            tstring = f"{minutes} minute"
+        else:
+            tstring = f"{minutes} minutes"
+    elif hours and not days and not years:
+        tstring = f"{hours}h {minutes}m"
+    elif days and not years:
+        tstring = f"{days}d {hours}h {minutes}m"
+    else:
+        tstring = f"{years}y {days}d {hours}h {minutes}m"
+    return tstring
 
 
 # Microsoft's timestamp end digits are fucked up and random so we iteratively try fixing them by stripping digits
@@ -477,24 +507,19 @@ def mostplayed(data, gt):
         mostplayedlist = ""
         if stop > len(sorted_playtime):
             stop = len(sorted_playtime)
+
+        table = []
         for i in range(start, stop, 1):
             game = sorted_playtime[i][0]
-            minutes_played = int(sorted_playtime[i][1])
-            hours, minutes = divmod(minutes_played, 60)
-            days, hours = divmod(hours, 24)
-            if days > 0:
-                mostplayedlist += f"**{i + 1}.** `{days}d {hours}h {minutes}m` - {game}\n"
-            elif hours > 0:
-                mostplayedlist += f"**{i + 1}.** `{hours}h {minutes}m` - {game}\n"
-            elif minutes_played == 0:
-                mostplayedlist += f"**{i + 1}.** `None` - {game}\n"
-            else:
-                mostplayedlist += f"**{i + 1}.** `{minutes} minutes` - {game}\n"
+            tstring = time_formatter(sorted_playtime[i][1])
+            table.append([i + 1, tstring, game])
+
+        mostplayedlist += tabulate.tabulate(table, tablefmt="presto")
         start += 10
         stop += 10
         embed = discord.Embed(
             title=f"{gt}'s Most Played Games",
-            description=mostplayedlist,
+            description=box(mostplayedlist),
             color=discord.Color.random()
         )
         hours, minutes = divmod(total_playtime, 60)

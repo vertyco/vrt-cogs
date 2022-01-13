@@ -25,7 +25,8 @@
   "requirements": [
     "xmltojson>=0.2.0",
     "xbox-webapi",
-    "utils>=1.0.1"
+    "utils>=1.0.1",
+    "tabulate"
   ],
   "short": "Get Xbox Live Info and Player Stats.",
   "tags": [
