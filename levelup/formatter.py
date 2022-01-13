@@ -41,7 +41,7 @@ def time_formatter(time_in_seconds) -> str:
         else:
             tstring = f"{minutes} minutes"
     elif hours and not days and not years:
-        tstring = f"{hours}h, {minutes}m"
+        tstring = f"{hours}h {minutes}m"
     elif days and not years:
         tstring = f"{days}d {hours}h {minutes}m"
     else:
