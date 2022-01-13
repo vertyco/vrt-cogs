@@ -178,7 +178,7 @@ class Generator:
 
         final = Image.alpha_composite(pre, blank)
         final_bytes = BytesIO()
-        final.save(final_bytes, 'png')
+        final.save(final_bytes, 'WEBP')
         final_bytes.seek(0)
         return final_bytes
 
@@ -238,7 +238,7 @@ class Generator:
 
         final = Image.alpha_composite(pre, blank)
         final_bytes = BytesIO()
-        final.save(final_bytes, 'png')
+        final.save(final_bytes, 'WEBP')
         final_bytes.seek(0)
         return final_bytes
 
