@@ -5,6 +5,8 @@ import logging
 import math
 import random
 import typing
+import validators
+
 
 import discord
 from discord.ext import tasks
@@ -910,6 +912,41 @@ class LevelUp(commands.Cog):
         file = await self.gen_levelup_img(args)
         await ctx.send(file=file)
 
+    @commands.command(name="setmybg", aliases=["setbg"])
+    async def set_user_background(self, ctx: commands.Context, image_url: str = None):
+        """
+        Set a background for your profile
+
+        This will override your profile banner as the background
+        Be aware that backgrounds are wide landscapes (900 by 240 pixels) and
+        using a portrait image will be skewed
+        """
+        valid = validators.url(image_url)
+        if not valid:
+            return await ctx.send("Uh Oh, looks like that is not a valid URL")
+        try:
+            args = {'bg_image': image_url, 'profile_image': ctx.author.avatar_url}
+            await self.gen_profile_img(args)
+        except Exception as e:
+            if "cannot identify image file" in str(e):
+                return await ctx.send("Uh Oh, looks like that is not a valid image")
+            else:
+                log.warning(f"background set failed: {e}")
+                return await ctx.send("Uh Oh, looks like that is not a valid image")
+        user = ctx.author
+        async with self.config.guild(ctx.guild).users() as users:
+            if str(user.id) not in users:
+                return await ctx.send("You aren't logged in the database yet, give it some time.")
+            if image_url:
+                users[str(user.id)]["background"] = image_url
+                await ctx.send("Your image has been set!")
+            else:
+                if "background" in users[str(user.id)]:
+                    del users[str(user.id)]["background"]
+                    await ctx.send("Your background has been removed!")
+                else:
+                    await ctx.send(f"Nothing to delete, for help with this command, type `{ctx.prefix}help setmybg`")
+
     @commands.command(name="pf")
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
@@ -935,6 +972,7 @@ class LevelUp(commands.Cog):
         lvlpercent = stats["lp"]
         emoji = stats["e"]
         prestige = stats["pr"]
+        bg = stats["bg"]
         if "stars" in stats:
             stars = stats["stars"]
         else:
@@ -957,7 +995,10 @@ class LevelUp(commands.Cog):
             await ctx.send(embed=embed)
         else:
             async with ctx.typing():
-                banner = await self.get_banner(user)
+                if bg:
+                    banner = bg
+                else:
+                    banner = await self.get_banner(user)
                 color = str(user.colour)
                 color = hex_to_rgb(color)
                 args = {

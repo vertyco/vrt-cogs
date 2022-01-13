@@ -91,6 +91,10 @@ async def get_user_stats(conf: dict, user_id: str) -> dict:
         stars = user["stars"]
     else:
         stars = 0
+    if "background" in user:
+        bg = user["background"]
+    else:
+        bg = None
     next_level = level + 1
     xp_needed = get_xp(next_level, base, exp)
     ratio = xp / xp_needed
@@ -113,7 +117,8 @@ async def get_user_stats(conf: dict, user_id: str) -> dict:
         "lp": lvlpercent,
         "e": emoji,
         "pr": prestige,
-        "stars": stars
+        "stars": stars,
+        "bg": bg
     }
     return stats
 
