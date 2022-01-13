@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import io
 import logging
 import math
 import random
@@ -7,11 +8,10 @@ import typing
 
 import discord
 from discord.ext import tasks
-from redbot.core import commands, Config
 from matplotlib import pyplot as plt
-from .menus import menu, DEFAULT_CONTROLS
-import io
-from .generator import Generator
+from redbot.core import commands, Config
+from redbot.core.utils.chat_formatting import box
+
 from .formatter import (
     time_formatter,
     hex_to_rgb,
@@ -21,14 +21,16 @@ from .formatter import (
     get_user_stats,
     profile_embed,
 )
+from .generator import Generator
+from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.levelup")
 
 
 # CREDITS
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
-# Used Fixator10#7133's Leveler cog to get a reference for what kinda settings a leveler cog might need!
-
+# Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
+# Thanks crayyy_zee#2900 for showing me the dislash repo that i yoinked and did dirty things to
 
 class LevelUp(commands.Cog):
     """Local Discord Leveling System"""
@@ -570,6 +572,31 @@ class LevelUp(commands.Cog):
         await self.config.guild(ctx.guild).users.set({})
         await ctx.tick()
 
+    @lvl_group.command(name="cleanup")
+    @commands.guildowner()
+    async def cleanup_guild(self, ctx: commands.Context):
+        """(Guild Owner Only) Delete users no longer in the server"""
+        guild = ctx.guild
+        members = guild.members
+        cleanup = []
+        users = await self.config.guild(ctx.guild).users()
+        for user_id in users:
+            user = guild.get_member(int(user_id))
+            if not user:
+                cleanup.append(user_id)
+            elif user not in members:
+                cleanup.append(user_id)
+            else:
+                continue
+        if not cleanup:
+            return await ctx.send("Nothing to clean")
+        async with await self.config.guild(ctx.guild).users() as users:
+            cleaned = 0
+            for uid in cleanup:
+                del users[uid]
+                cleaned += 1
+        await ctx.send(f"Deleted {cleaned} user ID's from the config that are no longer in the server")
+
     @lvl_group.command(name="xp")
     async def set_xp(self, ctx: commands.Context, min_xp: int = 3, max_xp: int = 6):
         """Set the Min and Max amount of XP that a message can gain"""
@@ -1072,9 +1099,12 @@ class LevelUp(commands.Cog):
         start = 0
         stop = 10
         you = ""
+        longestxp = 1
+        longestlvl = 1
         for p in range(pages):
-            msg = f"**Total Messages:** `{total_messages}`\n" \
+            title = f"**Total Messages:** `{total_messages}`\n" \
                   f"**Total VoiceMinutes:** `{voice}`\n"
+            msg = ""
             if stop > len(sorted_users):
                 stop = len(sorted_users)
             for i in range(start, stop, 1):
@@ -1088,14 +1118,91 @@ class LevelUp(commands.Cog):
                     user = uid
                 xp = sorted_users[i][1]
                 level = get_level(xp, base, exp)
-                emoji = conf["users"][uid]["emoji"]
-                if emoji:
-                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp｜{user}`{emoji}\n"
+                level = f"Lvl {level}"
+                xp = f"{xp} xp"
+                xp = str(xp)
+                level = str(level)
+                if i == 0:
+                    longestxp = len(xp)
+                    longestlvl = len(level)
+                xplength = len(xp)
+                if xplength < longestxp:
+                    spaces = longestxp - xplength
+                    for _ in range(spaces):
+                        xp += " "
+                lvlength = len(level)
+                if lvlength < longestlvl:
+                    spaces = longestlvl - lvlength
+                    for _ in range(spaces + 1):
+                        level += " "
+                if (i + 1) < 10:
+                    msg += f"{i + 1}  ➤ {level}｜{xp}｜{user}\n"
                 else:
-                    msg += f"`{i + 1} ➤ Lvl {level}｜{xp} xp｜{user}`\n"
+                    msg += f"{i + 1} ➤ {level}｜{xp}｜{user}\n"
             embed = discord.Embed(
                 title="LevelUp Leaderboard",
-                description=msg,
+                description=f"{title}{box(msg, lang='python')}",
+                color=discord.Color.random()
+            )
+            embed.set_thumbnail(url=ctx.guild.icon_url)
+            if you:
+                embed.set_footer(text=f"Pages {p + 1}/{pages} ｜ {you}")
+            else:
+                embed.set_footer(text=f"Pages {p + 1}/{pages}")
+            embeds.append(embed)
+            start += 10
+            stop += 10
+        if embeds:
+            if len(embeds) == 1:
+                embed = embeds[0]
+                await ctx.send(embed=embed)
+            else:
+                await menu(ctx, embeds, DEFAULT_CONTROLS)
+        else:
+            return await ctx.send("No user data yet!")
+
+    @commands.command(name="starlb")
+    @commands.guild_only()
+    async def star_leaderboard(self, ctx: commands.Context):
+        """View the star leaderboard"""
+        conf = await self.config.guild(ctx.guild).all()
+        embeds = []
+        leaderboard = {}
+        total_stars = 0
+        for user, data in conf["users"].items():
+            if "stars" in data:
+                stars = data["stars"]
+                leaderboard[user] = stars
+                total_stars += stars
+        if not leaderboard:
+            return await ctx.send("Nobody has stars yet 😕")
+        sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+        pages = math.ceil(len(sorted_users) / 10)
+        start = 0
+        stop = 10
+        you = ""
+        for p in range(pages):
+            title = f"**Star Leaderboard**\n" \
+                    f"**Total ⭐'s: {total_stars}**\n"
+            msg = ""
+            if stop > len(sorted_users):
+                stop = len(sorted_users)
+            for i in range(start, stop, 1):
+                uid = sorted_users[i][0]
+                if str(uid) == str(ctx.author.id):
+                    you = f"You: {i + 1}/{len(sorted_users)}\n"
+                user = ctx.guild.get_member(int(uid))
+                if user:
+                    user = user.name
+                else:
+                    user = uid
+                stars = sorted_users[i][1]
+                if stars < 10:
+                    msg += f"{stars}  ⭐ ｜ {user}\n"
+                else:
+                    msg += f"{stars} ⭐ ｜ {user}\n"
+            embed = discord.Embed(
+                description=f"{title}{box(msg, lang='python')}",
                 color=discord.Color.random()
             )
             embed.set_thumbnail(url=ctx.guild.icon_url)
