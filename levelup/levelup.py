@@ -864,7 +864,7 @@ class LevelUp(commands.Cog):
     @commands.command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
     async def give_star(self, ctx: commands.Context, *, user: discord.Member):
-        """Give a user a star"""
+        """Give a star to a user for being a good noodle"""
         now = datetime.datetime.now()
         user_id = str(user.id)
         if ctx.author == user:
