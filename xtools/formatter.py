@@ -519,7 +519,7 @@ def mostplayed(data, gt):
         stop += 10
         embed = discord.Embed(
             title=f"{gt}'s Most Played Games",
-            description=box(mostplayedlist),
+            description=box(mostplayedlist, lang="python"),
             color=discord.Color.random()
         )
         hours, minutes = divmod(total_playtime, 60)

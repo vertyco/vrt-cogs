@@ -1051,15 +1051,6 @@ class LevelUp(commands.Cog):
         """View your profile"""
         conf = await self.config.guild(ctx.guild).all()
         usepics = conf["usepics"]
-        if usepics:
-            embed = discord.Embed(
-                description="Gathering Data...",
-                color=discord.Color.random()
-            )
-            embed.set_thumbnail(url=LOADING)
-            msg = await ctx.send(embed=embed)
-        else:
-            msg = None
         users = conf["users"]
         if not user:
             user = ctx.author
@@ -1130,8 +1121,6 @@ class LevelUp(commands.Cog):
                     'stars': stars
                 }
                 file = await self.gen_profile_img(args)
-                if msg:
-                    await msg.delete()
                 await ctx.send(file=file)
 
     @commands.command(name="prestige")
