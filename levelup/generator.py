@@ -210,7 +210,6 @@ class Generator:
         else:
             bg_bytes = BytesIO(requests.get(bg_image).content)
             card = Image.open(bg_bytes).convert("RGBA")
-
             width, height = card.size
             if width == 180 and height == 70:
                 pass
@@ -218,11 +217,11 @@ class Generator:
                 x1 = 0
                 y1 = 0
                 x2 = width
-                nh = math.ceil(width * 0.3)
+                nh = math.ceil(width * 0.26)
                 y2 = 0
 
                 if nh < height:
-                    y1 = (height / 2) - 119
+                    y1 = (height / 2) - 100
                     y2 = nh + y1
 
                 card = card.crop((x1, y1, x2, y2)).resize((180, 70))
