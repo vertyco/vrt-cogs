@@ -5,7 +5,6 @@ import logging
 import math
 import random
 import typing
-import time
 
 import discord
 from discord.ext import tasks
