@@ -1120,8 +1120,6 @@ class LevelUp(commands.Cog):
                 level = get_level(xp, base, exp)
                 level = f"Lvl {level}"
                 xp = f"{xp} xp"
-                xp = str(xp)
-                level = str(level)
                 if i == 0:
                     longestxp = len(xp)
                     longestlvl = len(level)
