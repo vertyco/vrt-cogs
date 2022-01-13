@@ -35,6 +35,7 @@ log = logging.getLogger("red.vrt.levelup")
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
 # Thanks crayyy_zee#2900 for showing me the dislash repo that i yoinked and did dirty things to
+# Thanks Zephyrkul#1089 for the help with leaderboard formatting!
 
 class LevelUp(commands.Cog):
     """Local Discord Leveling System"""
@@ -1211,25 +1212,21 @@ class LevelUp(commands.Cog):
                     user = uid
                 xp = sorted_users[i][1]
                 level = get_level(xp, base, exp)
-                level = f"Lvl {level}"
-                xp = f"{xp} xp"
+                level = f"{level}"
+                xp = f"{xp}"
                 if i == 0:
                     longestxp = len(xp)
                     longestlvl = len(level)
                 xplength = len(xp)
                 if xplength < longestxp:
-                    spaces = longestxp - xplength
-                    for _ in range(spaces):
-                        xp += " "
+                    xp = xp.rjust(longestxp)
                 lvlength = len(level)
                 if lvlength < longestlvl:
-                    spaces = longestlvl - lvlength
-                    for _ in range(spaces + 1):
-                        level += " "
+                    level = level.rjust(longestlvl)
                 if (i + 1) < 10:
-                    msg += f"{i + 1}  ➤ {level}｜{xp}｜{user}\n"
+                    msg += f"{i + 1}  ➤ Lvl {level}｜{xp} xp｜{user}\n"
                 else:
-                    msg += f"{i + 1} ➤ {level}｜{xp}｜{user}\n"
+                    msg += f"{i + 1} ➤ Lvl {level}｜{xp} xp｜{user}\n"
             embed = discord.Embed(
                 title="LevelUp Leaderboard",
                 description=f"{title}{box(msg, lang='python')}",
