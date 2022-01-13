@@ -904,7 +904,7 @@ class LevelUp(commands.Cog):
         args = {
             'bg_image': banner,
             'profile_image': user.avatar_url,
-            'level': 4,
+            'level': 69,
             'color': color,
         }
         file = await self.gen_levelup_img(args)
