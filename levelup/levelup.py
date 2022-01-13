@@ -6,6 +6,7 @@ import math
 import random
 import sys
 import typing
+import tabulate
 
 import discord
 import matplotlib
@@ -20,6 +21,7 @@ from .formatter import (
     hex_to_rgb,
     get_level,
     get_xp,
+    time_to_level,
     get_user_position,
     get_user_stats,
     profile_embed,
@@ -410,14 +412,22 @@ class LevelUp(commands.Cog):
         conf = await self.config.guild(ctx.guild).all()
         base = conf["base"]
         exp = conf["exp"]
+        cd = conf["cooldown"]
+        xp_range = conf["xp"]
         msg = ""
+        table = []
         x = []
         y = []
-        for i in range(21):
+        for i in range(1, 21):
             xp = get_xp(i, base, exp)
-            msg += f"`Level {i}: `{xp} XP Needed\n"
+            msg += f"Level {i}: {xp} XP Needed\n"
+            time = time_to_level(i, base, exp, cd, xp_range)
+            time = time_formatter(time)
+            table.append([i, xp, time])
             x.append(i)
             y.append(xp)
+        headers = ["Level", "XP Needed", "AproxTime"]
+        data = tabulate.tabulate(table, headers, tablefmt="presto")
         with plt.style.context("dark_background"):
             plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
             plt.xlabel(f"Level", fontsize=10)
@@ -431,13 +441,18 @@ class LevelUp(commands.Cog):
             result.seek(0)
             file = discord.File(result, filename="lvlexample.png")
             img = "attachment://lvlexample.png"
+        example = "XP required for a level = Base * Level^Exp\n\n" \
+                  "Approx time is the time it would take for a user to reach a level if they " \
+                  "typed every time the cooldown expired non stop without sleeping or taking " \
+                  "potty breaks."
         embed = discord.Embed(
             title="Level Example",
-            description=f"**Base Multiplier:** {base}\n"
-                        f"**Exp Multiplier:** {exp}\n"
-                        f"XPForALevel = Base * Level^Exp\n"
-                        f"Level = Inverse of that\n"
-                        f"{msg}",
+            description=f"`Base Multiplier:  `{base}\n"
+                        f"`Exp Multiplier:   `{exp}\n"
+                        f"`Experience Range: `{xp_range}\n"
+                        f"`Message Cooldown: `{cd}\n"
+                        f"{box(example)}\n"
+                        f"{box(data, lang='python')}",
             color=discord.Color.random()
         )
         embed.set_image(url=img)

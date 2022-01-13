@@ -1,17 +1,31 @@
 import typing
 import math
 import discord
+import random
 from redbot.core.utils.chat_formatting import box
 
 
-# Get level from XP
+# Get a level that would be achieved from the amount of XP
 def get_level(xp: int, base: int, exp: typing.Union[int, float]) -> int:
     return int((xp / base) ** (1 / exp))
 
 
-# Get XP from level
+# Get how much XP is needed to reach a level
 def get_xp(level: int, base: int, exp: typing.Union[int, float]) -> int:
     return math.ceil(base * (level ** exp))
+
+
+# Estimate how much time it would take to reach a certain level based on curent algorithm
+def time_to_level(level: int, base: int, exp: typing.Union[int, float], cooldown: int, xp_range: list) -> int:
+        xp_needed = get_xp(level, base, exp)
+        xp_obtained = 0
+        time_to_reach_level = 0  # Seconds
+        while True:
+            xp = random.choice(range(xp_range[0], xp_range[1]))
+            xp_obtained += xp
+            time_to_reach_level += cooldown
+            if xp_obtained >= xp_needed:
+                return time_to_reach_level
 
 
 # Convert a hex color to an RGB tuple

@@ -116,7 +116,7 @@ class Generator:
         name = f"{user_name}"
         if prestige:
             name += f" - Prestige {prestige}"
-        rep = str(stars)
+        stars = str(stars)
 
         # Drawing borders
         draw.text((245, 22), name, BORDER, font=font_normal, stroke_width=1)
@@ -135,8 +135,8 @@ class Generator:
         draw.text((450, 95), messages, MAINCOLOR, font=font_small)
         draw.text((450, 125), voice, MAINCOLOR, font=font_small)
 
-        draw.text((747, 16), rep, BORDER, font=font_normal, stroke_width=1)
-        draw.text((747, 16), rep, MAINCOLOR, font=font_normal)
+        draw.text((747, 15), stars, BORDER, font=font_normal, stroke_width=1)
+        draw.text((747, 15), stars, MAINCOLOR, font=font_normal)
 
         # Adding another blank layer for the progress bar
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
