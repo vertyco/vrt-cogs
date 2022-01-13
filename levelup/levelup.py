@@ -7,13 +7,9 @@ import random
 import typing
 import validators
 
-import matplotlib
-matplotlib.use("agg")
-import matplotlib.pyplot as plt
-plt.switch_backend("agg")
-
 import discord
 from discord.ext import tasks
+from matplotlib import pyplot as plt
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
 
