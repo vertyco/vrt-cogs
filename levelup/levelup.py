@@ -467,6 +467,7 @@ class LevelUp(commands.Cog):
         notifydm = conf["notifydm"]
         mention = conf["mention"]
         starcooldown = conf["starcooldown"]
+        sc = time_formatter(starcooldown)
         notifylog = ctx.guild.get_channel(conf["notifylog"])
         if not notifylog:
             notifylog = conf["notifylog"]
@@ -491,7 +492,7 @@ class LevelUp(commands.Cog):
               f"`Mention User:     `{mention}\n" \
               f"`LevelUp Channel:  `{notifylog}\n" \
               f"**Stars**\n" \
-              f"`Cooldown:         `{starcooldown}\n"
+              f"`Cooldown:         `{sc}\n"
         if levelroles:
             msg += "**Levels**\n"
             for level, role_id in levelroles.items():
@@ -785,6 +786,17 @@ class LevelUp(commands.Cog):
             await ctx.send(f"LevelUp channel has been set to {levelup_channel.mention}")
         await self.init_settings()
 
+    @lvl_group.command(name="starcooldown")
+    async def set_star_cooldown(self, ctx: commands.Context, time_in_seconds: int):
+        """
+        Set the star cooldown
+
+        Users can give another user a star every X seconds
+        """
+        await self.config.guild(ctx.guild).starcooldown.set(time_in_seconds)
+        await ctx.tick()
+        await self.init_settings()
+
     @lvl_group.group(name="roles")
     async def level_roles(self, ctx: commands.Context):
         """Level role assignment"""
@@ -799,6 +811,7 @@ class LevelUp(commands.Cog):
                 overwrite = "Set"
             roles[level] = role.id
             await ctx.send(f"Level {level} has been {overwrite} as {role.mention}")
+            await self.init_settings()
 
     @level_roles.command(name="del")
     async def del_level_role(self, ctx: commands.Context, level: str):
@@ -809,6 +822,7 @@ class LevelUp(commands.Cog):
                 await ctx.send("Level role has been deleted!")
             else:
                 await ctx.send("Level doesnt exist!")
+            await self.init_settings()
 
     @lvl_group.group(name="prestige")
     async def prestige_settings(self, ctx: commands.Context):
@@ -823,6 +837,7 @@ class LevelUp(commands.Cog):
         """
         await self.config.guild(ctx.guild).prestige.set(level)
         await ctx.tick()
+        await self.init_settings()
 
     @prestige_settings.command(name="addprestigedata")
     async def add_pres_data(
@@ -844,6 +859,7 @@ class LevelUp(commands.Cog):
                 "emoji": emoji
             }
         await ctx.tick()
+        await self.init_settings()
 
     @prestige_settings.command(name="delprestigedata")
     async def del_pres_data(self, ctx: commands.Context, prestige_level: str):
@@ -854,6 +870,7 @@ class LevelUp(commands.Cog):
             else:
                 return await ctx.send("That prestige level doesnt exist!")
         await ctx.tick()
+        await self.init_settings()
 
     @lvl_group.group(name="ignored")
     async def ignore_group(self, ctx: commands.Context):
@@ -927,13 +944,15 @@ class LevelUp(commands.Cog):
         if user_id not in self.stars[str(ctx.guild.id)]:
             self.stars[str(ctx.guild.id)][user_id] = now
         else:
+            cooldown = self.settings[str(ctx.guild.id)]["starcooldown"]
             lastused = self.stars[str(ctx.guild.id)][user_id]
             td = now - lastused
             td = td.total_seconds()
-            if td > self.settings[str(ctx.guild.id)]["starcooldown"]:
+            if td > cooldown:
                 self.stars[str(ctx.guild.id)][user_id] = now
             else:
-                tstring = time_formatter(td)
+                time_left = cooldown - td
+                tstring = time_formatter(time_left)
                 msg = f"**You need to wait {tstring} before you can give more stars!**"
                 return await ctx.send(msg)
         async with self.config.guild(ctx.guild).all() as conf:
