@@ -5,6 +5,8 @@ import asyncio
 import logging
 import os
 
+from redbot.core.data_manager import bundled_data_path
+
 
 log = logging.getLogger("red.vrt.levelup.generator")
 
@@ -13,16 +15,16 @@ log = logging.getLogger("red.vrt.levelup.generator")
 
 class Generator:
     def __init__(self):
-        self.star = os.path.join(os.path.dirname(__file__), 'assets', 'star.png')
-        self.default_lvlup = os.path.join(os.path.dirname(__file__), 'assets', 'lvlup.png')
-        self.default_bg = os.path.join(os.path.dirname(__file__), 'assets', 'card.png')
-        self.online = os.path.join(os.path.dirname(__file__), 'assets', 'online.png')
-        self.offline = os.path.join(os.path.dirname(__file__), 'assets', 'offline.png')
-        self.idle = os.path.join(os.path.dirname(__file__), 'assets', 'idle.png')
-        self.dnd = os.path.join(os.path.dirname(__file__), 'assets', 'dnd.png')
-        self.streaming = os.path.join(os.path.dirname(__file__), 'assets', 'streaming.png')
-        self.font1 = os.path.join(os.path.dirname(__file__), 'assets', 'font.ttf')
-        self.font2 = os.path.join(os.path.dirname(__file__), 'assets', 'font2.ttf')
+        self.star = os.path.join(bundled_data_path(self), 'star.png')
+        self.default_lvlup = os.path.join(bundled_data_path(self), 'lvlup.png')
+        self.default_bg = os.path.join(bundled_data_path(self), 'card.png')
+        self.online = os.path.join(bundled_data_path(self), 'online.png')
+        self.offline = os.path.join(bundled_data_path(self), 'offline.png')
+        self.idle = os.path.join(bundled_data_path(self), 'idle.png')
+        self.dnd = os.path.join(bundled_data_path(self), 'dnd.png')
+        self.streaming = os.path.join(bundled_data_path(self), 'streaming.png')
+        self.font1 = os.path.join(bundled_data_path(self), 'font.ttf')
+        self.font2 = os.path.join(bundled_data_path(self), 'font2.ttf')
 
     # Not used atm still suck at pillow
     @staticmethod
