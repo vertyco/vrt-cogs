@@ -124,13 +124,13 @@ class LevelUp(commands.Cog):
     # Generate rinky dink profile image
     async def gen_profile_img(self, args: dict):
         image = await Generator().generate_profile(**args)
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.png")
+        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
     # Generate rinky dink level up image
     async def gen_levelup_img(self, args: dict):
         image = await Generator().generate_levelup(**args)
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.png")
+        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
     # Dump cache to config
