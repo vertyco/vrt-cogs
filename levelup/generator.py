@@ -199,7 +199,7 @@ class Generator:
                 x1 = 0
                 y1 = 0
                 x2 = width
-                nh = math.ceil(width * 0.3)
+                nh = math.ceil(width * 0.24)
                 y2 = 0
 
                 if nh < height:
