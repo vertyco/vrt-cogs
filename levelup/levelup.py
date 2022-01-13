@@ -927,6 +927,7 @@ class LevelUp(commands.Cog):
             if not valid:
                 return await ctx.send("Uh Oh, looks like that is not a valid URL")
             try:
+                # Try running it through profile generator blind to see if it errors
                 args = {'bg_image': image_url, 'profile_image': ctx.author.avatar_url}
                 await self.gen_profile_img(args)
             except Exception as e:
