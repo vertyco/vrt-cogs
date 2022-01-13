@@ -200,10 +200,13 @@ class Generator:
 
                 card = card.crop((x1, y1, x2, y2)).resize((180, 70), Image.ANTIALIAS)
         else:
-            bg_bytes = BytesIO(await self.get_image_content(bg_image))
-            card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
+            bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
+            if bg_bytes:
+                card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
+            else:
+                card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
 
-        profile_bytes = BytesIO(await self.get_image_content(str(profile_image)))
+        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
         profile = Image.open(profile_bytes)
         profile = profile.convert('RGBA').resize((70, 70), Image.ANTIALIAS)
 
