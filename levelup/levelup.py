@@ -40,7 +40,11 @@ class LevelUp(commands.Cog):
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
-        return f"{helpcmd}\nCog Version: {self.__version__}\nAuthor: {self.__author__}"
+        info = f"{helpcmd}\n" \
+               f"Cog Version: {self.__version__}\n" \
+               f"Author: {self.__author__}\n" \
+               f"Contributors: aikaterna#1393"
+        return info
 
     def __init__(self, bot):
         self.bot = bot
