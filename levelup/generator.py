@@ -183,22 +183,7 @@ class Generator:
             color: tuple = (0, 0, 0),
     ):
         if not bg_image:
-            card = Image.open(self.default_lvlup).convert("RGBA")
-            width, height = card.size
-            if width == 180 and height == 70:
-                pass
-            else:
-                x1 = -18
-                y1 = 0
-                x2 = width
-                nh = math.ceil(width * 0.24)  # 0.24 for default bg
-                y2 = 0
-
-                if nh < height:
-                    y1 = (height / 2) - 77  # 119 for other bg default
-                    y2 = nh + y1
-
-                card = card.crop((x1, y1, x2, y2)).resize((180, 70), Image.ANTIALIAS)
+            card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
         else:
             bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
             if bg_bytes:
@@ -208,7 +193,7 @@ class Generator:
 
         profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
         profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((70, 70), Image.ANTIALIAS)
+        profile = profile.convert('RGBA').resize((60, 60), Image.ANTIALIAS)
 
         # Is used as a blank image for mask
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -217,7 +202,7 @@ class Generator:
         mask = Image.new("RGBA", card.size, 0)
         mask_draw = ImageDraw.Draw(mask)
         # Profile pic border
-        mask_draw.ellipse((1, 1, 69, 69), fill=(255, 25, 255, 255))
+        mask_draw.ellipse((9, 9, 60, 60), fill=(255, 25, 255, 255))
         if len(str(level)) > 2:
             size = 19
         else:
@@ -236,7 +221,7 @@ class Generator:
         draw.text((75, 15), level, MAINCOLOR, font=font_normal)
 
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
-        profile_pic_holder.paste(profile, (0, 0))
+        profile_pic_holder.paste(profile, (5, 5))
 
         pre = Image.composite(profile_pic_holder, card, mask)
         pre = Image.alpha_composite(pre, blank)
