@@ -7,13 +7,9 @@ import random
 import typing
 import validators
 
-import matplotlib
-matplotlib.use("agg")
-import matplotlib.pyplot as plt
-plt.switch_backend("agg")
-
 import discord
 from discord.ext import tasks
+from matplotlib import pyplot as plt
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
 
@@ -115,25 +111,15 @@ class LevelUp(commands.Cog):
 
     # Generate rinky dink profile image
     async def gen_profile_img(self, args: dict):
-
-        def exe():
-            image = Generator().generate_profile(**args)
-            file = discord.File(fp=image, filename="image.png")
-            return file
-
-        profile = await self.bot.loop.run_in_executor(None, exe)
-        return profile
+        image = await Generator().generate_profile(**args)
+        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.png")
+        return file
 
     # Generate rinky dink level up image
     async def gen_levelup_img(self, args: dict):
-
-        def exe():
-            image = Generator().generate_levelup(**args)
-            file = discord.File(fp=image, filename="image.png")
-            return file
-
-        lvlup = await self.bot.loop.run_in_executor(None, exe)
-        return lvlup
+        image = await Generator().generate_levelup(**args)
+        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.png")
+        return file
 
     # Dump cache to config
     async def dump_cache(self):

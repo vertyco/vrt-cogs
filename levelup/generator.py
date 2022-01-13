@@ -1,8 +1,13 @@
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
-import requests
+import aiohttp
+import asyncio
+import logging
 import math
 import os
+
+
+log = logging.getLogger("red.vrt.levelup.generator")
 
 
 # Yoinked from disrank and modified to suit this cog's needs
@@ -35,7 +40,7 @@ class Generator:
         im.putalpha(alpha)
         return im
 
-    def generate_profile(
+    async def generate_profile(
             self,
             bg_image: str = None,
             profile_image: str = None,
@@ -55,10 +60,13 @@ class Generator:
         if not bg_image:
             card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
         else:
-            bg_bytes = BytesIO(requests.get(bg_image).content)
-            card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
+            bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
+            if bg_bytes:
+                card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
+            else:
+                card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
 
-        profile_bytes = BytesIO(requests.get(profile_image).content)
+        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
         profile = Image.open(profile_bytes)
         profile = profile.convert('RGBA').resize((180, 180), Image.ANTIALIAS)
 
@@ -167,7 +175,7 @@ class Generator:
         final_bytes.seek(0)
         return final_bytes
 
-    def generate_levelup(
+    async def generate_levelup(
             self,
             bg_image: str = None,
             profile_image: str = None,
@@ -192,10 +200,10 @@ class Generator:
 
                 card = card.crop((x1, y1, x2, y2)).resize((180, 70), Image.ANTIALIAS)
         else:
-            bg_bytes = BytesIO(requests.get(bg_image).content)
+            bg_bytes = BytesIO(await self.get_image_content(bg_image))
             card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
 
-        profile_bytes = BytesIO(requests.get(profile_image).content)
+        profile_bytes = BytesIO(await self.get_image_content(str(profile_image)))
         profile = Image.open(profile_bytes)
         profile = profile.convert('RGBA').resize((70, 70), Image.ANTIALIAS)
 
@@ -235,3 +243,21 @@ class Generator:
         final.save(final_bytes, 'png')
         final_bytes.seek(0)
         return final_bytes
+
+    async def get_image_content_from_url(self, url: str):
+        headers = {'User-Agent': 'Python/3.8'}
+        try:
+            timeout = aiohttp.ClientTimeout(total=20)
+            async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
+                async with session.get(url) as r:
+                    image = await r.content.read()
+                    return image
+        except aiohttp.client_exceptions.ClientConnectorError:
+            log.error(f"aiohttp failure accessing image at url:\n\t{url}", exc_info=True)
+            return None
+        except asyncio.exceptions.TimeoutError:
+            log.error(f"asyncio timeout while accessing image at url:\n\t{url}", exc_info=True)
+            return None
+        except Exception:
+            log.error(f"General failure accessing image at url:\n\t{url}", exc_info=True)
+            return None
