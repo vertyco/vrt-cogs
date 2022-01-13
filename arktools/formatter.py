@@ -212,10 +212,11 @@ def lb_format(stats: dict, guild: discord.guild):
             total_playtime = time_formatter(total)
             table.append([i + 1, total_playtime, username])
         players = tabulate.tabulate(table, tablefmt="presto")
+        saved = "{:,}".format(len(sorted_players))
         embed = discord.Embed(
             title="Playtime Leaderboard",
-            description=f"Global Cumulative Playtime: `{global_playtime}`\n"
-                        f"Players in Database: `{len(sorted_players)}`\n"
+            description=f"Global Playtime: `{global_playtime}`\n"
+                        f"Players in Database: `{saved}`\n"
                         f"{box(players, lang='python')}",
             color=discord.Color.random()
         )
