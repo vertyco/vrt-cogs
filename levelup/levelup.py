@@ -921,18 +921,20 @@ class LevelUp(commands.Cog):
         Be aware that backgrounds are wide landscapes (900 by 240 pixels) and
         using a portrait image will be skewed
         """
-        valid = validators.url(image_url)
-        if not valid:
-            return await ctx.send("Uh Oh, looks like that is not a valid URL")
-        try:
-            args = {'bg_image': image_url, 'profile_image': ctx.author.avatar_url}
-            await self.gen_profile_img(args)
-        except Exception as e:
-            if "cannot identify image file" in str(e):
-                return await ctx.send("Uh Oh, looks like that is not a valid image")
-            else:
-                log.warning(f"background set failed: {e}")
-                return await ctx.send("Uh Oh, looks like that is not a valid image")
+        # If image url is given, run some checks
+        if image_url:
+            valid = validators.url(image_url)
+            if not valid:
+                return await ctx.send("Uh Oh, looks like that is not a valid URL")
+            try:
+                args = {'bg_image': image_url, 'profile_image': ctx.author.avatar_url}
+                await self.gen_profile_img(args)
+            except Exception as e:
+                if "cannot identify image file" in str(e):
+                    return await ctx.send("Uh Oh, looks like that is not a valid image")
+                else:
+                    log.warning(f"background set failed: {e}")
+                    return await ctx.send("Uh Oh, looks like that is not a valid image")
         user = ctx.author
         async with self.config.guild(ctx.guild).users() as users:
             if str(user.id) not in users:
