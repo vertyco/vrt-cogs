@@ -4,6 +4,7 @@ import io
 import logging
 import math
 import random
+import sys
 import typing
 
 import discord
@@ -562,6 +563,26 @@ class LevelUp(commands.Cog):
         """Reset guild user data"""
         await self.config.guild(ctx.guild).users.set({})
         await ctx.tick()
+
+    @lvl_group.command(name="cachesize")
+    @commands.is_owner()
+    async def get_cache_size(self, ctx: commands.Context):
+        """Get size of this cog's cache in the RAM"""
+        s = sys.getsizeof(self.settings)
+        c = sys.getsizeof(self.cache)
+        lm = sys.getsizeof(self.lastmsg)
+        v = sys.getsizeof(self.voice)
+        st = sys.getsizeof(self.stars)
+        total = sum([s, c, lm, v, st])
+        bytestring = "{:,}".format(total)
+        kb = int(total / 1000)
+        kbstring = "{:,}".format(kb)
+        mb = int(kb / 1000)
+        mbstring = "{:,}".format(mb)
+        sizes = f"{bytestring} bytes\n" \
+                f"{kbstring} Kb\n" \
+                f"{mbstring} Mb\n"
+        await ctx.send(f"**Total Cache Size**\n{box(sizes)}")
 
     @lvl_group.command(name="cleanup")
     @commands.guildowner()
