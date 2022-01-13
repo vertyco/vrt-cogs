@@ -182,23 +182,25 @@ class LevelUp(commands.Cog):
                 await member.send(f"You have just reached level {new_level} in {guild.name}!")
             if channel:
                 channel = guild.get_channel(channel)
-                if mention:
-                    person = member.mention
-                else:
-                    person = member.name
+                name = member.name
+                mentionuser = member.mention
                 color = member.colour
                 pfp = member.avatar_url
+                if mention and channel:
+                    send = channel.permissions_for(guild.me).send_messages
+                    if send:
+                        await channel.send(f"{mentionuser}")
                 embed = discord.Embed(
-                    description=f"**{person} has just reached level {new_level}!**",
+                    description=f"**Just reached level {new_level}!**",
                     color=color
                 )
-                embed.set_thumbnail(url=pfp)
+                embed.set_author(name=name, icon_url=pfp)
                 if channel:
                     send = channel.permissions_for(guild.me).send_messages
                     if send:
                         await channel.send(embed=embed)
                     else:
-                        log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
+                        log.warning(f"Bot cant send LevelUp alert to {channel.name} in {guild.name}")
         else:
             # Generate LevelUP Image
             if bg:
