@@ -5,14 +5,11 @@ import logging
 import math
 import random
 import typing
-import validators
-
-import matplotlib
-matplotlib.use("agg")
-import matplotlib.pyplot as plt
-plt.switch_backend("agg")
 
 import discord
+import matplotlib
+import matplotlib.pyplot as plt
+import validators
 from discord.ext import tasks
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
@@ -29,6 +26,8 @@ from .formatter import (
 from .generator import Generator
 from .menus import menu, DEFAULT_CONTROLS
 
+matplotlib.use("agg")
+plt.switch_backend("agg")
 log = logging.getLogger("red.vrt.levelup")
 
 
@@ -1196,7 +1195,7 @@ class LevelUp(commands.Cog):
         longestlvl = 1
         for p in range(pages):
             title = f"**Total Messages:** `{'{:,}'.format(total_messages)}`\n" \
-                  f"**Total VoiceMinutes:** `{'{:,}'.format(voice)}`\n"
+                    f"**Total VoiceMinutes:** `{'{:,}'.format(voice)}`\n"
             msg = ""
             if stop > len(sorted_users):
                 stop = len(sorted_users)
