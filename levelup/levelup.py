@@ -466,6 +466,7 @@ class LevelUp(commands.Cog):
         invisible = conf["invisible"]
         notifydm = conf["notifydm"]
         mention = conf["mention"]
+        starcooldown = conf["starcooldown"]
         notifylog = ctx.guild.get_channel(conf["notifylog"])
         if not notifylog:
             notifylog = conf["notifylog"]
@@ -488,7 +489,9 @@ class LevelUp(commands.Cog):
               f"**LevelUps**\n" \
               f"`Notify in DMs:    `{notifydm}\n" \
               f"`Mention User:     `{mention}\n" \
-              f"`LevelUp Channel:  `{notifylog}\n"
+              f"`LevelUp Channel:  `{notifylog}\n" \
+              f"**Stars**\n" \
+              f"`Cooldown:         `{starcooldown}\n"
         if levelroles:
             msg += "**Levels**\n"
             for level, role_id in levelroles.items():
@@ -1009,6 +1012,8 @@ class LevelUp(commands.Cog):
         users = conf["users"]
         if not user:
             user = ctx.author
+        if user.bot:
+            return await ctx.send("Bots can't have profiles!")
         user_id = str(user.id)
         if user_id not in users:
             return await ctx.send("No information available yet!")
