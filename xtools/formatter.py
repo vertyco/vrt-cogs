@@ -511,7 +511,8 @@ def mostplayed(data, gt):
         table = []
         for i in range(start, stop, 1):
             game = sorted_playtime[i][0]
-            tstring = time_formatter(sorted_playtime[i][1])
+            minutes_played = int(sorted_playtime[i][1])
+            tstring = time_formatter(minutes_played * 60)
             table.append([i + 1, tstring, game])
 
         mostplayedlist += tabulate.tabulate(table, tablefmt="presto")
