@@ -206,10 +206,13 @@ class Generator:
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
 
         # Mask to crop profile image
-        mask = Image.new("RGBA", card.size, 0)
+        # draw at 4x size and resample down to 1x for a nice smooth circle
+        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
-        # Profile pic border
-        mask_draw.ellipse((9, 9, 60, 60), fill=(255, 25, 255, 255))
+        # Profile pic border at 4x
+        mask_draw.ellipse((36, 36, 240, 240), fill=(255, 255, 255, 255))
+        mask = mask.resize(card.size, Image.ANTIALIAS)
+
         if len(str(level)) > 2:
             size = 19
         else:
