@@ -5,6 +5,7 @@ import logging
 import math
 import random
 import typing
+import time
 
 import discord
 from discord.ext import tasks
@@ -319,30 +320,6 @@ class LevelUp(commands.Cog):
             self.cache[guild_id][user]["xp"] += xp
         self.cache[guild_id][user]["messages"] += 1
 
-    # Yoinked from aika's VoiceLogs for the most part
-    @commands.Cog.listener()
-    async def on_voice_state_update(
-            self,
-            member: discord.Member,
-            before: discord.VoiceState,
-            after: discord.VoiceState
-    ):
-        if before.channel == after.channel:
-            return
-        now = datetime.datetime.now()
-        guild_id = str(member.guild.id)
-        member_id = str(member.id)
-        if guild_id not in self.voice:
-            self.voice[guild_id] = {}
-        if member_id not in self.voice[guild_id]:
-            self.voice[guild_id][member_id] = now
-        # User left channel
-        if before.channel:
-            self.voice[guild_id][member_id] = None
-        # User joined channel
-        if after.channel:
-            self.voice[guild_id][member_id] = now
-
     async def check_voice(self):
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
@@ -350,21 +327,17 @@ class LevelUp(commands.Cog):
             xp_per_minute = conf["voicexp"]
             if guild_id not in self.voice:
                 self.voice[guild_id] = {}
-                continue
-            if not self.voice[guild_id]:
-                continue
-            for user, ts in self.voice[guild_id].items():
-                if not ts:
-                    continue
-                member = guild.get_member(int(user))
-                if not member:
-                    continue
+            now = datetime.datetime.now()
+            for member in guild.members:
                 voice_state = member.voice
-                if not voice_state:  # User isn't really in that voice channel anymore
+                if not voice_state:  # Only cache if user is in a vc
                     continue
-                if user not in self.cache[guild_id]:
-                    await self.cache_user(guild_id, user)
-                now = datetime.datetime.now()
+                user_id = str(member.id)
+                if user_id not in self.voice[guild_id]:
+                    self.voice[guild_id][user_id] = now
+                if user_id not in self.cache[guild_id]:
+                    await self.cache_user(guild_id, user_id)
+                ts = self.voice[guild_id][user_id]
                 td = now - ts
                 td = int(td.total_seconds())
                 xp_to_give = (td / 60) * xp_per_minute
@@ -375,21 +348,21 @@ class LevelUp(commands.Cog):
                     addxp = False
                 if conf["invisible"] and member.status.name == "offline":
                     addxp = False
-                if len(voice_state.channel.members) == 1:
+                if conf["solo"] and len(voice_state.channel.members) == 1:
                     addxp = False
                 for role in member.roles:
                     if role.id in conf["ignoredroles"]:
                         addxp = False
-                if int(user) in conf["ignoredusers"]:
+                if int(user_id) in conf["ignoredusers"]:
                     addxp = False
                 if voice_state.channel.id in conf["ignoredchannels"]:
                     addxp = False
                 if addxp:
-                    self.cache[guild_id][user]["xp"] += xp_to_give
-                self.cache[guild_id][user]["voice"] += td
-                self.voice[guild_id][user] = now
+                    self.cache[guild_id][user_id]["xp"] += xp_to_give
+                self.cache[guild_id][user_id]["voice"] += td
+                self.voice[guild_id][user_id] = now
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=15)
     async def voice_checker(self):
         await self.check_voice()
 
