@@ -3,7 +3,6 @@ from PIL import Image, ImageDraw, ImageFont
 import aiohttp
 import asyncio
 import logging
-import math
 import os
 
 

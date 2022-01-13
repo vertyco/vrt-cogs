@@ -564,10 +564,10 @@ class LevelUp(commands.Cog):
         await self.config.guild(ctx.guild).users.set({})
         await ctx.tick()
 
-    @lvl_group.command(name="cachesize")
+    @lvl_group.command(name="cache")
     @commands.is_owner()
     async def get_cache_size(self, ctx: commands.Context):
-        """Get size of this cog's cache in the RAM"""
+        """See how much RAM this cog's cache is using"""
         s = sys.getsizeof(self.settings)
         c = sys.getsizeof(self.cache)
         lm = sys.getsizeof(self.lastmsg)
