@@ -153,12 +153,16 @@ class LevelUp(commands.Cog):
                         saved_level = users[user]["level"]
                         new_level = get_level(users[user]["xp"], base, exp)
                         if new_level > saved_level:
-                            await self.level_up(guild, user, new_level)
+                            if "background" in users[user]:
+                                bg = users[user]["background"]
+                                await self.level_up(guild, user, new_level, bg)
+                            else:
+                                await self.level_up(guild, user, new_level)
                             users[user]["level"] = new_level
                 self.cache[guild_id].clear()
 
     # User has leveled up, send message and check if any roles are associated with it
-    async def level_up(self, guild: discord.guild, user: str, new_level: int):
+    async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
         conf = self.settings[str(guild.id)]
         levelroles = conf["levelroles"]
         roleperms = guild.me.guild_permissions.manage_roles
@@ -197,7 +201,10 @@ class LevelUp(commands.Cog):
                         log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
         else:
             # Generate LevelUP Image
-            banner = await self.get_banner(member)
+            if bg:
+                banner = bg
+            else:
+                banner = await self.get_banner(member)
             color = str(member.colour)
             color = hex_to_rgb(color)
             args = {
