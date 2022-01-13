@@ -339,6 +339,8 @@ class LevelUp(commands.Cog):
                 self.voice[guild_id] = {}
             now = datetime.datetime.now()
             for member in guild.members:
+                if member.bot:
+                    continue
                 voice_state = member.voice
                 if not voice_state:  # Only cache if user is in a vc
                     continue

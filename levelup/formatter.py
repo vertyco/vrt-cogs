@@ -140,7 +140,7 @@ async def profile_embed(
     msg = f"🎖｜Level {level}\n"
     if prestige:
         msg += f"🏆｜Prestige {prestige} {emoji}\n"
-    msg += f"⭐｜{stars} rep\n" \
+    msg += f"⭐｜{stars} stars\n" \
            f"💬｜{messages} messages sent\n" \
            f"🎙｜{voice} minutes in voice\n" \
            f"💡｜{progress} XP"
