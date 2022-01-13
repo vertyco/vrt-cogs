@@ -1010,6 +1010,8 @@ class LevelUp(commands.Cog):
                 else:
                     banner = await self.get_banner(user)
                 color = str(user.colour)
+                if color == "#000000":  # Don't use default color
+                    color = str(discord.Color.random())
                 color = hex_to_rgb(color)
                 args = {
                     'bg_image': banner,  # Background image link
