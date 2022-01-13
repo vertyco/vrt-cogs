@@ -108,7 +108,7 @@ class LevelUp(commands.Cog):
             "emoji": None
         }
 
-    # Hacky way to get user banner, generate backdrop based on users color if they dont have one
+    # Hacky way to get user banner
     async def get_banner(self, user: discord.Member) -> str:
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
         banner_id = req["banner"]
@@ -987,6 +987,7 @@ class LevelUp(commands.Cog):
         Set a background for your profile
 
         This will override your profile banner as the background
+
         **WARNING**
         Profile backgrounds are wide landscapes (900 by 240 pixels) and using a portrait image will be skewed
 
