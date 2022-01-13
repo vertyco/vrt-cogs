@@ -402,7 +402,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="seelevels")
     async def see_levels(self, ctx: commands.Context):
-        """View the first 20 levels using the current algorithm to test experience curve"""
+        """
+        Test the level algorith
+        View the first 20 levels using the current algorithm to test experience curve
+        """
         conf = await self.config.guild(ctx.guild).all()
         base = conf["base"]
         exp = conf["exp"]
@@ -545,7 +548,7 @@ class LevelUp(commands.Cog):
     @lvl_group.command(name="fullreset")
     @commands.is_owner()
     async def reset_all(self, ctx: commands.Context):
-        """(Bot Owner Only) Reset entire cog user data"""
+        """Reset entire cog user data"""
         for guild in self.bot.guilds:
             await self.config.guild(guild).users.set({})
             await ctx.tick()
@@ -553,14 +556,14 @@ class LevelUp(commands.Cog):
     @lvl_group.command(name="reset")
     @commands.guildowner()
     async def reset_guild(self, ctx: commands.Context):
-        """(Guild Owner Only) Reset user data"""
+        """Reset guild user data"""
         await self.config.guild(ctx.guild).users.set({})
         await ctx.tick()
 
     @lvl_group.command(name="cleanup")
     @commands.guildowner()
     async def cleanup_guild(self, ctx: commands.Context):
-        """(Guild Owner Only) Delete users no longer in the server"""
+        """Delete users no longer in the server"""
         guild = ctx.guild
         members = guild.members
         cleanup = []
@@ -577,7 +580,7 @@ class LevelUp(commands.Cog):
                 continue
         if not cleanup:
             return await ctx.send("Nothing to clean")
-        async with await self.config.guild(ctx.guild).users() as users:
+        async with self.config.guild(ctx.guild).users() as users:
             cleaned = 0
             for uid in cleanup:
                 del users[uid]
@@ -586,7 +589,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="xp")
     async def set_xp(self, ctx: commands.Context, min_xp: int = 3, max_xp: int = 6):
-        """Set the Min and Max amount of XP that a message can gain"""
+        """
+        Set message XP range
+        Set the Min and Max amount of XP that a message can gain
+        """
         xp = [min_xp, max_xp]
         await self.config.guild(ctx.guild).xp.set(xp)
         await ctx.send(f"Message XP range has been set to {min_xp} - {max_xp} per valid message")
@@ -594,7 +600,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="voicexp")
     async def set_voice_xp(self, ctx: commands.Context, voice_xp: int):
-        """Set the amount of XP gained per minute in a voice channel (default is 2)"""
+        """
+        Set voice XP gain
+        Sets the amount of XP gained per minute in a voice channel (default is 2)
+        """
         await self.config.guild(ctx.guild).voicexp.set(voice_xp)
         await ctx.tick()
         await self.init_settings()
@@ -602,7 +611,7 @@ class LevelUp(commands.Cog):
     @lvl_group.command(name="cooldown")
     async def set_cooldown(self, ctx: commands.Context, cooldown: int):
         """
-        Set the cooldown threshold for message XP to be gained
+        Cooldown threshold for message XP
 
         When a user sends a message they will have to wait X seconds before their message
         counts as XP gained
@@ -614,7 +623,7 @@ class LevelUp(commands.Cog):
     @lvl_group.command(name="base")
     async def set_base(self, ctx: commands.Context, base_multiplier: int):
         """
-        Set the base multiplier for the leveling algorithm
+        Base multiplier for the leveling algorithm
 
         Affects leveling on a more linear scale(higher values makes leveling take longer)
         """
@@ -625,7 +634,7 @@ class LevelUp(commands.Cog):
     @lvl_group.command(name="exp")
     async def set_exp(self, ctx: commands.Context, exponent_multiplier: typing.Union[int, float]):
         """
-        Set the exponent multiplier for the leveling algorithm
+        Exponent multiplier for the leveling algorithm
 
         Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)
         """
@@ -636,7 +645,8 @@ class LevelUp(commands.Cog):
     @lvl_group.command(name="length")
     async def set_length(self, ctx: commands.Context, minimum_length: int):
         """
-        Set the minimum length a message must be to count towards XP gained
+        Set minimum message length for XP
+        Minimum length a message must be to count towards XP gained
 
         Set to 0 to disable
         """
@@ -646,7 +656,7 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="embeds")
     async def toggle_embeds(self, ctx: commands.Context):
-        """Toggle whether to use embeds or generated pics for leveling"""
+        """Toggle useing embeds or generated pics"""
         usepics = await self.config.guild(ctx.guild).usepics()
         if usepics:
             await self.config.guild(ctx.guild).usepics.set(False)
@@ -658,7 +668,7 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="autoremove")
     async def toggle_autoremove(self, ctx: commands.Context):
-        """Toggle automatic removal of previous level roles"""
+        """Automatic removal of previous level roles"""
         autoremove = await self.config.guild(ctx.guild).autoremove()
         if autoremove:
             await self.config.guild(ctx.guild).autoremove.set(False)
@@ -670,7 +680,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="muted")
     async def ignore_muted(self, ctx: commands.Context):
-        """Toggle whether self-muted users in a voice channel can gain voice XP"""
+        """
+        Ignore muted voice users
+        Toggle whether self-muted users in a voice channel can gain voice XP
+        """
         muted = await self.config.guild(ctx.guild).muted()
         if muted:
             await self.config.guild(ctx.guild).muted.set(False)
@@ -682,7 +695,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="solo")
     async def ignore_solo(self, ctx: commands.Context):
-        """Toggle whether solo users in a voice channel can gain voice XP"""
+        """
+        Ignore solo voice users
+        Toggle whether solo users in a voice channel can gain voice XP
+        """
         solo = await self.config.guild(ctx.guild).solo()
         if solo:
             await self.config.guild(ctx.guild).solo.set(False)
@@ -694,7 +710,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="deafened")
     async def ignore_deafened(self, ctx: commands.Context):
-        """Toggle whether deafened users in a voice channel can gain voice XP"""
+        """
+        Ignore deafened voice users
+        Toggle whether deafened users in a voice channel can gain voice XP
+        """
         deafened = await self.config.guild(ctx.guild).deafened()
         if deafened:
             await self.config.guild(ctx.guild).deafened.set(False)
@@ -706,7 +725,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="invisible")
     async def ignore_invisible(self, ctx: commands.Context):
-        """Toggle whether invisible users in a voice channel can gain voice XP"""
+        """
+        Ignore invisible voice users
+        Toggle whether invisible users in a voice channel can gain voice XP
+        """
         invisible = await self.config.guild(ctx.guild).invisible()
         if invisible:
             await self.config.guild(ctx.guild).invisible.set(False)
@@ -718,7 +740,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
-        """Toggle whether LevelUp messages are DM'd to the user"""
+        """
+        Toggle DM notifications
+        Toggle whether LevelUp messages are DM'd to the user
+        """
         notifydm = await self.config.guild(ctx.guild).notifydm()
         if notifydm:
             await self.config.guild(ctx.guild).notifydm.set(False)
@@ -730,7 +755,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="mention")
     async def toggle_mention(self, ctx: commands.Context):
-        """Toggle whether the user in mentioned in LevelUp messages"""
+        """
+        Toggle levelup mentions
+        Toggle whether the user in mentioned in LevelUp messages
+        """
         mention = await self.config.guild(ctx.guild).mention()
         if mention:
             await self.config.guild(ctx.guild).mention.set(False)
@@ -742,7 +770,10 @@ class LevelUp(commands.Cog):
 
     @lvl_group.command(name="levelchannel")
     async def set_level_channel(self, ctx: commands.Context, levelup_channel: discord.TextChannel = None):
-        """Set a channel for all level up messages to send to"""
+        """
+        Set LevelUP message channel
+        Set a channel for all level up messages to send to
+        """
         if not levelup_channel:
             await self.config.guild(ctx.guild).notifylog.set(None)
             await ctx.send("LevelUp channel has been **Disabled**")
@@ -799,6 +830,7 @@ class LevelUp(commands.Cog):
             emoji: str
     ):
         """
+        Add prestige roles
         Add a role and emoji associated with a specific prestige level
 
         When a user prestiges, they will get that role and the emoji will show on their profile
@@ -812,7 +844,7 @@ class LevelUp(commands.Cog):
 
     @prestige_settings.command(name="delprestigedata")
     async def del_pres_data(self, ctx: commands.Context, prestige_level: str):
-        """Delete a prestige level data set"""
+        """Delete a prestige level"""
         async with self.config.guild(ctx.guild).prestigedata() as data:
             if prestige_level in data:
                 del data[prestige_level]
@@ -879,7 +911,10 @@ class LevelUp(commands.Cog):
     @commands.command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
     async def give_star(self, ctx: commands.Context, *, user: discord.Member):
-        """Give a star to a user for being a good noodle"""
+        """
+        Reward a good noodle
+        Give a star to a user for being a good noodle
+        """
         now = datetime.datetime.now()
         user_id = str(user.id)
         if ctx.author == user:
@@ -908,9 +943,10 @@ class LevelUp(commands.Cog):
                 users[user_id]["stars"] += 1
             await ctx.send(f"**You just gave a star to {user.mention}!**")
 
+    # For testing purposes
     @commands.command(name="mocklvl", hidden=True)
     async def get_lvl_test(self, ctx, *, user: discord.Member = None):
-        """get lvl"""
+        """Get lvl"""
         if not user:
             user = ctx.author
         banner = await self.get_banner(user)
@@ -931,8 +967,10 @@ class LevelUp(commands.Cog):
         Set a background for your profile
 
         This will override your profile banner as the background
-        Be aware that backgrounds are wide landscapes (900 by 240 pixels) and
-        using a portrait image will be skewed
+        **WARNING**
+        Profile backgrounds are wide landscapes (900 by 240 pixels) and using a portrait image will be skewed
+
+        Tip: Googling "dual monitor backgrounds" gives good results for the right images
         """
         # If image url is given, run some checks
         if image_url:
@@ -966,7 +1004,7 @@ class LevelUp(commands.Cog):
     @commands.command(name="pf")
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
-        """View your profile info"""
+        """View your profile"""
         conf = await self.config.guild(ctx.guild).all()
         users = conf["users"]
         if not user:
@@ -1042,6 +1080,7 @@ class LevelUp(commands.Cog):
     @commands.guild_only()
     async def prestige_user(self, ctx: commands.Context):
         """
+        Prestige your rank!
         Once you have reached this servers prestige level requirement, you can
         reset your stats to gain a prestige level and any perks associated with it
         """
