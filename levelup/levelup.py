@@ -567,9 +567,11 @@ class LevelUp(commands.Cog):
         users = await self.config.guild(ctx.guild).users()
         for user_id in users:
             user = guild.get_member(int(user_id))
-            if not user:
+            if not user:  # Banish the heretics
                 cleanup.append(user_id)
-            elif user not in members:
+            elif user not in members:  # Also banish the heretics
+                cleanup.append(user_id)
+            elif user.bot:  # Cleanup my noob mistakes
                 cleanup.append(user_id)
             else:
                 continue
