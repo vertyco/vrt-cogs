@@ -35,7 +35,7 @@ log = logging.getLogger("red.vrt.levelup")
 
 class LevelUp(commands.Cog):
     """Local Discord Leveling System"""
-    __author__ = "Vertyco"
+    __author__ = "Vertyco#0117"
     __version__ = "0.0.1"
 
     def format_help_for_context(self, ctx):
