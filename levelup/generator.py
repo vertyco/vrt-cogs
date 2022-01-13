@@ -10,6 +10,7 @@ import os
 class Generator:
     def __init__(self):
         self.star = os.path.join(os.path.dirname(__file__), 'assets', 'star.png')
+        self.default_lvlup = os.path.join(os.path.dirname(__file__), 'assets', 'lvlup.png')
         self.default_bg = os.path.join(os.path.dirname(__file__), 'assets', 'card.png')
         self.online = os.path.join(os.path.dirname(__file__), 'assets', 'online.png')
         self.offline = os.path.join(os.path.dirname(__file__), 'assets', 'offline.png')
@@ -18,6 +19,21 @@ class Generator:
         self.streaming = os.path.join(os.path.dirname(__file__), 'assets', 'streaming.png')
         self.font1 = os.path.join(os.path.dirname(__file__), 'assets', 'font.ttf')
         self.font2 = os.path.join(os.path.dirname(__file__), 'assets', 'font2.ttf')
+
+    # Not used atm still suck at pillow
+    @staticmethod
+    def add_corners(im, rad):
+        circle = Image.new('L', (rad * 2, rad * 2), 0)
+        draw = ImageDraw.Draw(circle)
+        draw.ellipse((0, 0, rad * 2, rad * 2), fill=255)
+        alpha = Image.new('L', im.size, 255)
+        w, h = im.size
+        alpha.paste(circle.crop((0, 0, rad, rad)), (0, 0))
+        alpha.paste(circle.crop((0, rad, rad, rad * 2)), (0, h - rad))
+        alpha.paste(circle.crop((rad, 0, rad * 2, rad)), (w - rad, 0))
+        alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
+        im.putalpha(alpha)
+        return im
 
     def generate_profile(
             self,
@@ -37,45 +53,14 @@ class Generator:
             stars: int = 0,
     ):
         if not bg_image:
-            card = Image.open(self.default_bg).convert("RGBA")
-            width, height = card.size
-            if width == 900 and height == 220:
-                pass
-            else:
-                x1 = 0
-                y1 = 0
-                x2 = width
-                nh = math.ceil(width * 0.245)
-                y2 = 0
-
-                if nh < height:
-                    y1 = (height / 2) - 119
-                    y2 = nh + y1
-
-                card = card.crop((x1, y1, x2, y2)).resize((900, 240))
+            card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
         else:
             bg_bytes = BytesIO(requests.get(bg_image).content)
-            card = Image.open(bg_bytes).convert("RGBA")
-
-            width, height = card.size
-            if width == 900 and height == 220:
-                pass
-            else:
-                x1 = 0
-                y1 = 0
-                x2 = width
-                nh = math.ceil(width * 0.245)
-                y2 = 0
-
-                if nh < height:
-                    y1 = (height / 2) - 119
-                    y2 = nh + y1
-
-                card = card.crop((x1, y1, x2, y2)).resize((900, 240))
+            card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
 
         profile_bytes = BytesIO(requests.get(profile_image).content)
         profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((180, 180))
+        profile = profile.convert('RGBA').resize((180, 180), Image.ANTIALIAS)
 
         if user_status == 'online':
             status = Image.open(self.online)
@@ -89,10 +74,10 @@ class Generator:
             status = Image.open(self.dnd)
         else:  # Eh just make it offline then
             status = Image.open(self.offline)
-        status = status.convert("RGBA").resize((40, 40))
+        status = status.convert("RGBA").resize((40, 40), Image.ANTIALIAS)
 
         rep_icon = Image.open(self.star)
-        rep_icon = rep_icon.convert("RGBA").resize((40, 40))
+        rep_icon = rep_icon.convert("RGBA").resize((40, 40), Image.ANTIALIAS)
 
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
 
@@ -106,7 +91,6 @@ class Generator:
         # ======== Fonts to use =============
         font_normal = ImageFont.truetype(self.font1, 40)
         font_small = ImageFont.truetype(self.font1, 25)
-        font_signa = ImageFont.truetype(self.font2, 25)
         # ======== Colors ========================
         MAINCOLOR = color
         BORDER = (0, 0, 0)
@@ -191,44 +175,29 @@ class Generator:
             color: tuple = (0, 0, 0),
     ):
         if not bg_image:
-            card = Image.open(self.default_bg).convert("RGBA")
+            card = Image.open(self.default_lvlup).convert("RGBA")
             width, height = card.size
             if width == 180 and height == 70:
                 pass
             else:
-                x1 = 0
+                x1 = -17
                 y1 = 0
                 x2 = width
-                nh = math.ceil(width * 0.24)
+                nh = math.ceil(width * 0.24)  # 0.24 for default bg
                 y2 = 0
 
                 if nh < height:
-                    y1 = (height / 2) - 119
+                    y1 = (height / 2) - 77  # 119 for other bg default
                     y2 = nh + y1
 
-                card = card.crop((x1, y1, x2, y2)).resize((180, 70))
+                card = card.crop((x1, y1, x2, y2)).resize((180, 70), Image.ANTIALIAS)
         else:
             bg_bytes = BytesIO(requests.get(bg_image).content)
-            card = Image.open(bg_bytes).convert("RGBA")
-            width, height = card.size
-            if width == 180 and height == 70:
-                pass
-            else:
-                x1 = 0
-                y1 = 0
-                x2 = width
-                nh = math.ceil(width * 0.26)
-                y2 = 0
-
-                if nh < height:
-                    y1 = (height / 2) - 100
-                    y2 = nh + y1
-
-                card = card.crop((x1, y1, x2, y2)).resize((180, 70))
+            card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
 
         profile_bytes = BytesIO(requests.get(profile_image).content)
         profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((70, 70))
+        profile = profile.convert('RGBA').resize((70, 70), Image.ANTIALIAS)
 
         # Is used as a blank image for mask
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -238,8 +207,11 @@ class Generator:
         mask_draw = ImageDraw.Draw(mask)
         # Profile pic border
         mask_draw.ellipse((1, 1, 69, 69), fill=(255, 25, 255, 255))
-
-        font_normal = ImageFont.truetype(self.font1, 24)
+        if len(str(level)) > 2:
+            size = 19
+        else:
+            size = 24
+        font_normal = ImageFont.truetype(self.font1, size)
 
         MAINCOLOR = color
         BORDER = (0, 0, 0)
