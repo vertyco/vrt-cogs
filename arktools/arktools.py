@@ -303,6 +303,8 @@ class ArkTools(commands.Cog):
             if tribes[tribe_id]["tribename"] != name:
                 tribes[tribe_id]["tribename"] = name
             tr = tribes[tribe_id]
+            if "members" not in tr:
+                tr["members"] = []
             if "servername" not in tribes[tribe_id]:
                 tribes[tribe_id]["servername"] = servername
             if not tribes[tribe_id]["servername"]:
