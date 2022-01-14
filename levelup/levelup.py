@@ -107,6 +107,20 @@ class LevelUp(commands.Cog):
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
 
+    # Generate rinky dink profile image
+    @staticmethod
+    async def gen_profile_img(args: dict):
+        image = await Generator().generate_profile(**args)
+        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+        return file
+
+    # Generate rinky dink level up image
+    @staticmethod
+    async def gen_levelup_img(args: dict):
+        image = await Generator().generate_levelup(**args)
+        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+        return file
+
     # Add a user to cache
     async def cache_user(self, guild: str, user: str):
         if guild not in self.cache:  # Alredy in init_settings but just in case
@@ -118,6 +132,7 @@ class LevelUp(commands.Cog):
             "level": 0,
             "prestige": 0,
             "emoji": None,
+            "background": None,
             "stars": 0
         }
 
@@ -128,18 +143,6 @@ class LevelUp(commands.Cog):
         if banner_id:
             banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
             return banner_url
-
-    # Generate rinky dink profile image
-    async def gen_profile_img(self, args: dict):
-        image = await Generator().generate_profile(**args)
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
-        return file
-
-    # Generate rinky dink level up image
-    async def gen_levelup_img(self, args: dict):
-        image = await Generator().generate_levelup(**args)
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
-        return file
 
     # Dump cache to config
     async def dump_cache(self):
@@ -161,14 +164,14 @@ class LevelUp(commands.Cog):
                             users[user]["messages"] += data["messages"]
                         saved_level = users[user]["level"]
                         new_level = get_level(users[user]["xp"], base, exp)
-                        if new_level > saved_level:
+                        if str(new_level) != str(saved_level):
                             if "background" in users[user]:
                                 bg = users[user]["background"]
                                 await self.level_up(guild, user, new_level, bg)
                             else:
                                 await self.level_up(guild, user, new_level)
                             users[user]["level"] = new_level
-                self.cache[guild_id].clear()
+                    self.cache[guild_id].clear()
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
@@ -262,36 +265,18 @@ class LevelUp(commands.Cog):
     async def init_settings(self):
         for guild in self.bot.guilds:
             settings = await self.config.guild(guild).all()
-            # Some of these dont get used yet in cache, just adding em for future sake
-            self.settings[str(guild.id)] = {
-                "levelroles": settings["levelroles"],
-                "ignoredchannels": settings["ignoredchannels"],
-                "ignoredroles": settings["ignoredroles"],
-                "ignoredusers": settings["ignoredusers"],
-                "prestige": settings["prestige"],
-                "prestigedata": settings["prestigedata"],
-                "xp": settings["xp"],
-                "base": settings["base"],
-                "exp": settings["exp"],
-                "length": settings["length"],
-                "starcooldown": settings["starcooldown"],
-                "usepics": settings["usepics"],
-                "voicexp": settings["voicexp"],
-                "cooldown": settings["cooldown"],
-                "autoremove": settings["autoremove"],
-                "stackprestige": settings["stackprestigeroles"],
-                "muted": settings["muted"],
-                "solo": settings["solo"],
-                "deafened": settings["deafened"],
-                "invisible": settings["invisible"],
-                "notifydm": settings["notifydm"],
-                "mention": settings["mention"],
-                "notifylog": settings["notifylog"],
-            }
-            if str(guild.id) not in self.cache:
-                self.cache[str(guild.id)] = {}
-            if str(guild.id) not in self.stars:
-                self.stars[str(guild.id)] = {}
+            guild_id = str(guild.id)
+            if guild_id not in self.settings:
+                self.settings[guild_id] = {}
+            for k, v in settings.items():
+                if k != "users":
+                    self.settings[guild_id][k] = v
+            if guild_id not in self.cache:
+                self.cache[guild_id] = {}
+            if guild_id not in self.stars:
+                self.stars[guild_id] = {}
+            if guild_id not in self.voice:
+                self.voice[guild_id] = {}
 
     @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
@@ -1218,6 +1203,31 @@ class LevelUp(commands.Cog):
         file = await self.gen_levelup_img(args)
         await ctx.send(file=file)
 
+    # For testing purposes
+    @commands.command(name="mocklvlup", hidden=True)
+    @commands.is_owner()
+    async def mock_lvl_up(self, ctx, *, user: discord.Member = None):
+        """Force level a user or yourself"""
+        if not user:
+            user = ctx.author
+        user_id = str(user.id)
+        guild_id = str(ctx.guild.id)
+        if user_id not in self.cache[guild_id]:
+            await self.cache_user(guild_id, user_id)
+        conf = self.settings[guild_id]
+        base = conf["base"]
+        exp = conf["exp"]
+        users = await self.config.guild(ctx.guild).users()
+        user = users[user_id]
+        currentxp = user["xp"]
+        level = user["level"]
+        level = level + 1
+        new_xp = get_xp(level, base, exp)
+        xp = new_xp - currentxp + 10
+        self.cache[guild_id][user_id]["xp"] = xp
+        await self.dump_cache()
+        await ctx.send(f"Forced {user.name} to level up!")
+
     @commands.command(name="setmybg", aliases=["setbg"])
     async def set_user_background(self, ctx: commands.Context, image_url: str = None):
         """
@@ -1260,6 +1270,7 @@ class LevelUp(commands.Cog):
                     await ctx.send(f"Nothing to delete, for help with this command, type `{ctx.prefix}help setmybg`")
 
     @commands.command(name="pf")
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
@@ -1426,10 +1437,18 @@ class LevelUp(commands.Cog):
             return await ctx.send("No user data yet!")
         voice = time_formatter(total_voice)
         sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+
+        # Get your place in the LB
+        you = ""
+        for i in sorted_users:
+            uid = i[0]
+            if str(uid) == str(ctx.author.id):
+                i = sorted_users.index(i)
+                you = f"You: {i + 1}/{len(sorted_users)}\n"
+
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
-        you = ""
         longestxp = 1
         longestlvl = 1
         for p in range(pages):
@@ -1440,8 +1459,6 @@ class LevelUp(commands.Cog):
                 stop = len(sorted_users)
             for i in range(start, stop, 1):
                 uid = sorted_users[i][0]
-                if str(uid) == str(ctx.author.id):
-                    you = f"You: {i + 1}/{len(sorted_users)}\n"
                 user = ctx.guild.get_member(int(uid))
                 if user:
                     user = user.name
@@ -1502,10 +1519,18 @@ class LevelUp(commands.Cog):
         if not leaderboard:
             return await ctx.send("Nobody has stars yet 😕")
         sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+
+        # Get your place in the LB
+        you = ""
+        for i in sorted_users:
+            uid = i[0]
+            if str(uid) == str(ctx.author.id):
+                i = sorted_users.index(i)
+                you = f"You: {i + 1}/{len(sorted_users)}\n"
+
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
-        you = ""
         for p in range(pages):
             title = f"**Star Leaderboard**\n" \
                     f"**Total ⭐'s: {total_stars}**\n"
@@ -1514,17 +1539,15 @@ class LevelUp(commands.Cog):
             table = []
             for i in range(start, stop, 1):
                 uid = sorted_users[i][0]
-                if str(uid) == str(ctx.author.id):
-                    you = f"You: {i + 1}/{len(sorted_users)}\n"
                 user = ctx.guild.get_member(int(uid))
                 if user:
                     user = user.name
                 else:
                     user = uid
                 stars = sorted_users[i][1]
-                stars = f"{stars}⭐"
+                stars = f"{stars} ⭐"
                 table.append([stars, user])
-            data = tabulate.tabulate(table, tablefmt="presto")
+            data = tabulate.tabulate(table, tablefmt="presto", colalign=("right",))
             embed = discord.Embed(
                 description=f"{title}{box(data, lang='python')}",
                 color=discord.Color.random()
