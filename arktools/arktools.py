@@ -1632,7 +1632,12 @@ class ArkTools(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 async with session.get(attachment_url) as resp:
                     config = await resp.json()
-            await self.config.set(config)
+            for guild in self.bot.guilds:
+                async with self.config.guild(guild).all() as conf:
+                    guild_id = str(guild.id)
+                    if guild_id in config:
+                        for k, v in config[guild_id]:
+                            conf[k] = v
             await self.initialize()
             return await ctx.send("Config restored from backup file!")
         else:

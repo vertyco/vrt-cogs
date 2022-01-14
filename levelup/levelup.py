@@ -7,6 +7,8 @@ import random
 import sys
 import typing
 import tabulate
+import json
+import aiohttp
 
 import discord
 import matplotlib
@@ -92,6 +94,11 @@ class LevelUp(commands.Cog):
         self.voice = {}  # Voice channel info
         self.stars = {}  # Keep track of star cooldowns
 
+        # For importing user levels from Fixator's Leveler cog
+        self._db_ready = False
+        self.client = None
+        self.db = None
+
         # Cachey wakey dumpy wumpy loopy woopy
         self.cache_dumper.start()
         self.voice_checker.start()
@@ -110,7 +117,8 @@ class LevelUp(commands.Cog):
             "messages": 0,
             "level": 0,
             "prestige": 0,
-            "emoji": None
+            "emoji": None,
+            "stars": 0
         }
 
     # Hacky way to get user banner
@@ -519,7 +527,7 @@ class LevelUp(commands.Cog):
                     role = role_id
                 msg += f"`Level {level}: `{role}\n"
         if igchannels:
-            msg += "**Ignored Channels\n"
+            msg += "**Ignored Channels**\n"
             for channel_id in igchannels:
                 channel = ctx.guild.get_channel(channel_id)
                 if channel:
@@ -580,6 +588,70 @@ class LevelUp(commands.Cog):
         await self.config.guild(ctx.guild).users.set({})
         await ctx.tick()
 
+    @lvl_group.command(name="fullbackup")
+    @commands.is_owner()
+    async def backup_all_settings(self, ctx: commands.Context):
+        """Sends a full backup of the config as a JSON file to Discord."""
+        settings = await self.config.all_guilds()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"LevelUp_full_config.json"))
+
+    @lvl_group.command(name="backup")
+    @commands.guildowner()
+    async def backup_settings(self, ctx: commands.Context):
+        """
+        Make a backup of your config
+
+        Sends the .json to discord
+        """
+        settings = await self.config.guild(ctx.guild).all()
+        settings = json.dumps(settings)
+        with open(f"{ctx.guild}.json", "w") as file:
+            file.write(settings)
+        with open(f"{ctx.guild}.json", "rb") as file:
+            await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
+
+    @lvl_group.command(name="fullrestore")
+    @commands.is_owner()
+    async def restore_all_settings(self, ctx: commands.Context):
+        """Upload a backup JSON file attached to this command to restore the full config."""
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            for guild in self.bot.guilds:
+                async with self.config.guild(guild).all() as conf:
+                    guild_id = str(guild.id)
+                    if guild_id in config:
+                        conf["users"] = config[guild_id]["users"]
+            await self.init_settings()
+            return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
+    @lvl_group.command(name="restore")
+    @commands.guildowner()
+    async def restore_settings(self, ctx: commands.Context):
+        """
+        Restore your LevelUp backup config
+
+        Attach the .json file that you made when using the command to import it
+        """
+        if ctx.message.attachments:
+            attachment_url = ctx.message.attachments[0].url
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url) as resp:
+                    config = await resp.json()
+            await self.config.guild(ctx.guild).set(config)
+            await self.init_settings()
+            return await ctx.send("Config restored from backup file!")
+        else:
+            return await ctx.send("Attach your backup file to the message when using this command.")
+
     @lvl_group.command(name="cache")
     @commands.is_owner()
     async def get_cache_size(self, ctx: commands.Context):
@@ -599,6 +671,133 @@ class LevelUp(commands.Cog):
                 f"{kbstring} Kb\n" \
                 f"{mbstring} Mb\n"
         await ctx.send(f"**Total Cache Size**\n{box(sizes)}")
+
+    @lvl_group.command(name="importleveler")
+    @commands.is_owner()
+    async def import_from_leveler(self, ctx: commands.Context, yes_or_no: str):
+        """
+        Import data from Fixator's Leveler cog
+
+        This will overwrite existing LevelUp level data and stars
+        It will also import XP range level roles, and ignored channels
+        *Obviously you will need Leveler loaded while you run this command*
+        """
+        if "y" not in yes_or_no:
+            return await ctx.send("Not importing users")
+        leveler = self.bot.get_cog("Leveler")
+        if not leveler:
+            return await ctx.send("Leveler is not loaded, please load it and try again!")
+        config = await leveler.config.custom("MONGODB").all()
+        if not config:
+            return await ctx.send("Couldnt find mongo config")
+
+        # If leveler is installed then libs should import fine
+        try:
+            import subprocess
+            from motor.motor_asyncio import AsyncIOMotorClient
+            from pymongo import errors as mongoerrors
+        except Exception as e:
+            log.warning(f"pymongo Import Error: {e}")
+            return await ctx.send("Failed to import modules")
+
+        # Try connecting to mongo
+        if self._db_ready:
+            self._db_ready = False
+        self._disconnect_mongo()
+        try:
+            self.client = AsyncIOMotorClient(
+                **{k: v for k, v in config.items() if not k == "db_name"}
+            )
+            await self.client.server_info()
+            self.db = self.client[config["db_name"]]
+            self._db_ready = True
+        except (
+            mongoerrors.ServerSelectionTimeoutError,
+            mongoerrors.ConfigurationError,
+            mongoerrors.OperationFailure,
+        ) as e:
+            log.warning(f"Failed to connect to MongoDB: {e}")
+            self.client = None
+            self.db = None
+            return await ctx.send("Failed to connect to MongoDB")
+
+        # If everything is okay so far let the user know its working
+        embed = discord.Embed(
+            description=f"Importing users from Leveler...",
+            color=discord.Color.orange()
+        )
+        embed.set_thumbnail(url=LOADING)
+        msg = await ctx.send(embed=embed)
+        users_imported = 0
+        # Now to start the importing
+        async with ctx.typing():
+            min_message_length = await leveler.config.message_length()
+            mention = await leveler.config.mention()
+            xp_range = await leveler.config.xp()
+            for guild in self.bot.guilds:
+                guild_id = str(guild.id)
+                async with self.config.guild(guild).all() as conf:
+
+                    # IMPORT COG SETTINGS
+                    ignored_channels = await leveler.config.guild(guild).ignored_channels()
+                    if ignored_channels:
+                        conf["ignoredchannels"] = ignored_channels
+                    if min_message_length:
+                        conf["length"] = int(min_message_length)
+                    if mention:
+                        conf["mention"] = True
+                    if xp_range:
+                        conf["xp"] = xp_range
+                    server_roles = await self.db.roles.find_one({"server_id": guild_id})
+                    if server_roles:
+                        for rolename, data in server_roles["roles"].items():
+                            role = guild.get_role(rolename)
+                            if not role:
+                                continue
+                            level_req = data["level"]
+                            conf["levelroles"][level_req] = role.id
+
+                    # IMPORT USER DATA
+                    users = conf["users"]
+                    for user in guild.members:
+                        user_id = str(user.id)
+                        if user_id not in users:
+                            continue
+                        try:
+                            userinfo = await self.db.users.find_one({"user_id": user_id})
+                        except Exception as e:
+                            log.info(f"No data found for {user.name}: {e}")
+                            continue
+                        if not userinfo:
+                            continue
+                        rep = userinfo["rep"]
+                        servers = userinfo["servers"]
+                        if guild_id in servers:
+                            level = servers[guild_id]["level"]
+                        else:
+                            level = None
+                        if "stars" in users[user_id]:
+                            users[user_id]["stars"] = int(rep)
+                        if level:
+                            base = conf["base"]
+                            exp = conf["exp"]
+                            xp = get_xp(level, base, exp)
+                            users[user_id]["level"] = int(level)
+                            users[user_id]["xp"] = xp
+                        if level or "stars" in users[user_id]:
+                            users_imported += 1
+            embed = discord.Embed(
+                description=f"Importing Complete!\n"
+                            f"{users_imported} users imported",
+                color=discord.Color.green()
+            )
+            embed.set_thumbnail(url=LOADING)
+            await msg.edit(embed=embed)
+            self._disconnect_mongo()
+
+    def _disconnect_mongo(self):
+        if self.client:
+            self.client.close()
 
     @lvl_group.command(name="cleanup")
     @commands.guildowner()
