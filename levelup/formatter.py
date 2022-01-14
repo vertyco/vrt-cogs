@@ -6,12 +6,12 @@ from redbot.core.utils.chat_formatting import box
 
 
 # Get a level that would be achieved from the amount of XP
-def get_level(xp: int, base: int, exp: typing.Union[int, float]) -> int:
+def get_level(xp: int, base: int, exp: int) -> int:
     return int((xp / base) ** (1 / exp))
 
 
 # Get how much XP is needed to reach a level
-def get_xp(level: int, base: int, exp: typing.Union[int, float]) -> int:
+def get_xp(level: int, base: int, exp: int) -> int:
     return math.ceil(base * (level ** exp))
 
 

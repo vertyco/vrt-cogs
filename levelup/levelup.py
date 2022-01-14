@@ -163,7 +163,7 @@ class LevelUp(commands.Cog):
                             users[user]["voice"] += data["voice"]
                             users[user]["messages"] += data["messages"]
                         saved_level = users[user]["level"]
-                        new_level = get_level(users[user]["xp"], base, exp)
+                        new_level = get_level(int(users[user]["xp"]), base, exp)
                         if str(new_level) != str(saved_level):
                             if "background" in users[user]:
                                 bg = users[user]["background"]
@@ -329,6 +329,9 @@ class LevelUp(commands.Cog):
     async def check_voice(self):
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
+            if guild_id not in self.settings:
+                self.settings[guild_id] = {}
+                continue
             conf = self.settings[guild_id]
             xp_per_minute = conf["voicexp"]
             if guild_id not in self.voice:
@@ -377,7 +380,7 @@ class LevelUp(commands.Cog):
     @voice_checker.before_loop
     async def before_voice_checker(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
 
     @tasks.loop(seconds=30)
     async def cache_dumper(self):
@@ -387,7 +390,7 @@ class LevelUp(commands.Cog):
     async def before_dumper(self):
         await self.bot.wait_until_red_ready()
         await self.init_settings()
-        await asyncio.sleep(30)
+        await asyncio.sleep(10)
 
     @commands.group(name="levelset", aliases=["lset"])
     @commands.admin()
@@ -1206,11 +1209,11 @@ class LevelUp(commands.Cog):
     # For testing purposes
     @commands.command(name="mocklvlup", hidden=True)
     @commands.is_owner()
-    async def mock_lvl_up(self, ctx, *, user: discord.Member = None):
+    async def mock_lvl_up(self, ctx, *, person: discord.Member = None):
         """Force level a user or yourself"""
-        if not user:
-            user = ctx.author
-        user_id = str(user.id)
+        if not person:
+            person = ctx.author
+        user_id = str(person.id)
         guild_id = str(ctx.guild.id)
         if user_id not in self.cache[guild_id]:
             await self.cache_user(guild_id, user_id)
@@ -1225,8 +1228,9 @@ class LevelUp(commands.Cog):
         new_xp = get_xp(level, base, exp)
         xp = new_xp - currentxp + 10
         self.cache[guild_id][user_id]["xp"] = xp
+        await asyncio.sleep(2)
         await self.dump_cache()
-        await ctx.send(f"Forced {user.name} to level up!")
+        await ctx.send(f"Forced {person.name} to level up!")
 
     @commands.command(name="setmybg", aliases=["setbg"])
     async def set_user_background(self, ctx: commands.Context, image_url: str = None):
@@ -1465,7 +1469,7 @@ class LevelUp(commands.Cog):
                 else:
                     user = uid
                 xp = sorted_users[i][1]
-                level = get_level(xp, base, exp)
+                level = get_level(int(xp), base, exp)
                 level = f"{level}"
                 xp = f"{xp}"
                 if i == 0:
