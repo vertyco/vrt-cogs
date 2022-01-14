@@ -1509,9 +1509,9 @@ class LevelUp(commands.Cog):
         for p in range(pages):
             title = f"**Star Leaderboard**\n" \
                     f"**Total ⭐'s: {total_stars}**\n"
-            msg = ""
             if stop > len(sorted_users):
                 stop = len(sorted_users)
+            table = []
             for i in range(start, stop, 1):
                 uid = sorted_users[i][0]
                 if str(uid) == str(ctx.author.id):
@@ -1522,12 +1522,11 @@ class LevelUp(commands.Cog):
                 else:
                     user = uid
                 stars = sorted_users[i][1]
-                if stars < 10:
-                    msg += f"{stars}  ⭐ ｜ {user}\n"
-                else:
-                    msg += f"{stars} ⭐ ｜ {user}\n"
+                stars = f"{stars}⭐"
+                table.append([stars, user])
+            data = tabulate.tabulate(table, tablefmt="presto")
             embed = discord.Embed(
-                description=f"{title}{box(msg, lang='python')}",
+                description=f"{title}{box(data, lang='python')}",
                 color=discord.Color.random()
             )
             embed.set_thumbnail(url=ctx.guild.icon_url)
