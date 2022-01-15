@@ -215,20 +215,8 @@ class Generator:
             else:
                 card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
 
-        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
-        profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((60, 60), Image.ANTIALIAS)
-
-        # Is used as a blank image for mask
-        profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
-
-        # Mask to crop profile image
-        # draw at 4x size and resample down to 1x for a nice smooth circle
-        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        # Profile pic border at 4x
-        mask_draw.ellipse((36, 36, 240, 240), fill=(255, 255, 255, 255))
-        mask = mask.resize(card.size, Image.ANTIALIAS)
+        # Draw
+        draw = ImageDraw.Draw(card)
 
         if len(str(level)) > 2:
             size = 19
@@ -238,8 +226,6 @@ class Generator:
 
         MAINCOLOR = color
         BORDER = (0, 0, 0)
-
-        draw = ImageDraw.Draw(card)
         level = f"Level {level}"
 
         # Drawing borders
@@ -247,13 +233,33 @@ class Generator:
         # Filling text
         draw.text((73, 16), level, MAINCOLOR, font=font_normal)
 
-        blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
+        # get profile pic
+        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
+        profile = Image.open(profile_bytes)
+        profile = profile.convert('RGBA').resize((60, 60), Image.ANTIALIAS)
+
+        # Mask to crop profile image
+        # draw at 4x size and resample down to 1x for a nice smooth circle
+        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        # Profile pic border at 4x
+        mask_draw.ellipse((36, 36, 240, 240), fill=(255, 255, 255, 255))
+        mask = mask.resize(card.size, Image.ANTIALIAS)
+
+        # Is used as a blank image for mask
+        profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
+
+        # paste on square profile pic in appropriate spot
         profile_pic_holder.paste(profile, (5, 5))
 
-        pre = Image.composite(profile_pic_holder, card, mask)
-        pre = Image.alpha_composite(pre, blank)
+        # make a new Image at card size to crop pfp with transparency to the circle mask
+        pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
+        pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
 
-        final = Image.alpha_composite(pre, blank)
+        # layer the pfp_composite_holder onto the card
+        pre = Image.alpha_composite(card, pfp_composite_holder)
+
+        final = Image.alpha_composite(pre, pfp_composite_holder)
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP')
         final_bytes.seek(0)

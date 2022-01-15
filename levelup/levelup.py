@@ -85,7 +85,7 @@ class LevelUp(commands.Cog):
             "mention": False,  # Toggle whether to mention the user
             "notifylog": None,  # Notify member of level up in a set channel
         }
-        default_global = {"ignoredservers": []}
+        default_global = {"ignored_guilds": []}
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
 
@@ -269,7 +269,7 @@ class LevelUp(commands.Cog):
 
     # Cache main settings
     async def init_settings(self):
-        ignored = await self.config.ignoredservers()
+        ignored = await self.config.ignored_guilds()
         self.ignored_guilds = ignored
         for guild in self.bot.guilds:
             settings = await self.config.guild(guild).all()
@@ -285,6 +285,8 @@ class LevelUp(commands.Cog):
                 self.stars[guild_id] = {}
             if guild_id not in self.voice:
                 self.voice[guild_id] = {}
+            if guild_id not in self.lastmsg:
+                self.lastmsg[guild_id] = {}
 
     @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
@@ -317,10 +319,12 @@ class LevelUp(commands.Cog):
         addxp = False
         if user not in self.cache[guild_id]:
             await self.cache_user(guild_id, user)
-        if user not in self.lastmsg:
-            self.lastmsg[user] = now
+        if guild_id not in self.lastmsg:
+            self.lastmsg[guild_id] = {}
+        if user not in self.lastmsg[guild_id]:
+            self.lastmsg[guild_id][user] = now
             addxp = True
-        td = now - self.lastmsg[user]
+        td = now - self.lastmsg[guild_id][user]
         td = int(td.total_seconds())
         if td > conf["cooldown"]:
             addxp = True
@@ -1172,19 +1176,22 @@ class LevelUp(commands.Cog):
         """
         now = datetime.datetime.now()
         user_id = str(user.id)
+        guild_id = str(ctx.guild.id)
         if ctx.author == user:
             return await ctx.send("**You can't give stars to yourself!**")
         if user.bot:
             return await ctx.send("**You can't give stars to a bot!**")
-        if user_id not in self.stars[str(ctx.guild.id)]:
-            self.stars[str(ctx.guild.id)][user_id] = now
+        if guild_id not in self.stars:
+            self.stars[guild_id] = {}
+        if user_id not in self.stars[guild_id]:
+            self.stars[guild_id][user_id] = now
         else:
-            cooldown = self.settings[str(ctx.guild.id)]["starcooldown"]
-            lastused = self.stars[str(ctx.guild.id)][user_id]
+            cooldown = self.settings[guild_id]["starcooldown"]
+            lastused = self.stars[guild_id][user_id]
             td = now - lastused
             td = td.total_seconds()
             if td > cooldown:
-                self.stars[str(ctx.guild.id)][user_id] = now
+                self.stars[guild_id][user_id] = now
             else:
                 time_left = cooldown - td
                 tstring = time_formatter(time_left)
