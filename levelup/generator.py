@@ -71,19 +71,6 @@ class Generator:
         # Draw
         draw = ImageDraw.Draw(card)
 
-        # PfP image
-        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
-        profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((180, 180), Image.ANTIALIAS)
-
-        profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
-
-        # draw at 4x size and resample down to 1x for a nice smooth circle
-        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((116, 116, 836, 836), fill=(255, 255, 255, 255))
-        mask = mask.resize(card.size, Image.ANTIALIAS)
-
         # Editing stuff here
         # ======== Fonts to use =============
         font_normal = ImageFont.truetype(self.font1, 40)
@@ -126,10 +113,10 @@ class Generator:
         draw.text((797, 15), stars, MAINCOLOR, font=font_normal)
 
         # Adding another blank layer for the progress bar
-        blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
-        blank_draw = ImageDraw.Draw(blank)
+        progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
+        progress_bar_draw = ImageDraw.Draw(progress_bar)
         # rectangle 0:x, 1:top y, 2:length, 3:bottom y
-        blank_draw.rectangle((240, 200, 750, 215), fill=(255, 255, 255, 0), outline=BORDER)
+        progress_bar_draw.rectangle((240, 200, 750, 215), fill=(255, 255, 255, 0), outline=BORDER)
 
         xpneed = next_xp - current_xp
         xphave = user_xp - current_xp
@@ -137,20 +124,41 @@ class Generator:
         current_percentage = (xphave / xpneed) * 100
         length_of_bar = (current_percentage * 4.9) + 248
 
-        blank_draw.rectangle((248, 203, length_of_bar, 212), fill=MAINCOLOR)
+        progress_bar_draw.rectangle((248, 203, length_of_bar, 212), fill=MAINCOLOR)
 
-        # Pfp border
-        # draw at 4x and resample down to 1x for nice smooth circles
+        # pfp border - draw at 4x and resample down to 1x for nice smooth circles
         circle_img = Image.new("RGBA", (800, 800))
         pfp_border = ImageDraw.Draw(circle_img)
         pfp_border.ellipse([4, 4, 796, 796], fill=(255, 255, 255, 0), outline=MAINCOLOR, width=12)
         circle_img = circle_img.resize((200, 200), Image.ANTIALIAS)
         card.paste(circle_img, (19, 19), circle_img)
 
+        # get profile pic
+        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
+        profile = Image.open(profile_bytes)
+        profile = profile.convert('RGBA').resize((180, 180), Image.ANTIALIAS)
+
+        # Mask to crop profile pic image to a circle
+        # draw at 4x size and resample down to 1x for a nice smooth circle
+        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        mask_draw.ellipse((116, 116, 836, 836), fill=(255, 255, 255, 255))
+        mask = mask.resize(card.size, Image.ANTIALIAS)
+
+        # make a new Image to set up card-sized image for pfp layer and the circle mask for it
+        profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
+
+        # paste on square profile pic in appropriate spot
         profile_pic_holder.paste(profile, (29, 29, 209, 209))
 
-        pre = Image.composite(profile_pic_holder, card, mask)
-        pre = Image.alpha_composite(pre, blank)
+        # make a new Image at card size to crop pfp with transparency to the circle mask
+        pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
+        pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
+
+        # layer the pfp_composite_holder onto the card
+        pre = Image.alpha_composite(card, pfp_composite_holder) 
+        # layer on the progress bar
+        pre = Image.alpha_composite(pre, progress_bar)
 
         if user_status == 'online':
             status = Image.open(self.online)
