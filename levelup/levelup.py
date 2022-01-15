@@ -152,12 +152,14 @@ class LevelUp(commands.Cog):
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
             if guild_id not in self.cache:
-                continue
+                log.info("Guild ID not in cache for some reason")  # Should have been initialized already
+                self.cache[guild_id] = {}
             if not self.cache[guild_id]:  # If there is anything to cache
                 continue
             conf = self.settings[guild_id]
             base = conf["base"]
             exp = conf["exp"]
+            keys_to_delete = []
             async with self.config.guild(guild).users() as users:
                 for user, data in self.cache[guild_id].items():
                     if user not in users:
@@ -175,7 +177,10 @@ class LevelUp(commands.Cog):
                         else:
                             await self.level_up(guild, user, new_level)
                         users[user]["level"] = new_level
-                self.cache[guild_id].clear()
+                    keys_to_delete.append(user)
+            # Tried using .clear() but for some reason was running into issues not sure if it was that or not
+            for user in keys_to_delete:
+                del self.cache[guild_id][user]
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
@@ -272,13 +277,7 @@ class LevelUp(commands.Cog):
         ignored = await self.config.ignored_guilds()
         self.ignored_guilds = ignored
         for guild in self.bot.guilds:
-            settings = await self.config.guild(guild).all()
             guild_id = str(guild.id)
-            if guild_id not in self.settings:
-                self.settings[guild_id] = {}
-            for k, v in settings.items():
-                if k != "users":
-                    self.settings[guild_id][k] = v
             if guild_id not in self.cache:
                 self.cache[guild_id] = {}
             if guild_id not in self.stars:
@@ -287,6 +286,13 @@ class LevelUp(commands.Cog):
                 self.voice[guild_id] = {}
             if guild_id not in self.lastmsg:
                 self.lastmsg[guild_id] = {}
+            if guild_id not in self.settings:
+                self.settings[guild_id] = {}
+            settings = await self.config.guild(guild).all()
+            for k, v in settings.items():
+                if k != "users":
+                    self.settings[guild_id][k] = v
+        log.info("Settings initialized to cache")
 
     @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
@@ -397,16 +403,19 @@ class LevelUp(commands.Cog):
     @voice_checker.before_loop
     async def before_voice_checker(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
+        log.info("Voice checker running")
 
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=15)
     async def cache_dumper(self):
         await self.dump_cache()
 
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(5)
+        await self.init_settings()
+        await asyncio.sleep(10)
+        log.info("Cache dumber running")
 
     @commands.group(name="levelset", aliases=["lset"])
     @commands.admin()
