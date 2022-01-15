@@ -4281,7 +4281,7 @@ class ArkTools(commands.Cog):
                                             if sus:
                                                 yes = "✅"
                                                 no = "❌"
-                                                if alt["autoban"] and xuid not in alt["whitelist"]:
+                                                if alt["autoban"] and int(xuid) not in alt["whitelist"]:
                                                     banned = yes
                                                     command = f"banplayer {xuid}"
                                                     bantasks = []
