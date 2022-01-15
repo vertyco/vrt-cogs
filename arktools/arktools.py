@@ -1115,7 +1115,9 @@ class ArkTools(commands.Cog):
                                 session,
                                 server["cluster"],
                                 server["name"],
-                                tokens
+                                tokens,
+                                None,
+                                ctx.guild
                             )
                             if token:
                                 try:
@@ -1142,7 +1144,9 @@ class ArkTools(commands.Cog):
                                 session,
                                 server["cluster"],
                                 server["name"],
-                                tokens
+                                tokens,
+                                None,
+                                ctx.guild
                             )
                             if token:
                                 try:
@@ -4283,7 +4287,7 @@ class ArkTools(commands.Cog):
                                                 no = "❌"
                                                 if alt["autoban"] and int(xuid) not in alt["whitelist"]:
                                                     banned = yes
-                                                    command = f"banplayer {xuid}"
+                                                     command = f"banplayer {xuid}"
                                                     bantasks = []
                                                     for tup in self.servers:
                                                         sguild = tup[0]
