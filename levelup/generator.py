@@ -109,8 +109,15 @@ class Generator:
         draw.text((450, 95), messages, MAINCOLOR, font=font_small)
         draw.text((450, 125), voice, MAINCOLOR, font=font_small)
 
-        draw.text((797, 15), stars, BORDER, font=font_normal, stroke_width=1)
-        draw.text((797, 15), stars, MAINCOLOR, font=font_normal)
+        # STAR TEXT
+        if len(str(stars)) < 3:
+            star_font = ImageFont.truetype(self.font1, 35)
+            draw.text((825, 25), stars, BORDER, font=star_font, stroke_width=1)
+            draw.text((825, 25), stars, MAINCOLOR, font=star_font)
+        else:
+            star_font = ImageFont.truetype(self.font1, 30)
+            draw.text((825, 28), stars, BORDER, font=star_font, stroke_width=1)
+            draw.text((825, 28), stars, MAINCOLOR, font=star_font)
 
         # Adding another blank layer for the progress bar
         progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -184,7 +191,7 @@ class Generator:
         blank = Image.new("RGBA", pre.size, (255, 255, 255, 0))
         blank.paste(status, (169, 169))
         # Add rep star
-        blank.paste(rep_icon, (750, 22))
+        blank.paste(rep_icon, (780, 29))
 
         final = Image.alpha_composite(pre, blank)
         final_bytes = BytesIO()

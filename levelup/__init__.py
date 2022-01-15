@@ -5,6 +5,7 @@ ___red_end_user_data_statement__ = (
 )
 
 
-def setup(bot):
+async def setup(bot):
     cog = LevelUp(bot)
     bot.add_cog(cog)
+    await LevelUp.init_settings(LevelUp(bot))

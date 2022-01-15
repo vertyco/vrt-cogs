@@ -85,7 +85,9 @@ class LevelUp(commands.Cog):
             "mention": False,  # Toggle whether to mention the user
             "notifylog": None,  # Notify member of level up in a set channel
         }
+        default_global = {"ignoredservers": []}
         self.config.register_guild(**default_guild)
+        self.config.register_global(**default_global)
 
         # Guild id's as strings, user id's as strings
         self.settings = {}  # Cache settings
@@ -93,6 +95,7 @@ class LevelUp(commands.Cog):
         self.lastmsg = {}  # Last sent message for users
         self.voice = {}  # Voice channel info
         self.stars = {}  # Keep track of star cooldowns
+        self.ignored_guilds = []
 
         # For importing user levels from Fixator's Leveler cog
         self._db_ready = False
@@ -123,7 +126,7 @@ class LevelUp(commands.Cog):
 
     # Add a user to cache
     async def cache_user(self, guild: str, user: str):
-        if guild not in self.cache:  # Alredy in init_settings but just in case
+        if guild not in self.cache:  # Already in init_settings but just in case
             self.cache[guild] = {}
         self.cache[guild][user] = {
             "xp": 0,
@@ -150,28 +153,29 @@ class LevelUp(commands.Cog):
             guild_id = str(guild.id)
             if guild_id not in self.cache:
                 continue
-            if self.cache[guild_id]:  # If there is anything to cache
-                conf = self.settings[guild_id]
-                base = conf["base"]
-                exp = conf["exp"]
-                async with self.config.guild(guild).users() as users:
-                    for user, data in self.cache[guild_id].items():
-                        if user not in users:
-                            users[user] = data
+            if not self.cache[guild_id]:  # If there is anything to cache
+                continue
+            conf = self.settings[guild_id]
+            base = conf["base"]
+            exp = conf["exp"]
+            async with self.config.guild(guild).users() as users:
+                for user, data in self.cache[guild_id].items():
+                    if user not in users:
+                        users[user] = data
+                    else:
+                        users[user]["xp"] += data["xp"]
+                        users[user]["voice"] += data["voice"]
+                        users[user]["messages"] += data["messages"]
+                    saved_level = users[user]["level"]
+                    new_level = get_level(int(users[user]["xp"]), base, exp)
+                    if str(new_level) != str(saved_level):
+                        if "background" in users[user]:
+                            bg = users[user]["background"]
+                            await self.level_up(guild, user, new_level, bg)
                         else:
-                            users[user]["xp"] += data["xp"]
-                            users[user]["voice"] += data["voice"]
-                            users[user]["messages"] += data["messages"]
-                        saved_level = users[user]["level"]
-                        new_level = get_level(int(users[user]["xp"]), base, exp)
-                        if str(new_level) != str(saved_level):
-                            if "background" in users[user]:
-                                bg = users[user]["background"]
-                                await self.level_up(guild, user, new_level, bg)
-                            else:
-                                await self.level_up(guild, user, new_level)
-                            users[user]["level"] = new_level
-                    self.cache[guild_id].clear()
+                            await self.level_up(guild, user, new_level)
+                        users[user]["level"] = new_level
+                self.cache[guild_id].clear()
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
@@ -185,6 +189,8 @@ class LevelUp(commands.Cog):
         mention = conf["mention"]
         channel = conf["notifylog"]
         usepics = conf["usepics"]
+        if not any([dm, channel]):
+            return
         member = guild.get_member(int(user))
         if not member:
             return
@@ -263,6 +269,8 @@ class LevelUp(commands.Cog):
 
     # Cache main settings
     async def init_settings(self):
+        ignored = await self.config.ignoredservers()
+        self.ignored_guilds = ignored
         for guild in self.bot.guilds:
             settings = await self.config.guild(guild).all()
             guild_id = str(guild.id)
@@ -296,9 +304,13 @@ class LevelUp(commands.Cog):
         guild = message.guild
         guild_id = str(guild.id)
         if guild_id not in self.cache:
-            return
+            self.cache[guild_id] = {}
         user = str(message.author.id)
+        if guild_id not in self.settings:
+            self.settings[guild_id] = {}
         conf = self.settings[guild_id]
+        if not conf:
+            return
         xpmin = int(conf["xp"][0])
         xpmax = int(conf["xp"][1]) + 1
         xp = random.choice(range(xpmin, xpmax))
@@ -331,8 +343,9 @@ class LevelUp(commands.Cog):
             guild_id = str(guild.id)
             if guild_id not in self.settings:
                 self.settings[guild_id] = {}
-                continue
             conf = self.settings[guild_id]
+            if not conf:
+                continue
             xp_per_minute = conf["voicexp"]
             if guild_id not in self.voice:
                 self.voice[guild_id] = {}
@@ -382,15 +395,14 @@ class LevelUp(commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(5)
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(seconds=60)
     async def cache_dumper(self):
         await self.dump_cache()
 
     @cache_dumper.before_loop
-    async def before_dumper(self):
+    async def before_cache_dumper(self):
         await self.bot.wait_until_red_ready()
-        await self.init_settings()
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
 
     @commands.group(name="levelset", aliases=["lset"])
     @commands.admin()
@@ -1215,9 +1227,13 @@ class LevelUp(commands.Cog):
             person = ctx.author
         user_id = str(person.id)
         guild_id = str(ctx.guild.id)
+        if guild_id not in self.cache:
+            self.cache[guild_id] = {}
         if user_id not in self.cache[guild_id]:
             await self.cache_user(guild_id, user_id)
         conf = self.settings[guild_id]
+        if not conf:
+            await self.init_settings()
         base = conf["base"]
         exp = conf["exp"]
         users = await self.config.guild(ctx.guild).users()
@@ -1232,7 +1248,45 @@ class LevelUp(commands.Cog):
         await self.dump_cache()
         await ctx.send(f"Forced {person.name} to level up!")
 
-    @commands.command(name="setmybg", aliases=["setbg"])
+    # For testing purposes
+    @commands.command(name="mocklvldown", hidden=True)
+    @commands.is_owner()
+    async def mock_lvl_down(self, ctx, *, person: discord.Member = None):
+        """Force de-level a user or yourself"""
+        if not person:
+            person = ctx.author
+        user_id = str(person.id)
+        guild_id = str(ctx.guild.id)
+        if guild_id not in self.cache:
+            self.cache[guild_id] = {}
+        if user_id not in self.cache[guild_id]:
+            await self.cache_user(guild_id, user_id)
+        conf = self.settings[guild_id]
+        if not conf:
+            await self.init_settings()
+        base = conf["base"]
+        exp = conf["exp"]
+        users = await self.config.guild(ctx.guild).users()
+        user = users[user_id]
+        currentxp = user["xp"]
+        level = user["level"]
+        level = level - 1
+        new_xp = get_xp(level, base, exp)
+        xp = new_xp - currentxp + 10
+        self.cache[guild_id][user_id]["xp"] = xp
+        await asyncio.sleep(2)
+        await self.dump_cache()
+        await ctx.send(f"Forced {person.name} to level down!")
+
+    # For testing purposes
+    @commands.command(name="forceinit", hidden=True)
+    @commands.is_owner()
+    async def force_init(self, ctx):
+        """Force level a user or yourself"""
+        await self.init_settings()
+        await ctx.tick()
+
+    @commands.command(name="setbg", aliases=["setmybg"])
     async def set_user_background(self, ctx: commands.Context, image_url: str = None):
         """
         Set a background for your profile
@@ -1243,6 +1297,12 @@ class LevelUp(commands.Cog):
         Profile backgrounds are wide landscapes (900 by 240 pixels) and using a portrait image will be skewed
 
         Tip: Googling "dual monitor backgrounds" gives good results for the right images
+
+        Here are some good places to look.
+        [dualmonitorbackgrounds](https://www.dualmonitorbackgrounds.com/)
+        [setaswall](https://www.setaswall.com/dual-monitor-wallpapers/)
+        [pexels](https://www.pexels.com/photo/panoramic-photography-of-trees-and-lake-358482/)
+        [teahub](https://www.teahub.io/searchw/dual-monitor/)
         """
         # If image url is given, run some checks
         if image_url:
