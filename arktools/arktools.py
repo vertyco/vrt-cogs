@@ -211,7 +211,7 @@ class ArkTools(commands.Cog):
         if xbl_client == "validation error":
             if ctx:
                 await ctx.send(
-                    f"Client ID and Secret have not been authorized yet!\n"
+                    f"Client ID and Secret either aren't authorized yet or need to be re-authorized!\n"
                     f"Bot owner needs to run `{ctx.prefix}apiset authorize`"
                 )
             return None, None
@@ -1115,8 +1115,7 @@ class ArkTools(commands.Cog):
                                 session,
                                 server["cluster"],
                                 server["name"],
-                                tokens,
-                                ctx
+                                tokens
                             )
                             if token:
                                 try:
@@ -1143,8 +1142,7 @@ class ArkTools(commands.Cog):
                                 session,
                                 server["cluster"],
                                 server["name"],
-                                tokens,
-                                ctx
+                                tokens
                             )
                             if token:
                                 try:
@@ -2180,8 +2178,13 @@ class ArkTools(commands.Cog):
                    f"**YOU WILL GET A LOCALHOST ERROR AND A BLANK PAGE, THIS IS OKAY!**\n" \
                    f"On that blank page, copy the ENTIRE contents of the address bar after you authorize, " \
                    f"and reply to this message with what you copied.\n" \
-                   f"{auth_url}"
-        await author.send(plz_auth)
+                   f"**[CLICK HERE TO SIGN IN]({auth_url})**"
+        embed = discord.Embed(
+            title=f"Authorize {servername} {clustername}",
+            description=plz_auth,
+            color=discord.Color.gold()
+        )
+        await author.send(embed=embed)
 
         def check(message):
             return message.author == ctx.author
