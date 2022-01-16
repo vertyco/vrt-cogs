@@ -98,7 +98,7 @@ async def get_user_stats(conf: dict, user_id: str) -> dict:
     xp = int(user["xp"])
     messages = user["messages"]
     voice = user["voice"]
-    voice = int(voice / 60)
+    voice = time_formatter(voice)
     level = user["level"]
     prestige = user["prestige"]
     emoji = user["emoji"]
@@ -157,7 +157,7 @@ async def profile_embed(
         msg += f"🏆｜Prestige {prestige} {emoji}\n"
     msg += f"⭐｜{stars} stars\n" \
            f"💬｜{messages} messages sent\n" \
-           f"🎙｜{voice} minutes in voice\n" \
+           f"🎙｜{voice} in voice\n" \
            f"💡｜{progress} XP"
     embed = discord.Embed(
         title=f"{user.name}'s Profile",

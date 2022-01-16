@@ -368,14 +368,16 @@ class LevelUp(commands.Cog):
             xp_per_minute = conf["voicexp"]
             if guild_id not in self.voice:
                 self.voice[guild_id] = {}
-            now = datetime.datetime.now()
             for member in guild.members:
                 if member.bot:
                     continue
+                now = datetime.datetime.now()
+                user_id = str(member.id)
                 voice_state = member.voice
                 if not voice_state:  # Only cache if user is in a vc
+                    if user_id in self.voice[guild_id]:
+                        del self.voice[guild_id][user_id]
                     continue
-                user_id = str(member.id)
                 if user_id not in self.voice[guild_id]:
                     self.voice[guild_id][user_id] = now
                 if user_id not in self.cache[guild_id]:
@@ -1074,6 +1076,68 @@ class LevelUp(commands.Cog):
     async def level_roles(self, ctx: commands.Context):
         """Level role assignment"""
 
+    @level_roles.command(name="Initialize")
+    async def init_roles(self, ctx: commands.Context):
+        """
+        Initialize level roles
+
+        This command is for if you added level roles after users have achieved that level,
+        it will apply all necessary roles to a user according to their level and prestige
+        """
+        guild = ctx.guild
+        perms = guild.me.guild_permissions.manage_roles
+        if not perms:
+            return await ctx.send("I dont have the proper permissions to manage roles!")
+        roles_added = 0
+        async with ctx.typing():
+            async with self.config.guild(guild).all() as conf:
+                level_roles = conf["levelroles"]
+                prestiges = conf["prestigedata"]
+                autoremove = conf["autoremove"]
+                users = conf["users"]
+                for user_id, data in users.items():
+                    user = guild.get_member(int(user_id))
+                    if not user:
+                        continue
+                    user_level = data["level"]
+                    prestige_level = data["prestige"]
+                    if autoremove:
+                        highest_level = ""
+                        for lvl, role_id in level_roles.items():
+                            if int(lvl) <= int(user_level):
+                                highest_level = lvl
+                        if highest_level:
+                            role = level_roles[highest_level]
+                            role = guild.get_role(int(role))
+                            if role:
+                                await user.add_roles(role)
+                                roles_added += 1
+                        highest_prestige = ""
+                        for plvl, prole in prestiges.items():
+                            if int(plvl) <= int(prestige_level):
+                                highest_prestige = plvl
+                        if highest_prestige:
+                            role = prestiges[highest_prestige]
+                            role = guild.get_role(int(role))
+                            if role:
+                                await user.add_roles(role)
+                                roles_added += 1
+                    else:
+                        for lvl, role_id in level_roles.items():
+                            role = guild.get_role(int(role_id))
+                            if role and int(lvl) <= int(user_level):
+                                await user.add_roles(role)
+                                roles_added += 1
+                        for lvl, role_id in prestiges.items():
+                            role = guild.get_role(int(role_id))
+                            if role and int(lvl) <= int(prestige_level):
+                                await user.add_roles(role)
+                                roles_added += 1
+                if roles_added:
+                    await ctx.send(f"Initialization complete, added {roles_added} roles to users")
+                else:
+                    await ctx.send(f"Initialization complete, there were no roles to add")
+
     @level_roles.command(name="autoremove")
     async def toggle_autoremove(self, ctx: commands.Context):
         """Automatic removal of previous level roles"""
@@ -1430,7 +1494,7 @@ class LevelUp(commands.Cog):
         stats = await get_user_stats(conf, user_id)
         level = stats["l"]
         messages = stats["m"]
-        voice = stats["v"]
+        voice = stats["v"]  # Minutes at this point
         xp = stats["xp"]
         goal = stats["goal"]
         progress = f'{"{:,}".format(xp)}/{"{:,}".format(goal)}'
@@ -1560,7 +1624,7 @@ class LevelUp(commands.Cog):
         prestige_req = conf["prestige"]
         leaderboard = {}
         total_messages = 0
-        total_voice = 0
+        total_voice = 0  # Seconds
         for user, data in conf["users"].items():
             prestige = data["prestige"]
             xp = int(data["xp"])
