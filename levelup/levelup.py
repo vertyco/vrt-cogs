@@ -1522,7 +1522,7 @@ class LevelUp(commands.Cog):
                 prestige,
                 stars
             )
-            await ctx.send(embed=embed)
+            await ctx.reply(embed=embed, mention_author=True)
         else:
             async with ctx.typing():
                 if bg:
@@ -1550,7 +1550,7 @@ class LevelUp(commands.Cog):
                     'stars': stars
                 }
                 file = await self.gen_profile_img(args)
-                await ctx.send(file=file)
+                await ctx.reply(file=file, mention_author=True)
 
     @commands.command(name="prestige")
     @commands.guild_only()
