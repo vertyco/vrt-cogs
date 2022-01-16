@@ -1133,6 +1133,8 @@ class LevelUp(commands.Cog):
         """
         Add/Remove a guild in the ignore list
 
+        **THIS IS A GLOBAL SETTING ONLY BOT OWNERS CAN USE**
+
         Use the command with a guild already in the ignore list to remove it
         """
         async with self.config.ignored_guilds() as ignored:
