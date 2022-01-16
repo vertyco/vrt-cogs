@@ -409,7 +409,10 @@ class LevelUp(commands.Cog):
 
     @tasks.loop(seconds=15)
     async def voice_checker(self):
-        await self.check_voice()
+        try:
+            await self.check_voice()
+        except Exception as e:
+            log.warning(f"Error in Voice checker loop: {e}")
 
     @voice_checker.before_loop
     async def before_voice_checker(self):
@@ -419,7 +422,10 @@ class LevelUp(commands.Cog):
 
     @tasks.loop(seconds=15)
     async def cache_dumper(self):
-        await self.dump_cache()
+        try:
+            await self.dump_cache()
+        except Exception as e:
+            log.warning(f"Error in cache dumber loop: {e}")
 
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
@@ -1522,7 +1528,10 @@ class LevelUp(commands.Cog):
                 prestige,
                 stars
             )
-            await ctx.reply(embed=embed, mention_author=True)
+            try:
+                await ctx.reply(embed=embed, mention_author=True)
+            except discord.HTTPException:
+                await ctx.send(embed=embed)
         else:
             async with ctx.typing():
                 if bg:
@@ -1550,7 +1559,10 @@ class LevelUp(commands.Cog):
                     'stars': stars
                 }
                 file = await self.gen_profile_img(args)
-                await ctx.reply(file=file, mention_author=True)
+                try:
+                    await ctx.reply(file=file, mention_author=True)
+                except discord.HTTPException:
+                    await ctx.send(file=file)
 
     @commands.command(name="prestige")
     @commands.guild_only()

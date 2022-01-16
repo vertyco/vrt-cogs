@@ -11,7 +11,9 @@
   "permissions": [
     "read_messages",
     "send_messages",
-    "manage_roles"
+    "manage_roles",
+    "attach_files",
+    "embed_links"
   ],
   "required_cogs": {},
   "requirements": [
