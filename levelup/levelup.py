@@ -351,6 +351,8 @@ class LevelUp(commands.Cog):
     async def check_voice(self):
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
+            if guild_id in self.ignored_guilds:
+                continue
             if guild_id not in self.settings:
                 self.settings[guild_id] = {}
             conf = self.settings[guild_id]
@@ -1125,10 +1127,27 @@ class LevelUp(commands.Cog):
         """Base command for all ignore lists"""
         pass
 
+    @ignore_group.command(name="guild")
+    @commands.is_owner()
+    async def ignore_guild(self, ctx: commands.Context, guild_id: str):
+        """
+        Add/Remove a guild in the ignore list
+
+        Use the command with a guild already in the ignore list to remove it
+        """
+        async with self.config.ignored_guilds() as ignored:
+            if guild_id in ignored:
+                ignored.remove(guild_id)
+                await ctx.send("Guild removed from ignore list")
+            else:
+                ignored.append(guild_id)
+                await ctx.send("Guild added to ignore list")
+            await self.init_settings()
+
     @ignore_group.command(name="channel")
     async def ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """
-        Add/Remove a channel from the ignore list
+        Add/Remove a channel in the ignore list
         Channels in the ignore list dont gain XP
 
         Use the command with a channel already in the ignore list to remove it
