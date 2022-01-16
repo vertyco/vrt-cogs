@@ -258,18 +258,26 @@ class LevelUp(commands.Cog):
 
         # Role adding/removal
         if roleperms and levelroles:
-            if str(new_level) in levelroles:
-                role_id = levelroles[str(new_level)]
-                role = guild.get_role(int(role_id))
-                if not role:
-                    return
-                if role not in member.roles:
-                    await member.add_roles(role)
-            if new_level > 1 and autoremove:
-                for role in member.roles:
-                    for level, role_id in levelroles:
-                        if int(level) < new_level and str(role.id) == str(role_id):
-                            await member.remove_roles(role)
+            if not autoremove:  # Level roles stack
+                for level, role in levelroles.items():
+                    if int(level) <= int(new_level):  # Then give user that role since they should stack
+                        role = guild.get_role(int(role))
+                        if not role:
+                            continue
+                        if role not in member.roles:
+                            await member.add_roles(role)
+            else:  # No stacking so add role and remove the others below that level
+                if str(new_level) in levelroles:
+                    role_id = levelroles[str(new_level)]
+                    role = guild.get_role(int(role_id))
+                    if role not in member.roles:
+                        await member.add_roles(role)
+
+                if new_level > 1:
+                    for role in member.roles:
+                        for level, role_id in levelroles:
+                            if int(level) < new_level and str(role.id) == str(role_id):
+                                await member.remove_roles(role)
 
     # Cache main settings
     async def init_settings(self):
@@ -428,7 +436,7 @@ class LevelUp(commands.Cog):
     @lvl_group.command(name="seelevels")
     async def see_levels(self, ctx: commands.Context):
         """
-        Test the level algorith
+        Test the level algorithm
         View the first 20 levels using the current algorithm to test experience curve
         """
         conf = await self.config.guild(ctx.guild).all()
@@ -587,51 +595,70 @@ class LevelUp(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @lvl_group.command(name="fullreset")
+    @lvl_group.group(name="admin")
+    @commands.guildowner()
+    async def admin_group(self, ctx: commands.Context):
+        """
+        Cog admin commands
+
+        Reset levels, bakup and restore cog data
+        """
+        pass
+
+    @admin_group.command(name="globalreset")
     @commands.is_owner()
     async def reset_all(self, ctx: commands.Context):
-        """Reset entire cog user data"""
+        """Reset cog data for all guilds"""
         for guild in self.bot.guilds:
             await self.config.guild(guild).users.set({})
             await ctx.tick()
 
-    @lvl_group.command(name="reset")
-    @commands.guildowner()
+    @admin_group.command(name="guildreset")
     async def reset_guild(self, ctx: commands.Context):
-        """Reset guild user data"""
+        """Reset cog data for this guild"""
         await self.config.guild(ctx.guild).users.set({})
         await ctx.tick()
 
-    @lvl_group.command(name="fullbackup")
+    @admin_group.command(name="globalbackup")
     @commands.is_owner()
     async def backup_all_settings(self, ctx: commands.Context):
-        """Sends a full backup of the config as a JSON file to Discord."""
+        """
+        Backup global cog data
+
+        Sends the .json to discord
+        """
+        today = datetime.datetime.now().strftime('%m-%d-%y')
         settings = await self.config.all_guilds()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
         with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"LevelUp_full_config.json"))
+            await ctx.send(file=discord.File(file, f"LevelUp_global_config_{today}.json"))
 
-    @lvl_group.command(name="backup")
+    @admin_group.command(name="guildbackup")
     @commands.guildowner()
     async def backup_settings(self, ctx: commands.Context):
         """
-        Make a backup of your config
+        Backup guild data
 
         Sends the .json to discord
         """
+        today = datetime.datetime.now().strftime('%m-%d-%y')
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
             file.write(settings)
         with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
+            await ctx.send(file=discord.File(file, f"LevelUp_guild_config_{today}.json"))
 
-    @lvl_group.command(name="fullrestore")
+    @admin_group.command(name="globalrestore")
     @commands.is_owner()
     async def restore_all_settings(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the full config."""
+        """
+        Restore a global backup
+
+        Attach the .json file to the command message to import
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -647,13 +674,13 @@ class LevelUp(commands.Cog):
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
-    @lvl_group.command(name="restore")
+    @admin_group.command(name="guildrestore")
     @commands.guildowner()
     async def restore_settings(self, ctx: commands.Context):
         """
-        Restore your LevelUp backup config
+        Restore a guild backup
 
-        Attach the .json file that you made when using the command to import it
+        Attach the .json file to the command message to import
         """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
@@ -666,7 +693,7 @@ class LevelUp(commands.Cog):
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
 
-    @lvl_group.command(name="cache")
+    @admin_group.command(name="cache")
     @commands.is_owner()
     async def get_cache_size(self, ctx: commands.Context):
         """See how much RAM this cog's cache is using"""
@@ -686,7 +713,7 @@ class LevelUp(commands.Cog):
                 f"{mbstring} Mb\n"
         await ctx.send(f"**Total Cache Size**\n{box(sizes)}")
 
-    @lvl_group.command(name="importleveler")
+    @admin_group.command(name="importleveler")
     @commands.is_owner()
     async def import_from_leveler(self, ctx: commands.Context, yes_or_no: str):
         """
@@ -813,7 +840,7 @@ class LevelUp(commands.Cog):
         if self.client:
             self.client.close()
 
-    @lvl_group.command(name="cleanup")
+    @admin_group.command(name="cleanup")
     @commands.guildowner()
     async def cleanup_guild(self, ctx: commands.Context):
         """Delete users no longer in the server"""
@@ -840,7 +867,11 @@ class LevelUp(commands.Cog):
                 cleaned += 1
         await ctx.send(f"Deleted {cleaned} user ID's from the config that are no longer in the server")
 
-    @lvl_group.command(name="xp")
+    @lvl_group.group(name="messages")
+    async def message_group(self, ctx: commands.Context):
+        """Message settings"""
+
+    @message_group.command(name="xp")
     async def set_xp(self, ctx: commands.Context, min_xp: int = 3, max_xp: int = 6):
         """
         Set message XP range
@@ -851,17 +882,7 @@ class LevelUp(commands.Cog):
         await ctx.send(f"Message XP range has been set to {min_xp} - {max_xp} per valid message")
         await self.init_settings()
 
-    @lvl_group.command(name="voicexp")
-    async def set_voice_xp(self, ctx: commands.Context, voice_xp: int):
-        """
-        Set voice XP gain
-        Sets the amount of XP gained per minute in a voice channel (default is 2)
-        """
-        await self.config.guild(ctx.guild).voicexp.set(voice_xp)
-        await ctx.tick()
-        await self.init_settings()
-
-    @lvl_group.command(name="cooldown")
+    @message_group.command(name="cooldown")
     async def set_cooldown(self, ctx: commands.Context, cooldown: int):
         """
         Cooldown threshold for message XP
@@ -871,6 +892,93 @@ class LevelUp(commands.Cog):
         """
         await self.config.guild(ctx.guild).cooldown.set(cooldown)
         await ctx.tick()
+        await self.init_settings()
+
+    @message_group.command(name="length")
+    async def set_length(self, ctx: commands.Context, minimum_length: int):
+        """
+        Set minimum message length for XP
+        Minimum length a message must be to count towards XP gained
+
+        Set to 0 to disable
+        """
+        await self.config.guild(ctx.guild).length.set(minimum_length)
+        await ctx.tick()
+        await self.init_settings()
+
+    @lvl_group.group(name="voice")
+    async def voice_group(self, ctx: commands.Context):
+        """Voice settings"""
+        pass
+
+    @voice_group.command(name="voicexp")
+    async def set_voice_xp(self, ctx: commands.Context, voice_xp: int):
+        """
+        Set voice XP gain
+        Sets the amount of XP gained per minute in a voice channel (default is 2)
+        """
+        await self.config.guild(ctx.guild).voicexp.set(voice_xp)
+        await ctx.tick()
+        await self.init_settings()
+
+    @voice_group.command(name="muted")
+    async def ignore_muted(self, ctx: commands.Context):
+        """
+        Ignore muted voice users
+        Toggle whether self-muted users in a voice channel can gain voice XP
+        """
+        muted = await self.config.guild(ctx.guild).muted()
+        if muted:
+            await self.config.guild(ctx.guild).muted.set(False)
+            await ctx.send("Self-Muted users can now gain XP while in a voice channel")
+        else:
+            await self.config.guild(ctx.guild).muted.set(True)
+            await ctx.send("Self-Muted users can no longer gain XP while in a voice channel")
+        await self.init_settings()
+
+    @voice_group.command(name="solo")
+    async def ignore_solo(self, ctx: commands.Context):
+        """
+        Ignore solo voice users
+        Toggle whether solo users in a voice channel can gain voice XP
+        """
+        solo = await self.config.guild(ctx.guild).solo()
+        if solo:
+            await self.config.guild(ctx.guild).solo.set(False)
+            await ctx.send("Solo users can now gain XP while in a voice channel")
+        else:
+            await self.config.guild(ctx.guild).solo.set(True)
+            await ctx.send("Solo users can no longer gain XP while in a voice channel")
+        await self.init_settings()
+
+    @voice_group.command(name="deafened")
+    async def ignore_deafened(self, ctx: commands.Context):
+        """
+        Ignore deafened voice users
+        Toggle whether deafened users in a voice channel can gain voice XP
+        """
+        deafened = await self.config.guild(ctx.guild).deafened()
+        if deafened:
+            await self.config.guild(ctx.guild).deafened.set(False)
+            await ctx.send("Deafened users can now gain XP while in a voice channel")
+        else:
+            await self.config.guild(ctx.guild).deafened.set(True)
+            await ctx.send("Deafened users can no longer gain XP while in a voice channel")
+        await self.init_settings()
+
+    @voice_group.command(name="invisible")
+    async def ignore_invisible(self, ctx: commands.Context):
+        """
+        Ignore invisible voice users
+        Toggle whether invisible users in a voice channel can gain voice XP
+        """
+        invisible = await self.config.guild(ctx.guild).invisible()
+        if invisible:
+            await self.config.guild(ctx.guild).invisible.set(False)
+            await ctx.send("Invisible users can now gain XP while in a voice channel")
+        else:
+            await self.config.guild(ctx.guild).invisible.set(True)
+            await ctx.send("Invisible users can no longer gain XP while in a voice channel")
         await self.init_settings()
 
     @lvl_group.command(name="base")
@@ -895,18 +1003,6 @@ class LevelUp(commands.Cog):
         await ctx.tick()
         await self.init_settings()
 
-    @lvl_group.command(name="length")
-    async def set_length(self, ctx: commands.Context, minimum_length: int):
-        """
-        Set minimum message length for XP
-        Minimum length a message must be to count towards XP gained
-
-        Set to 0 to disable
-        """
-        await self.config.guild(ctx.guild).length.set(minimum_length)
-        await ctx.tick()
-        await self.init_settings()
-
     @lvl_group.command(name="embeds")
     async def toggle_embeds(self, ctx: commands.Context):
         """Toggle useing embeds or generated pics"""
@@ -917,78 +1013,6 @@ class LevelUp(commands.Cog):
         else:
             await self.config.guild(ctx.guild).usepics.set(True)
             await ctx.send("LevelUp will now use generated images instead of embeds")
-        await self.init_settings()
-
-    @lvl_group.command(name="autoremove")
-    async def toggle_autoremove(self, ctx: commands.Context):
-        """Automatic removal of previous level roles"""
-        autoremove = await self.config.guild(ctx.guild).autoremove()
-        if autoremove:
-            await self.config.guild(ctx.guild).autoremove.set(False)
-            await ctx.send("Automatic role removal **Disabled**")
-        else:
-            await self.config.guild(ctx.guild).autoremove.set(True)
-            await ctx.send("Automatic role removal **Enabled**")
-        await self.init_settings()
-
-    @lvl_group.command(name="muted")
-    async def ignore_muted(self, ctx: commands.Context):
-        """
-        Ignore muted voice users
-        Toggle whether self-muted users in a voice channel can gain voice XP
-        """
-        muted = await self.config.guild(ctx.guild).muted()
-        if muted:
-            await self.config.guild(ctx.guild).muted.set(False)
-            await ctx.send("Self-Muted users can now gain XP while in a voice channel")
-        else:
-            await self.config.guild(ctx.guild).muted.set(True)
-            await ctx.send("Self-Muted users can no longer gain XP while in a voice channel")
-        await self.init_settings()
-
-    @lvl_group.command(name="solo")
-    async def ignore_solo(self, ctx: commands.Context):
-        """
-        Ignore solo voice users
-        Toggle whether solo users in a voice channel can gain voice XP
-        """
-        solo = await self.config.guild(ctx.guild).solo()
-        if solo:
-            await self.config.guild(ctx.guild).solo.set(False)
-            await ctx.send("Solo users can now gain XP while in a voice channel")
-        else:
-            await self.config.guild(ctx.guild).solo.set(True)
-            await ctx.send("Solo users can no longer gain XP while in a voice channel")
-        await self.init_settings()
-
-    @lvl_group.command(name="deafened")
-    async def ignore_deafened(self, ctx: commands.Context):
-        """
-        Ignore deafened voice users
-        Toggle whether deafened users in a voice channel can gain voice XP
-        """
-        deafened = await self.config.guild(ctx.guild).deafened()
-        if deafened:
-            await self.config.guild(ctx.guild).deafened.set(False)
-            await ctx.send("Deafened users can now gain XP while in a voice channel")
-        else:
-            await self.config.guild(ctx.guild).deafened.set(True)
-            await ctx.send("Deafened users can no longer gain XP while in a voice channel")
-        await self.init_settings()
-
-    @lvl_group.command(name="invisible")
-    async def ignore_invisible(self, ctx: commands.Context):
-        """
-        Ignore invisible voice users
-        Toggle whether invisible users in a voice channel can gain voice XP
-        """
-        invisible = await self.config.guild(ctx.guild).invisible()
-        if invisible:
-            await self.config.guild(ctx.guild).invisible.set(False)
-            await ctx.send("Invisible users can now gain XP while in a voice channel")
-        else:
-            await self.config.guild(ctx.guild).invisible.set(True)
-            await ctx.send("Invisible users can no longer gain XP while in a voice channel")
         await self.init_settings()
 
     @lvl_group.command(name="dm")
@@ -1050,6 +1074,18 @@ class LevelUp(commands.Cog):
     async def level_roles(self, ctx: commands.Context):
         """Level role assignment"""
 
+    @level_roles.command(name="autoremove")
+    async def toggle_autoremove(self, ctx: commands.Context):
+        """Automatic removal of previous level roles"""
+        autoremove = await self.config.guild(ctx.guild).autoremove()
+        if autoremove:
+            await self.config.guild(ctx.guild).autoremove.set(False)
+            await ctx.send("Automatic role removal **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).autoremove.set(True)
+            await ctx.send("Automatic role removal **Enabled**")
+        await self.init_settings()
+
     @level_roles.command(name="add")
     async def add_level_role(self, ctx: commands.Context, level: str, role: discord.Role):
         """Assign a role to a level"""
@@ -1088,7 +1124,7 @@ class LevelUp(commands.Cog):
         await ctx.tick()
         await self.init_settings()
 
-    @prestige_settings.command(name="addprestigedata")
+    @prestige_settings.command(name="add")
     async def add_pres_data(
             self,
             ctx: commands.Context,
@@ -1097,7 +1133,7 @@ class LevelUp(commands.Cog):
             emoji: str
     ):
         """
-        Add prestige roles
+        Add a prestige level role
         Add a role and emoji associated with a specific prestige level
 
         When a user prestiges, they will get that role and the emoji will show on their profile
@@ -1110,9 +1146,9 @@ class LevelUp(commands.Cog):
         await ctx.tick()
         await self.init_settings()
 
-    @prestige_settings.command(name="delprestigedata")
+    @prestige_settings.command(name="del")
     async def del_pres_data(self, ctx: commands.Context, prestige_level: str):
-        """Delete a prestige level"""
+        """Delete a prestige level role"""
         async with self.config.guild(ctx.guild).prestigedata() as data:
             if prestige_level in data:
                 del data[prestige_level]
