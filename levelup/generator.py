@@ -1,12 +1,11 @@
-from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
-import aiohttp
 import asyncio
 import logging
 import os
+from io import BytesIO
 
+import aiohttp
+from PIL import Image, ImageDraw, ImageFont
 from redbot.core.data_manager import bundled_data_path
-
 
 log = logging.getLogger("red.vrt.levelup.generator")
 
@@ -163,7 +162,7 @@ class Generator:
         pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
 
         # layer the pfp_composite_holder onto the card
-        pre = Image.alpha_composite(card, pfp_composite_holder) 
+        pre = Image.alpha_composite(card, pfp_composite_holder)
         # layer on the progress bar
         pre = Image.alpha_composite(pre, progress_bar)
 

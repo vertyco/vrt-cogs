@@ -1,7 +1,8 @@
-import typing
 import math
-import discord
 import random
+import typing
+
+import discord
 from redbot.core.utils.chat_formatting import box
 
 
@@ -17,15 +18,15 @@ def get_xp(level: int, base: int, exp: int) -> int:
 
 # Estimate how much time it would take to reach a certain level based on curent algorithm
 def time_to_level(level: int, base: int, exp: typing.Union[int, float], cooldown: int, xp_range: list) -> int:
-        xp_needed = get_xp(level, base, exp)
-        xp_obtained = 0
-        time_to_reach_level = 0  # Seconds
-        while True:
-            xp = random.choice(range(xp_range[0], xp_range[1]))
-            xp_obtained += xp
-            time_to_reach_level += cooldown
-            if xp_obtained >= xp_needed:
-                return time_to_reach_level
+    xp_needed = get_xp(level, base, exp)
+    xp_obtained = 0
+    time_to_reach_level = 0  # Seconds
+    while True:
+        xp = random.choice(range(xp_range[0], xp_range[1]))
+        xp_obtained += xp
+        time_to_reach_level += cooldown
+        if xp_obtained >= xp_needed:
+            return time_to_reach_level
 
 
 # Convert a hex color to an RGB tuple
@@ -168,4 +169,3 @@ async def profile_embed(
     if position:
         embed.set_footer(text=f"Rank: {position} with {percentage}% of global server XP")
     return embed
-

@@ -1,18 +1,18 @@
 import asyncio
 import datetime
 import io
+import json
 import logging
 import math
 import random
 import sys
 import typing
-import tabulate
-import json
-import aiohttp
 
+import aiohttp
 import discord
 import matplotlib
 import matplotlib.pyplot as plt
+import tabulate
 import validators
 from discord.ext import tasks
 from redbot.core import commands, Config
@@ -727,9 +727,9 @@ class LevelUp(commands.Cog):
             self.db = self.client[config["db_name"]]
             self._db_ready = True
         except (
-            mongoerrors.ServerSelectionTimeoutError,
-            mongoerrors.ConfigurationError,
-            mongoerrors.OperationFailure,
+                mongoerrors.ServerSelectionTimeoutError,
+                mongoerrors.ConfigurationError,
+                mongoerrors.OperationFailure,
         ) as e:
             log.warning(f"Failed to connect to MongoDB: {e}")
             self.client = None
