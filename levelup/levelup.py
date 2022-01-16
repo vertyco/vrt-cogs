@@ -159,7 +159,6 @@ class LevelUp(commands.Cog):
             conf = self.settings[guild_id]
             base = conf["base"]
             exp = conf["exp"]
-            keys_to_delete = []
             async with self.config.guild(guild).users() as users:
                 for user, data in self.cache[guild_id].items():
                     if user not in users:
@@ -177,10 +176,10 @@ class LevelUp(commands.Cog):
                         else:
                             await self.level_up(guild, user, new_level)
                         users[user]["level"] = new_level
-                    keys_to_delete.append(user)
-            # Tried using .clear() but for some reason was running into issues not sure if it was that or not
-            for user in keys_to_delete:
-                del self.cache[guild_id][user]
+                    # Set values back to 0
+                    data["xp"] = 0
+                    data["voice"] = 0
+                    data["messages"] = 0
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
