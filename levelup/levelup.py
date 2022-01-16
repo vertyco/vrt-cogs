@@ -1226,6 +1226,7 @@ class LevelUp(commands.Cog):
                 tstring = time_formatter(time_left)
                 msg = f"**You need to wait {tstring} before you can give more stars!**"
                 return await ctx.send(msg)
+        mention = await self.config.guild(ctx.guild).mention()
         async with self.config.guild(ctx.guild).all() as conf:
             users = conf["users"]
             if user_id not in users:
@@ -1234,7 +1235,10 @@ class LevelUp(commands.Cog):
                 users[user_id]["stars"] = 1
             else:
                 users[user_id]["stars"] += 1
-            await ctx.send(f"**You just gave a star to {user.mention}!**")
+            if mention:
+                await ctx.send(f"**You just gave a star to {user.mention}!**")
+            else:
+                await ctx.send(f"**You just gave a star to {user.name}!**")
 
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)
