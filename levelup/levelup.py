@@ -124,6 +124,25 @@ class LevelUp(commands.Cog):
         file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
+    async def valid_url(self, ctx: commands.Context, image_url: str):
+        valid = validators.url(image_url)
+        if not valid:
+            await ctx.send("Uh Oh, looks like that is not a valid URL")
+            return
+        try:
+            # Try running it through profile generator blind to see if it errors
+            args = {'bg_image': image_url, 'profile_image': ctx.author.avatar_url}
+            await self.gen_profile_img(args)
+        except Exception as e:
+            if "cannot identify image file" in str(e):
+                await ctx.send("Uh Oh, looks like that is not a valid image")
+                return
+            else:
+                log.warning(f"background set failed: {e}")
+                await ctx.send("Uh Oh, looks like that is not a valid image")
+                return
+        return True
+
     # Add a user to cache
     async def cache_user(self, guild: str, user: str):
         if guild not in self.cache:  # Already in init_settings but just in case
@@ -1453,19 +1472,13 @@ class LevelUp(commands.Cog):
         """
         # If image url is given, run some checks
         if image_url:
-            valid = validators.url(image_url)
-            if not valid:
-                return await ctx.send("Uh Oh, looks like that is not a valid URL")
-            try:
-                # Try running it through profile generator blind to see if it errors
-                args = {'bg_image': image_url, 'profile_image': ctx.author.avatar_url}
-                await self.gen_profile_img(args)
-            except Exception as e:
-                if "cannot identify image file" in str(e):
-                    return await ctx.send("Uh Oh, looks like that is not a valid image")
-                else:
-                    log.warning(f"background set failed: {e}")
-                    return await ctx.send("Uh Oh, looks like that is not a valid image")
+            if not await self.valid_url(ctx, image_url):
+                return
+        else:
+            if ctx.message.attachments:
+                image_url = ctx.message.attachments[0].url
+                if not await self.valid_url(ctx, image_url):
+                    return
         user = ctx.author
         async with self.config.guild(ctx.guild).users() as users:
             if str(user.id) not in users:
@@ -1475,7 +1488,7 @@ class LevelUp(commands.Cog):
                 await ctx.send("Your image has been set!")
             else:
                 if "background" in users[str(user.id)]:
-                    del users[str(user.id)]["background"]
+                    users[str(user.id)]["background"] = None
                     await ctx.send("Your background has been removed!")
                 else:
                     await ctx.send(f"Nothing to delete, for help with this command, type `{ctx.prefix}help setmybg`")
