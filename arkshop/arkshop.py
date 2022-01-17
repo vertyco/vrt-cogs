@@ -1187,7 +1187,8 @@ class ArkShop(commands.Cog):
                 return await ctx.send(embed=embed)
         # category info setup
         shop_categories = []
-        for category in categories:
+        sorted_shops = sorted(categories, key=lambda x: x.lower())
+        for category in sorted_shops:
             num_items = len(categories[category].keys())
             shop_categories.append((category, num_items))
         # sort that bitch
@@ -1248,7 +1249,8 @@ class ArkShop(commands.Cog):
             return await message.edit(embed=embed)
         # item info setup
         items = []
-        for item in category:
+        sorted_items = sorted(category, key=lambda x: x.lower())
+        for item in sorted_items:
             num_options = len(category[item]["options"].keys())
             if num_options == 0:
                 price = category[item]["price"]

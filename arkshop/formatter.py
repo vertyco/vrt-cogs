@@ -50,9 +50,11 @@ async def shop_stats(logs: dict):
 
 async def dlist(shops: dict):
     embeds = []
-    for category in shops:
+    sorted_shops = sorted(shops, key=lambda x: x.lower())
+    for category in sorted_shops:
+        sorted_items = sorted(shops[category], key=lambda x: x.lower())
         category_items = ""
-        for item in shops[category]:
+        for item in sorted_items:
             if shops[category][item]["options"] == {}:
                 price = shops[category][item]["price"]
                 category_items += f"🔸 {item}: `{price}`\n"
@@ -71,11 +73,13 @@ async def dlist(shops: dict):
     return embeds
 
 
-async def rlist(shops):
+async def rlist(shops: dict):
     embeds = []
-    for category in shops:
+    sorted_shops = sorted(shops, key=lambda x: x.lower())
+    for category in sorted_shops:
+        sorted_items = sorted(shops[category], key=lambda x: x.lower())
         category_items = ""
-        for item in shops[category]:
+        for item in sorted_items:
             if "options" in shops[category][item]:
                 if shops[category][item]["options"] == {}:
                     price = shops[category][item]["price"]
