@@ -85,7 +85,7 @@ class Generator:
         level = f"Level: {level}"
         exp = f"Exp: {get_str(user_xp)}/{get_str(next_xp)}"
         messages = f"Messages: {messages}"
-        voice = f"Voice Minutes: {voice}"
+        voice = f"Voice Time: {voice}"
         name = f"{user_name}"
         if prestige:
             name += f" - Prestige {prestige}"
