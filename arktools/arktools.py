@@ -216,7 +216,7 @@ class ArkTools(commands.Cog):
             if ctx:
                 await ctx.send(
                     f"Client ID and Secret aren't authorized yet!\n"
-                    f"**Bot owner** needs to run `{ctx.prefix}apiset auth <clustername> <servername>`"
+                    f"**Admin** needs to run `{ctx.prefix}apiset auth <clustername> <servername>`"
                 )
             return None, None
         elif xbl_client == "Service Unavailable":
@@ -3163,6 +3163,9 @@ class ArkTools(commands.Cog):
             return
         # Check if any servers have been initialized
         if not self.servers:
+            return
+        # Check if channel id matches any of the active channels
+        if message.channel.id not in self.channels:
             return
         # Reformat messages if containing mentions
         if message.mentions:
