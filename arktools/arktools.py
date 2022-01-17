@@ -3555,7 +3555,7 @@ class ArkTools(commands.Cog):
             '<RichColor Color="0,1,0,1">',  # Green
             '<RichColor Color="1,0.65,0,1">',  # Orange
             '<RichColor Color="0,0,0,1">',  # Black
-            '<RichColor Color "1,1,0,1">',  # Yellow
+            '<RichColor Color="1,1,0,1">',  # Yellow
             '<RichColor Color="1,0,1,1">',  # Fuchsia
             '<RichColor Color="0.5,0,0.5,1">',  # Purple
             '<RichColor Color="0,0.5,0.5,1">'  # Blue
