@@ -1311,6 +1311,7 @@ class LevelUp(commands.Cog):
         """
         now = datetime.datetime.now()
         user_id = str(user.id)
+        star_giver = str(ctx.author.id)
         guild_id = str(ctx.guild.id)
         if ctx.author == user:
             return await ctx.send("**You can't give stars to yourself!**")
@@ -1318,15 +1319,15 @@ class LevelUp(commands.Cog):
             return await ctx.send("**You can't give stars to a bot!**")
         if guild_id not in self.stars:
             self.stars[guild_id] = {}
-        if user_id not in self.stars[guild_id]:
-            self.stars[guild_id][user_id] = now
+        if star_giver not in self.stars[guild_id]:
+            self.stars[guild_id][star_giver] = now
         else:
             cooldown = self.settings[guild_id]["starcooldown"]
-            lastused = self.stars[guild_id][user_id]
+            lastused = self.stars[guild_id][star_giver]
             td = now - lastused
             td = td.total_seconds()
             if td > cooldown:
-                self.stars[guild_id][user_id] = now
+                self.stars[guild_id][star_giver] = now
             else:
                 time_left = cooldown - td
                 tstring = time_formatter(time_left)
