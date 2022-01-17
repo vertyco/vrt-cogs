@@ -172,12 +172,16 @@ class ArkTools(commands.Cog):
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
             if "validation error" in str(e):
+                log.warning(f"Validation Error while parsing tokens: {e}")
                 return "validation error", None, None
         try:
             await auth_mgr.refresh_tokens()
         except Exception as e:
-            if "Service Unavailable" in str(e):
+            if "Service Unavailable" in str(e) and "expected dict not NoneType" not in str(e):
+                log.warning(f"Microsoft API Unavailable: {e}")
                 return "unavailable", None, None
+            elif "expected dict not NoneType" in str(e):
+                return "no token", None, None
         xbl_client = XboxLiveClient(auth_mgr)
         try:
             xsts_token = auth_mgr.xsts_token.authorization_header_value
@@ -211,8 +215,8 @@ class ArkTools(commands.Cog):
         if xbl_client == "validation error":
             if ctx:
                 await ctx.send(
-                    f"Client ID and Secret either aren't authorized yet or need to be re-authorized!\n"
-                    f"Bot owner needs to run `{ctx.prefix}apiset authorize`"
+                    f"Client ID and Secret aren't authorized yet!\n"
+                    f"**Bot owner** needs to run `{ctx.prefix}apiset auth <clustername> <servername>`"
                 )
             return None, None
         elif xbl_client == "Service Unavailable":
@@ -224,11 +228,15 @@ class ArkTools(commands.Cog):
                     "Try re-authorizing your host gamertags"
                 )
             return None, None
+        elif xbl_client == "no token":
+            if ctx:
+                await ctx.send(f"No token set for {sname} {cname}!")
         else:
             if not guild:
                 guild = ctx.guild
-            async with self.config.guild(guild).clusters() as clusters:
-                clusters[cname]["servers"][sname]["tokens"] = refreshed_tokens
+            if refreshed_tokens:  # Make sure refresh tokens arent null
+                async with self.config.guild(guild).clusters() as clusters:
+                    clusters[cname]["servers"][sname]["tokens"] = refreshed_tokens
         return xbl_client, xsts_token
 
     # If a server goes offline it will be added to the queue and task loops will wait before trying to call it again
@@ -450,7 +458,8 @@ class ArkTools(commands.Cog):
             for sname, server in cluster["servers"].items():
                 if "tokens" in server:
                     tokens = server["tokens"]
-                    return tokens, cname, sname
+                    if server["tokens"]:  # Make sure token dict isnt null
+                        return tokens, cname, sname
 
     # Parse in-game commands as efficiently as possible
     # only command that can have multiple words as an arg is "rename"
@@ -725,8 +734,9 @@ class ArkTools(commands.Cog):
         for cluster in clusters.values():
             for server in cluster["servers"].values():
                 if "tokens" in server:
-                    xsapi_available = True
-                    break
+                    if server["tokens"]:  # Make sure token dict isnt null
+                        xsapi_available = True
+                        break
 
         if xsapi_available:
             embed = discord.Embed(
@@ -2079,6 +2089,9 @@ class ArkTools(commands.Cog):
                                 if gt.lower() != gamertag.lower():
                                     async with self.config.guild(ctx.guild).clusters() as clusters:
                                         clusters[cname]["servers"][sname]["gamertag"] = gt
+                            else:
+                                description += f"**{sname.capitalize()}**\n" \
+                                               f"`Unable to authorize`\n\n"
                 embed = discord.Embed(
                     description=description
                 )
