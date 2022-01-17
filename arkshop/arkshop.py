@@ -545,22 +545,30 @@ class ArkShop(commands.Cog):
         path = await self.config.main_path()
         packs = os.listdir(path)
         if not packname:
-            packlist = "NAME - SIZE IN BYTES\n"
+            packlist = ""
             for pack in packs:
                 fullpath = os.path.join(path, pack)
                 size = os.path.getsize(fullpath)
                 packlist += f"{pack} - {size}\n"
-            for p in pagify(packlist):
-                await ctx.send(box(p, lang="python"))
+            if packlist:
+                packlist = f"NAME - SIZE IN BYTES\n{packlist}"
+                for p in pagify(packlist):
+                    embed = discord.Embed(
+                        title="NAME - SIZE IN BYTES",
+                        description=box(p, lang="python")
+                    )
+                    await ctx.send(embed=embed)
         else:
+            packlist = ""
             for pack in packs:
                 if pack.lower() == packname.lower():
                     fullpath = os.path.join(path, packname)
                     size = os.path.getsize(fullpath)
-                    await ctx.send(f"**{pack}:** `{size}` Bytes")
-                    break
+                    packlist += f"**{pack}:** `{size}` Bytes"
+            if packlist:
+                await ctx.send(f"NAME - SIZE IN BYTES\n{packlist}")
             else:
-                await ctx.send("Pack not found")
+                await ctx.send("No packs found!")
 
     @_file.command(name="rename")
     async def rename_pack(self, ctx, current_name, new_name):

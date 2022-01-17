@@ -1,6 +1,6 @@
 import math
 import random
-
+from redbot.core.utils.chat_formatting import pagify
 import discord
 
 TIPS = [
@@ -65,11 +65,19 @@ async def dlist(shops: dict):
                     option = k
                     category_items += f"• {option}: {price}\n"
                 category_items += "```"
-        embed = discord.Embed(
-            title=f"🔰 {category}",
-            description=f"{category_items}"
-        )
-        embeds.append(embed)
+        if len(category_items) <= 4096:
+            embed = discord.Embed(
+                title=f"🔰 {category}",
+                description=f"{category_items}"
+            )
+            embeds.append(embed)
+        else:
+            for p in pagify(category_items):
+                embed = discord.Embed(
+                    title=f"🔰 {category}",
+                    description=f"{p}"
+                )
+                embeds.append(embed)
     return embeds
 
 
@@ -91,9 +99,17 @@ async def rlist(shops: dict):
                         option = k
                         category_items += f"• {option}: {price}\n"
                     category_items += "```"
-        embed = discord.Embed(
-            title=f"🔰 {category}",
-            description=f"{category_items}"
-        )
-        embeds.append(embed)
+        if len(category_items) <= 4096:
+            embed = discord.Embed(
+                title=f"🔰 {category}",
+                description=f"{category_items}"
+            )
+            embeds.append(embed)
+        else:
+            for p in pagify(category_items):
+                embed = discord.Embed(
+                    title=f"🔰 {category}",
+                    description=f"{p}"
+                )
+                embeds.append(embed)
     return embeds

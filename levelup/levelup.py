@@ -938,7 +938,7 @@ class LevelUp(commands.Cog):
         """Voice settings"""
         pass
 
-    @voice_group.command(name="voicexp")
+    @voice_group.command(name="xp")
     async def set_voice_xp(self, ctx: commands.Context, voice_xp: int):
         """
         Set voice XP gain
