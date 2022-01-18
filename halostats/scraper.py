@@ -1,5 +1,5 @@
 import logging
-import os
+
 import discord
 from redbot.core.utils.chat_formatting import box
 from selenium import webdriver
@@ -44,7 +44,6 @@ def get_profile_data(gamertag: str) -> list:
         alt = str(img.get_attribute("alt"))
         if gamertag.lower() in alt.lower():
             pfp = str(img.get_attribute("src"))
-            print(pfp)
             break
 
     # GET STATS FOR EACH GAME MODE
