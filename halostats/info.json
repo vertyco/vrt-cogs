@@ -4,7 +4,7 @@
   ],
   "description": "View your Halo Infinite stats",
   "disabled": false,
-  "end_user_data_statement": "This cog stores Discord ID's and Gamertags",
+  "end_user_data_statement": "This cog stores Discord ID's and Gamertags and uses Selenium to web-scrape the halotracker.com site for Halo Infinite stats",
   "hidden": false,
   "install_msg": "Thank you for installing HaloStats! type `[p]help HaloStats` to see all commands.",
   "min_bot_version": "3.4.0",
