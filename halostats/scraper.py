@@ -1,5 +1,5 @@
 import logging
-
+import os
 import discord
 from redbot.core.utils.chat_formatting import box
 from selenium import webdriver
@@ -18,11 +18,13 @@ MODES = ["Overall", "Ranked Arena", "Tactical Slayer", "Team Slayer", "Quick Pla
 
 
 def get_profile_data(gamertag: str) -> list:
-    print(gamertag)
     embeds = []
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=chrome_options
+    )
     driver.get("https://halotracker.com")
     search = WebDriverWait(driver, 10).until(
         EC.visibility_of_element_located(
@@ -56,6 +58,7 @@ def get_profile_data(gamertag: str) -> list:
             )
         except Exception as e:
             log.warning(f"Scraper failed to change modes for {gamertag}. Error: {e}")
+            driver.quit()
             return embeds
         driver.execute_script("arguments[0].click();", mode)
         # GET MAIN STATS
@@ -100,6 +103,7 @@ def get_profile_data(gamertag: str) -> list:
             embed.add_field(name="Headshot Accuracy", value=box(headshot_accuracy, lang='python'), inline=False)
         embed.set_footer(text=f"Pages {page_num + 1}/{len(MODES)}")
         embeds.append(embed)
+    driver.quit()
     return embeds
 
 

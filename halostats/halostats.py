@@ -58,7 +58,7 @@ class HaloStats(commands.Cog):
             if user_id in users:
                 gamertag = users[user_id]
             else:
-                return await ctx.send(f"Please include a Gamertag or type `{ctx.prefix} setmygt`")
+                return await ctx.send(f"Please include a Gamertag or type `{ctx.prefix}setmygt`")
         async with ctx.typing():
             pages = await self.run_scraper(gamertag)
         if pages:
