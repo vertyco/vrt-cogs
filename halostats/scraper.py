@@ -1,15 +1,16 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.options import Options
-from tabulate import tabulate
+import logging
+
 import discord
 from redbot.core.utils.chat_formatting import box
-import logging
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from tabulate import tabulate
+from webdriver_manager.chrome import ChromeDriverManager
 
 log = logging.getLogger("red.vrt.halostats.scraper")
 
@@ -117,4 +118,3 @@ def tabulate_stats(stats: list) -> str:
     table = list(zip(left, right))
     tabulated = tabulate(table, tablefmt="presto")
     return box(tabulated, lang='python')
-

@@ -1,7 +1,9 @@
-from redbot.core import commands, Config
 import logging
-from .scraper import get_profile_data
+
+from redbot.core import commands, Config
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+
+from .scraper import get_profile_data
 
 log = logging.getLogger("red.vrt.halostats")
 
