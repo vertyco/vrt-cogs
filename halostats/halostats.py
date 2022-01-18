@@ -1,11 +1,14 @@
 import logging
 
+import discord
 from redbot.core import commands, Config
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
 from .scraper import get_profile_data
 
 log = logging.getLogger("red.vrt.halostats")
+
+LOADING = "https://i.imgur.com/Ar7duFt.gif"
 
 
 class HaloStats(commands.Cog):
@@ -60,8 +63,15 @@ class HaloStats(commands.Cog):
             else:
                 return await ctx.send(f"Please include a Gamertag or type `{ctx.prefix}setmygt`")
         async with ctx.typing():
+            embed = discord.Embed(
+                description="Gathering Data..."
+            )
+            embed.set_thumbnail(url=LOADING)
+            msg = await ctx.send(embed=embed)
             pages = await self.run_scraper(gamertag)
-        if pages:
-            await menu(ctx, pages, DEFAULT_CONTROLS)
-        else:
-            await ctx.send(f"Couldnt find stats for {gamertag}")
+            await msg.delete()
+            if pages:
+                await menu(ctx, pages, DEFAULT_CONTROLS)
+            else:
+                await ctx.send(f"Couldnt find stats for {gamertag}")
+
