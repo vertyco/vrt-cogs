@@ -69,9 +69,8 @@ class HaloStats(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             pages = await self.run_scraper(gamertag)
-            await msg.delete()
             if pages:
-                await menu(ctx, pages, DEFAULT_CONTROLS)
+                await menu(ctx, pages, DEFAULT_CONTROLS, msg)
             else:
                 await ctx.send(f"Couldnt find stats for {gamertag}")
 
