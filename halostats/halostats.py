@@ -52,7 +52,8 @@ class HaloStats(commands.Cog):
                 users[user_id] = gamertag
                 await ctx.send("Your Gamertag has been overwritten!")
 
-    @commands.command(name="halostats")
+    @commands.command(name="halostats", aliases=["hstats", "hstat"])
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def view_halo_stats(self, ctx, *, gamertag: str = None):
         """View yours or another person's Halo stats"""
         user_id = str(ctx.author.id)
