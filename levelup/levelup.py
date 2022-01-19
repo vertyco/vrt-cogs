@@ -56,7 +56,8 @@ class LevelUp(commands.Cog):
                f"Contributors: aikaterna#1393"
         return info
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         default_guild = {
