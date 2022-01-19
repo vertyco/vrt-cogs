@@ -38,7 +38,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.8"
+    __version__ = "1.4.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1621,7 +1621,7 @@ class ArkShop(commands.Cog):
                         f"**Price:** {price} {currency_name}\n"
                         f"**XUID:** {xuid}"
         )
-        if perms:
+        if perms and logchannel:
             await logchannel.send(embed=embed)
         async with self.config.guild(ctx.guild).logs() as logs:
             member = str(ctx.author.id)
