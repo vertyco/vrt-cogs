@@ -716,6 +716,10 @@ async def get_graph(settings: dict, hours: int):
     dates = times[:-lim:-stagger]
     x = []
     y = counts[:-lim:-stagger]
+    y_unstaggered = counts[:-lim:-1]
+    print(y_unstaggered)
+    y_unstaggered.reverse()
+    maxplayers = max(y_unstaggered)
     for d in dates:
         d = datetime.datetime.fromisoformat(d)
         d = d.astimezone(tz)
@@ -773,7 +777,6 @@ async def get_graph(settings: dict, hours: int):
         plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
         plt.ylim([0, max(y) + 2])
         plt.xlabel(f"Time ({timezone})", fontsize=10)
-        maxplayers = max(y)
         plt.ylabel(f"Player Count (Max: {maxplayers})", fontsize=10)
         plt.title(title)
         plt.tight_layout()
