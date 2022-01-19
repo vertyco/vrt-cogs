@@ -20,7 +20,8 @@
     "matplotlib",
     "aiohttp",
     "pillow",
-    "validators"
+    "validators",
+    "tabulate"
   ],
   "short": "Leveling System",
   "tags": [
