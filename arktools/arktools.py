@@ -57,13 +57,24 @@ SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 REDIRECT_URI = "http://localhost/auth/callback"
 
+RICH_COLORS = [
+    '<RichColor Color="1,0,0,1">',  # Red
+    '<RichColor Color="0,1,0,1">',  # Green
+    '<RichColor Color="1,0.65,0,1">',  # Orange
+    '<RichColor Color="0,0,0,1">',  # Black
+    '<RichColor Color="1,1,0,1">',  # Yellow
+    '<RichColor Color="1,0,1,1">',  # Fuchsia
+    '<RichColor Color="0.5,0,0.5,1">',  # Purple
+    '<RichColor Color="0,0.5,0.5,1">'  # Blue
+]
+
 
 class ArkTools(commands.Cog):
     """
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.9.43"
+    __version__ = "2.9.44"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -172,8 +183,10 @@ class ArkTools(commands.Cog):
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
             if "validation error" in str(e):
-                log.warning(f"Validation Error while parsing tokens: {e}")
                 return "validation error", None, None
+            else:
+                log.warning(f"Error while parsing tokens: {e}")
+                return "parsing error", None, None
         try:
             await auth_mgr.refresh_tokens()
         except Exception as e:
@@ -231,6 +244,11 @@ class ArkTools(commands.Cog):
         elif xbl_client == "no token":
             if ctx:
                 await ctx.send(f"No token set for {sname} {cname}!")
+            return None, None
+        elif xbl_client == "parsing error":
+            if ctx:
+                await ctx.send(f"Parsing error occured for {sname} {cname}")
+            return None, None
         else:
             if not guild:
                 guild = ctx.guild
@@ -238,6 +256,33 @@ class ArkTools(commands.Cog):
                 async with self.config.guild(guild).clusters() as clusters:
                     clusters[cname]["servers"][sname]["tokens"] = refreshed_tokens
         return xbl_client, xsts_token
+
+    # Initialize a player to the config
+    async def init_player(self, guild: discord.guild, server_id: str, xuid: str, character_name: str):
+        async with self.config.guild(guild).players() as conf:
+            if xuid in conf:
+                conf[xuid]["ingame"][server_id] = {
+                    "implant": None,
+                    "name": character_name,
+                    "previous_names": [],
+                    "stats": {
+                        "pvpkills": 0,
+                        "pvpdeaths": 0,
+                        "pvedeaths": 0,
+                        "tamed": 0
+                    }
+                }
+
+    # Update an existing players in-game name
+    async def update_name(self, guild: discord.guild, server_id: str, xuid: str, character_name: str):
+        async with self.config.guild(guild).players() as conf:
+            saved_name = conf[xuid]["ingame"][server_id]["name"]
+            if not saved_name:
+                conf[xuid]["ingame"][server_id]["name"] = character_name
+            else:
+                if saved_name not in conf[xuid]["ingame"][server_id]["previous_names"]:
+                    conf[xuid]["ingame"][server_id]["previous_names"].append(saved_name)
+                conf[xuid]["ingame"][server_id]["name"] = character_name
 
     # If a server goes offline it will be added to the queue and task loops will wait before trying to call it again
     def in_queue(self, channel: str):
@@ -576,7 +621,6 @@ class ArkTools(commands.Cog):
             for server in serverlist:
                 for path in IMSTUCK_BLUEPRINTS:
                     stucktasks.append(self.executor(ctx.guild, server, f"GiveItemToPlayer {implant_id} {path}"))
-
             async with ctx.typing():
                 await asyncio.gather(*stucktasks)
             return
@@ -3091,19 +3135,11 @@ class ArkTools(commands.Cog):
         self.servercount = 0
         self.servers = []
         self.channels = []
-        config = await self.config.all_guilds()
-        for guild_id in config:
-            guild = self.bot.get_guild(int(guild_id))
-            if not guild:
-                continue
+        for guild in self.bot.guilds:
+            guild_id = str(guild.id)
             settings = await self.config.guild(guild).all()
-            log.info(f"Checking {guild} config")
-            newsettings, results = await cleanup_config(settings)
-            if results:
-                log.info(results)
-                await self.config.guild(guild).set(newsettings)
-            else:
-                log.info("Config health: Good")
+            if not settings:
+                continue
             clusters = settings["clusters"]
             if not clusters:
                 continue
@@ -3111,36 +3147,41 @@ class ArkTools(commands.Cog):
             for clusterdata in clusters.values():
                 if clusterdata["servers"]:
                     servers_present = True
+                    break
             if not servers_present:
                 continue
+            log.info(f"Checking {guild} config")
+            newsettings, results = await cleanup_config(settings)
+            if results:
+                log.info(results)
+                await self.config.guild(guild).set(newsettings)
+            else:
+                log.info("Config health: Good")
             if guild_id not in self.activeguilds:
                 self.activeguilds.append(guild_id)
-            for cluster in clusters:
-                if clusters[cluster] == {}:
-                    continue
-                globalchannel = clusters[cluster]["globalchatchannel"]
+            for cluster, data in clusters.items():
+                globalchannel = data["globalchatchannel"]
                 self.channels.append(globalchannel)
-                adminlog = clusters[cluster]["adminlogchannel"]
-                joinchannel = clusters[cluster]["joinchannel"]
-                leavechannel = clusters[cluster]["leavechannel"]
-                for server in clusters[cluster]["servers"]:
-                    name = server
-                    server = clusters[cluster]["servers"][server]
-                    server["globalchatchannel"] = globalchannel
-                    server["adminlogchannel"] = adminlog
-                    server["joinchannel"] = joinchannel
-                    server["leavechannel"] = leavechannel
-                    server["cluster"] = cluster
-                    server["name"] = name
-                    server["guild"] = guild
-                    server["eventlog"] = settings["eventlog"]
-                    if "extrcon" in clusters[cluster]:
-                        server["extrcon"] = clusters[cluster]["extrcon"]
-                    self.servers.append((guild.id, server))
+                adminlog = data["adminlogchannel"]
+                joinchannel = data["joinchannel"]
+                leavechannel = data["leavechannel"]
+                # Add more info to each server dict and send it to cache
+                for server, serverdata in data["servers"].items():
+                    serverdata["globalchatchannel"] = globalchannel
+                    serverdata["adminlogchannel"] = adminlog
+                    serverdata["joinchannel"] = joinchannel
+                    serverdata["leavechannel"] = leavechannel
+                    serverdata["cluster"] = cluster
+                    serverdata["name"] = server
+                    serverdata["guild"] = guild
+                    serverdata["eventlog"] = settings["eventlog"]
+                    if "extrcon" in data:
+                        serverdata["extrcon"] = data["extrcon"]
+                    self.servers.append((guild.id, serverdata))
                     self.servercount += 1
-                    self.channels.append(server["chatchannel"])
-                    if server["chatchannel"] not in self.playerlist:
-                        self.playerlist[server["chatchannel"]] = "offline"
+                    self.channels.append(serverdata["chatchannel"])
+                    if serverdata["chatchannel"] not in self.playerlist:
+                        self.playerlist[serverdata["chatchannel"]] = "offline"
         log.info("Config initialized.")
 
     # Sends ServerChat command to designated server if message is in the server chat channel
@@ -3250,6 +3291,7 @@ class ArkTools(commands.Cog):
             return
         if not guild:
             return
+        # These commands will try to run even if the server is in the waitlist queue
         priority_commands = ["listplayers", "banplayer", "unbanplayer", "doexit", "saveworld"]
         for cmd in priority_commands:
             if cmd in command:
@@ -3302,7 +3344,6 @@ class ArkTools(commands.Cog):
                 else:
                     log.warning(f"Executor Error: {e}")
                 return
-
         if skip:
             res = None
         else:
@@ -3478,29 +3519,12 @@ class ArkTools(commands.Cog):
             # In game player name sync
             if stats:
                 server_id = str(server["chatchannel"])
-                async with self.config.guild(guild).players() as playerconf:
-                    if server_id not in playerconf[xuid]["ingame"]:
-                        playerconf[xuid]["ingame"][server_id] = {
-                            "implant": None,
-                            "name": character_name,
-                            "previous_names": [],
-                            "stats": {
-                                "pvpkills": 0,
-                                "pvpdeaths": 0,
-                                "pvedeaths": 0,
-                                "tamed": 0
-                            }
-                        }
-                    else:
-                        saved_name = playerconf[xuid]["ingame"][server_id]["name"]
-                        if not saved_name:
-                            playerconf[xuid]["ingame"][server_id]["name"] = character_name
-                        else:
-                            if saved_name != character_name:
-                                if saved_name not in playerconf[xuid]["ingame"][server_id]["previous_names"]:
-                                    playerconf[xuid]["ingame"][server_id]["previous_names"].append(saved_name)
-                                playerconf[xuid]["ingame"][server_id]["name"] = character_name
-
+                if server_id not in settings["players"][xuid]["ingame"]:
+                    await self.init_player(guild, server_id, xuid, character_name)
+                else:
+                    user = settings["players"][xuid]
+                    if character_name != user["ingame"][server_id]["name"]:
+                        await self.update_name(guild, server_id, xuid, character_name)
             # Check or apply ranks
             if settings["autorename"]:
                 rank = None
@@ -3550,17 +3574,7 @@ class ArkTools(commands.Cog):
     async def ingame_cmd(self, guild: discord.guild, prefix: str, server: dict, gamertag: str, char_name: str,
                          cmd: str) -> str:
         settings = await self.config.guild(guild).all()
-        colors = [
-            '<RichColor Color="1,0,0,1">',  # Red
-            '<RichColor Color="0,1,0,1">',  # Green
-            '<RichColor Color="1,0.65,0,1">',  # Orange
-            '<RichColor Color="0,0,0,1">',  # Black
-            '<RichColor Color="1,1,0,1">',  # Yellow
-            '<RichColor Color="1,0,1,1">',  # Fuchsia
-            '<RichColor Color="0.5,0,0.5,1">',  # Purple
-            '<RichColor Color="0,0.5,0.5,1">'  # Blue
-        ]
-        color = random.choice(colors)
+        color = random.choice(RICH_COLORS)
         available_cmd = f"{color}IN GAME COMMANDS</>\n" \
                         f"{prefix}register <ID> - Register your implantID to use commands without it\n" \
                         f"{prefix}imstuck - Send yourself a care package if youre stuck\n" \
@@ -3995,7 +4009,8 @@ class ArkTools(commands.Cog):
                     if len(session["votes"]) < session["minvotes"]:
                         guild = session["server"]["guild"]
                         await self.executor(guild, session["server"], f"serverchat {votetype} session expired")
-                        expired.append(cid)
+                        if cid not in expired:
+                            expired.append(cid)
         for cid in expired:
             del self.votes[cid]
 
@@ -4008,7 +4023,7 @@ class ArkTools(commands.Cog):
     @tasks.loop(seconds=60)
     async def status_channel(self):
         for guild in self.activeguilds:
-            guild = self.bot.get_guild(guild)
+            guild = self.bot.get_guild(int(guild))
             if not guild:
                 continue
             settings = await self.config.guild(guild).all()
@@ -4115,55 +4130,60 @@ class ArkTools(commands.Cog):
             file = await get_graph(settings, int(hours))
             img = "attachment://plot.png"
             await self.status_cleaner(settings["status"], dest_channel)
-            if len(status) <= 4096:
-                embed = discord.Embed(
-                    description=status,
-                    color=discord.Color.random(),
-                    timestamp=now.astimezone(tz)
-                )
-                embed.set_author(name="Server Status", icon_url=guild.icon_url)
-                embed.add_field(name="Total Players", value=f"`{totalplayers}`")
-                embed.set_thumbnail(url=thumbnail)
-                embed.set_image(url=img)
-                if file:
-                    message = await dest_channel.send(embed=embed, file=file)
-                else:
-                    message = await dest_channel.send(embed=embed)
-                await self.config.guild(guild).status.multi.set([])
-                await self.config.guild(guild).status.message.set(message.id)
-
-            else:  # Person must have a fuck ton of servers for the bot to have use this ugh
-                # Embed is too dummy thicc and needs multiple embeds
-                pages = 0
-                for _ in pagify(status):
-                    pages += 1
-                new_message_list = []
-                count = 1
-                color = discord.Color.random()
-                for p in pagify(status):
-                    if count == pages:
-                        embed = discord.Embed(
-                            description=p,
-                            color=color,
-                            timestamp=now.astimezone(tz)
-                        )
-                    else:
-                        embed = discord.Embed(
-                            description=p,
-                            color=color
-                        )
-                    if count == 1:
-                        embed.set_author(name="Server Status", icon_url=guild.icon_url)
-                        embed.set_thumbnail(url=thumbnail)
-                    if count == pages:
-                        embed.set_image(url=img)
+            try:
+                if len(status) <= 4096:
+                    embed = discord.Embed(
+                        description=status,
+                        color=discord.Color.random(),
+                        timestamp=now.astimezone(tz)
+                    )
+                    embed.set_author(name="Server Status", icon_url=guild.icon_url)
+                    embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+                    embed.set_thumbnail(url=thumbnail)
+                    embed.set_image(url=img)
+                    if file:
                         message = await dest_channel.send(embed=embed, file=file)
                     else:
                         message = await dest_channel.send(embed=embed)
-                    count += 1
-                    new_message_list.append(message.id)
-                await self.config.guild(guild).status.message.set(None)
-                await self.config.guild(guild).status.multi.set(new_message_list)
+                    await self.config.guild(guild).status.multi.set([])
+                    await self.config.guild(guild).status.message.set(message.id)
+                else:  # Person must have a fuck ton of servers for the bot to have use this ugh
+                    # Embed is too dummy thicc and needs multiple embeds
+                    pages = 0
+                    for _ in pagify(status):
+                        pages += 1
+                    new_message_list = []
+                    count = 1
+                    color = discord.Color.random()
+                    for p in pagify(status):
+                        if count == pages:
+                            embed = discord.Embed(
+                                description=p,
+                                color=color,
+                                timestamp=now.astimezone(tz)
+                            )
+                        else:
+                            embed = discord.Embed(
+                                description=p,
+                                color=color
+                            )
+                        if count == 1:
+                            embed.set_author(name="Server Status", icon_url=guild.icon_url)
+                            embed.set_thumbnail(url=thumbnail)
+                        if count == pages:
+                            embed.set_image(url=img)
+                            message = await dest_channel.send(embed=embed, file=file)
+                        else:
+                            message = await dest_channel.send(embed=embed)
+                        count += 1
+                        new_message_list.append(message.id)
+                    await self.config.guild(guild).status.message.set(None)
+                    await self.config.guild(guild).status.multi.set(new_message_list)
+            except discord.errors.DiscordServerError:
+                continue
+            except Exception as e:
+                log.warning(f"Unknown error in status channel: {e}")
+                continue
 
     @status_channel.before_loop
     async def before_status_channel(self):
@@ -4180,10 +4200,9 @@ class ArkTools(commands.Cog):
         last = datetime.datetime.fromisoformat(str(self.time))
         timedifference = current_time - last
         timedifference = int(timedifference.total_seconds())
-        config = await self.config.all_guilds()
-        for guild_id in config:
-            guild = self.bot.get_guild(int(guild_id))
-            if not guild:
+        for guild in self.bot.guilds:
+            guild_id = str(guild.id)
+            if guild_id not in self.activeguilds:
                 continue
             settings = await self.config.guild(guild).all()
             autofriend = settings["autofriend"]
@@ -4222,10 +4241,12 @@ class ArkTools(commands.Cog):
                                 for p in prefixes:
                                     if str(p) != "":
                                         break
-                                cmd = f"broadcast A new player has been detected on the server!\n" \
+                                color1 = random.choice(RICH_COLORS)
+                                color2 = random.choice(RICH_COLORS)
+                                cmd = f"broadcast {color1}A new player has been detected on the server!</>\n" \
                                       f"Everyone say hi to {gamertag}!!!\n" \
-                                      f"Be sure to type {p}help in global chat to see a list of help commands " \
-                                      f"you can use\n" \
+                                      f"Be sure to type {color2}{p}help</> in global chat to see a list of help " \
+                                      f"commands you can use\n" \
                                       f"If the kit command is enabled, you can use it to get your starter pack\n" \
                                       f"Enjoy your stay on {guild.name}!"
                                 await self.executor(guild, server, cmd)
@@ -4483,7 +4504,7 @@ class ArkTools(commands.Cog):
         if not cid:
             return
         for guild in self.activeguilds:
-            guild = self.bot.get_guild(guild)
+            guild = self.bot.get_guild(int(guild))
             settings = await self.config.guild(guild).all()
             autofriend = settings["autofriend"]
             if not autofriend:
@@ -4559,7 +4580,7 @@ class ArkTools(commands.Cog):
         if not cid:
             return
         for guild in self.activeguilds:
-            guild = self.bot.get_guild(guild)
+            guild = self.bot.get_guild(int(guild))
             settings = await self.config.guild(guild).all()
             autofriend = settings["autofriend"]
             if not autofriend:
@@ -4676,7 +4697,7 @@ class ArkTools(commands.Cog):
     @tasks.loop(hours=5)
     async def graphdata_prune(self):
         for guild in self.activeguilds:
-            guild = self.bot.get_guild(guild)
+            guild = self.bot.get_guild(int(guild))
             if not guild:
                 continue
             stats = {}
