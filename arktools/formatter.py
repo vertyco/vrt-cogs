@@ -717,7 +717,6 @@ async def get_graph(settings: dict, hours: int):
     x = []
     y = counts[:-lim:-stagger]
     y_unstaggered = counts[:-lim:-1]
-    print(y_unstaggered)
     y_unstaggered.reverse()
     maxplayers = max(y_unstaggered)
     for d in dates:
