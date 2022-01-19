@@ -3197,11 +3197,8 @@ class ArkTools(commands.Cog):
         # If message has no content for some reason?
         if not message:
             return
-        # Can i send messages in that channel
-        if not message.channel.permissions_for(message.guild.me).send_messages:
-            return
         # Check if guild id is initialized
-        if message.channel.guild.id not in self.activeguilds:
+        if str(message.channel.guild.id) not in self.activeguilds:
             return
         # Check if any servers have been initialized
         if not self.servers:
