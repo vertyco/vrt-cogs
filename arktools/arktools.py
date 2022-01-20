@@ -2565,7 +2565,7 @@ class ArkTools(commands.Cog):
 
     # Arktools-Server subgroup
     @arktools_main.group(name="server")
-    @commands.guildowner()
+    @commands.admin()
     async def server_settings(self, ctx: commands.Context):
         """Server settings."""
         pass
