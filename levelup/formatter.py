@@ -84,7 +84,10 @@ async def get_user_position(conf: dict, user_id: str) -> dict:
     sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     for i in sorted_users:
         if i[0] == user_id:
-            percent = round((user_xp / total_xp) * 100, 2)
+            if total_xp:
+                percent = round((user_xp / total_xp) * 100, 2)
+            else:
+                percent = 100
             pos = sorted_users.index(i) + 1
             pos_data = {"p": pos, "pr": percent}
             return pos_data
