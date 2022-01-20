@@ -163,8 +163,6 @@ def overview_format(stats: dict, guild: discord.guild, timezone: str):
             tz = pytz.timezone(timezone)
             time = datetime.datetime.now(tz)
             last_seen = stats[xuid]['lastseen']["time"]
-            if stats[xuid]['lastseen']["map"] == "None":
-                print(username, "NO TIME")
             timestamp = datetime.datetime.fromisoformat(last_seen)
             timestamp = timestamp.astimezone(tz)
             timedifference = time - timestamp

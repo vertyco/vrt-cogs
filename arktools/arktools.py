@@ -8,6 +8,7 @@ import re
 import socket
 import sys
 import typing
+import tabulate
 
 import aiohttp
 import discord
@@ -74,7 +75,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.9.44"
+    __version__ = "2.9.45"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1356,7 +1357,6 @@ class ArkTools(commands.Cog):
     async def ark_leaderboard(self, ctx: commands.Context):
         """View the playtime leaderboard"""
         stats = await self.config.guild(ctx.guild).players()
-        tz = await self.config.guild(ctx.guild).timezone()
         pages = lb_format(stats, ctx.guild)
         if len(pages) == 0:
             return await ctx.send("There are no stats available yet!")
@@ -1401,7 +1401,7 @@ class ArkTools(commands.Cog):
                         gamertag = data["username"]
                         break
             else:
-                embed = discord.Embed(description=f"You havent registered yet!\n\n"
+                embed = discord.Embed(description=f"You haven't registered yet!\n"
                                                   f"Register with the `{ctx.prefix}register` command.")
                 embed.set_thumbnail(url=FAILED)
                 return await ctx.send(embed=embed)
@@ -1419,9 +1419,8 @@ class ArkTools(commands.Cog):
         stats = settings["players"]
         if not member:
             member = self.bot.get_user(member)
-
         if not member:
-            return await ctx.send(f"Couldnt find member.")
+            return await ctx.send(f"Couldn't find member.")
         for xuid, stat in stats.items():
             if "discord" in stat:
                 if stat["discord"] == member.id:
@@ -1433,8 +1432,9 @@ class ArkTools(commands.Cog):
     async def find_player_by_character(self, ctx: commands.Context, *, character_name: str):
         """Find any players associated with a specified character name"""
         players = await self.config.guild(ctx.guild).players()
-        matches = ""
         uids = []
+        headers = ["Gamertag", "PlayerID"]
+        table = []
         for uid, data in players.items():
             ig = data["ingame"]
             for channel, details in ig.items():
@@ -1443,13 +1443,11 @@ class ArkTools(commands.Cog):
                     if name.lower() == character_name.lower():
                         gt = data["username"]
                         if uid not in uids:
-                            matches += f"`{gt}: `{uid}\n"
                             uids.append(uid)
-        if matches:
-            embed = discord.Embed(
-                title="Found Matches",
-                description=f"`Gamertag: `Player ID\n{matches}"
-            )
+                            table.append([gt, uid])
+        if uids:
+            found = box(tabulate.tabulate(table, headers, tablefmt="presto"), lang="python")
+            embed = discord.Embed(title="Found Matches", description=found)
             await ctx.send(embed=embed)
         else:
             await ctx.send("No matches found")
@@ -1990,7 +1988,7 @@ class ArkTools(commands.Cog):
                     members = ""
                     for member in tribes[tribe]["allowed"]:
                         members += f"{ctx.guild.get_member(member).mention}\n"
-                    if members == "":
+                    if not members:
                         members = "None Added"
                     embed.add_field(
                         name=f"Tribe Members",
