@@ -1072,7 +1072,7 @@ class ArkShop(commands.Cog):
             stop += 10
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
-    @commands.command(name="playershopstats")
+    @commands.command(name="playershopstats", aliases=["pshopstats"])
     async def player_shop_stats(self, ctx, *, member: discord.Member = None):
         """Get a member's shop stats, or yours"""
         logs = await self.config.guild(ctx.guild).logs()
@@ -1096,7 +1096,9 @@ class ArkShop(commands.Cog):
         for item in logs["users"][str(member.id)]:
             itemtype = logs["users"][str(member.id)][item]["type"]
             count = logs["users"][str(member.id)][item]["count"]
-            items += f"**{item}**\nType: `{itemtype}`\nPurchased: `{count}`\n\n"
+            items += f"**{item}**\n" \
+                     f"`ShopType:  `{itemtype}\n" \
+                     f"`Purchased: `{count}\n"
         for xuid, stats in playerstats.items():
             if "discord" in stats:
                 if str(member.id) == str(stats["discord"]):
@@ -1105,15 +1107,21 @@ class ArkShop(commands.Cog):
         else:
             gt = "Unknown"
             xuid = "Unknown"
-        embed = discord.Embed(
-            title=f"Shop stats for {member.name}",
-            description=f"**Registered Cluster:** `{users[str(member.id)].upper()}`\n"
-                        f"**Gamertag:** `{gt}`\n"
-                        f"**XUID:** `{xuid}`\n\n"
-                        f"{items}"
-        )
-        embed.set_footer(text=random.choice(TIPS))
-        return await ctx.send(embed=embed)
+        page = 0
+        for p in pagify(items):
+            if page == 0:
+                msg = f"**Registered Cluster:** `{users[str(member.id)].upper()}`\n" \
+                      f"**Gamertag:** `{gt}`\n" \
+                      f"**XUID:** `{xuid}`\n" \
+                      f"{p}"
+            else:
+                msg = p
+            embed = discord.Embed(
+                title=f"Shop stats for {member.name}",
+                description=msg
+            )
+            embed.set_footer(text=random.choice(TIPS))
+            await ctx.send(embed=embed)
 
     @commands.command(name="rshop")
     @commands.guild_only()
