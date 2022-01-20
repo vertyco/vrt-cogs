@@ -38,7 +38,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.9"
+    __version__ = "1.4.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1073,7 +1073,7 @@ class ArkShop(commands.Cog):
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command(name="playershopstats")
-    async def player_shop_stats(self, ctx, member: discord.Member = None):
+    async def player_shop_stats(self, ctx, *, member: discord.Member = None):
         """Get a member's shop stats, or yours"""
         logs = await self.config.guild(ctx.guild).logs()
         users = await self.config.guild(ctx.guild).users()
