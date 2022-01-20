@@ -1642,7 +1642,7 @@ class ArkShop(commands.Cog):
                 item_name = filename
             # shop logs
             if item_name not in logs["items"]:
-                logs["items"][item_name] = {"type": "data", "count": 1}
+                logs["items"][item_name] = {"type": shoptype, "count": 1}
             else:
                 logs["items"][item_name]["count"] += 1
 
@@ -1653,7 +1653,7 @@ class ArkShop(commands.Cog):
 
             item = logs["users"][member].get(item_name)
             if not item:
-                logs["users"][member][item_name] = {"type": "data", "count": 1}
+                logs["users"][member][item_name] = {"type": shoptype, "count": 1}
 
             else:
                 logs["users"][member][item_name]["count"] += 1
