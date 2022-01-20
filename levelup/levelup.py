@@ -1502,6 +1502,7 @@ class LevelUp(commands.Cog):
         conf = await self.config.guild(ctx.guild).all()
         usepics = conf["usepics"]
         users = conf["users"]
+        mention = conf["mention"]
         if not user:
             user = ctx.author
         if user.bot:
@@ -1544,7 +1545,7 @@ class LevelUp(commands.Cog):
                 stars
             )
             try:
-                await ctx.reply(embed=embed, mention_author=True)
+                await ctx.reply(embed=embed, mention_author=mention)
             except discord.HTTPException:
                 await ctx.send(embed=embed)
         else:
@@ -1575,7 +1576,7 @@ class LevelUp(commands.Cog):
                 }
                 file = await self.gen_profile_img(args)
                 try:
-                    await ctx.reply(file=file, mention_author=True)
+                    await ctx.reply(file=file, mention_author=mention)
                 except discord.HTTPException:
                     await ctx.send(file=file)
 
