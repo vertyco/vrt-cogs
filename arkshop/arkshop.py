@@ -1107,9 +1107,12 @@ class ArkShop(commands.Cog):
         else:
             gt = "Unknown"
             xuid = "Unknown"
-        page = 0
+        pages = 0
+        for _ in pagify(items):
+            pages += 1
+        count = 1
         for p in pagify(items):
-            if page == 0:
+            if count == 1:
                 msg = f"**Registered Cluster:** `{users[str(member.id)].upper()}`\n" \
                       f"**Gamertag:** `{gt}`\n" \
                       f"**XUID:** `{xuid}`\n" \
@@ -1120,8 +1123,10 @@ class ArkShop(commands.Cog):
                 title=f"Shop stats for {member.name}",
                 description=msg
             )
-            embed.set_footer(text=random.choice(TIPS))
+            if count == pages:
+                embed.set_footer(text=random.choice(TIPS))
             await ctx.send(embed=embed)
+            count += 1
 
     @commands.command(name="rshop")
     @commands.guild_only()
