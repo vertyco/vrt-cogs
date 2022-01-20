@@ -1114,9 +1114,9 @@ class ArkShop(commands.Cog):
         for p in pagify(items):
             if count == 1:
                 msg = f"**Shop stats for {member.name}**\n" \
-                      f"`Cluster:     `{users[str(member.id)].upper()}`\n" \
-                      f"`PlayerName:  `{gt}`\n" \
-                      f"`PlayerID:    `{xuid}`\n" \
+                      f"`Cluster:     `{users[str(member.id)].upper()}\n" \
+                      f"`PlayerName:  `{gt}\n" \
+                      f"`PlayerID:    `{xuid}\n" \
                       f"{p}"
             else:
                 msg = p
