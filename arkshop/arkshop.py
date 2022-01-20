@@ -1113,14 +1113,14 @@ class ArkShop(commands.Cog):
         count = 1
         for p in pagify(items):
             if count == 1:
-                msg = f"**Registered Cluster:** `{users[str(member.id)].upper()}`\n" \
-                      f"**Gamertag:** `{gt}`\n" \
-                      f"**XUID:** `{xuid}`\n" \
+                msg = f"**Shop stats for {member.name}**\n" \
+                      f"`Cluster:     `{users[str(member.id)].upper()}`\n" \
+                      f"`PlayerName:  `{gt}`\n" \
+                      f"`PlayerID:    `{xuid}`\n" \
                       f"{p}"
             else:
                 msg = p
             embed = discord.Embed(
-                title=f"Shop stats for {member.name}",
                 description=msg
             )
             if count == pages:
