@@ -32,9 +32,20 @@ class Inspire(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def _message_listener(self, message: discord.Message):
+        # check if message is from a guild
         if not message.guild:
             return
+        # check if author is a bot
         if message.author.bot:
+            return
+        # check whether the cog isn't disabled
+        if await self.bot.cog_disabled_in_guild(self, message.guild):
+            return
+        # check whether the channel isn't on the ignore list
+        if not await self.bot.ignored_channel_or_guild(message):
+            return
+        # check whether the message author isn't on allowlist/blocklist
+        if not await self.bot.allowed_by_whitelist_blacklist(message.author):
             return
 
         msg = message.content.lower().split()

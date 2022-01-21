@@ -50,6 +50,10 @@ from .formatter import (
 from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.arktools")
+logging.basicConfig(filename='logs.log',
+                    filemode='a',
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S')
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 LIVE = "https://i.imgur.com/LPzCcgU.gif"

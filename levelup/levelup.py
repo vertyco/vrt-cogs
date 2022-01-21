@@ -332,6 +332,18 @@ class LevelUp(commands.Cog):
         # If message has no content for some reason?
         if not message:
             return
+        # Check if guild is in the master ignore list
+        if str(message.guild.id) in self.ignored_guilds:
+            return
+        # Check whether the cog isn't disabled
+        if await self.bot.cog_disabled_in_guild(self, message.guild):
+            return
+        # Check whether the channel isn't on the ignore list
+        if not await self.bot.ignored_channel_or_guild(message):
+            return
+        # Check whether the message author isn't on allowlist/blocklist
+        if not await self.bot.allowed_by_whitelist_blacklist(message.author):
+            return
         return await self.message_handler(message)
 
     async def message_handler(self, message: discord.Message):
