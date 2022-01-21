@@ -1316,6 +1316,7 @@ class ArkShop(commands.Cog):
             stop += 4
         await menu(ctx, embedlist, self.shop_controls, message)
 
+    # Either buy the item if it has no options, or compile the options and send back to menu
     async def buy_or_nah(self, ctx, message, name, shoptype):
         title, tip, categories = await self.get_types(ctx, shoptype)
         full_item = {}
@@ -1340,6 +1341,7 @@ class ArkShop(commands.Cog):
         else:
             await self.op_compiler(ctx, message, name, shoptype)
 
+    # Compile an items options and display in menu
     async def op_compiler(self, ctx, message, name, shoptype):
         title, tip, categories = await self.get_types(ctx, shoptype)
         full_item = {}
@@ -1398,6 +1400,7 @@ class ArkShop(commands.Cog):
             stop += 4
         await menu(ctx, embedlist, self.shop_controls, message)
 
+    # Locate paths of rcon or data shop items for purchase
     async def pathfinder(self, ctx, message, shoptype, name, itemname=None):
         title, tip, categories = await self.get_types(ctx, shoptype)
         if shoptype == "rcon":
@@ -1771,4 +1774,5 @@ class ArkShop(commands.Cog):
             else:
                 await self.item_compiler(ctx, msg, shoptype, None, item)
         else:
-            return  # idk somethings fucked up
+            log.warning("Menu handler borked")
+            return  # idk somethings fucked up, else case shouldnt happen

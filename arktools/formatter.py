@@ -509,7 +509,7 @@ async def detect_friends(friends: list, followers: list):
     return people_to_add
 
 
-# Detect if a user account is suspicious based on owner's settings
+# Detect if a user account is suspicious based on server owner's settings
 def detect_sus(alt: dict, profile: dict, friends: dict):
     reasons = ""
     sus = False
@@ -541,6 +541,7 @@ def detect_sus(alt: dict, profile: dict, friends: dict):
 
 
 # Takes config and removes funky stuff from it
+# Fixes various things like incomplete player data, old deleted maps, or anything that messed up from a bot crash
 async def cleanup_config(settings: dict):
     cleanup_status = ""
     # First off, fix any old cluster data for the server graph
@@ -550,7 +551,7 @@ async def cleanup_config(settings: dict):
         # Just add these to the newdata dict
         if cname == "dates" or cname == "counts" or cname == "expiration":
             newgraphdata[cname] = countlist
-        # Only adds the player count list to the newdata if the cluster exists in main settings still
+        # Only adds the player count list to the newdata if the cluster still exists in main settings
         else:
             if cname in settings["clusters"]:
                 newgraphdata[cname] = countlist
@@ -604,7 +605,7 @@ async def cleanup_config(settings: dict):
                 if playerdata["ingame"]:
                     old = True
                     for value in playerdata["ingame"].values():
-                        if isinstance(value, dict):  # Only newer config has dict in it, so config is not old
+                        if isinstance(value, dict):  # Only newer config has a dict in it, so config is not old
                             old = False
                             break
                     if old:
@@ -664,7 +665,7 @@ async def cleanup_config(settings: dict):
         cleanup_status += f"Fixed {count} Tribe configs with old data\n"
         count = 0
 
-    # Make sure players have a username for whatever reason they wouldnt maybe bot crash while registering idk
+    # Make sure players have a username for whatever reason they wouldn't, maybe bot crash while registering idk
     no_username = []
     for xuid, data in settings["players"].items():
         if "username" not in data:
@@ -693,7 +694,7 @@ async def get_graph(settings: dict, hours: int):
     title = f"Player Count Over the Past {int(hours)} Hours"
     if days > 5:
         title = f"Player Count Over the Past {days} Days"
-    if len(times) < lim:  # Time input is greater of equal to available time recorded
+    if len(times) < lim:  # Time input is greater or equal to available time recorded
         hours = int(len(times) / 60)
         days = int(hours / 24)
         if days > 5:
@@ -714,6 +715,7 @@ async def get_graph(settings: dict, hours: int):
     dates = times[:-lim:-stagger]
     x = []
     y = counts[:-lim:-stagger]
+    # Unstaggered list is for the max player count for the given time
     y_unstaggered = counts[:-lim:-1]
     y_unstaggered.reverse()
     maxplayers = max(y_unstaggered)
@@ -730,7 +732,7 @@ async def get_graph(settings: dict, hours: int):
         locator = 20
     else:
         locator = "auto"
-
+    # Reverse the new lists so they're in the correct order
     x.reverse()
     y.reverse()
     if len(y) < 3:
@@ -755,6 +757,7 @@ async def get_graph(settings: dict, hours: int):
             usecolors = True
         else:
             usecolors = False
+        # Plot each cluster in addition to the total graph line
         for cname, countlist in c.items():
             if len(countlist) < len(y):
                 countlist.reverse()
