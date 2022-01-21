@@ -38,7 +38,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.11"
+    __version__ = "1.4.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1763,7 +1763,7 @@ class ArkShop(commands.Cog):
             if name:
                 await self.buy_or_nah(ctx, msg, name, shoptype)
             else:
-                await self.cat_compiler(ctx, shoptype)
+                await self.cat_compiler(ctx, shoptype, msg)
         elif level.endswith("options"):
             item = level.replace(" options", "")
             if name:
