@@ -1114,7 +1114,7 @@ class LevelUp(commands.Cog):
     async def level_roles(self, ctx: commands.Context):
         """Level role assignment"""
 
-    @level_roles.command(name="Initialize")
+    @level_roles.command(name="initialize")
     async def init_roles(self, ctx: commands.Context):
         """
         Initialize level roles
