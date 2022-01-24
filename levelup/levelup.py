@@ -125,6 +125,7 @@ class LevelUp(commands.Cog):
         file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
+    # Function to test a given URL and see if it's valid
     async def valid_url(self, ctx: commands.Context, image_url: str):
         valid = validators.url(image_url)
         if not valid:
@@ -1382,7 +1383,7 @@ class LevelUp(commands.Cog):
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)
     async def get_lvl_test(self, ctx, *, user: discord.Member = None):
-        """Get lvl"""
+        """Test levelup image gen"""
         if not user:
             user = ctx.author
         banner = await self.get_banner(user)
@@ -1400,6 +1401,7 @@ class LevelUp(commands.Cog):
     # For testing purposes
     @commands.command(name="mocklvlup", hidden=True)
     @commands.is_owner()
+    @commands.guild_only()
     async def mock_lvl_up(self, ctx, *, person: discord.Member = None):
         """Force level a user or yourself"""
         if not person:
@@ -1430,6 +1432,7 @@ class LevelUp(commands.Cog):
     # For testing purposes
     @commands.command(name="mocklvldown", hidden=True)
     @commands.is_owner()
+    @commands.guild_only()
     async def mock_lvl_down(self, ctx, *, person: discord.Member = None):
         """Force de-level a user or yourself"""
         if not person:
@@ -1461,7 +1464,7 @@ class LevelUp(commands.Cog):
     @commands.command(name="forceinit", hidden=True)
     @commands.is_owner()
     async def force_init(self, ctx):
-        """Force level a user or yourself"""
+        """Force Initialization"""
         await self.init_settings()
         await ctx.tick()
 
