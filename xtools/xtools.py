@@ -1,6 +1,6 @@
 import asyncio
 import json
-
+from typing import List
 import aiohttp
 import discord
 import xmltojson
@@ -779,4 +779,5 @@ class XTools(commands.Cog):
                 await msg.edit(embed=embed)
             else:
                 await msg.delete()
+
             return await menu(ctx, pages, DEFAULT_CONTROLS)
