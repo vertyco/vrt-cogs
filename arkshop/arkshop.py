@@ -38,7 +38,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.12"
+    __version__ = "1.4.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -50,7 +50,6 @@ class ArkShop(commands.Cog):
         default_global = {
             "main_server": None,
             "main_path": None,
-            "viewchannel": None,
             "clusters": {},
             "datashops": {},
 
@@ -58,7 +57,6 @@ class ArkShop(commands.Cog):
         default_guild = {
             "shops": {},
             "logchannel": None,
-            "viewchannel": None,
             "users": {},
             "logs": {"items": {}, "users": {}}
         }
@@ -207,6 +205,52 @@ class ArkShop(commands.Cog):
         """Base Ark Shop Setup Command"""
         await self.arktools(ctx)
         pass
+
+    @_shopset.command(name="view")
+    @commands.admin()
+    @commands.guild_only()
+    async def view_settings(self, ctx: commands.Context):
+        """View ArkShop settings"""
+        guild = ctx.guild
+        conf = await self.config.guild(guild).all()
+        log_channel = conf["logchannel"]
+        if log_channel:
+            log_channel = guild.get_channel(log_channel)
+            if log_channel:
+                log_channel = log_channel.mention
+            else:
+                log_channel = "#deleted-channel"
+
+        main_server = await self.config.main_server()
+        main_guild = self.bot.get_guild(int(main_server))
+        if main_guild:
+            main = main_guild.name
+        else:
+            main = main_server
+        embed = discord.Embed(
+            title="ArkShop Settings",
+            description=f"`Log Channel:      `{log_channel}\n"
+                        f"`Users Registered: `{len(conf['users'].keys())}\n"
+                        f"`Main Server:   `{main}",
+            color=discord.Color.random()
+        )
+        if guild.id == main_server:
+            main_path = await self.config.main_path()
+            clusters = await self.config.clusters()
+            clist = ""
+            for c, p in clusters.items():
+                clist += f"{c}: {p}\n"
+            embed.add_field(
+                name="Main Path",
+                value=box(main_path, lang='python'),
+                inline=False
+            )
+            embed.add_field(
+                name="Cluster Paths",
+                value=box(clist, lang='python'),
+                inline=False
+            )
+        await ctx.send(embed=embed)
 
     @_shopset.command(name="fullbackup")
     @commands.is_owner()
