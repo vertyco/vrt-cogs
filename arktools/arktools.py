@@ -4151,7 +4151,7 @@ class ArkTools(commands.Cog):
             send_perms = dest_channel.permissions_for(guild.me).send_messages
             if not send_perms:
                 continue
-
+            cluster_counts = {}
             for cluster in settings["clusters"]:
                 cname = cluster
                 clustertotal = 0
@@ -4219,18 +4219,17 @@ class ArkTools(commands.Cog):
                     status += f"`{clustertotal}` player cluster wide\n\n"
                 else:
                     status += f"`{clustertotal}` players cluster wide\n\n"
+                cluster_counts[cname] = int(clustertotal)
 
-                # Log player counts per cluster
-                async with self.config.guild(guild).serverstats() as serverstats:
-                    if cname not in serverstats:
-                        serverstats[cname] = []
-                    serverstats[cname].append(int(clustertotal))
-
-            # Log total player counts
+            # Log player counts
             now = datetime.datetime.now(pytz.timezone("UTC"))
             async with self.config.guild(guild).serverstats() as serverstats:
                 serverstats["dates"].append(now.isoformat())
                 serverstats["counts"].append(int(totalplayers))
+                for cname, count in cluster_counts.items():
+                    if cname not in serverstats:
+                        serverstats[cname] = []
+                    serverstats[cname].append(count)
 
             # Embed setup
             tz = settings["timezone"]
