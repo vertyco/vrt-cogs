@@ -79,7 +79,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.9.45"
+    __version__ = "2.10.45"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -110,6 +110,7 @@ class ArkTools(commands.Cog):
             "autofriend": False,  # Toggle for whether to auto add new players as a friend by the host gamertags
             "unfriendafter": 30,  # Unfriend players after X days of inactivity
             "clusters": {},  # All server data gets stored here
+            "crosschat": True,  # Global toggle for Discord to server crosschat
             "clustertypes": "both",  # If cluster types available are either Xbox, Steam, or both
             "modroles": [],  # All mod role ID's get stored here
             "modcommands": [],  # All commands that the mods are allowed to use go here
@@ -638,7 +639,11 @@ class ArkTools(commands.Cog):
     @commands.guildowner()
     @commands.guild_only()
     async def wipe_all_stats(self, ctx: commands.Context):
-        """Wipe all player stats including last seen data and registration."""
+        """
+        Wipe all player stats
+
+        Includes last seen data and registration.
+        """
         async with self.config.guild(ctx.guild).all() as data:
             data["players"].clear()
             await ctx.send(embed=discord.Embed(description="All player data has been wiped."))
@@ -670,7 +675,7 @@ class ArkTools(commands.Cog):
     @commands.admin()
     @commands.guild_only()
     async def unregister_user(self, ctx: commands.Context, member: discord.Member):
-        """Unregister a discord user from any gamertags theyre associated with"""
+        """Force unregister a discord user"""
         async with self.config.guild(ctx.guild).players() as players:
             unreg = []
             for xuid, data in players.items():
@@ -687,7 +692,11 @@ class ArkTools(commands.Cog):
     @commands.command(name="unregisterme")
     @commands.guild_only()
     async def unregister_user_self(self, ctx: commands.Context):
-        """Unregister a yourself from any gamertags you have registered to"""
+        """
+        Unregister yourself
+
+        Removes you from any Gamertags you have registered to
+        """
         myself = ctx.author.id
         async with self.config.guild(ctx.guild).players() as players:
             unreg = []
@@ -705,7 +714,7 @@ class ArkTools(commands.Cog):
     @commands.admin()
     @commands.guild_only()
     async def unregister_gamertag(self, ctx: commands.Context, gamertag: str):
-        """Unregister any discord account associated with a specific gamertag"""
+        """Force unregister a Gamertag"""
         async with self.config.guild(ctx.guild).players() as players:
             unreg = []
             for xuid, data in players.items():
@@ -825,11 +834,15 @@ class ArkTools(commands.Cog):
                         if "discord" in players[xuid]:
                             if players[xuid]["discord"] != ctx.author.id:
                                 claimed = ctx.guild.get_member(players[xuid]["discord"])
-                                embed = discord.Embed(
-                                    description=f"{claimed.mention} has already claimed this Gamertag",
-                                    color=discord.Color.orange()
-                                )
-                                return await msg.edit(embed=embed)
+                                if claimed:  # If user is still in guild
+                                    embed = discord.Embed(
+                                        description=f"{claimed.mention} has already claimed this Gamertag",
+                                        color=discord.Color.orange()
+                                    )
+                                    return await msg.edit(embed=embed)
+                                else:
+                                    # Original claim user left guild so that gamertag is up for grabs
+                                    players[xuid]["discord"] = ctx.author.id
                             if players[xuid]["discord"] == ctx.author.id:
                                 embed = discord.Embed(
                                     description=f"You have already claimed this Gamertag",
@@ -963,7 +976,9 @@ class ArkTools(commands.Cog):
     @commands.guild_only()
     async def add_user(self, ctx: commands.Context):
         """
-        (Xbox/Win10 CROSSPLAY ONLY)Add yourself as a friend from the host gamertags
+        (Xbox/Win10 CROSSPLAY ONLY)Add yourself as a friend
+
+        Make the host Gamertags add you as a friend
 
         This command requires api keys to be set for the servers
         """
@@ -1434,7 +1449,7 @@ class ArkTools(commands.Cog):
     @commands.command(name="findcharname")
     @commands.guild_only()
     async def find_player_by_character(self, ctx: commands.Context, *, character_name: str):
-        """Find any players associated with a specified character name"""
+        """Find player by character name"""
         players = await self.config.guild(ctx.guild).players()
         uids = []
         headers = ["Gamertag", "PlayerID"]
@@ -1460,7 +1475,7 @@ class ArkTools(commands.Cog):
     @commands.command(name="findbyid")
     @commands.guild_only()
     async def find_player_from_by_id(self, ctx: commands.Context, uid: int):
-        """Find out if a player has registered by their discord ID
+        """Find a player by their discord ID
 
         This is a manual method for if the member has left the discord
         """
@@ -1559,7 +1574,11 @@ class ArkTools(commands.Cog):
 
     @ranks_main.command(name="autoremove")
     async def auto_remove(self, ctx: commands.Context):
-        """(TOGGLE)Auto remove old ranks from users when they reach the next rank"""
+        """
+        (TOGGLE)Auto remove old ranks
+
+        When user levels up their previous rank would be removed
+        """
         if await self.config.guild(ctx.guild).autoremove():
             await self.config.guild(ctx.guild).autoremove.set(False)
             await ctx.send("Auto rank removal Disabled")
@@ -1625,10 +1644,27 @@ class ArkTools(commands.Cog):
             for p in pagify(final):
                 await ctx.send(p)
 
+    @arktools_main.command(name="crosschat")
+    @commands.admin()
+    async def toggle_crosschat(self, ctx: commands.Context):
+        """(Toggle) Cross-chat"""
+        crosschat = await self.config.guild(ctx.guild).crosschat()
+        if crosschat:
+            await self.config.guild(ctx.guild).crosschat.set(False)
+            await ctx.send("Cross-Chat has been **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).crosschat.set(True)
+            await ctx.send("Cross-Chat has been **Enabled**")
+        await self.initialize()
+
     @arktools_main.command(name="fullbackup")
     @commands.is_owner()
     async def backup_all_settings(self, ctx: commands.Context):
-        """Sends a full backup of the config as a JSON file to Discord."""
+        """
+        Backup global cog data
+
+        Sends a full backup of the config as a JSON file to Discord.
+        """
         settings = await self.config.all_guilds()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
@@ -1639,7 +1675,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="backup")
     @commands.guildowner()
     async def backup_settings(self, ctx: commands.Context):
-        """Sends a backup of the config as a JSON file to Discord."""
+        """
+        Backup guild cog data
+
+        Sends a backup of the config as a JSON file to Discord.
+        """
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
@@ -1650,7 +1690,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="backupcluster")
     @commands.guildowner()
     async def backup_cluster(self, ctx: commands.Context, clustername: str):
-        """Sends a backup of a cluster config as a JSON file to Discord."""
+        """
+        Backup cluster data
+
+        Sends a backup of a cluster config as a JSON file to Discord.
+        """
         settings = await self.config.guild(ctx.guild).all()
         clusters = settings["clusters"]
         if clustername not in clusters:
@@ -1665,7 +1709,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="backupstats")
     @commands.guildowner()
     async def backup_stat_settings(self, ctx: commands.Context):
-        """Sends a backup of the player stats as a JSON file to Discord."""
+        """
+        Backup player stat data
+
+        Sends a backup of the player stats as a JSON file to Discord.
+        """
         settings = await self.config.guild(ctx.guild).players()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
@@ -1676,7 +1724,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="backupgraphdata")
     @commands.guildowner()
     async def backup_graph_data(self, ctx: commands.Context):
-        """Sends a backup of the graph data for graphing as a JSON file to Discord."""
+        """
+        Backup graph data
+
+        Sends a backup of the graph data for graphing as a JSON file to Discord.
+        """
         settings = await self.config.guild(ctx.guild).serverstats()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
@@ -1687,7 +1739,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="fullrestore")
     @commands.is_owner()
     async def restore_all_settings(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the full config."""
+        """
+        Restore a global backup
+
+        Upload a backup JSON file attached to this command to restore the full config.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -1707,7 +1763,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="restore")
     @commands.guildowner()
     async def restore_settings(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the config."""
+        """
+        Restore a guild backup
+
+        Upload a backup JSON file attached to this command to restore the config.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -1722,7 +1782,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="restorecluster")
     @commands.guildowner()
     async def restore_cluster(self, ctx: commands.Context, clustername: str):
-        """Upload a backup JSON file attached to this command to restore the config for a specific cluster."""
+        """
+        Restore a cluster from backup
+
+        Upload a backup JSON file attached to this command to restore the config for a specific cluster.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -1738,7 +1802,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="restorestats")
     @commands.guildowner()
     async def restore_stats(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the player stats."""
+        """
+        Restore player stats from backup
+
+        Upload a backup JSON file attached to this command to restore the player stats.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -1753,7 +1821,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="restoregraphdata")
     @commands.guildowner()
     async def restore_graph_data(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the graph data."""
+        """
+        Restore a graph data backup
+
+        Upload a backup JSON file attached to this command to restore the graph data.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -1853,7 +1925,10 @@ class ArkTools(commands.Cog):
 
     @mod_permissions.command(name="addbadname")
     async def add_badname(self, ctx: commands.Context, *, badname: str):
-        """Blacklist a player name to be auto-renamed if detected in chat."""
+        """
+        Blacklist a player name
+
+        Blacklisted names will be auto-renamed to their Gamertag if detected in chat."""
         async with self.config.guild(ctx.guild).badnames() as badnames:
             if badname in badnames:
                 await ctx.send("That name already exists.")
@@ -2048,7 +2123,9 @@ class ArkTools(commands.Cog):
     @arktools_main.group(name="api")
     async def api_settings(self, ctx: commands.Context):
         """
-        (Win10/Xbox CROSSPLAY ONLY) API tools for the host Gamertags.
+        (Win10/Xbox CROSSPLAY ONLY) API tools
+
+        Assortment of API tools for the host Gamertags.
 
         Type `[p]arktools api help` for more information.
         """
@@ -2103,10 +2180,7 @@ class ArkTools(commands.Cog):
 
     @api_settings.command(name="viewhosts")
     async def view_host_gamertags(self, ctx: commands.Context):
-        """
-        View API information for the host Gamertags such as if they're authorized,
-        friend list count, ect..
-        """
+        """View Gamertags friend info"""
         clientid = await self.config.clientid()
         if not clientid:
             return await ctx.send("Bot owner needs to set Client ID and Secret before api commands can be used!")
@@ -2295,7 +2369,9 @@ class ArkTools(commands.Cog):
     @commands.admin()
     async def welcome_toggle(self, ctx):
         """
-        (Toggle) Automatic server welcome messages when a new player is detected on the servers
+        (Toggle) Auto welcome messages
+
+        Gamertag sends auto welcome messages when a new player is detected on the servers
 
         When a new player joins the server through the list or without being in the Discord,
         the bot will send them a welcome message.
@@ -2312,7 +2388,7 @@ class ArkTools(commands.Cog):
     @commands.admin()
     async def autofriend_toggle(self, ctx: commands.Context):
         """
-        (Toggle) Automatic maintenance of host Gamertag friend lists.
+        (Toggle) Automatic maintenance
 
         This will enable automatically adding new players as a friend by the host Gamertag
         and automatically unfriending them after the set number of days of inactivity (Default is 30).
@@ -2331,7 +2407,9 @@ class ArkTools(commands.Cog):
     @commands.admin()
     async def unfriend_time(self, ctx: commands.Context, days: int):
         """
-        Set number of days of inactivity for the host Gamertags to unfriend a player.
+        Set days till auto unfriend
+
+        This is the number of days of inactivity for the host Gamertags to unfriend a player.
 
         This keep xbox host Gamertag friends lists clean since the max you can have is 1000.
         """
@@ -2342,7 +2420,8 @@ class ArkTools(commands.Cog):
     @commands.admin()
     async def welcome_message(self, ctx: commands.Context, *, welcome_message: str):
         """
-        Set a welcome message to be used instead of the default.
+        Set a welcome message
+
         When the bot detects a new Gamertag that isn't in the database, it sends it a welcome DM with
         an invite to the server.
 
@@ -2665,7 +2744,9 @@ class ArkTools(commands.Cog):
     @server_settings.command(name="graphdata")
     async def graph_data_expiration(self, ctx: commands.Context, days: int):
         """
-        Set how many days worth of graph data to keep saved
+        Set graph data storage
+
+        How many days worth of graph data to keep saved
         """
         await self.config.guild(ctx.guild).serverstats.expiration.set(days)
         await ctx.tick()
@@ -2673,7 +2754,8 @@ class ArkTools(commands.Cog):
     @server_settings.command(name="timezone")
     async def set_timezone(self, ctx: commands.Context, timezone: str):
         """
-        Set your timezone to display in the Server Status footer.
+        Set your timezone
+        Displays in the Server Status footer.
 
         You can type "[p]arktools server showtimezones" for a list of all available timezones
         """
@@ -2697,7 +2779,7 @@ class ArkTools(commands.Cog):
 
     @server_settings.command(name="timezones")
     async def display_timezones(self, ctx: commands.Context):
-        """Display all available timezones for your server status embed"""
+        """Display all available timezones"""
         tzlist = ""
         content = []
         pages = []
@@ -2769,7 +2851,7 @@ class ArkTools(commands.Cog):
     @server_settings.command(name="clustertype")
     async def set_cluster_type(self, ctx: commands.Context, cluster_type: str):
         """
-        Set the type of clusters you have available on your discord.
+        Set what type of clusters you have
         This is a global setting for all your servers that will affect the wording of
         the register command prompts
 
@@ -2786,7 +2868,9 @@ class ArkTools(commands.Cog):
     @server_settings.command(name="extendedrcon")
     async def toggle_extendedrcon(self, ctx: commands.Context, cluster_name: str):
         """
-        Toggle ExtendedRCON for a cluster(STEAM ONLY)
+        (STEAM ONLY)Toggle ExtendedRCON
+
+        Toggle this feature for a cluster
 
         This toggle is ONLY compatible for steam servers with the extendedRCON plugin,
         view the link below for more info.
@@ -2880,8 +2964,8 @@ class ArkTools(commands.Cog):
     @server_settings.command(name="statuschannelgraph")
     async def set_statuschannel_graph(self, ctx: commands.Context, hours: int = None):
         """
-        Set the length of time to display in the server status embed in hours.
-
+        Set status channel graph time
+        The length of time to display in the server status embed in hours.
 
         Must use hours in whole numbers. If no time is given it will default back to 1 hour.
         """
@@ -2894,7 +2978,10 @@ class ArkTools(commands.Cog):
 
     @server_settings.command(name="interchat")
     async def server_to_server_toggle(self, ctx: commands.Context, clustername: str):
-        """(Toggle) server to server chat for a cluster so maps can talk to eachother."""
+        """
+        (Toggle) server to server chat
+
+        For a cluster so maps can talk to eachother."""
         async with self.config.guild(ctx.guild).clusters() as clusters:
             if clustername.lower() not in clusters:
                 return await ctx.send(f"{clustername} cluster does not exist!")
@@ -2923,6 +3010,7 @@ class ArkTools(commands.Cog):
     @in_game.command(name="random")
     async def toggle_random(self, ctx: commands.Context):
         """
+        (Toggle) Random paydays
         Toggle whether the in-game payday command chooses a random item from the list of blueprint paths
         or if it sends all items in the list.
 
@@ -2962,7 +3050,7 @@ class ArkTools(commands.Cog):
 
     @in_game.command(name="togglekit")
     async def toggle_starter_kit(self, ctx: commands.Context):
-        """Toggle the in-game starter kit command on or off"""
+        """(Toggle) in-game starter kit"""
         toggled = await self.config.guild(ctx.guild).kit.enabled()
         if toggled:
             await self.config.guild(ctx.guild).kit.enabled.set(False)
@@ -2974,6 +3062,7 @@ class ArkTools(commands.Cog):
     @in_game.command(name="setpayday")
     async def set_payday_blueprint_paths(self, ctx: commands.Context):
         """
+        Set payday blueprint paths
         Set the full blueprint paths for the in-game payday rewards to send
         The paths must be the FULL blueprint paths WITH the quantity, quality, and blueprint identifier
         separated by a line break
@@ -3009,6 +3098,7 @@ class ArkTools(commands.Cog):
     @in_game.command(name="setkit")
     async def set_kit_paths(self, ctx: commands.Context):
         """
+        Set kit blueprint paths
         Set the full blueprint paths for the in-game starter kit
         The paths must be the FULL blueprint paths WITH the quantity, quality, and blueprint identifier
         separated by a line break
@@ -3044,6 +3134,7 @@ class ArkTools(commands.Cog):
     @in_game.command(name="resetkit")
     async def reset_player_kit(self, ctx: commands.Context, xuid: str):
         """
+        Reset an XUID's claim status
         Reset a player XUID's claim status for their starter kit,
         just in case they used the wrong implant ID
         """
@@ -3081,7 +3172,10 @@ class ArkTools(commands.Cog):
 
     @in_game.command(name="view")
     async def view_ingame_settings(self, ctx: commands.Context):
-        """View configuration settings for in-game payday options"""
+        """
+        View In-Game settings
+        View configuration settings for in-game command options
+        """
         payday = await self.config.guild(ctx.guild).payday()
         kit = await self.config.guild(ctx.guild).kit()
         starter = "Disabled"
@@ -3178,11 +3272,12 @@ class ArkTools(commands.Cog):
                     serverdata["name"] = server
                     serverdata["guild"] = guild
                     serverdata["eventlog"] = settings["eventlog"]
+                    serverdata["crosschat"] = settings["crosschat"]
                     if "extrcon" in data:
                         serverdata["extrcon"] = data["extrcon"]
+                    self.channels.append(serverdata["chatchannel"])
                     self.servers.append((guild.id, serverdata))
                     self.servercount += 1
-                    self.channels.append(serverdata["chatchannel"])
                     if serverdata["chatchannel"] not in self.playerlist:
                         self.playerlist[serverdata["chatchannel"]] = "offline"
         log.info("Config initialized.")
@@ -3251,6 +3346,8 @@ class ArkTools(commands.Cog):
                 rtasks.append(self.executor(guild, server, f"serverchat {name}: {msg}"))
             await asyncio.gather(*rtasks)
         elif int(message.channel.id) == int(chatchannel):
+            if not servermap["crosschat"]:
+                return
             await self.executor(guild, servermap, f"serverchat {name}: {msg}")
         else:
             return
@@ -3408,6 +3505,8 @@ class ArkTools(commands.Cog):
             lperms = None
         if jperms and lperms:
             can_send = True
+        else:
+            log.warning(f"Missing send message perms in {guild} for Join/Leave channel")
 
         lastplayerlist = self.playerlist[channel]
 
@@ -3448,6 +3547,7 @@ class ArkTools(commands.Cog):
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
+        crosschat = server["crosschat"]
         perms = chatchannel.permissions_for(guild.me).send_messages
         msgs = res.split("\n")
         settings = await self.config.guild(guild).all()
@@ -3518,7 +3618,7 @@ class ArkTools(commands.Cog):
                     await self.executor(guild, server, f'renameplayer "{badname}" {gamertag}')
                     cmd = f"serverchat {gamertag}, the name {badname} has been blacklisted, you have been renamed"
                     await self.executor(guild, server, cmd)
-                    if perms:
+                    if perms and crosschat:
                         await chatchannel.send(f"A player named `{badname}` has been renamed to `{gamertag}`.")
             try:
                 xuid, stats = await self.get_player(gamertag, settings["players"])
@@ -3553,7 +3653,7 @@ class ArkTools(commands.Cog):
                             await self.executor(guild, server, cmd)
                         cmd = f"serverchat Congrats {gamertag}, you have reached the rank of {str(rank)}"
                         await self.executor(guild, server, cmd)
-                        if perms:
+                        if perms and crosschat:
                             await chatchannel.send(f"`Congrats {gamertag}, you have reached the rank of {str(rank)}`")
 
             # In-game command interpretation
@@ -3567,7 +3667,7 @@ class ArkTools(commands.Cog):
                     break
         # Send off messages to discord channels
         if perms:
-            if messages:
+            if messages and crosschat:
                 for p in pagify(messages):
                     await chatchannel.send(p)
             if globalmessages:
