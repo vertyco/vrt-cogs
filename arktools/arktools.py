@@ -4238,7 +4238,6 @@ class ArkTools(commands.Cog):
             hours = settings["status"]["time"]
             file = await get_graph(settings, int(hours))
             img = "attachment://plot.png"
-            await self.status_cleaner(settings["status"], dest_channel)
             try:
                 if len(status) <= 4096:
                     embed = discord.Embed(
@@ -4254,6 +4253,7 @@ class ArkTools(commands.Cog):
                         message = await dest_channel.send(embed=embed, file=file)
                     else:
                         message = await dest_channel.send(embed=embed)
+                    await self.status_cleaner(settings["status"], dest_channel)
                     await self.config.guild(guild).status.multi.set([])
                     await self.config.guild(guild).status.message.set(message.id)
                 else:  # Person must have a fuck ton of servers for the bot to have use this ugh
@@ -4286,6 +4286,7 @@ class ArkTools(commands.Cog):
                             message = await dest_channel.send(embed=embed)
                         count += 1
                         new_message_list.append(message.id)
+                    await self.status_cleaner(settings["status"], dest_channel)
                     await self.config.guild(guild).status.message.set(None)
                     await self.config.guild(guild).status.multi.set(new_message_list)
             except discord.errors.DiscordServerError:
