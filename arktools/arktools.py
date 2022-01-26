@@ -79,7 +79,7 @@ class ArkTools(commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.10.45"
+    __version__ = "2.10.46"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -495,13 +495,17 @@ class ArkTools(commands.Cog):
                     msg_to_delete = await dest_channel.fetch_message(msg)
                     if msg_to_delete:
                         await msg_to_delete.delete()
-        except discord.NotFound:
-            pass
-        except discord.Forbidden:
-            pass
+            return True
+        except discord.NotFound:  # Message could have already been deleted
+            return True
+        except discord.Forbidden:  # User could have imported config from another bot
+            return True
         except Exception as e:
-            cleanup_type = "Status" if message else "Multi-Status"
-            log.warning(f"{cleanup_type} Cleanup: {e}")
+            if "503 Service Unavailable" in str(e):
+                return True
+            else:
+                cleanup_type = "Status" if message else "Multi-Status"
+                log.warning(f"{cleanup_type} Cleanup: {e}")
 
     # Pull the first (authorized) token found (for api calls where the token owner doesnt matter)
     @staticmethod
@@ -4252,9 +4256,10 @@ class ArkTools(commands.Cog):
                         message = await dest_channel.send(embed=embed, file=file)
                     else:
                         message = await dest_channel.send(embed=embed)
-                    await self.status_cleaner(settings["status"], dest_channel)
-                    await self.config.guild(guild).status.multi.set([])
-                    await self.config.guild(guild).status.message.set(message.id)
+                    successful = await self.status_cleaner(settings["status"], dest_channel)
+                    if successful:
+                        await self.config.guild(guild).status.multi.set([])
+                        await self.config.guild(guild).status.message.set(message.id)
                 else:  # Person must have a fuck ton of servers for the bot to have use this ugh
                     # Embed is too dummy thicc and needs multiple embeds
                     pages = 0
@@ -4285,9 +4290,10 @@ class ArkTools(commands.Cog):
                             message = await dest_channel.send(embed=embed)
                         count += 1
                         new_message_list.append(message.id)
-                    await self.status_cleaner(settings["status"], dest_channel)
-                    await self.config.guild(guild).status.message.set(None)
-                    await self.config.guild(guild).status.multi.set(new_message_list)
+                    successful = await self.status_cleaner(settings["status"], dest_channel)
+                    if successful:
+                        await self.config.guild(guild).status.message.set(None)
+                        await self.config.guild(guild).status.multi.set(new_message_list)
             except discord.errors.DiscordServerError:
                 continue
             except Exception as e:
