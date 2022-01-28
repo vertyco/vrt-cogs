@@ -494,22 +494,22 @@ class ArkTools(Calls, commands.Cog):
                 msg_to_delete = await dest_channel.fetch_message(message)
                 if msg_to_delete:
                     await msg_to_delete.delete()
-            else:
+            if multi:
                 for msg in multi:
                     msg_to_delete = await dest_channel.fetch_message(msg)
                     if msg_to_delete:
                         await msg_to_delete.delete()
-            return True
         except discord.NotFound:  # Message could have already been deleted
-            return True
+            return
         except discord.Forbidden:  # User could have imported config from another bot
-            return True
+            return
         except Exception as e:
             if "503 Service Unavailable" in str(e):
-                return True
+                return
             else:
                 cleanup_type = "Status" if message else "Multi-Status"
                 log.warning(f"{cleanup_type} Cleanup: {e}")
+                return
 
     # Pull the first (authorized) token found (for api calls where the token owner doesnt matter)
     @staticmethod
@@ -4314,64 +4314,58 @@ class ArkTools(Calls, commands.Cog):
             hours = settings["status"]["time"]
             file = await get_graph(settings, int(hours))
             img = "attachment://plot.png"
-            try:
-                if len(status) <= 4096:
-                    embed = discord.Embed(
-                        description=status,
-                        color=discord.Color.random(),
-                        timestamp=now.astimezone(tz)
-                    )
-                    embed.set_author(name="Server Status", icon_url=guild.icon_url)
-                    embed.add_field(name="Total Players", value=f"`{totalplayers}`")
-                    embed.set_thumbnail(url=thumbnail)
-                    embed.set_image(url=img)
-                    if file:
+            # Nice simple single embed status channel for normal people
+            if len(status) <= 4096:
+                embed = discord.Embed(
+                    description=status,
+                    color=discord.Color.random(),
+                    timestamp=now.astimezone(tz)
+                )
+                embed.set_author(name="Server Status", icon_url=guild.icon_url)
+                embed.add_field(name="Total Players", value=f"`{totalplayers}`")
+                embed.set_thumbnail(url=thumbnail)
+                embed.set_image(url=img)
+                if file:
+                    message = await dest_channel.send(embed=embed, file=file)
+                else:
+                    message = await dest_channel.send(embed=embed)
+                await self.config.guild(guild).status.multi.set([])
+                await self.config.guild(guild).status.message.set(message.id)
+            else:  # Person must have a fuck ton of servers for the bot to have use this ugh
+                # Embed is too dummy thicc and needs multiple embeds
+                pages = 0
+                for _ in pagify(status):
+                    pages += 1
+                new_message_list = []
+                count = 1
+                color = discord.Color.random()
+                for p in pagify(status):
+                    if count == pages:
+                        embed = discord.Embed(
+                            description=p,
+                            color=color,
+                            timestamp=now.astimezone(tz)
+                        )
+                    else:
+                        embed = discord.Embed(
+                            description=p,
+                            color=color
+                        )
+                    if count == 1:
+                        embed.set_author(name="Server Status", icon_url=guild.icon_url)
+                        embed.set_thumbnail(url=thumbnail)
+                    if count == pages:
+                        embed.set_image(url=img)
                         message = await dest_channel.send(embed=embed, file=file)
                     else:
                         message = await dest_channel.send(embed=embed)
-                    successful = await self.status_cleaner(settings["status"], dest_channel)
-                    if successful:
-                        await self.config.guild(guild).status.multi.set([])
-                        await self.config.guild(guild).status.message.set(message.id)
-                else:  # Person must have a fuck ton of servers for the bot to have use this ugh
-                    # Embed is too dummy thicc and needs multiple embeds
-                    pages = 0
-                    for _ in pagify(status):
-                        pages += 1
-                    new_message_list = []
-                    count = 1
-                    color = discord.Color.random()
-                    for p in pagify(status):
-                        if count == pages:
-                            embed = discord.Embed(
-                                description=p,
-                                color=color,
-                                timestamp=now.astimezone(tz)
-                            )
-                        else:
-                            embed = discord.Embed(
-                                description=p,
-                                color=color
-                            )
-                        if count == 1:
-                            embed.set_author(name="Server Status", icon_url=guild.icon_url)
-                            embed.set_thumbnail(url=thumbnail)
-                        if count == pages:
-                            embed.set_image(url=img)
-                            message = await dest_channel.send(embed=embed, file=file)
-                        else:
-                            message = await dest_channel.send(embed=embed)
-                        count += 1
-                        new_message_list.append(message.id)
-                    successful = await self.status_cleaner(settings["status"], dest_channel)
-                    if successful:
-                        await self.config.guild(guild).status.message.set(None)
-                        await self.config.guild(guild).status.multi.set(new_message_list)
-            except discord.errors.DiscordServerError:
-                continue
-            except Exception as e:
-                log.warning(f"Unknown error in status channel: {e}")
-                continue
+                    count += 1
+                    new_message_list.append(message.id)
+                await self.config.guild(guild).status.message.set(None)
+                await self.config.guild(guild).status.multi.set(new_message_list)
+            # Cleanup previous message/messages
+            status_data = settings["status"]
+            await self.status_cleaner(status_data, dest_channel)
 
     @status_channel.before_loop
     async def before_status_channel(self):
