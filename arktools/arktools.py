@@ -3492,9 +3492,9 @@ class ArkTools(Calls, commands.Cog):
                     await eventlog.send(embed=embed)
             return
         if command == "getchat" or "serverchat" in command:
-            timeout = 2
+            timeout = 1
         elif command == "listplayers":
-            timeout = 5
+            timeout = 10
         else:
             timeout = 3
 

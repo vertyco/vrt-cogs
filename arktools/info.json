@@ -13,7 +13,7 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "rcon",
+    "rcon==1.3.7",
     "pytz",
     "xbox-webapi",
     "matplotlib",
