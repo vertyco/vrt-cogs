@@ -1,9 +1,11 @@
 import json
+
 import aiohttp
 
 
 class Calls:
     """XSAPI endpoints that xbox-webapi doesn't have"""
+
     def __init__(self):
         self.session = aiohttp.ClientSession()
         self.headers = {

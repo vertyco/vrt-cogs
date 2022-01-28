@@ -1,16 +1,16 @@
 import datetime
 import io
+import logging
 import math
 import re
 import unicodedata
 
 import discord
-import pytz
 import matplotlib
+import pytz
+import tabulate
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
-import logging
-import tabulate
 from redbot.core.utils.chat_formatting import box
 
 matplotlib.use("agg")

@@ -8,12 +8,12 @@ import re
 import socket
 import sys
 import typing
-import tabulate
 
 import aiohttp
 import discord
 import numpy as np
 import pytz
+import tabulate
 from discord.ext import tasks
 from rcon import Client
 from redbot.core import commands, Config
@@ -23,8 +23,6 @@ from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 from .calls import Calls
-from .rcon import async_rcon
-
 from .formatter import (
     decode,
     profile_format,
@@ -43,6 +41,7 @@ from .formatter import (
     IMSTUCK_BLUEPRINTS
 )
 from .menus import menu, DEFAULT_CONTROLS
+from .rcon import async_rcon
 
 log = logging.getLogger("red.vrt.arktools")
 logging.basicConfig(filename='logs.log',
@@ -56,8 +55,6 @@ FAILED = "https://i.imgur.com/TcnAyVO.png"
 SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 REDIRECT_URI = "http://localhost/auth/callback"
-
-OUTAGE = ""
 
 RICH_COLORS = [
     '<RichColor Color="1,0,0,1">',  # Red
@@ -1447,7 +1444,7 @@ class ArkTools(Calls, commands.Cog):
         await menu(ctx, pages, DEFAULT_CONTROLS)
 
     # Get the top 10 players in the cluster, browse pages to see them all
-    @commands.command(name="tribelb")
+    @commands.command(name="tribelb", aliases=["tribetop"])
     @commands.guild_only()
     async def tribe_leaderboard(self, ctx: commands.Context):
         """View leaderboard for all tribes"""
@@ -3525,6 +3522,7 @@ class ArkTools(Calls, commands.Cog):
                 else:
                     log.warning(f"Executor Error: {e}")
                 return
+
         if skip:
             res = None
         else:

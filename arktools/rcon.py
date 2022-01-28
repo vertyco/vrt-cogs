@@ -37,5 +37,3 @@ async def async_rcon(channel: discord.TextChannel, server: dict, command: str):
             resp = box(f"- {name} encountered an unknown error, see traceback for details.", lang="diff")
             await channel.send(resp)
             log.warning(f"Async_RCON Error: {e}")
-
-
