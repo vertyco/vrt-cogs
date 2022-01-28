@@ -22,14 +22,9 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
-from .calls import (
-    add_friend,
-    remove_friend,
-    manual_rcon,
-    get_followers,
-    block_player,
-    unblock_player
-)
+from .calls import Calls
+from .rcon import async_rcon
+
 from .formatter import (
     decode,
     profile_format,
@@ -62,6 +57,8 @@ SUCCESS = "https://i.imgur.com/NrLAEpq.gif"
 
 REDIRECT_URI = "http://localhost/auth/callback"
 
+OUTAGE = ""
+
 RICH_COLORS = [
     '<RichColor Color="1,0,0,1">',  # Red
     '<RichColor Color="0,1,0,1">',  # Green
@@ -74,12 +71,12 @@ RICH_COLORS = [
 ]
 
 
-class ArkTools(commands.Cog):
+class ArkTools(Calls, commands.Cog):
     """
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.10.46"
+    __version__ = "2.11.46"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -222,8 +219,11 @@ class ArkTools(commands.Cog):
     ):
         client_id, client_secret = await self.get_azure_credentials()
         if not client_id:  # Owner hasnt set client id yet
-            await ctx.send(f"Client ID and Secret have not been set yet!\n"
-                           f"Bot owner needs to run `{ctx.prefix}arktools api addtokens`")
+            if ctx:
+                await ctx.send(f"Client ID and Secret have not been set yet!\n"
+                               f"Bot owner needs to run `{ctx.prefix}arktools api addtokens`")
+            else:
+                log.warning("Client ID and Secret have not been set yet!")
             return None, None
         xbl_client, xsts_token, refreshed_tokens = await self.refresh_tokens(
             session,
@@ -302,6 +302,10 @@ class ArkTools(commands.Cog):
             else:
                 return False
 
+    def add_queue(self, channel: str):
+        if channel not in self.queue:
+            self.queue[channel] = datetime.datetime.now()
+
     async def tribelog_sendoff(self, guild, settings, server, logs):
         for msg in logs:
             try:
@@ -309,16 +313,19 @@ class ArkTools(commands.Cog):
             except TypeError:
                 continue
             masterlog = guild.get_channel(settings["masterlog"])
-            if masterlog:
-                perms = masterlog.permissions_for(guild.me).send_messages
-                if perms:
-                    await masterlog.send(embed=embed)
-            if tribe_id in settings["tribes"]:
-                tribechannel = guild.get_channel(settings["tribes"][tribe_id]["channel"])
-                if tribechannel:
-                    perms = tribechannel.permissions_for(guild.me).send_messages
+            try:
+                if masterlog:
+                    perms = masterlog.permissions_for(guild.me).send_messages
                     if perms:
-                        await tribechannel.send(embed=embed)
+                        await masterlog.send(embed=embed)
+                if tribe_id in settings["tribes"]:
+                    tribechannel = guild.get_channel(settings["tribes"][tribe_id]["channel"])
+                    if tribechannel:
+                        perms = tribechannel.permissions_for(guild.me).send_messages
+                        if perms:
+                            await tribechannel.send(embed=embed)
+            except discord.errors.DiscordServerError:
+                log.warning("TribeLogSend: Discord seems to have an API Outage.")
 
     # Handles tribe log formatting/itemizing
     async def tribelog_format(self, server: dict, msg: str):
@@ -574,6 +581,54 @@ class ArkTools(commands.Cog):
             if "discord" in stat:
                 if stat["discord"] == uid:
                     return stat["username"]
+
+    @commands.command(name="xboxdm", aliases=["xdm"])
+    @commands.guild_only()
+    @commands.admin()
+    async def send_xbox_dm(self,
+                           ctx: commands.Context,
+                           clustername: str,
+                           servername: str,
+                           xuid: str,
+                           *,
+                           message: str):
+        """
+        Send an Xbox DM
+
+        DM an Xbox user through one of the host Gamertags
+        """
+        cname = clustername.lower()
+        sname = servername.lower()
+        clusters = await self.config.guild(ctx.guild).clusters()
+        if cname not in clusters:
+            return await ctx.send("Cluster not found")
+        elif sname not in clusters[cname]["servers"]:
+            return await ctx.send("Server not found")
+        elif "tokens" not in clusters[cname]["servers"][sname]:
+            return await ctx.send("That server has no tokens")
+        elif not clusters[cname]["servers"][sname]["tokens"]:
+            return await ctx.send("That server has no tokens")
+        tokens = clusters[cname]["servers"][sname]["tokens"]
+        async with ctx.typing():
+            async with aiohttp.ClientSession() as session:
+                xbl_client, token = await self.auth_manager(
+                    session,
+                    cname,
+                    sname,
+                    tokens,
+                    ctx
+                )
+                if xbl_client:
+                    try:
+                        await xbl_client.message.send_message(xuid, message)
+                        sent = True
+                    except Exception as e:
+                        log.warning(f"{sname} {cname} failed to send a message to {xuid}: {e}")
+                        sent = False
+                if sent:
+                    await ctx.tick()
+                else:
+                    await ctx.send("Message failed to send!")
 
     # Hard coded item send for those hard times
     # Sends some in-game items that can help get a player unstuck, or just kill themselves
@@ -1051,7 +1106,7 @@ class ArkTools(commands.Cog):
                             if not xbl_client:
                                 addstatus += f"`{server['gamertag']}: `❌\n"
                                 continue
-                            status = await add_friend(xuid, token)
+                            status = await self.add_friend(xuid, token)
                             if 200 <= status <= 204:
                                 embed = discord.Embed(
                                     description=f"Friend request sent from... `{server['gamertag']}`",
@@ -1107,7 +1162,7 @@ class ArkTools(commands.Cog):
                     )
                     embed.set_thumbnail(url=FAILED)
                     return await msg.edit(embed=embed)
-                status = await add_friend(xuid, token)
+                status = await self.add_friend(xuid, token)
                 if 200 <= status <= 204:
                     embed = discord.Embed(color=discord.Color.green(),
                                           description=f"✅ `{gt}` Successfully added `{ptag}`\n"
@@ -1178,7 +1233,7 @@ class ArkTools(commands.Cog):
         else:
             rtasks = []
             for server in serverlist:
-                rtasks.append(manual_rcon(ctx.channel, server, command))
+                rtasks.append(async_rcon(ctx.channel, server, command))
             await asyncio.gather(*rtasks)
 
         if command.lower().startswith("banplayer"):  # Have the host Gamertags block the user that was banned
@@ -1200,7 +1255,7 @@ class ArkTools(commands.Cog):
                             )
                             if token:
                                 try:
-                                    status = await block_player(int(player_id), token)
+                                    status = await self.block_player(int(player_id), token)
                                 except Exception as e:
                                     if "semaphore" in str(e):
                                         pass
@@ -1208,7 +1263,10 @@ class ArkTools(commands.Cog):
                                     blocked += f"{host} Successfully blocked XUID: {player_id}\n"
                                 else:
                                     blocked += f"{host} Failed to block XUID: {player_id} - Status: {status}\n"
-                    if blocked != "":
+                            else:
+                                blocked += f"{host} Failed to block XUID: {player_id}"
+
+                    if blocked:
                         await ctx.send(box(blocked, lang="python"))
         if command.lower().startswith("unbanplayer"):  # Have the host Gamertags unblock the user
             player_id = str(re.search(r'(\d+)', command).group(1))
@@ -1229,7 +1287,7 @@ class ArkTools(commands.Cog):
                             )
                             if token:
                                 try:
-                                    status = await unblock_player(int(player_id), token)
+                                    status = await self.unblock_player(int(player_id), token)
                                 except Exception as e:
                                     if "semaphore" in str(e):
                                         pass
@@ -1237,7 +1295,10 @@ class ArkTools(commands.Cog):
                                     unblocked += f"{host} Successfully unblocked XUID: {player_id}\n"
                                 else:
                                     unblocked += f"{host} Failed to unblock XUID: {player_id} - Status: {status}\n"
-                    if unblocked != "":
+                            else:
+                                unblocked += f"{host} Failed to unblock XUID: {player_id}\n"
+
+                    if unblocked:
                         await ctx.send(box(unblocked, lang="python"))
 
     @commands.command(name="bulksend")
@@ -1651,7 +1712,11 @@ class ArkTools(commands.Cog):
     @arktools_main.command(name="crosschat")
     @commands.admin()
     async def toggle_crosschat(self, ctx: commands.Context):
-        """(Toggle) Cross-chat"""
+        """
+        (Toggle) Cross-chat
+
+        In-game commands *should* still work
+        """
         crosschat = await self.config.guild(ctx.guild).crosschat()
         if crosschat:
             await self.config.guild(ctx.guild).crosschat.set(False)
@@ -2661,6 +2726,11 @@ class ArkTools(commands.Cog):
     async def view_server_settings(self, ctx: commands.Context):
         """View current server settings"""
         settings = await self.config.guild(ctx.guild).all()
+        crosschat = settings["crosschat"]
+        if crosschat:
+            crosschat = "Enabled"
+        else:
+            crosschat = "Disabled"
         tz = settings["timezone"]
         statuschannel = "Not Set"
         eventlog = "Not Set"
@@ -2684,7 +2754,8 @@ class ArkTools(commands.Cog):
                         f"`Timezone:       `{tz}\n"
                         f"`GraphHistory:   `{days} days\n"
                         f"`GraphStorage:   `{exp} days\n"
-                        f"`ClusterType:    `{clustertype.capitalize()}",
+                        f"`ClusterType:    `{clustertype.capitalize()}\n"
+                        f"`Cross-Chat:     `{crosschat}",
             color=discord.Color.blue()
         )
         await ctx.send(embed=embed)
@@ -3460,9 +3531,8 @@ class ArkTools(commands.Cog):
             res = await self.bot.loop.run_in_executor(None, exe)
         if not res and not skip:
             channel = server["chatchannel"]
-            if channel not in self.queue:
-                # Put server in queue, loops will ignore that server for 2 minutes and then try again
-                self.queue[channel] = datetime.datetime.now()
+            # Put server in queue, loops will ignore that server for 2 minutes and then try again
+            self.add_queue(channel)
         if command == "getchat":
             if res:
                 if "Server received, But no response!!" not in res:
@@ -3482,13 +3552,13 @@ class ArkTools(commands.Cog):
     @getchat.before_loop
     async def before_getchat(self):
         await self.bot.wait_until_red_ready()
-        await self.initialize()
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
         log.info("GetChat loop ready")
 
     @listplayers.before_loop
     async def before_listplayers(self):
         await self.bot.wait_until_red_ready()
+        await self.initialize()
         await asyncio.sleep(5)
         log.info("Listplayers loop ready")
 
@@ -3595,6 +3665,8 @@ class ArkTools(commands.Cog):
                         inv = await chatchannel.create_invite(unique=False, max_age=3600, reason="Ark Auto Response")
                     except Exception as e:
                         log.exception(f"INVITE CREATION FAILED: {e}")
+                except discord.errors.DiscordServerError:
+                    log.warning("Message_handler: Invite creation failed, seems to be an issue with Discord's API")
                 if inv:
                     await self.executor(guild, server, f"serverchat {inv}")
 
@@ -3604,13 +3676,14 @@ class ArkTools(commands.Cog):
                 for data in self.servers:
                     s = data[1]
                     g = self.bot.get_guild(data[0])
+                    # Send in-game message to all other servers in the same cluster except for the originator
                     if s["cluster"] == server["cluster"] and s["name"] != server["name"] and g == guild:
                         await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
 
             # Break message into groups for interpretation
             reg = r'(.+)\s\((.+)\): (.+)'
             msg = re.findall(reg, msg)
-            if len(msg) == 0:  # Weird this shouldnt happen but
+            if len(msg) == 0:  # This shouldn't happen but eh...
                 continue
             msg = msg[0]
             gamertag = msg[0]
@@ -3671,15 +3744,17 @@ class ArkTools(commands.Cog):
                     break
         # Send off messages to discord channels
         if perms:
-            if messages and crosschat:
-                for p in pagify(messages):
-                    await chatchannel.send(p)
-            if globalmessages:
-                for p in pagify(globalmessages):
-                    await globalchat.send(p)
-            if admin_commands:
-                for p in pagify(admin_commands):
-                    await adminlog.send(p)
+            try:
+                if messages and crosschat:
+                    await chatchannel.send(messages)
+                if globalmessages:
+                    await globalchat.send(globalmessages)
+                if admin_commands:
+                    await adminlog.send(admin_commands)
+            except discord.errors.DiscordServerError:
+                log.warning("MessageHandler: Discord seems to have an API Outage.")
+            except Exception as e:
+                log.warning(f"MessageHandler Error in {guild.name}: {e}")
         if tribe_logs:
             await self.tribelog_sendoff(guild, settings, server, tribe_logs)
 
@@ -4409,7 +4484,7 @@ class ArkTools(commands.Cog):
                                             newplayermessage += f"DM sent: ❌ {e}\n"
 
                                     if autofriend and xbl_client:
-                                        status = await add_friend(str(xuid), token)
+                                        status = await self.add_friend(str(xuid), token)
                                         if 200 <= status <= 204:
                                             newplayermessage += f"Added by {host}: ✅\n"
                                         else:
@@ -4499,7 +4574,7 @@ class ArkTools(commands.Cog):
                                         guild=guild
                                     )
                                     if autofriend and xbl_client:
-                                        status = await add_friend(str(xuid), token)
+                                        status = await self.add_friend(str(xuid), token)
                                         if 200 <= status <= 204:
                                             newplayermessage += f"Added by {host}: ✅\n"
                                         else:
@@ -4601,7 +4676,7 @@ class ArkTools(commands.Cog):
                     guild=member.guild
                 )
                 if token:
-                    utasks.append(remove_friend(item[0], token))
+                    utasks.append(self.remove_friend(item[0], token))
             await asyncio.gather(*utasks)
             if eventlog:
                 eventlog = member.guild.get_channel(eventlog)
@@ -4660,7 +4735,7 @@ class ArkTools(commands.Cog):
                                 xuid = user[0]
                                 playerstats[xuid]["lastseen"]["map"] = None
                                 player = user[1]
-                                status = await remove_friend(xuid, token)
+                                status = await self.remove_friend(xuid, token)
                                 if 200 <= status <= 204:
                                     # Set last seen to None
                                     msg = "This is an automated message:\n\n" \
@@ -4686,7 +4761,7 @@ class ArkTools(commands.Cog):
     @maintenance.before_loop
     async def before_maintenance(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(5)
+        await asyncio.sleep(30)
         log.info("Maintenance loop ready")
 
     @tasks.loop(seconds=20)
@@ -4738,7 +4813,7 @@ class ArkTools(commands.Cog):
                     log.warning(f"Autofriend Session Error: {e}")
                     return
             friends = friends["people"]
-            followers = await get_followers(token)
+            followers = await self.get_followers_own(token)
             if "people" not in followers:
                 return
             followers = followers["people"]
@@ -4749,7 +4824,7 @@ class ArkTools(commands.Cog):
             cname = cname.upper()
             if len(people_to_add) > 0:
                 for xuid, username in people_to_add:
-                    status = await add_friend(xuid, token)
+                    status = await self.add_friend(xuid, token)
                     if 200 <= status <= 204 and eventlog:
                         embed = discord.Embed(
                             description=f"**{sname} {cname}** accepted **{username}**'s friend request.",
@@ -4787,7 +4862,7 @@ class ArkTools(commands.Cog):
                 time = datetime.datetime.now(tz)
                 timedifference = time - added
                 if not following and timedifference.days > 0:
-                    status = await remove_friend(xuid, token)
+                    status = await self.remove_friend(xuid, token)
                     if 200 <= status <= 204:
                         ustatus = "successfully"
                         msg = f"Hi {username}, you have been unfollowed by this account for not following back.\n" \
@@ -4806,7 +4881,7 @@ class ArkTools(commands.Cog):
     @autofriend.before_loop
     async def before_autofriend(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(5)
+        await asyncio.sleep(30)
         log.info("Autofriend loop ready")
 
     @tasks.loop(hours=5)
@@ -4834,5 +4909,5 @@ class ArkTools(commands.Cog):
     @graphdata_prune.before_loop
     async def before_graphdata_prune(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(10)
+        await asyncio.sleep(60)
         log.info("Janitor ready")

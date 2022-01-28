@@ -23,7 +23,8 @@ IMSTUCK_BLUEPRINTS = [
     f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_GrapplingHook.PrimalItemAmmo_GrapplingHook'" 3 0 0""",
     f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow'" 1 0 0""",
     f""""Blueprint'/Game/PrimalEarth/CoreBlueprints/Items/Structures/Thatch/PrimalItemStructure_ThatchFloor.PrimalItemStructure_ThatchFloor'" 1 0 0""",
-    f""""Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 1 0 0"""
+    f""""Blueprint'/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick'" 1 0 0""",
+    f""""Blueprint'/Game/PrimalEarth/Test/PrimalItem_WeaponGPS.PrimalItem_WeaponGPS'" 1 0 0""",
 ]
 
 
@@ -490,26 +491,33 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
 
 
 # Detect recent followers and return list of people to add back
-async def detect_friends(friends: list, followers: list):
+async def detect_friends(friends: list, followers: list) -> list:
     people_to_add = []
     xuids = []
+    # Friends list is who the Gamertag is following
+    # Followers are the people following the gamertag
     for friend in friends:
+        # Make list of all xuid's the GT is following
         xuids.append(friend["xuid"])
 
     for follower in followers:
+        # Person not found in GT's friends list
         if follower["xuid"] not in xuids:
             followed_back = follower["isFollowedByCaller"]
+            # Person is following GT but GT isnt following them back, lets see if this was recent
             if not followed_back:
                 date_followed = follower["follower"]["followedDateTime"]
                 date_followed = fix_timestamp(date_followed)
                 time = datetime.datetime.utcnow()
                 timedifference = time - date_followed
+                # If the person followed the GT less than an hour ago then its recent
                 if int(timedifference.total_seconds()) < 3600:
+                    # Add to the list of people to be added back
                     people_to_add.append((follower["xuid"], follower["gamertag"]))
     return people_to_add
 
 
-# Detect if a user account is suspicious based on server owner's settings
+# Detect if a user account is suspicious based on cogs settings
 def detect_sus(alt: dict, profile: dict, friends: dict):
     reasons = ""
     sus = False
@@ -524,6 +532,7 @@ def detect_sus(alt: dict, profile: dict, friends: dict):
 
     following = int(friends["target_following_count"])
     followers = int(friends["target_follower_count"])
+    # Compare player to config settings, if any triggers are true the user will be flagged as sus
     if alt["silver"]:
         if tier == "Silver":
             sus = True
@@ -732,7 +741,7 @@ async def get_graph(settings: dict, hours: int):
         locator = 20
     else:
         locator = "auto"
-    # Reverse the new lists so they're in the correct order
+    # Reverse the new lists, so they're in the correct order
     x.reverse()
     y.reverse()
     if len(y) < 3:
