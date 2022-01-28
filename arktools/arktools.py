@@ -73,7 +73,7 @@ class ArkTools(Calls, commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.11.46"
+    __version__ = "2.11.47"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -261,12 +261,19 @@ class ArkTools(Calls, commands.Cog):
                     clusters[cname]["servers"][sname]["tokens"] = refreshed_tokens
         return xbl_client, xsts_token
 
-    # Initialize a player to the config
-    async def init_player(self, guild: discord.guild, server_id: str, xuid: str, character_name: str):
+    # Initialize a map to a player in the config
+    async def init_player_map(
+            self,
+            guild: discord.guild,
+            server_id: str,
+            xuid: str,
+            character_name: str,
+            implant: str = None
+    ):
         async with self.config.guild(guild).players() as conf:
             if xuid in conf:
                 conf[xuid]["ingame"][server_id] = {
-                    "implant": None,
+                    "implant": implant,
                     "name": character_name,
                     "previous_names": [],
                     "stats": {
@@ -3248,8 +3255,10 @@ class ArkTools(Calls, commands.Cog):
         View In-Game settings
         View configuration settings for in-game command options
         """
-        payday = await self.config.guild(ctx.guild).payday()
-        kit = await self.config.guild(ctx.guild).kit()
+        conf = await self.config.guild(ctx.guild).all()
+        payday = conf["payday"]
+        kit = conf["kit"]
+        votecd = conf["votecooldown"]
         starter = "Disabled"
         if kit["enabled"]:
             starter = "Enabled"
@@ -3265,7 +3274,8 @@ class ArkTools(Calls, commands.Cog):
             description=f"`Payday Status:       `{status}\n"
                         f"`Payday Randomness:   `{rand}\n"
                         f"`Payday Cooldown:     `{cooldown}\n"
-                        f"`Starter Kit:         `{starter}\n",
+                        f"`Starter Kit:         `{starter}\n"
+                        f"`Voting Cooldown:     `{votecd}",
             color=discord.Color.random()
         )
         await ctx.send(embed=embed)
@@ -3464,6 +3474,8 @@ class ArkTools(Calls, commands.Cog):
         await asyncio.gather(*chat_tasks)
 
     # Non-blocking sync executor for rcon task loops
+    # This is the main function for all rcon task loops
+    # Using async rcon for lots of server was overflowing the network buffer
     async def executor(self, guild: discord.guild, server: dict, command: str):
         if not server:
             return
@@ -3477,10 +3489,12 @@ class ArkTools(Calls, commands.Cog):
                 break
         else:
             priority = False
+        # If a command is not priority, check if it's in the queue and if it is, skip
         if not priority and self.in_queue(server["chatchannel"]):
             skip = True
         else:
             skip = False
+        # User probably had a typo when adding the server
         if server["port"] > 65535 or server["port"] < 0:
             eventlog = guild.get_channel(server["eventlog"])
             if eventlog:
@@ -3491,6 +3505,8 @@ class ArkTools(Calls, commands.Cog):
                 if eventlog.permissions_for(guild.me).send_messages:
                     await eventlog.send(embed=embed)
             return
+
+        # Optimal timeouts for various commands
         if command == "getchat" or "serverchat" in command:
             timeout = 1
         elif command == "listplayers":
@@ -3523,18 +3539,23 @@ class ArkTools(Calls, commands.Cog):
                     log.warning(f"Executor Error: {e}")
                 return
 
+        # If server is to be skipped, mock the result for the player_join_leave function
         if skip:
             res = None
         else:
             res = await self.bot.loop.run_in_executor(None, exe)
+
+        # If result is none and the command was a priority, then servers probably timed out or crashed
         if not res and not skip:
             channel = server["chatchannel"]
             # Put server in queue, loops will ignore that server for 2 minutes and then try again
             self.add_queue(channel)
+        # Message_handler interprets in-game chat buffer
         if command == "getchat":
             if res:
                 if "Server received, But no response!!" not in res:
                     await self.message_handler(guild, server, res)
+        # Send off to player_join_leave function for player cache
         if command == "listplayers":
             # If server is online create list of player tuples
             if res:
@@ -3580,20 +3601,25 @@ class ArkTools(Calls, commands.Cog):
         else:
             log.warning(f"Missing send message perms in {guild} for Join/Leave channel")
 
+        # Previously cached player list to compare with newplayerlist
         lastplayerlist = self.playerlist[channel]
 
         # If new and last are both strings then just update them, nothing to log
+        # Theyre probably both offline or empty so no notable change
         if isinstance(newplayerlist, str) and isinstance(lastplayerlist, str):
             self.playerlist[channel] = newplayerlist
-        else:  # Either new playerlist, last playerlist, or neither is a string so now we narrow it down
+        else:
+            # Either the newplayerlist, lastplayerlist, or neither are a string, so now we narrow it down
             # If both are lists then detect change in population
             if isinstance(newplayerlist, list) and isinstance(lastplayerlist, list):
                 if can_send:
                     for player in newplayerlist:
+                        # If a player is in the new list but not the last list, then they must have joined
                         if player not in lastplayerlist:
                             await joinlog.send(
                                 f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
                     for player in lastplayerlist:
+                        # If a player is in the last list but not the new list, then they must have left
                         if player not in newplayerlist:
                             await leavelog.send(f":red_circle: `{player[0]}, {player[1]}` left {mapname} {clustername}")
                 self.playerlist[channel] = newplayerlist
@@ -3611,7 +3637,7 @@ class ArkTools(Calls, commands.Cog):
                             f":green_circle: `{player[0]}, {player[1]}` joined {mapname} {clustername}")
                 self.playerlist[channel] = newplayerlist
             else:
-                # If a server goes from offline to populated its probably cause the cog was reloaded, so ignore
+                # If a server goes from offline to populated it's probably cause the cog was reloaded, so ignore
                 self.playerlist[channel] = newplayerlist
 
     # Sends messages from in-game chat to their designated channels
@@ -3619,6 +3645,7 @@ class ArkTools(Calls, commands.Cog):
         adminlog = guild.get_channel(server["adminlogchannel"])
         globalchat = guild.get_channel(server["globalchatchannel"])
         chatchannel = guild.get_channel(server["chatchannel"])
+        # If crosschat is false messages wont be sent to discord but in-game commands *should* still work
         crosschat = server["crosschat"]
         perms = chatchannel.permissions_for(guild.me).send_messages
         msgs = res.split("\n")
@@ -3637,6 +3664,7 @@ class ArkTools(Calls, commands.Cog):
                 continue
             if msg == " ":
                 continue
+            # This is discord chat being sent to server, so we dont want to loop it
             if msg.startswith("SERVER:"):
                 continue
             if msg.startswith("AdminCmd:"):  # Admin command
@@ -3645,9 +3673,12 @@ class ArkTools(Calls, commands.Cog):
             elif "Tribe" and ", ID" in msg:  # Tribe log
                 tribe_logs.append(msg)
             else:
+                # Anything else ignored,
+                # like wrapped sentences from to_server_chat that we dont want sent back to the discord
                 if "):" not in msg:
                     continue
                 else:
+                    # Send off to the cleaned up message list for further interpretation
                     chats.append(msg)
         for msg in chats:
             # Append messages to be sent to discord
@@ -3679,6 +3710,7 @@ class ArkTools(Calls, commands.Cog):
                         await self.executor(guild, s, f"serverchat {server['name'].capitalize()}: {msg}")
 
             # Break message into groups for interpretation
+            # (gamertag) (character name) (message)
             reg = r'(.+)\s\((.+)\): (.+)'
             msg = re.findall(reg, msg)
             if len(msg) == 0:  # This shouldn't happen but eh...
@@ -3689,6 +3721,7 @@ class ArkTools(Calls, commands.Cog):
             message = msg[2]
             # Check if any character has a blacklisted name and rename the character to their Gamertag if so
             for badname in badnames:
+                # User's character name is present in the blacklist
                 if badname.lower() == character_name.lower():
                     await self.executor(guild, server, f'renameplayer "{badname}" {gamertag}')
                     cmd = f"serverchat {gamertag}, the name {badname} has been blacklisted, you have been renamed"
@@ -3704,7 +3737,7 @@ class ArkTools(Calls, commands.Cog):
             if stats:
                 server_id = str(server["chatchannel"])
                 if server_id not in settings["players"][xuid]["ingame"]:
-                    await self.init_player(guild, server_id, xuid, character_name)
+                    await self.init_player_map(guild, server_id, xuid, character_name)
                 else:
                     user = settings["players"][xuid]
                     if character_name != user["ingame"][server_id]["name"]:
@@ -3716,8 +3749,9 @@ class ArkTools(Calls, commands.Cog):
                     if "rank" in stats:
                         rank = stats["rank"]
                         rank = guild.get_role(rank)
-                if rank:
+                if rank:  # Feature request, i dont prefer it but char names will be renamed to whatever rank they are
                     if str(rank) not in character_name:
+                        # Players char name doesnt have a rank in it currently
                         if "[" not in character_name and "]" not in character_name:
                             cmd = f'renameplayer "{character_name}" [{str(rank)}] {character_name}'
                             await self.executor(guild, server, cmd)
@@ -3794,6 +3828,8 @@ class ArkTools(Calls, commands.Cog):
             return resp
         # Help command
         elif com == "help":
+            # Help info can be too long for broadcast message if too many extra commands are enabled
+            # So send the extras in server chat
             if extras == 0:
                 available_cmd += f"{prefix}rename NewName - Rename your character\n" \
                                  f"{prefix}players - returns current player count"
@@ -3822,17 +3858,7 @@ class ArkTools(Calls, commands.Cog):
                     if resp:
                         return resp
                     if server_id not in players[xuid]["ingame"]:
-                        players[xuid]["ingame"][server_id] = {
-                            "implant": arg,
-                            "name": char_name,
-                            "previous_names": [],
-                            "stats": {
-                                "pvpkills": 0,
-                                "pvpdeaths": 0,
-                                "pvedeaths": 0,
-                                "tamed": 0
-                            }
-                        }
+                        await self.init_player_map(guild, server_id, xuid, char_name, arg)
                     else:
                         players[xuid]["ingame"][server_id]["implant"] = arg
                     resp = f"{gamertag}, Your implant was registered as {arg}"
@@ -4117,6 +4143,7 @@ class ArkTools(Calls, commands.Cog):
         else:
             return ""
 
+    # Checks an implant ID and makes sure it is a digit and the right length
     async def check_implant(self, guild: discord.guild, server: dict, arg: str):
         if not arg.isdigit():
             resp = "That is not a number. Include your implant ID NUMBER in the command, " \
@@ -4133,16 +4160,17 @@ class ArkTools(Calls, commands.Cog):
         else:
             return None
 
+    # Determines if a vote is valid or not
     async def vote_handler(self, guild, channel_id, server, gamertag, vote_type):
         can_run = False
         time = datetime.datetime.now()
+        # ID doesnt exist yet so either cog was just loaded or that vote is new
         if channel_id not in self.lastran:
             self.lastran[channel_id] = {}
             can_run = True
+        # Vote type doesnt exist yet so it must be new
         if vote_type not in self.lastran[channel_id]:
             self.lastran[channel_id][vote_type] = time
-            can_run = True
-        if channel_id in self.votes:
             can_run = True
         last_ran = self.lastran[channel_id][vote_type]
         td = time - last_ran
@@ -4182,7 +4210,7 @@ class ArkTools(Calls, commands.Cog):
         else:
             tleft = cooldown - td
             tleft = time_formatter(tleft)
-            msg = f"Command is in cooldown, wait {tleft}"
+            msg = f"{vote_type} in cooldown, wait {tleft}"
             return msg
 
     @tasks.loop(seconds=10)
