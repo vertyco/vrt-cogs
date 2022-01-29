@@ -84,7 +84,7 @@ class ArkTools(Calls, commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 117117117117117117, force_registration=True)
         default_guild = {
-            "usebuttons": False,
+            "usebuttons": True,
             "alt": {  # System for detecting suspicious Xbox accounts
                 "on": False,  # Alt-detection system toggle
                 "autoban": False,  # Auto ban suspicious users toggle

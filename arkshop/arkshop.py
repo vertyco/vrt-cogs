@@ -64,7 +64,7 @@ class ArkShop(commands.Cog):
 
         }
         default_guild = {
-            "usebuttons": False,
+            "usebuttons": True,
             "shops": {},
             "logchannel": None,
             "users": {},
@@ -1640,7 +1640,7 @@ class ArkShop(commands.Cog):
                 description=f"You don't have enough {currency_name} to buy this :smiling_face_with_tear:",
                 color=discord.Color.red()
             )
-            return await message.edit(embed=embed)
+            return await message.edit(embed=embed, components=[])
 
         def check(msg: discord.Message):
             return msg.author == ctx.author and msg.channel == ctx.channel
@@ -1658,14 +1658,14 @@ class ArkShop(commands.Cog):
                     description=f"There are no set clusters configured!",
                     color=discord.Color.red()
                 )
-                return await ctx.send(embed=embed)
+                return await ctx.send(embed=embed, components=[])
             if cname not in clusters:
                 await message.delete()
                 embed = discord.Embed(
                     description=f"Cluster no longer exists, please re-set your cluster with `{ctx.prefix}setcluster`",
                     color=discord.Color.red()
                 )
-                return await ctx.send(embed=embed)
+                return await ctx.send(embed=embed, components=[])
             serverlist = []
             for server in clusters[cname]["servers"]:
                 serverlist.append(clusters[cname]["servers"][server])
@@ -1679,7 +1679,7 @@ class ArkShop(commands.Cog):
             else:
                 embed.set_footer(text="Type 'cancel' to cancel the purchase.")
             embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
-            await message.edit(embed=embed)
+            await message.edit(embed=embed, components=[])
 
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=check)
@@ -1706,7 +1706,7 @@ class ArkShop(commands.Cog):
                     description=resp,
                     color=discord.Color.red()
                 )
-                return await message.edit(embed=embed)
+                return await message.edit(embed=embed, components=[])
 
             commandlist = []
             for path in paths:
@@ -1726,7 +1726,7 @@ class ArkShop(commands.Cog):
             )
             embed.set_footer(text=random.choice(TIPS))
             embed.set_thumbnail(url=SHOP_ICON)
-            await message.edit(embed=embed)
+            await message.edit(embed=embed, components=[])
 
         # Data shop purchase
         else:
@@ -1739,14 +1739,14 @@ class ArkShop(commands.Cog):
                     description=f"Source path does not exist!",
                     color=discord.Color.red()
                 )
-                return await message.edit(embed=embed)
+                return await message.edit(embed=embed, components=[])
             # check destination dir
             if not os.path.exists(dest_directory):
                 embed = discord.Embed(
                     description=f"Destination path does not exist!",
                     color=discord.Color.red()
                 )
-                return await message.edit(embed=embed)
+                return await message.edit(embed=embed, components=[])
             item_source_file = os.path.join(source_directory, filename)
             # check source file
             if not os.path.exists(item_source_file):
@@ -1754,7 +1754,7 @@ class ArkShop(commands.Cog):
                     description=f"Data file does not exist!",
                     color=discord.Color.red()
                 )
-                return await message.edit(embed=embed)
+                return await message.edit(embed=embed, components=[])
             # last check to make sure user still wants to buy item
             embed = discord.Embed(
                 description=f"**Are you sure you want to purchase the {item_name} item?**\n"
@@ -1763,7 +1763,7 @@ class ArkShop(commands.Cog):
             )
             if desc:
                 embed.set_footer(text=desc)
-            await message.edit(embed=embed)
+            await message.edit(embed=embed, components=[])
 
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=check)
@@ -1776,7 +1776,7 @@ class ArkShop(commands.Cog):
                     color=discord.Color.blue()
                 )
                 embed.set_footer(text=random.choice(TIPS))
-                return await message.edit(embed=embed)
+                return await message.edit(embed=embed, components=[])
 
             destination = os.path.join(dest_directory, xuid)
             # remove any existing data from destination
@@ -1791,7 +1791,7 @@ class ArkShop(commands.Cog):
                     )
                     size = "{:,}".format(int(size))
                     embed.set_footer(text=f"Detected {size} bytes worth of ark data in your upload")
-                    return await message.edit(embed=embed)
+                    return await message.edit(embed=embed, components=[])
                 try:
                     os.remove(destination)
                 except PermissionError:
@@ -1799,7 +1799,7 @@ class ArkShop(commands.Cog):
                         description=f"Failed to clean source file!\n",
                         color=discord.Color.red()
                     )
-                    return await message.edit(embed=embed)
+                    return await message.edit(embed=embed, components=[])
 
             shutil.copyfile(item_source_file, destination)
             await bank.withdraw_credits(ctx.author, int(price))
@@ -1810,7 +1810,7 @@ class ArkShop(commands.Cog):
             )
             embed.set_footer(text=random.choice(TIPS))
             embed.set_thumbnail(url=SHOP_ICON)
-            await message.edit(embed=embed)
+            await message.edit(embed=embed, components=[])
 
         # Add the purchase to logs
         embed = discord.Embed(
