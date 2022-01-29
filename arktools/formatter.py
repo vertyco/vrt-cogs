@@ -10,7 +10,8 @@ import matplotlib
 import pytz
 import tabulate
 from matplotlib import pyplot as plt
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator, AutoMinorLocator
+from matplotlib.dates import DateFormatter
 from redbot.core.utils.chat_formatting import box
 
 matplotlib.use("agg")
@@ -701,12 +702,12 @@ async def get_graph(settings: dict, hours: int):
     if len(counts) == 0 or len(times) == 0:
         return None
     title = f"Player Count Over the Past {int(hours)} Hours"
-    if days > 5:
+    if days > 3:
         title = f"Player Count Over the Past {days} Days"
     if len(times) < lim:  # Time input is greater or equal to available time recorded
         hours = int(len(times) / 60)
         days = int(hours / 24)
-        if days > 5:
+        if days > 3:
             title = f"Player Count Over Lifetime ({days} Days)"
         else:
             title = f"Player Count Over Lifetime ({hours} Hours)"
@@ -730,17 +731,8 @@ async def get_graph(settings: dict, hours: int):
     maxplayers = max(y_unstaggered)
     for d in dates:
         d = datetime.datetime.fromisoformat(d)
-        d = d.astimezone(tz)
-        if days > 1:
-            d = d.strftime('%m/%d %I:%M %p')
-        else:
-            d = d.strftime('%I:%M %p')
         x.append(d)
 
-    if days > 20:
-        locator = 20
-    else:
-        locator = "auto"
     # Reverse the new lists, so they're in the correct order
     x.reverse()
     y.reverse()
@@ -790,12 +782,30 @@ async def get_graph(settings: dict, hours: int):
         plt.title(title)
         plt.tight_layout()
         plt.legend(loc=3)
-        plt.xticks(rotation=30, fontsize=9)
         plt.yticks(fontsize=10)
         plt.subplots_adjust(bottom=0.2)
         plt.grid(axis="y")
         plt.grid(axis="x")
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=locator, integer=True, min_n_ticks=10))
+
+        # Major x-axis ticks/size
+        major_locator = MaxNLocator(nbins='auto', integer=True, min_n_ticks=10)
+        major_fmt = DateFormatter('%I:%M %p', tz=tz)
+        size = 9
+        if days > 1:
+            size = 8
+            major_fmt = DateFormatter('%I:%M %p\n%m/%d', tz=tz)
+        if days >= 10:
+            major_fmt = DateFormatter('%b %d', tz=tz)
+        ax.xaxis.set_major_formatter(major_fmt)
+        ax.xaxis.set_major_locator(major_locator)
+
+        # Minor x-axis ticks
+        minor_locator = AutoMinorLocator()
+        ax.xaxis.set_minor_locator(minor_locator)
+
+        plt.xticks(fontsize=size)
+
+        fig.autofmt_xdate()
         result = io.BytesIO()
         plt.savefig(result, format="png", dpi=200)
         plt.close()
