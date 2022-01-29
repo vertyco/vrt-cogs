@@ -12,6 +12,7 @@ import discord
 import rcon
 from redbot.core import commands, Config, bank
 from redbot.core.utils.chat_formatting import box, pagify
+from dislash import InteractionClient, ActionRow, Button, ButtonStyle
 
 from .formatter import (
     shop_stats,
@@ -29,6 +30,13 @@ from .menus import (
     next_page,
     DEFAULT_CONTROLS
 )
+from .buttonmenus import (
+    buttonmenu,
+    bprev_page,
+    bclose_menu,
+    bnext_page,
+    DEFAULT_BUTTON_CONTROLS
+)
 
 log = logging.getLogger("red.vrt.arkshop")
 
@@ -38,7 +46,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.4.13"
+    __version__ = "1.5.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -46,6 +54,7 @@ class ArkShop(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        InteractionClient(bot)
         self.config = Config.get_conf(self, 117117, force_registration=True)
         default_global = {
             "main_server": None,
@@ -55,6 +64,7 @@ class ArkShop(commands.Cog):
 
         }
         default_guild = {
+            "usebuttons": False,
             "shops": {},
             "logchannel": None,
             "users": {},
@@ -71,6 +81,64 @@ class ArkShop(commands.Cog):
             "\N{DIGIT TWO}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": self.select_two,
             "\N{DIGIT THREE}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": self.select_three,
             "\N{DIGIT FOUR}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}": self.select_four,
+        }
+        self.shop_button_controls = {
+            "buttons": [
+                ActionRow(
+                    Button(
+                        style=ButtonStyle.grey,
+                        label="Back",
+                        custom_id="back"
+                    ),
+                    Button(
+                        style=ButtonStyle.gray,
+                        label="◀",
+                        custom_id="prev"
+                    ),
+                    Button(
+                        style=ButtonStyle.grey,
+                        label="❌",
+                        custom_id="exit"
+                    ),
+                    Button(
+                        style=ButtonStyle.grey,
+                        label="▶",
+                        custom_id="next"
+                    )
+                ),
+                ActionRow(
+                    Button(
+                        style=ButtonStyle.green,
+                        label="\N{DIGIT ONE}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}",
+                        custom_id="one"
+                    ),
+                    Button(
+                        style=ButtonStyle.green,
+                        label="\N{DIGIT TWO}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}",
+                        custom_id="two"
+                    ),
+                    Button(
+                        style=ButtonStyle.green,
+                        label="\N{DIGIT THREE}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}",
+                        custom_id="three"
+                    ),
+                    Button(
+                        style=ButtonStyle.green,
+                        label="\N{DIGIT FOUR}\N{VARIATION SELECTOR-16}\N{COMBINING ENCLOSING KEYCAP}",
+                        custom_id="four"
+                    )
+                )
+            ],
+            "actions": {
+                "back": self.go_back,
+                "prev": bprev_page,
+                "exit": bclose_menu,
+                "next": bnext_page,
+                "one": self.select_one,
+                "two": self.select_two,
+                "three": self.select_three,
+                "four": self.select_four
+            }
         }
 
     @staticmethod
@@ -176,7 +244,10 @@ class ArkShop(commands.Cog):
             )
             return await ctx.send(embed=embed)
         pages = await dlist(shops)
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="rshoplist")
     @commands.guild_only()
@@ -196,7 +267,10 @@ class ArkShop(commands.Cog):
             )
             return await ctx.send(embed=embed)
         pages = await rlist(shops)
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.group(name="shopset")
     @commands.admin()
@@ -252,10 +326,30 @@ class ArkShop(commands.Cog):
             )
         await ctx.send(embed=embed)
 
+    @_shopset.command(name="usebuttons")
+    @commands.admin()
+    async def toggle_buttons(self, ctx: commands.Context):
+        """
+        (Toggle) use of buttons
+
+        ArkTools will use buttons instead of reactions
+        """
+        buttons = await self.config.guild(ctx.guild).usebuttons()
+        if buttons:
+            await self.config.guild(ctx.guild).usebuttons.set(False)
+            await ctx.send("ArkShop will no longer use buttons")
+        else:
+            await self.config.guild(ctx.guild).usebuttons.set(True)
+            await ctx.send("ArkShop will now use buttons")
+
     @_shopset.command(name="fullbackup")
     @commands.is_owner()
     async def backup_all_settings(self, ctx: commands.Context):
-        """Sends a full backup of the config as a JSON file to Discord."""
+        """
+        Backup global cog data
+
+        Sends a full backup of the config as a JSON file to Discord.
+        """
         settings = await self.config.all_guilds()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
@@ -266,13 +360,22 @@ class ArkShop(commands.Cog):
     @_shopset.command(name="fullrestore")
     @commands.is_owner()
     async def restore_all_settings(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the full config."""
+        """
+        Restore a global backup
+
+        Upload a backup JSON file attached to this command to restore the full config.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
                 async with session.get(attachment_url) as resp:
                     config = await resp.json()
-            await self.config.set(config)
+            for guild in self.bot.guilds:
+                async with self.config.guild(guild).all() as conf:
+                    guild_id = str(guild.id)
+                    if guild_id in config:
+                        for k, v in config[guild_id]:
+                            conf[k] = v
             return await ctx.send("Config restored from backup file!")
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
@@ -280,7 +383,11 @@ class ArkShop(commands.Cog):
     @_shopset.command(name="dbackup")
     @commands.is_owner()
     async def backup_data_settings(self, ctx: commands.Context):
-        """Sends a full backup of the DATA shop config as a JSON file to Discord."""
+        """
+        Backup Data shop
+
+        Sends a full backup of the DATA shop config as a JSON file to Discord.
+        """
         settings = await self.config.all()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
@@ -291,7 +398,11 @@ class ArkShop(commands.Cog):
     @_shopset.command(name="drestore")
     @commands.is_owner()
     async def restore_data_settings(self, ctx: commands.Context):
-        """Upload a backup JSON file attached to this command to restore the data shop config."""
+        """
+        Restore the Data shop
+
+        Upload a backup JSON file attached to this command to restore the data shop config.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -305,7 +416,11 @@ class ArkShop(commands.Cog):
     @_shopset.command(name="rbackup")
     @commands.guildowner()
     async def backup_settings(self, ctx: commands.Context):
-        """Sends a backup of the RCON shop config as a JSON file to Discord."""
+        """
+        Backup RCON shop guild cog data
+
+        Sends a backup of the config as a JSON file to Discord.
+        """
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
         with open(f"{ctx.guild}.json", "w") as file:
@@ -316,7 +431,11 @@ class ArkShop(commands.Cog):
     @_shopset.command(name="rrestore")
     @commands.guildowner()
     async def restore_settings(self, ctx: commands.Context):
-        """Upload an RCON shop backup JSON file attached to this command to restore the config."""
+        """
+        Restore the RCON shop
+
+        Upload an RCON shop backup JSON file attached to this command to restore the config.
+        """
         if ctx.message.attachments:
             attachment_url = ctx.message.attachments[0].url
             async with aiohttp.ClientSession() as session:
@@ -1065,8 +1184,11 @@ class ArkShop(commands.Cog):
         logs = await self.config.guild(ctx.guild).logs()
         if logs["items"] == {}:
             return await ctx.send("No logs yet!")
-        embeds = await shop_stats(logs)
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        pages = await shop_stats(logs)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="shoplb")
     async def shop_leaderboard(self, ctx):
@@ -1114,7 +1236,11 @@ class ArkShop(commands.Cog):
             embeds.append(embed)
             start += 10
             stop += 10
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        pages = embeds
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="playershopstats", aliases=["pshopstats"])
     async def player_shop_stats(self, ctx, *, member: discord.Member = None):
@@ -1284,10 +1410,16 @@ class ArkShop(commands.Cog):
             embedlist.append(embed)
             start += 4
             stop += 4
-        if message:
-            await menu(ctx, embedlist, self.shop_controls, message)
+        if await self.config.guild(ctx.guild).usebuttons():
+            if message:
+                await buttonmenu(ctx, embedlist, self.shop_button_controls, message)
+            else:
+                await buttonmenu(ctx, embedlist, self.shop_button_controls)
         else:
-            await menu(ctx, embedlist, self.shop_controls)
+            if message:
+                await menu(ctx, embedlist, self.shop_controls, message)
+            else:
+                await menu(ctx, embedlist, self.shop_controls)
 
     async def item_compiler(self, ctx, message, shoptype, category_name, altname=None, ):
         title, tip, categories = await self.get_types(ctx, shoptype)
@@ -1358,7 +1490,10 @@ class ArkShop(commands.Cog):
             embedlist.append(embed)
             start += 4
             stop += 4
-        await menu(ctx, embedlist, self.shop_controls, message)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, embedlist, self.shop_button_controls, message)
+        else:
+            await menu(ctx, embedlist, self.shop_controls, message)
 
     # Either buy the item if it has no options, or compile the options and send back to menu
     async def buy_or_nah(self, ctx, message, name, shoptype):
@@ -1442,7 +1577,10 @@ class ArkShop(commands.Cog):
             embedlist.append(embed)
             start += 4
             stop += 4
-        await menu(ctx, embedlist, self.shop_controls, message)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, embedlist, self.shop_button_controls, message)
+        else:
+            await menu(ctx, embedlist, self.shop_controls, message)
 
     # Locate paths of rcon or data shop items for purchase
     async def pathfinder(self, ctx, message, shoptype, name, itemname=None):
@@ -1713,13 +1851,19 @@ class ArkShop(commands.Cog):
             controls: dict,
             msg: discord.Message,
             page: int,
-            timeout: float,
-            emoji: str,
+            timeout: float = None,
+            emoji: str = None,
     ):
-        await self.clear(ctx, msg, emoji, ctx.author)
+        buttons = False
+        if "buttons" in controls:
+            buttons = True
+        if not buttons:
+            await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
         if len(pages[page].fields) < 1:
+            if buttons:
+                return await buttonmenu(ctx, pages, controls, msg, page)
             return await menu(ctx, pages, controls, msg, page, timeout)
         name = pages[page].fields[0].name.split(' ', 1)[-1]
         await self.handler(ctx, msg, shoptype, level, name)
@@ -1731,13 +1875,19 @@ class ArkShop(commands.Cog):
             controls: dict,
             msg: discord.Message,
             page: int,
-            timeout: float,
-            emoji: str,
+            timeout: float = None,
+            emoji: str = None,
     ):
-        await self.clear(ctx, msg, emoji, ctx.author)
+        buttons = False
+        if "buttons" in controls:
+            buttons = True
+        if not buttons:
+            await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
         if len(pages[page].fields) < 2:
+            if buttons:
+                return await buttonmenu(ctx, pages, controls, msg, page)
             return await menu(ctx, pages, controls, msg, page, timeout)
         name = pages[page].fields[1].name.split(' ', 1)[-1]
         await self.handler(ctx, msg, shoptype, level, name)
@@ -1749,13 +1899,19 @@ class ArkShop(commands.Cog):
             controls: dict,
             msg: discord.Message,
             page: int,
-            timeout: float,
-            emoji: str,
+            timeout: float = None,
+            emoji: str = None,
     ):
-        await self.clear(ctx, msg, emoji, ctx.author)
+        buttons = False
+        if "buttons" in controls:
+            buttons = True
+        if not buttons:
+            await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
         if len(pages[page].fields) < 3:
+            if buttons:
+                return await buttonmenu(ctx, pages, controls, msg, page)
             return await menu(ctx, pages, controls, msg, page, timeout)
         name = pages[page].fields[2].name.split(' ', 1)[-1]
         await self.handler(ctx, msg, shoptype, level, name)
@@ -1767,13 +1923,19 @@ class ArkShop(commands.Cog):
             controls: dict,
             msg: discord.Message,
             page: int,
-            timeout: float,
-            emoji: str,
+            timeout: float = None,
+            emoji: str = None,
     ):
-        await self.clear(ctx, msg, emoji, ctx.author)
+        buttons = False
+        if "buttons" in controls:
+            buttons = True
+        if not buttons:
+            await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
         if len(pages[page].fields) < 4:
+            if buttons:
+                return await buttonmenu(ctx, pages, controls, msg, page)
             return await menu(ctx, pages, controls, msg, page, timeout)
         name = pages[page].fields[3].name.split(' ', 1)[-1]
         await self.handler(ctx, msg, shoptype, level, name)
@@ -1785,10 +1947,14 @@ class ArkShop(commands.Cog):
             controls: dict,
             msg: discord.Message,
             page: int,
-            timeout: float,
-            emoji: str,
+            timeout: float = None,
+            emoji: str = None,
     ):
-        await self.clear(ctx, msg, emoji, ctx.author)
+        buttons = False
+        if "buttons" in controls:
+            buttons = True
+        if not buttons:
+            await self.clear(ctx, msg, emoji, ctx.author)
         shoptype = pages[page].title.split()[0].lower().replace(" shop", "")
         level = pages[page].description
         await self.handler(ctx, msg, shoptype, level)

@@ -6,7 +6,9 @@ from typing import List, Union
 import discord
 from dislash import ActionRow, Button, ButtonStyle, ResponseType
 from redbot.core import commands
-
+from .menus import menu, DEFAULT_CONTROLS
+import logging
+log = logging.getLogger("red.vrt.arktools.buttonmenu")
 
 # Red menus, but with buttons :D
 
@@ -36,10 +38,14 @@ async def buttonmenu(
             raise RuntimeError("Function must be a coroutine")
 
     if not message:
-        if isinstance(current_page, discord.Embed):
-            message = await ctx.send(embed=current_page, components=buttons)
-        else:
-            message = await ctx.send(current_page, components=buttons)
+        try:
+            if isinstance(current_page, discord.Embed):
+                message = await ctx.send(embed=current_page, components=buttons)
+            else:
+                message = await ctx.send(current_page, components=buttons)
+        except TypeError:
+            log.warning("Failed to add components, using normal menu instead")
+            return await menu(ctx, pages, DEFAULT_CONTROLS)
     else:
         try:
             if isinstance(current_page, discord.Embed):
@@ -61,7 +67,7 @@ async def buttonmenu(
     return await action(ctx, pages, controls, message, page)
 
 
-async def next_page(
+async def bnext_page(
         ctx: commands.Context,
         pages: list,
         controls: dict,
@@ -91,7 +97,7 @@ async def skip_ten(
     return await buttonmenu(ctx, pages, controls, message=message, page=page)
 
 
-async def prev_page(
+async def bprev_page(
         ctx: commands.Context,
         pages: list,
         controls: dict,
@@ -121,7 +127,7 @@ async def back_ten(
     return await buttonmenu(ctx, pages, controls, message=message, page=page)
 
 
-async def close_menu(
+async def bclose_menu(
         ctx: commands.Context,
         pages: list,
         controls: dict,
@@ -132,7 +138,7 @@ async def close_menu(
         await message.delete()
 
 
-DEFAULT_CONTROLS = {
+DEFAULT_BUTTON_CONTROLS = {
     # List of ActionRows
     "buttons": [
         ActionRow(
@@ -166,9 +172,9 @@ DEFAULT_CONTROLS = {
     # Dict of coros
     "actions": {
         "prev10": back_ten,
-        "prev": prev_page,
-        "exit": close_menu,
-        "next": next_page,
+        "prev": bprev_page,
+        "exit": bclose_menu,
+        "next": bnext_page,
         "next10": skip_ten
     }
 }
