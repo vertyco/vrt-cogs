@@ -17,7 +17,8 @@
     "pytz",
     "xbox-webapi",
     "matplotlib",
-    "tabulate"
+    "tabulate",
+    "dislash.py"
   ],
   "short": "RCON tools for Ark",
   "tags": [

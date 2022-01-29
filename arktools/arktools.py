@@ -41,6 +41,7 @@ from .formatter import (
     IMSTUCK_BLUEPRINTS
 )
 from .menus import menu, DEFAULT_CONTROLS
+from .buttonmenus import buttonmenu, DEFAULT_BUTTON_CONTROLS
 from .rcon import async_rcon
 
 log = logging.getLogger("red.vrt.arktools")
@@ -70,7 +71,7 @@ class ArkTools(Calls, commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.11.47"
+    __version__ = "2.12.47"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -81,6 +82,7 @@ class ArkTools(Calls, commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 117117117117117117, force_registration=True)
         default_guild = {
+            "usebuttons": False,
             "alt": {  # System for detecting suspicious Xbox accounts
                 "on": False,  # Alt-detection system toggle
                 "autoban": False,  # Auto ban suspicious users toggle
@@ -1434,7 +1436,10 @@ class ArkTools(Calls, commands.Cog):
         pages = overview_format(stats, ctx.guild, tz)
         if len(pages) == 0:
             return await ctx.send("There are no stats available yet!")
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="arklb", aliases=["arktop"])
@@ -1445,7 +1450,10 @@ class ArkTools(Calls, commands.Cog):
         pages = lb_format(stats, ctx.guild)
         if len(pages) == 0:
             return await ctx.send("There are no stats available yet!")
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     # Get the top 10 players in the cluster, browse pages to see them all
     @commands.command(name="tribelb", aliases=["tribetop"])
@@ -1456,7 +1464,10 @@ class ArkTools(Calls, commands.Cog):
         pages = tribe_lb_format(tribes, ctx.guild)
         if len(pages) == 0:
             return await ctx.send("There are no tribes available yet!")
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     # Displays an embed of all maps for all clusters in order of time played on each map along with top player
     @commands.command(name="clusterstats")
@@ -1470,7 +1481,10 @@ class ArkTools(Calls, commands.Cog):
         if len(pages) == 1:
             embed = pages[0]
             return await ctx.send(embed=embed)
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     # Get detailed info of an individual player on the server
     @commands.command(name="playerstats")
@@ -1726,6 +1740,22 @@ class ArkTools(Calls, commands.Cog):
             await self.config.guild(ctx.guild).crosschat.set(True)
             await ctx.send("Cross-Chat has been **Enabled**")
         await self.initialize()
+
+    @arktools_main.command(name="usebuttons")
+    @commands.admin()
+    async def toggle_buttons(self, ctx: commands.Context):
+        """
+        (Toggle) use of buttons
+
+        ArkTools will use buttons instead of reactions
+        """
+        buttons = await self.config.guild(ctx.guild).usebuttons()
+        if buttons:
+            await self.config.guild(ctx.guild).usebuttons.set(False)
+            await ctx.send("ArkTools will no longer use buttons")
+        else:
+            await self.config.guild(ctx.guild).usebuttons.set(True)
+            await ctx.send("ArkTools will now use buttons")
 
     @arktools_main.command(name="fullbackup")
     @commands.is_owner()
@@ -2876,7 +2906,10 @@ class ArkTools(Calls, commands.Cog):
             embed.set_footer(text=f"Pages: {cur_page}/{len(content)}")
             pages.append(embed)
             cur_page += 1
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @server_settings.command(name="eventlog")
     async def set_event_log(self, ctx: commands.Context, channel: discord.TextChannel = None):
