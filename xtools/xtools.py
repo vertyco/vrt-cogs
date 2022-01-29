@@ -8,6 +8,7 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 from redbot.core.utils.chat_formatting import box
+from dislash import ActionRow, Button, ButtonStyle
 
 from .formatter import (profile,
                         profile_embed,
@@ -19,13 +20,8 @@ from .formatter import (profile,
                         gwg_embeds,
                         mostplayed,
                         stats_api_format)
-from .menus import (menu,
-                    DEFAULT_CONTROLS,
-                    next_page,
-                    prev_page,
-                    skip_ten,
-                    back_ten,
-                    close_menu)
+from .menus import DEFAULT_CONTROLS
+from .menus import buttonmenu as menu
 
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -37,7 +33,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.3.8"
+    __version__ = "3.4.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -551,15 +547,26 @@ class XTools(commands.Cog):
                 )
                 return await msg.edit(embed=embed)
             await msg.delete()
-
+            default_buttons = DEFAULT_CONTROLS["buttons"]
+            default_actions = DEFAULT_CONTROLS["actions"]
+            search_action = ActionRow(
+                Button(
+                    style=ButtonStyle.grey,
+                    label="Search Friends",
+                    custom_id="search"
+                )
+            )
             search_controls = {
-                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}": back_ten,
-                "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
-                "\N{CROSS MARK}": close_menu,
-                "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
-                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}": skip_ten,
-                "\N{LEFT-POINTING MAGNIFYING GLASS}": self.searching,
+                "buttons": [
+                    default_buttons[0],
+                    search_action
+                ],
+                "actions": {
+                    "search": self.searching
+                }
             }
+            for k, v in default_actions.items():
+                search_controls["actions"][k] = v
             await menu(ctx, pages, search_controls)
 
     async def searching(self,
@@ -567,9 +574,7 @@ class XTools(commands.Cog):
                         pages: list,
                         controls: dict,
                         msg: discord.Message,
-                        page: int,
-                        timeout: float,
-                        emoji: str,
+                        page: int
                         ):
         data = self.cache[str(ctx.author.id)]
         embed = discord.Embed(
@@ -599,7 +604,7 @@ class XTools(commands.Cog):
                 players.append(player["gamertag"])
         if len(players) == 0:
             return await msg.edit(
-                embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list."))
+                embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list."), components=[])
         elif len(players) > 1:
             flist = ""
             count = 1
