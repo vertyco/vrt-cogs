@@ -1,10 +1,9 @@
 import datetime
 import json
 import math
-import tabulate
-
 
 import discord
+import tabulate
 from redbot.core.utils.chat_formatting import box
 
 

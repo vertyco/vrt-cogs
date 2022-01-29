@@ -21,6 +21,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
+from dislash import InteractionClient
 
 from .calls import Calls
 from .formatter import (
@@ -79,6 +80,7 @@ class ArkTools(Calls, commands.Cog):
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        InteractionClient(bot)
         self.bot = bot
         self.config = Config.get_conf(self, 117117117117117117, force_registration=True)
         default_guild = {

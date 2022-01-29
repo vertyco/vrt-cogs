@@ -2,9 +2,13 @@ import asyncio
 import contextlib
 import functools
 from typing import List, Union
+
 import discord
-from redbot.core import commands
 from dislash import ActionRow, Button, ButtonStyle, ResponseType
+from redbot.core import commands
+from .menus import menu, DEFAULT_CONTROLS
+import logging
+log = logging.getLogger("red.vrt.arktools.buttonmenu")
 
 # Red menus, but with buttons :D
 
@@ -34,10 +38,14 @@ async def buttonmenu(
             raise RuntimeError("Function must be a coroutine")
 
     if not message:
-        if isinstance(current_page, discord.Embed):
-            message = await ctx.send(embed=current_page, components=buttons)
-        else:
-            message = await ctx.send(current_page, components=buttons)
+        try:
+            if isinstance(current_page, discord.Embed):
+                message = await ctx.send(embed=current_page, components=buttons)
+            else:
+                message = await ctx.send(current_page, components=buttons)
+        except TypeError:
+            log.warning("Failed to add components, using normal menu instead")
+            return await menu(ctx, pages, DEFAULT_CONTROLS)
     else:
         try:
             if isinstance(current_page, discord.Embed):
@@ -128,6 +136,7 @@ async def close_menu(
 ):
     with contextlib.suppress(discord.NotFound):
         await message.delete()
+
 
 DEFAULT_BUTTON_CONTROLS = {
     # List of ActionRows

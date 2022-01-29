@@ -1,14 +1,15 @@
 import asyncio
 import json
+
 import aiohttp
 import discord
 import xmltojson
+from dislash import ActionRow, Button, ButtonStyle
 from redbot.core import commands, Config
+from redbot.core.utils.chat_formatting import box
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
-from redbot.core.utils.chat_formatting import box
-from dislash import ActionRow, Button, ButtonStyle
 
 from .formatter import (profile,
                         profile_embed,

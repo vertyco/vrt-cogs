@@ -2,9 +2,11 @@ import asyncio
 import contextlib
 import functools
 from typing import List, Union
+
 import discord
-from redbot.core import commands
 from dislash import ActionRow, Button, ButtonStyle, ResponseType
+from redbot.core import commands
+
 
 # Red menus, but with buttons :D
 
@@ -128,6 +130,7 @@ async def close_menu(
 ):
     with contextlib.suppress(discord.NotFound):
         await message.delete()
+
 
 DEFAULT_CONTROLS = {
     # List of ActionRows
