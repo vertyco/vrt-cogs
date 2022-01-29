@@ -484,7 +484,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                     value=pstats,
                     inline=False
                 )
-            if position != "":
+            if position and global_time:
                 percent = round((total_playtime / global_time) * 100, 2)
                 embed.set_footer(text=f"Rank: {position} with {percent}% of global playtime")
             return embed

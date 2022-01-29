@@ -44,10 +44,7 @@ from .menus import menu, DEFAULT_CONTROLS
 from .rcon import async_rcon
 
 log = logging.getLogger("red.vrt.arktools")
-logging.basicConfig(filename='logs.log',
-                    filemode='a',
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    datefmt='%d-%b-%y %H:%M:%S')
+logging.basicConfig(datefmt='%d-%b-%y %H:%M:%S')
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 LIVE = "https://i.imgur.com/LPzCcgU.gif"
@@ -64,7 +61,7 @@ RICH_COLORS = [
     '<RichColor Color="1,1,0,1">',  # Yellow
     '<RichColor Color="1,0,1,1">',  # Fuchsia
     '<RichColor Color="0.5,0,0.5,1">',  # Purple
-    '<RichColor Color="0,0.5,0.5,1">'  # Blue
+    '<RichColor Color="0,0.5,0.5,1">',  # Blue
 ]
 
 
