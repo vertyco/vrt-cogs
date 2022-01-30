@@ -4261,6 +4261,10 @@ class ArkTools(Calls, commands.Cog):
                     if len(session["votes"]) < session["minvotes"]:
                         guild = session["server"]["guild"]
                         await self.executor(guild, session["server"], f"serverchat {votetype} session expired")
+                        channel = guild.get_channel(int(cid))
+                        crosschat = await self.config.guild(guild).crosschat()
+                        if channel and crosschat:
+                            await channel.send(f"{votetype} session expired")
                         if cid not in expired:
                             expired.append(cid)
         for cid in expired:
