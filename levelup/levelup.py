@@ -1080,10 +1080,10 @@ class LevelUp(commands.Cog):
         mention = await self.config.guild(ctx.guild).mention()
         if mention:
             await self.config.guild(ctx.guild).mention.set(False)
-            await ctx.send("Users will no longer be mentioned when they level up")
+            await ctx.send("Mentions **Disabled**")
         else:
             await self.config.guild(ctx.guild).mention.set(True)
-            await ctx.send("Users will now be mentioned when they level up")
+            await ctx.send("Mentions **Enabled**")
         await self.init_settings()
 
     @lvl_group.command(name="levelchannel")
@@ -1364,7 +1364,7 @@ class LevelUp(commands.Cog):
             else:
                 time_left = cooldown - td
                 tstring = time_formatter(time_left)
-                msg = f"You need to wait {tstring} before you can give more stars!"
+                msg = f"You need to wait **{tstring}** before you can give more stars!"
                 return await ctx.send(msg)
         mention = await self.config.guild(ctx.guild).mention()
         async with self.config.guild(ctx.guild).all() as conf:
@@ -1378,7 +1378,7 @@ class LevelUp(commands.Cog):
             if mention:
                 await ctx.send(f"You just gave a star to {user.mention}!")
             else:
-                await ctx.send(f"You just gave a star to {user.name}!")
+                await ctx.send(f"You just gave a star to **{user.name}**!")
 
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)

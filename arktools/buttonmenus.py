@@ -56,6 +56,8 @@ async def buttonmenu(
             return
 
     def check(inter):
+        if inter.author != ctx.author:
+            asyncio.create_task(inter.reply("You are not the author of this command", ephemeral=True))
         return inter.author == ctx.author
 
     inter = await message.wait_for_button_click(check)
