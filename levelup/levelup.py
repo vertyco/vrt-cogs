@@ -214,8 +214,6 @@ class LevelUp(commands.Cog):
         mention = conf["mention"]
         channel = conf["notifylog"]
         usepics = conf["usepics"]
-        if not any([dm, channel]):
-            return
         member = guild.get_member(int(user))
         if not member:
             return
