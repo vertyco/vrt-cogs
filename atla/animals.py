@@ -17,6 +17,7 @@ ROLES
 -utility
 
 ATTRIBUTES
+-autonomy (0-1) 
 -health (hp)
 -intelligence (int)
 -agility (agi)
@@ -43,26 +44,11 @@ pets = {
     "Flying bison": {
         "desc": "Large, flying mammal sacred to the Air Nomads",
         "img": "https://static.wikia.nocookie.net/avatar/images/3/37/Flying_bison_family.png/revision/latest/scale-to-width-down/700?cb=20130928143425",
-        "habitat": [
-            "Eastern Air Temple",
-            "Northern Air Temple",
-            "Southern Air Temple",
-            "Western Air Temple",
-            "Boiling Rock",
-            "Ember Island",
-            "Fire Fountain City",
-            "Fire Nation Capital",
-            "Hira'a village",
-            "Jang Hui",
-            "Shu Jing",
-            "Sun Warriors' ancient city",
-            "Air Temple Island"
-        ],
         "status": "endangered",
         "affinity": "air",
-        "bending": "air",
+        "special": ["airbending", "flying"],
         "food": "herbivore",
-        "autonomy": 9,
+        "autonomy": 0.9,
         "stubborness": 6,
         "strength": 8,
         "agility": 3,
