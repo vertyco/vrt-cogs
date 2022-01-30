@@ -1,14 +1,17 @@
 import asyncio
 import contextlib
 import functools
+import logging
 from typing import List, Union
 
 import discord
 from dislash import ActionRow, Button, ButtonStyle, ResponseType
 from redbot.core import commands
+
 from .menus import menu, DEFAULT_CONTROLS
-import logging
-log = logging.getLogger("red.vrt.arktools.buttonmenu")
+
+log = logging.getLogger("red.vrt.arkshop.buttonmenu")
+
 
 # Red menus, but with buttons :D
 
@@ -19,6 +22,7 @@ async def buttonmenu(
         controls: dict,
         message: discord.Message = None,
         page: int = 0,
+        timeout: float = 60.0,
 ):
     if not isinstance(pages[0], (discord.Embed, str)):
         raise RuntimeError("Pages must be of type discord.Embed or str")
@@ -60,13 +64,16 @@ async def buttonmenu(
             asyncio.create_task(inter.reply("You are not the author of this command", ephemeral=True))
         return inter.author == ctx.author
 
-    inter = await message.wait_for_button_click(check)
+    try:
+        inter = await message.wait_for_button_click(check, timeout=timeout)
+    except asyncio.TimeoutError:
+        return await message.edit(components=[])
     await inter.reply(type=ResponseType.DeferredUpdateMessage)
     button_action = inter.clicked_button.id
     if button_action not in actions:
         raise RuntimeError("Button ID must match action coro key name")
     action = actions[button_action]
-    return await action(ctx, pages, controls, message, page)
+    return await action(ctx, pages, controls, message, page, timeout=timeout)
 
 
 async def bnext_page(
@@ -74,13 +81,14 @@ async def bnext_page(
         pages: list,
         controls: dict,
         message: discord.Message,
-        page: int
+        page: int,
+        timeout: float
 ):
     if page == len(pages) - 1:
         page = 0  # Loop around to the first item
     else:
         page = page + 1
-    return await buttonmenu(ctx, pages, controls, message=message, page=page)
+    return await buttonmenu(ctx, pages, controls, message=message, page=page, timeout=timeout)
 
 
 async def skip_ten(
@@ -88,7 +96,8 @@ async def skip_ten(
         pages: list,
         controls: dict,
         message: discord.Message,
-        page: int
+        page: int,
+        timeout: float
 ):
     if len(pages) < 10:
         page = page  # Do nothing if there arent enough pages
@@ -96,7 +105,7 @@ async def skip_ten(
         page = 10 - (len(pages) - page)  # Loop around to the first item
     else:
         page = page + 10
-    return await buttonmenu(ctx, pages, controls, message=message, page=page)
+    return await buttonmenu(ctx, pages, controls, message=message, page=page, timeout=timeout)
 
 
 async def bprev_page(
@@ -104,13 +113,14 @@ async def bprev_page(
         pages: list,
         controls: dict,
         message: discord.Message,
-        page: int
+        page: int,
+        timeout: float
 ):
     if page == 0:
         page = len(pages) - 1  # Loop around to the last item
     else:
         page = page - 1
-    return await buttonmenu(ctx, pages, controls, message=message, page=page)
+    return await buttonmenu(ctx, pages, controls, message=message, page=page, timeout=timeout)
 
 
 async def back_ten(
@@ -118,7 +128,8 @@ async def back_ten(
         pages: list,
         controls: dict,
         message: discord.Message,
-        page: int
+        page: int,
+        timeout: float
 ):
     if len(pages) < 10:
         page = page  # Do nothing if there arent enough pages
@@ -126,7 +137,7 @@ async def back_ten(
         page = page + len(pages) - 10  # Loop around to the last item
     else:
         page = page - 10
-    return await buttonmenu(ctx, pages, controls, message=message, page=page)
+    return await buttonmenu(ctx, pages, controls, message=message, page=page, timeout=timeout)
 
 
 async def bclose_menu(
@@ -134,7 +145,8 @@ async def bclose_menu(
         pages: list,
         controls: dict,
         message: discord.Message,
-        page: int
+        page: int,
+        timeout: float
 ):
     with contextlib.suppress(discord.NotFound):
         await message.delete()

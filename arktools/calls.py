@@ -3,10 +3,10 @@ import json
 import aiohttp
 
 HEADERS = {
-            'x-xbl-contract-version': '2',
-            'Authorization': '',
-            'Accept-Language': 'en-US',
-        }
+    'x-xbl-contract-version': '2',
+    'Authorization': '',
+    'Accept-Language': 'en-US',
+}
 
 
 class Calls:

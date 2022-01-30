@@ -2,9 +2,11 @@ import asyncio
 import contextlib
 import functools
 from typing import List, Union
+
 import discord
-from redbot.core import commands
 from dislash import ActionRow, Button, ButtonStyle, ResponseType
+from redbot.core import commands
+
 
 # Red menus, but with buttons :D
 
@@ -52,6 +54,7 @@ async def buttonmenu(
         if inter.author != ctx.author:
             asyncio.create_task(inter.reply("You are not the author of this command", ephemeral=True))
         return inter.author == ctx.author
+
     try:
         inter = await message.wait_for_button_click(check, timeout=timeout)
     except asyncio.TimeoutError:
@@ -138,6 +141,7 @@ async def close_menu(
 ):
     with contextlib.suppress(discord.NotFound):
         await message.delete()
+
 
 DEFAULT_BUTTON_CONTROLS = {
     # List of ActionRows

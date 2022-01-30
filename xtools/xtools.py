@@ -21,8 +21,8 @@ from .formatter import (profile,
                         gwg_embeds,
                         mostplayed,
                         stats_api_format)
-from .menus import buttonmenu as menu
 from .menus import DEFAULT_BUTTON_CONTROLS
+from .menus import buttonmenu as menu
 
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"

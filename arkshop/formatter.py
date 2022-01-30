@@ -1,7 +1,8 @@
 import math
 import random
-from redbot.core.utils.chat_formatting import pagify
+
 import discord
+from redbot.core.utils.chat_formatting import pagify
 
 TIPS = [
     "Tip: The {p}shopstats command shows how many items have been purchased!",

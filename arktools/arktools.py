@@ -15,14 +15,15 @@ import numpy as np
 import pytz
 import tabulate
 from discord.ext import tasks
+from dislash import InteractionClient
 from rcon import Client
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, pagify
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
-from dislash import InteractionClient
 
+from .buttonmenus import buttonmenu, DEFAULT_BUTTON_CONTROLS
 from .calls import Calls
 from .formatter import (
     decode,
@@ -42,7 +43,6 @@ from .formatter import (
     IMSTUCK_BLUEPRINTS
 )
 from .menus import menu, DEFAULT_CONTROLS
-from .buttonmenus import buttonmenu, DEFAULT_BUTTON_CONTROLS
 from .rcon import async_rcon
 
 log = logging.getLogger("red.vrt.arktools")

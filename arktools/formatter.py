@@ -9,8 +9,8 @@ import discord
 import pytz
 import tabulate
 from matplotlib import pyplot as plt
-from matplotlib.ticker import MaxNLocator, AutoMinorLocator
 from matplotlib.dates import DateFormatter
+from matplotlib.ticker import MaxNLocator, AutoMinorLocator
 from redbot.core.utils.chat_formatting import box
 
 log = logging.getLogger("red.vrt.arktools")

@@ -10,15 +10,22 @@ import shutil
 import aiohttp
 import discord
 import rcon
-from redbot.core import commands, Config, bank
-from redbot.core.utils.chat_formatting import box, pagify
 from dislash import (InteractionClient,
                      ActionRow,
                      Button,
                      ButtonStyle,
                      SelectMenu,
                      SelectOption)
+from redbot.core import commands, Config, bank
+from redbot.core.utils.chat_formatting import box, pagify
 
+from .buttonmenus import (
+    buttonmenu,
+    bprev_page,
+    bclose_menu,
+    bnext_page,
+    DEFAULT_BUTTON_CONTROLS
+)
 from .formatter import (
     shop_stats,
     dlist,
@@ -34,13 +41,6 @@ from .menus import (
     close_menu,
     next_page,
     DEFAULT_CONTROLS
-)
-from .buttonmenus import (
-    buttonmenu,
-    bprev_page,
-    bclose_menu,
-    bnext_page,
-    DEFAULT_BUTTON_CONTROLS
 )
 
 log = logging.getLogger("red.vrt.arkshop")
