@@ -4,7 +4,7 @@ import json
 import aiohttp
 import discord
 import xmltojson
-from dislash import ActionRow, Button, ButtonStyle
+from dislash import ActionRow, Button, ButtonStyle, InteractionClient
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
 from xbox.webapi.api.client import XboxLiveClient
@@ -21,8 +21,8 @@ from .formatter import (profile,
                         gwg_embeds,
                         mostplayed,
                         stats_api_format)
-from .menus import DEFAULT_CONTROLS
 from .menus import buttonmenu as menu
+from .menus import DEFAULT_BUTTON_CONTROLS
 
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -34,7 +34,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.4.8"
+    __version__ = "3.4.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -55,7 +55,9 @@ class XTools(commands.Cog):
 
         # Caching friend list for searching
         self.cache = {}
-        self.tlist = [1, 2, 3, "test"]
+
+        # Dislash monkeypatch
+        InteractionClient(bot)
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
@@ -382,7 +384,7 @@ class XTools(commands.Cog):
                 embed = discord.Embed(description="No screenshots found", color=color)
                 return await msg.edit(embed=embed)
             await msg.delete()
-            await menu(ctx, pages, DEFAULT_CONTROLS)
+            await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
 
     @commands.command(name="xgames")
     async def get_games(self, ctx, *, gamertag=None):
@@ -510,7 +512,7 @@ class XTools(commands.Cog):
             }
             pages = game_embeds(gt, gamename, gs, data)
             await msg.delete()
-            await menu(ctx, pages, DEFAULT_CONTROLS)
+            await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
 
     @commands.command(name="xfriends")
     async def get_friends(self, ctx, *, gamertag=None):
@@ -548,8 +550,8 @@ class XTools(commands.Cog):
                 )
                 return await msg.edit(embed=embed)
             await msg.delete()
-            default_buttons = DEFAULT_CONTROLS["buttons"]
-            default_actions = DEFAULT_CONTROLS["actions"]
+            default_buttons = DEFAULT_BUTTON_CONTROLS["buttons"]
+            default_actions = DEFAULT_BUTTON_CONTROLS["actions"]
             search_action = ActionRow(
                 Button(
                     style=ButtonStyle.grey,
@@ -575,7 +577,8 @@ class XTools(commands.Cog):
                         pages: list,
                         controls: dict,
                         msg: discord.Message,
-                        page: int
+                        page: int,
+                        timeout: float
                         ):
         data = self.cache[str(ctx.author.id)]
         embed = discord.Embed(
@@ -667,7 +670,7 @@ class XTools(commands.Cog):
                 embed = discord.Embed(description="No game clips found", color=color)
                 return await msg.edit(embed=embed)
             await msg.delete()
-            await menu(ctx, pages, DEFAULT_CONTROLS)
+            await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
 
     @commands.command(name="xstatus")
     async def get_microsoft_status(self, ctx):
@@ -695,7 +698,7 @@ class XTools(commands.Cog):
                     game_data = json.loads((await xbl_client.catalog.get_products(game_ids)).json())
                     products = game_data["products"]
                     pages = gwg_embeds(products)
-                    return await menu(ctx, pages, DEFAULT_CONTROLS)
+                    return await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
 
     @commands.command(name="xmostplayed")
     async def get_mostplayed(self, ctx, *, gamertag=None):
@@ -785,4 +788,4 @@ class XTools(commands.Cog):
             else:
                 await msg.delete()
 
-            return await menu(ctx, pages, DEFAULT_CONTROLS)
+            return await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
