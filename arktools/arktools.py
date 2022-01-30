@@ -545,13 +545,14 @@ class ArkTools(Calls, commands.Cog):
         if len(cmd) == 1:
             return command, None
         # Pull command name and append the rest to a string for the rename
-        if command == "rename":
+        # This also works for the updategt command
+        if command == "rename" or command == "updategt":
             args = cmd[1:]
-            newname = ""
+            name = ""
             for i in args:
-                newname += f"{i} "
-            newname = newname.strip()
-            arg = newname
+                name += f"{i} "
+            name = name.strip()
+            arg = name
         # All other commands just have 1 arg
         else:
             arg = cmd[1]
@@ -3858,14 +3859,11 @@ class ArkTools(Calls, commands.Cog):
         if not com:
             return ""
         xuid, stats = await self.get_player(gamertag, players)
-        if not xuid or not stats:
-            resp = "In-game command failed! This can happen if you recently changed your Gamertag"
-            com = f"serverchat {resp}"
-            await self.executor(guild, server, com)
-            log.info(f"In-Game command failed for: {gamertag}, {com}")
-            return resp
+        failed = f"In-game command failed! This can happen if you recently changed your Gamertag. " \
+                 f"Type {prefix}updategt YourOldGamertag to fix this"
+
         # Help command
-        elif com == "help":
+        if com == "help":
             # Help info can be too long for broadcast message if too many extra commands are enabled
             # So send the extras in server chat
             if extras == 0:
@@ -3885,6 +3883,11 @@ class ArkTools(Calls, commands.Cog):
             return resp
         # Register command
         elif com == "register":
+            if not xuid or not stats:
+                com = f"serverchat {failed}"
+                await self.executor(guild, server, com)
+                log.info(f"In-Game command failed for: {gamertag}, {com}")
+                return failed
             if not arg:
                 resp = "You must include your implant ID in the command!"
                 com = f"serverchat {resp}"
@@ -3903,6 +3906,27 @@ class ArkTools(Calls, commands.Cog):
                     com = f"serverchat {resp}"
                     await self.executor(guild, server, com)
                     return resp
+
+        # Forces a players gamertag to be updated
+        # If a player changes their gamertag, it creates a discrepancy between
+        # in-game chat gamertag and listplayers gamertag, this fixes it
+        elif com == "updategt":
+            if not arg:
+                resp = "You must include your old gamertag in the command for it to update!"
+                com = f"serverchat {resp}"
+                await self.executor(guild, server, com)
+                return resp
+            else:
+                old_gamertag = arg
+                async with self.config.guild(guild).players() as players:
+                    for xuid, data in players.items():
+                        if old_gamertag.lower() == data["username"].lower():
+                            data["username"] = gamertag
+                            resp = f"Your gamertag has been updated to {gamertag}"
+                            com = f"serverchat {resp}"
+                            await self.executor(guild, server, com)
+                            return resp
+
         # Rename command
         elif com == "rename":
             if not arg:
@@ -4040,6 +4064,11 @@ class ArkTools(Calls, commands.Cog):
                 if resp:
                     return resp
             else:
+                if not xuid or not stats:
+                    com = f"serverchat {failed}"
+                    await self.executor(guild, server, com)
+                    log.info(f"In-Game command failed for: {gamertag}, {com}")
+                    return failed
                 implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
                     resp = "Include your Implant ID in the command or use the .register command to save it"
@@ -4094,6 +4123,11 @@ class ArkTools(Calls, commands.Cog):
                 if resp:
                     return resp
             else:
+                if not xuid or not stats:
+                    com = f"serverchat {failed}"
+                    await self.executor(guild, server, com)
+                    log.info(f"In-Game command failed for: {gamertag}, {com}")
+                    return failed
                 implant = self.get_implant(stats, str(server["chatchannel"]))
                 if not implant:
                     resp = "Include your Implant ID in the command or use the .register command to save it"
@@ -4144,6 +4178,11 @@ class ArkTools(Calls, commands.Cog):
                     return resp
         # Starter kit command
         elif com == "kit":
+            if not xuid or not stats:
+                com = f"serverchat {failed}"
+                await self.executor(guild, server, com)
+                log.info(f"In-Game command failed for: {gamertag}, {com}")
+                return failed
             kit = await self.config.guild(guild).kit()
             if not kit["enabled"]:
                 resp = f"{gamertag}, That command is disabled on this server at the moment"
@@ -4279,7 +4318,7 @@ class ArkTools(Calls, commands.Cog):
                         channel = guild.get_channel(int(cid))
                         crosschat = await self.config.guild(guild).crosschat()
                         if channel and crosschat:
-                            await channel.send(f"{votetype} session expired")
+                            await channel.send(f"`{votetype} session expired`")
                         if cid not in expired:
                             expired.append(cid)
         for cid in expired:
@@ -4677,7 +4716,9 @@ class ArkTools(Calls, commands.Cog):
                                 "time": current_time.isoformat(),
                                 "map": mapstring
                             }
-                            stats[xuid]["username"] = gamertag
+                            # Havent decided on gt updates
+                            # stats[xuid]["username"] = gamertag
+
                             # Rank system
                             ranks = settings["ranks"]
                             hours = int(stats[xuid]["playtime"]["total"] / 3600)

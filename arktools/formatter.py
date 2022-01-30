@@ -6,7 +6,6 @@ import re
 import unicodedata
 
 import discord
-import matplotlib
 import pytz
 import tabulate
 from matplotlib import pyplot as plt
@@ -14,8 +13,6 @@ from matplotlib.ticker import MaxNLocator, AutoMinorLocator
 from matplotlib.dates import DateFormatter
 from redbot.core.utils.chat_formatting import box
 
-matplotlib.use("agg")
-plt.switch_backend("agg")
 log = logging.getLogger("red.vrt.arktools")
 
 # Hard coded item blueprint paths for the imstuck command
