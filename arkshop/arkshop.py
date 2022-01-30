@@ -12,7 +12,12 @@ import discord
 import rcon
 from redbot.core import commands, Config, bank
 from redbot.core.utils.chat_formatting import box, pagify
-from dislash import InteractionClient, ActionRow, Button, ButtonStyle
+from dislash import (InteractionClient,
+                     ActionRow,
+                     Button,
+                     ButtonStyle,
+                     SelectMenu,
+                     SelectOption)
 
 from .formatter import (
     shop_stats,
@@ -182,7 +187,7 @@ class ArkShop(commands.Cog):
                 log.warning(f"RSHOP RCON Error: {e}")
 
     # Check if arktools is installed and loaded
-    async def arktools(self, ctx):
+    async def arktools(self, ctx: commands.Context = None):
         arktools = self.bot.get_cog("ArkTools")
         if arktools:
             return arktools
@@ -193,7 +198,8 @@ class ArkShop(commands.Cog):
                             "please install that first and load it.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed)
+            if ctx:
+                await ctx.send(embed=embed)
             return None
 
     # Iterate through arktools config and find player XUID
@@ -214,6 +220,20 @@ class ArkShop(commands.Cog):
             )
             await ctx.send(embed=embed)
             return None
+
+    async def get_implants_from_user(self, ctx, xuid: str):
+        arktools = await self.arktools()
+        if not arktools:
+            return None
+        stats = await arktools.config.guild(ctx.guild).players()
+        user = stats[xuid]["ingame"]
+        implants = []
+        for channel_id, data in user.items():
+            channel = ctx.guild.get_channel(int(channel_id))
+            implant = data["implant"]
+            if implant:
+                implants.append((channel, implant))
+        return implants
 
     async def get_types(self, ctx, shoptype):
         if shoptype == "rcon":
@@ -1631,9 +1651,7 @@ class ArkShop(commands.Cog):
         currency_name = await bank.get_currency_name(ctx.guild)
         logchannel = await self.config.guild(ctx.guild).logchannel()
         logchannel = ctx.guild.get_channel(logchannel)
-        perms = None
-        if logchannel:
-            perms = logchannel.permissions_for(ctx.guild.me).send_messages
+        usebuttons = await self.config.guild(ctx.guild).usebuttons()
         cname = users[str(ctx.author.id)]
         if not await bank.can_spend(ctx.author, int(price)):
             embed = discord.Embed(
@@ -1669,7 +1687,8 @@ class ArkShop(commands.Cog):
             serverlist = []
             for server in clusters[cname]["servers"]:
                 serverlist.append(clusters[cname]["servers"][server])
-            # ask for implant ID
+
+            # ASK FOR IMPLANT ID
             embed = discord.Embed(
                 description=f"**Type your implant ID below.**\n",
                 color=discord.Color.blue()
@@ -1679,54 +1698,116 @@ class ArkShop(commands.Cog):
             else:
                 embed.set_footer(text="Type 'cancel' to cancel the purchase.")
             embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
-            await message.edit(embed=embed, components=[])
-
-            try:
-                reply = await self.bot.wait_for("message", timeout=60, check=check)
-            except asyncio.TimeoutError:
-                return await message.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
-
-            if "cancel" in reply.content.lower() or "no" in reply.content.lower():
-                embed = discord.Embed(
-                    description=f"**Purchase cancelled.**\n",
-                    color=discord.Color.blue()
+            implants = await self.get_implants_from_user(ctx, xuid)
+            if implants and usebuttons:
+                options = []
+                for channel, implant in implants:
+                    op = SelectOption(f"{channel.name} - {implant}", implant)
+                    options.append(op)
+                comp = SelectMenu(
+                    custom_id="imp_select",
+                    placeholder="Or pick an existing implant from a map",
+                    max_values=1,
+                    options=options
                 )
-                embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
-                return await message.edit(embed=embed)
+                await message.edit(embed=embed, components=[comp])
+            else:
+                await message.edit(embed=embed, components=[])
 
-            resp = None
-            if not reply.content.isdigit():  # Check if user is stupid
-                resp = "That is not a number. Include your implant ID NUMBER in the command, " \
-                       "your Implant is in the top left of your inventory, look for the 'specimen' number"
-            if len(reply.content) > 9 or len(reply.content) < 7:  # Check if user is blind
-                resp = "Incorrect ID, Implant ID's are 7 or 9 digits long, " \
-                       "your Implant is in the top left of your inventory, look for the 'specimen' number"
-            if resp:
-                embed = discord.Embed(
-                    description=resp,
-                    color=discord.Color.red()
+            def mcheck(inter):
+                if inter.author != ctx.author:
+                    asyncio.create_task(inter.reply("You are not the author of this command", ephemeral=True))
+                return inter.author == ctx.author
+
+            async def dropdown():
+                select = await message.wait_for_dropdown(mcheck)
+                res = {"inter": select}
+                return res
+
+            async def response():
+                repl = await self.bot.wait_for("message", check=check)
+                res = {"reply": repl}
+                return res
+
+            async def wait_first(*futures):
+                done, pending = await asyncio.wait(
+                    futures,
+                    return_when=asyncio.FIRST_COMPLETED,
+                    timeout=80
                 )
-                return await message.edit(embed=embed, components=[])
+                gather = asyncio.gather(*pending)
+                gather.cancel()
+                try:
+                    await gather
+                except asyncio.CancelledError:
+                    pass
+                if done:
+                    return done.pop().result()
+                else:
+                    await message.edit(
+                        embed=discord.Embed(
+                            description="You took too long :yawning_face:"
+                        ),
+                        components=[]
+                    )
+                    return None
 
-            commandlist = []
-            for path in paths:
-                commandlist.append(f"giveitemtoplayer {reply.content} {path}")
+            result = await wait_first(dropdown(), response())
+            if not result:
+                return
 
-            tasks = []
-            for server in serverlist:
-                for command in commandlist:
-                    tasks.append(self.rcon(server, command))
-            await asyncio.gather(*tasks)
+            if "inter" in result:
+                inter = result["inter"]
+                values = [option.value for option in inter.select_menu.selected_options]
+                implant_id = values[0]
+                if implant_id:
+                    return await self.sendoff_rcon_items(
+                        ctx,
+                        message,
+                        serverlist,
+                        implant_id,
+                        item_name,
+                        paths,
+                        price,
+                        currency_name,
+                        xuid,
+                        logchannel
+                    )
+            else:
+                reply = result["reply"]
+                if "cancel" in reply.content.lower() or "no" in reply.content.lower():
+                    embed = discord.Embed(
+                        description=f"**Purchase cancelled.**\n",
+                        color=discord.Color.blue()
+                    )
+                    embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
+                    return await message.edit(embed=embed)
 
-            # withdraw credits and send purchase message
-            await bank.withdraw_credits(ctx.author, int(price))
-            embed = discord.Embed(
-                description=f"You have purchased the {item_name} item for {price} {currency_name}!",
-                color=discord.Color.green()
-            )
-            embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
-            embed.set_thumbnail(url=SHOP_ICON)
-            await message.edit(embed=embed, components=[])
+                resp = None
+                if not reply.content.isdigit():  # Check if user is stupid
+                    resp = "That is not a number. Include your implant ID NUMBER in the command, " \
+                           "your Implant is in the top left of your inventory, look for the 'specimen' number"
+                if len(reply.content) > 9 or len(reply.content) < 7:  # Check if user is blind
+                    resp = "Incorrect ID, Implant ID's are 7 or 9 digits long, " \
+                           "your Implant is in the top left of your inventory, look for the 'specimen' number"
+                if resp:
+                    embed = discord.Embed(
+                        description=resp,
+                        color=discord.Color.red()
+                    )
+                    return await message.edit(embed=embed, components=[])
+                return await self.sendoff_rcon_items(
+                    ctx,
+                    message,
+                    serverlist,
+                    reply.content,
+                    item_name,
+                    paths,
+                    price,
+                    currency_name,
+                    xuid,
+                    logchannel
+                )
 
         # Data shop purchase
         else:
@@ -1811,7 +1892,53 @@ class ArkShop(commands.Cog):
             embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
             embed.set_thumbnail(url=SHOP_ICON)
             await message.edit(embed=embed, components=[])
+            await self.log_purchase(ctx, shoptype, item_name, price, currency_name, xuid, logchannel, filename)
 
+    async def sendoff_rcon_items(self,
+                                 ctx,
+                                 message,
+                                 serverlist,
+                                 implant_id,
+                                 item_name,
+                                 paths,
+                                 price,
+                                 currency_name,
+                                 xuid,
+                                 logchannel):
+        commandlist = []
+        for path in paths:
+            commandlist.append(f"giveitemtoplayer {implant_id} {path}")
+
+        tasks = []
+        for server in serverlist:
+            for command in commandlist:
+                tasks.append(self.rcon(server, command))
+        await asyncio.gather(*tasks)
+
+        # withdraw credits and send purchase message
+        await bank.withdraw_credits(ctx.author, int(price))
+        embed = discord.Embed(
+            description=f"You have purchased the {item_name} item for {price} {currency_name}!",
+            color=discord.Color.green()
+        )
+        embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
+        embed.set_thumbnail(url=SHOP_ICON)
+        await message.edit(embed=embed, components=[])
+        await self.log_purchase(ctx, "rcon", item_name, price, currency_name, xuid, logchannel)
+
+    async def log_purchase(self,
+                           ctx,
+                           shoptype,
+                           item_name,
+                           price,
+                           currency_name,
+                           xuid,
+                           logchannel,
+                           filename=None,
+                           ):
+        perms = None
+        if logchannel:
+            perms = logchannel.permissions_for(ctx.guild.me).send_messages
         # Add the purchase to logs
         embed = discord.Embed(
             title=f"{shoptype.upper()} Purchase",
