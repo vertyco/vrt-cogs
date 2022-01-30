@@ -3923,6 +3923,7 @@ class ArkTools(Calls, commands.Cog):
             return resp
         # Vote day command
         elif com == "voteday":
+            vote_type = com
             remaining = await self.vote_handler(guild, cid, server, gamertag, "voteday")
             if isinstance(remaining, str):
                 resp = remaining
@@ -3941,9 +3942,11 @@ class ArkTools(Calls, commands.Cog):
                 com = "settimeofday 07:00"
                 await self.executor(guild, server, com)
                 del self.votes[cid]
+                self.update_lastran(cid, vote_type)
                 return resp
         # Vote night command
         elif com == "votenight":
+            vote_type = com
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votenight")
             if isinstance(remaining, str):
                 resp = remaining
@@ -3962,9 +3965,11 @@ class ArkTools(Calls, commands.Cog):
                 com = "settimeofday 22:00"
                 await self.executor(guild, server, com)
                 del self.votes[cid]
+                self.update_lastran(cid, vote_type)
                 return resp
         # Dino wipe command
         elif com == "votedinowipe":
+            vote_type = com
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votedinowipe")
             if isinstance(remaining, str):
                 resp = remaining
@@ -3983,9 +3988,11 @@ class ArkTools(Calls, commands.Cog):
                 com = "destroywilddinos"
                 await self.executor(guild, server, com)
                 del self.votes[cid]
+                self.update_lastran(cid, vote_type)
                 return resp
         # Vote server cleanup command, wipes beaver dams and spoiled eggs
         elif com == "votecleanup":
+            vote_type = com
             remaining = await self.vote_handler(guild, cid, server, gamertag, "votecleanup")
             if isinstance(remaining, str):
                 resp = remaining
@@ -4011,6 +4018,7 @@ class ArkTools(Calls, commands.Cog):
                 for cleanup_command in cleanup_commands:
                     await self.executor(guild, server, cleanup_command)
                 del self.votes[cid]
+                self.update_lastran(cid, vote_type)
                 return resp
         # Player count command
         elif com == "players":
@@ -4198,26 +4206,36 @@ class ArkTools(Calls, commands.Cog):
         else:
             return None
 
+    def init_lastran(self, cid: str):
+        # ID doesnt exist yet so either cog was just loaded or that vote is new
+        if cid not in self.lastran:
+            self.lastran[cid] = {}
+
+    def update_lastran(self, cid: str, vote_type: str):
+        self.init_lastran(cid)
+        time = datetime.datetime.now()
+        self.lastran[cid][vote_type] = time
+
     # Determines if a vote is valid or not
     async def vote_handler(self, guild, channel_id, server, gamertag, vote_type):
-        can_run = False
         time = datetime.datetime.now()
-        # ID doesnt exist yet so either cog was just loaded or that vote is new
-        if channel_id not in self.lastran:
-            self.lastran[channel_id] = {}
-            can_run = True
-        # Vote type doesnt exist yet so it must be new
+        self.init_lastran(channel_id)
         if vote_type not in self.lastran[channel_id]:
-            self.lastran[channel_id][vote_type] = time
             can_run = True
-        last_ran = self.lastran[channel_id][vote_type]
-        td = time - last_ran
-        td = td.total_seconds()
-        td = int(td)
-        cooldown = await self.config.guild(guild).votecooldown()
-        cooldown = int(cooldown)
-        if td > cooldown:
-            can_run = True
+        else:
+            last_ran = self.lastran[channel_id][vote_type]
+            td = time - last_ran
+            td = td.total_seconds()
+            td = int(td)
+            cooldown = await self.config.guild(guild).votecooldown()
+            cooldown = int(cooldown)
+            if td > cooldown:
+                can_run = True
+            else:
+                tleft = cooldown - td
+                tleft = time_formatter(tleft)
+                msg = f"{vote_type} in cooldown, wait {tleft}"
+                return msg
         if can_run:
             time_till_expired = time + datetime.timedelta(minutes=2)
             playerlist = self.playerlist[channel_id]
@@ -4245,22 +4263,19 @@ class ArkTools(Calls, commands.Cog):
             current = len(self.votes[channel_id][vote_type]["votes"])
             remaining = min_votes - current
             return int(remaining)
-        else:
-            tleft = cooldown - td
-            tleft = time_formatter(tleft)
-            msg = f"{vote_type} in cooldown, wait {tleft}"
-            return msg
 
     @tasks.loop(seconds=10)
     async def vote_sessions(self):
         expired = []
         for cid in self.votes:
             for votetype, session in self.votes[cid].items():
+                self.init_lastran(cid)
                 time = datetime.datetime.now()
                 if time > session["expires"]:
                     if len(session["votes"]) < session["minvotes"]:
                         guild = session["server"]["guild"]
                         await self.executor(guild, session["server"], f"serverchat {votetype} session expired")
+                        self.update_lastran(cid, votetype)
                         channel = guild.get_channel(int(cid))
                         crosschat = await self.config.guild(guild).crosschat()
                         if channel and crosschat:
