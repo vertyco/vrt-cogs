@@ -1347,9 +1347,9 @@ class LevelUp(commands.Cog):
         star_giver = str(ctx.author.id)
         guild_id = str(ctx.guild.id)
         if ctx.author == user:
-            return await ctx.send("**You can't give stars to yourself!**")
+            return await ctx.send("You can't give stars to yourself!")
         if user.bot:
-            return await ctx.send("**You can't give stars to a bot!**")
+            return await ctx.send("You can't give stars to a bot!")
         if guild_id not in self.stars:
             self.stars[guild_id] = {}
         if star_giver not in self.stars[guild_id]:
@@ -1364,7 +1364,7 @@ class LevelUp(commands.Cog):
             else:
                 time_left = cooldown - td
                 tstring = time_formatter(time_left)
-                msg = f"**You need to wait {tstring} before you can give more stars!**"
+                msg = f"You need to wait {tstring} before you can give more stars!"
                 return await ctx.send(msg)
         mention = await self.config.guild(ctx.guild).mention()
         async with self.config.guild(ctx.guild).all() as conf:
@@ -1376,9 +1376,9 @@ class LevelUp(commands.Cog):
             else:
                 users[user_id]["stars"] += 1
             if mention:
-                await ctx.send(f"**You just gave a star to {user.mention}!**")
+                await ctx.send(f"You just gave a star to {user.mention}!")
             else:
-                await ctx.send(f"**You just gave a star to {user.name}!**")
+                await ctx.send(f"You just gave a star to {user.name}!")
 
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)

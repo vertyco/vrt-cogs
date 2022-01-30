@@ -139,6 +139,9 @@ class ArkTools(Calls, commands.Cog):
         self.downtime = {}
         self.time = ""
 
+        # Only fire certain warnings once so loops dont spam logs
+        self.warnings = []
+
         # Offline servers go into a queue to wait a minute before bot attempts to reconnect
         self.queue = {}
 
@@ -3631,7 +3634,10 @@ class ArkTools(Calls, commands.Cog):
         if jperms and lperms:
             can_send = True
         else:
-            log.warning(f"Missing send message perms in {guild} for Join/Leave channel")
+            error = f"Missing send message perms in {guild} for Join/Leave channel"
+            if error not in self.warnings:
+                log.warning(error)
+                self.warnings.append(error)
 
         # Previously cached player list to compare with newplayerlist
         lastplayerlist = self.playerlist[channel]
@@ -4669,7 +4675,8 @@ class ArkTools(Calls, commands.Cog):
                                     rank = guild.get_role(rank)
                                     if rank not in user.roles:
                                         try:
-                                            await user.add_roles(rank)
+                                            if rank:
+                                                await user.add_roles(rank)
                                         except Exception as e:
                                             log.warning(f"Failed to add rank role to user: {e}")
                                     if settings["autoremove"]:

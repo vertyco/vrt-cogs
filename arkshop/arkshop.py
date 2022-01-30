@@ -1232,7 +1232,7 @@ class ArkShop(commands.Cog):
                 title="Item Purchases",
                 description=items
             )
-            embed.set_footer(text=f"Pages: {page + 1}/{pages}\n{random.choice(TIPS)}")
+            embed.set_footer(text=f"Pages: {page + 1}/{pages}\n{random.choice(TIPS).format(p=ctx.prefix)}")
             embeds.append(embed)
             start += 10
             stop += 10
@@ -1294,7 +1294,7 @@ class ArkShop(commands.Cog):
                 description=msg
             )
             if count == pages:
-                embed.set_footer(text=random.choice(TIPS))
+                embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
             await ctx.send(embed=embed)
             count += 1
 
@@ -1691,7 +1691,7 @@ class ArkShop(commands.Cog):
                     description=f"**Purchase cancelled.**\n",
                     color=discord.Color.blue()
                 )
-                embed.set_footer(text=random.choice(TIPS))
+                embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
                 return await message.edit(embed=embed)
 
             resp = None
@@ -1724,7 +1724,7 @@ class ArkShop(commands.Cog):
                 description=f"You have purchased the {item_name} item for {price} {currency_name}!",
                 color=discord.Color.green()
             )
-            embed.set_footer(text=random.choice(TIPS))
+            embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
             embed.set_thumbnail(url=SHOP_ICON)
             await message.edit(embed=embed, components=[])
 
@@ -1775,7 +1775,7 @@ class ArkShop(commands.Cog):
                     description=f"**Purchase cancelled.**\n",
                     color=discord.Color.blue()
                 )
-                embed.set_footer(text=random.choice(TIPS))
+                embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
                 return await message.edit(embed=embed, components=[])
 
             destination = os.path.join(dest_directory, xuid)
@@ -1808,7 +1808,7 @@ class ArkShop(commands.Cog):
                             f"**Make sure to wait 30 seconds before accessing your Ark data!**",
                 color=discord.Color.green()
             )
-            embed.set_footer(text=random.choice(TIPS))
+            embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
             embed.set_thumbnail(url=SHOP_ICON)
             await message.edit(embed=embed, components=[])
 

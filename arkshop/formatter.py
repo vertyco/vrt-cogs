@@ -4,15 +4,15 @@ from redbot.core.utils.chat_formatting import pagify
 import discord
 
 TIPS = [
-    "Tip: The shopstats command shows how many items have been purchased!",
-    "Tip: The shoplb command shows the shop leaderboard for the server!",
-    "Tip: The rshoplist command shows an overview of all RCON shop categories and items!",
-    "Tip: The dshoplist command shows an overview of all DATA shop categories and items!",
-    "Tip: The playershopstats command shows shop stats for a particular member, or yourself!",
-    "Tip: You can use the playerstats command to view playtime stats for a specific player, or yourself!",
-    "Tip: You can use the clusterstats command to view the top player on each cluster!",
-    "Tip: You can use the arklb command to view a global playtime leaderboard for all maps!",
-    "Tip: You can use the servergraph command to view player count over time!",
+    "Tip: The {p}shopstats command shows how many items have been purchased!",
+    "Tip: The {p}shoplb command shows the shop leaderboard for the server!",
+    "Tip: The {p}rshoplist command shows an overview of all RCON shop categories and items!",
+    "Tip: The {p}dshoplist command shows an overview of all DATA shop categories and items!",
+    "Tip: The {p}playershopstats command shows shop stats for a particular member, or yourself!",
+    "Tip: You can use the {p}playerstats command to view playtime stats for a specific player, or yourself!",
+    "Tip: You can use the {p}clusterstats command to view the top player on each cluster!",
+    "Tip: You can use the {p}arklb command to view a global playtime leaderboard for all maps!",
+    "Tip: You can use the {p}servergraph command to view player count over time!",
 ]
 SHOP_ICON = "https://i.imgur.com/iYpszMO.jpg"
 SELECTORS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
