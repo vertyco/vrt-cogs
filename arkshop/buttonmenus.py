@@ -68,7 +68,10 @@ async def buttonmenu(
         inter = await message.wait_for_button_click(check, timeout=timeout)
     except asyncio.TimeoutError:
         return await message.edit(components=[])
-    await inter.reply(type=ResponseType.DeferredUpdateMessage)
+    try:
+        await inter.reply(type=ResponseType.DeferredUpdateMessage)
+    except discord.NotFound:
+        log.warning(f"InteractionError for {inter.author} not sure whats wrong.")
     button_action = inter.clicked_button.id
     if button_action not in actions:
         raise RuntimeError("Button ID must match action coro key name")
