@@ -1,0 +1,34 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Discord support ticket system with buttons!",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores Discord ID's",
+  "hidden": false,
+  "install_msg": "Thank you for installing Support! type `[p]help Support` to see all commands.",
+  "min_bot_version": "3.4.0",
+  "permissions": [
+    "read_messages",
+    "send_messages",
+    "manage_messages",
+    "manage_permissions",
+    "manage_roles",
+    "attach_files",
+    "embed_links",
+    "manage_channels"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "dislash.py"
+  ],
+  "short": "Leveling System",
+  "tags": [
+    "utility",
+    "tickets",
+    "ticket",
+    "support",
+    "support system"
+  ],
+  "type": "COG"
+}

@@ -490,6 +490,12 @@ class ArkTools(Calls, commands.Cog):
     # Fetch a user ID from a given character name if it exists
     @staticmethod
     async def get_uid(players: dict, character_name: str) -> str:
+        if isinstance(character_name, tuple):
+            character_name = character_name[0]
+            if not character_name:
+                return ""
+        if not isinstance(character_name, str):
+            return ""
         if character_name.lower() in ["human", "humano"]:
             return ""  # Dont bother logging players that dont name their character
         for uid, data in players.items():
@@ -3497,22 +3503,24 @@ class ArkTools(Calls, commands.Cog):
     # Initiates the Listplayers loop
     @tasks.loop(seconds=30)
     async def listplayers(self):
-        listplayertasks = []
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            listplayertasks.append(self.executor(guild, server, "listplayers"))
-        await asyncio.gather(*listplayertasks)
+            task_name = f"{guild.id}-{server['chatchannel']}-listplayers"
+            running = [task.get_name() for task in asyncio.all_tasks()]
+            if task_name not in running:
+                asyncio.create_task(self.executor(guild, server, "listplayers"), name=task_name)
 
     # Initiates the GetChat loop
     @tasks.loop(seconds=5)
     async def getchat(self):
-        chat_tasks = []
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            chat_tasks.append(self.executor(guild, server, "getchat"))
-        await asyncio.gather(*chat_tasks)
+            task_name = f"{guild.id}-{server['chatchannel']}-getchat"
+            running = [task.get_name() for task in asyncio.all_tasks()]
+            if task_name not in running:
+                asyncio.create_task(self.executor(guild, server, "getchat"), name=task_name)
 
     # Non-blocking sync executor for rcon task loops
     # This is the main function for all rcon task loops
