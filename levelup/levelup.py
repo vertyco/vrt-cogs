@@ -183,7 +183,12 @@ class LevelUp(commands.Cog):
             async with self.config.guild(guild).users() as users:
                 if not users:
                     continue
-                for user, data in self.cache[guild_id].items():
+                for user in self.cache[guild_id]:
+                    if not user:
+                        continue
+                    data = self.cache[guild_id][user]
+                    if not data:
+                        continue
                     if user not in users:
                         users[user] = data
                     else:
@@ -203,6 +208,7 @@ class LevelUp(commands.Cog):
                     data["xp"] = 0
                     data["voice"] = 0
                     data["messages"] = 0
+
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
