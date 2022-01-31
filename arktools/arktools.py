@@ -14,6 +14,8 @@ import discord
 import numpy as np
 import pytz
 import tabulate
+import matplotlib
+import matplotlib.pyplot as plt
 from discord.ext import tasks
 from dislash import InteractionClient
 from rcon import Client
@@ -44,6 +46,9 @@ from .formatter import (
 )
 from .menus import menu, DEFAULT_CONTROLS
 from .rcon import async_rcon
+
+matplotlib.use("agg")
+plt.switch_backend("agg")
 
 log = logging.getLogger("red.vrt.arktools")
 logging.basicConfig(datefmt='%d-%b-%y %H:%M:%S')
