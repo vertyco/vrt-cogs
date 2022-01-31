@@ -1,6 +1,6 @@
 import datetime
 import logging
-import sys
+
 import discord
 from redbot.core import commands
 from redbot.core.utils.mod import is_admin_or_superior

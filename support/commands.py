@@ -1,9 +1,9 @@
 import asyncio
-import discord
 from typing import Union
+
+import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box
-from redbot.core.utils import chat_formatting as chat
 
 
 class SupportCommands(commands.Cog):
@@ -116,6 +116,7 @@ class SupportCommands(commands.Cog):
         await self.config.guild(ctx.guild).message_id.set(message.id)
         await self.config.guild(ctx.guild).channel_id.set(message.channel.id)
         await ctx.send("Support ticket message has been set!")
+        # Cancel the guild task if already running and re-add components to update button
         for task in asyncio.all_tasks():
             if str(ctx.guild.id) == str(task.get_name()):
                 task.cancel()
@@ -190,6 +191,7 @@ class SupportCommands(commands.Cog):
         if len(button_content) <= 80:
             await self.config.guild(ctx.guild).button_content.set(button_content)
             await ctx.tick()
+            # Cancel the guild task and re-add components to update button
             for task in asyncio.all_tasks():
                 if str(ctx.guild.id) == str(task.get_name()):
                     task.cancel()
@@ -202,6 +204,7 @@ class SupportCommands(commands.Cog):
         """Set a button emoji, this will override your button content"""
         await self.config.guild(ctx.guild).emoji.set(str(emoji))
         await ctx.tick()
+        # Cancel the guild task and re-add components to update button
         for task in asyncio.all_tasks():
             if str(ctx.guild.id) == str(task.get_name()):
                 task.cancel()

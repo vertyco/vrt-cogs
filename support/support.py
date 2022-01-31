@@ -18,6 +18,9 @@ from .commands import SupportCommands
 log = logging.getLogger("red.vrt.support")
 
 
+# Shoutout to Neuro Assassin#4779 for having a nice support ticket cog I could get ideas from
+
+
 class Support(BaseCommands, SupportCommands, commands.Cog):
     """
     Support ticket system with buttons/logging
@@ -71,7 +74,6 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         self.check_listener.cancel()
 
     # Just checks if guild has been added to the listener
-    # If all guilds are configured it wil self cancel
     @tasks.loop(seconds=10)
     async def check_listener(self):
         await self.add_components()
@@ -97,6 +99,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             message = await channel.fetch_message(conf["message_id"])
             if not message:
                 continue
+
+            # Check if listener task is running for guild
             guild_id = str(guild.id)
             running = [task.get_name() for task in asyncio.all_tasks()]
             if guild_id not in running:
