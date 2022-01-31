@@ -181,6 +181,8 @@ class LevelUp(commands.Cog):
             base = conf["base"]
             exp = conf["exp"]
             async with self.config.guild(guild).users() as users:
+                if not users:
+                    continue
                 for user, data in self.cache[guild_id].items():
                     if user not in users:
                         users[user] = data
