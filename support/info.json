@@ -4,7 +4,7 @@
   ],
   "description": "Discord support ticket system with buttons!",
   "disabled": false,
-  "end_user_data_statement": "This cog stores Discord ID's",
+  "end_user_data_statement": "This cog does not persistently store data about users.",
   "hidden": false,
   "install_msg": "Thank you for installing Support! type `[p]help Support` to see all commands.",
   "min_bot_version": "3.4.0",
@@ -22,7 +22,7 @@
   "requirements": [
     "dislash.py"
   ],
-  "short": "Leveling System",
+  "short": "Support ticket system",
   "tags": [
     "utility",
     "tickets",

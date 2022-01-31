@@ -1,7 +1,7 @@
 from .support import Support
 
 ___red_end_user_data_statement__ = (
-    "This cog stores Discord ID's"
+    "This cog does not persistently store data about users."
 )
 
 
