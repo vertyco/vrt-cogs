@@ -209,7 +209,6 @@ class LevelUp(commands.Cog):
                     data["voice"] = 0
                     data["messages"] = 0
 
-
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
         conf = self.settings[str(guild.id)]
@@ -461,10 +460,7 @@ class LevelUp(commands.Cog):
 
     @tasks.loop(seconds=15)
     async def cache_dumper(self):
-        try:
-            await self.dump_cache()
-        except Exception as e:
-            log.warning(f"Error in cache dumber loop: {e}")
+        await self.dump_cache()
 
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
