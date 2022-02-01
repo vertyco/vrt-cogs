@@ -99,22 +99,22 @@ class SupportCommands(commands.Cog):
         await self.add_components()
 
     @support.command(name="supportmessage")
-    async def set_support_button_message(self, ctx: commands.Context, message: discord.Message):
+    async def set_support_button_message(self, ctx: commands.Context, message_id: discord.Message):
         """
         Set the support ticket message
 
         The support button will be added to this message
         """
-        if not message.channel.permissions_for(ctx.guild.me).view_channel:
+        if not message_id.channel.permissions_for(ctx.guild.me).view_channel:
             return await ctx.send("I cant see that channel")
-        if not message.channel.permissions_for(ctx.guild.me).read_messages:
+        if not message_id.channel.permissions_for(ctx.guild.me).read_messages:
             return await ctx.send("I cant read messages in that channel")
-        if not message.channel.permissions_for(ctx.guild.me).read_message_history:
+        if not message_id.channel.permissions_for(ctx.guild.me).read_message_history:
             return await ctx.send("I cant read message history in that channel")
-        if message.author.id != self.bot.user.id:
+        if message_id.author.id != self.bot.user.id:
             return await ctx.send("I can only add buttons to my own messages!")
-        await self.config.guild(ctx.guild).message_id.set(message.id)
-        await self.config.guild(ctx.guild).channel_id.set(message.channel.id)
+        await self.config.guild(ctx.guild).message_id.set(message_id.id)
+        await self.config.guild(ctx.guild).channel_id.set(message_id.channel.id)
         await ctx.send("Support ticket message has been set!")
         # Cancel the guild task if already running and re-add components to update button
         for task in asyncio.all_tasks():
