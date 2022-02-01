@@ -12,7 +12,7 @@
     "permissions" : ["administrator"],
     "required_cogs" : {},
     "requirements" : [],
-    "short": "Ark data save tool",
+    "short": "ArkTools data save plugin",
     "tags" : ["utility", "ark", "rcon", "servermanager"],
     "type": "COG"
 }

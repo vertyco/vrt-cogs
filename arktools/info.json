@@ -20,7 +20,7 @@
     "tabulate",
     "dislash.py"
   ],
-  "short": "RCON tools for Ark",
+  "short": "Ark: Survival Evolved Server Manager",
   "tags": [
     "utility",
     "ark",
