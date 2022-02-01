@@ -210,7 +210,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 ).replace(
                     "{longdate}", now.strftime("%m-%d-%Y")
                 ).replace(
-                    "{time}", now.strftime("%I %M %p")
+                    "{time}", now.strftime("%I-%M-%p")
                 )
             )
         channel = await category.create_text_channel(channel_name, overwrites=overwrite)
