@@ -127,8 +127,7 @@ class SupportCommands(commands.Cog):
         """
         Set the message sent when a ticket is opened
 
-        You can include any of these in the message to be replaced by their value
-        when the message is sent
+        You can include any of these in the message to be replaced by their value when the message is sent
         `{username}` - Person's Discord username
         `{mention}` - This will mention the user
         `{id}` - This is the ID of the user that created the ticket
