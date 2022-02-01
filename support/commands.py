@@ -175,7 +175,7 @@ class SupportCommands(commands.Cog):
     @support.command(name="maxtickets")
     async def set_max_tickets(self, ctx: commands.Context, max_tickets: int):
         """Set the max amount of tickets a user can have opened"""
-        await self.config.guild(ctx.guild).maxtickets.set(max_tickets)
+        await self.config.guild(ctx.guild).max_tickets.set(max_tickets)
         await ctx.tick()
 
     @support.command(name="logchannel")
