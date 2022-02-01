@@ -201,7 +201,7 @@ class SupportCommands(commands.Cog):
 
     @support.command(name="buttonemoji")
     async def set_button_emoji(self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji]):
-        """Set a button emoji, this will override your button content"""
+        """Set a button emoji"""
         await self.config.guild(ctx.guild).emoji.set(str(emoji))
         await ctx.tick()
         # Cancel the guild task and re-add components to update button
