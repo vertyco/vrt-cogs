@@ -199,13 +199,19 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             channel_name = f"{user.name}"
         else:
             channel_name = (
-                name_fmt
-                    .replace("{num}", str(num))
-                    .replace("{user}", user.name)
-                    .replace("{id}", str(user.id))
-                    .replace("{shortdate}", now.strftime("%m-%d"))
-                    .replace("{longdate}", now.strftime("%m-%d-%Y"))
-                    .replace("{time}", now.strftime("%I %M %p"))
+                name_fmt.replace(
+                    "{num}", str(num)
+                ).replace(
+                    "{user}", user.name
+                ).replace(
+                    "{id}", str(user.id)
+                ).replace(
+                    "{shortdate}", now.strftime("%m-%d")
+                ).replace(
+                    "{longdate}", now.strftime("%m-%d-%Y")
+                ).replace(
+                    "{time}", now.strftime("%I %M %p")
+                )
             )
         channel = await category.create_text_channel(channel_name, overwrites=overwrite)
         if conf["message"] == "{default}":
@@ -221,14 +227,18 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         else:
             try:
                 message = (
-                    conf["message"]
-                        .replace("{username}", user.name)
-                        .replace("{mention}", str(user.mention))
-                        .replace("{id}", str(user.id))
+                    conf["message"].replace(
+                        "{username}", user.name
+                    ).replace(
+                        "{mention}", str(user.mention)
+                    ).replace(
+                        "{id}", str(user.id)
+                    )
                 )
                 msg = await channel.send(message, allowed_mentions=discord.AllowedMentions(users=True, roles=True))
             except Exception as e:
-                log.warning(f"An error occured while sending a ticket message: {e}")
+                log.warning(f"An error occurred while sending a ticket message: {e}")
+                # Revert to default message
                 if conf["user_can_close"]:
                     msg = await channel.send(
                         f"{user.mention} welcome to your ticket channel\nTo close this, "
