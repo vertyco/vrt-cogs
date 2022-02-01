@@ -129,9 +129,9 @@ class SupportCommands(commands.Cog):
 
         You can include any of these in the message to be replaced by their value
         when the message is sent
-        {username} - Person's Discord username
-        {mention} - This will mention the user
-        {id} - This is the ID of the user that created the ticket
+        `{username}` - Person's Discord username
+        `{mention}` - This will mention the user
+        `{id}` - This is the ID of the user that created the ticket
 
         You can set this to {default} to restore original settings
         """
