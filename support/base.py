@@ -98,13 +98,18 @@ class BaseCommands(commands.Cog):
             if not owner:
                 owner = await self.bot.fetch_user(int(owner_id))
 
-        now = datetime.datetime.now()
         ticket = opened[owner_id][str(chan.id)]
         pfp = ticket["pfp"]
-        opened = ticket["opened"]
-        opened = datetime.datetime.fromisoformat(opened)
-        opened = opened.strftime('%m/%d/%y at %I:%M %p')
-        closed = now.strftime('%m/%d/%y at %I:%M %p')
+
+        now = datetime.datetime.now()
+        now = now.astimezone()
+
+        opened = datetime.datetime.fromisoformat(ticket["opened"])
+        opened = opened.astimezone()
+
+        opened = opened.strftime('%m/%d/%y at %I:%M %p %Z')
+        closed = now.strftime('%m/%d/%y at %I:%M %p %Z')
+
         embed = discord.Embed(
             title="Ticket Closed",
             description=f"Ticket created by **{owner.name}-{owner_id}** has been closed.\n"
