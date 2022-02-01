@@ -18,7 +18,7 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "googletrans==3.1.0a0"
+    "googletrans"
   ],
   "short": "Auto translation between two languages.",
   "tags": [
