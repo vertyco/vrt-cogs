@@ -167,7 +167,10 @@ class BaseCommands(commands.Cog):
 
         # If DM is on, also send log to ticket owner
         if dm and owner:
-            await owner.send(embed=embed)
+            try:
+                await owner.send(embed=embed)
+            except discord.Forbidden:  # Bot is either blocked or user has left
+                pass
 
         # Delete old log message
         if log_chan:
