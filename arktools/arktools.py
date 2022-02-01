@@ -507,23 +507,28 @@ class ArkTools(Calls, commands.Cog):
                         return uid
 
     # Cleans up the most recent live embed posted in the status channel
-    @staticmethod
-    async def status_cleaner(status: dict, dest_channel: discord.TextChannel):
+    async def status_cleaner(self, status: dict):
         message = status["message"]
         multi = status["multi"]
+        channel_id = status["channel"]
+        channel = self.bot.get_channel(channel_id)
+        if not channel:
+            log.warning(f"Status cleaner cant find channel {channel_id}")
+            return
         try:
             if message:
-                msg_to_delete = await dest_channel.fetch_message(message)
+                msg_to_delete = await channel.fetch_message(message)
                 if msg_to_delete:
                     await msg_to_delete.delete()
             if multi:
                 for msg in multi:
-                    msg_to_delete = await dest_channel.fetch_message(msg)
+                    msg_to_delete = await channel.fetch_message(msg)
                     if msg_to_delete:
                         await msg_to_delete.delete()
         except discord.NotFound:  # Message could have already been deleted
             return
         except discord.Forbidden:  # User could have imported config from another bot
+            log.warning(f"Cannot delete message in {channel.name} channel in {channel.guild.name}")
             return
         except Exception as e:
             if "503 Service Unavailable" in str(e):
@@ -706,7 +711,8 @@ class ArkTools(Calls, commands.Cog):
             for server in serverlist:
                 for path in IMSTUCK_BLUEPRINTS:
                     cmd = f"GiveItemToPlayer {implant_id} {path}"
-                    asyncio.create_task(self.executor(ctx.guild, server, cmd), name=cmd)
+                    task_name = f"ArkTools-{ctx.guild.name}-{server['name']}-{server['cluster']}-GiveItemToPlayer"
+                    asyncio.create_task(self.executor(ctx.guild, server, cmd), name=task_name)
         else:
             return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
 
@@ -3469,11 +3475,14 @@ class ArkTools(Calls, commands.Cog):
         if message.channel.id in clusterchannels:
             for server in allservers:
                 cmd = f"serverchat {name}: {msg}"
-                asyncio.create_task(self.executor(guild, server, cmd), name=cmd)
+                task_name = f"ArkTools-{guild.name}-{server['name']}-{server['cluster']}-ServerChat"
+                asyncio.create_task(self.executor(guild, server, cmd), name=task_name)
         elif int(message.channel.id) == int(chatchannel):
             if not servermap["crosschat"]:
                 return
-            await self.executor(guild, servermap, f"serverchat {name}: {msg}")
+            cmd = f"serverchat {name}: {msg}"
+            task_name = f"ArkTools-{guild.name}-{servermap['name']}-{servermap['cluster']}-ServerChat"
+            asyncio.create_task(self.executor(guild, servermap, cmd), name=task_name)
         else:
             return
 
@@ -3502,7 +3511,7 @@ class ArkTools(Calls, commands.Cog):
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            task_name = f"{server['name']}-{server['cluster']}-listplayers"
+            task_name = f"ArkTools-{guild.name}-{server['name']}-{server['cluster']}-listplayers"
             running = [task.get_name() for task in asyncio.all_tasks()]
             if task_name not in running:
                 asyncio.create_task(self.executor(guild, server, "listplayers"), name=task_name)
@@ -3513,7 +3522,7 @@ class ArkTools(Calls, commands.Cog):
         for data in self.servers:
             guild = self.bot.get_guild(data[0])
             server = data[1]
-            task_name = f"{server['name']}-{server['cluster']}-getchat"
+            task_name = f"ArkTools-{guild.name}-{server['name']}-{server['cluster']}-getchat"
             running = [task.get_name() for task in asyncio.all_tasks()]
             if task_name not in running:
                 asyncio.create_task(self.executor(guild, server, "getchat"), name=task_name)
@@ -4103,7 +4112,8 @@ class ArkTools(Calls, commands.Cog):
                     cooldowns[gamertag]["imstuck"] = time.isoformat()
                     for path in IMSTUCK_BLUEPRINTS:
                         cmd = f"giveitemtoplayer {arg} {path}"
-                        asyncio.create_task(self.executor(guild, server, cmd))
+                        task_name = f"ArkTools-{guild.name}-{server['name']}-{server['cluster']}-giveitemtoplayer"
+                        asyncio.create_task(self.executor(guild, server, cmd), name=task_name)
                     resp = f"{gamertag}, your care package is on the way!"
                     com = f"serverchat {resp}"
                     await self.executor(guild, server, com)
@@ -4167,7 +4177,8 @@ class ArkTools(Calls, commands.Cog):
                     else:
                         for path in paths:
                             cmd = f"giveitemtoplayer {arg} {path}"
-                            asyncio.create_task(self.executor(guild, server, cmd), name=cmd)
+                            task_name = f"ArkTools-{guild.name}-{server['name']}-{server['cluster']}-giveitemtoplayer"
+                            asyncio.create_task(self.executor(guild, server, cmd), name=task_name)
                     resp = f"{gamertag}, your payday rewards have been sent!"
                     com = f"serverchat {resp}"
                     await self.executor(guild, server, com)
@@ -4225,7 +4236,8 @@ class ArkTools(Calls, commands.Cog):
                     kit["claimed"].append(xuid)
                     for path in kit["paths"]:
                         cmd = f"giveitemtoplayer {arg} {path}"
-                        asyncio.create_task(self.executor(guild, server, cmd), name=cmd)
+                        task_name = f"ArkTools-{guild.name}-{server['name']}-{server['cluster']}-giveitemtoplayer"
+                        asyncio.create_task(self.executor(guild, server, cmd), name=task_name)
                     resp = f"{gamertag}, you have successfully claimed your starter kit!"
                     com = f"serverchat {resp}"
                     await self.executor(guild, server, com)
@@ -4444,6 +4456,10 @@ class ArkTools(Calls, commands.Cog):
             hours = settings["status"]["time"]
             file = await get_graph(settings, int(hours))
             img = "attachment://plot.png"
+            # Cleanup previous message/messages
+            status_data = settings["status"]
+            task_name = f"ArkTools-{guild.name}-StatusCleanup"
+            asyncio.create_task(self.status_cleaner(status_data), name=task_name)
             # Nice simple single embed status channel for normal people
             if len(status) <= 4096:
                 embed = discord.Embed(
@@ -4493,9 +4509,6 @@ class ArkTools(Calls, commands.Cog):
                     new_message_list.append(message.id)
                 await self.config.guild(guild).status.message.set(None)
                 await self.config.guild(guild).status.multi.set(new_message_list)
-            # Cleanup previous message/messages
-            status_data = settings["status"]
-            await self.status_cleaner(status_data, dest_channel)
 
     @status_channel.before_loop
     async def before_status_channel(self):
@@ -4640,10 +4653,12 @@ class ArkTools(Calls, commands.Cog):
                                                     for tup in self.servers:
                                                         sguild = tup[0]
                                                         server = tup[1]
+                                                        task_name = f"ArkTools-{guild.name}-{server['name']}-" \
+                                                                    f"{server['cluster']}-Banplayer"
                                                         if sguild == guild.id:
                                                             asyncio.create_task(
                                                                 self.executor(guild, server, command),
-                                                                name=command
+                                                                name=task_name
                                                             )
                                                     log.info(f"Banning {gamertag} - {xuid} from all servers")
                                                 else:
@@ -4801,7 +4816,8 @@ class ArkTools(Calls, commands.Cog):
                     guild=member.guild
                 )
                 if token:
-                    asyncio.create_task(self.remove_friend(item[0], token), name=f"Unfriending {member.id}")
+                    task_name = f"ArkTools-{member.guild.name}-Unfriending-{member.name}"
+                    asyncio.create_task(self.remove_friend(item[0], token), name=task_name)
             if eventlog:
                 eventlog = member.guild.get_channel(eventlog)
                 embed = discord.Embed(
@@ -5036,26 +5052,39 @@ class ArkTools(Calls, commands.Cog):
         await asyncio.sleep(60)
         log.info("Janitor ready")
 
-    @commands.command(name="alltasks", hidden=True)
+    @commands.command(name="alltasks")
     @commands.is_owner()
     @commands.guild_only()
     async def get_all_tasks(self, ctx):
         """Get all asyncio tasks"""
-        running = [task.get_name() for task in asyncio.all_tasks()]
-        count = len(running)
-        arktools = 0
-        current = ""
-        for task in running:
-            if "Task" not in str(task) and str(ctx.guild.id) != str(task):
-                arktools += 1
-                current += f"{task}\n"
-        desc = f"`Total Pending:    `{count}\n" \
-               f"`ArkTools Pending: `{arktools}\n\n" \
-               f"**Current Pending Tasks**\n" \
-               f"{current}"
+        async_tasks = 0
+        global_tasks = 0
+        guild_tasks = 0
+        arktasks = ""
+        for task in asyncio.all_tasks():
+            async_tasks += 1
+            tname = task.get_name()
+            if "Task" in str(tname):
+                continue
+            if "arktools" in str(tname).lower():
+                global_tasks += 1
+                arktask = str(tname).replace("ArkTools-", "")
+                arktasks += f"{arktask}\n"
+            if str(ctx.guild.name) in str(tname):
+                guild_tasks += 1
 
-        embed = discord.Embed(
-            title="ArkTools Tasks",
-            description=desc
-        )
+        if len(arktasks) <= 4096:
+            embed = discord.Embed(
+                title="ArkTools Tasks",
+                description=box(arktasks if arktasks else "None", lang="python"),
+                color=discord.Color.green()
+            )
+        else:
+            embed = discord.Embed(
+                title="ArkTools Tasks",
+                description="Too many tasks to list here",
+                color=discord.Color.red()
+            )
+        footer = f"TotalTasks: {async_tasks}｜ArkToolsTasks -> Total: {global_tasks} Guild: {guild_tasks}"
+        embed.set_footer(text=footer)
         await ctx.send(embed=embed)
