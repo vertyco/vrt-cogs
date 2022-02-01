@@ -556,7 +556,8 @@ class XTools(commands.Cog):
                 Button(
                     style=ButtonStyle.grey,
                     label="Search Friends",
-                    custom_id="search"
+                    custom_id="search",
+                    emoji="🔍"
                 )
             )
             search_controls = {

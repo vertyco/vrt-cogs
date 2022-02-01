@@ -158,28 +158,28 @@ DEFAULT_BUTTON_CONTROLS = {
         ActionRow(
             Button(
                 style=ButtonStyle.grey,
-                label="⏪",
-                custom_id="prev10"
+                custom_id="prev10",
+                emoji="⏪"
             ),
             Button(
                 style=ButtonStyle.gray,
-                label="◀",
-                custom_id="prev"
+                custom_id="prev",
+                emoji="◀"
             ),
             Button(
                 style=ButtonStyle.grey,
-                label="❌",
-                custom_id="exit"
+                custom_id="exit",
+                emoji="❌"
             ),
             Button(
                 style=ButtonStyle.grey,
-                label="▶",
-                custom_id="next"
+                custom_id="next",
+                emoji="▶"
             ),
             Button(
                 style=ButtonStyle.grey,
-                label="⏩",
-                custom_id="next10"
+                custom_id="next10",
+                emoji="⏩"
             )
         )
     ],
