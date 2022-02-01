@@ -216,12 +216,12 @@ class SupportCommands(commands.Cog):
         Set the default ticket channel name
 
         You can include the following in the name
-        {num} - Ticket number
-        {user} - user's name
-        {id} - user's ID
-        {shortdate} - mm/dd
-        {longdate} - mm/dd/yyyy
-        {time} - hh:mm AM/PM according to bot host system time
+        `{num}` - Ticket number
+        `{user}` - user's name
+        `{id}` - user's ID
+        `{shortdate}` - mm-dd
+        `{longdate}` - mm-dd-yyyy
+        `{time}` - hh-mm AM/PM according to bot host system time
 
         You can set this to {default} to use default "Ticket-Username
         """
@@ -242,7 +242,7 @@ class SupportCommands(commands.Cog):
 
     @support.command(name="selfrename")
     async def toggle_rename(self, ctx: commands.Context):
-        """(Toggle) If ticket user can rename their channel"""
+        """(Toggle) If users can rename their own tickets"""
         toggle = await self.config.guild(ctx.guild).user_can_rename()
         if toggle:
             await self.config.guild(ctx.guild).user_can_rename.set(False)
