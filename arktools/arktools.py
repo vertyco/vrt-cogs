@@ -1623,8 +1623,8 @@ class ArkTools(Calls, commands.Cog):
     async def unlink_level(self, ctx: commands.Context, hours: int):
         """Unlink a role assigned to a level"""
         async with self.config.guild(ctx.guild).ranks() as ranks:
-            if hours in ranks:
-                del ranks[hours]
+            if str(hours) in ranks:
+                del ranks[str(hours)]
                 await ctx.tick()
             else:
                 await ctx.send("No role assigned to that time played")
@@ -1695,54 +1695,52 @@ class ArkTools(Calls, commands.Cog):
         requirements
         """
         added = 0
-        ad = ""
         removed = 0
-        rem = ""
+        perms = ctx.guild.me.guild_permissions.manage_roles
+        if not perms:
+            return await ctx.send("I do not have Manage Roles permissions!")
         async with ctx.typing():
             async with self.config.guild(ctx.guild).all() as settings:
                 stats = settings["players"]
-                ranks = []
-                for rank in settings["ranks"].keys():
-                    ranks.append(int(rank))
-                if not ranks:
+                rank_roles = settings["ranks"]
+                if not rank_roles:
                     return await ctx.send("There are no ranks set!")
-                a = np.array(ranks)
                 unrank = settings["autoremove"]
                 for uid, stat in stats.items():
                     hours = int(stat["playtime"]["total"] / 3600)
-                    try:
-                        top = a[a <= hours].max()  # Highest rank lower or equal to hours played
-                        # await ctx.send(top)
-                    except ValueError:
+                    if "discord" not in stat:
                         continue
-                    if top:
-                        to_assign = settings["ranks"][str(top)]
-                        settings["players"][uid]["rank"] = to_assign
-                    if "discord" in stat:
-                        did = stat["discord"]
-                        member = ctx.guild.get_member(did)
-                        if member and top:
-                            for h, r in settings["ranks"].items():
-                                r = ctx.guild.get_role(r)
-                                if not r:
-                                    continue
-                                h = str(h)
-                                top = str(top)
-                                if h == top and r not in member.roles:
-                                    await member.add_roles(r)
-                                    added += 1
-                                    ad += f"{r} to {member.display_name}\n"
-                                if unrank:
-                                    if h != top and r in member.roles:
-                                        await member.remove_roles(r)
+                    user = ctx.guild.get_member(int(stat["discord"]))
+                    if not user:
+                        continue
+                    if unrank:
+                        highest_rank = ""
+                        for time, role_id in rank_roles.items():
+                            if int(time) <= hours:
+                                highest_rank = time
+                        if highest_rank:
+                            settings["players"][uid]["rank"] = int(rank_roles[highest_rank])
+                            role = rank_roles[highest_rank]
+                            role = ctx.guild.get_role(int(role))
+                            if role:
+                                await user.add_roles(role)
+                                added += 1
+                                for r in user.roles:
+                                    if r.id in rank_roles.values() and r.id != role.id:
+                                        await user.remove_roles(r)
                                         removed += 1
-                                        rem += f"{r} from {member.display_name}\n"
-            final = f"**Added ranks to {added} people**\n" \
-                    f"{ad}\n" \
-                    f"**Removed ranks from {removed} people**\n" \
-                    f"{rem}"
-            for p in pagify(final):
-                await ctx.send(p)
+                    else:
+                        highest_rank = ""
+                        for time, role_id in rank_roles.items():
+                            if int(time) <= hours:
+                                highest_rank = time
+                        if highest_rank:
+                            settings["players"][uid]["rank"] = int(rank_roles[highest_rank])
+                        for time, role_id in rank_roles.items():
+                            role = ctx.guild.get_role(int(role_id))
+                            if role and int(time) <= hours:
+                                await user.add_roles(role)
+                                added += 1
 
     @arktools_main.command(name="crosschat")
     @commands.admin()
