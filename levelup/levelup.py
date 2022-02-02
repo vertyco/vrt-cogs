@@ -1128,6 +1128,7 @@ class LevelUp(commands.Cog):
         if not perms:
             return await ctx.send("I dont have the proper permissions to manage roles!")
         roles_added = 0
+        roles_removed = 0
         async with ctx.typing():
             async with self.config.guild(guild).all() as conf:
                 level_roles = conf["levelroles"]
@@ -1151,6 +1152,10 @@ class LevelUp(commands.Cog):
                             if role:
                                 await user.add_roles(role)
                                 roles_added += 1
+                                for r in user.roles:
+                                    if r.id in level_roles.values() and r.id != role.id:
+                                        await user.remove_roles(r)
+                                        roles_removed += 1
                         highest_prestige = ""
                         for plvl, prole in prestiges.items():
                             if int(plvl) <= int(prestige_level):
@@ -1176,6 +1181,8 @@ class LevelUp(commands.Cog):
                     await ctx.send(f"Initialization complete, added {roles_added} roles to users")
                 else:
                     await ctx.send(f"Initialization complete, there were no roles to add")
+                if roles_removed:
+                    await ctx.send(f"Removed {roles_removed} roles from users")
 
     @level_roles.command(name="autoremove")
     async def toggle_autoremove(self, ctx: commands.Context):
