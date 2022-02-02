@@ -51,7 +51,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.5.13"
+    __version__ = "1.5.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1705,12 +1705,16 @@ class ArkShop(commands.Cog):
                     op = SelectOption(f"{channel.name} - {implant}", implant)
                     options.append(op)
                 comp = SelectMenu(
-                    custom_id="imp_select",
+                    custom_id=str(ctx.author.id),
                     placeholder="Or pick an existing implant from a map",
                     max_values=1,
                     options=options
                 )
-                await message.edit(embed=embed, components=[comp])
+                try:
+                    await message.edit(embed=embed, components=[comp])
+                except discord.HTTPException:
+                    log.warning("Error sending dropdown list with message, sending normal message instead")
+                    await message.edit(embed=embed, components=[])
             else:
                 await message.edit(embed=embed, components=[])
 
