@@ -1129,6 +1129,12 @@ class LevelUp(commands.Cog):
             return await ctx.send("I dont have the proper permissions to manage roles!")
         roles_added = 0
         roles_removed = 0
+        embed = discord.Embed(
+            description="Adding roles, this may take a while...",
+            color=discord.Color.magenta()
+        )
+        embed.set_thumbnail(url=LOADING)
+        msg = await ctx.send(embed=embed)
         async with ctx.typing():
             async with self.config.guild(guild).all() as conf:
                 level_roles = conf["levelroles"]
@@ -1177,12 +1183,11 @@ class LevelUp(commands.Cog):
                             if role and int(lvl) <= int(prestige_level):
                                 await user.add_roles(role)
                                 roles_added += 1
-                if roles_added:
-                    await ctx.send(f"Initialization complete, added {roles_added} roles to users")
-                else:
-                    await ctx.send(f"Initialization complete, there were no roles to add")
-                if roles_removed:
-                    await ctx.send(f"Removed {roles_removed} roles from users")
+                embed = discord.Embed(
+                    description=f"Initialization complete! Added {roles_added} roles and removed {roles_removed}.",
+                    color=discord.Color.green()
+                )
+                await msg.edit(embed=embed)
 
     @level_roles.command(name="autoremove")
     async def toggle_autoremove(self, ctx: commands.Context):

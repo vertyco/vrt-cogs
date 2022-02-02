@@ -1699,6 +1699,12 @@ class ArkTools(Calls, commands.Cog):
         perms = ctx.guild.me.guild_permissions.manage_roles
         if not perms:
             return await ctx.send("I do not have Manage Roles permissions!")
+        embed = discord.Embed(
+            description="Adding roles, this may take a while...",
+            color=discord.Color.magenta()
+        )
+        embed.set_thumbnail(url=LOADING)
+        msg = await ctx.send(embed=embed)
         async with ctx.typing():
             async with self.config.guild(ctx.guild).all() as settings:
                 stats = settings["players"]
@@ -1741,6 +1747,11 @@ class ArkTools(Calls, commands.Cog):
                             if role and int(time) <= hours:
                                 await user.add_roles(role)
                                 added += 1
+                embed = discord.Embed(
+                    description=f"Initialization complete! Added {added} roles and removed {removed}.",
+                    color=discord.Color.green()
+                )
+                await msg.edit(embed=embed)
 
     @arktools_main.command(name="crosschat")
     @commands.admin()
