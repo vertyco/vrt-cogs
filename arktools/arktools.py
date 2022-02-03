@@ -11,7 +11,6 @@ import typing
 
 import aiohttp
 import discord
-import numpy as np
 import pytz
 import tabulate
 import matplotlib
@@ -77,7 +76,7 @@ class ArkTools(Calls, commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.12.47"
+    __version__ = "2.12.49"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -881,7 +880,8 @@ class ArkTools(Calls, commands.Cog):
 
         if xsapi_available:
             embed = discord.Embed(
-                description="**Type your Xbox Gamertag chat below.**"
+                description="**Type your Xbox Gamertag chat below.**\n"
+                            "If your Gamertag has a # extension, make sure to include those numbers too!"
             )
             msg = await ctx.send(embed=embed)
             try:
@@ -892,6 +892,8 @@ class ArkTools(Calls, commands.Cog):
             if rpl == "no" or rpl == "cancel":
                 return await msg.edit(embed=discord.Embed(description="Registration Cancelled"))
             gamertag = reply.content
+            if "#" in str(gamertag):
+                gamertag = str(gamertag).replace("#", "")  # People often don't remove the # smh
             embed = discord.Embed(color=discord.Color.green(),
                                   description=f"Searching...")
             embed.set_thumbnail(url=LOADING)
@@ -945,9 +947,10 @@ class ArkTools(Calls, commands.Cog):
                         }
             embed = discord.Embed(
                 color=discord.Color.green(),
-                description=f"✅ Gamertag set to `{gamertag}`\n"
-                            f"XUID: `{xuid}`\n"
-                            f"Gamerscore: `{gs}`\n\n"
+                description=f"✅ Gamertag set to **{gamertag}**\n"
+                            f"`XUID:       `{xuid}\n"
+                            f"`Gamerscore: `{gs}\n\n"
+                            f"Please make sure the image in this message matches your profile picture!"
             )
             embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
             embed.set_thumbnail(url=pfp)
