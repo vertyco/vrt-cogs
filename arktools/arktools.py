@@ -711,7 +711,7 @@ class ArkTools(Calls, commands.Cog):
             for server in serverlist:
                 for path in IMSTUCK_BLUEPRINTS:
                     cmd = f"GiveItemToPlayer {implant_id} {path}"
-                    task_name = f"ArkTools-{ctx.guild.name}-{server['name']}-{server['cluster']}-GiveItemToPlayer"
+                    task_name = f"ArkTools-{ctx.guild.name}-GiveItemToPlayer"
                     asyncio.create_task(self.executor(ctx.guild, server, cmd), name=task_name)
         else:
             return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
