@@ -1698,10 +1698,12 @@ class ArkShop(commands.Cog):
             else:
                 embed.set_footer(text="Type 'cancel' to cancel the purchase.")
             embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
+            # See if player registered any implant ID's in-game
             implants = await self.get_implants_from_user(ctx, xuid)
             if implants and usebuttons:
                 options = []
                 for channel, implant in implants:
+                    # Show any implant ID's that the player registered in-game for quicker checkout
                     op = SelectOption(f"{channel.name} - {implant}", implant)
                     options.append(op)
                 comp = SelectMenu(
