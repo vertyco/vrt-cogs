@@ -51,7 +51,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.5.14"
+    __version__ = "1.5.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -221,10 +221,11 @@ class ArkShop(commands.Cog):
             await ctx.send(embed=embed)
             return None
 
-    async def get_implants_from_user(self, ctx, xuid: str):
+    # Returns a list of tuples containing a channel object and implant ID string
+    async def get_implants_from_user(self, ctx, xuid: str) -> list:
         arktools = await self.arktools()
         if not arktools:
-            return None
+            return []
         stats = await arktools.config.guild(ctx.guild).players()
         user = stats[xuid]["ingame"]
         implants = []
@@ -991,7 +992,8 @@ class ArkShop(commands.Cog):
 
         embed = discord.Embed(
             description=f"**Type one of the cluster names below.**\n"
-                        f"{clist}"
+                        f"{clist}",
+            color=discord.Color.gold()
         )
         msg = await ctx.send(embed=embed)
 
@@ -1001,14 +1003,16 @@ class ArkShop(commands.Cog):
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+            ttl = "You took too long :yawning_face:"
+            return await msg.edit(embed=discord.Embed(description=ttl))
         if reply.content.lower() not in clusters:
-            return await msg.edit(embed=discord.Embed(description="Cluster doesn't exist!"))
+            noexist = "Cluster doesn't exist! Make sure you spelled it correctly."
+            return await msg.edit(embed=discord.Embed(description=noexist))
         else:
             async with self.config.guild(ctx.guild).users() as users:
                 users[ctx.author.id] = reply.content.lower()
                 embed = discord.Embed(
-                    description=f"Cluster has been set for {ctx.author.name}!",
+                    description=f"**{reply.content}** cluster has been set for **{ctx.author.name}**!",
                     color=discord.Color.green()
                 )
                 return await msg.edit(embed=embed)
@@ -1684,13 +1688,11 @@ class ArkShop(commands.Cog):
                     color=discord.Color.red()
                 )
                 return await ctx.send(embed=embed, components=[])
-            serverlist = []
-            for server in clusters[cname]["servers"]:
-                serverlist.append(clusters[cname]["servers"][server])
 
             # ASK FOR IMPLANT ID
             embed = discord.Embed(
-                description=f"**Type your implant ID below.**\n",
+                title="Type your Implant ID below",
+                description=f"`Current cluster: `**{cname}**",
                 color=discord.Color.blue()
             )
             if desc:
@@ -1698,13 +1700,14 @@ class ArkShop(commands.Cog):
             else:
                 embed.set_footer(text="Type 'cancel' to cancel the purchase.")
             embed.set_thumbnail(url="https://i.imgur.com/PZmR6QW.png")
+
             # See if player registered any implant ID's in-game
             implants = await self.get_implants_from_user(ctx, xuid)
             if implants and usebuttons:
                 options = []
                 for channel, implant in implants:
                     # Show any implant ID's that the player registered in-game for quicker checkout
-                    op = SelectOption(f"{channel.name} - {implant}", implant)
+                    op = SelectOption(f"{channel.name} - {implant}", f"{implant}-{channel.id}")
                     options.append(op)
                 comp = SelectMenu(
                     custom_id=str(ctx.author.id),
@@ -1736,6 +1739,7 @@ class ArkShop(commands.Cog):
                 return res
 
             async def wait_first(*futures):
+                # Thanks, Stack Overflow
                 done, pending = await asyncio.wait(
                     futures,
                     return_when=asyncio.FIRST_COMPLETED,
@@ -1761,16 +1765,24 @@ class ArkShop(commands.Cog):
             result = await wait_first(dropdown(), response())
             if not result:
                 return
-
             if "inter" in result:
                 inter = result["inter"]
                 values = [option.value for option in inter.select_menu.selected_options]
-                implant_id = values[0]
+                implant_id = values[0].split("-")[0]
+                channel_id = values[0].split("-")[1]
+                # Since they selected an option, we can just get the exact server instead of calling all of them
+                # And since we have channel id we can bypass their set cluster
+                # So it will still work if they are registered on one cluster and purchase something for another
+                server = []
+                for cluster_data in clusters.values():
+                    for server_data in cluster_data["servers"].values():
+                        if str(server_data["chatchannel"]) == channel_id:
+                            server.append(server_data)
                 if implant_id:
                     return await self.sendoff_rcon_items(
                         ctx,
                         message,
-                        serverlist,
+                        server,
                         implant_id,
                         item_name,
                         paths,
@@ -1787,7 +1799,7 @@ class ArkShop(commands.Cog):
                         color=discord.Color.blue()
                     )
                     embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
-                    return await message.edit(embed=embed)
+                    return await message.edit(embed=embed, components=[])
 
                 resp = None
                 if not reply.content.isdigit():  # Check if user is stupid
@@ -1802,6 +1814,7 @@ class ArkShop(commands.Cog):
                         color=discord.Color.red()
                     )
                     return await message.edit(embed=embed, components=[])
+                serverlist = list(clusters[cname]["servers"].values())
                 return await self.sendoff_rcon_items(
                     ctx,
                     message,
@@ -1915,11 +1928,10 @@ class ArkShop(commands.Cog):
         for path in paths:
             commandlist.append(f"giveitemtoplayer {implant_id} {path}")
 
-        tasks = []
         for server in serverlist:
             for command in commandlist:
-                tasks.append(self.rcon(server, command))
-        await asyncio.gather(*tasks)
+                task_name = f"ArkTools-{ctx.guild.name}-ArkShop-giveitemtoplayer"
+                asyncio.create_task(self.rcon(server, command), name=task_name)
 
         # withdraw credits and send purchase message
         await bank.withdraw_credits(ctx.author, int(price))
