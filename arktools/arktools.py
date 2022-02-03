@@ -76,7 +76,7 @@ class ArkTools(Calls, commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.12.49"
+    __version__ = "2.12.50"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -833,7 +833,7 @@ class ArkTools(Calls, commands.Cog):
         settings = await self.config.guild(ctx.guild).all()
         user = await self.check_reg_status(settings, ctx.author.id)
         if user:
-            return await ctx.send(f"You are already registered as {user}\n"
+            return await ctx.send(f"You are already registered as **{user}**\n"
                                   f"If you want to re-register, type `{ctx.prefix}unregisterme` "
                                   f"and then try again.")
 
@@ -880,8 +880,8 @@ class ArkTools(Calls, commands.Cog):
 
         if xsapi_available:
             embed = discord.Embed(
-                description="**Type your Xbox Gamertag chat below.**\n"
-                            "If your Gamertag has a # extension, make sure to include those numbers too!"
+                description="**Type your Xbox Gamertag in chat below.**\n"
+                            "If your Gamertag has a '#' extension, make sure to include those numbers too!"
             )
             msg = await ctx.send(embed=embed)
             try:
@@ -894,8 +894,16 @@ class ArkTools(Calls, commands.Cog):
             gamertag = reply.content
             if "#" in str(gamertag):
                 gamertag = str(gamertag).replace("#", "")  # People often don't remove the # smh
-            embed = discord.Embed(color=discord.Color.green(),
-                                  description=f"Searching...")
+            try:
+                await reply.delete()
+            except discord.NotFound:
+                pass
+            except discord.Forbidden:
+                pass
+            embed = discord.Embed(
+                description=f"Searching...",
+                color=discord.Color.orange()
+            )
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
             async with aiohttp.ClientSession() as session:
@@ -907,7 +915,7 @@ class ArkTools(Calls, commands.Cog):
                     profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
                 except aiohttp.ClientResponseError:
                     embed = discord.Embed(
-                        description=f"Invalid Gamertag. Try again.",
+                        description=f"Looks like **{gamertag}** is an invalid Gamertag. Try again.",
                         color=discord.Color.red()
                     )
                     return await msg.edit(embed=embed)
@@ -945,22 +953,19 @@ class ArkTools(Calls, commands.Cog):
                             },
                             "ingame": {}
                         }
+            rem = f"If the image above does not match your Gamertag, use '{ctx.prefix}unregisterme' and try again"
             embed = discord.Embed(
-                color=discord.Color.green(),
-                description=f"✅ Gamertag set to **{gamertag}**\n"
+                title="✅ Registration Successful!",
+                description=f"`Gamertag:   `{gamertag}\n"
                             f"`XUID:       `{xuid}\n"
                             f"`Gamerscore: `{gs}\n\n"
-                            f"Please make sure the image in this message matches your profile picture!"
+                            f"You can now type `{ctx.prefix}addme` to have a host Gamertag add you!",
+                color=discord.Color.green()
             )
             embed.set_author(name="Success", icon_url=ctx.author.avatar_url)
-            embed.set_thumbnail(url=pfp)
+            embed.set_image(url=pfp)
+            embed.set_footer(text=rem)
             await msg.edit(embed=embed)
-            embed = discord.Embed(
-                description=f"You can now type `{ctx.prefix}addme` to have a host Gamertag add you.",
-                color=discord.Color.magenta()
-            )
-            embed.set_footer(text="Then you can follow it back and join session from its profile page!")
-            await ctx.send(embed=embed)
         else:
             await ctx.send("No API tokens found. Switching to manual registration.")
             await self.manual_or_steam_reg(ctx, "xbox")
