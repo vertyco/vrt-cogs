@@ -46,7 +46,7 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 class LevelUp(commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -212,7 +212,7 @@ class LevelUp(commands.Cog):
         conf = self.settings[str(guild.id)]
         levelroles = conf["levelroles"]
         roleperms = guild.me.guild_permissions.manage_roles
-        if not roleperms:
+        if not roleperms and levelroles:  # No point in logging if it isnt setup in that guild
             log.warning(f"Bot can't manage roles in {guild.name}")
         autoremove = conf["autoremove"]
         dm = conf["notifydm"]
@@ -456,7 +456,7 @@ class LevelUp(commands.Cog):
         await asyncio.sleep(10)
         log.info("Voice checker running")
 
-    @tasks.loop(seconds=15)
+    @tasks.loop(seconds=50)
     async def cache_dumper(self):
         await self.dump_cache()
 
