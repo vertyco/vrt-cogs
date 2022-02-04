@@ -158,6 +158,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
     # Listen for a button click on a message
     async def listen(self, message: discord.Message):
         if isinstance(message, str):  # If for some reason message is not a discord.Message object
+            #  Edit: Pretty sure i found the issue
             log.warning(f"Message isn't an object for some reason: {message}")
             return await self.add_components()
         inter = await message.wait_for_button_click()
@@ -233,7 +234,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 )
         else:
             try:
-                message = (
+                tmessage = (
                     conf["message"].replace(
                         "{username}", user.name
                     ).replace(
@@ -242,7 +243,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                         "{id}", str(user.id)
                     )
                 )
-                msg = await channel.send(message, allowed_mentions=discord.AllowedMentions(users=True, roles=True))
+                msg = await channel.send(tmessage, allowed_mentions=discord.AllowedMentions(users=True, roles=True))
             except Exception as e:
                 log.warning(f"An error occurred while sending a ticket message: {e}")
                 # Revert to default message
