@@ -4575,14 +4575,9 @@ class ArkTools(Calls, commands.Cog):
     # Player stat handler
     @tasks.loop(minutes=2)
     async def player_stats(self):
-        current_time = datetime.datetime.now(pytz.timezone("UTC"))
-        if self.time == "":
-            self.time = current_time.isoformat()
-        last = datetime.datetime.fromisoformat(str(self.time))
-        timedifference = current_time - last
-        timedifference = int(timedifference.total_seconds())
-        for guild in self.bot.guilds:
-            guild_id = str(guild.id)
+        for data in self.servers:
+            guild_id = str(data[0])
+            guild = self.bot.get_guild(int(guild_id))
             if guild_id not in self.activeguilds:
                 continue
             settings = await self.config.guild(guild).all()
@@ -4591,270 +4586,267 @@ class ArkTools(Calls, commands.Cog):
             eventlog = settings["eventlog"]
             if eventlog:
                 eventlog = guild.get_channel(eventlog)
-            for data in self.servers:
-                sguild = data[0]
-                sguild = self.bot.get_guild(sguild)
-                if guild != sguild:
+            server = data[1]
+            channel = server["chatchannel"]
+            channel_obj = guild.get_channel(channel)
+            sname = server["name"]
+            cname = server["cluster"]
+            mapstring = f"{sname} {cname}"
+            async with self.config.guild(guild).players() as stats:
+                if channel not in self.playerlist:
+                    log.warning(f"Player_Stats: {sname} {cname} not found in playerlist!")
                     continue
-                server = data[1]
-                channel = server["chatchannel"]
-                channel_obj = guild.get_channel(channel)
-                sname = server["name"]
-                cname = server["cluster"]
-                mapstring = f"{sname} {cname}"
-                async with self.config.guild(guild).players() as stats:
-                    if channel not in self.playerlist:
-                        log.warning(f"Player_Stats: {sname} {cname} not found in playerlist!")
-                        continue
-                    if not self.playerlist[channel]:
-                        continue
-                    if self.playerlist[channel] == "offline":
-                        continue
-                    if self.playerlist[channel] == "empty":
-                        continue
-                    for player in self.playerlist[channel]:
-                        xuid = player[1]
-                        gamertag = player[0]
-                        newplayermessage = ""
-                        if xuid not in stats:  # New player found
-                            if autowelcome:
-                                prefixes = await self.bot.get_valid_prefixes(guild)
-                                for p in prefixes:
-                                    if str(p) != "":
-                                        break
-                                color1 = random.choice(RICH_COLORS)
-                                color2 = random.choice(RICH_COLORS)
-                                cmd = f"broadcast {color1}A new player has been detected on the server!</>\n" \
-                                      f"Everyone say hi to {gamertag}!!!\n" \
-                                      f"Be sure to type {color2}{p}help</> in global chat to see a list of help " \
-                                      f"commands you can use\n" \
-                                      f"If the kit command is enabled, you can use it to get your starter pack\n" \
-                                      f"Enjoy your stay on {guild.name}!"
-                                await self.executor(guild, server, cmd)
-                                welc = f"```py\nA new player has been detected on the server!\n" \
-                                       f"Everyone say hi to {gamertag}!!!\n```"
-                                await channel_obj.send(welc)
-                            newplayermessage += f"**{gamertag}** added to the database.\n"
-                            stats[xuid] = {
-                                "playtime": {"total": 0},
-                                "username": gamertag,
-                                "lastseen": {"time": current_time.isoformat(), "map": mapstring},
-                                "ingame": {}
-                            }
-                            if "tokens" in server and (autowelcome or autofriend):
-                                async with aiohttp.ClientSession() as session:
-                                    host = server["gamertag"]
-                                    tokens = server["tokens"]
-                                    xbl_client, token = await self.auth_manager(
-                                        session,
-                                        cname,
-                                        sname,
-                                        tokens,
-                                        ctx=None,
-                                        guild=guild
-                                    )
-                                    if autowelcome and xbl_client:
-                                        link = await channel_obj.create_invite(unique=False, reason="New Player")
-                                        if settings["welcomemsg"]:
-                                            params = {
-                                                "discord": guild.name,
-                                                "gamertag": gamertag,
-                                                "link": link
-                                            }
-                                            welcome = settings["welcomemsg"]
-                                            welcome = welcome.format(**params)
-                                        else:
-                                            welcome = f"Welcome to {guild.name}!\nThis is an automated message:\n" \
-                                                      f"You appear to be a new player, " \
-                                                      f"here is an invite to the Discord server:\n\n{link}"
-                                        try:
-                                            await xbl_client.message.send_message(str(xuid), welcome)
-                                            newplayermessage += f"DM sent: ✅\n"
-                                        except Exception as e:
-                                            log.warning(f"{gamertag} Failed to DM New Player in guild {guild}: {e}")
-                                            newplayermessage += f"DM sent: ❌ {e}\n"
-
-                                    if autofriend and xbl_client:
-                                        status = await self.add_friend(str(xuid), token)
-                                        if 200 <= status <= 204:
-                                            newplayermessage += f"Added by {host}: ✅\n"
-                                        else:
-                                            log.warning(f"{host} FAILED to add {gamertag} in guild {guild}")
-                                            newplayermessage += f"Added by {host}: ❌\n"
-
-                                    alt = settings["alt"]
-                                    if alt["on"] and xbl_client:  # If alt detection is on
-                                        try:
-                                            profile = json.loads(
-                                                (
-                                                    await xbl_client.profile.get_profile_by_gamertag(gamertag)
-                                                ).json()
-                                            )
-                                            friends = json.loads(
-                                                (
-                                                    await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
-                                                ).json()
-                                            )
-                                        except aiohttp.ClientResponseError:
-                                            profile = None
-                                            friends = None
-                                        if profile and friends:
-                                            sus, reasons = detect_sus(alt, profile, friends)
-                                            if sus:
-                                                yes = "✅"
-                                                no = "❌"
-                                                if alt["autoban"] and int(xuid) not in alt["whitelist"]:
-                                                    banned = yes
-                                                    command = f"banplayer {xuid}"
-                                                    for tup in self.servers:
-                                                        sguild = tup[0]
-                                                        server = tup[1]
-                                                        task_name = f"ArkTools-{guild.name}-{server['name']}-" \
-                                                                    f"{server['cluster']}-Banplayer"
-                                                        if sguild == guild.id:
-                                                            asyncio.create_task(
-                                                                self.executor(guild, server, command),
-                                                                name=task_name
-                                                            )
-                                                    log.info(f"Banning {gamertag} - {xuid} from all servers")
-                                                else:
-                                                    banned = no
-                                                if alt["msgtoggle"] and alt["msg"]:
-                                                    warning = yes
-                                                    params = {"reasons": reasons}
-                                                    msg = alt["msg"].format(**params)
-                                                    await xbl_client.message.send_message(str(xuid), msg)
-                                                else:
-                                                    warning = no
-                                                if eventlog:
-                                                    embed = discord.Embed(
-                                                        description=f"**Suspicious account detected!**\n"
-                                                                    f"**{gamertag}** - `{xuid}`\n"
-                                                                    f"`Auto-Banned:  `{banned}\n"
-                                                                    f"`Sent Warning: `{warning}\n"
-                                                                    f"**Reasons**\n"
-                                                                    f"{box(reasons)}",
-                                                        color=discord.Color.orange()
-                                                    )
-                                                    try:
-                                                        await eventlog.send(embed=embed)
-                                                    except discord.HTTPException:
-                                                        log.warning("Sus account message failed.")
-                                                        pass
-
-                            if eventlog:
-                                embed = discord.Embed(
-                                    description=newplayermessage,
-                                    color=discord.Color.green()
+                if not self.playerlist[channel]:
+                    continue
+                if self.playerlist[channel] == "offline":
+                    continue
+                if self.playerlist[channel] == "empty":
+                    continue
+                for player in self.playerlist[channel]:
+                    current_time = datetime.datetime.now(pytz.timezone("UTC"))
+                    if not self.time:
+                        self.time = current_time.isoformat()
+                    last = datetime.datetime.fromisoformat(str(self.time))
+                    timedifference = current_time - last
+                    timedifference = int(timedifference.total_seconds())
+                    xuid = player[1]
+                    gamertag = player[0]
+                    newplayermessage = ""
+                    if xuid not in stats:  # New player found
+                        if autowelcome:
+                            prefixes = await self.bot.get_valid_prefixes(guild)
+                            for p in prefixes:
+                                if str(p) != "":
+                                    break
+                            color1 = random.choice(RICH_COLORS)
+                            color2 = random.choice(RICH_COLORS)
+                            cmd = f"broadcast {color1}A new player has been detected on the server!</>\n" \
+                                  f"Everyone say hi to {gamertag}!!!\n" \
+                                  f"Be sure to type {color2}{p}help</> in global chat to see a list of help " \
+                                  f"commands you can use\n" \
+                                  f"If the kit command is enabled, you can use it to get your starter pack\n" \
+                                  f"Enjoy your stay on {guild.name}!"
+                            await self.executor(guild, server, cmd)
+                            welc = f"```py\nA new player has been detected on the server!\n" \
+                                   f"Everyone say hi to {gamertag}!!!\n```"
+                            await channel_obj.send(welc)
+                        newplayermessage += f"**{gamertag}** added to the database.\n"
+                        stats[xuid] = {
+                            "playtime": {"total": 0},
+                            "username": gamertag,
+                            "lastseen": {"time": current_time.isoformat(), "map": mapstring},
+                            "ingame": {}
+                        }
+                        if "tokens" in server and (autowelcome or autofriend):
+                            async with aiohttp.ClientSession() as session:
+                                host = server["gamertag"]
+                                tokens = server["tokens"]
+                                xbl_client, token = await self.auth_manager(
+                                    session,
+                                    cname,
+                                    sname,
+                                    tokens,
+                                    ctx=None,
+                                    guild=guild
                                 )
+                                if autowelcome and xbl_client:
+                                    link = await channel_obj.create_invite(unique=False, reason="New Player")
+                                    if settings["welcomemsg"]:
+                                        params = {
+                                            "discord": guild.name,
+                                            "gamertag": gamertag,
+                                            "link": link
+                                        }
+                                        welcome = settings["welcomemsg"]
+                                        welcome = welcome.format(**params)
+                                    else:
+                                        welcome = f"Welcome to {guild.name}!\nThis is an automated message:\n" \
+                                                  f"You appear to be a new player, " \
+                                                  f"here is an invite to the Discord server:\n\n{link}"
+                                    try:
+                                        task_name = f"ArkTools-{guild.name}-SendXboxDM"
+                                        asyncio.create_task(
+                                            xbl_client.message.send_message(str(xuid), welcome), name=task_name
+                                        )
+                                        newplayermessage += f"DM sent: ✅\n"
+                                    except Exception as e:
+                                        log.warning(f"{gamertag} Failed to DM New Player in guild {guild}: {e}")
+                                        newplayermessage += f"DM sent: ❌ {e}\n"
+
+                                if autofriend and xbl_client:
+                                    status = await self.add_friend(str(xuid), token)
+                                    if 200 <= status <= 204:
+                                        newplayermessage += f"Added by {host}: ✅\n"
+                                    else:
+                                        log.warning(f"{host} FAILED to add {gamertag} in guild {guild}")
+                                        newplayermessage += f"Added by {host}: ❌\n"
+
+                                alt = settings["alt"]
+                                if alt["on"] and xbl_client:  # If alt detection is on
+                                    try:
+                                        profile = json.loads(
+                                            (
+                                                await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                                            ).json()
+                                        )
+                                        friends = json.loads(
+                                            (
+                                                await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
+                                            ).json()
+                                        )
+                                    except aiohttp.ClientResponseError:
+                                        profile = None
+                                        friends = None
+                                    if profile and friends:
+                                        sus, reasons = detect_sus(alt, profile, friends)
+                                        if sus:
+                                            yes = "✅"
+                                            no = "❌"
+                                            if alt["autoban"] and int(xuid) not in alt["whitelist"]:
+                                                banned = yes
+                                                command = f"banplayer {xuid}"
+                                                for tup in self.servers:
+                                                    sguild = tup[0]
+                                                    server = tup[1]
+                                                    task_name = f"ArkTools-{guild.name}-{server['name']}-" \
+                                                                f"{server['cluster']}-Banplayer"
+                                                    if sguild == guild.id:
+                                                        asyncio.create_task(
+                                                            self.executor(guild, server, command),
+                                                            name=task_name
+                                                        )
+                                                log.info(f"Banning {gamertag} - {xuid} from all servers")
+                                            else:
+                                                banned = no
+                                            if alt["msgtoggle"] and alt["msg"]:
+                                                warning = yes
+                                                params = {"reasons": reasons}
+                                                msg = alt["msg"].format(**params)
+                                                await xbl_client.message.send_message(str(xuid), msg)
+                                            else:
+                                                warning = no
+                                            if eventlog:
+                                                embed = discord.Embed(
+                                                    description=f"**Suspicious account detected!**\n"
+                                                                f"**{gamertag}** - `{xuid}`\n"
+                                                                f"`Auto-Banned:  `{banned}\n"
+                                                                f"`Sent Warning: `{warning}\n"
+                                                                f"**Reasons**\n"
+                                                                f"{box(reasons)}",
+                                                    color=discord.Color.orange()
+                                                )
+                                                try:
+                                                    await eventlog.send(embed=embed)
+                                                except discord.HTTPException:
+                                                    log.warning("Sus account message failed.")
+                                                    pass
+
+                        if eventlog:
+                            embed = discord.Embed(
+                                description=newplayermessage,
+                                color=discord.Color.green()
+                            )
+                            try:
+                                await eventlog.send(embed=embed)
+                            except discord.HTTPException:
+                                log.warning("New Player Message Failed.")
+                                pass
+
+                    last_seen = stats[xuid]["lastseen"]["map"]
+                    if not last_seen:
+                        if "tokens" in server and autofriend:
+                            async with aiohttp.ClientSession() as session:
+                                host = server["gamertag"]
+                                tokens = server["tokens"]
+                                xbl_client, token = await self.auth_manager(
+                                    session,
+                                    cname,
+                                    sname,
+                                    tokens,
+                                    ctx=None,
+                                    guild=guild
+                                )
+                                if autofriend and xbl_client:
+                                    status = await self.add_friend(str(xuid), token)
+                                    if 200 <= status <= 204:
+                                        newplayermessage += f"Added by {host}: ✅\n"
+                                    else:
+                                        newplayermessage += f"Added by {host}: ❌\n"
+                    if str(channel) not in stats[xuid]["ingame"]:
+                        stats[xuid]["ingame"][str(channel)] = {
+                            "implant": None,
+                            "name": None,
+                            "previous_names": [],
+                            "stats": {
+                                "pvpkills": 0,
+                                "pvpdeaths": 0,
+                                "pvedeaths": 0,
+                                "tamed": 0
+                            }
+                        }
+                    if mapstring not in stats[xuid]["playtime"]:
+                        stats[xuid]["playtime"][mapstring] = 0
+                    else:
+                        stats[xuid]["playtime"][mapstring] += timedifference
+                        stats[xuid]["playtime"]["total"] += timedifference
+                        stats[xuid]["lastseen"] = {
+                            "time": current_time.isoformat(),
+                            "map": mapstring
+                        }
+
+                        # Rank system
+                        ranks = settings["ranks"]
+                        if not ranks:
+                            continue
+                        hours = int(stats[xuid]["playtime"]["total"] / 3600)
+                        if str(hours) in ranks:
+                            role = ranks[str(hours)]
+                            role = guild.get_role(role)
+                            if role:
+                                # Just settings the player stat role
+                                # Even if they aren't in discord
+                                if "rank" in stats[xuid] and "discord" in stats[xuid]:
+                                    if stats[xuid]["rank"] == role.id:
+                                        continue
+                                stats[xuid]["rank"] = role.id
+                        if "rank" not in stats[xuid]:
+                            continue
+                        if "discord" not in stats[xuid]:
+                            continue
+                        user = guild.get_member(stats[xuid]["discord"])
+                        if not user:
+                            continue
+                        highest_rank = ""
+                        for time in ranks:
+                            if int(time) <= hours:
+                                highest_rank = time
+                        perms = guild.me.guild_permissions.manage_roles
+                        if not perms:
+                            continue
+                        unrank = settings["autoremove"]
+                        if unrank and highest_rank:
+                            role = guild.get_role(int(ranks[highest_rank]))
+                            if role:
                                 try:
-                                    await eventlog.send(embed=embed)
-                                except discord.HTTPException:
-                                    log.warning("New Player Message Failed.")
-                                    pass
-
-                        last_seen = stats[xuid]["lastseen"]["map"]
-                        if not last_seen:
-                            if "tokens" in server and autofriend:
-                                async with aiohttp.ClientSession() as session:
-                                    host = server["gamertag"]
-                                    tokens = server["tokens"]
-                                    xbl_client, token = await self.auth_manager(
-                                        session,
-                                        cname,
-                                        sname,
-                                        tokens,
-                                        ctx=None,
-                                        guild=guild
-                                    )
-                                    if autofriend and xbl_client:
-                                        status = await self.add_friend(str(xuid), token)
-                                        if 200 <= status <= 204:
-                                            newplayermessage += f"Added by {host}: ✅\n"
-                                        else:
-                                            newplayermessage += f"Added by {host}: ❌\n"
-                        if str(channel) not in stats[xuid]["ingame"]:
-                            stats[xuid]["ingame"][str(channel)] = {
-                                "implant": None,
-                                "name": None,
-                                "previous_names": [],
-                                "stats": {
-                                    "pvpkills": 0,
-                                    "pvpdeaths": 0,
-                                    "pvedeaths": 0,
-                                    "tamed": 0
-                                }
-                            }
-                        if mapstring not in stats[xuid]["playtime"]:
-                            stats[xuid]["playtime"][mapstring] = 0
+                                    await user.add_roles(role)
+                                except Exception as e:
+                                    log.warning(f"Failed to add rank role to user: {e}")
+                                for r in user.roles:
+                                    if r.id in ranks.values() and r.id != role.id:
+                                        try:
+                                            await user.remove_roles(r)
+                                        except Exception as e:
+                                            log.warning(f"Failed to remove rank role to user: {e}")
                         else:
-                            stats[xuid]["playtime"][mapstring] += timedifference
-                            stats[xuid]["playtime"]["total"] += timedifference
-                            stats[xuid]["lastseen"] = {
-                                "time": current_time.isoformat(),
-                                "map": mapstring
-                            }
-                            # Havent decided on gt updates
-                            # Ark is dumb, if a user changes their GT, the map file still shows the old one
-                            # Thus, we're not gonna update gamertags
-                            # stats[xuid]["username"] = gamertag
-
-                            # Rank system
-                            ranks = settings["ranks"]
-                            if not ranks:
-                                continue
-                            hours = int(stats[xuid]["playtime"]["total"] / 3600)
-                            if str(hours) in ranks:
-                                role = ranks[str(hours)]
-                                role = guild.get_role(role)
-                                if role:
-                                    # Just settings the player stat role
-                                    # Even if they aren't in discord
-                                    stats[xuid]["rank"] = role.id
-                            if "rank" not in stats[xuid]:
-                                continue
-                            if "discord" not in stats[xuid]:
-                                continue
-                            user = guild.get_member(stats[xuid]["discord"])
-                            if not user:
-                                continue
-                            perms = guild.me.guild_permissions.manage_roles
-                            if not perms:
-                                continue
-                            unrank = settings["autoremove"]
-                            if unrank:  # Add the highest role and remove the rest
-                                highest_rank = ""
-                                for time in ranks:
-                                    if int(time) <= hours:
-                                        highest_rank = time
-                                if highest_rank:
-                                    role = guild.get_role(int(ranks[highest_rank]))
-                                    if role:
+                            for time, role_id in ranks.items():
+                                role = guild.get_role(int(role_id))
+                                if role and int(time) <= hours:
+                                    if role not in user.roles:
                                         try:
                                             await user.add_roles(role)
                                         except Exception as e:
                                             log.warning(f"Failed to add rank role to user: {e}")
-                                        for r in user.roles:
-                                            if r.id in ranks.values() and r.id != role.id:
-                                                try:
-                                                    await user.remove_roles(r)
-                                                except Exception as e:
-                                                    log.warning(f"Failed to remove rank role to user: {e}")
-                            else:
-                                highest_rank = ""
-                                for time in ranks:
-                                    if int(time) <= hours:
-                                        highest_rank = time
-                                if highest_rank:
-                                    for time, role_id in ranks.items():
-                                        role = guild.get_role(int(role_id))
-                                        if role and int(time) <= hours:
-                                            if role not in user.roles:
-                                                try:
-                                                    await user.add_roles(role)
-                                                except Exception as e:
-                                                    log.warning(f"Failed to add rank role to user: {e}")
-        self.time = current_time.isoformat()
+        self.time = datetime.datetime.now(pytz.timezone("UTC")).isoformat()
 
     @player_stats.before_loop
     async def before_player_stats(self):
