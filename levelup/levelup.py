@@ -46,7 +46,7 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 class LevelUp(commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1481,6 +1481,7 @@ class LevelUp(commands.Cog):
         await ctx.tick()
 
     @commands.command(name="setbg", aliases=["setmybg"])
+    @commands.guild_only()
     async def set_user_background(self, ctx: commands.Context, image_url: str = None):
         """
         Set a background for your profile
