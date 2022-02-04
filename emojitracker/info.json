@@ -1,0 +1,25 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "A simple guild emoji tracker",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores Discord ID's",
+  "hidden": false,
+  "install_msg": "Thank you for installing EmojiTracker! type `[p]help EmojiTracker` to see all commands.",
+  "min_bot_version": "3.4.0",
+  "permissions": [
+    "read_messages"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "tabulate"
+  ],
+  "short": "Emoji tracker",
+  "tags": [
+    "emoji",
+    "tracker",
+    "stats"
+  ],
+  "type": "COG"
+}
