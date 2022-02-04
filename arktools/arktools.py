@@ -27,6 +27,7 @@ from xbox.webapi.authentication.models import OAuth2TokenResponse
 from .buttonmenus import buttonmenu, DEFAULT_BUTTON_CONTROLS
 from .calls import Calls
 from .formatter import (
+    time_from_string,
     decode,
     profile_format,
     expired_players,
@@ -76,7 +77,7 @@ class ArkTools(Calls, commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.12.50"
+    __version__ = "2.13.51"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1602,164 +1603,43 @@ class ArkTools(Calls, commands.Cog):
         """ArkTools base setting command."""
         pass
 
-    @arktools_main.group(name="ranks")
-    @commands.admin()
-    async def ranks_main(self, ctx: commands.Context):
-        """Base command for playtime ranks"""
-        pass
-
-    @ranks_main.command(name="link")
-    async def link_level(self, ctx: commands.Context, role: discord.Role, hours_played: int):
+    @arktools_main.command(name="prune")
+    @commands.guildowner()
+    async def prune_playerdata(self, ctx: commands.Context, *, time: str):
         """
-        Link a role to a certain amount of playtime(in-hours)
+        Prune player data based on specified time
 
-        DO NOT USE EMOJIS IN RANK ROLE NAMES! Ark doesnt support unicode or
-        emojis, so dont use them.
+        **Example**
+        `[p]arktools prune 30 days` - delete players that have been inactive for over 30 days
+        `[p]arktools prune 15d`  - delete players that have been inactive for over 15 days
+        `[p]arktools prune 2 weeks` - delete players that have been inactive for over 2 weeks
+
+        This will delete all users that haven't been seen on the server for X amount of time
         """
-        async with self.config.guild(ctx.guild).ranks() as ranks:
-            if hours_played in ranks:
-                old = ranks[hours_played]
-                old = ctx.guild.get_role(old)
-                msg = f"The role {role.mention} will now be assigned when player hits {hours_played} hours " \
-                      f"instead of {old.mention}"
-            else:
-                msg = f"The role {role.mention} will now be assigned when player hits {hours_played} hours"
-            ranks[hours_played] = role.id
-            await ctx.send(msg)
-
-    @ranks_main.command(name="unlink")
-    async def unlink_level(self, ctx: commands.Context, hours: int):
-        """Unlink a role assigned to a level"""
-        async with self.config.guild(ctx.guild).ranks() as ranks:
-            if str(hours) in ranks:
-                del ranks[str(hours)]
-                await ctx.tick()
-            else:
-                await ctx.send("No role assigned to that time played")
-
-    @ranks_main.command(name="view")
-    async def view_ranks(self, ctx: commands.Context):
-        """View current settings for the rank system"""
-        config = await self.config.guild(ctx.guild).all()
-        unrank = config["autoremove"]
-        rename = config["autorename"]
-        ranks = config["ranks"]
-        settings = f"`AutoUnrank: `{unrank}\n" \
-                   f"`AutoRename: `{rename}\n\n"
-        rankmsg = ""
-        embed = discord.Embed(
-            description=settings,
-            color=discord.Color.random()
-        )
-        for hour in ranks:
-            role = ctx.guild.get_role(ranks[hour])
-            if role:
-                role = role.mention
-            else:
-                role = ranks[hour]
-            if int(hour) == 1:
-                hour = f"{hour} hour played"
-            else:
-                hour = f"{hour} hours played"
-            rankmsg += f"{role} - {hour}\n"
-        if rankmsg == "":
-            rankmsg = "No roles set"
-        embed.add_field(
-            name="Ranks",
-            value=rankmsg
-        )
-        await ctx.send(embed=embed)
-
-    @ranks_main.command(name="autorename")
-    async def auto_name(self, ctx: commands.Context):
-        """(TOGGLE)Auto rename character names to their rank"""
-        if await self.config.guild(ctx.guild).autorename():
-            await self.config.guild(ctx.guild).autorename.set(False)
-            await ctx.send("Auto rank renaming Disabled")
-        else:
-            await self.config.guild(ctx.guild).autorename.set(True)
-            await ctx.send("Auto rank renaming Enabled")
-
-    @ranks_main.command(name="autoremove")
-    async def auto_remove(self, ctx: commands.Context):
-        """
-        (TOGGLE)Auto remove old ranks
-
-        When user levels up their previous rank would be removed
-        """
-        if await self.config.guild(ctx.guild).autoremove():
-            await self.config.guild(ctx.guild).autoremove.set(False)
-            await ctx.send("Auto rank removal Disabled")
-        else:
-            await self.config.guild(ctx.guild).autoremove.set(True)
-            await ctx.send("Auto rank removal Enabled")
-
-    @ranks_main.command(name="initialize")
-    async def initialize_ranks(self, ctx: commands.Context):
-        """
-        Initialize created ranks to existing player database
-
-        This adds any roles and ranks to existing players that meet playtime
-        requirements
-        """
-        added = 0
-        removed = 0
-        perms = ctx.guild.me.guild_permissions.manage_roles
-        if not perms:
-            return await ctx.send("I do not have Manage Roles permissions!")
-        embed = discord.Embed(
-            description="Adding roles, this may take a while...",
-            color=discord.Color.magenta()
-        )
-        embed.set_thumbnail(url=LOADING)
-        msg = await ctx.send(embed=embed)
+        total_seconds = await time_from_string(time)
+        if not total_seconds:
+            return await ctx.send("I was not able to figure out how much time that is, try wording it differently")
+        data = await self.config.guild(ctx.guild).players()
+        if not data:
+            return await ctx.send("No player data yet!")
+        current_time = datetime.datetime.now(pytz.timezone("UTC"))
         async with ctx.typing():
-            async with self.config.guild(ctx.guild).all() as settings:
-                stats = settings["players"]
-                rank_roles = settings["ranks"]
-                if not rank_roles:
-                    return await ctx.send("There are no ranks set!")
-                unrank = settings["autoremove"]
-                for uid, stat in stats.items():
-                    hours = int(stat["playtime"]["total"] / 3600)
-                    if "discord" not in stat:
-                        continue
-                    user = ctx.guild.get_member(int(stat["discord"]))
-                    if not user:
-                        continue
-                    if unrank:
-                        highest_rank = ""
-                        for time, role_id in rank_roles.items():
-                            if int(time) <= hours:
-                                highest_rank = time
-                        if highest_rank:
-                            settings["players"][uid]["rank"] = int(rank_roles[highest_rank])
-                            role = rank_roles[highest_rank]
-                            role = ctx.guild.get_role(int(role))
-                            if role:
-                                await user.add_roles(role)
-                                added += 1
-                                for r in user.roles:
-                                    if r.id in rank_roles.values() and r.id != role.id:
-                                        await user.remove_roles(r)
-                                        removed += 1
-                    else:
-                        highest_rank = ""
-                        for time, role_id in rank_roles.items():
-                            if int(time) <= hours:
-                                highest_rank = time
-                        if highest_rank:
-                            settings["players"][uid]["rank"] = int(rank_roles[highest_rank])
-                        for time, role_id in rank_roles.items():
-                            role = ctx.guild.get_role(int(role_id))
-                            if role and int(time) <= hours:
-                                await user.add_roles(role)
-                                added += 1
-                embed = discord.Embed(
-                    description=f"Initialization complete! Added {added} roles and removed {removed}.",
-                    color=discord.Color.green()
-                )
-                await msg.edit(embed=embed)
+            to_delete = []
+            for uid, stats in data.items():
+                last_seen = datetime.datetime.fromisoformat(stats["lastseen"]["time"])
+                last_seen = last_seen.astimezone(pytz.timezone("UTC"))
+                td = current_time - last_seen
+                td = int(td.total_seconds())
+                if td >= total_seconds:
+                    to_delete.append(uid)
+            if to_delete:
+                async with self.config.guild(ctx.guild).players() as data:
+                    for uid in to_delete:
+                        del data[uid]
+                pruned = len(to_delete)
+                await ctx.send(f"Pruned {pruned} players from cog data")
+            else:
+                await ctx.send("Nobody to prune that has less than that amount of time")
 
     @arktools_main.command(name="crosschat")
     @commands.admin()
@@ -1994,6 +1874,165 @@ class ArkTools(Calls, commands.Cog):
             await ctx.send(results)
         else:
             await ctx.send("Nothing to clean, config looks healthy :thumbsup:")
+
+    @arktools_main.group(name="ranks")
+    @commands.admin()
+    async def ranks_main(self, ctx: commands.Context):
+        """Base command for playtime ranks"""
+        pass
+
+    @ranks_main.command(name="link")
+    async def link_level(self, ctx: commands.Context, role: discord.Role, hours_played: int):
+        """
+        Link a role to a certain amount of playtime(in-hours)
+
+        DO NOT USE EMOJIS IN RANK ROLE NAMES! Ark doesnt support unicode or
+        emojis, so dont use them.
+        """
+        async with self.config.guild(ctx.guild).ranks() as ranks:
+            if hours_played in ranks:
+                old = ranks[hours_played]
+                old = ctx.guild.get_role(old)
+                msg = f"The role {role.mention} will now be assigned when player hits {hours_played} hours " \
+                      f"instead of {old.mention}"
+            else:
+                msg = f"The role {role.mention} will now be assigned when player hits {hours_played} hours"
+            ranks[hours_played] = role.id
+            await ctx.send(msg)
+
+    @ranks_main.command(name="unlink")
+    async def unlink_level(self, ctx: commands.Context, hours: int):
+        """Unlink a role assigned to a level"""
+        async with self.config.guild(ctx.guild).ranks() as ranks:
+            if str(hours) in ranks:
+                del ranks[str(hours)]
+                await ctx.tick()
+            else:
+                await ctx.send("No role assigned to that time played")
+
+    @ranks_main.command(name="view")
+    async def view_ranks(self, ctx: commands.Context):
+        """View current settings for the rank system"""
+        config = await self.config.guild(ctx.guild).all()
+        unrank = config["autoremove"]
+        rename = config["autorename"]
+        ranks = config["ranks"]
+        settings = f"`AutoUnrank: `{unrank}\n" \
+                   f"`AutoRename: `{rename}\n\n"
+        rankmsg = ""
+        embed = discord.Embed(
+            description=settings,
+            color=discord.Color.random()
+        )
+        for hour in ranks:
+            role = ctx.guild.get_role(ranks[hour])
+            if role:
+                role = role.mention
+            else:
+                role = ranks[hour]
+            if int(hour) == 1:
+                hour = f"{hour} hour played"
+            else:
+                hour = f"{hour} hours played"
+            rankmsg += f"{role} - {hour}\n"
+        if rankmsg == "":
+            rankmsg = "No roles set"
+        embed.add_field(
+            name="Ranks",
+            value=rankmsg
+        )
+        await ctx.send(embed=embed)
+
+    @ranks_main.command(name="autorename")
+    async def auto_name(self, ctx: commands.Context):
+        """(TOGGLE)Auto rename character names to their rank"""
+        if await self.config.guild(ctx.guild).autorename():
+            await self.config.guild(ctx.guild).autorename.set(False)
+            await ctx.send("Auto rank renaming Disabled")
+        else:
+            await self.config.guild(ctx.guild).autorename.set(True)
+            await ctx.send("Auto rank renaming Enabled")
+
+    @ranks_main.command(name="autoremove")
+    async def auto_remove(self, ctx: commands.Context):
+        """
+        (TOGGLE)Auto remove old ranks
+
+        When user levels up their previous rank would be removed
+        """
+        if await self.config.guild(ctx.guild).autoremove():
+            await self.config.guild(ctx.guild).autoremove.set(False)
+            await ctx.send("Auto rank removal Disabled")
+        else:
+            await self.config.guild(ctx.guild).autoremove.set(True)
+            await ctx.send("Auto rank removal Enabled")
+
+    @ranks_main.command(name="initialize")
+    async def initialize_ranks(self, ctx: commands.Context):
+        """
+        Initialize created ranks to existing player database
+
+        This adds any roles and ranks to existing players that meet playtime
+        requirements
+        """
+        added = 0
+        removed = 0
+        perms = ctx.guild.me.guild_permissions.manage_roles
+        if not perms:
+            return await ctx.send("I do not have Manage Roles permissions!")
+        embed = discord.Embed(
+            description="Adding roles, this may take a while...",
+            color=discord.Color.magenta()
+        )
+        embed.set_thumbnail(url=LOADING)
+        msg = await ctx.send(embed=embed)
+        async with ctx.typing():
+            async with self.config.guild(ctx.guild).all() as settings:
+                stats = settings["players"]
+                rank_roles = settings["ranks"]
+                if not rank_roles:
+                    return await ctx.send("There are no ranks set!")
+                unrank = settings["autoremove"]
+                for uid, stat in stats.items():
+                    hours = int(stat["playtime"]["total"] / 3600)
+                    if "discord" not in stat:
+                        continue
+                    user = ctx.guild.get_member(int(stat["discord"]))
+                    if not user:
+                        continue
+                    if unrank:
+                        highest_rank = ""
+                        for time in rank_roles:
+                            if int(time) <= hours:
+                                highest_rank = time
+                        if highest_rank:
+                            settings["players"][uid]["rank"] = int(rank_roles[highest_rank])
+                            role = rank_roles[highest_rank]
+                            role = ctx.guild.get_role(int(role))
+                            if role:
+                                await user.add_roles(role)
+                                added += 1
+                                for r in user.roles:
+                                    if r.id in rank_roles.values() and r.id != role.id:
+                                        await user.remove_roles(r)
+                                        removed += 1
+                    else:
+                        highest_rank = ""
+                        for time, role_id in rank_roles.items():
+                            if int(time) <= hours:
+                                highest_rank = time
+                        if highest_rank:
+                            settings["players"][uid]["rank"] = int(rank_roles[highest_rank])
+                        for time, role_id in rank_roles.items():
+                            role = ctx.guild.get_role(int(role_id))
+                            if role and int(time) <= hours:
+                                await user.add_roles(role)
+                                added += 1
+                embed = discord.Embed(
+                    description=f"Initialization complete! Added {added} roles and removed {removed}.",
+                    color=discord.Color.green()
+                )
+                await msg.edit(embed=embed)
 
     # Arktools-Mod subgroup
     @arktools_main.group(name="mod")
@@ -4756,39 +4795,65 @@ class ArkTools(Calls, commands.Cog):
                                 "map": mapstring
                             }
                             # Havent decided on gt updates
+                            # Ark is dumb, if a user changes their GT, the map file still shows the old one
+                            # Thus, we're not gonna update gamertags
                             # stats[xuid]["username"] = gamertag
 
                             # Rank system
                             ranks = settings["ranks"]
+                            if not ranks:
+                                continue
                             hours = int(stats[xuid]["playtime"]["total"] / 3600)
                             if str(hours) in ranks:
                                 role = ranks[str(hours)]
                                 role = guild.get_role(role)
                                 if role:
+                                    # Just settings the player stat role
+                                    # Even if they aren't in discord
                                     stats[xuid]["rank"] = role.id
-                            if "rank" in stats[xuid] and "discord" in stats[xuid]:
-                                user = stats[xuid]["discord"]
-                                user = guild.get_member(user)
-                                if user:
-                                    rank = stats[xuid]["rank"]
-                                    rank = guild.get_role(rank)
-                                    if rank not in user.roles:
+                            if "rank" not in stats[xuid]:
+                                continue
+                            if "discord" not in stats[xuid]:
+                                continue
+                            user = guild.get_member(stats[xuid]["discord"])
+                            if not user:
+                                continue
+                            perms = guild.me.guild_permissions.manage_roles
+                            if not perms:
+                                continue
+                            unrank = settings["autoremove"]
+                            if unrank:  # Add the highest role and remove the rest
+                                highest_rank = ""
+                                for time in ranks:
+                                    if int(time) <= hours:
+                                        highest_rank = time
+                                if highest_rank:
+                                    role = guild.get_role(int(ranks[highest_rank]))
+                                    if role:
                                         try:
-                                            if rank:
-                                                await user.add_roles(rank)
+                                            await user.add_roles(role)
                                         except Exception as e:
                                             log.warning(f"Failed to add rank role to user: {e}")
-                                    if settings["autoremove"]:
-                                        ranks = settings["ranks"]
-                                        for role in ranks:
-                                            role = ranks[role]
-                                            role = guild.get_role(role)
-                                            if role in user.roles:
-                                                if role.id != rank.id:
-                                                    try:
-                                                        await user.remove_roles(role)
-                                                    except Exception as e:
-                                                        log.warning(f"Failed to remove rank role to user: {e}")
+                                        for r in user.roles:
+                                            if r.id in ranks.values() and r.id != role.id:
+                                                try:
+                                                    await user.remove_roles(r)
+                                                except Exception as e:
+                                                    log.warning(f"Failed to remove rank role to user: {e}")
+                            else:
+                                highest_rank = ""
+                                for time in ranks:
+                                    if int(time) <= hours:
+                                        highest_rank = time
+                                if highest_rank:
+                                    for time, role_id in ranks.items():
+                                        role = guild.get_role(int(role_id))
+                                        if role and int(time) <= hours:
+                                            if role not in user.roles:
+                                                try:
+                                                    await user.add_roles(role)
+                                                except Exception as e:
+                                                    log.warning(f"Failed to add rank role to user: {e}")
         self.time = current_time.isoformat()
 
     @player_stats.before_loop

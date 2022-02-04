@@ -26,6 +26,36 @@ IMSTUCK_BLUEPRINTS = [
 ]
 
 
+# Yoinked from Red's core mutes cog and stripped down for just time finding
+async def time_from_string(time_string: str) -> int:
+    time_re_string = r"|".join(
+        [
+            r"((?P<weeks>\d+?)\s?(weeks?|w))",
+            r"((?P<days>\d+?)\s?(days?|d))",
+            r"((?P<hours>\d+?)\s?(hours?|hrs|hr?))",
+            r"((?P<minutes>\d+?)\s?(minutes?|mins?|m(?!o)))",
+            r"((?P<seconds>\d+?)\s?(seconds?|secs?|s))",
+        ]
+    )
+    time_re = re.compile(time_re_string, re.I)
+    time_split = re.compile(r"t(?:ime)?=")
+    time_split = time_split.split(time_string)
+    if time_split:
+        maybe_time = time_split[-1]
+    else:
+        maybe_time = time_string
+    time_data = {}
+    for time in time_re.finditer(maybe_time):
+        time_string = time_string.replace(time[0], "")
+        for k, v in time.groupdict().items():
+            if v:
+                time_data[k] = int(v)
+    if time_data:
+        time = datetime.timedelta(**time_data)
+        time = int(time.total_seconds())
+        return time
+
+
 # Filter unicode, emojis, and links out of messages and user names
 async def decode(message: discord.Message):
     # Strip links, emojis, and unicode characters from message content before sending to server
