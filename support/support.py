@@ -18,7 +18,7 @@ from .commands import SupportCommands
 log = logging.getLogger("red.vrt.support")
 
 
-# Shoutout to Neuro Assassin#4779 for having a nice support ticket cog I could get ideas from
+# Shoutout to Neuro Assassin#4779 for having a nice ass support ticket cog I could get ideas from
 
 
 class Support(BaseCommands, SupportCommands, commands.Cog):
@@ -26,7 +26,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
     Support ticket system with buttons/logging
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -72,6 +72,12 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
 
     def cog_unload(self):
         self.check_listener.cancel()
+        # Cancel all guild tasks
+        # Hope nobody else is using asyncio task names!
+        # Tasks are named guild.id for each guild so if you are plz DM me and ill make a diff naming scheme
+        for task in asyncio.all_tasks():
+            if task.get_name().isdigit():
+                task.cancel()
 
     # Just checks if guild has been added to the listener
     @tasks.loop(seconds=10)
@@ -149,10 +155,11 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             if count:
                 log.info(f"{count} tickets pruned from {guild.name}")
 
-    # Listen for a buton click on a message
+    # Listen for a button click on a message
     async def listen(self, message: discord.Message):
-        if isinstance(message, str):
-            return
+        if isinstance(message, str):  # If for some reason message is not a discord.Message object
+            log.warning(f"Message isn't an object for some reason: {message}")
+            return await self.add_components()
         inter = await message.wait_for_button_click()
         try:
             await inter.reply(type=ResponseType.DeferredUpdateMessage)

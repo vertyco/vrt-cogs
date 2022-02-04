@@ -14,6 +14,13 @@ class SupportCommands(commands.Cog):
         """Base support settings"""
         pass
 
+    # Check running button tasks and update guild task if exists
+    async def refresh_tasks(self, guild_id: str):
+        for task in asyncio.all_tasks():
+            if guild_id == task.get_name():
+                task.cancel()
+                await self.add_components()
+
     @support.command(name="view")
     async def view_settings(self, ctx: commands.Context):
         """View support settings"""
@@ -96,7 +103,6 @@ class SupportCommands(commands.Cog):
             )
         await self.config.guild(ctx.guild).category.set(category.id)
         await ctx.send(f"Tickets will now be created in the {category.name} category")
-        await self.add_components()
 
     @support.command(name="supportmessage")
     async def set_support_button_message(self, ctx: commands.Context, message_id: discord.Message):
@@ -116,11 +122,7 @@ class SupportCommands(commands.Cog):
         await self.config.guild(ctx.guild).message_id.set(message_id.id)
         await self.config.guild(ctx.guild).channel_id.set(message_id.channel.id)
         await ctx.send("Support ticket message has been set!")
-        # Cancel the guild task if already running and re-add components to update button
-        for task in asyncio.all_tasks():
-            if str(ctx.guild.id) == str(task.get_name()):
-                task.cancel()
-        await self.add_components()
+        await self.refresh_tasks(str(ctx.guild.id))
 
     @support.command(name="ticketmessage")
     async def set_support_ticket_message(self, ctx: commands.Context, *, message: str):
@@ -190,11 +192,7 @@ class SupportCommands(commands.Cog):
         if len(button_content) <= 80:
             await self.config.guild(ctx.guild).button_content.set(button_content)
             await ctx.tick()
-            # Cancel the guild task and re-add components to update button
-            for task in asyncio.all_tasks():
-                if str(ctx.guild.id) == str(task.get_name()):
-                    task.cancel()
-            await self.add_components()
+            await self.refresh_tasks(str(ctx.guild.id))
         else:
             await ctx.send("Button content is too long! Must be less than 80 characters")
 
@@ -203,11 +201,7 @@ class SupportCommands(commands.Cog):
         """Set a button emoji"""
         await self.config.guild(ctx.guild).emoji.set(str(emoji))
         await ctx.tick()
-        # Cancel the guild task and re-add components to update button
-        for task in asyncio.all_tasks():
-            if str(ctx.guild.id) == str(task.get_name()):
-                task.cancel()
-        await self.add_components()
+        await self.refresh_tasks(str(ctx.guild.id))
 
     @support.command(name="tname")
     async def set_def_ticket_name(self, ctx: commands.Context, *, default_name: str):
