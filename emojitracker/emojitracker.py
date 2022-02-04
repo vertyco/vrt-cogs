@@ -121,6 +121,8 @@ class EmojiTracker(commands.Cog):
             embeds.append(embed)
             start += 10
             stop += 10
+        if not embeds:
+            return await ctx.send("No reactions saved yet!")
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command(name="reactlb")
@@ -164,4 +166,6 @@ class EmojiTracker(commands.Cog):
             embeds.append(embed)
             start += 10
             stop += 10
+        if not embeds:
+            return await ctx.send("No reactions saved yet!")
         await menu(ctx, embeds, DEFAULT_CONTROLS)
