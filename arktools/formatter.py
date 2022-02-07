@@ -423,7 +423,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 if member:
                     color = member.colour
                     pfp = member.avatar_url
-                    registration = f"{member.mention}"
+                    registration = f"{member.mention}-{member.id}"
                 else:
                     registration = f"{data['discord']}"
                     in_server = False

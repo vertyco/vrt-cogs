@@ -76,7 +76,7 @@ class ArkTools(Calls, commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.14.51"
+    __version__ = "2.15.51"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1517,11 +1517,26 @@ class ArkTools(Calls, commands.Cog):
     # Get detailed info of an individual player on the server
     @commands.command(name="playerstats")
     @commands.guild_only()
-    async def get_player_stats(self, ctx: commands.Context, *, gamertag: str = None):
-        """View stats for yourself or another gamertag"""
+    async def get_player_stats(
+            self,
+            ctx: commands.Context, *,
+            gamertag_or_user: typing.Union[discord.Member, str] = None
+    ):
+        """
+        View stats for yourself or another gamertag/user
+
+        You can use any of the following values to find a player's stats
+        ```
+        gamertag
+        XUID or Steam ID
+        Discord ID
+        @mention
+        ```
+        """
         settings = await self.config.guild(ctx.guild).all()
         stats = settings["players"]
-        if not gamertag:
+        if not gamertag_or_user:
+            # If user is registered, pull their own stats
             for xuid, data in stats.items():
                 if "discord" in data:
                     if ctx.author.id == data["discord"]:
@@ -1532,27 +1547,40 @@ class ArkTools(Calls, commands.Cog):
                                                   f"Register with the `{ctx.prefix}register` command.")
                 embed.set_thumbnail(url=FAILED)
                 return await ctx.send(embed=embed)
+        else:
+            if isinstance(gamertag_or_user, discord.Member):
+                # If a discord ID or mention is passed, pull their data from ID
+                for xuid, data in stats.items():
+                    if "discord" in data:
+                        if gamertag_or_user.id == data["discord"]:
+                            gamertag = data["username"]
+                            break
+                else:
+                    embed = discord.Embed(description=f"{gamertag_or_user.name} never registered.")
+                    embed.set_thumbnail(url=FAILED)
+                    return await ctx.send(embed=embed)
+            elif gamertag_or_user.isdigit():
+                # User either entered an XUID, Steam ID, or Discord ID that isnt in guild anymore
+                for xuid, data in stats.items():
+                    if "discord" in data:
+                        if int(gamertag_or_user) == data["discord"]:
+                            gamertag = data["username"]
+                            break
+                else:
+                    # See if person entered XUID or steam ID instead of discord ID
+                    if gamertag_or_user in stats:
+                        gamertag = stats[gamertag_or_user]["username"]
+                    else:
+                        embed = discord.Embed(description=f"No player data found for user ID {gamertag_or_user}.")
+                        embed.set_thumbnail(url=FAILED)
+                        return await ctx.send(embed=embed)
+            else:
+                # User just entered a gamertag so find that instead
+                gamertag = gamertag_or_user
         embed = player_stats(settings, ctx.guild, gamertag)
         if not embed:
             return await ctx.send(embed=discord.Embed(description=f"No player data found for {gamertag}"))
         await ctx.send(embed=embed)
-
-    # Find out if a user has registered their gamertag
-    @commands.command(name="findplayer")
-    @commands.guild_only()
-    async def find_player_from_discord(self, ctx: commands.Context, *, member: discord.Member):
-        """Find out if a player has registered"""
-        settings = await self.config.guild(ctx.guild).all()
-        stats = settings["players"]
-        if not member:
-            member = self.bot.get_user(member)
-        if not member:
-            return await ctx.send(f"Couldn't find member.")
-        for xuid, stat in stats.items():
-            if "discord" in stat:
-                if stat["discord"] == member.id:
-                    return await ctx.send(f"User is registered as **{stat['username']}**")
-        await ctx.send("User never registered.")
 
     @commands.command(name="findcharname")
     @commands.guild_only()
@@ -1578,22 +1606,6 @@ class ArkTools(Calls, commands.Cog):
             await ctx.send(embed=embed)
         else:
             await ctx.send("No matches found")
-
-    # Find out if a user has registered their discord id
-    @commands.command(name="findbyid")
-    @commands.guild_only()
-    async def find_player_from_by_id(self, ctx: commands.Context, uid: int):
-        """Find a player by their discord ID
-
-        This is a manual method for if the member has left the discord
-        """
-        settings = await self.config.guild(ctx.guild).all()
-        stats = settings["players"]
-        for xuid, stat in stats.items():
-            if "discord" in stat:
-                if stat["discord"] == uid:
-                    return await ctx.send(f"User is registered as **{stat['username']}**")
-        await ctx.send("User never registered.")
 
     # Main group
     @commands.group(name="arktools")
