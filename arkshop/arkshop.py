@@ -184,7 +184,7 @@ class ArkShop(commands.Cog):
             if "semaphore" in str(e):
                 log.info(f"Server {server['ip']} is offline")
             else:
-                log.warning(f"RSHOP RCON Error: {e}")
+                log.warning(f"RCON Error: {e}")
 
     # Check if arktools is installed and loaded
     async def arktools(self, ctx: commands.Context = None):
@@ -1692,7 +1692,7 @@ class ArkShop(commands.Cog):
             # ASK FOR IMPLANT ID
             embed = discord.Embed(
                 title="Type your Implant ID below",
-                description=f"`Current cluster: `**{cname}**",
+                description=f"`Current cluster: ` **{cname}**",
                 color=discord.Color.blue()
             )
             if desc:
@@ -1778,6 +1778,11 @@ class ArkShop(commands.Cog):
                     for server_data in cluster_data["servers"].values():
                         if str(server_data["chatchannel"]) == channel_id:
                             server.append(server_data)
+                if not server:
+                    embed = discord.Embed(
+                        description=f"Couldn't find server associated with channel ID {channel_id}"
+                    )
+                    return await message.edit(embed=embed, components=[])
                 if implant_id:
                     return await self.sendoff_rcon_items(
                         ctx,
@@ -1930,13 +1935,13 @@ class ArkShop(commands.Cog):
 
         for server in serverlist:
             for command in commandlist:
-                task_name = f"ArkTools-{ctx.guild.name}-ArkShop-giveitemtoplayer"
-                asyncio.create_task(self.rcon(server, command), name=task_name)
+                await self.rcon(server, command)
 
         # withdraw credits and send purchase message
         await bank.withdraw_credits(ctx.author, int(price))
         embed = discord.Embed(
-            description=f"You have purchased the {item_name} item for {price} {currency_name}!",
+            description=f"You have purchased the {item_name} item for {price} {currency_name}!\n"
+                        f"Item was sent to ImplantID {implant_id}",
             color=discord.Color.green()
         )
         embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))

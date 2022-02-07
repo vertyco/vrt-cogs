@@ -51,7 +51,6 @@ matplotlib.use("agg")
 plt.switch_backend("agg")
 
 log = logging.getLogger("red.vrt.arktools")
-logging.basicConfig(datefmt='%d-%b-%y %I:%M %p')
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 LIVE = "https://i.imgur.com/LPzCcgU.gif"
