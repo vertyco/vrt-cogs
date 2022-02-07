@@ -664,7 +664,23 @@ class XTools(commands.Cog):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            data = json.loads((await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json())
+            try:
+                data = json.loads((await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json())
+            except Exception as e:
+                if "Forbidden" in str(e):
+                    embed = discord.Embed(
+                        color=discord.Color.red(),
+                        description="Your privacy settings might be blocking your game clips.\n"
+                                    "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings."
+                    )
+                    return await msg.edit(embed=embed)
+                else:
+                    log.warning(f"Error getting xclip info")
+                    embed = discord.Embed(
+                        color=discord.Color.red(),
+                        description=f"Unknown error while fetching xclip data: {e}"
+                    )
+                    return await msg.edit(embed=embed)
             pages = gameclip_embeds(data, gamertag)
             if len(pages) == 0:
                 color = discord.Color.red()
