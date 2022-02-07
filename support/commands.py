@@ -200,7 +200,7 @@ class SupportCommands(commands.Cog):
     async def set_button_color(self, ctx: commands.Context, button_color: str):
         """Set button color(red/blue/green/grey only)"""
         c = button_color.lower()
-        valid = ["red", "blue", "green", "grey"]
+        valid = ["red", "blue", "green", "grey", "gray"]
         if c not in valid:
             return await ctx.send("That is not a valid color, must be red, blue, green, or grey")
         await self.config.guild(ctx.guild).bcolor.set(c)
@@ -233,6 +233,21 @@ class SupportCommands(commands.Cog):
         await ctx.tick()
 
     # TOGGLES --------------------------------------------------------------------------------
+    @support.command(name="ticketembed")
+    async def toggle_ticket_embed(self, ctx: commands.Context):
+        """
+        (Toggle) Ticket message as an embed
+
+        When user opens a ticket, the formatted message will be an embed instead
+        """
+        toggle = await self.config.guild(ctx.guild).embeds()
+        if toggle:
+            await self.config.guild(ctx.guild).embeds.set(False)
+            await ctx.send("Ticket message embeds have been **Disabled**")
+        else:
+            await self.config.guild(ctx.guild).embeds.set(True)
+            await ctx.send("Ticket message embeds have been **Enabled**")
+
     @support.command(name="dm")
     async def toggle_dms(self, ctx: commands.Context):
         """(Toggle) The bot sending DM's for ticket alerts"""

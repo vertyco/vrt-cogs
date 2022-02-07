@@ -50,6 +50,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             "blacklist": [],
             "max_tickets": 1,
             "bcolor": "red",
+            "embeds": False,
             # Ticket data
             "opened": {},
             "num": 0,
@@ -226,16 +227,23 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             }
             channel_name = name_fmt.format(**params)
         channel = await category.create_text_channel(channel_name, overwrites=overwrite)
+        # Ticket message setup
+        embeds = conf["embeds"]
+        color = user.color
         if conf["message"] == "{default}":
             if conf["user_can_close"]:
-                msg = await channel.send(
-                    f"{user.mention} welcome to your ticket channel\nTo close this, "
-                    f"You or an Administrator may run `[p]sclose`."
-                )
+                text = f"Welcome to your ticket channel\nTo close this, " \
+                       f"You or an Administrator may run `[p]sclose`."
+                if embeds:
+                    msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                else:
+                    msg = await channel.send(f"{user.mention}, {text}")
             else:
-                msg = await channel.send(
-                    f"{user.mention} welcome to your ticket channel"
-                )
+                text = f"Welcome to your ticket channel"
+                if embeds:
+                    msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                else:
+                    msg = await channel.send(f"{user.mention}, {text}")
         else:
             try:
                 params = {
@@ -244,19 +252,29 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     "id": str(user.id)
                 }
                 tmessage = conf["message"].format(**params)
-                msg = await channel.send(tmessage, allowed_mentions=discord.AllowedMentions(users=True, roles=True))
+                if embeds:
+                    if "mention" in conf["message"]:
+                        msg = await channel.send(user.mention, embed=discord.Embed(description=tmessage, color=color))
+                    else:
+                        msg = await channel.send(embed=discord.Embed(description=tmessage, color=color))
+                else:
+                    msg = await channel.send(tmessage, allowed_mentions=discord.AllowedMentions(users=True, roles=True))
             except Exception as e:
                 log.warning(f"An error occurred while sending a ticket message: {e}")
                 # Revert to default message
                 if conf["user_can_close"]:
-                    msg = await channel.send(
-                        f"{user.mention} welcome to your ticket channel\nTo close this, "
-                        f"You or an Administrator may run `[p]sclose`."
-                    )
+                    text = f"Welcome to your ticket channel\nTo close this, " \
+                           f"You or an Administrator may run `[p]sclose`."
+                    if embeds:
+                        msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                    else:
+                        msg = await channel.send(f"{user.mention}, {text}")
                 else:
-                    msg = await channel.send(
-                        f"{user.mention} welcome to your ticket channel"
-                    )
+                    text = f"Welcome to your ticket channel"
+                    if embeds:
+                        msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                    else:
+                        msg = await channel.send(f"{user.mention}, {text}")
 
         async with self.config.guild(guild).all() as settings:
             settings["num"] += 1
