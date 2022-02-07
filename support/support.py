@@ -26,7 +26,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
     Support ticket system with buttons/logging
     """
     __author__ = "Vertyco"
-    __version__ = "0.1.1"
+    __version__ = "1.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -49,6 +49,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             "support": [],
             "blacklist": [],
             "max_tickets": 1,
+            "bcolor": "red",
             # Ticket data
             "opened": {},
             "num": 0,
@@ -105,6 +106,15 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             message = await channel.fetch_message(conf["message_id"])
             if not message:
                 continue
+            bcolor = conf["bcolor"]
+            if bcolor == "red":
+                style = ButtonStyle.red
+            elif bcolor == "blue":
+                style = ButtonStyle.blurple
+            elif bcolor == "green":
+                style = ButtonStyle.green
+            else:
+                style = ButtonStyle.grey
 
             # Check if listener task is running for guild
             guild_id = str(guild.id)
@@ -115,7 +125,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 if emoji:
                     button = ActionRow(
                         Button(
-                            style=ButtonStyle.red,
+                            style=style,
                             label=button_content,
                             custom_id=f"{guild.id}",
                             emoji=emoji
@@ -124,7 +134,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 else:
                     button = ActionRow(
                         Button(
-                            style=ButtonStyle.red,
+                            style=style,
                             label=button_content,
                             custom_id=f"{guild.id}"
                         )

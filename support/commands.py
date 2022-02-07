@@ -196,6 +196,17 @@ class SupportCommands(commands.Cog):
         else:
             await ctx.send("Button content is too long! Must be less than 80 characters")
 
+    @support.command(name="buttoncolor")
+    async def set_button_color(self, ctx: commands.Context, button_color: str):
+        """Set button color(red/blue/green/grey only)"""
+        c = button_color.lower()
+        valid = ["red", "blue", "green", "grey"]
+        if c not in valid:
+            return await ctx.send("That is not a valid color, must be red, blue, green, or grey")
+        await self.config.guild(ctx.guild).bcolor.set(c)
+        await ctx.tick()
+        await self.refresh_tasks(str(ctx.guild.id))
+
     @support.command(name="buttonemoji")
     async def set_button_emoji(self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji]):
         """Set a button emoji"""
