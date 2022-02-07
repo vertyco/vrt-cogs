@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 
 import discord
 from redbot.core import commands
@@ -152,6 +153,10 @@ class BaseCommands(commands.Cog):
                             continue
                 with open(filename, "rb") as file:
                     await log_chan.send(embed=embed, file=discord.File(file, filename))
+                try:
+                    os.remove(filename)
+                except Exception as e:
+                    log.warning(f"Failed to delete txt file: {e}")
             try:
                 await chan.delete()
             except Exception as e:

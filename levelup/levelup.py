@@ -7,6 +7,7 @@ import math
 import random
 import sys
 import typing
+import os
 
 import aiohttp
 import discord
@@ -671,10 +672,15 @@ class LevelUp(commands.Cog):
         today = datetime.datetime.now().strftime('%m-%d-%y')
         settings = await self.config.all_guilds()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"LevelUp_global_config_{today}.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"LevelUp_global_config_{today}.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @admin_group.command(name="guildbackup")
     @commands.guildowner()
@@ -687,10 +693,15 @@ class LevelUp(commands.Cog):
         today = datetime.datetime.now().strftime('%m-%d-%y')
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"LevelUp_guild_config_{today}.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"LevelUp_guild_config_{today}.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @admin_group.command(name="globalrestore")
     @commands.is_owner()

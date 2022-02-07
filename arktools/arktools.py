@@ -8,6 +8,7 @@ import re
 import socket
 import sys
 import typing
+import os
 
 import aiohttp
 import discord
@@ -1695,10 +1696,15 @@ class ArkTools(Calls, commands.Cog):
         """
         settings = await self.config.all_guilds()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_full_config.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_full_config.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @arktools_main.command(name="backup")
     @commands.guildowner()
@@ -1710,10 +1716,15 @@ class ArkTools(Calls, commands.Cog):
         """
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_config.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_config.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @arktools_main.command(name="backupcluster")
     @commands.guildowner()
@@ -1729,10 +1740,15 @@ class ArkTools(Calls, commands.Cog):
             return await ctx.send("Cluster not found!")
         cluster = clusters[clustername]
         cluster = json.dumps(cluster)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_{clustername}_config.json"
+        with open(filename, "w") as file:
             file.write(cluster)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_{clustername}_config.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @arktools_main.command(name="backupstats")
     @commands.guildowner()
@@ -1744,10 +1760,15 @@ class ArkTools(Calls, commands.Cog):
         """
         settings = await self.config.guild(ctx.guild).players()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_playerstats.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_playerstats.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @arktools_main.command(name="backupgraphdata")
     @commands.guildowner()
@@ -1759,10 +1780,15 @@ class ArkTools(Calls, commands.Cog):
         """
         settings = await self.config.guild(ctx.guild).serverstats()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_graphdata.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_graphdata.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @arktools_main.command(name="fullrestore")
     @commands.is_owner()

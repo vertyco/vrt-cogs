@@ -373,10 +373,15 @@ class ArkShop(commands.Cog):
         """
         settings = await self.config.all_guilds()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_full_config.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_full_config.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @_shopset.command(name="fullrestore")
     @commands.is_owner()
@@ -411,10 +416,15 @@ class ArkShop(commands.Cog):
         """
         settings = await self.config.all()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_datashop_config.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_datashop_config.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @_shopset.command(name="drestore")
     @commands.is_owner()
@@ -444,10 +454,15 @@ class ArkShop(commands.Cog):
         """
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
-        with open(f"{ctx.guild}.json", "w") as file:
+        filename = f"{ctx.guild}_RCON_config.json"
+        with open(filename, "w") as file:
             file.write(settings)
-        with open(f"{ctx.guild}.json", "rb") as file:
-            await ctx.send(file=discord.File(file, f"{ctx.guild}_RCON_config.json"))
+        with open(filename, "rb") as file:
+            await ctx.send(file=discord.File(file, filename))
+        try:
+            os.remove(filename)
+        except Exception as e:
+            log.warning(f"Failed to delete txt file: {e}")
 
     @_shopset.command(name="rrestore")
     @commands.guildowner()
