@@ -1774,8 +1774,9 @@ class LevelUp(commands.Cog):
         for user, data in conf["users"].items():
             if "stars" in data:
                 stars = data["stars"]
-                leaderboard[user] = stars
-                total_stars += stars
+                if stars:
+                    leaderboard[user] = stars
+                    total_stars += stars
         if not leaderboard:
             return await ctx.send("Nobody has stars yet 😕")
         sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
