@@ -51,7 +51,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.5.15"
+    __version__ = "1.5.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1765,13 +1765,21 @@ class ArkShop(commands.Cog):
                 try:
                     await gather
                 except asyncio.CancelledError:
-                    pass
+                    await message.edit(
+                        embed=discord.Embed(
+                            description="You took too long :yawning_face:",
+                            color=discord.Color.dark_purple()
+                        ),
+                        components=[]
+                    )
+                    return None
                 if done:
                     return done.pop().result()
                 else:
                     await message.edit(
                         embed=discord.Embed(
-                            description="You took too long :yawning_face:"
+                            description="Purchase cancelled",
+                            color=discord.Color.dark_purple()
                         ),
                         components=[]
                     )
