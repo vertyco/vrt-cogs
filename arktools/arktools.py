@@ -4764,13 +4764,11 @@ class ArkTools(Calls, commands.Cog):
             p = [p for p in prefixes if p][0]
             color1 = random.choice(RICH_COLORS)
             color2 = random.choice(RICH_COLORS)
-            cmd = f"""
-            broadcast {color1}A new player has been detected on the server!</>
-            Everyone say hi to {gamertag}!!!
-            Be sure to type {color2}{p}help</> in global chat to see a list of help commands you can use
-            If the kit command is enabled, you can use it to get your starter pack
-            Enjoy your stay on {guild.name}!
-            """
+            cmd = f"broadcast {color1}A new player has been detected on the server!</>\n" \
+                  f"Everyone say hi to {gamertag}!!!\n" \
+                  f"Be sure to type {color2}{p}help</> in global chat to see a list of help commands you can use\n" \
+                  f"If the kit command is enabled, you can use it to get your starter pack\n" \
+                  f"Enjoy your stay on {guild.name}!"
             await self.executor(guild, server, cmd)
             welc = f"```py\nA new player has been detected on the server!\n" \
                    f"Everyone say hi to {gamertag}!!!\n```"
