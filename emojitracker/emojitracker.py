@@ -114,7 +114,7 @@ class EmojiTracker(commands.Cog):
                 top += f"{emoji} - `{count}`\n"
             embed = discord.Embed(
                 title="Emoji Leaderboard",
-                description=f"Total Reactions: {total_emojis}\n{top}",
+                description=f"Total Reactions: {'{:,}'.format(total_emojis)}\n{top}",
                 color=color
             )
             embed.set_footer(text=f"Pages {p + 1}/{pages}")
@@ -159,7 +159,7 @@ class EmojiTracker(commands.Cog):
             top = tabulate.tabulate(table, tablefmt="presto")
             embed = discord.Embed(
                 title="Reaction Leaderboard",
-                description=f"Total Reactions: {total_reactions}\n```py\n{top}\n```",
+                description=f"Total Reactions: {'{:,}'.format(total_reactions)}\n```py\n{top}\n```",
                 color=color
             )
             embed.set_footer(text=f"Pages {p + 1}/{pages}")
