@@ -206,21 +206,15 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         if name_fmt == "{default}":
             channel_name = f"{user.name}"
         else:
-            channel_name = (
-                name_fmt.replace(
-                    "{num}", str(num)
-                ).replace(
-                    "{user}", user.name
-                ).replace(
-                    "{id}", str(user.id)
-                ).replace(
-                    "{shortdate}", now.strftime("%m-%d")
-                ).replace(
-                    "{longdate}", now.strftime("%m-%d-%Y")
-                ).replace(
-                    "{time}", now.strftime("%I-%M-%p")
-                )
-            )
+            params = {
+                "num": str(num),
+                "user": user.name,
+                "id": str(user.id),
+                "shortdate": now.strftime("%m-%d"),
+                "longdate": now.strftime("%m-%d-%Y"),
+                "time": now.strftime("%I-%M-%p")
+            }
+            channel_name = name_fmt.format(**params)
         channel = await category.create_text_channel(channel_name, overwrites=overwrite)
         if conf["message"] == "{default}":
             if conf["user_can_close"]:
@@ -234,15 +228,12 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 )
         else:
             try:
-                tmessage = (
-                    conf["message"].replace(
-                        "{username}", user.name
-                    ).replace(
-                        "{mention}", str(user.mention)
-                    ).replace(
-                        "{id}", str(user.id)
-                    )
-                )
+                params = {
+                    "username": user.name,
+                    "mention": user.mention,
+                    "id": str(user.id)
+                }
+                tmessage = conf["message"].format(**params)
                 msg = await channel.send(tmessage, allowed_mentions=discord.AllowedMentions(users=True, roles=True))
             except Exception as e:
                 log.warning(f"An error occurred while sending a ticket message: {e}")
@@ -276,6 +267,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                                     f"To view this ticket, **[Click Here]({msg.jump_url})**",
                         color=discord.Color.red()
                     )
+                    embed.set_thumbnail(url=pfp)
                     log_msg = await log_channel.send(embed=embed)
                     opened[str(user.id)][str(channel.id)]["logmsg"] = str(log_msg.id)
         return await self.listen(message)
