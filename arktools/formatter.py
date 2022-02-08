@@ -160,19 +160,21 @@ def overview_format(stats: dict, guild: discord.guild, timezone: str):
     for xuid, data in stats.items():
         if "playtime" in data:
             time = data["playtime"]["total"]
-            leaderboard[xuid] = time
-            global_time = global_time + time
+            if time:
+                leaderboard[xuid] = time
+                global_time = global_time + time
     global_playtime = time_formatter(global_time)
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     # Figure out how many pages the lb menu will be
     pages = math.ceil(len(sorted_players) / 10)
     start = 0
     stop = 10
+    saved = "{:,}".format(len(stats.keys()))
     for p in range(pages):
         embed = discord.Embed(
             title="Player Overview",
             description=f"Global Cumulative Playtime: `{global_playtime}`\n\n"
-                        f"**Top Players by Playtime** - `{len(sorted_players)} in Database`\n",
+                        f"**Top Players by Playtime** - `{saved} in Database`\n",
             color=discord.Color.random()
         )
         embed.set_thumbnail(url=guild.icon_url)
@@ -219,8 +221,9 @@ def lb_format(stats: dict, guild: discord.guild):
     for xuid, data in stats.items():
         if "playtime" in data:
             time = data["playtime"]["total"]
-            leaderboard[xuid] = time
-            global_time = global_time + time
+            if time:
+                leaderboard[xuid] = time
+                global_time = global_time + time
     global_playtime = time_formatter(global_time)
     sorted_players = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     # Figure out how many pages the lb menu will be
@@ -239,7 +242,7 @@ def lb_format(stats: dict, guild: discord.guild):
             total_playtime = time_formatter(total)
             table.append([i + 1, total_playtime, username])
         players = tabulate.tabulate(table, tablefmt="presto")
-        saved = "{:,}".format(len(sorted_players))
+        saved = "{:,}".format(len(stats.keys()))
         embed = discord.Embed(
             title="Playtime Leaderboard",
             description=f"Global Playtime: `{global_playtime}`\n"
