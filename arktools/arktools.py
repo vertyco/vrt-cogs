@@ -1557,9 +1557,9 @@ class ArkTools(Calls, commands.Cog):
                             gamertag = data["username"]
                             break
                 else:
-                    # Make sure its not a Gamertag mistaken as a discord.Member
+                    # Make sure it's not a Gamertag mistaken as a discord.Member
                     for xuid, data in stats.items():
-                        if data["username"] == str(gamertag_or_user):
+                        if data["username"].lower() == str(gamertag_or_user).lower():
                             gamertag = str(gamertag_or_user)
                             break
                     else:
