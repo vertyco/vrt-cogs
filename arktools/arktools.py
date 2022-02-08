@@ -1557,9 +1557,15 @@ class ArkTools(Calls, commands.Cog):
                             gamertag = data["username"]
                             break
                 else:
-                    embed = discord.Embed(description=f"{gamertag_or_user.name} never registered.")
-                    embed.set_thumbnail(url=FAILED)
-                    return await ctx.send(embed=embed)
+                    # Make sure its not a Gamertag mistaken as a discord.Member
+                    for xuid, data in stats.items():
+                        if data["username"] == str(gamertag_or_user):
+                            gamertag = str(gamertag_or_user)
+                            break
+                    else:
+                        embed = discord.Embed(description=f"{gamertag_or_user.name} never registered.")
+                        embed.set_thumbnail(url=FAILED)
+                        return await ctx.send(embed=embed)
             elif gamertag_or_user.isdigit():
                 # User either entered an XUID, Steam ID, or Discord ID that isnt in guild anymore
                 for xuid, data in stats.items():

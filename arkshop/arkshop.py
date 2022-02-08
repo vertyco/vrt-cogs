@@ -1760,13 +1760,13 @@ class ArkShop(commands.Cog):
                     return_when=asyncio.FIRST_COMPLETED,
                     timeout=80
                 )
-                gather = asyncio.gather(*pending)
-                gather.cancel()
-                try:
-                    await gather
-                except asyncio.CancelledError:
-                    pass
+                # try:
+                #     await gather
+                # except asyncio.CancelledError:
+                #     pass
                 if done:
+                    gather = asyncio.gather(*pending)
+                    gather.cancel()
                     return done.pop().result()
                 else:
                     await message.edit(
