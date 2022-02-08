@@ -1765,14 +1765,7 @@ class ArkShop(commands.Cog):
                 try:
                     await gather
                 except asyncio.CancelledError:
-                    await message.edit(
-                        embed=discord.Embed(
-                            description="You took too long :yawning_face:",
-                            color=discord.Color.dark_purple()
-                        ),
-                        components=[]
-                    )
-                    return None
+                    pass
                 if done:
                     return done.pop().result()
                 else:
