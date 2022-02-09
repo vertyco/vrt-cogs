@@ -11,7 +11,7 @@ import tabulate
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import MaxNLocator, AutoMinorLocator
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, pagify
 
 log = logging.getLogger("red.vrt.arktools")
 
@@ -467,7 +467,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             for mapname, playtime in data["playtime"].items():
                 if mapname != "total":
                     ptime = time_formatter(playtime)
-                    if playtime > 0:
+                    if int(playtime):
                         embed.add_field(
                             name=f"Time on {mapname.capitalize()}",
                             value=f"`{ptime}`"
@@ -476,7 +476,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             for mapid, info in data["ingame"].items():
                 channel = guild.get_channel(int(mapid))
                 if channel:
-                    mapid = channel.mention
+                    mapid = channel.name
 
                 implant = info["implant"]
                 name = info["name"]
@@ -487,34 +487,42 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                 ped = info["stats"]["pvedeaths"]
                 tamed = info["stats"]["tamed"]
                 prev_names = info["previous_names"]
-                pstats += f"{mapid}\n"
+                pstats += f"**{mapid}**\n"
                 if implant:
                     pstats += f"`Implant:        `{implant}\n"
                 if name:
                     pstats += f"`Character Name: `{name}\n"
-                if any([pk, pd, ped]):
-                    pstats += f"`PvE Deaths:  `{ped}\n" \
-                              f"`PvP Kills:   `{pk}\n" \
-                              f"`PVP Deaths:  `{pd}\n"
-                    if pk > 0 and pd > 0:
-                        kd_ratio = round(pk / pd, 2)
-                        pstats += f"`PvP K/D:     `{kd_ratio}\n"
+                if pk and pd:
+                    kd_ratio = round(pk / pd, 2)
+                    pstats += f"`PvP K/D:        `{pk}/{pd} ({kd_ratio})\n"
+                if ped:
+                    pstats += f"`PvE Deaths:     `{ped}\n"
                 if tamed:
-                    pstats += f"`Dinos Tamed: `{tamed}\n"
+                    pstats += f"`Dinos Tamed:    `{tamed}\n"
                 if prev_names:
                     names = ""
                     for name in prev_names:
                         if name:
-                            names += f"{name}, "
+                            names += f"{name}\n"
                     if names:
-                        names = names.rstrip(", ")
-                        pstats += f"`Previous Names: `{names}\n"
+                        names = names.strip()
+                        pstats += f"**Prev Names**\n{names}"
             if pstats:
-                embed.add_field(
-                    name="In-Game Stats",
-                    value=pstats,
-                    inline=False
-                )
+                if len(pstats) <= 1024:
+                    embed.add_field(
+                        name="In-Game Stats",
+                        value=pstats,
+                        inline=False
+                    )
+                else:
+                    page = 1
+                    for p in pagify(pstats, page_length=1024):
+                        embed.add_field(
+                            name=f"In-Game Stats {page}",
+                            value=p,
+                            inline=False
+                        )
+                        page += 1
             if position and global_time:
                 percent = round((total_playtime / global_time) * 100, 2)
                 embed.set_footer(text=f"Rank: {position} with {percent}% of global playtime")
