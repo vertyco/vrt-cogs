@@ -6,10 +6,11 @@ import math
 import os
 import random
 import shutil
+import socket
 
 import aiohttp
 import discord
-import rcon
+from rcon import Client
 from dislash import (InteractionClient,
                      ActionRow,
                      Button,
@@ -44,6 +45,8 @@ from .menus import (
 )
 
 log = logging.getLogger("red.vrt.arkshop")
+
+LOADING = "https://i.imgur.com/l3p6EMX.gif"
 
 
 class ArkShop(commands.Cog):
@@ -171,20 +174,30 @@ class ArkShop(commands.Cog):
             pass
         return
 
-    @staticmethod
-    async def rcon(server, command):
-        try:
-            await rcon.asyncio.rcon(
-                command=command,
-                host=server["ip"],
-                port=server["port"],
-                passwd=server["password"]
-            )
-        except Exception as e:
-            if "semaphore" in str(e):
-                log.info(f"Server {server['ip']} is offline")
-            else:
-                log.warning(f"RCON Error: {e}")
+    async def executor(self, server: dict, command_list: list) -> bool:
+        def exe():
+            try:
+                with Client(
+                        host=server['ip'],
+                        port=server['port'],
+                        passwd=server['password'],
+                        timeout=10
+                ) as client:
+                    for command in command_list:
+                        client.run(command)
+                    return True
+            except socket.timeout:
+                return False
+            except Exception as e:
+                if "WinError 10054" in str(e):
+                    log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
+                elif "semaphore" in str(e):
+                    log.info(f"Server {server['ip']} is offline")
+                else:
+                    log.warning(f"Executor Error: {e}")
+                return False
+        res = await self.bot.loop.run_in_executor(None, exe)
+        return res
 
     # Check if arktools is installed and loaded
     async def arktools(self, ctx: commands.Context = None):
@@ -1835,6 +1848,13 @@ class ArkShop(commands.Cog):
                         color=discord.Color.red()
                     )
                     return await message.edit(embed=embed, components=[])
+                else:
+                    embed = discord.Embed(
+                        description="Sending items...",
+                        color=discord.Color.orange()
+                    )
+                    embed.set_thumbnail(url=LOADING)
+                    await message.edit(embed=embed, components=[])
                 serverlist = list(clusters[cname]["servers"].values())
                 return await self.sendoff_rcon_items(
                     ctx,
@@ -1950,8 +1970,16 @@ class ArkShop(commands.Cog):
             commandlist.append(f"giveitemtoplayer {implant_id} {path}")
 
         for server in serverlist:
-            for command in commandlist:
-                await self.rcon(server, command)
+            res = await self.executor(server, commandlist)
+            if not res:
+                embed = discord.Embed(
+                    title="Purchase Failed",
+                    description="The server timed out or lost connection during item send.\n"
+                                "Please try again, if the problem persists, contact an admin.\n"
+                                f"No {currency_name} has been deducted from your balance.",
+                    color=discord.Color.orange()
+                )
+                return await message.edit(embed=embed)
 
         # withdraw credits and send purchase message
         await bank.withdraw_credits(ctx.author, int(price))
@@ -1962,7 +1990,7 @@ class ArkShop(commands.Cog):
         )
         embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
         embed.set_thumbnail(url=SHOP_ICON)
-        await message.edit(embed=embed, components=[])
+        await message.edit(embed=embed)
         await self.log_purchase(ctx, "rcon", item_name, price, currency_name, xuid, logchannel)
 
     async def log_purchase(self,
@@ -2150,5 +2178,5 @@ class ArkShop(commands.Cog):
             else:
                 await self.item_compiler(ctx, msg, shoptype, None, item)
         else:
-            log.warning("Menu handler borked")
+            log.warning(f"Menu handler borked in {ctx.guild.name}. shoptype: {shoptype}, level: {level}")
             return  # idk somethings fucked up, else case shouldnt happen

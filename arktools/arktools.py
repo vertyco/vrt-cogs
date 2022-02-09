@@ -130,7 +130,8 @@ class ArkTools(Calls, commands.Cog):
         # Microsoft Azure application Client ID and Secret for accessing the Xbox API
         default_global = {
             "clientid": None,
-            "secret": None
+            "secret": None,
+            "clearonkick": True  # Delete the guild's config from the cog if owner kicks the bot
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
@@ -1557,10 +1558,10 @@ class ArkTools(Calls, commands.Cog):
                             gamertag = data["username"]
                             break
                 else:
-                    # Make sure it's not a Gamertag mistaken as a discord.Member
-                    for xuid, data in stats.items():
-                        if data["username"].lower() == str(gamertag_or_user).lower():
-                            gamertag = str(gamertag_or_user)
+                    # Check if user is in discord, has the exact same name, but hasnt registered
+                    for data in stats.values():
+                        if data["username"].lower() == str(gamertag_or_user.name).lower():
+                            gamertag = str(gamertag_or_user.name)
                             break
                     else:
                         embed = discord.Embed(description=f"{gamertag_or_user.name} never registered.")
@@ -1691,6 +1692,18 @@ class ArkTools(Calls, commands.Cog):
         else:
             await self.config.guild(ctx.guild).usebuttons.set(True)
             await ctx.send("ArkTools will now use buttons")
+
+    @arktools_main.command(name="autowipe")
+    @commands.is_owner()
+    async def toggle_auto_wipe(self, ctx: commands.Context):
+        """(Toggle) Auto wipe guild data if the owner kicks the bot"""
+        toggle = await self.config.clearonkick()
+        if toggle:
+            await self.config.clearonkick.set(False)
+            await ctx.send("Auto guild wipe on bot kick has been **Disabled**")
+        else:
+            await self.config.clearonkick.set(False)
+            await ctx.send("Auto guild wipe on bot kick has been **Enabled**")
 
     @arktools_main.command(name="fullbackup")
     @commands.is_owner()
@@ -3643,7 +3656,7 @@ class ArkTools(Calls, commands.Cog):
         else:
             priority = False
         # If a command is not priority, check if it's in the queue and if it is, skip
-        if not priority and self.in_queue(server["chatchannel"]):
+        if not priority and self.in_queue(str(server["chatchannel"])):
             skip = True
         else:
             skip = False
@@ -3687,9 +3700,9 @@ class ArkTools(Calls, commands.Cog):
                 return
             except Exception as e:
                 if "WinError 10054" in str(e):
-                    log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
+                    log.info(f"{guild.name}: Server {server['name']} {server['cluster']} timed out too quickly")
                 else:
-                    log.warning(f"Executor Error: {e}")
+                    log.warning(f"Executor-{guild.name}-{server['name']}-{command}: {e}")
                 return
 
         # If server is to be skipped, mock the result for the player_join_leave function
@@ -3752,7 +3765,7 @@ class ArkTools(Calls, commands.Cog):
         if jperms and lperms:
             can_send = True
         else:
-            error = f"Missing send message perms in {guild} for Join/Leave channel"
+            error = f"Missing send message perms in {guild.name} for Join/Leave channel"
             if error not in self.warnings:
                 log.warning(error)
                 self.warnings.append(error)
@@ -4462,13 +4475,21 @@ class ArkTools(Calls, commands.Cog):
                 continue
             dest_channel = guild.get_channel(dest_channel)
             if not dest_channel:
+                log.warning(f"Can't find status channel in {guild.name}")
                 continue
             view_perms = dest_channel.permissions_for(guild.me).view_channel
             if not view_perms:
+                log.warning(f"Can't view status channel in {guild.name}")
                 continue
             send_perms = dest_channel.permissions_for(guild.me).send_messages
             if not send_perms:
+                log.warning(f"Can't send messages to status channel in {guild.name}")
                 continue
+            # Get graph
+            hours = settings["status"]["time"]
+            file = await get_graph(settings, int(hours))
+            img = "attachment://plot.png"
+            # Gather server player counts
             cluster_counts = {}
             for cluster in settings["clusters"]:
                 cname = cluster
@@ -4552,9 +4573,6 @@ class ArkTools(Calls, commands.Cog):
             # Embed setup
             tz = settings["timezone"]
             tz = pytz.timezone(tz)
-            hours = settings["status"]["time"]
-            file = await get_graph(settings, int(hours))
-            img = "attachment://plot.png"
             # Cleanup previous message/messages
             status_data = settings["status"]
             task_name = f"ArkTools-{guild.name}-StatusCleanup"
@@ -4914,6 +4932,15 @@ class ArkTools(Calls, commands.Cog):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(7)
         log.info("Playerstats loop ready")
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: discord.Guild) -> None:
+        autoclear = await self.config.clearonkick()
+        if not autoclear:
+            return
+        await self.config.guild(guild).clear()
+        await self.initialize()
+        log.info(f"Guild {guild.name}'s config has been cleared for kicking the bot")
 
     # have the gamertags unfriend a member when they leave the server
     @commands.Cog.listener()
