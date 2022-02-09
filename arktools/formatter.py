@@ -476,7 +476,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
             for mapid, info in data["ingame"].items():
                 channel = guild.get_channel(int(mapid))
                 if channel:
-                    mapid = channel.name
+                    mapid = channel.mention
 
                 implant = info["implant"]
                 name = info["name"]
@@ -505,8 +505,7 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                         if name:
                             names += f"{name}\n"
                     if names:
-                        names = names.strip()
-                        pstats += f"*Prev Names*\n{names}\n"
+                        pstats += f"`Previous Names`\n{names}"
             if pstats:
                 if len(pstats) <= 1024:
                     embed.add_field(
