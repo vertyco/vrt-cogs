@@ -1238,35 +1238,50 @@ class ArkTools(Calls, commands.Cog):
             return await ctx.send("No servers have been found")
 
         if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
-            await ctx.send("Beginning reboot countdown...")
+            await ctx.send("Beginning 30 second reboot countdown...")
+            alerts = []
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                msg = "Reboot starting, make sure you are in a bed to avoid your character dying!"
-                await mapchannel.send(f"**{msg}**")
-                await self.executor(ctx.guild, server, f'broadcast <RichColor Color="1,0,0,1">{msg.upper()}</>')
-            for i in range(10, 0, -1):
+                msg = "Reboot will commence in 30 seconds.\n" \
+                      "Make sure you are in a bed to avoid your character dying!"
+                embed = discord.Embed(
+                    title="INCOMING REBOOT",
+                    description=msg,
+                    color=discord.Color.orange()
+                )
+                await mapchannel.send(embed=embed)
+                broadcast = '<RichColor Color="1,0,0,1">SERVER REBOOT IN 30 SECONDS</>\n' \
+                            'Make sure you are in a bed to avoid your character dying!'
+                await self.executor(ctx.guild, server, f'broadcast {broadcast}')
+                alerts.append(async_rcon(server, f"broadcast {broadcast}", ctx.channel))
+            await asyncio.gather(*alerts)
+            for i in range(30, 0, -1):
+                counting = []
                 for server in serverlist:
-                    mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                    await mapchannel.send(f"Reboot in {i}")
-                    await self.executor(ctx.guild, server, f"serverchat Reboot in {i}")
-                await asyncio.sleep(0.6)
+                    counting.append(async_rcon(server, f"serverchat Reboot in {i}"))
+                await asyncio.gather(*counting)
+                await asyncio.sleep(1)
             await ctx.send("Saving maps...")
             save = []
             for server in serverlist:
                 mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                await mapchannel.send(f"Saving map...")
-                save.append(self.executor(ctx.guild, server, "saveworld"))
+                embed = discord.Embed(
+                    description="Saving map and exiting...",
+                    color=discord.Color.purple()
+                )
+                await mapchannel.send(embed=embed)
+                save.append(async_rcon(server, f"saveworld"))
             await asyncio.gather(*save)
             await asyncio.sleep(5)
             await ctx.send("Running DoExit...")
             exiting = []
             for server in serverlist:
-                exiting.append(self.executor(ctx.guild, server, "doexit"))
+                exiting.append(async_rcon(server, f"doexit"))
             await asyncio.gather(*exiting)
         else:
             rtasks = []
             for server in serverlist:
-                rtasks.append(async_rcon(ctx.channel, server, command))
+                rtasks.append(async_rcon(server, command, ctx.channel))
             await asyncio.gather(*rtasks)
 
         if command.lower().startswith("banplayer"):  # Have the host Gamertags block the user that was banned
@@ -1301,6 +1316,7 @@ class ArkTools(Calls, commands.Cog):
 
                     if blocked:
                         await ctx.send(box(blocked, lang="python"))
+
         if command.lower().startswith("unbanplayer"):  # Have the host Gamertags unblock the user
             player_id = str(re.search(r'(\d+)', command).group(1))
             unblocked = ""
@@ -1330,7 +1346,6 @@ class ArkTools(Calls, commands.Cog):
                                     unblocked += f"{host} Failed to unblock XUID: {player_id} - Status: {status}\n"
                             else:
                                 unblocked += f"{host} Failed to unblock XUID: {player_id}\n"
-
                     if unblocked:
                         await ctx.send(box(unblocked, lang="python"))
 
@@ -4497,6 +4512,17 @@ class ArkTools(Calls, commands.Cog):
                 status += f"**{cluster.upper()}**\n"
                 servers = settings["clusters"][cluster]["servers"]
                 clustersettngs = settings["clusters"][cluster]
+                alertchannel = guild.get_channel(clustersettngs["adminlogchannel"])
+                perms = None
+                if alertchannel:
+                    perms = alertchannel.permissions_for(guild.me).send_messages
+                mentions = discord.AllowedMentions(roles=True)
+                pingrole = guild.get_role(settings["fullaccessrole"])
+                if pingrole:
+                    pingrole = pingrole.mention
+                else:
+                    pingrole = "Failed to Ping admin role... BUT,"
+                alerts = ""
                 for server in servers:
                     sname = server
                     server = servers[server]
@@ -4523,22 +4549,7 @@ class ArkTools(Calls, commands.Cog):
                             schannel = channel
                         status += f"{schannel}: Offline for {count} {inc}\n"
                         if self.downtime[channel] == 5:
-                            mentions = discord.AllowedMentions(roles=True)
-                            pingrole = guild.get_role(settings["fullaccessrole"])
-                            if pingrole:
-                                pingrole = pingrole.mention
-                            else:
-                                pingrole = "Failed to Ping admin role... BUT,"
-                            alertchannel = guild.get_channel(clustersettngs["adminlogchannel"])
-                            perms = None
-                            if alertchannel:
-                                perms = alertchannel.permissions_for(guild.me).send_messages
-                            if perms:
-                                await alertchannel.send(
-                                    f"{pingrole}\n"
-                                    f"The **{sname} {cname}** server has been offline for 5 minutes now!",
-                                    allowed_mentions=mentions
-                                )
+                            alerts += f"The **{sname} {cname}** server has been offline for 5 minutes now!\n"
                         self.downtime[channel] += 1
 
                     elif playerlist == "empty":
@@ -4559,6 +4570,12 @@ class ArkTools(Calls, commands.Cog):
                 else:
                     status += f"`{clustertotal}` players cluster wide\n\n"
                 cluster_counts[cname] = int(clustertotal)
+
+                if alerts and perms and alertchannel:
+                    await alertchannel.send(
+                        f"{pingrole}\n{alerts}",
+                        allowed_mentions=mentions
+                    )
 
             # Log player counts
             now = datetime.datetime.now(pytz.timezone("UTC"))

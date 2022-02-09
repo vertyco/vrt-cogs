@@ -8,7 +8,7 @@ log = logging.getLogger("red.vrt.arktools.rcon")
 
 
 # Manual RCON commands
-async def async_rcon(channel: discord.TextChannel, server: dict, command: str):
+async def async_rcon(server: dict, command: str, channel: discord.TextChannel = None):
     serv = server["name"]
     cluster = server["cluster"]
     name = f"{serv} {cluster}"
@@ -26,17 +26,20 @@ async def async_rcon(channel: discord.TextChannel, server: dict, command: str):
         resp = box(f"➣ {name}\n{res}", lang="python")
         if "Server received, But no response!!" in str(res):
             resp = box(f"✅ {name}", lang="python")
-        await channel.send(resp)
+        if channel:
+            await channel.send(resp)
     except Exception as e:
         if "121" in str(e):
             resp = box(f"- {name} has timed out and may be down", lang="diff")
-            await channel.send(resp)
+            if channel:
+                await channel.send(resp)
         elif "502 Bad Gateway" in str(e) and "Cloudflare" in str(e):
             log.warning("Async_RCON Error: Cloudflare Issue, Discord is borked not my fault.")
         else:
             resp = box(f"- {name} encountered an unknown error, see traceback for details.", lang="diff")
-            await channel.send(resp)
-            log.warning(f"Async_RCON Error: {e}")
+            if channel:
+                await channel.send(resp)
+            log.warning(f"Async_RCON Error: {e}\nCommand: {command}")
 
 
 
