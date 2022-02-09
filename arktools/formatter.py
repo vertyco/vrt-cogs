@@ -503,9 +503,10 @@ def player_stats(settings: dict, guild: discord.guild, gamertag: str):
                     names = ""
                     for name in prev_names:
                         if name:
-                            names += f"{name}\n"
+                            names += f"{name}, "
                     if names:
-                        pstats += f"`Previous Names`\n{names}"
+                        names = names.rstrip(", ")
+                        pstats += f"`Previous Names: `{names}\n"
             if pstats:
                 if len(pstats) <= 1024:
                     embed.add_field(
