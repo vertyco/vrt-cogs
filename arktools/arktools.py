@@ -213,6 +213,10 @@ class ArkTools(Calls, commands.Cog):
                 return "unavailable", None, None
             elif "expected dict not NoneType" in str(e):
                 return "no token", None, None
+            elif "Bad Request" in str(e):
+                return "bad request", None, None
+            else:
+                return None, None, None
         xbl_client = XboxLiveClient(auth_mgr)
         try:
             xsts_token = auth_mgr.xsts_token.authorization_header_value
@@ -231,6 +235,7 @@ class ArkTools(Calls, commands.Cog):
             ctx: commands.Context = None,
             guild: discord.guild = None
     ):
+        name = f"{sname} {cname}"
         client_id, client_secret = await self.get_azure_credentials()
         if not client_id:  # Owner hasnt set client id yet
             if ctx:
@@ -264,11 +269,15 @@ class ArkTools(Calls, commands.Cog):
             return None, None
         elif xbl_client == "no token":
             if ctx:
-                await ctx.send(f"No token set for {sname} {cname}!")
+                await ctx.send(f"No token set for {name}!")
             return None, None
         elif xbl_client == "parsing error":
             if ctx:
-                await ctx.send(f"Parsing error occured for {sname} {cname}")
+                await ctx.send(f"Parsing error occured for {name}")
+            return None, None
+        elif not xbl_client:
+            if ctx:
+                await ctx.send(f"Tokens have failed to refresh for {name}")
             return None, None
         else:
             if not guild:
@@ -276,7 +285,7 @@ class ArkTools(Calls, commands.Cog):
             if refreshed_tokens:  # Make sure refresh tokens arent null
                 async with self.config.guild(guild).clusters() as clusters:
                     clusters[cname]["servers"][sname]["tokens"] = refreshed_tokens
-        return xbl_client, xsts_token
+            return xbl_client, xsts_token
 
     # Initialize a map to a player in the config
     async def init_player_map(
@@ -5036,16 +5045,17 @@ class ArkTools(Calls, commands.Cog):
                 embed = discord.Embed(
                     description=f"**{member.display_name}** - `{member.id}` was unfriended by the host Gamertags "
                                 f"for leaving the Discord.",
-                    color=discord.Color.red()
+                    color=discord.Color.purple()
                 )
                 await eventlog.send(embed=embed)
 
     @tasks.loop(seconds=10)
     async def task_manager(self):
-        # Cancel any duplicate arktools tasks
+        # Cancel any duplicate arktools tasks for the main loops
         t = []
         for task in asyncio.all_tasks():
-            if "ArkTools" in task.get_name():
+            tname = task.get_name().lower()
+            if "arktools" in tname and ("listplayers" in tname or "getchat" in tname):
                 if task.get_name() not in t:
                     t.append(task.get_name())
                 else:
