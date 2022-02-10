@@ -1,0 +1,29 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "ECO Game Server RCON Tools",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not persistently store data about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing! Use `[p]help EcoTools` for more info.",
+  "min_bot_version": "3.4.0",
+  "permissions": [
+    "send_messages"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "rcon==1.3.7"
+  ],
+  "short": "ECO Game Server RCON Tools",
+  "tags": [
+    "utility",
+    "eco",
+    "rcon",
+    "servermanager",
+    "server",
+    "survival",
+    "gameserver"
+  ],
+  "type": "COG"
+}
