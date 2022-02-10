@@ -5310,32 +5310,29 @@ class ArkTools(Calls, commands.Cog):
                 arktasks += f"{arktask}\n"
             if str(ctx.guild.name) in str(tname):
                 guild_tasks += 1
-        fname = f"ArkTools_Tasks.txt"
         if len(arktasks) <= 4096:
             embed = discord.Embed(
                 title="ArkTools Tasks",
                 description=box(arktasks if arktasks else "None", lang="python"),
                 color=discord.Color.green()
             )
-            file = None
+            footer = f"TotalTasks: {async_tasks}｜ArkToolsTasks -> Total: {global_tasks} Guild: {guild_tasks}"
+            embed.set_footer(text=footer)
+            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title="ArkTools Tasks",
                 description="Too many tasks to list here",
                 color=discord.Color.red()
             )
+            fname = f"ArkTools_Tasks.txt"
             with open(fname, "w") as file:
                 file.write(arktasks)
             with open(fname, "rb") as file:
-                taskfile = discord.File(file, fname)
-        footer = f"TotalTasks: {async_tasks}｜ArkToolsTasks -> Total: {global_tasks} Guild: {guild_tasks}"
-        embed.set_footer(text=footer)
-        if file:
-            await ctx.send(embed=embed, file=taskfile)
-            await asyncio.sleep(5)
+                footer = f"TotalTasks: {async_tasks}｜ArkToolsTasks -> Total: {global_tasks} Guild: {guild_tasks}"
+                embed.set_footer(text=footer)
+                await ctx.send(embed=embed, file=discord.File(file, fname))
             try:
                 os.remove(fname)
             except Exception as e:
                 log.warning(f"Failed to delete txt file: {e}")
-        else:
-            await ctx.send(embed=embed)
