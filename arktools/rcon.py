@@ -24,7 +24,7 @@ async def async_rcon(server: dict, command: str, channel: discord.TextChannel = 
         )
         res = res.strip()
         resp = box(f"➣ {name}\n{res}", lang="python")
-        if "Server received, But no response!!" in str(res):
+        if "Server received, But no response!!" in str(res) or "World Saved" in str(res):
             resp = box(f"✅ {name}", lang="python")
         if channel:
             await channel.send(resp)
