@@ -70,7 +70,8 @@ async def buttonmenu(
         return await message.edit(components=[])
     try:
         await inter.reply(type=ResponseType.DeferredUpdateMessage)
-    except discord.NotFound:
+    except Exception as e:
+        log.warning(f"inter.reply failure: {e}")
         return await menu(ctx, pages, controls, None, page, timeout)
     button_action = inter.clicked_button.id
     if button_action not in actions:

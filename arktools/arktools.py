@@ -155,7 +155,7 @@ class ArkTools(Calls, commands.Cog):
         self.votes = {}
         self.lastran = {}
 
-        # Task Loops. Yeah theres a lot, sue me.
+        # Task Loops
         self.getchat.start()
         self.listplayers.start()
         self.status_channel.start()
@@ -164,6 +164,8 @@ class ArkTools(Calls, commands.Cog):
         self.autofriend.start()
         self.vote_sessions.start()
         self.graphdata_prune.start()
+        self.task_manager.start()
+        self.gather_graphdata.start()
 
         # Windows is dumb, set asyncio event loop selector policy for it, not even sure if this helps tbh
         if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
@@ -179,6 +181,8 @@ class ArkTools(Calls, commands.Cog):
         self.autofriend.cancel()
         self.vote_sessions.cancel()
         self.graphdata_prune.cancel()
+        self.task_manager.cancel()
+        self.gather_graphdata.cancel()
 
     # Just grab azure credentials from the config, only bot owner needs to set this and its optional
     async def get_azure_credentials(self):
@@ -306,7 +310,7 @@ class ArkTools(Calls, commands.Cog):
                 conf[xuid]["ingame"][server_id]["name"] = character_name
 
     # If a server goes offline it will be added to the queue and task loops will wait before trying to call it again
-    def in_queue(self, channel: str):
+    async def in_queue(self, channel: str) -> bool:
         now = datetime.datetime.now()
         if channel in self.queue:
             td = now - self.queue[channel]
@@ -315,8 +319,10 @@ class ArkTools(Calls, commands.Cog):
                 return True
             else:
                 return False
+        else:
+            return False
 
-    def add_queue(self, channel: str):
+    def add_queue(self, channel: str) -> None:
         if channel not in self.queue:
             self.queue[channel] = datetime.datetime.now()
 
@@ -3671,7 +3677,9 @@ class ArkTools(Calls, commands.Cog):
         else:
             priority = False
         # If a command is not priority, check if it's in the queue and if it is, skip
-        if not priority and self.in_queue(str(server["chatchannel"])):
+        cstring = str(server["chatchannel"])
+        queued = await self.in_queue(cstring)
+        if not priority and queued:
             skip = True
         else:
             skip = False
@@ -3728,9 +3736,8 @@ class ArkTools(Calls, commands.Cog):
 
         # If result is none and the command was a priority, then servers probably timed out or crashed
         if not res and not skip:
-            channel = server["chatchannel"]
             # Put server in queue, loops will ignore that server for 2 minutes and then try again
-            self.add_queue(channel)
+            self.add_queue(cstring)
         # Message_handler interprets in-game chat buffer
         if command == "getchat":
             if res:
@@ -4476,6 +4483,41 @@ class ArkTools(Calls, commands.Cog):
         log.info("Vote session manager ready")
 
     @tasks.loop(seconds=60)
+    async def gather_graphdata(self):
+        for guild_id in self.activeguilds:
+            guild = self.bot.get_guild(int(guild_id))
+            if not guild:
+                continue
+            clusters = await self.config.guild(guild).clusters()
+            cluster_counts = {}
+            total_players = 0
+            for cname, cdata in clusters.items():
+                ctotal = 0
+                for sname, sdata in cdata["servers"].items():
+                    cid = sdata["chatchannel"]
+                    if cid not in self.playerlist:
+                        continue
+                    plist = self.playerlist[cid]
+                    if isinstance(plist, list):
+                        total_players += len(plist)
+                        ctotal += len(plist)
+                cluster_counts[cname] = ctotal
+            now = datetime.datetime.now(pytz.timezone("UTC"))
+            async with self.config.guild(guild).serverstats() as serverstats:
+                serverstats["dates"].append(now.isoformat())
+                serverstats["counts"].append(total_players)
+                for cname, count in cluster_counts.items():
+                    if cname not in serverstats:
+                        serverstats[cname] = []
+                    serverstats[cname].append(count)
+
+    @gather_graphdata.before_loop
+    async def before_gather_graphdata(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(60)
+        log.info("Logging graph data")
+
+    @tasks.loop(seconds=120)
     async def status_channel(self):
         for guild in self.activeguilds:
             guild = self.bot.get_guild(int(guild))
@@ -4505,7 +4547,6 @@ class ArkTools(Calls, commands.Cog):
             file = await get_graph(settings, int(hours))
             img = "attachment://plot.png"
             # Gather server player counts
-            cluster_counts = {}
             for cluster in settings["clusters"]:
                 cname = cluster
                 clustertotal = 0
@@ -4548,9 +4589,9 @@ class ArkTools(Calls, commands.Cog):
                         else:
                             schannel = channel
                         status += f"{schannel}: Offline for {count} {inc}\n"
-                        if self.downtime[channel] == 5:
-                            alerts += f"The **{sname} {cname}** server has been offline for 5 minutes now!\n"
-                        self.downtime[channel] += 1
+                        if self.downtime[channel] == 10:
+                            alerts += f"The **{sname} {cname}** server has been offline for 10 minutes now!\n"
+                        self.downtime[channel] += 2
 
                     elif playerlist == "empty":
                         status += f"{guild.get_channel(channel).mention}: 0 Players\n"
@@ -4569,23 +4610,12 @@ class ArkTools(Calls, commands.Cog):
                     status += f"`{clustertotal}` player cluster wide\n\n"
                 else:
                     status += f"`{clustertotal}` players cluster wide\n\n"
-                cluster_counts[cname] = int(clustertotal)
 
                 if alerts and perms and alertchannel:
                     await alertchannel.send(
                         f"{pingrole}\n{alerts}",
                         allowed_mentions=mentions
                     )
-
-            # Log player counts
-            now = datetime.datetime.now(pytz.timezone("UTC"))
-            async with self.config.guild(guild).serverstats() as serverstats:
-                serverstats["dates"].append(now.isoformat())
-                serverstats["counts"].append(int(totalplayers))
-                for cname, count in cluster_counts.items():
-                    if cname not in serverstats:
-                        serverstats[cname] = []
-                    serverstats[cname].append(count)
 
             # Embed setup
             tz = settings["timezone"]
@@ -4594,6 +4624,7 @@ class ArkTools(Calls, commands.Cog):
             status_data = settings["status"]
             task_name = f"ArkTools-{guild.name}-StatusCleanup"
             asyncio.create_task(self.status_cleaner(status_data), name=task_name)
+            now = datetime.datetime.now(pytz.timezone("UTC"))
             # Nice simple single embed status channel for normal people
             if len(status) <= 4096:
                 embed = discord.Embed(
@@ -4653,6 +4684,9 @@ class ArkTools(Calls, commands.Cog):
     # Player stat handler
     @tasks.loop(minutes=2)
     async def player_stats(self):
+        current_time = datetime.datetime.now(pytz.timezone("UTC"))
+        if not self.time:
+            self.time = current_time.isoformat()
         for data in self.servers:
             guild_id = str(data[0])
             guild = self.bot.get_guild(int(guild_id))
@@ -4676,9 +4710,6 @@ class ArkTools(Calls, commands.Cog):
                 continue
             players = settings["players"]
             for player in self.playerlist[channel]:
-                current_time = datetime.datetime.now(pytz.timezone("UTC"))
-                if not self.time:
-                    self.time = current_time.isoformat()
                 last = datetime.datetime.fromisoformat(str(self.time))
                 timedifference = current_time - last
                 timedifference = int(timedifference.total_seconds())
@@ -5006,6 +5037,26 @@ class ArkTools(Calls, commands.Cog):
                 )
                 await eventlog.send(embed=embed)
 
+    @tasks.loop(seconds=10)
+    async def task_manager(self):
+        # Cancel any duplicate arktools tasks
+        t = []
+        for task in asyncio.all_tasks():
+            if "ArkTools" in task.get_name():
+                if task.get_name() not in t:
+                    t.append(task.get_name())
+                else:
+                    log.info(f"Cancelled duplicate task: {task.get_name()}")
+                    task.cancel()
+            else:
+                continue
+
+    @task_manager.before_loop
+    async def before_task_manager(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(60)
+        log.info("Task manager ready")
+
     # Unfriends players if they havent been seen on any server for the set amount of time
     @tasks.loop(hours=2)
     async def maintenance(self):
@@ -5205,6 +5256,7 @@ class ArkTools(Calls, commands.Cog):
 
     @tasks.loop(hours=5)
     async def graphdata_prune(self):
+        pruned = 0
         for guild in self.activeguilds:
             guild = self.bot.get_guild(int(guild))
             if not guild:
@@ -5223,7 +5275,11 @@ class ArkTools(Calls, commands.Cog):
                         newdat.reverse()
                         stats[str(item)] = newdat
             if len(curcounts) > to_keep:
+                diff = len(curcounts) - to_keep
+                pruned += diff
                 await self.config.guild(guild).serverstats.set(stats)
+        if pruned:
+            log.info(f"Pruned {pruned} graph data points")
 
     @graphdata_prune.before_loop
     async def before_graphdata_prune(self):
@@ -5273,6 +5329,7 @@ class ArkTools(Calls, commands.Cog):
         embed.set_footer(text=footer)
         if file:
             await ctx.send(embed=embed, file=taskfile)
+            await asyncio.sleep(5)
             try:
                 os.remove(fname)
             except Exception as e:
