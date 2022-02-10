@@ -183,6 +183,9 @@ class ArkTools(Calls, commands.Cog):
         self.graphdata_prune.cancel()
         self.task_manager.cancel()
         self.gather_graphdata.cancel()
+        for task in asyncio.all_tasks():
+            if "ArkTools" in task.get_name():
+                task.cancel()
 
     # Just grab azure credentials from the config, only bot owner needs to set this and its optional
     async def get_azure_credentials(self):
