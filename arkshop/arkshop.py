@@ -6,11 +6,9 @@ import math
 import os
 import random
 import shutil
-import socket
 
 import aiohttp
 import discord
-from rcon import Client
 from rcon.asyncio import rcon
 from dislash import (InteractionClient,
                      ActionRow,
@@ -385,12 +383,11 @@ class ArkShop(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 async with session.get(attachment_url) as resp:
                     config = await resp.json()
-            for guild in self.bot.guilds:
-                async with self.config.guild(guild).all() as conf:
-                    guild_id = str(guild.id)
-                    if guild_id in config:
-                        for k, v in config[guild_id]:
-                            conf[k] = v
+            for guild_id, data in config.items():
+                guild = self.bot.get_guild(int(guild_id))
+                if not guild:
+                    continue
+                await self.config.guild(guild).set(data)
             return await ctx.send("Config restored from backup file!")
         else:
             return await ctx.send("Attach your backup file to the message when using this command.")
@@ -1270,7 +1267,7 @@ class ArkShop(commands.Cog):
         else:
             await menu(ctx, pages, DEFAULT_CONTROLS)
 
-    @commands.command(name="playershopstats", aliases=["pshopstats"])
+    @commands.command(name="playershopstats", aliases=["pss"])
     async def player_shop_stats(self, ctx, *, member: discord.Member = None):
         """Get a member's shop stats, or yours"""
         logs = await self.config.guild(ctx.guild).logs()
@@ -1290,13 +1287,7 @@ class ArkShop(commands.Cog):
                 return await ctx.send("It appears you haven't purchased anything yet.")
         if str(member.id) not in logs["users"]:
             return await ctx.send("It appears that player hasn't purchased anything yet.")
-        items = ""
-        for item in logs["users"][str(member.id)]:
-            itemtype = logs["users"][str(member.id)][item]["type"]
-            count = logs["users"][str(member.id)][item]["count"]
-            items += f"**{item}**\n" \
-                     f"`ShopType:  `{itemtype}\n" \
-                     f"`Purchased: `{count}\n"
+
         for xuid, stats in playerstats.items():
             if "discord" in stats:
                 if str(member.id) == str(stats["discord"]):
@@ -1305,26 +1296,45 @@ class ArkShop(commands.Cog):
         else:
             gt = "Unknown"
             xuid = "Unknown"
-        pages = 0
-        for _ in pagify(items):
-            pages += 1
-        count = 1
-        for p in pagify(items):
-            if count == 1:
-                msg = f"**Shop stats for {member.name}**\n" \
-                      f"`Cluster:     `{users[str(member.id)].upper()}\n" \
-                      f"`PlayerName:  `{gt}\n" \
-                      f"`PlayerID:    `{xuid}\n" \
-                      f"{p}"
-            else:
-                msg = p
+
+        embeds = []
+        items = {}
+        user = logs["users"][str(member.id)]
+        for item, details in user.items():
+            items[item] = details["count"]
+        sorted_items = sorted(items.items(), key=lambda x: x[1], reverse=True)
+        pages = math.ceil(len(sorted_items) / 5)
+        start = 0
+        stop = 5
+        color = discord.Color.random()
+        for p in range(pages):
             embed = discord.Embed(
-                description=msg
+                title=f"Shop stats for {member.display_name}",
+                description=f"`Registered To: `{users[str(member.id)].upper()}\n"
+                            f"`Player Name:   `{gt}\n"
+                            f"`Player ID:     `{xuid}",
+                color=color
             )
-            if count == pages:
-                embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
-            await ctx.send(embed=embed)
-            count += 1
+            if stop > len(sorted_items):
+                stop = len(sorted_items)
+            for i in range(start, stop, 1):
+                item = sorted_items[i][0]
+                amount = sorted_items[i][1]
+                shop = user[item]["type"]
+                embed.add_field(
+                    name=item,
+                    value=f"`Purchased: `{amount}\n"
+                          f"`Shop Type: `{shop}",
+                    inline=False
+                )
+            embed.set_footer(text=f"Pages {p + 1}/{pages}")
+            start += 5
+            stop += 5
+            embeds.append(embed)
+        if await self.config.guild(ctx.guild).usebuttons():
+            await buttonmenu(ctx, embeds, DEFAULT_BUTTON_CONTROLS)
+        else:
+            await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command(name="rshop")
     @commands.guild_only()
