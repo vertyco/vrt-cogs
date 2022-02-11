@@ -11,7 +11,7 @@ class EcoTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "1.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -130,11 +130,12 @@ class EcoTools(commands.Cog):
             return await ctx.send("You do not have permissions to run that command.")
 
         server = servers[sname]
-        res = await self.run_cmd(server, command)
-        if res == "tick":
-            await ctx.tick()
-        else:
-            await ctx.send(res)
+        async with ctx.typing():
+            res = await self.run_cmd(server, command)
+            if res == "tick":
+                await ctx.tick()
+            else:
+                await ctx.send(res)
 
     @staticmethod
     async def run_cmd(server: dict, command: str) -> str:
