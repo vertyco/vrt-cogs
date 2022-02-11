@@ -165,7 +165,6 @@ class ArkTools(Calls, commands.Cog):
         self.autofriend.start()
         self.vote_sessions.start()
         self.graphdata_prune.start()
-        self.task_manager.start()
         self.gather_graphdata.start()
 
         # Windows is dumb, set asyncio event loop selector policy for it, not even sure if this helps tbh
@@ -182,7 +181,6 @@ class ArkTools(Calls, commands.Cog):
         self.autofriend.cancel()
         self.vote_sessions.cancel()
         self.graphdata_prune.cancel()
-        self.task_manager.cancel()
         self.gather_graphdata.cancel()
         for task in asyncio.all_tasks():
             if "ArkTools" in task.get_name() and "giveitemtoplayer" not in task.get_name().lower():
@@ -1855,12 +1853,11 @@ class ArkTools(Calls, commands.Cog):
             async with aiohttp.ClientSession() as session:
                 async with session.get(attachment_url) as resp:
                     config = await resp.json()
-            for guild in self.bot.guilds:
-                async with self.config.guild(guild).all() as conf:
-                    guild_id = str(guild.id)
-                    if guild_id in config:
-                        for k, v in config[guild_id]:
-                            conf[k] = v
+            for guild_id, data in config.items():
+                guild = self.bot.get_guild(int(guild_id))
+                if not guild:
+                    continue
+                await self.config.guild(guild).set(data)
             await self.initialize()
             return await ctx.send("Config restored from backup file!")
         else:
@@ -5054,27 +5051,6 @@ class ArkTools(Calls, commands.Cog):
                     color=discord.Color.blurple()
                 )
                 await eventlog.send(embed=embed)
-
-    @tasks.loop(seconds=10)
-    async def task_manager(self):
-        # Cancel any duplicate arktools tasks for the main loops
-        t = []
-        for task in asyncio.all_tasks():
-            tname = task.get_name().lower()
-            if "arktools" in tname and ("listplayers" in tname or "getchat" in tname):
-                if task.get_name() not in t:
-                    t.append(task.get_name())
-                else:
-                    log.info(f"Cancelled duplicate task: {task.get_name()}")
-                    task.cancel()
-            else:
-                continue
-
-    @task_manager.before_loop
-    async def before_task_manager(self):
-        await self.bot.wait_until_red_ready()
-        await asyncio.sleep(60)
-        log.info("Task manager ready")
 
     # Unfriends players if they havent been seen on any server for the set amount of time
     @tasks.loop(hours=2)
