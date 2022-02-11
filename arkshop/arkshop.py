@@ -1754,18 +1754,19 @@ class ArkShop(commands.Cog):
 
             async def wait_first(*futures):
                 # Thanks, Stack Overflow
+                # https://stackoverflow.com/questions/31900244/select-first-result-from-two-coroutines-in-asyncio
                 done, pending = await asyncio.wait(
                     futures,
                     return_when=asyncio.FIRST_COMPLETED,
                     timeout=80
                 )
-                # try:
-                #     await gather
-                # except asyncio.CancelledError:
-                #     pass
+                gather = asyncio.gather(*pending)
+                gather.cancel()
+                try:
+                    await gather
+                except asyncio.CancelledError:
+                    pass
                 if done:
-                    gather = asyncio.gather(*pending)
-                    gather.cancel()
                     return done.pop().result()
                 else:
                     await message.edit(
