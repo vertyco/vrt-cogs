@@ -112,5 +112,5 @@ class EcoTools(commands.Cog):
             elif "502 Bad Gateway" in str(e) and "Cloudflare" in str(e):
                 resp = box(f"- Cloudflare Issue, Discord is borked not my fault.", lang="diff")
             else:
-                resp = box(f"- Server encountered an unknown error: {e}", lang="diff")
+                resp = box(f"- Encountered an unknown error: {e}", lang="diff")
         return resp
