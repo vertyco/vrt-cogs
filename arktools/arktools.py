@@ -9,6 +9,7 @@ import socket
 import sys
 import typing
 import os
+import time
 
 import aiohttp
 import discord
@@ -77,7 +78,7 @@ class ArkTools(Calls, commands.Cog):
     RCON/API tools and cross-chat for Ark: Survival Evolved!
     """
     __author__ = "Vertyco"
-    __version__ = "2.15.51"
+    __version__ = "2.15.53"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -131,7 +132,7 @@ class ArkTools(Calls, commands.Cog):
         default_global = {
             "clientid": None,
             "secret": None,
-            "clearonkick": True  # Delete the guild's config from the cog if owner kicks the bot
+            "clearonkick": True  # Reset the guild's config from the cog if guild owner kicks the bot
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
@@ -184,7 +185,7 @@ class ArkTools(Calls, commands.Cog):
         self.task_manager.cancel()
         self.gather_graphdata.cancel()
         for task in asyncio.all_tasks():
-            if "ArkTools" in task.get_name():
+            if "ArkTools" in task.get_name() and "giveitemtoplayer" not in task.get_name().lower():
                 task.cancel()
 
     # Just grab azure credentials from the config, only bot owner needs to set this and its optional
@@ -1270,8 +1271,7 @@ class ArkTools(Calls, commands.Cog):
                 await mapchannel.send(embed=embed)
                 broadcast = '<RichColor Color="1,0,0,1">SERVER REBOOT IN 30 SECONDS</>\n' \
                             'Make sure you are in a bed to avoid your character dying!'
-                await self.executor(ctx.guild, server, f'broadcast {broadcast}')
-                alerts.append(async_rcon(server, f"broadcast {broadcast}", ctx.channel))
+                alerts.append(async_rcon(server, f"broadcast {broadcast}"))
             await asyncio.gather(*alerts)
             for i in range(30, 0, -1):
                 counting = []
@@ -1288,13 +1288,13 @@ class ArkTools(Calls, commands.Cog):
                     color=discord.Color.purple()
                 )
                 await mapchannel.send(embed=embed)
-                save.append(async_rcon(server, f"saveworld"))
+                save.append(async_rcon(server, f"saveworld", ctx.channel))
             await asyncio.gather(*save)
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)
             await ctx.send("Running DoExit...")
             exiting = []
             for server in serverlist:
-                exiting.append(async_rcon(server, f"doexit"))
+                exiting.append(async_rcon(server, f"doexit", ctx.channel))
             await asyncio.gather(*exiting)
         else:
             rtasks = []
@@ -3505,6 +3505,7 @@ class ArkTools(Calls, commands.Cog):
 
     # Cache server data
     async def initialize(self):
+        t1 = time.monotonic()
         self.activeguilds = []
         self.servercount = 0
         self.servers = []
@@ -3557,7 +3558,8 @@ class ArkTools(Calls, commands.Cog):
                     self.servercount += 1
                     if serverdata["chatchannel"] not in self.playerlist:
                         self.playerlist[serverdata["chatchannel"]] = "offline"
-        log.info("Config initialized.")
+        t = round(time.monotonic() - t1, 1)
+        log.info(f"Config initialized (took {t} seconds)")
 
     # Sends ServerChat command to designated server if message is in the server chat channel
     @commands.Cog.listener("on_message")
@@ -4531,8 +4533,8 @@ class ArkTools(Calls, commands.Cog):
 
     @tasks.loop(seconds=120)
     async def status_channel(self):
-        for guild in self.activeguilds:
-            guild = self.bot.get_guild(int(guild))
+        for guild_id in self.activeguilds:
+            guild = self.bot.get_guild(int(guild_id))
             if not guild:
                 continue
             settings = await self.config.guild(guild).all()
@@ -4541,6 +4543,10 @@ class ArkTools(Calls, commands.Cog):
             totalplayers = 0
             dest_channel = settings["status"]["channel"]
             if not dest_channel:
+                error = f"{guild.name} has not set a status channel"
+                if error not in self.warnings:
+                    log.warning(error)
+                    self.warnings.append(error)
                 continue
             dest_channel = guild.get_channel(dest_channel)
             if not dest_channel:
@@ -5045,7 +5051,7 @@ class ArkTools(Calls, commands.Cog):
                 embed = discord.Embed(
                     description=f"**{member.display_name}** - `{member.id}` was unfriended by the host Gamertags "
                                 f"for leaving the Discord.",
-                    color=discord.Color.purple()
+                    color=discord.Color.blurple()
                 )
                 await eventlog.send(embed=embed)
 
@@ -5137,7 +5143,7 @@ class ArkTools(Calls, commands.Cog):
                     embed = discord.Embed(
                         description=f"**{player}** - `{xuid}` was unfriended by the "
                                     f"host Gamertags for exceeding {unfriendtime} days of inactivity.",
-                        color=discord.Color.red()
+                        color=discord.Color.purple()
                     )
                     await eventlog.send(embed=embed)
 
