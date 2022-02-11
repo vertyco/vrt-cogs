@@ -105,7 +105,7 @@ class EcoTools(commands.Cog):
                 passwd=server["pass"]
             )
             res = res.strip()
-            resp = box(res, lang="python")
+            resp = box(res)
         except Exception as e:
             if "121" in str(e):
                 resp = box(f"- Server has timed out and may be down", lang="diff")
