@@ -324,10 +324,10 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             closed = now.strftime('%m/%d/%y at %I:%M %p')
             embed = discord.Embed(
                 title="Ticket Closed",
-                description=f"Ticket created by **{member}-{member.id}** has been closed.\n"
+                description=f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
                             f"`Opened on: `{opened}\n"
                             f"`Closed on: `{closed}\n"
-                            f"`Closed by: `{self.bot.name}\n"
+                            f"`Closed by: `{self.bot.user.name}\n"
                             f"`Reason:    `User left guild(Auto-Close)\n",
                 color=discord.Color.green()
             )
