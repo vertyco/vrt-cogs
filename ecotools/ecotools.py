@@ -93,7 +93,10 @@ class EcoTools(commands.Cog):
             return await ctx.send(f"Couldn't find {server_name} in the server config")
         server = servers[sname]
         res = await self.run_cmd(server, command)
-        await ctx.send(res)
+        if res == "tick":
+            await ctx.tick()
+        else:
+            await ctx.send(res)
 
     @staticmethod
     async def run_cmd(server: dict, command: str) -> str:
@@ -105,7 +108,10 @@ class EcoTools(commands.Cog):
                 passwd=server["pass"]
             )
             res = res.strip()
-            resp = box(res)
+            if not res:
+                resp = "tick"
+            else:
+                resp = box(res)
         except Exception as e:
             if "121" in str(e):
                 resp = box(f"- Server has timed out and may be down", lang="diff")
