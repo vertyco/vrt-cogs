@@ -1,4 +1,5 @@
 import math
+import sys
 
 import discord
 import tabulate
@@ -9,6 +10,8 @@ from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 class EmojiTracker(commands.Cog):
     """
     Track emojis and view leaderboards/most emojis used ect..
+
+    This cog will track
     """
     __author__ = "Vertyco"
     __version__ = "0.0.1"
@@ -24,6 +27,7 @@ class EmojiTracker(commands.Cog):
         default_guild = {"users": {}}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
+        self.reacted = {}
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -56,15 +60,28 @@ class EmojiTracker(commands.Cog):
         if msg.author.bot:
             return
 
+        emoji = str(payload.emoji)
+        uid = str(user.id)
+        mid = str(msg.id)
+
+        # Only allow one reaction count per emoji on a message so users cant unreact and add the same emoji
+        # This may eat up cache over time for bots with a long ass uptime and in massive servers
+        if uid not in self.reacted:
+            self.reacted[uid] = {}
+        if mid not in self.reacted[uid]:
+            self.reacted[uid][mid] = []
+        if emoji in self.reacted[uid][mid]:
+            return
+        else:
+            self.reacted[uid][mid].append(mid)
+
         async with self.config.guild(guild).users() as users:
-            user_id = str(user.id)
-            emoji = str(payload.emoji)
-            if user_id not in users:
-                users[user_id] = {}
-            if emoji not in users[user_id]:
-                users[user_id][emoji] = 1
+            if uid not in users:
+                users[uid] = {}
+            if emoji not in users[uid]:
+                users[uid][emoji] = 1
             else:
-                users[user_id][emoji] += 1
+                users[uid][emoji] += 1
 
     @commands.command(name="ingoreguild")
     @commands.is_owner()
@@ -191,3 +208,19 @@ class EmojiTracker(commands.Cog):
         if not embeds:
             return await ctx.send("No reactions saved yet!")
         await menu(ctx, embeds, DEFAULT_CONTROLS)
+
+    @commands.command(name="emojitrackercache", aliases=["etc"])
+    @commands.is_owner()
+    async def get_reaction_cache(self, ctx):
+        """Get the size of EmojiTracker cache"""
+        size = sys.getsizeof(self.reacted)
+        if size > 1000:
+            formatted = "{:,}".format(round(size / 1000, 2))
+            inc = "KB"
+        elif size > 1000000:
+            formatted = "{:,}".format(round(size / 1000000, 2))
+            inc = "MB"
+        else:
+            formatted = "{:,}".format(size)
+            inc = "Bytes"
+        await ctx.send(f"EmojiTracker Cache Size: `{formatted} {inc}`")
