@@ -11,6 +11,7 @@ import socket
 import aiohttp
 import discord
 from rcon import Client
+from rcon.asyncio import rcon
 from dislash import (InteractionClient,
                      ActionRow,
                      Button,
@@ -54,7 +55,7 @@ class ArkShop(commands.Cog):
     Integrated Shop for Ark!
     """
     __author__ = "Vertyco"
-    __version__ = "1.5.16"
+    __version__ = "1.5.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -173,31 +174,6 @@ class ArkShop(commands.Cog):
         except discord.HTTPException:
             pass
         return
-
-    async def executor(self, server: dict, command_list: list) -> bool:
-        def exe():
-            try:
-                with Client(
-                        host=server['ip'],
-                        port=server['port'],
-                        passwd=server['password'],
-                        timeout=10
-                ) as client:
-                    for command in command_list:
-                        client.run(command)
-                    return True
-            except socket.timeout:
-                return False
-            except Exception as e:
-                if "WinError 10054" in str(e):
-                    log.info(f"Server {server['name']} {server['cluster']} timed out too quickly")
-                elif "semaphore" in str(e):
-                    log.info(f"Server {server['ip']} is offline")
-                else:
-                    log.warning(f"Executor Error: {e}")
-                return False
-        res = await self.bot.loop.run_in_executor(None, exe)
-        return res
 
     # Check if arktools is installed and loaded
     async def arktools(self, ctx: commands.Context = None):
@@ -1969,17 +1945,35 @@ class ArkShop(commands.Cog):
         for path in paths:
             commandlist.append(f"giveitemtoplayer {implant_id} {path}")
 
-        for server in serverlist:
-            res = await self.executor(server, commandlist)
-            if not res:
-                embed = discord.Embed(
-                    title="Purchase Failed",
-                    description="The server timed out or lost connection during item send.\n"
-                                "Please try again, if the problem persists, contact an admin.\n"
-                                f"No {currency_name} has been deducted from your balance.",
-                    color=discord.Color.orange()
+        success = []
+
+        async def sendoff(s, c):
+            try:
+                res = await rcon(
+                    host=s['ip'],
+                    port=s['port'],
+                    passwd=s['password'],
+                    command=c
                 )
-                return await message.edit(embed=embed)
+                success.append(res)
+            except Exception as e:
+                log.warning(f"Server {server['ip']} failed to send item.\nError: {e}")
+
+        tasks = []
+        for server in serverlist:
+            for command in commandlist:
+                tasks.append(sendoff(server, command))
+        await asyncio.gather(*tasks)
+
+        if not success:  # If none of the commands were successful, don't deduct credits
+            embed = discord.Embed(
+                title="Purchase Failed",
+                description="The servers timed out or lost connection during item send.\n"
+                            "Please try again, if the problem persists, contact an admin.\n"
+                            f"No {currency_name} has been deducted from your balance.",
+                color=discord.Color.orange()
+            )
+            return await message.edit(embed=embed, components=[])
 
         # withdraw credits and send purchase message
         await bank.withdraw_credits(ctx.author, int(price))
@@ -1990,7 +1984,7 @@ class ArkShop(commands.Cog):
         )
         embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
         embed.set_thumbnail(url=SHOP_ICON)
-        await message.edit(embed=embed)
+        await message.edit(embed=embed, components=[])
         await self.log_purchase(ctx, "rcon", item_name, price, currency_name, xuid, logchannel)
 
     async def log_purchase(self,
