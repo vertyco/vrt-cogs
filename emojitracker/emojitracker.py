@@ -59,6 +59,9 @@ class EmojiTracker(commands.Cog):
         # Ignore reactions added to a message that a bot sent
         if msg.author.bot:
             return
+        # Ignore people adding reactions to their own messages
+        if msg.author.id == user.id:
+            return
 
         emoji = str(payload.emoji)
         uid = str(user.id)
