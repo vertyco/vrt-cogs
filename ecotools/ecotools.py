@@ -80,11 +80,12 @@ class EcoTools(commands.Cog):
 
         servers = conf["servers"]
         info = ""
-        for sname, data in servers.items():
-            info += f"➣{sname.capitalize()}\n" \
-                    f"`Host: `{data['ip']}\n" \
-                    f"`Port: `{data['port']}\n" \
-                    f"`Pass: `{data['pass']}\n\n"
+        if servers:
+            for sname, data in servers.items():
+                info += f"➣{sname.capitalize()}\n" \
+                        f"`Host: `{data['ip']}\n" \
+                        f"`Port: `{data['port']}\n" \
+                        f"`Pass: `{data['pass']}\n\n"
         if not info:
             info = "No Servers Configured\n"
 
