@@ -21,7 +21,8 @@ class EcoTools(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=117117117, force_registration=True)
         default_guild = {
-            "servers": {}
+            "servers": {},
+            "allow": []
         }
         self.config.register_guild(**default_guild)
 
@@ -65,32 +66,69 @@ class EcoTools(commands.Cog):
     @eco_set.command(name="view")
     async def view_settings(self, ctx):
         """View ECO server settings"""
-        servers = await self.config.guild(ctx.guild).servers()
+        conf = await self.config.guild(ctx.guild).all()
+
+        allowlist = conf["allow"]
+        allowed = ""
+        if allowlist:
+            for role_id in allowlist:
+                role = ctx.guild.get_role(role_id)
+                if role:
+                    allowed += f"{role.mention}\n"
+        if not allowed:
+            allowed = "None Set\n"
+
+        servers = conf["servers"]
         info = ""
         for sname, data in servers.items():
-            info += f"**{sname.capitalize()}**\n" \
+            info += f"➣{sname.capitalize()}\n" \
                     f"`Host: `{data['ip']}\n" \
                     f"`Port: `{data['port']}\n" \
                     f"`Pass: `{data['pass']}\n\n"
-        if info:
-            embed = discord.Embed(
-                title="ECO Servers",
-                description=info,
-                color=discord.Color.random()
-            )
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("No servers have been added yet!")
+        if not info:
+            info = "No Servers Configured\n"
+
+        embed = discord.Embed(
+            title="ECOTools Settings",
+            description=f"**RCON Access Roles**\n"
+                        f"{allowed}"
+                        f"**ECO Servers**\n"
+                        f"{info}",
+            color=discord.Color.random()
+        )
+        await ctx.send(embed=embed)
+
+    @eco_set.command(name="allow")
+    async def allow_list(self, ctx, *, role: discord.Role):
+        """
+        Add/Remove roles from the allow list to use RCON commands
+
+        To remove a role, simply mention it again in the command
+        """
+        async with self.config.guild(ctx.guild).allow() as allow:
+            if role.id in allow:
+                allow.remove(role.id)
+                await ctx.send(f"**{role.name}** has been removed from the allow list")
+            else:
+                allow.append(role.id)
+                await ctx.send(f"**{role.name}** has been added to the allow list")
 
     @commands.command(name="ercon", aliases=["erc"])
     @commands.guild_only()
-    @commands.admin()
     async def eco_rcon(self, ctx, server_name: str, *, command: str):
         """Execute an RCON command for a server"""
-        servers = await self.config.guild(ctx.guild).servers()
+        conf = await self.config.guild(ctx.guild).all()
+        servers = conf["servers"]
         sname = server_name.lower()
-        if sname not in servers:
+        if sname not in conf["servers"]:
             return await ctx.send(f"Couldn't find {server_name} in the server config")
+
+        for role in ctx.author.roles:
+            if role.id in conf["allow"]:
+                break
+        else:
+            return await ctx.send("You do not have permissions to run that command.")
+
         server = servers[sname]
         res = await self.run_cmd(server, command)
         if res == "tick":
