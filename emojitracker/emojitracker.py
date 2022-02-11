@@ -27,21 +27,35 @@ class EmojiTracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        # Ignore reactions added by the bot
         if payload.user_id == self.bot.user.id:
             return
+        # Ignore reactions added in DMs
         if not payload.guild_id:
             return
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
+        # Ignore blacklisted guilds
         blacklist = await self.config.blacklist()
         if guild.id in blacklist:
             return
-        user = guild.get_member(payload.user_id)
+        user = payload.member
         if not user:
             return
+        # Ignore reactions added by other bots
         if user.bot:
             return
+        chan = guild.get_channel(payload.channel_id)
+        if not chan:
+            return
+        msg = await chan.fetch_message(payload.message_id)
+        if not msg:
+            return
+        # Ignore reactions added to a message that a bot sent
+        if msg.author.bot:
+            return
+
         async with self.config.guild(guild).users() as users:
             user_id = str(user.id)
             emoji = str(payload.emoji)
@@ -83,6 +97,14 @@ class EmojiTracker(commands.Cog):
             description=f"```py\b{blacklist}\n```"
         )
         await ctx.send(embed=embed)
+
+    @commands.command(name="resetreacts")
+    @commands.guild_only()
+    @commands.admin()
+    async def reset_reactions(self, ctx):
+        """Reset reaction data for this guild"""
+        await self.config.guild(ctx.guild).clear()
+        await ctx.tick()
 
     @commands.command(name="emojilb")
     @commands.guild_only()
