@@ -174,7 +174,7 @@ class LevelUp(commands.Cog):
         for guild in self.bot.guilds:
             guild_id = str(guild.id)
             if guild_id not in self.cache:
-                log.info("Guild ID not in cache for some reason")  # Should have been initialized already
+                log.info(f"{guild.name} Guild ID not in cache for some reason")  # Should have been initialized already
                 self.cache[guild_id] = {}
             if not self.cache[guild_id]:  # If there is anything to cache
                 continue
