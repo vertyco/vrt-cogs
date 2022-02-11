@@ -53,8 +53,11 @@ class EmojiTracker(commands.Cog):
         chan = guild.get_channel(payload.channel_id)
         if not chan:
             return
-        msg = await chan.fetch_message(payload.message_id)
-        if not msg:
+        try:
+            msg = await chan.fetch_message(payload.message_id)
+            if not msg:
+                return
+        except discord.NotFound:
             return
         # Ignore reactions added to a message that a bot sent
         if msg.author.bot:
