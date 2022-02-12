@@ -1734,7 +1734,7 @@ class LevelUp(commands.Cog):
                 uid = sorted_users[i][0]
                 user = ctx.guild.get_member(int(uid))
                 if user:
-                    user = user.display_name
+                    user = user.name
                 else:
                     user = uid
                 xp = sorted_users[i][1]
