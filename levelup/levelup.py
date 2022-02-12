@@ -424,19 +424,26 @@ class LevelUp(commands.Cog):
                 td = int(td.total_seconds())
                 xp_to_give = (td / 60) * xp_per_minute
                 addxp = True
+                # Ignore muted users
                 if conf["muted"] and voice_state.self_mute:
                     addxp = False
+                # Ignore deafened users
                 if conf["deafened"] and voice_state.self_deaf:
                     addxp = False
+                # Ignore offline/invisible users
                 if conf["invisible"] and member.status.name == "offline":
                     addxp = False
+                # Ignore if user is only one in channel
                 if conf["solo"] and len(voice_state.channel.members) == 1:
                     addxp = False
+                # Check ignored roles
                 for role in member.roles:
                     if role.id in conf["ignoredroles"]:
                         addxp = False
+                # Check ignored users
                 if int(user_id) in conf["ignoredusers"]:
                     addxp = False
+                # Check ignored channels
                 if voice_state.channel.id in conf["ignoredchannels"]:
                     addxp = False
                 if addxp:
@@ -444,17 +451,14 @@ class LevelUp(commands.Cog):
                 self.cache[guild_id][user_id]["voice"] += td
                 self.voice[guild_id][user_id] = now
 
-    @tasks.loop(seconds=15)
+    @tasks.loop(seconds=20)
     async def voice_checker(self):
-        try:
-            await self.check_voice()
-        except Exception as e:
-            log.warning(f"Error in Voice checker loop: {e}")
+        await self.check_voice()
 
     @voice_checker.before_loop
     async def before_voice_checker(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(10)
+        await self.init_settings()
         log.info("Voice checker running")
 
     @tasks.loop(seconds=50)
@@ -464,9 +468,8 @@ class LevelUp(commands.Cog):
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
         await self.bot.wait_until_red_ready()
-        await self.init_settings()
-        await asyncio.sleep(10)
-        log.info("Cache dumber running")
+        await asyncio.sleep(50)
+        log.info("Cache dumber ready")
 
     @commands.group(name="levelset", aliases=["lset"])
     @commands.admin()
