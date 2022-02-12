@@ -1479,6 +1479,7 @@ class ArkTools(Calls, commands.Cog):
     # STAT COMMANDS
     # Thanks Vexed#3211 for some ideas with the Matplotlib logic :)
     @commands.command(name="servergraph", hidden=False)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     @commands.guild_only()
     async def graph_player_count(self, ctx: commands.Context, hours=None):
         """View a graph of player count over a set time"""
