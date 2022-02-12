@@ -2030,11 +2030,16 @@ class ArkShop(commands.Cog):
         if logchannel:
             perms = logchannel.permissions_for(ctx.guild.me).send_messages
         # Add the purchase to logs
+        if shoptype == "data":
+            color = discord.Color.dark_teal()
+        else:
+            color = discord.Color.magenta()
         embed = discord.Embed(
             title=f"{shoptype.upper()} Purchase",
             description=f"**{ctx.author.name}** has purchased the {item_name} item.\n"
                         f"**Price:** {price} {currency_name}\n"
-                        f"**XUID:** {xuid}"
+                        f"**XUID:** {xuid}",
+            color=color
         )
         if perms and logchannel:
             await logchannel.send(embed=embed)
