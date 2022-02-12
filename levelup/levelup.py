@@ -1741,7 +1741,7 @@ class LevelUp(commands.Cog):
                 xp = sorted_users[i][1]
                 level = get_level(int(xp), base, exp)
                 level = f"{level}"
-                xp = f"{xp}"
+                xp = "{:,}".format(int(xp))
                 if i == 0:
                     longestxp = len(xp)
                     longestlvl = len(level)
