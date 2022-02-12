@@ -11,7 +11,7 @@ class Meow(commands.Cog):
     My girlfriend had a dream about this cog so I had to make it ¯\_(ツ)_/¯
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -25,10 +25,8 @@ class Meow(commands.Cog):
         if not text:
             if hasattr(ctx.message, "reference") and ctx.message.reference:
                 try:
-                    text = (
-                        await ctx.fetch_message(ctx.message.reference.message_id)
-                    ).content
-                except (discord.Forbidden, discord.NotFound, discord.HTTPException):
+                    text = ctx.message.reference.resolved.content
+                except AttributeError:
                     pass
             if not text:
                 text = (await ctx.channel.history(limit=2).flatten())[
