@@ -6,10 +6,12 @@ import math
 import os
 import random
 import shutil
+import socket
 
 import aiohttp
 import discord
 from rcon.asyncio import rcon
+from rcon import Client
 from dislash import (InteractionClient,
                      ActionRow,
                      Button,
@@ -1760,13 +1762,20 @@ class ArkShop(commands.Cog):
                     return_when=asyncio.FIRST_COMPLETED,
                     timeout=80
                 )
-                gather = asyncio.gather(*pending)
-                gather.cancel()
-                try:
-                    await gather
-                except asyncio.CancelledError:
-                    pass
+                # Bunch of stuff the example had that was giving "asyncio Task was destroyed but it is pending!"
+                # gather = asyncio.gather(*pending)
+                # print("cancelling")
+                # gather.cancel()
+                # print("gather.cancel()")
+                # try:
+                #     print("trying to gather")
+                #     await gather
+                #     print("cancelled gather")
+                # except Exception as e:
+                #     print(f"gather error: {str(e)}")
+                #     pass
                 if done:
+                    # print(f"Done: {done}")
                     return done.pop().result()
                 else:
                     await message.edit(
@@ -1791,9 +1800,9 @@ class ArkShop(commands.Cog):
                 # So it will still work if they are registered on one cluster and purchase something for another
                 server = []
                 for cluster_data in clusters.values():
-                    for server_data in cluster_data["servers"].values():
+                    for sname, server_data in cluster_data["servers"].items():
                         if str(server_data["chatchannel"]) == channel_id:
-                            server.append(server_data)
+                            server.append((f"{sname} {cname}", server_data))
                 if not server:
                     embed = discord.Embed(
                         description=f"Couldn't find server associated with channel ID {channel_id}"
@@ -1842,7 +1851,9 @@ class ArkShop(commands.Cog):
                     )
                     embed.set_thumbnail(url=LOADING)
                     await message.edit(embed=embed, components=[])
-                serverlist = list(clusters[cname]["servers"].values())
+                serverlist = []
+                for sname, server_data in clusters[cname]["servers"].items():
+                    serverlist.append((f"{sname} {cname}", server_data))
                 return await self.sendoff_rcon_items(
                     ctx,
                     message,
@@ -1952,31 +1963,30 @@ class ArkShop(commands.Cog):
                                  currency_name,
                                  xuid,
                                  logchannel):
-        commandlist = []
-        for path in paths:
-            commandlist.append(f"giveitemtoplayer {implant_id} {path}")
+        def exe():
+            results = {"success": [], "failed": []}
+            for name, data in serverlist:
+                try:
+                    with Client(
+                            host=data['ip'],
+                            port=data['port'],
+                            passwd=data['password'],
+                            timeout=5
+                    ) as client:
+                        for path in paths:
+                            client.run(f"giveitemtoplayer {implant_id} {path}")
+                        client.close()
+                        results["success"].append(name)
+                except socket.timeout:
+                    results["failed"].append(name)
+                except Exception as e:
+                    log.warning(f"Failed to send item to {name}\nError: {e}")
+                    results["failed"].append(name)
+            return results
 
-        success = []
+        res = await self.bot.loop.run_in_executor(None, exe)
 
-        async def sendoff(s, c):
-            try:
-                res = await rcon(
-                    host=s['ip'],
-                    port=s['port'],
-                    passwd=s['password'],
-                    command=c
-                )
-                success.append(res)
-            except Exception as e:
-                log.warning(f"Server {server['ip']} failed to send item.\nError: {e}")
-
-        tasks = []
-        for server in serverlist:
-            for command in commandlist:
-                tasks.append(sendoff(server, command))
-        await asyncio.gather(*tasks)
-
-        if not success:  # If none of the commands were successful, don't deduct credits
+        if not res["success"]:  # If none of the commands were successful, don't deduct credits
             embed = discord.Embed(
                 title="Purchase Failed",
                 description="The servers timed out or lost connection during item send.\n"
@@ -1989,12 +1999,21 @@ class ArkShop(commands.Cog):
         # withdraw credits and send purchase message
         await bank.withdraw_credits(ctx.author, int(price))
         embed = discord.Embed(
-            description=f"You have purchased the {item_name} item for {price} {currency_name}!\n"
-                        f"Item was sent to ImplantID {implant_id}",
+            description=f"You have purchased the **{item_name}** item for **{price}** {currency_name}!\n"
+                        f"Item was sent to ImplantID **{implant_id}**",
             color=discord.Color.green()
         )
         embed.set_footer(text=random.choice(TIPS).format(p=ctx.prefix))
         embed.set_thumbnail(url=SHOP_ICON)
+        if res["failed"]:
+            failed = ""
+            for fail in res["failed"]:
+                failed += f"{fail}\n"
+            embed.add_field(
+                name="Failed to send to some maps",
+                value=box(failed),
+                inline=False
+            )
         await message.edit(embed=embed, components=[])
         await self.log_purchase(ctx, "rcon", item_name, price, currency_name, xuid, logchannel)
 

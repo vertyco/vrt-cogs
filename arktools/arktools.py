@@ -1255,45 +1255,46 @@ class ArkTools(Calls, commands.Cog):
             return await ctx.send("No servers have been found")
 
         if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
-            await ctx.send("Beginning 30 second reboot countdown...")
+            await ctx.send("Beginning 10 second reboot countdown...")
             alerts = []
-            for server in serverlist:
-                mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                msg = "Reboot will commence in 30 seconds.\n" \
-                      "Make sure you are in a bed to avoid your character dying!"
-                embed = discord.Embed(
-                    title="INCOMING REBOOT",
-                    description=msg,
-                    color=discord.Color.orange()
-                )
-                await mapchannel.send(embed=embed)
-                broadcast = '<RichColor Color="1,0,0,1">SERVER REBOOT IN 30 SECONDS</>\n' \
-                            'Make sure you are in a bed to avoid your character dying!'
-                alerts.append(async_rcon(server, f"broadcast {broadcast}"))
-            await asyncio.gather(*alerts)
-            for i in range(30, 0, -1):
-                counting = []
+            async with ctx.typing():
                 for server in serverlist:
-                    counting.append(async_rcon(server, f"serverchat Reboot in {i}"))
-                await asyncio.gather(*counting)
-                await asyncio.sleep(1)
-            await ctx.send("Saving maps...")
-            save = []
-            for server in serverlist:
-                mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                embed = discord.Embed(
-                    description="Saving map and exiting...",
-                    color=discord.Color.purple()
-                )
-                await mapchannel.send(embed=embed)
-                save.append(async_rcon(server, f"saveworld", ctx.channel))
-            await asyncio.gather(*save)
-            await asyncio.sleep(2)
-            await ctx.send("Running DoExit...")
-            exiting = []
-            for server in serverlist:
-                exiting.append(async_rcon(server, f"doexit", ctx.channel))
-            await asyncio.gather(*exiting)
+                    mapchannel = ctx.guild.get_channel(server["chatchannel"])
+                    msg = "Reboot will commence in 10 seconds.\n" \
+                          "Make sure you are in a bed to avoid your character dying!"
+                    embed = discord.Embed(
+                        title="INCOMING REBOOT",
+                        description=msg,
+                        color=discord.Color.orange()
+                    )
+                    await mapchannel.send(embed=embed)
+                    broadcast = '<RichColor Color="1,0,0,1">SERVER REBOOT IN 10 SECONDS</>\n' \
+                                'Make sure you are in a bed to avoid your character dying!'
+                    alerts.append(self.executor(ctx.guild, server, f"broadcast {broadcast}"))
+                await asyncio.gather(*alerts)
+                for i in range(10, 0, -1):
+                    counting = []
+                    for server in serverlist:
+                        counting.append(self.executor(ctx.guild, server, f"serverchat Reboot in {i}"))
+                    await asyncio.gather(*counting)
+                    await asyncio.sleep(1)
+                await ctx.send("Saving maps...")
+                save = []
+                for server in serverlist:
+                    mapchannel = ctx.guild.get_channel(server["chatchannel"])
+                    embed = discord.Embed(
+                        description="Saving map and exiting...",
+                        color=discord.Color.purple()
+                    )
+                    await mapchannel.send(embed=embed)
+                    save.append(self.executor(ctx.guild, server, f"saveworld"))
+                await asyncio.gather(*save)
+                await asyncio.sleep(2)
+                await ctx.send("Running DoExit...")
+                exiting = []
+                for server in serverlist:
+                    exiting.append(self.executor(ctx.guild, server, f"doexit"))
+                await asyncio.gather(*exiting)
         else:
             rtasks = []
             for server in serverlist:
@@ -3682,7 +3683,7 @@ class ArkTools(Calls, commands.Cog):
         # These commands will try to run even if the server is in the waitlist queue
         priority_commands = ["listplayers", "banplayer", "unbanplayer", "doexit", "saveworld"]
         for cmd in priority_commands:
-            if cmd in command:
+            if cmd in command.lower():
                 priority = True
                 break
         else:
