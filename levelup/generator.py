@@ -46,16 +46,16 @@ class Generator:
             profile_image: str = None,
             level: int = 1,
             current_xp: int = 0,
-            user_xp: int = 20,
+            user_xp: int = 0,
             next_xp: int = 100,
-            user_position: int = 1,
+            user_position: str = "1",
             user_name: str = 'NotSpeified#0117',
             user_status: str = 'online',
             color: tuple = (0, 0, 0),
-            messages: int = 0,
-            voice: int = 0,
+            messages: str = "0",
+            voice: str = "None",
             prestige: int = 0,
-            stars: int = 0,
+            stars: str = "0",
     ):
         # Set canvas
         if not bg_image:

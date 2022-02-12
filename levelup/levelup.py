@@ -1550,22 +1550,22 @@ class LevelUp(commands.Cog):
         if user_id not in users:
             return await ctx.send("No information available yet!")
         pos = await get_user_position(conf, user_id)
-        position = pos["p"]
-        percentage = pos["pr"]
+        position = "{:,}".format(pos["p"])  # int format
+        percentage = pos["pr"]  # Float
         stats = await get_user_stats(conf, user_id)
-        level = stats["l"]
-        messages = stats["m"]
+        level = stats["l"]  # Int
+        messages = "{:,}".format(stats["m"])  # Int format
         voice = stats["v"]  # Minutes at this point
-        xp = stats["xp"]
-        goal = stats["goal"]
+        xp = stats["xp"]  # Int
+        goal = stats["goal"]  # Int
         progress = f'{"{:,}".format(xp)}/{"{:,}".format(goal)}'
-        lvlbar = stats["lb"]
-        lvlpercent = stats["lp"]
-        emoji = stats["e"]
-        prestige = stats["pr"]
-        bg = stats["bg"]
+        lvlbar = stats["lb"]  # Str
+        lvlpercent = stats["lp"]  # Int
+        emoji = stats["e"]  # Str
+        prestige = stats["pr"]  # Int
+        bg = stats["bg"]  # Str
         if "stars" in stats:
-            stars = stats["stars"]
+            stars = "{:,}".format(stats["stars"])
         else:
             stars = 0
         if not usepics:
@@ -1803,9 +1803,10 @@ class LevelUp(commands.Cog):
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
+        startotal = "{:,}".format(total_stars)
         for p in range(pages):
             title = f"**Star Leaderboard**\n" \
-                    f"**Total ⭐'s: {total_stars}**\n"
+                    f"**Total ⭐'s: {startotal}**\n"
             if stop > len(sorted_users):
                 stop = len(sorted_users)
             table = []

@@ -98,7 +98,7 @@ async def get_user_stats(conf: dict, user_id: str) -> dict:
     exp = conf["exp"]
     users = conf["users"]
     user = users[user_id]
-    xp = int(user["xp"])
+    xp = int(user["xp"])  # XP is float in config
     messages = user["messages"]
     voice = user["voice"]
     voice = time_formatter(voice)
@@ -142,18 +142,18 @@ async def get_user_stats(conf: dict, user_id: str) -> dict:
 
 
 async def profile_embed(
-        user,
-        position,
-        percentage,
-        level,
-        messages,
-        voice,
-        progress,
-        lvlbar,
-        lvlpercent,
-        emoji,
-        prestige,
-        stars
+        user: discord.Member,
+        position: str,
+        percentage: float,
+        level: int,
+        messages: str,
+        voice: str,
+        progress: str,
+        lvlbar: str,
+        lvlpercent: int,
+        emoji: str,
+        prestige: int,
+        stars: str
 ) -> discord.Embed:
     msg = f"🎖｜Level {level}\n"
     if prestige:
@@ -170,5 +170,5 @@ async def profile_embed(
     embed.add_field(name="Progress", value=box(f"{lvlbar} {lvlpercent} %", lang="python"))
     embed.set_thumbnail(url=user.avatar_url)
     if position:
-        embed.set_footer(text=f"Rank: {position} with {percentage}% of global server XP")
+        embed.set_footer(text=f"Rank {position}, with {percentage}% of global server XP")
     return embed
