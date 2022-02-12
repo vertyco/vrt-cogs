@@ -10,7 +10,6 @@ import socket
 
 import aiohttp
 import discord
-from rcon.asyncio import rcon
 from rcon import Client
 from dislash import (InteractionClient,
                      ActionRow,

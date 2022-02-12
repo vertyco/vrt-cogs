@@ -3804,7 +3804,6 @@ class ArkTools(Calls, commands.Cog):
     async def before_listplayers(self):
         await self.bot.wait_until_red_ready()
         await self.initialize()
-        await asyncio.sleep(5)
         log.info("Listplayers loop ready")
 
     # Detect player joins/leaves and log to respective channels
@@ -4720,7 +4719,7 @@ class ArkTools(Calls, commands.Cog):
     @status_channel.before_loop
     async def before_status_channel(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(15)
+        await asyncio.sleep(30)
         log.info("Status Channel loop ready")
 
     # Player stat handler

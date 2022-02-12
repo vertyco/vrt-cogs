@@ -33,10 +33,14 @@ async def async_rcon(server: dict, command: str, channel: discord.TextChannel = 
             resp = box(f"- {name} has timed out and may be down", lang="diff")
             if channel:
                 await channel.send(resp)
+        elif "Connection timed out" in str(e):
+            resp = box(f"- {name} has timed out and may be down", lang="diff")
+            if channel:
+                await channel.send(resp)
         elif "502 Bad Gateway" in str(e) and "Cloudflare" in str(e):
             log.warning("Async_RCON Error: Cloudflare Issue, Discord is borked not my fault.")
         else:
-            resp = box(f"- {name} encountered an unknown error, see traceback for details.", lang="diff")
+            resp = box(f"- {name} encountered an unknown error: {e}", lang="diff")
             if channel:
                 await channel.send(resp)
             log.warning(f"Async_RCON Error: {e}\nCommand: {command}")
