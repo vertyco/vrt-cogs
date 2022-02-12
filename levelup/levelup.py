@@ -1723,41 +1723,30 @@ class LevelUp(commands.Cog):
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
-        longestxp = 1
-        longestlvl = 1
         for p in range(pages):
             title = f"**Total Messages:** `{'{:,}'.format(total_messages)}`\n" \
                     f"**Total VoiceTime:** `{voice}`\n"
-            msg = ""
             if stop > len(sorted_users):
                 stop = len(sorted_users)
+            table = []
             for i in range(start, stop, 1):
+                label = i + 1
                 uid = sorted_users[i][0]
                 user = ctx.guild.get_member(int(uid))
                 if user:
-                    user = user.name
+                    user = user.display_name
                 else:
                     user = uid
                 xp = sorted_users[i][1]
                 level = get_level(int(xp), base, exp)
                 level = f"{level}"
                 xp = "{:,}".format(int(xp))
-                if i == 0:
-                    longestxp = len(xp)
-                    longestlvl = len(level)
-                xplength = len(xp)
-                if xplength < longestxp:
-                    xp = xp.rjust(longestxp)
-                lvlength = len(level)
-                if lvlength < longestlvl:
-                    level = level.rjust(longestlvl)
-                if (i + 1) < 10:
-                    msg += f"{i + 1}  ➤ Lvl {level}｜{xp} xp｜{user}\n"
-                else:
-                    msg += f"{i + 1} ➤ Lvl {level}｜{xp} xp｜{user}\n"
+                table.append([label, f"Lvl {level}", f"{xp} xp", user])
+
+            msg = tabulate.tabulate(table, tablefmt="presto")
             embed = discord.Embed(
                 title="LevelUp Leaderboard",
-                description=f"{title}{box(msg, lang='python')}",
+                description=f"{title}{box(msg)}",
                 color=discord.Color.random()
             )
             embed.set_thumbnail(url=ctx.guild.icon_url)
