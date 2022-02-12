@@ -90,7 +90,7 @@ class ArkTools(Calls, commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 117117117117117117, force_registration=True)
         default_guild = {
-            "usebuttons": True,
+            "usebuttons": False,
             "alt": {  # System for detecting suspicious Xbox accounts
                 "on": False,  # Alt-detection system toggle
                 "autoban": False,  # Auto ban suspicious users toggle
@@ -111,6 +111,7 @@ class ArkTools(Calls, commands.Cog):
             "autofriend": False,  # Toggle for whether to auto add new players as a friend by the host gamertags
             "unfriendafter": 30,  # Unfriend players after X days of inactivity
             "clusters": {},  # All server data gets stored here
+            "countdown": 10,  # DoExit countdown for safe shutdown
             "crosschat": True,  # Global toggle for Discord to server crosschat
             "clustertypes": "both",  # If cluster types available are either Xbox, Steam, or both
             "modroles": [],  # All mod role ID's get stored here
@@ -734,6 +735,14 @@ class ArkTools(Calls, commands.Cog):
         else:
             return await msg.edit(embed=discord.Embed(description="Ok guess ya didn't need help then."))
 
+    @commands.command(name="wipecogdata")
+    @commands.guildowner()
+    @commands.guild_only()
+    async def wipe_all_data(self, ctx: commands.Context):
+        """Wipe ALL ArkTools cog data"""
+        await self.config.guild(ctx.guild).clear()
+        await ctx.tick()
+
     # Deletes all player data in the config
     @commands.command(name="wipestats")
     @commands.guildowner()
@@ -1254,25 +1263,26 @@ class ArkTools(Calls, commands.Cog):
         if len(serverlist) == 0:
             return await ctx.send("No servers have been found")
 
-        if command.lower() == "doexit":  # Count down, save world, exit - for clean shutdown
-            await ctx.send("Beginning 10 second reboot countdown...")
+        cd = settings["countdown"]
+        if command.lower() == "doexit" and cd:  # Count down, save world, exit - for clean shutdown
+            await ctx.send(f"Beginning {cd} second reboot countdown...")
             alerts = []
             async with ctx.typing():
                 for server in serverlist:
                     mapchannel = ctx.guild.get_channel(server["chatchannel"])
-                    msg = "Reboot will commence in 10 seconds.\n" \
-                          "Make sure you are in a bed to avoid your character dying!"
+                    msg = f"Reboot will commence in {cd} seconds.\n" \
+                          f"Make sure you are in a bed to avoid your character dying!"
                     embed = discord.Embed(
                         title="INCOMING REBOOT",
                         description=msg,
                         color=discord.Color.orange()
                     )
                     await mapchannel.send(embed=embed)
-                    broadcast = '<RichColor Color="1,0,0,1">SERVER REBOOT IN 10 SECONDS</>\n' \
-                                'Make sure you are in a bed to avoid your character dying!'
+                    broadcast = f'<RichColor Color="1,0,0,1">SERVER REBOOT IN {cd} SECONDS</>\n' \
+                                f'Make sure you are in a bed to avoid your character dying!'
                     alerts.append(self.executor(ctx.guild, server, f"broadcast {broadcast}"))
                 await asyncio.gather(*alerts)
-                for i in range(10, 0, -1):
+                for i in range(cd, 0, -1):
                     counting = []
                     for server in serverlist:
                         counting.append(self.executor(ctx.guild, server, f"serverchat Reboot in {i}"))
@@ -2920,6 +2930,7 @@ class ArkTools(Calls, commands.Cog):
     async def view_server_settings(self, ctx: commands.Context):
         """View current server settings"""
         settings = await self.config.guild(ctx.guild).all()
+        countdown = settings["countdown"]
         crosschat = settings["crosschat"]
         if crosschat:
             crosschat = "Enabled"
@@ -2943,13 +2954,14 @@ class ArkTools(Calls, commands.Cog):
         days = int(len(stats) / 1440)
         clustertype = settings["clustertypes"]
         embed = discord.Embed(
-            description=f"`Status Channel: `{statuschannel}\n"
-                        f"`Event Log:      `{eventlog}\n"
-                        f"`Timezone:       `{tz}\n"
-                        f"`GraphHistory:   `{days} days\n"
-                        f"`GraphStorage:   `{exp} days\n"
-                        f"`ClusterType:    `{clustertype.capitalize()}\n"
-                        f"`Cross-Chat:     `{crosschat}",
+            description=f"`Status Channel:  `{statuschannel}\n"
+                        f"`Event Log:       `{eventlog}\n"
+                        f"`Timezone:        `{tz}\n"
+                        f"`Graph History:   `{days} days\n"
+                        f"`Graph Storage:   `{exp} days\n"
+                        f"`Cluster Type:    `{clustertype.capitalize()}\n"
+                        f"`Cross-Chat:      `{crosschat}\n"
+                        f"`DoExitCountdown: `{countdown}",
             color=discord.Color.blue()
         )
         await ctx.send(embed=embed)
@@ -3009,6 +3021,20 @@ class ArkTools(Calls, commands.Cog):
                     color=discord.Color.blue()
                 )
                 await ctx.send(embed=embed)
+
+    @server_settings.command(name="countdown")
+    async def set_doexit_countdown(self, ctx: commands.Context, seconds: int):
+        """
+        Set a countdown for shutting down the servers with "doexit"
+
+        When the doexit command is used, the servers will begin a countdown and save before exiting.
+
+        **Default is 10 seconds**
+
+        Set to 0 to skip safe shutdowns and doexit immediately
+        """
+        await self.config.guild(ctx.guild).countdown.set(seconds)
+        await ctx.tick()
 
     @server_settings.command(name="graphdata")
     async def graph_data_expiration(self, ctx: commands.Context, days: int):

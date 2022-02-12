@@ -73,7 +73,7 @@ class ArkShop(commands.Cog):
 
         }
         default_guild = {
-            "usebuttons": True,
+            "usebuttons": False,
             "shops": {},
             "logchannel": None,
             "users": {},
