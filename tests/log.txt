@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "C:/Users/GAMER/Desktop/GitHub Projects/tests/xsapi-scratch.py", line 10, in main
-    print(win32gui.EnumWindows())
-TypeError: function takes exactly 2 arguments (0 given)
