@@ -1,0 +1,30 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Simple Minecraft server stats cog for Bedrock servers",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not persistently store data about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!",
+  "min_bot_version": "3.4.0",
+  "min_python_version": [
+    3,
+    8,
+    1
+  ],
+  "permissions": [
+    "embed_links"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "mcstats"
+  ],
+  "short": "Get Bedrock server stats.",
+  "tags": [
+    "utility",
+    "minecraft",
+    "bedrock"
+  ],
+  "type": "COG"
+}

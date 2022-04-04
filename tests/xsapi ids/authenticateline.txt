@@ -1,0 +1,1 @@
+python authenticate.py --client-id f67ee5e7-0cda-442e-8af6-fcf01a6fee61 --client-secret oZM7Q~.LTV4YVq.6~V7W-owDdizVUXu4.U~f.

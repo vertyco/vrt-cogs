@@ -1,0 +1,661 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="dd240ba4-efef-4ef4-b77d-ad0d4b3acc31" name="Changes" comment="[ArkTools] - level ranks">
+      <change beforePath="$PROJECT_DIR$/arktools/arktools.py" beforeDir="false" afterPath="$PROJECT_DIR$/arktools/arktools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/arktools/formatter.py" beforeDir="false" afterPath="$PROJECT_DIR$/arktools/formatter.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="ProjectId" id="1wgb1jMoRQ3u70Oc9iaU9Q3M9KS" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="add_unversioned_files" value="$PROJECT_DIR$/xbox-webapi-python-master/xbox/webapi/scripts/friends.py&#10;C:/Users/GAMER/Desktop/GitHubProjects/xbox-webapi-python-master/xbox/webapi/scripts/authenticate.py" />
+    <property name="com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File" value="Python" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/arkhandler" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\GAMER\Desktop\GitHubProjects\arkhandler" />
+      <recent name="C:\Users\GAMER\Desktop\GitHubProjects\sctools" />
+      <recent name="C:\Users\GAMER\Desktop\GitHubProjects\archive" />
+      <recent name="C:\Users\GAMER\Desktop\GitHubProjects\ark2" />
+      <recent name="C:\Users\GAMER\Desktop\GitHub Projects\DiscordEmbeds" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.scratch">
+    <configuration name="Red-V3" type="PythonConfigurationType" factoryName="Python">
+      <module name="GitHubProjects" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/redv3venv" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/redv3venv/Scripts" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="apitesting" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GitHubProjects" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/apitesting.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="arkhandler" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GitHubProjects" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/arkhandler" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/arkhandler/arkhandler.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="arkhandler2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GitHubProjects" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/arkhandler" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/arkhandler/arkhandler2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="oauth" type="PythonConfigurationType" factoryName="Python">
+      <module name="GitHubProjects" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Python38\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/oauthvenv" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/oauthvenv/Scripts" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="scratch" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GitHubProjects" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$APPLICATION_CONFIG_DIR$/scratches" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$APPLICATION_CONFIG_DIR$/scratches/scratch.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="scratch_9" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GitHubProjects" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$APPLICATION_CONFIG_DIR$/scratches" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$APPLICATION_CONFIG_DIR$/scratches/scratch_9.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.Red-V3" />
+      <item itemvalue="Python.oauth" />
+      <item itemvalue="Python.apitesting" />
+      <item itemvalue="Python.arkhandler2" />
+      <item itemvalue="Python.arkhandler" />
+      <item itemvalue="Python.scratch_9" />
+      <item itemvalue="Python.scratch" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.scratch" />
+        <item itemvalue="Python.arkhandler" />
+        <item itemvalue="Python.arkhandler2" />
+        <item itemvalue="Python.scratch_9" />
+        <item itemvalue="Python.apitesting" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="dd240ba4-efef-4ef4-b77d-ad0d4b3acc31" name="Changes" comment="" />
+      <created>1628882966422</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1628882966422</updated>
+    </task>
+    <task id="LOCAL-00683" summary="[arkshop] detect if ark data has something in it and cancel transaction if file size is above 0">
+      <created>1636864663633</created>
+      <option name="number" value="00683" />
+      <option name="presentableId" value="LOCAL-00683" />
+      <option name="project" value="LOCAL" />
+      <updated>1636864663633</updated>
+    </task>
+    <task id="LOCAL-00684" summary="[arkshop] detect if ark data has something in it and cancel transaction if file size is above 0">
+      <created>1636864764197</created>
+      <option name="number" value="00684" />
+      <option name="presentableId" value="LOCAL-00684" />
+      <option name="project" value="LOCAL" />
+      <updated>1636864764197</updated>
+    </task>
+    <task id="LOCAL-00685" summary="[arkshop] detect if ark data has something in it and cancel transaction if file size is above 0">
+      <created>1636865094402</created>
+      <option name="number" value="00685" />
+      <option name="presentableId" value="LOCAL-00685" />
+      <option name="project" value="LOCAL" />
+      <updated>1636865094402</updated>
+    </task>
+    <task id="LOCAL-00686" summary="[arkshop] detect if ark data has something in it and cancel transaction if file size is above 0">
+      <created>1636865282189</created>
+      <option name="number" value="00686" />
+      <option name="presentableId" value="LOCAL-00686" />
+      <option name="project" value="LOCAL" />
+      <updated>1636865282189</updated>
+    </task>
+    <task id="LOCAL-00687" summary="[arktools] char name blacklist fix">
+      <created>1636917470158</created>
+      <option name="number" value="00687" />
+      <option name="presentableId" value="LOCAL-00687" />
+      <option name="project" value="LOCAL" />
+      <updated>1636917470159</updated>
+    </task>
+    <task id="LOCAL-00688" summary="[arktools] default guild and docstring cleanup">
+      <created>1636935964994</created>
+      <option name="number" value="00688" />
+      <option name="presentableId" value="LOCAL-00688" />
+      <option name="project" value="LOCAL" />
+      <updated>1636935964994</updated>
+    </task>
+    <task id="LOCAL-00689" summary="[arktools] fixed duplicate function name">
+      <created>1637012873711</created>
+      <option name="number" value="00689" />
+      <option name="presentableId" value="LOCAL-00689" />
+      <option name="project" value="LOCAL" />
+      <updated>1637012873711</updated>
+    </task>
+    <task id="LOCAL-00690" summary="[arktools] fixed duplicate function name">
+      <created>1637012921923</created>
+      <option name="number" value="00690" />
+      <option name="presentableId" value="LOCAL-00690" />
+      <option name="project" value="LOCAL" />
+      <updated>1637012921923</updated>
+    </task>
+    <task id="LOCAL-00691" summary="[arktools/ArkShop] blueprint strings take txt files too now">
+      <created>1637028141996</created>
+      <option name="number" value="00691" />
+      <option name="presentableId" value="LOCAL-00691" />
+      <option name="project" value="LOCAL" />
+      <updated>1637028141997</updated>
+    </task>
+    <task id="LOCAL-00692" summary="[arktools] status channel tweak oops">
+      <created>1637072828158</created>
+      <option name="number" value="00692" />
+      <option name="presentableId" value="LOCAL-00692" />
+      <option name="project" value="LOCAL" />
+      <updated>1637072828159</updated>
+    </task>
+    <task id="LOCAL-00693" summary="[arktools] ingame cmd response fix">
+      <created>1637090782593</created>
+      <option name="number" value="00693" />
+      <option name="presentableId" value="LOCAL-00693" />
+      <option name="project" value="LOCAL" />
+      <updated>1637090782593</updated>
+    </task>
+    <task id="LOCAL-00694" summary="[arktools] autofriend session">
+      <created>1637091233063</created>
+      <option name="number" value="00694" />
+      <option name="presentableId" value="LOCAL-00694" />
+      <option name="project" value="LOCAL" />
+      <updated>1637091233063</updated>
+    </task>
+    <task id="LOCAL-00695" summary="[SCTools] - Initial commit">
+      <created>1637181872606</created>
+      <option name="number" value="00695" />
+      <option name="presentableId" value="LOCAL-00695" />
+      <option name="project" value="LOCAL" />
+      <updated>1637181872606</updated>
+    </task>
+    <task id="LOCAL-00696" summary="[SCTools] - formatter tweak">
+      <created>1637182003866</created>
+      <option name="number" value="00696" />
+      <option name="presentableId" value="LOCAL-00696" />
+      <option name="project" value="LOCAL" />
+      <updated>1637182003866</updated>
+    </task>
+    <task id="LOCAL-00697" summary="[SCTools] - formatter tweak">
+      <created>1637183712390</created>
+      <option name="number" value="00697" />
+      <option name="presentableId" value="LOCAL-00697" />
+      <option name="project" value="LOCAL" />
+      <updated>1637183712390</updated>
+    </task>
+    <task id="LOCAL-00698" summary="arksave added">
+      <created>1637183751422</created>
+      <option name="number" value="00698" />
+      <option name="presentableId" value="LOCAL-00698" />
+      <option name="project" value="LOCAL" />
+      <updated>1637183751422</updated>
+    </task>
+    <task id="LOCAL-00699" summary="forgot menu oops">
+      <created>1637201556037</created>
+      <option name="number" value="00699" />
+      <option name="presentableId" value="LOCAL-00699" />
+      <option name="project" value="LOCAL" />
+      <updated>1637201556037</updated>
+    </task>
+    <task id="LOCAL-00700" summary="[ArkShop]-fixed null list shop list&#10;[ArkTools]-Tweaks">
+      <created>1637370601076</created>
+      <option name="number" value="00700" />
+      <option name="presentableId" value="LOCAL-00700" />
+      <option name="project" value="LOCAL" />
+      <updated>1637370601077</updated>
+    </task>
+    <task id="LOCAL-00701" summary="[ArkShop]-fixed null list shop list">
+      <created>1637371081866</created>
+      <option name="number" value="00701" />
+      <option name="presentableId" value="LOCAL-00701" />
+      <option name="project" value="LOCAL" />
+      <updated>1637371081866</updated>
+    </task>
+    <task id="LOCAL-00702" summary="[ArkTools] - Make votes require less players to pass">
+      <created>1637453378698</created>
+      <option name="number" value="00702" />
+      <option name="presentableId" value="LOCAL-00702" />
+      <option name="project" value="LOCAL" />
+      <updated>1637453378698</updated>
+    </task>
+    <task id="LOCAL-00703" summary="[xtools] - fix xfriends">
+      <created>1637454466888</created>
+      <option name="number" value="00703" />
+      <option name="presentableId" value="LOCAL-00703" />
+      <option name="project" value="LOCAL" />
+      <updated>1637454466888</updated>
+    </task>
+    <task id="LOCAL-00704" summary="[arkshop] - fix rshoplist if no items">
+      <created>1637454551258</created>
+      <option name="number" value="00704" />
+      <option name="presentableId" value="LOCAL-00704" />
+      <option name="project" value="LOCAL" />
+      <updated>1637454551258</updated>
+    </task>
+    <task id="LOCAL-00705" summary="[arkshop] - fix rshoplist if not main server">
+      <created>1637454974197</created>
+      <option name="number" value="00705" />
+      <option name="presentableId" value="LOCAL-00705" />
+      <option name="project" value="LOCAL" />
+      <updated>1637454974198</updated>
+    </task>
+    <task id="LOCAL-00706" summary="[arkshop] - fix rshoplist if not main server">
+      <created>1637455049951</created>
+      <option name="number" value="00706" />
+      <option name="presentableId" value="LOCAL-00706" />
+      <option name="project" value="LOCAL" />
+      <updated>1637455049951</updated>
+    </task>
+    <task id="LOCAL-00707" summary="lots of tweaks">
+      <created>1637548882317</created>
+      <option name="number" value="00707" />
+      <option name="presentableId" value="LOCAL-00707" />
+      <option name="project" value="LOCAL" />
+      <updated>1637548882317</updated>
+    </task>
+    <task id="LOCAL-00708" summary="lots of tweaks">
+      <created>1637549129965</created>
+      <option name="number" value="00708" />
+      <option name="presentableId" value="LOCAL-00708" />
+      <option name="project" value="LOCAL" />
+      <updated>1637549129965</updated>
+    </task>
+    <task id="LOCAL-00709" summary="[ArkTools] - Run graphing logic in executor">
+      <created>1637732548998</created>
+      <option name="number" value="00709" />
+      <option name="presentableId" value="LOCAL-00709" />
+      <option name="project" value="LOCAL" />
+      <updated>1637732548998</updated>
+    </task>
+    <task id="LOCAL-00710" summary="[ArkTools] - graphing logic">
+      <created>1637945661397</created>
+      <option name="number" value="00710" />
+      <option name="presentableId" value="LOCAL-00710" />
+      <option name="project" value="LOCAL" />
+      <updated>1637945661397</updated>
+    </task>
+    <task id="LOCAL-00711" summary="[ArkTools] - graphing logic">
+      <created>1637946836066</created>
+      <option name="number" value="00711" />
+      <option name="presentableId" value="LOCAL-00711" />
+      <option name="project" value="LOCAL" />
+      <updated>1637946836066</updated>
+    </task>
+    <task id="LOCAL-00712" summary="[ArkTools] - graphing logic">
+      <created>1637950051009</created>
+      <option name="number" value="00712" />
+      <option name="presentableId" value="LOCAL-00712" />
+      <option name="project" value="LOCAL" />
+      <updated>1637950051009</updated>
+    </task>
+    <task id="LOCAL-00713" summary="[ArkTools] - graphing logic">
+      <created>1637952987582</created>
+      <option name="number" value="00713" />
+      <option name="presentableId" value="LOCAL-00713" />
+      <option name="project" value="LOCAL" />
+      <updated>1637952987582</updated>
+    </task>
+    <task id="LOCAL-00714" summary="[ArkTools] - graphing logic">
+      <created>1637953320362</created>
+      <option name="number" value="00714" />
+      <option name="presentableId" value="LOCAL-00714" />
+      <option name="project" value="LOCAL" />
+      <updated>1637953320362</updated>
+    </task>
+    <task id="LOCAL-00715" summary="[ArkTools] - graphing logic">
+      <created>1637959996928</created>
+      <option name="number" value="00715" />
+      <option name="presentableId" value="LOCAL-00715" />
+      <option name="project" value="LOCAL" />
+      <updated>1637959996928</updated>
+    </task>
+    <task id="LOCAL-00716" summary="[ArkTools] - graphing logic">
+      <created>1637960027528</created>
+      <option name="number" value="00716" />
+      <option name="presentableId" value="LOCAL-00716" />
+      <option name="project" value="LOCAL" />
+      <updated>1637960027529</updated>
+    </task>
+    <task id="LOCAL-00717" summary="[ArkTools] - graphing logic">
+      <created>1637960720016</created>
+      <option name="number" value="00717" />
+      <option name="presentableId" value="LOCAL-00717" />
+      <option name="project" value="LOCAL" />
+      <updated>1637960720016</updated>
+    </task>
+    <task id="LOCAL-00718" summary="[ArkTools] - graphing logic">
+      <created>1637960884675</created>
+      <option name="number" value="00718" />
+      <option name="presentableId" value="LOCAL-00718" />
+      <option name="project" value="LOCAL" />
+      <updated>1637960884675</updated>
+    </task>
+    <task id="LOCAL-00719" summary="[ArkTools] - graphing logic">
+      <created>1637961252398</created>
+      <option name="number" value="00719" />
+      <option name="presentableId" value="LOCAL-00719" />
+      <option name="project" value="LOCAL" />
+      <updated>1637961252398</updated>
+    </task>
+    <task id="LOCAL-00720" summary="[ArkTools] - vanity invite">
+      <created>1637962273503</created>
+      <option name="number" value="00720" />
+      <option name="presentableId" value="LOCAL-00720" />
+      <option name="project" value="LOCAL" />
+      <updated>1637962273503</updated>
+    </task>
+    <task id="LOCAL-00721" summary="[ArkTools] - level ranks">
+      <created>1638057831933</created>
+      <option name="number" value="00721" />
+      <option name="presentableId" value="LOCAL-00721" />
+      <option name="project" value="LOCAL" />
+      <updated>1638057831939</updated>
+    </task>
+    <task id="LOCAL-00722" summary="[ArkTools] - level ranks">
+      <created>1638058891824</created>
+      <option name="number" value="00722" />
+      <option name="presentableId" value="LOCAL-00722" />
+      <option name="project" value="LOCAL" />
+      <updated>1638058891824</updated>
+    </task>
+    <task id="LOCAL-00723" summary="[ArkTools] - level ranks">
+      <created>1638059433356</created>
+      <option name="number" value="00723" />
+      <option name="presentableId" value="LOCAL-00723" />
+      <option name="project" value="LOCAL" />
+      <updated>1638059433356</updated>
+    </task>
+    <task id="LOCAL-00724" summary="[ArkTools] - level ranks">
+      <created>1638060706411</created>
+      <option name="number" value="00724" />
+      <option name="presentableId" value="LOCAL-00724" />
+      <option name="project" value="LOCAL" />
+      <updated>1638060706411</updated>
+    </task>
+    <task id="LOCAL-00725" summary="[ArkTools] - level ranks">
+      <created>1638061275872</created>
+      <option name="number" value="00725" />
+      <option name="presentableId" value="LOCAL-00725" />
+      <option name="project" value="LOCAL" />
+      <updated>1638061275872</updated>
+    </task>
+    <task id="LOCAL-00726" summary="[ArkTools] - level ranks">
+      <created>1638061523461</created>
+      <option name="number" value="00726" />
+      <option name="presentableId" value="LOCAL-00726" />
+      <option name="project" value="LOCAL" />
+      <updated>1638061523461</updated>
+    </task>
+    <task id="LOCAL-00727" summary="[ArkTools] - level ranks">
+      <created>1638061813249</created>
+      <option name="number" value="00727" />
+      <option name="presentableId" value="LOCAL-00727" />
+      <option name="project" value="LOCAL" />
+      <updated>1638061813249</updated>
+    </task>
+    <task id="LOCAL-00728" summary="[ArkTools] - level ranks">
+      <created>1638062395940</created>
+      <option name="number" value="00728" />
+      <option name="presentableId" value="LOCAL-00728" />
+      <option name="project" value="LOCAL" />
+      <updated>1638062395940</updated>
+    </task>
+    <task id="LOCAL-00729" summary="[ArkTools] - level ranks">
+      <created>1638062929692</created>
+      <option name="number" value="00729" />
+      <option name="presentableId" value="LOCAL-00729" />
+      <option name="project" value="LOCAL" />
+      <updated>1638062929692</updated>
+    </task>
+    <task id="LOCAL-00730" summary="[ArkTools] - level ranks">
+      <created>1638063461309</created>
+      <option name="number" value="00730" />
+      <option name="presentableId" value="LOCAL-00730" />
+      <option name="project" value="LOCAL" />
+      <updated>1638063461309</updated>
+    </task>
+    <task id="LOCAL-00731" summary="[ArkTools] - level ranks">
+      <created>1638063691775</created>
+      <option name="number" value="00731" />
+      <option name="presentableId" value="LOCAL-00731" />
+      <option name="project" value="LOCAL" />
+      <updated>1638063691775</updated>
+    </task>
+    <option name="localTasksCounter" value="732" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="73193e89-ee38-482d-83d9-b926d80e6bef">
+          <value>
+            <State>
+              <option name="SHOW_ONLY_AFFECTED_CHANGES" value="true" />
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="HEAD" />
+                      </list>
+                    </value>
+                  </entry>
+                  <entry key="structure">
+                    <value>
+                      <list>
+                        <option value="dir:C:/Users/GAMER/Desktop/GitHub Projects/arkhandler" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="73193e89-ee38-482d-83d9-b926d80e6bef" value="TOOL_WINDOW" />
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="[arktools] status channel tweaks" />
+    <MESSAGE value="[arktools] servergraph loading message" />
+    <MESSAGE value="[arkshop] detect if ark data has something in it and cancel transaction if file size is above 0" />
+    <MESSAGE value="[arktools] char name blacklist fix" />
+    <MESSAGE value="[arktools] default guild and docstring cleanup" />
+    <MESSAGE value="[arktools] fixed duplicate function name" />
+    <MESSAGE value="[arktools/ArkShop] blueprint strings take txt files too now" />
+    <MESSAGE value="[arktools] status channel tweak oops" />
+    <MESSAGE value="[arktools] ingame cmd response fix" />
+    <MESSAGE value="[arktools] autofriend session" />
+    <MESSAGE value="[SCTools] - Initial commit" />
+    <MESSAGE value="[SCTools] - formatter tweak" />
+    <MESSAGE value="arksave added" />
+    <MESSAGE value="forgot menu oops" />
+    <MESSAGE value="[ArkShop]-fixed null list shop list&#10;[ArkTools]-Tweaks" />
+    <MESSAGE value="[ArkShop]-fixed null list shop list" />
+    <MESSAGE value="[ArkTools] - Make votes require less players to pass" />
+    <MESSAGE value="[xtools] - fix xfriends" />
+    <MESSAGE value="[arkshop] - fix rshoplist if no items" />
+    <MESSAGE value="[arkshop] - fix rshoplist if not main server" />
+    <MESSAGE value="lots of tweaks" />
+    <MESSAGE value="[ArkTools] - Run graphing logic in executor" />
+    <MESSAGE value="[ArkTools] - graphing logic" />
+    <MESSAGE value="[ArkTools] - vanity invite" />
+    <MESSAGE value="[ArkTools] - level ranks" />
+    <option name="LAST_COMMIT_MESSAGE" value="[ArkTools] - level ranks" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

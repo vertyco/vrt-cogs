@@ -1,0 +1,23 @@
+{
+	"author": [
+		"Vertyco"
+	],
+	"description": "Various utility cogs for Red, with a few other random/fun cogs sprinkled in.",
+	"install_msg": "Thanks for installing!\nIf you have any suggestions, or found any bugs, feel free to create an issue on my repo or contact me in the Red 3rd party cog support server",
+	"name": "vrt-cogs",
+	"short": "Utility & Game Server cogs by Vertyco",
+	"tags": [
+		"utilities",
+		"fun",
+		"ark",
+		"minecraft",
+		"xbox",
+		"vertyco",
+		"star citizen",
+		"leveler",
+		"levelup",
+		"leveling",
+		"support",
+		"ticket"
+	]
+}

@@ -1,0 +1,54 @@
+{
+        "footer": {
+    "text": "discord.gg/vertyco"
+    },
+            "author": {
+    "name": "Discord Role Assignment",
+    "icon_url": "https://i.imgur.com/qjxJ6Ux.png"
+    },
+    "thumbnail": {
+        "url": "https://i.imgur.com/noatUsl.png"
+    },
+    "color": 260348,
+    "type": "rich",
+    "description": "Please assign yourself a role by clicking the icon below that corresponds with the experience you want.\n\nThese roles will grant access to the entire discord, option specific channels and allow you to be pinged when news specific to your option is shared."
+}
+
+
+
+# Ark
+{
+            "thumbnail": {
+        "url": "https://i.imgur.com/Mno1SZG.png"
+    },
+        "footer": {
+    "text": "React below to receive your role"
+    },
+        "author": {
+    "name": "Ark: Survival Evolved",
+    "icon_url": "https://i.imgur.com/6fEMOPo.png"
+    },
+    "color": 261152,
+    "type": "rich",
+    "description": "React below for access to the entire discord including Ark. This is for Xbox/Windows 10."
+}
+
+
+# Discord
+{
+                    "thumbnail": {
+        "url": "https://i.imgur.com/sUYWCve.png"
+    },
+        "footer": {
+    "text": "React below to receive your role"
+    },
+        "author": {
+    "name": "Discord Experience ONLY",
+    "icon_url": "https://i.imgur.com/CTgztyB.png"
+    },
+    "color": 10181046,
+    "type": "rich",
+    "description": "React below for access to the entire discord NOT including the Ark channels. This is for those who want to enjoy Vertyco but don't play Ark."
+}
+
+

@@ -1,0 +1,27 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Import WarnSystem data to core modlogs",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not persistently store data about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing! type `[p]warntransfer` to get started.",
+  "min_bot_version": "3.4.0",
+  "permissions": [
+    "read_messages",
+    "send_messages"
+  ],
+  "required_cogs": {},
+  "requirements": [
+  ],
+  "short": "Import WarnSystem data to core modlogs",
+  "tags": [
+    "utility",
+    "warnsystem",
+    "import",
+    "warnings",
+    "modlog"
+  ],
+  "type": "COG"
+}

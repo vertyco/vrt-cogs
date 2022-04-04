@@ -1,0 +1,18 @@
+{
+    "author": [
+        "Vertyco"
+    ],
+    "description": "Filter certain messages from other bots",
+    "disabled" : false,
+    "end_user_data_statement" : "This cog only listens for other bots, it is probably not a good idea to use this on large or public bots.",
+    "hidden": false,
+    "install_msg": "Thank you for installing NoBot! Type `[p]nobot` to view the list of commands\n**THIS COG IS NOT INTENDED FOR LARGE OR PUBLIC BOTS**",
+    "min_bot_version" : "3.4.0",
+    "min_python_version" : [3, 8, 1],
+    "permissions" : ["manage_messages", "send_messages", "add_reactions"],
+    "required_cogs" : {},
+    "requirements" : [],
+    "short": "Filter bot messages",
+    "tags" : ["utility", "nobot"],
+    "type": "COG"
+}

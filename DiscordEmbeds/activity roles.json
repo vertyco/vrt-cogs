@@ -1,0 +1,42 @@
+{
+    "author": {
+      "name": "Discord Activity Roles",
+      "icon_url": "https://i.imgur.com/CTgztyB.png"
+    },
+    "thumbnail": {
+      "url": "https://i.imgur.com/sUYWCve.png"
+    },
+    "color": 10181046,
+    "type": "rich",
+    "description": "Activity roles are based on how active you are in chat and voice.\nThe default payday amount is 20 VC.",
+    "footer": {
+      "text": "Type '.vc' every 12 hours claim your payday rewards!"
+    },
+      "fields": [
+      {
+        "name": "Level 1",
+        "value": "`Role:   `@Dodo <:dodog:901909100324073542>\n`Payday: `60 VC\n`Perks:  `Send attachments, use 3rd party emojis",
+        "inline": false
+      },
+      {
+        "name": "Level 5",
+        "value": "`Role:   `@Raptor <:raptor:938281109140160553>\n`Payday: `80 VC\n`Perks:  `Gain the ability to change your nickname",
+        "inline": false
+      },
+      {
+        "name": "Level 10",
+        "value": "`Role:   `@Rex <:RexFingerGuns:860888659044335627>\n`Payday: `100 VC\n`Perks:  `Make community suggestions using the '.suggest' command",
+        "inline": false
+      },
+      {
+        "name": "Level 15",
+        "value": "`Role:   `@Giga <:giga:938283346113495050>\n`Payday: `120 VC\n`Perks:  `Access the basic role color panel",
+        "inline": false
+      },
+      {
+        "name": "Level 30",
+        "value": "`Role:   `@Titan <:titan:938284793387417720>\n`Payday: `200 VC\n`Perks:  `Access the advanced role color panel",
+        "inline": false
+      }
+    ]
+}

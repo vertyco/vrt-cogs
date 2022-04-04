@@ -1,0 +1,36 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "A local discord leveling system",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores Discord ID's",
+  "hidden": false,
+  "install_msg": "Thank you for installing LevelUp! type `[p]help LevelUp` to see all commands.",
+  "min_bot_version": "3.4.0",
+  "permissions": [
+    "read_messages",
+    "send_messages",
+    "manage_roles",
+    "attach_files",
+    "embed_links"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "matplotlib",
+    "aiohttp",
+    "pillow",
+    "validators",
+    "tabulate",
+    "colorgram.py"
+  ],
+  "short": "Leveling System",
+  "tags": [
+    "utility",
+    "leveler",
+    "level",
+    "levelup",
+    "leveling"
+  ],
+  "type": "COG"
+}

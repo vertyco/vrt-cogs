@@ -1,0 +1,57 @@
+{
+    "author": {
+      "name": "Data Shop Prices",
+      "icon_url": "https://i.imgur.com/qjxJ6Ux.png"
+    },
+    "thumbnail": {
+      "url": "https://i.imgur.com/iYpszMO.jpg"
+    },
+    "color": 15844367,
+    "type": "rich",
+    "description": "Individual dinos can be bought as [male/female/pair].\nPacks can be bought as all male or all female.\nAll dinos come with and ascendant saddle.\nType `.dshop` to open the DATA shop.\nType `.dshoplist` to view just prices.",
+    "footer": {
+      "text": "Type 'Donate' to become a Tier Supporter and get higher Payday rewards!"
+    },
+      "fields": [
+      {
+        "name": "Dinos",
+        "value": "```py\n• Astrocetus\n• Basilisk\n• BloodStalker\n• Deinonychus\n• Ferox\n• Giga\n• lvl 300 Dodo\n• Maewing\n• Magmasaur\n• Managarmr\n• Megachelon\n• Otter\n• Phoenix\n• Reaper King\n• Rock Drake\n• Rock Golem\n• Shadowmane\n• Tek Rex\n• Tropeognathus\n• Voidwrym\n• Wyverns\n```",
+        "inline": true
+      },
+      {
+        "name": "Aquatic Pack",
+        "value": "```py\n• Angler\n• Dunkleosteus\n• Ichthyosaurus\n• Mosasaur\n• Scuba Set\n• Tusoteuthis\n```",
+        "inline": true
+      },
+      {
+        "name": "Battle Pack",
+        "value": "```py\n• Daeodon\n• Giga\n• Rex\n• Spino\n• Yutyrannus\n```",
+        "inline": true
+      },
+      {
+        "name": "Defense Pack",
+        "value": "```py\n• 10 Plant-X instant turrets\n• 20 Metal spike walls\n• Kentrosaurus\n• Velonasaur\n```",
+        "inline": true
+      },
+      {
+        "name": "Flyer Pack",
+        "value": "```py\n• Griffin\n• Pteranodon\n• Quetzal\n• Snow Owl\n• Tapejara\n```",
+        "inline": true
+      },
+      {
+        "name": "Soaker Pack",
+        "value": "```py\n• Gasbags\n• Stego\n• Trike\n```",
+        "inline": true
+      },
+      {
+        "name": "Utility Pack",
+        "value": "```py\n• Ankylosaurus\n• Argentavis\n• Castoroides\n• Doedicurus\n• Tools(pic/hatchet/pike/sickle)\n```",
+        "inline": true
+      },
+      {
+        "name": "Tek Pack",
+        "value": "```py\n• Tek Generator\n• Tek Replicator\n• Tek Trough\n• Tek Canteen\n• Tek Transmitter\n• 3 Tek Crop Plots\n• Tek Sleeping Pod\n• CryoFridge\n• 15 Element\n```",
+        "inline": true
+      }
+    ]
+}

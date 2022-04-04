@@ -1,0 +1,47 @@
+{
+    "author": {
+      "name": "RCON Shop Prices",
+      "icon_url": "https://i.imgur.com/qjxJ6Ux.png"
+    },
+    "thumbnail": {
+      "url": "https://i.imgur.com/iYpszMO.jpg"
+    },
+    "color": 15844367,
+    "type": "rich",
+    "description": "Most items can be purchased as Crafted or Blueprint.\nAll items are ascendant.\nType `.rshop` to open the RCON shop.\nType `.rshoplist` to view just prices.",
+    "footer": {
+      "text": "Type 'Donate' to become a Tier Supporter and get higher Payday rewards!"
+    },
+      "fields": [
+      {
+        "name": "Saddles",
+        "value": "```py\n• Deinonychus\n• Giganotosaurus\n• Managarmr\n• Megachelon\n• Megalosaurus\n• Megatherium\n• Rex\n• Snow Owl\n• Therizino\n```",
+        "inline": true
+      },
+      {
+        "name": "Weapons",
+        "value": "```py\n• Assault rifle\n• Compound bow\n• Crossbow\n• Fabricated pistol\n• Fabricated sniper\n• Flamethrower\n• Longneck\n• Metal sword\n• Minigun\n• Pike\n• Pump shotgun\n• Simple pistol\n```",
+        "inline": true
+      },
+      {
+        "name": "Tools",
+        "value": "```py\n• chainsaw\n• climbing picks\n• hatchet\n• pick\n• sickle\n• whip\n```",
+        "inline": true
+      },
+      {
+        "name": "Armor)",
+        "value": "```py\n• Desert Sets\n• Flak Sets\n• Ghillie Sets\n• Hazard Sets\n• Riot Sets\n• Tek Sets\n```",
+        "inline": true
+      },
+      {
+        "name": "Resources",
+        "value": "```py\n• Element Pack\n```",
+        "inline": true
+      },
+      {
+        "name": "Structures",
+        "value": "```py\n• Bee Hive```",
+        "inline": true
+      }
+    ]
+}

@@ -1,0 +1,12 @@
+{
+    "color": 57277,
+    "type": "rich",
+    "description": "**These are pingable roles only.**\n1\ufe0f\u20e3 <@&692034688457506856> \n2\ufe0f\u20e3 <@&691661080174526485> \n3\ufe0f\u20e3 <@&691661195861688341> \n4\ufe0f\u20e3 <@&691661256024915969> \n5\ufe0f\u20e3 <@&692427964905947186> \n6\ufe0f\u20e3 <@&691669012748304434> \n7\ufe0f\u20e3 <@&692027145106489431>",
+    "title": "Select Your Concentration",
+            "footer": {
+    "text": "Select a number below to receive the corresponding role"
+    },
+        "thumbnail": {
+        "url": "https://i.imgur.com/4VJAQYJ.jpg"
+    }
+}

@@ -1,0 +1,22 @@
+Display name
+
+:
+xtools
+Application (client) ID
+:
+f67ee5e7-0cda-442e-8af6-fcf01a6fee61
+Object ID
+:
+33f3955c-333e-4d06-957c-3736c8051603
+Directory (tenant) ID
+:
+f8cdef31-a31e-4b4a-93e4-5f571e91255a
+
+
+
+secret
+oZM7Q~.LTV4YVq.6~V7W-owDdizVUXu4.U~f.
+
+
+secret id
+4926b57c-2dfe-4ab7-a6eb-f0f9b66fec0e

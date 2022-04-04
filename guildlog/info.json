@@ -1,0 +1,24 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Log the bot joining and leaving guilds.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not persistently store data about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing Support! type `[p]help GuildLog` to see all commands.",
+  "min_bot_version": "3.4.0",
+  "permissions": [
+    "send_messages"
+  ],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Log bot guild joins/leaves",
+  "tags": [
+    "utility",
+    "logging",
+    "logs",
+    "guildlog"
+  ],
+  "type": "COG"
+}
