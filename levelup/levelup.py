@@ -189,14 +189,13 @@ class LevelUp(commands.Cog):
                 self.cache[guild_id] = {}
             if not self.cache[guild_id]:  # If there is anything to cache
                 continue
+            usercache = self.cache[guild_id].copy()
+            self.cache[guild_id].clear()
             conf = self.settings[guild_id]
             base = conf["base"]
             exp = conf["exp"]
             async with self.config.guild(guild).users() as users:
-                for user in self.cache[guild_id]:
-                    if not user:
-                        continue
-                    data = self.cache[guild_id][user]
+                for user, data in usercache.items():
                     if not data:
                         continue
                     if user not in users:
@@ -210,9 +209,9 @@ class LevelUp(commands.Cog):
                     if str(new_level) != str(saved_level):
                         if "background" in users[user]:
                             bg = users[user]["background"]
-                            await self.level_up(guild, user, new_level, bg)
+                            asyncio.create_task(self.level_up(guild, user, new_level, bg))
                         else:
-                            await self.level_up(guild, user, new_level)
+                            asyncio.create_task(self.level_up(guild, user, new_level))
                         users[user]["level"] = new_level
                     # Set values back to 0
                     data["xp"] = 0
