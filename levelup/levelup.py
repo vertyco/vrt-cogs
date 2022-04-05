@@ -471,14 +471,14 @@ class LevelUp(commands.Cog):
         await self.init_settings()
         log.info("Voice checker running")
 
-    @tasks.loop(seconds=50)
+    @tasks.loop(seconds=45)
     async def cache_dumper(self):
         await self.dump_cache()
 
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(50)
+        await asyncio.sleep(45)
         log.info("Cache dumber ready")
 
     @commands.group(name="levelset", aliases=["lset"])
