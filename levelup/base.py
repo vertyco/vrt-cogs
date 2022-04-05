@@ -495,7 +495,7 @@ class UserCommands(commands.Cog):
                 description=f"{title}{box(msg, lang='python')}",
                 color=discord.Color.random()
             )
-            embed.set_thumbnail(url=ctx.guild.icon.url)
+            embed.set_thumbnail(url=ctx.guild.icon_url)
             if you:
                 embed.set_footer(text=f"Pages {p + 1}/{pages} ｜ {you}")
             else:
@@ -563,7 +563,7 @@ class UserCommands(commands.Cog):
                 description=f"{title}{box(data, lang='python')}",
                 color=discord.Color.random()
             )
-            embed.set_thumbnail(url=ctx.guild.icon.url)
+            embed.set_thumbnail(url=ctx.guild.icon_url)
             if you:
                 embed.set_footer(text=f"Pages {p + 1}/{pages} ｜ {you}")
             else:
