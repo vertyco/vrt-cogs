@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from io import BytesIO
+from math import sqrt
 
 import aiohttp
 import colorgram
@@ -67,10 +68,16 @@ class Generator:
                 card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
 
         # Compare text colors to BG
-        if self.rgb_isclose(namecolor, bgcolor):
+        if self.distance(namecolor, bgcolor) < 45:
             namecolor = self.inv_rgb(namecolor)
-        if self.rgb_isclose(statcolor, bgcolor):
+        if self.distance(statcolor, bgcolor) < 45:
             statcolor = self.inv_rgb(statcolor)
+
+        # Compare level bar border to background color
+        if self.distance(bordercolor, bgcolor) < 50:
+            lvlbarcolor = self.inv_rgb(bordercolor)
+        else:
+            lvlbarcolor = bordercolor
 
         # Draw
         draw = ImageDraw.Draw(card)
@@ -124,7 +131,7 @@ class Generator:
         progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
         progress_bar_draw = ImageDraw.Draw(progress_bar)
         # rectangle 0:x, 1:top y, 2:length, 3:bottom y
-        progress_bar_draw.rectangle((240, 200, 750, 215), fill=(255, 255, 255, 0), outline=bordercolor)
+        progress_bar_draw.rectangle((246, 200, 741, 215), fill=(255, 255, 255, 0), outline=lvlbarcolor)
 
         xpneed = next_xp - current_xp
         xphave = user_xp - current_xp
@@ -291,15 +298,18 @@ class Generator:
         return colors[0].rgb
 
     @staticmethod
-    def rgb_isclose(a: tuple, b: tuple):
-        close = 0
-        if b[2] == 44 and a[2] > a[1] and a[2] > a[0]:
-            return True  # Default BG is very blue
-        for i in range(3):
-            if abs(a[i] - b[i]) <= 30:
-                close += 1
-        if close == 3:
-            return True
+    def distance(color: tuple, background_color: tuple):
+        # Values
+        x1, y1, z1 = color
+        x2, y2, z2 = background_color
+
+        # Distances
+        dx = x1 - x2
+        dy = y1 - y2
+        dz = z1 - z2
+
+        # Final distance
+        return int(sqrt(dx ** 2 + dy ** 2 + dz ** 2))
 
     @staticmethod
     def inv_rgb(rgb: tuple) -> tuple:
