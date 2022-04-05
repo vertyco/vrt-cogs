@@ -47,7 +47,7 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 class LevelUp(commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.1.4"
+    __version__ = "1.1.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
