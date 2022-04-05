@@ -31,8 +31,19 @@ def time_to_level(level: int, base: int, exp: typing.Union[int, float], cooldown
 
 # Convert a hex color to an RGB tuple
 def hex_to_rgb(color: str) -> tuple:
-    color = color.strip("#")
-    rgb = tuple(int(color[i: i + 2], 16) for i in (0, 2, 4))
+    if color.isdigit():
+        rgb = int_to_rgb(int(color))
+    else:
+        color = color.strip("#")
+        rgb = tuple(int(color[i: i + 2], 16) for i in (0, 2, 4))
+    return rgb
+
+
+def int_to_rgb(color: int) -> tuple:
+    r = color & 255
+    g = (color >> 8) & 255
+    b = (color >> 16) & 255
+    rgb = (r, g, b)
     return rgb
 
 
