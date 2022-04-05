@@ -1,8 +1,10 @@
+import json
+from pathlib import Path
+
 from .xtools import XTools
 
-___red_end_user_data_statement__ = (
-    "This cog uses Microsofts XSAPI endpoints to pull data. It stores your (the bot owner's) client ID and secret for the Azure application for authorization."
-)
+with open(Path(__file__).parent / "info.json") as fp:
+    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
 
 
 def setup(bot):
