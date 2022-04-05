@@ -24,7 +24,6 @@ class Generator:
         self.dnd = os.path.join(bundled_data_path(self), 'dnd.png')
         self.streaming = os.path.join(bundled_data_path(self), 'streaming.png')
         self.font1 = os.path.join(bundled_data_path(self), 'font.ttf')
-        self.font2 = os.path.join(bundled_data_path(self), 'font2.ttf')
 
     async def generate_profile(
             self,
