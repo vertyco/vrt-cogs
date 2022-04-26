@@ -525,6 +525,7 @@ class LevelUp(UserCommands, commands.Cog):
             notifylog = conf["notifylog"]
         else:
             notifylog = notifylog.mention
+
         msg = f"**Messages**\n" \
               f"`Message XP:       `{xp[0]}-{xp[1]}\n" \
               f"`Min Msg Length:   `{length}\n" \
