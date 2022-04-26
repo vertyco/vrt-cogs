@@ -49,8 +49,8 @@ class HaloStats(commands.Cog):
             except Exception as e:
                 log.warning(f"Web scraping error: {e}")
 
-        stats = await self.bot.loop.run_in_executor(None, exe)
-        return stats
+        result = await self.bot.loop.run_in_executor(None, exe)
+        return result
 
     @commands.command(name="setmygt")
     async def set_gamertag(self, ctx, *, gamertag: str):
