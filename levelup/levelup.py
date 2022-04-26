@@ -535,13 +535,13 @@ class LevelUp(UserCommands, commands.Cog):
               f"`Ignore Solo:      `{solo}\n" \
               f"`Ignore Deafened:  `{deafended}\n" \
               f"`Ignore Invisible: `{invisible}\n" \
-              f"`AutoRemove Roles: `{autoremove}\n" \
               f"**Level Algorithm**\n" \
               f"`Base Multiplier:  `{base}\n" \
               f"`Exp Multiplier:   `{exp}\n" \
               f"**LevelUps**\n" \
               f"`Notify in DMs:    `{notifydm}\n" \
               f"`Mention User:     `{mention}\n" \
+              f"`AutoRemove Roles: `{autoremove}\n" \
               f"`LevelUp Channel:  `{notifylog}\n" \
               f"**Stars**\n" \
               f"`Cooldown:         `{sc}\n"
