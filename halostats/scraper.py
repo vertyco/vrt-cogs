@@ -11,7 +11,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from tabulate import tabulate
 from webdriver_manager.chrome import ChromeDriverManager
-import chromedriver_autoinstaller
 
 log = logging.getLogger("red.vrt.halostats.scraper")
 
@@ -20,12 +19,14 @@ MODES = ["Overall", "Ranked Arena", "Tactical Slayer", "Team Slayer", "Quick Pla
 
 def get_profile_data(gamertag: str) -> list:
     embeds = []
-    chromedriver_autoinstaller.install()
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=chrome_options
+    )
     driver.get("https://halotracker.com")
-    search = WebDriverWait(driver, 15).until(
+    search = WebDriverWait(driver, 10).until(
         EC.visibility_of_element_located(
             (By.XPATH, "//*[@aria-label='Enter Xbox Live Username']")
         )
