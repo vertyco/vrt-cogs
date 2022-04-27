@@ -8,5 +8,5 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 
 async def setup(bot):
-    cog = BackBackup(bot)
+    cog = BankBackup(bot)
     bot.add_cog(cog)
