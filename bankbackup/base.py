@@ -40,7 +40,7 @@ class BankBackup(commands.Cog):
 
     @commands.command(name="bankrestore")
     @commands.guildowner()
-    async def restore(self, ctx, set_or_add=None):
+    async def restore(self, ctx, set_or_add):
         """Restore your guild's bank balances
 
         set_or_add argument is if you want to add the saved bank balances to
@@ -50,10 +50,11 @@ class BankBackup(commands.Cog):
             return await ctx.send("Cannot restore backup because bank is set to global.")
         if not ctx.message.attachments:
             return await ctx.send("Attach your backup file to the message when using this command.")
-        if not set_or_add:
+        if 'a' not in set_or_add.lower() and 's' not in set_or_add.lower():
             return await ctx.send("Specify whether you want to `add` or `set` balances from the backup.\n"
                                   "Add: adds the backed up balance to the user's current balance\n"
-                                  "Set: sets the backup balance as the user's new balance.")
+                                  "Set: sets the backup balance as the user's new balance.\n"
+                                  "You just type in 'set' or 'add' for this argument.")
         attachment_url = ctx.message.attachments[0].url
         try:
             async with aiohttp.ClientSession() as session:
