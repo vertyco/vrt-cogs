@@ -43,8 +43,8 @@ class BankBackup(commands.Cog):
     async def restore(self, ctx, set_or_add):
         """Restore your guild's bank balances
 
-        set_or_add argument is if you want to add the saved bank balances to
-        the user's current balance, or 'set' their balance to what is saved
+        set_or_add argument is if you want to add the saved bank balances to the user's current balance,
+        or 'set' their balance to what is saved
         """
         if await bank.is_global():
             return await ctx.send("Cannot restore backup because bank is set to global.")
