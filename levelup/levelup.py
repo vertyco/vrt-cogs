@@ -184,20 +184,16 @@ class LevelUp(UserCommands, commands.Cog):
         member = guild.get_member(int(user))
         if not member:
             return
+        mentionuser = member.mention
+        name = member.name
         # Send levelup messages
         if not usepics:
             if dm:
                 await member.send(f"You have just reached level {new_level} in {guild.name}!")
             if channel:
                 channel = guild.get_channel(channel)
-                name = member.name
-                mentionuser = member.mention
                 color = member.colour
                 pfp = member.avatar_url
-                if mention and channel:
-                    send = channel.permissions_for(guild.me).send_messages
-                    if send:
-                        await channel.send(f"{mentionuser}")
                 embed = discord.Embed(
                     description=f"**Just reached level {new_level}!**",
                     color=color
@@ -206,7 +202,10 @@ class LevelUp(UserCommands, commands.Cog):
                 if channel:
                     send = channel.permissions_for(guild.me).send_messages
                     if send:
-                        await channel.send(embed=embed)
+                        if mention:
+                            await channel.send(mentionuser, embed=embed)
+                        else:
+                            await channel.send(embed=embed)
                     else:
                         log.warning(f"Bot cant send LevelUp alert to {channel.name} in {guild.name}")
         else:
@@ -230,15 +229,14 @@ class LevelUp(UserCommands, commands.Cog):
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
             if channel:
                 channel = guild.get_channel(channel)
-                if mention:
-                    person = member.mention
-                else:
-                    person = member.name
                 if channel:
                     send = channel.permissions_for(guild.me).send_messages
                     if send:
                         file = await self.gen_levelup_img(args)
-                        await channel.send(f"**{person} just leveled up!**", file=file)
+                        if mention:
+                            await channel.send(f"**{mentionuser} just leveled up!**", file=file)
+                        else:
+                            await channel.send(f"**{name} just leveled up!**", file=file)
                     else:
                         log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
 
