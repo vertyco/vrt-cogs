@@ -40,7 +40,7 @@ class BankBackup(commands.Cog):
 
     @commands.command(name="bankrestore")
     @commands.guildowner()
-    async def restore(self, ctx, set_or_add='add'):
+    async def restore(self, ctx, set_or_add=None):
         """Restore your guild's bank balances
 
         set_or_add argument is if you want to add the saved bank balances to
@@ -50,6 +50,10 @@ class BankBackup(commands.Cog):
             return await ctx.send("Cannot restore backup because bank is set to global.")
         if not ctx.message.attachments:
             return await ctx.send("Attach your backup file to the message when using this command.")
+        if not set_or_add:
+            return await ctx.send("Specify whether you want to `add` or `set` balances from the backup.\n"
+                                  "Add: adds the backed up balance to the user's current balance\n"
+                                  "Set: sets the backup balance as the user's new balance.")
         attachment_url = ctx.message.attachments[0].url
         try:
             async with aiohttp.ClientSession() as session:
@@ -62,14 +66,14 @@ class BankBackup(commands.Cog):
             if uid not in user_ids:
                 continue
             member = ctx.guild.get_member(int(uid))
-            if 'a' in set_or_add:
+            if 'a' in set_or_add.lower():
                 try:
                     await bank.deposit_credits(member, balance)
                 except BalanceTooHigh as e:
                     await bank.set_balance(member, e.max_balance)
             else:
                 await bank.set_balance(member, balance)
-        if 'a' in set_or_add:
+        if 'a' in set_or_add.lower():
             await ctx.send("Saved balances have been added to user's current balance!")
         else:
             await ctx.send("Balances have been restored from the backup!")
