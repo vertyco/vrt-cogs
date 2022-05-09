@@ -44,7 +44,7 @@ class Fluent(commands.Cog):
         return translated_msg
 
     @commands.group()
-    @commands.guildowner()
+    @commands.mod()
     async def fluent(self, ctx):
         """Base command"""
         pass

@@ -17,7 +17,7 @@ from .formatter import (profile,
                         game_embeds,
                         friend_embeds,
                         gameclip_embeds,
-                        status,
+                        ms_status,
                         gwg_embeds,
                         mostplayed,
                         stats_api_format)
@@ -701,8 +701,9 @@ class XTools(commands.Cog):
     async def get_microsoft_status(self, ctx):
         """Check Microsoft Services Status"""
         data = await self.microsoft_services_status()
-        embed = status(data)
-        await ctx.send(embed=embed)
+        embeds = ms_status(data)
+        for embed in embeds:
+            await ctx.send(embed=embed)
 
     @commands.command(name="gameswithgold")
     async def get_gameswithgold(self, ctx):
