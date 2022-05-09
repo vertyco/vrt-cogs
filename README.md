@@ -10,7 +10,7 @@ Various utility/random cogs for Red V3.
     </a>
 <p>
 
-I enjoy working with API's and making cogs for game servers or other helpful use cases. Check out some of my projects below
+I enjoy working with API's and making cogs for game servers or other helpful use cases. Check out some of my projects below!
 
 | Cog          | Status | Description                                                                                                                                                                                                                                                                                                                                                                                        |
 |--------------|:---:|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -28,6 +28,9 @@ I enjoy working with API's and making cogs for game servers or other helpful use
 | Support      | ✓ | <details><summary>Your basic support ticket system, but with buttons.</summary> Configure a ticket category and support message for the button to be added to, includes ticket log feature and optional transcripts.</details>                                                                                                                                                                     |
 | WarnTransfer | ✓ | <details><summary>Import El Laggron's WarnSystem modlog cases to core ModLogs.</summary> This cog has one command, which simply imports all WarnSystem cases to core modlogs. Only the owner can run it and it imports the data globally for all guilds the bot is in.</details>                                                                                                                   |
 | XTools       | ✓ | <details><summary>View your Xbox profile, friends, screenshots and game clips using simple commands and interactive menus.</summary> Various tools for Xbox using Microsoft's XSAPI. (You will need to register a Microsoft Azure application to use this cog. Type "[p]apiset help" after install for more info)</details>                                                                        |
+
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vertyco)
 
 # Installation
 Run the following commands with your Red instance, replacing `[p]` with your prefix:
