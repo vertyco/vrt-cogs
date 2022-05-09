@@ -27,7 +27,8 @@
     "xbox-webapi==2.0.11",
     "utils>=1.0.1",
     "tabulate",
-    "dislash.py"
+    "dislash.py",
+    "pytz"
   ],
   "short": "Get Xbox Live Info and Player Stats.",
   "tags": [

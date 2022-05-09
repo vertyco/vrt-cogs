@@ -1,10 +1,13 @@
 import datetime
+import pytz
 import json
 import math
+import os
 
 import discord
 import tabulate
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core import commands
 
 
 # Check if an object is None
@@ -49,8 +52,8 @@ def time_formatter(time_in_seconds) -> str:
     return tstring
 
 
-# Microsoft's timestamp end digits are fucked up and random so we iteratively try fixing them by stripping digits
-def fix_timestamp(time):
+# Microsoft's timestamp end digits are fucked up and random, so we iteratively try fixing them by stripping digits
+def fix_timestamp(time, timezone: str = "UTC"):
     try:
         time = datetime.datetime.fromisoformat(time)
     except ValueError:
@@ -64,7 +67,7 @@ def fix_timestamp(time):
                 strip -= 1
                 if strip < -10:
                     stripping_that_shit = False  # idfk then
-    return time
+    return time.astimezone(pytz.timezone(timezone))
 
 
 # Format profile data
@@ -387,59 +390,136 @@ def gameclip_embeds(clip_data, gamertag):
     return embeds
 
 
-# Format microsoft service data, has some commented out lines for if i plan on expanding this later
-def status(data):
-    overall_status = data["ServiceStatus"]["Status"]["Overall"]["State"]
-    # overall_id = data["ServiceStatus"]["Status"]["Overall"]["Id"]
-    last_updated = data["ServiceStatus"]["Status"]["Overall"]["LastUpdated"]
-    last_updated = fix_timestamp(last_updated).strftime("%m/%d/%Y, %H:%M:%S")
-    if overall_status == "Impacted":
+# Format microsoft service data
+def ms_status(data: dict) -> list:
+    timezone = "UTC"
+    up = "✅"
+    limited = "⚠"
+    down = "⛔"
+
+    ss = data["ServiceStatus"]
+
+    status_data = ss["Status"]["Overall"]
+    overall = status_data["State"]
+    last_updated = fix_timestamp(status_data["LastUpdated"], timezone).strftime("%m/%d/%y at %I:%M %p %Z")
+
+    # If nothing is impacted then just return embed
+    if overall == "None":
+        color = discord.Color.green()
         embed = discord.Embed(
-            title="⚠ Microsoft Status Alert ⚠",
-            color=discord.Color.orange(),
-            description="Microsoft is experiencing technical problems with the following services:"
+            description="✅ All Microsoft services are up and running!",
+            color=color
         )
         embed.set_footer(text=f"Last Updated: {last_updated}")
-        for service in data["ServiceStatus"]["CoreServices"]["Category"]:
-            service_status = service["Status"]["Name"]
-            if service_status == "Impacted":
-                # service_id = service["Id"]
-                service_name = service["Name"]
-                # status_id = service["Status"]["Id"]
-                actions = ''
-                for scenario in service["Scenarios"]["Scenario"]:
-                    if scenario["Status"]["Name"] == "Impacted":
-                        # scenario_id = scenario["Status"]["Id"]
-                        action = scenario["Name"]
-                        timestamp = scenario["Incidents"]["Incident"]["Begin"]
-                        timestamp = fix_timestamp(timestamp).strftime("%m/%d/%Y, %H:%M:%S")
-                        # message = scenario["Incidents"]["Incident"]["Stage"]["Message"]
-                        level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
-                        actions += f"`{action}`-`{timestamp}`-`{level_of_impact} impact`\n"
-                if len(actions) <= 1024:
-                    embed.add_field(name=f"{service_name}",
-                                    value=actions,
-                                    inline=False)
-        for title in data["ServiceStatus"]["Titles"]["Category"]:
-            title_name = title["Name"]
-            status = title["Status"]["Name"]
-            if status == "Impacted":
-                actions = ''
-                for scenario in title["Scenarios"]["Scenario"]:
-                    if scenario["Status"]["Name"] == "Impacted":
-                        scenario_name = scenario["Name"]
-                        level_of_impact = scenario["Incidents"]["Incident"]["LevelOfImpact"]["Name"]
-                        timestamp = scenario["Incidents"]["Incident"]["Begin"]
-                        timestamp = fix_timestamp(timestamp).strftime("%m/%d/%Y, %H:%M:%S")
-                        actions += f"`{scenario_name}`-`{timestamp}`-`{level_of_impact} impact`\n"
-                if len(actions) <= 1024:
-                    embed.add_field(name=f"{title_name}",
-                                    value=actions,
-                                    inline=False)
+        return [embed]
+
+    # Something must be impacted
+    # Iterate through service categories and find what is wrong
+    out = 0
+    core_svc = ss["CoreServices"]
+    for service in core_svc["Category"]:
+        status = service["Status"]["Name"]
+        if status != "Impacted":
+            continue
+        out += 1
+
+    title_svc = ss["Titles"]
+    for service in title_svc["Category"]:
+        status = service["Status"]["Name"]
+        if status != "Impacted":
+            continue
+        out += 1
+
+    service_statuses = ""
+
+    for i in core_svc["Category"]:
+        service_name = i["Name"]
+        status = i["Status"]
+
+        # Skip if the status is impacted
+        sname = status["Name"]
+        if sname != "Impacted":
+            continue
+
+        # Get status emoji based on status ID
+        sid = status["Id"]
+        if sid == "1":
+            indicator = up
+        elif sid == "2":
+            indicator = down
+        else:
+            indicator = limited
+
+        service_statuses += f"**{indicator} {service_name}**\n"
+        info = ""
+        scenarios = i["Scenarios"]["Scenario"]
+        for scenario in scenarios:
+            if scenario["Status"]["Name"] != "Impacted":
+                continue
+
+            name = scenario["Name"]
+            service_info = scenario["Description"]
+            info += f"➣ {name.upper()}\n" \
+                    f"{service_info}\n"
+        service_statuses += f"{box(info.strip())}\n"
+
+    for i in title_svc["Category"]:
+        service_name = i["Name"]
+        status = i["Status"]
+
+        sname = status["Name"]
+        if sname != "Impacted":
+            continue
+
+        # Get status emoji based on status ID
+        sid = status["Id"]
+        if sid == "1":
+            indicator = up
+        elif sid == "2":
+            indicator = down
+        else:
+            indicator = limited
+
+        service_statuses += f"**{indicator} {service_name}**\n"
+        info = ""
+        scenarios = i["Scenarios"]["Scenario"]
+        for scenario in scenarios:
+            if scenario["Status"]["Name"] != "Impacted":
+                continue
+
+            name = scenario["Name"]
+            service_info = scenario["Description"]
+            info += f"➣ {name.upper()}\n" \
+                    f"{service_info}\n"
+        service_statuses += f"{box(info.strip())}\n"
+
+    grammer = f"{out} {'service is' if out == 1 else 'services are'}"
+    title = f"{grammer} affected at this time"
+    text = f"{limited} Limited\n" \
+           f"{down} Major outage"
+
+    desc = f"{text}\n\n" \
+           f"{service_statuses.strip()}"
+
+    if len(desc) > 4096:
+        embeds = []
+        for p in pagify(desc):
+            embed = discord.Embed(
+                title=title,
+                description=p,
+                color=discord.Color.orange()
+            )
+            embed.set_footer(text=f"Last Updated: {last_updated}")
+            embeds.append(embed)
+            return embeds
     else:
-        color = discord.Color.green()
-        embed = discord.Embed(description="✅ All Microsoft services are up and running!", color=color)
-    return embed
+        embed = discord.Embed(
+            title=title,
+            description=desc,
+            color=discord.Color.orange()
+        )
+        embed.set_footer(text=f"Last Updated: {last_updated}")
+        return [embed]
 
 
 # Format games with gold products
