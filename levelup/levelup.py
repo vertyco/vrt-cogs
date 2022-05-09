@@ -393,7 +393,12 @@ class LevelUp(UserCommands, commands.Cog):
                 if conf["invisible"] and member.status.name == "offline":
                     addxp = False
                 # Ignore if user is only one in channel
-                if conf["solo"] and len(voice_state.channel.members) == 1:
+                in_voice = 0
+                for mem in voice_state.channel.members:
+                    if mem.bot:
+                        continue
+                    in_voice += 1
+                if conf["solo"] and in_voice <= 1:
                     addxp = False
                 # Check ignored roles
                 for role in member.roles:
