@@ -4,6 +4,7 @@ import os
 from io import BytesIO
 from math import sqrt
 
+import PIL
 import aiohttp
 import colorgram
 from PIL import Image, ImageDraw, ImageFont
@@ -150,7 +151,13 @@ class Generator:
 
         # get profile pic
         profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
-        profile = Image.open(profile_bytes)
+        try:
+            profile = Image.open(profile_bytes)
+        except PIL.UnidentifiedImageError:
+            log.warning("Failed to pull user image. Using default instead.")
+            profile_bytes = BytesIO(await self.get_image_content_from_url("https://imgur.com/qvFlyiZ"))
+            profile = Image.open(profile_bytes)
+
         profile = profile.convert('RGBA').resize((180, 180), Image.ANTIALIAS)
 
         # Mask to crop profile pic image to a circle
