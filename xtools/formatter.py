@@ -139,7 +139,7 @@ def profile_embed(data):
         return device
 
     # Format field depending if user is offline or not
-    current_time = datetime.datetime.utcnow()
+    current_time = datetime.datetime.now().astimezone(pytz.timezone("UTC"))
     if "lastSeen" in presence:
         game = presence["lastSeen"]["titleName"]
         device = presence["lastSeen"]["deviceType"]
