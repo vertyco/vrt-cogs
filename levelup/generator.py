@@ -20,6 +20,7 @@ class Generator:
         self.star = os.path.join(bundled_data_path(self), 'star.png')
         self.default_lvlup = os.path.join(bundled_data_path(self), 'lvlup.png')
         self.default_bg = os.path.join(bundled_data_path(self), 'card.png')
+        self.default_pfp = os.path.join(bundled_data_path(self), 'defaultpfp.png')
         self.online = os.path.join(bundled_data_path(self), 'online.png')
         self.offline = os.path.join(bundled_data_path(self), 'offline.png')
         self.idle = os.path.join(bundled_data_path(self), 'idle.png')
@@ -58,15 +59,15 @@ class Generator:
 
         # Set canvas
         if not bg_image:
-            card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
+            card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.LANCZOS)
             bgcolor = await self.get_img_color(self.default_bg)
         else:
             bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
             bgcolor = await self.get_img_color(bg_bytes)
             if bg_bytes:
-                card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
+                card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.LANCZOS)
             else:
-                card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.ANTIALIAS)
+                card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.LANCZOS)
 
         # Compare text colors to BG
         if self.distance(namecolor, bgcolor) < 45:
@@ -146,26 +147,25 @@ class Generator:
         circle_img = Image.new("RGBA", (800, 800))
         pfp_border = ImageDraw.Draw(circle_img)
         pfp_border.ellipse([4, 4, 796, 796], fill=(255, 255, 255, 0), outline=circlecolor, width=12)
-        circle_img = circle_img.resize((200, 200), Image.ANTIALIAS)
+        circle_img = circle_img.resize((200, 200), Image.LANCZOS)
         card.paste(circle_img, (19, 19), circle_img)
 
         # get profile pic
-        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
-        try:
+        pfp_image = await self.get_image_content_from_url(str(profile_image))
+        if pfp_image:
+            profile_bytes = BytesIO(pfp_image)
             profile = Image.open(profile_bytes)
-        except PIL.UnidentifiedImageError:
-            log.warning("Failed to pull user image. Using default instead.")
-            profile_bytes = BytesIO(await self.get_image_content_from_url("https://imgur.com/qvFlyiZ"))
-            profile = Image.open(profile_bytes)
+        else:
+            profile = Image.open(self.default_pfp)
 
-        profile = profile.convert('RGBA').resize((180, 180), Image.ANTIALIAS)
+        profile = profile.convert('RGBA').resize((180, 180), Image.LANCZOS)
 
         # Mask to crop profile pic image to a circle
         # draw at 4x size and resample down to 1x for a nice smooth circle
         mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.ellipse((116, 116, 836, 836), fill=(255, 255, 255, 255))
-        mask = mask.resize(card.size, Image.ANTIALIAS)
+        mask = mask.resize(card.size, Image.LANCZOS)
 
         # make a new Image to set up card-sized image for pfp layer and the circle mask for it
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -194,9 +194,9 @@ class Generator:
             status = Image.open(self.dnd)
         else:  # Eh just make it offline then
             status = Image.open(self.offline)
-        status = status.convert("RGBA").resize((40, 40), Image.ANTIALIAS)
+        status = status.convert("RGBA").resize((40, 40), Image.LANCZOS)
         rep_icon = Image.open(self.star)
-        rep_icon = rep_icon.convert("RGBA").resize((40, 40), Image.ANTIALIAS)
+        rep_icon = rep_icon.convert("RGBA").resize((40, 40), Image.LANCZOS)
 
         blank = Image.new("RGBA", pre.size, (255, 255, 255, 0))
         blank.paste(status, (500, 50))
@@ -222,13 +222,13 @@ class Generator:
             color: tuple = (0, 0, 0),
     ):
         if not bg_image:
-            card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
+            card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.LANCZOS)
         else:
             bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
             if bg_bytes:
-                card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
+                card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.LANCZOS)
             else:
-                card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.ANTIALIAS)
+                card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.LANCZOS)
 
         # Draw
         draw = ImageDraw.Draw(card)
@@ -251,7 +251,7 @@ class Generator:
         # get profile pic
         profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
         profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((60, 60), Image.ANTIALIAS)
+        profile = profile.convert('RGBA').resize((60, 60), Image.LANCZOS)
 
         # Mask to crop profile image
         # draw at 4x size and resample down to 1x for a nice smooth circle
@@ -259,7 +259,7 @@ class Generator:
         mask_draw = ImageDraw.Draw(mask)
         # Profile pic border at 4x
         mask_draw.ellipse((36, 36, 240, 240), fill=(255, 255, 255, 255))
-        mask = mask.resize(card.size, Image.ANTIALIAS)
+        mask = mask.resize(card.size, Image.LANCZOS)
 
         # Is used as a blank image for mask
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
