@@ -10,6 +10,8 @@ Various utility/random cogs for Red V3.
     </a>
 <p>
 
+  ![Lines of code](https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs?style=plastic)
+
 I enjoy working with API's and making cogs for game servers or other helpful use cases. Check out some of my projects below!
 
 | Cog          | Status | Description                                                                                                                                                                                                                                                                                                                                                                                        |
