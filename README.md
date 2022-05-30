@@ -8,9 +8,11 @@ Various utility/random cogs for Red V3.
   <a href="https://github.com/Rapptz/discord.py">
     <img src="https://img.shields.io/badge/Discord-py-blue.svg">
     </a>
+  <a href="https://github.com/vertyco">
+    <img src="https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs?style=plastic">
+    </a>
 <p>
 
-  ![Lines of code](https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs?style=plastic)
 
 I enjoy working with API's and making cogs for game servers or other helpful use cases. Check out some of my projects below!
 
