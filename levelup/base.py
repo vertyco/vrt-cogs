@@ -250,8 +250,11 @@ class UserCommands(commands.Cog):
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
+        can_send_attachments = ctx.channel.permissions_for(ctx.guild.me).attach_files
         conf = await self.config.guild(ctx.guild).all()
         usepics = conf["usepics"]
+        if usepics and not can_send_attachments:
+            return await ctx.send("I don't have permission to send attachments to this channel.")
         users = conf["users"]
         mention = conf["mention"]
         if not user:
@@ -353,6 +356,9 @@ class UserCommands(commands.Cog):
                 try:
                     await ctx.reply(file=file, mention_author=mention)
                 except discord.HTTPException:
+                    await ctx.send(file=file)
+                except Exception as e:
+                    log.warning(f"Error sending generated profile: {e}")
                     await ctx.send(file=file)
 
     @commands.command(name="prestige")
