@@ -19,7 +19,7 @@
   "requirements": [
     "matplotlib",
     "aiohttp",
-    "pillow",
+    "pillow==9.1.1",
     "validators",
     "tabulate",
     "colorgram.py"
