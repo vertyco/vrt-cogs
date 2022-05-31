@@ -435,7 +435,7 @@ class LevelUp(UserCommands, commands.Cog):
         await asyncio.sleep(45)
         log.info("Cache dumber ready")
 
-    @commands.group(name="levelset", aliases=["lset"])
+    @commands.group(name="levelset", aliases=["lset", "lvlset", "levelup"])
     @commands.admin()
     @commands.guild_only()
     async def lvl_group(self, ctx: commands.Context):
