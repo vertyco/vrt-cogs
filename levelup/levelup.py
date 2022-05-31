@@ -190,6 +190,9 @@ class LevelUp(UserCommands, commands.Cog):
                 log.warning(f"Bot doesnt have perms LevelUp alert to {channel.name} in {guild.name}")
 
         usepics = conf["usepics"]
+        can_send_attachments = False
+        if channel:
+            can_send_attachments = channel.permissions_for(guild.me).attach_files
         member = guild.get_member(int(user))
         if not member:
             return
@@ -231,7 +234,7 @@ class LevelUp(UserCommands, commands.Cog):
             if dm:
                 file = await self.gen_levelup_img(args)
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
-                if channel and can_send:
+                if channel and can_send and can_send_attachments:
                     file = await self.gen_levelup_img(args)
                     if mention:
                         await channel.send(f"**{mentionuser} just leveled up!**", file=file)
