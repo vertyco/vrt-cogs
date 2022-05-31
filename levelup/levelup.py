@@ -180,6 +180,15 @@ class LevelUp(UserCommands, commands.Cog):
         dm = conf["notifydm"]
         mention = conf["mention"]
         channel = conf["notifylog"]
+        can_send = False
+        if channel:
+            channel = guild.get_channel(channel)
+            perms = channel.permissions_for(guild.me).send_messages
+            if perms:
+                can_send = True
+            else:
+                log.warning(f"Bot doesnt have perms LevelUp alert to {channel.name} in {guild.name}")
+
         usepics = conf["usepics"]
         member = guild.get_member(int(user))
         if not member:
@@ -190,24 +199,19 @@ class LevelUp(UserCommands, commands.Cog):
         if not usepics:
             if dm:
                 await member.send(f"You have just reached level {new_level} in {guild.name}!")
-            if channel:
-                channel = guild.get_channel(channel)
-                color = member.colour
-                pfp = member.avatar_url
-                embed = discord.Embed(
-                    description=f"**Just reached level {new_level}!**",
-                    color=color
-                )
-                embed.set_author(name=name, icon_url=pfp)
-                if channel:
-                    send = channel.permissions_for(guild.me).send_messages
-                    if send:
-                        if mention:
-                            await channel.send(mentionuser, embed=embed)
-                        else:
-                            await channel.send(embed=embed)
-                    else:
-                        log.warning(f"Bot cant send LevelUp alert to {channel.name} in {guild.name}")
+            color = member.colour
+            pfp = member.avatar_url
+            embed = discord.Embed(
+                description=f"**Just reached level {new_level}!**",
+                color=color
+            )
+            embed.set_author(name=name, icon_url=pfp)
+            if channel and can_send:
+                if mention:
+                    await channel.send(mentionuser, embed=embed)
+                else:
+                    await channel.send(embed=embed)
+
         else:
             # Generate LevelUP Image
             if bg:
@@ -227,18 +231,14 @@ class LevelUp(UserCommands, commands.Cog):
             if dm:
                 file = await self.gen_levelup_img(args)
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
-            if channel:
-                channel = guild.get_channel(channel)
-                if channel:
-                    send = channel.permissions_for(guild.me).send_messages
-                    if send:
-                        file = await self.gen_levelup_img(args)
-                        if mention:
-                            await channel.send(f"**{mentionuser} just leveled up!**", file=file)
-                        else:
-                            await channel.send(f"**{name} just leveled up!**", file=file)
+                if channel and can_send:
+                    file = await self.gen_levelup_img(args)
+                    if mention:
+                        await channel.send(f"**{mentionuser} just leveled up!**", file=file)
                     else:
-                        log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
+                        await channel.send(f"**{name} just leveled up!**", file=file)
+                else:
+                    log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
 
         # Role adding/removal
         if roleperms and levelroles:
