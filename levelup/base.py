@@ -182,7 +182,10 @@ class UserCommands(commands.Cog):
             if user_id not in users:
                 return await ctx.send("You have no information stored about your account yet. Talk for a bit first")
             user = users[user_id]
-            rgb = hex_to_rgb(hex_color)
+            try:
+                rgb = hex_to_rgb(hex_color)
+            except ValueError:
+                return await ctx.send("That is an invalid color, please use a valid integer color code or hex color.")
             try:
                 embed = discord.Embed(
                     description="This is the color you chose",
