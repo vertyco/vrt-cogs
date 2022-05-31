@@ -8,7 +8,6 @@ import aiohttp
 import colorgram
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.data_manager import bundled_data_path
-from
 
 log = logging.getLogger("red.vrt.levelup.generator")
 
