@@ -1,11 +1,13 @@
 import asyncio
 import logging
 import os
+import random
 from io import BytesIO
 from math import sqrt
 
 import aiohttp
 import colorgram
+import discord
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.data_manager import bundled_data_path
 
@@ -211,7 +213,8 @@ class Generator:
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP', quality=100)
         final_bytes.seek(0)
-        return final_bytes
+        file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
+        return file
 
     async def generate_levelup(
             self,
@@ -277,7 +280,8 @@ class Generator:
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP')
         final_bytes.seek(0)
-        return final_bytes
+        file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
+        return file
 
     @staticmethod
     async def get_image_content_from_url(url: str):
