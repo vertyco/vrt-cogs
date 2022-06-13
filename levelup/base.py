@@ -29,15 +29,15 @@ class UserCommands(commands.Cog):
     # Generate rinky dink profile image
     @staticmethod
     async def gen_profile_img(args: dict):
-        image = await Generator().generate_profile(**args)
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+        file = await Generator().generate_profile(**args)
+        # file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
     # Generate rinky dink level up image
     @staticmethod
     async def gen_levelup_img(args: dict):
-        image = await Generator().generate_levelup(**args)
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+        file = await Generator().generate_levelup(**args)
+        # file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
     # Function to test a given URL and see if it's valid
