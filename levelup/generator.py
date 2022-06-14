@@ -213,8 +213,9 @@ class Generator:
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP', quality=100)
         final_bytes.seek(0)
-        file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
-        return file
+        # file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
+        # return file
+        return final_bytes
 
     async def generate_levelup(
             self,
@@ -280,8 +281,9 @@ class Generator:
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP')
         final_bytes.seek(0)
-        file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
-        return file
+        # file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
+        # return file
+        return final_bytes
 
     @staticmethod
     async def get_image_content_from_url(url: str):
