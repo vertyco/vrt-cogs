@@ -764,7 +764,6 @@ class XTools(commands.Cog):
             while running:
                 async with self.session.get(url=url, headers=header, params=params) as res:
                     data = await res.json(content_type=None)
-                    print(data)
                     c_token = data["pagingInfo"]["continuationToken"]
                     titles = data["titles"]
                     game_data["titles"].extend(titles)
