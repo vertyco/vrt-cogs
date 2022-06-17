@@ -7,6 +7,7 @@ import os
 import random
 import sys
 import typing
+from time import monotonic
 
 import aiohttp
 import discord
@@ -41,7 +42,7 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.1.20"
+    __version__ = "1.1.21"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -103,6 +104,13 @@ class LevelUp(UserCommands, commands.Cog):
         self.voice = {}  # Voice channel info
         self.stars = {}  # Keep track of star cooldowns
         self.ignored_guilds = []
+        self.first_run = True
+
+        self.looptimes = {
+            "checkvoice": 0,
+            "cachedump": 0,
+            "lvlassignavg": 0
+        }
 
         # For importing user levels from Fixator's Leveler cog
         self._db_ready = False
@@ -114,6 +122,7 @@ class LevelUp(UserCommands, commands.Cog):
         self.voice_checker.start()
 
     def cog_unload(self):
+        self.first_run = True
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
 
@@ -158,11 +167,11 @@ class LevelUp(UserCommands, commands.Cog):
                     saved_level = users[user]["level"]
                     new_level = get_level(int(users[user]["xp"]), base, exp)
                     if str(new_level) != str(saved_level):
-                        if "background" in users[user]:
-                            bg = users[user]["background"]
-                            asyncio.create_task(self.level_up(guild, user, new_level, bg))
-                        else:
-                            asyncio.create_task(self.level_up(guild, user, new_level))
+                        # if "background" in users[user]:
+                        bg = users[user]["background"]
+                        asyncio.create_task(self.level_up(guild, user, new_level, bg))
+                        # else:
+                        #     asyncio.create_task(self.level_up(guild, user, new_level))
                         users[user]["level"] = new_level
                     # Set values back to 0
                     data["xp"] = 0
@@ -171,11 +180,10 @@ class LevelUp(UserCommands, commands.Cog):
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
+        t1 = monotonic()
         conf = self.settings[str(guild.id)]
         levelroles = conf["levelroles"]
         roleperms = guild.me.guild_permissions.manage_roles
-        if not roleperms and levelroles:  # No point in logging if it isnt setup in that guild
-            log.warning(f"Bot can't manage roles in {guild.name}")
         autoremove = conf["autoremove"]
         dm = conf["notifydm"]
         mention = conf["mention"]
@@ -243,31 +251,45 @@ class LevelUp(UserCommands, commands.Cog):
                 else:
                     log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
 
+        if not roleperms:
+            log.warning(f"Bot can't manage roles in {guild.name}")
+            return
+        if not levelroles:
+            return
         # Role adding/removal
-        if roleperms and levelroles:
-            if not autoremove:  # Level roles stack
-                for level, role in levelroles.items():
-                    if int(level) <= int(new_level):  # Then give user that role since they should stack
-                        role = guild.get_role(int(role))
-                        if not role:
-                            continue
-                        if role not in member.roles:
-                            await member.add_roles(role)
-            else:  # No stacking so add role and remove the others below that level
-                if str(new_level) in levelroles:
-                    role_id = levelroles[str(new_level)]
-                    role = guild.get_role(int(role_id))
+        if not autoremove:  # Level roles stack
+            for level, role in levelroles.items():
+                if int(level) <= int(new_level):  # Then give user that role since they should stack
+                    role = guild.get_role(int(role))
+                    if not role:
+                        continue
                     if role not in member.roles:
                         await member.add_roles(role)
+        else:  # No stacking so add role and remove the others below that level
+            if str(new_level) in levelroles:
+                role_id = levelroles[str(new_level)]
+                role = guild.get_role(int(role_id))
+                if role not in member.roles:
+                    await member.add_roles(role)
 
-                if new_level > 1:
-                    for role in member.roles:
-                        for level, role_id in levelroles:
-                            if int(level) < new_level and str(role.id) == str(role_id):
-                                await member.remove_roles(role)
+            if new_level > 1:
+                for role in member.roles:
+                    for level, role_id in levelroles:
+                        if int(level) < new_level and str(role.id) == str(role_id):
+                            await member.remove_roles(role)
+
+        t = int((monotonic() - t1) * 1000)
+        loop = self.looptimes["lvladdignavg"]
+        if not loop:
+            self.looptimes["lvlassignavg"] = t
+        else:
+            self.looptimes["lvladdignavg"] = int((loop + t) / 2)
 
     # Cache main settings
     async def init_settings(self):
+        if self.first_run:
+            await self.cleanup_schema()
+            self.first_run = False
         ignored = await self.config.ignored_guilds()
         self.ignored_guilds = ignored
         for guild in self.bot.guilds:
@@ -287,6 +309,21 @@ class LevelUp(UserCommands, commands.Cog):
                 if k != "users":
                     self.settings[guild_id][k] = v
         log.info("Settings initialized to cache")
+
+    async def cleanup_schema(self):
+        """Fix small config errors while writing cog"""
+        conf = await self.config.all_guilds()
+        for gid, data in conf.items():
+            if not data:
+                continue
+            guild = self.bot.get_guild(gid)
+            if not guild:
+                continue
+            users = conf["users"]
+            for uid, userdata in users.items():
+                if "background" not in userdata:
+                    userdata["background"] = None
+            await self.config.guild(guild).set(data)
 
     @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
@@ -420,7 +457,9 @@ class LevelUp(UserCommands, commands.Cog):
 
     @tasks.loop(seconds=20)
     async def voice_checker(self):
+        t = monotonic()
         await self.check_voice()
+        self.looptimes["checkvoice"] = int((monotonic() - t) * 1000)
 
     @voice_checker.before_loop
     async def before_voice_checker(self):
@@ -430,7 +469,9 @@ class LevelUp(UserCommands, commands.Cog):
 
     @tasks.loop(seconds=45)
     async def cache_dumper(self):
+        t = monotonic()
         await self.dump_cache()
+        self.looptimes["cachedump"] = int((monotonic() - t) * 1000)
 
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
@@ -631,6 +672,21 @@ class LevelUp(UserCommands, commands.Cog):
         """Reset cog data for this guild"""
         await self.config.guild(ctx.guild).users.set({})
         await ctx.tick()
+
+    @admin_group.command(name="looptimes")
+    async def get_looptimes(self, ctx: commands.Context):
+        """View current looptimes"""
+        lt = self.looptimes
+        text = f"`Voice Checker: `{lt['checkvoice']}ms\n" \
+               f"`Cache Dumper:  `{lt['cachedump']}ms\n" \
+               f"`Average Lvl Assignment: `{lt['lvlassignavg']}"
+        embed = discord.Embed(
+            title="Task Loop Times",
+            description=text,
+            color=discord.Color.random()
+        )
+        embed.set_footer(text="Loop times are in milliseconds")
+        await ctx.send(embed=embed)
 
     @admin_group.command(name="globalbackup")
     @commands.is_owner()
