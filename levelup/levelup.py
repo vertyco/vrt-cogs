@@ -308,7 +308,7 @@ class LevelUp(UserCommands, commands.Cog):
                 if k == "users":
                     continue
                 self.settings[guild_id][k] = v
-            self.settings[guild_id]["starcooldown"] = settings["starcooldown"]
+            # self.settings[guild_id]["starcooldown"] = settings["starcooldown"]
         log.info("Settings initialized to cache")
 
     async def cleanup_schema(self):
