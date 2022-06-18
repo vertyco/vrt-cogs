@@ -122,7 +122,6 @@ class LevelUp(UserCommands, commands.Cog):
         self.voice_checker.start()
 
     def cog_unload(self):
-        self.first_run = True
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
 
@@ -306,8 +305,10 @@ class LevelUp(UserCommands, commands.Cog):
                 self.settings[guild_id] = {}
             settings = await self.config.guild(guild).all()
             for k, v in settings.items():
-                if k != "users":
-                    self.settings[guild_id][k] = v
+                if k == "users":
+                    continue
+                self.settings[guild_id][k] = v
+            self.settings[guild_id]["starcooldown"] = settings["starcooldown"]
         log.info("Settings initialized to cache")
 
     async def cleanup_schema(self):
