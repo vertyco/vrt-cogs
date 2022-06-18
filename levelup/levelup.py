@@ -303,13 +303,13 @@ class LevelUp(UserCommands, commands.Cog):
                 self.lastmsg[guild_id] = {}
             if guild_id not in self.settings:
                 self.settings[guild_id] = {}
-            self.settings[guild_id] = await self.config.guild(guild).all()
-            # settings = await self.config.guild(guild).all()
-            # for k, v in settings.items():
-            #     if k == "users":
-            #         continue
-            #     self.settings[guild_id][k] = v
-            # self.settings[guild_id]["starcooldown"] = settings["starcooldown"]
+            # self.settings[guild_id] = await self.config.guild(guild).all()
+            settings = await self.config.guild(guild).all()
+            for k, v in settings.items():
+                if k == "users":
+                    continue
+                self.settings[guild_id][k] = v
+            self.settings[guild_id]["starcooldown"] = settings["starcooldown"]
         log.info("Settings initialized to cache")
 
     async def cleanup_schema(self):
@@ -321,7 +321,7 @@ class LevelUp(UserCommands, commands.Cog):
             guild = self.bot.get_guild(gid)
             if not guild:
                 continue
-            users = conf["users"]
+            users = conf[gid]["users"]
             for uid, userdata in users.items():
                 if "background" not in userdata:
                     userdata["background"] = None
