@@ -303,11 +303,12 @@ class LevelUp(UserCommands, commands.Cog):
                 self.lastmsg[guild_id] = {}
             if guild_id not in self.settings:
                 self.settings[guild_id] = {}
-            settings = await self.config.guild(guild).all()
-            for k, v in settings.items():
-                if k == "users":
-                    continue
-                self.settings[guild_id][k] = v
+            self.settings[guild_id] = await self.config.guild(guild).all()
+            # settings = await self.config.guild(guild).all()
+            # for k, v in settings.items():
+            #     if k == "users":
+            #         continue
+            #     self.settings[guild_id][k] = v
             # self.settings[guild_id]["starcooldown"] = settings["starcooldown"]
         log.info("Settings initialized to cache")
 
