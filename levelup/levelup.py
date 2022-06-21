@@ -278,11 +278,11 @@ class LevelUp(UserCommands, commands.Cog):
                             await member.remove_roles(role)
 
         t = int((monotonic() - t1) * 1000)
-        loop = self.looptimes["lvladdignavg"]
+        loop = self.looptimes["lvlassignavg"]
         if not loop:
             self.looptimes["lvlassignavg"] = t
         else:
-            self.looptimes["lvladdignavg"] = int((loop + t) / 2)
+            self.looptimes["lvlassignavg"] = int((loop + t) / 2)
 
     # Cache main settings
     async def init_settings(self):
