@@ -41,7 +41,7 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.3.23"
+    __version__ = "1.3.24"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -141,41 +141,39 @@ class LevelUp(UserCommands, commands.Cog):
         }
 
     # Dump cache to config
-    async def dump_cache(self):
-        for guild in self.bot.guilds:
-            guild_id = str(guild.id)
-            if guild_id not in self.cache:
-                self.cache[guild_id] = {}
-            if not self.cache[guild_id]:  # If there is anything to cache
-                continue
-            usercache = self.cache[guild_id].copy()
-            self.cache[guild_id].clear()
-            conf = self.settings[guild_id]
-            base = conf["base"]
-            exp = conf["exp"]
-            async with self.config.guild(guild).users() as users:
-                for user, data in usercache.items():
-                    if not data:
-                        continue
-                    if user not in users:
-                        users[user] = data
-                    else:
-                        users[user]["xp"] += data["xp"]
-                        users[user]["voice"] += data["voice"]
-                        users[user]["messages"] += data["messages"]
-                    saved_level = users[user]["level"]
-                    new_level = get_level(int(users[user]["xp"]), base, exp)
-                    if str(new_level) != str(saved_level):
-                        # if "background" in users[user]:
-                        bg = users[user]["background"]
-                        asyncio.create_task(self.level_up(guild, user, new_level, bg))
-                        # else:
-                        #     asyncio.create_task(self.level_up(guild, user, new_level))
-                        users[user]["level"] = new_level
-                    # Set values back to 0
-                    data["xp"] = 0
-                    data["voice"] = 0
-                    data["messages"] = 0
+    async def dump_cache(self, guild: discord.guild):
+        guild_id = str(guild.id)
+        if guild_id not in self.cache:
+            self.cache[guild_id] = {}
+        if not self.cache[guild_id]:  # If there is anything to cache
+            return
+        usercache = self.cache[guild_id].copy()
+        self.cache[guild_id].clear()
+        conf = self.settings[guild_id]
+        base = conf["base"]
+        exp = conf["exp"]
+        leveluptasks = []
+        async with self.config.guild(guild).users() as users:
+            for user, data in usercache.items():
+                if not data:
+                    continue
+                if user not in users:
+                    users[user] = data
+                else:
+                    users[user]["xp"] += data["xp"]
+                    users[user]["voice"] += data["voice"]
+                    users[user]["messages"] += data["messages"]
+                saved_level = users[user]["level"]
+                new_level = get_level(int(users[user]["xp"]), base, exp)
+                if str(new_level) != str(saved_level):
+                    bg = users[user]["background"]
+                    leveluptasks.append(self.level_up(guild, user, new_level, bg))
+                    users[user]["level"] = new_level
+                # Set values back to 0
+                data["xp"] = 0
+                data["voice"] = 0
+                data["messages"] = 0
+        await asyncio.gather(*leveluptasks)
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
@@ -501,7 +499,10 @@ class LevelUp(UserCommands, commands.Cog):
     @tasks.loop(seconds=45)
     async def cache_dumper(self):
         t = monotonic()
-        await self.dump_cache()
+        dumptasks = []
+        for guild in self.bot.guilds:
+            dumptasks.append(self.dump_cache(guild))
+        await asyncio.gather(*dumptasks)
         self.looptimes["cachedump"] = int((monotonic() - t) * 1000)
 
     @cache_dumper.before_loop
