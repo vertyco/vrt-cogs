@@ -41,7 +41,7 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.2.23"
+    __version__ = "1.3.23"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -76,6 +76,7 @@ class LevelUp(UserCommands, commands.Cog):
             "prestigedata": {},  # Prestige tiers, the role associated with them, and emoji for them
             "xp": [3, 6],  # Min/Max XP per message
             "voicexp": 2,  # XP per minute in voice
+            "rolebonuses": {"msg": {}, "voice": {}},  # Roles that give a bonus range of XP
             "cooldown": 60,  # Only gives XP every 30 seconds
             "base": 100,  # Base denominator for level algorithm, higher takes longer to level
             "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve
@@ -366,6 +367,10 @@ class LevelUp(UserCommands, commands.Cog):
         xpmin = int(conf["xp"][0])
         xpmax = int(conf["xp"][1]) + 1
         xp = random.choice(range(xpmin, xpmax))
+
+        bonuses = conf["rolebonuses"]["msg"]
+        bonusrole = None
+
         addxp = False
         if user not in self.cache[guild_id]:
             await self.cache_user(guild_id, user)
@@ -379,8 +384,12 @@ class LevelUp(UserCommands, commands.Cog):
         if td > conf["cooldown"]:
             addxp = True
         for role in message.author.roles:
+            rid = str(role.id)
             if role.id in conf["ignoredroles"]:
                 addxp = False
+            if rid in bonuses:
+                bonusrole = rid
+
         if message.channel.id in conf["ignoredchannels"]:
             addxp = False
         if int(user) in conf["ignoredusers"]:
@@ -390,6 +399,12 @@ class LevelUp(UserCommands, commands.Cog):
                 addxp = False
         if addxp:  # Give XP
             self.cache[guild_id][user]["xp"] += xp
+            if bonusrole:
+                bonusrange = bonuses[bonusrole]
+                bmin = int(bonusrange[0])
+                bmax = int(bonusrange[1]) + 1
+                bxp = random.choice(range(bmin, bmax))
+                self.cache[guild_id][user]["xp"] += bxp
         self.cache[guild_id][user]["messages"] += 1
 
     async def check_voice(self, guild: discord.guild):
@@ -402,6 +417,10 @@ class LevelUp(UserCommands, commands.Cog):
         if not conf:
             return
         xp_per_minute = conf["voicexp"]
+
+        bonuses = conf["rolebonuses"]["voice"]
+        bonusrole = None
+
         if guild_id not in self.voice:
             self.voice[guild_id] = {}
         for member in guild.members:
@@ -442,8 +461,11 @@ class LevelUp(UserCommands, commands.Cog):
                 addxp = False
             # Check ignored roles
             for role in member.roles:
+                rid = str(role.id)
                 if role.id in conf["ignoredroles"]:
                     addxp = False
+                if rid in bonuses:
+                    bonusrole = rid
             # Check ignored users
             if int(user_id) in conf["ignoredusers"]:
                 addxp = False
@@ -452,6 +474,12 @@ class LevelUp(UserCommands, commands.Cog):
                 addxp = False
             if addxp:
                 self.cache[guild_id][user_id]["xp"] += xp_to_give
+                if bonusrole:
+                    bonusrange = bonuses[bonusrole]
+                    bmin = int(bonusrange[0])
+                    bmax = int(bonusrange[1]) + 1
+                    bxp = random.choice(range(bmin, bmax))
+                    self.cache[guild_id][user_id]["xp"] += bxp
             self.cache[guild_id][user_id]["voice"] += td
             self.voice[guild_id][user_id] = now
 
@@ -489,61 +517,6 @@ class LevelUp(UserCommands, commands.Cog):
         """Access LevelUP setting commands"""
         pass
 
-    @lvl_group.command(name="seelevels")
-    async def see_levels(self, ctx: commands.Context):
-        """
-        Test the level algorithm
-        View the first 20 levels using the current algorithm to test experience curve
-        """
-        conf = await self.config.guild(ctx.guild).all()
-        base = conf["base"]
-        exp = conf["exp"]
-        cd = conf["cooldown"]
-        xp_range = conf["xp"]
-        msg = ""
-        table = []
-        x = []
-        y = []
-        for i in range(1, 21):
-            xp = get_xp(i, base, exp)
-            msg += f"Level {i}: {xp} XP Needed\n"
-            time = time_to_level(i, base, exp, cd, xp_range)
-            time = time_formatter(time)
-            table.append([i, xp, time])
-            x.append(i)
-            y.append(xp)
-        headers = ["Level", "XP Needed", "AproxTime"]
-        data = tabulate.tabulate(table, headers, tablefmt="presto")
-        with plt.style.context("dark_background"):
-            plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
-            plt.xlabel(f"Level", fontsize=10)
-            plt.ylabel(f"Experience", fontsize=10)
-            plt.title("XP Curve")
-            plt.grid(axis="y")
-            plt.grid(axis="x")
-            result = io.BytesIO()
-            plt.savefig(result, format="png", dpi=200)
-            plt.close()
-            result.seek(0)
-            file = discord.File(result, filename="lvlexample.png")
-            img = "attachment://lvlexample.png"
-        example = "XP required for a level = Base * Level^Exp\n\n" \
-                  "Approx time is the time it would take for a user to reach a level if they " \
-                  "typed every time the cooldown expired non stop without sleeping or taking " \
-                  "potty breaks."
-        embed = discord.Embed(
-            title="Level Example",
-            description=f"`Base Multiplier:  `{base}\n"
-                        f"`Exp Multiplier:   `{exp}\n"
-                        f"`Experience Range: `{xp_range}\n"
-                        f"`Message Cooldown: `{cd}\n"
-                        f"{box(example)}\n"
-                        f"{box(data, lang='python')}",
-            color=discord.Color.random()
-        )
-        embed.set_image(url=img)
-        await ctx.send(embed=embed, file=file)
-
     @lvl_group.command(name="view")
     async def view_settings(self, ctx: commands.Context):
         """View all LevelUP settings"""
@@ -556,7 +529,9 @@ class LevelUp(UserCommands, commands.Cog):
         pdata = conf["prestigedata"]
         stacking = conf["stackprestigeroles"]
         xp = conf["xp"]
+        xpbonus = conf["rolebonuses"]["msg"]
         voicexp = conf["voicexp"]
+        voicexpbonus = conf["rolebonuses"]["voice"]
         cooldown = conf["cooldown"]
         base = conf["base"]
         exp = conf["exp"]
@@ -650,6 +625,30 @@ class LevelUp(UserCommands, commands.Cog):
             description=msg,
             color=discord.Color.random()
         )
+        if voicexpbonus:
+            text = ""
+            for rid, bonusrange in voicexpbonus.items():
+                role = ctx.guild.get_role(int(rid))
+                if not role:
+                    continue
+                text += f"{role.name} - {bonusrange}\n"
+            if text:
+                embed.add_field(
+                    name="Voice XP Bonus Roles",
+                    value=text
+                )
+        if xpbonus:
+            text = ""
+            for rid, bonusrange in xpbonus.items():
+                role = ctx.guild.get_role(int(rid))
+                if not role:
+                    continue
+                text += f"{role.name} - {bonusrange}\n"
+            if text:
+                embed.add_field(
+                    name="Message XP Bonus Roles",
+                    value=text
+                )
         await ctx.send(embed=embed)
 
     @lvl_group.group(name="admin")
@@ -974,6 +973,33 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.send(f"Message XP range has been set to {min_xp} - {max_xp} per valid message")
         await self.init_settings()
 
+    @message_group.command(name="rolebonus")
+    async def msg_role_bonus(self, ctx: commands.Context, role: discord.Role, min_xp: int, max_xp: int):
+        """
+        Add a range of bonus XP to apply to certain roles
+
+        This bonus applies to both messages and voice time
+
+        Set both min and max to 0 to remove the role bonus
+        """
+        if not role:
+            return await ctx.send("I cannot find that role")
+        if min_xp > max_xp:
+            return await ctx.send("Max xp needs to be higher than min xp")
+        rid = str(role.id)
+        xp = [min_xp, max_xp]
+        async with self.config.guild(ctx.guild).rolebonuses() as rb:
+            msg = rb["msg"]
+            if not min_xp and not max_xp:
+                if rid in msg:
+                    del msg[rid]
+                    await ctx.send(f"Bonus xp for {role.name} has been removed")
+                else:
+                    await ctx.send("That role has no bonus xp associated with it")
+            else:
+                msg[rid] = xp
+                await ctx.send(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}")
+
     @message_group.command(name="cooldown")
     async def set_cooldown(self, ctx: commands.Context, cooldown: int):
         """
@@ -1012,6 +1038,33 @@ class LevelUp(UserCommands, commands.Cog):
         await self.config.guild(ctx.guild).voicexp.set(voice_xp)
         await ctx.tick()
         await self.init_settings()
+
+    @voice_group.command(name="rolebonus")
+    async def voice_role_bonus(self, ctx: commands.Context, role: discord.Role, min_xp: int, max_xp: int):
+        """
+        Add a range of bonus XP to apply to certain roles
+
+        This bonus applies to voice time xp
+
+        Set both min and max to 0 to remove the role bonus
+        """
+        if not role:
+            return await ctx.send("I cannot find that role")
+        if min_xp > max_xp:
+            return await ctx.send("Max xp needs to be higher than min xp")
+        rid = str(role.id)
+        xp = [min_xp, max_xp]
+        async with self.config.guild(ctx.guild).rolebonuses() as rb:
+            msg = rb["voice"]
+            if not min_xp and not max_xp:
+                if rid in msg:
+                    del msg[rid]
+                    await ctx.send(f"Bonus xp for {role.name} has been removed")
+                else:
+                    await ctx.send("That role has no bonus xp associated with it")
+            else:
+                msg[rid] = xp
+                await ctx.send(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}")
 
     @voice_group.command(name="muted")
     async def ignore_muted(self, ctx: commands.Context):
@@ -1100,7 +1153,12 @@ class LevelUp(UserCommands, commands.Cog):
                 self.cache[gid][uid]["xp"] += xp
             await ctx.send(f"Added {xp} xp to {len(users)} users that had the {user_or_role.name} role")
 
-    @lvl_group.command(name="base")
+    @lvl_group.group(name="algorithm")
+    async def algo_edit(self, ctx: commands.Context):
+        """Customize the leveling algorithm for your guild"""
+        pass
+
+    @algo_edit.command(name="base")
     async def set_base(self, ctx: commands.Context, base_multiplier: int):
         """
         Base multiplier for the leveling algorithm
@@ -1111,7 +1169,7 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.tick()
         await self.init_settings()
 
-    @lvl_group.command(name="exp")
+    @algo_edit.command(name="exp")
     async def set_exp(self, ctx: commands.Context, exponent_multiplier: typing.Union[int, float]):
         """
         Exponent multiplier for the leveling algorithm
@@ -1133,6 +1191,61 @@ class LevelUp(UserCommands, commands.Cog):
             await self.config.guild(ctx.guild).usepics.set(True)
             await ctx.send("LevelUp will now use generated images instead of embeds")
         await self.init_settings()
+
+    @lvl_group.command(name="seelevels")
+    async def see_levels(self, ctx: commands.Context):
+        """
+        Test the level algorithm
+        View the first 20 levels using the current algorithm to test experience curve
+        """
+        conf = await self.config.guild(ctx.guild).all()
+        base = conf["base"]
+        exp = conf["exp"]
+        cd = conf["cooldown"]
+        xp_range = conf["xp"]
+        msg = ""
+        table = []
+        x = []
+        y = []
+        for i in range(1, 21):
+            xp = get_xp(i, base, exp)
+            msg += f"Level {i}: {xp} XP Needed\n"
+            time = time_to_level(i, base, exp, cd, xp_range)
+            time = time_formatter(time)
+            table.append([i, xp, time])
+            x.append(i)
+            y.append(xp)
+        headers = ["Level", "XP Needed", "AproxTime"]
+        data = tabulate.tabulate(table, headers, tablefmt="presto")
+        with plt.style.context("dark_background"):
+            plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
+            plt.xlabel(f"Level", fontsize=10)
+            plt.ylabel(f"Experience", fontsize=10)
+            plt.title("XP Curve")
+            plt.grid(axis="y")
+            plt.grid(axis="x")
+            result = io.BytesIO()
+            plt.savefig(result, format="png", dpi=200)
+            plt.close()
+            result.seek(0)
+            file = discord.File(result, filename="lvlexample.png")
+            img = "attachment://lvlexample.png"
+        example = "XP required for a level = Base * Level^Exp\n\n" \
+                  "Approx time is the time it would take for a user to reach a level if they " \
+                  "typed every time the cooldown expired non stop without sleeping or taking " \
+                  "potty breaks."
+        embed = discord.Embed(
+            title="Level Example",
+            description=f"`Base Multiplier:  `{base}\n"
+                        f"`Exp Multiplier:   `{exp}\n"
+                        f"`Experience Range: `{xp_range}\n"
+                        f"`Message Cooldown: `{cd}\n"
+                        f"{box(example)}\n"
+                        f"{box(data, lang='python')}",
+            color=discord.Color.random()
+        )
+        embed.set_image(url=img)
+        await ctx.send(embed=embed, file=file)
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
