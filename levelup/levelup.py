@@ -42,7 +42,7 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.1.22"
+    __version__ = "1.1.23"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -251,7 +251,7 @@ class LevelUp(UserCommands, commands.Cog):
                     log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
 
         if not roleperms:
-            log.warning(f"Bot can't manage roles in {guild.name}")
+            # log.warning(f"Bot can't manage roles in {guild.name}")
             return
         if not levelroles:
             return
@@ -1254,6 +1254,9 @@ class LevelUp(UserCommands, commands.Cog):
     @level_roles.command(name="add")
     async def add_level_role(self, ctx: commands.Context, level: str, role: discord.Role):
         """Assign a role to a level"""
+        perms = ctx.guild.me.guild_permissions.manage_roles
+        if not perms:
+            return await ctx.send("I do not have permission to manage roles")
         async with self.config.guild(ctx.guild).levelroles() as roles:
             if level in roles:
                 overwrite = "Overwritten"
