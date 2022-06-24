@@ -1,13 +1,11 @@
 import asyncio
 import logging
 import os
-import random
 from io import BytesIO
 from math import sqrt
 
 import aiohttp
 import colorgram
-import discord
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.data_manager import bundled_data_path
 
