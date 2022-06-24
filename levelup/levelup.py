@@ -36,13 +36,12 @@ LOADING = "https://i.imgur.com/l3p6EMX.gif"
 # CREDITS
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
-# Thanks crayyy_zee#2900 for showing me the dislash repo that i yoinked and did dirty things to
 # Thanks Zephyrkul#1089 for the help with leaderboard formatting!
 
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.1.23"
+    __version__ = "1.2.23"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -393,74 +392,76 @@ class LevelUp(UserCommands, commands.Cog):
             self.cache[guild_id][user]["xp"] += xp
         self.cache[guild_id][user]["messages"] += 1
 
-    async def check_voice(self):
-        for guild in self.bot.guilds:
-            guild_id = str(guild.id)
-            if guild_id in self.ignored_guilds:
+    async def check_voice(self, guild: discord.guild):
+        guild_id = str(guild.id)
+        if guild_id in self.ignored_guilds:
+            return
+        if guild_id not in self.settings:
+            self.settings[guild_id] = {}
+        conf = self.settings[guild_id]
+        if not conf:
+            return
+        xp_per_minute = conf["voicexp"]
+        if guild_id not in self.voice:
+            self.voice[guild_id] = {}
+        for member in guild.members:
+            if member.bot:
                 continue
-            if guild_id not in self.settings:
-                self.settings[guild_id] = {}
-            conf = self.settings[guild_id]
-            if not conf:
+            now = datetime.datetime.now()
+            user_id = str(member.id)
+            voice_state = member.voice
+            if not voice_state:  # Only cache if user is in a vc
+                if user_id in self.voice[guild_id]:
+                    del self.voice[guild_id][user_id]
                 continue
-            xp_per_minute = conf["voicexp"]
-            if guild_id not in self.voice:
-                self.voice[guild_id] = {}
-            for member in guild.members:
-                if member.bot:
-                    continue
-                now = datetime.datetime.now()
-                user_id = str(member.id)
-                voice_state = member.voice
-                if not voice_state:  # Only cache if user is in a vc
-                    if user_id in self.voice[guild_id]:
-                        del self.voice[guild_id][user_id]
-                    continue
-                if user_id not in self.voice[guild_id]:
-                    self.voice[guild_id][user_id] = now
-                if user_id not in self.cache[guild_id]:
-                    await self.cache_user(guild_id, user_id)
-                ts = self.voice[guild_id][user_id]
-                td = now - ts
-                td = int(td.total_seconds())
-                xp_to_give = (td / 60) * xp_per_minute
-                addxp = True
-                # Ignore muted users
-                if conf["muted"] and voice_state.self_mute:
-                    addxp = False
-                # Ignore deafened users
-                if conf["deafened"] and voice_state.self_deaf:
-                    addxp = False
-                # Ignore offline/invisible users
-                if conf["invisible"] and member.status.name == "offline":
-                    addxp = False
-                # Ignore if user is only one in channel
-                in_voice = 0
-                for mem in voice_state.channel.members:
-                    if mem.bot:
-                        continue
-                    in_voice += 1
-                if conf["solo"] and in_voice <= 1:
-                    addxp = False
-                # Check ignored roles
-                for role in member.roles:
-                    if role.id in conf["ignoredroles"]:
-                        addxp = False
-                # Check ignored users
-                if int(user_id) in conf["ignoredusers"]:
-                    addxp = False
-                # Check ignored channels
-                if voice_state.channel.id in conf["ignoredchannels"]:
-                    addxp = False
-                if addxp:
-                    self.cache[guild_id][user_id]["xp"] += xp_to_give
-                self.cache[guild_id][user_id]["voice"] += td
+            if user_id not in self.voice[guild_id]:
                 self.voice[guild_id][user_id] = now
+            if user_id not in self.cache[guild_id]:
+                await self.cache_user(guild_id, user_id)
+            ts = self.voice[guild_id][user_id]
+            td = now - ts
+            td = int(td.total_seconds())
+            xp_to_give = (td / 60) * xp_per_minute
+            addxp = True
+            # Ignore muted users
+            if conf["muted"] and voice_state.self_mute:
+                addxp = False
+            # Ignore deafened users
+            if conf["deafened"] and voice_state.self_deaf:
+                addxp = False
+            # Ignore offline/invisible users
+            if conf["invisible"] and member.status.name == "offline":
+                addxp = False
+            # Ignore if user is only one in channel
+            in_voice = 0
+            for mem in voice_state.channel.members:
+                if mem.bot:
+                    continue
+                in_voice += 1
+            if conf["solo"] and in_voice <= 1:
+                addxp = False
+            # Check ignored roles
+            for role in member.roles:
+                if role.id in conf["ignoredroles"]:
+                    addxp = False
+            # Check ignored users
+            if int(user_id) in conf["ignoredusers"]:
+                addxp = False
+            # Check ignored channels
+            if voice_state.channel.id in conf["ignoredchannels"]:
+                addxp = False
+            if addxp:
+                self.cache[guild_id][user_id]["xp"] += xp_to_give
+            self.cache[guild_id][user_id]["voice"] += td
+            self.voice[guild_id][user_id] = now
 
     @tasks.loop(seconds=20)
     async def voice_checker(self):
         t = monotonic()
-        await self.check_voice()
+        vtasks = []
+        for guild in self.bot.guilds:
+            vtasks.append(self.check_voice(guild))
+        await asyncio.gather(*vtasks)
         self.looptimes["checkvoice"] = int((monotonic() - t) * 1000)
 
     @voice_checker.before_loop
@@ -1071,6 +1072,33 @@ class LevelUp(UserCommands, commands.Cog):
             await self.config.guild(ctx.guild).invisible.set(True)
             await ctx.send("Invisible users can no longer gain XP while in a voice channel")
         await self.init_settings()
+
+    @lvl_group.command(name="addxp")
+    async def add_xp(self, ctx: commands.Context, user_or_role: typing.Union[discord.Member, discord.Role], xp: int):
+        """Add XP to a user or role"""
+        gid = str(ctx.guild.id)
+        if gid not in self.cache:
+            self.cache[gid] = {}
+        if not user_or_role:
+            return await ctx.send("I cannot find that user or role")
+        if isinstance(user_or_role, discord.Member):
+            uid = str(user_or_role.id)
+            if uid not in self.cache[gid]:
+                await self.cache_user(gid, uid)
+            self.cache[gid][uid]["xp"] += xp
+            await ctx.send(f"{xp} xp has been added to {user_or_role.name}")
+        else:
+            users = []
+            for user in ctx.guild.members:
+                if user.bot:
+                    continue
+                if user_or_role in user.roles:
+                    users.append(str(user.id))
+            for uid in users:
+                if uid not in self.cache[gid]:
+                    await self.cache_user(gid, uid)
+                self.cache[gid][uid]["xp"] += xp
+            await ctx.send(f"Added {xp} xp to {len(users)} users that had the {user_or_role.name} role")
 
     @lvl_group.command(name="base")
     async def set_base(self, ctx: commands.Context, base_multiplier: int):
