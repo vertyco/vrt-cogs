@@ -12,7 +12,7 @@ class Fluent(commands.Cog):
     Inspired by Obi-Wan3#0003's translation cog.
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.5"
+    __version__ = "1.0.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -115,6 +115,8 @@ class Fluent(commands.Cog):
             return
         if not message.guild:
             return
+        if not message.content:
+            return
         channels = await self.config.guild(message.guild).channels()
         channel_id = str(message.channel.id)
         if channel_id not in channels:
@@ -122,7 +124,10 @@ class Fluent(commands.Cog):
         lang1 = channels[channel_id]["lang1"]
         lang2 = channels[channel_id]["lang2"]
         channel = message.channel
-        trans = await self.translator(message.content, lang1)
+        try:
+            trans = await self.translator(message.content, lang1)
+        except AttributeError:
+            return
         if trans is None:
             await channel.send(embed=discord.Embed(description=f"❌ API seems to be down at the moment."))
         elif trans.src == lang2:
