@@ -137,6 +137,8 @@ class SupportCommands(commands.Cog):
 
         You can set this to {default} to restore original settings
         """
+        if "[" in message or "]" in message:
+            return await ctx.send("Wrong brackets, use { } instead")
         if len(message) > 1024:
             return await ctx.send("Message length is too long! Must be less than 1024 chars")
         await self.config.guild(ctx.guild).message.set(message)
