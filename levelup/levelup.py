@@ -488,7 +488,12 @@ class LevelUp(UserCommands, commands.Cog):
         for guild in self.bot.guilds:
             vtasks.append(self.check_voice(guild))
         await asyncio.gather(*vtasks)
-        self.looptimes["checkvoice"] = int((monotonic() - t) * 1000)
+        t = int((monotonic() - t) * 1000)
+        loop = self.looptimes["checkvoice"]
+        if not loop:
+            self.looptimes["checkvoice"] = t
+        else:
+            self.looptimes["checkvoice"] = int((loop + t) / 2)
 
     @voice_checker.before_loop
     async def before_voice_checker(self):
@@ -503,7 +508,12 @@ class LevelUp(UserCommands, commands.Cog):
         for guild in self.bot.guilds:
             dumptasks.append(self.dump_cache(guild))
         await asyncio.gather(*dumptasks)
-        self.looptimes["cachedump"] = int((monotonic() - t) * 1000)
+        t = int((monotonic() - t) * 1000)
+        loop = self.looptimes["cachedump"]
+        if not loop:
+            self.looptimes["cachedump"] = t
+        else:
+            self.looptimes["cachedump"] = int((loop + t) / 2)
 
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
@@ -682,13 +692,13 @@ class LevelUp(UserCommands, commands.Cog):
         lt = self.looptimes
         text = f"`Voice Checker: `{lt['checkvoice']}ms\n" \
                f"`Cache Dumper:  `{lt['cachedump']}ms\n" \
-               f"`Average Lvl Assignment: `{lt['lvlassignavg']}"
+               f"`Lvl Assignment: `{lt['lvlassignavg']}ms"
         embed = discord.Embed(
             title="Task Loop Times",
             description=text,
             color=discord.Color.random()
         )
-        embed.set_footer(text="Loop times are in milliseconds")
+        embed.set_footer(text="Units are the average times in milliseconds")
         await ctx.send(embed=embed)
 
     @admin_group.command(name="globalbackup")
