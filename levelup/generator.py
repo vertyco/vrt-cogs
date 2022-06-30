@@ -59,10 +59,18 @@ class Generator:
         # Set canvas
         if not bg_image:
             card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
-            bgcolor = await self.get_img_color(self.default_bg)
+            try:
+                bgcolor = await self.get_img_color(self.default_bg)
+            except Exception as e:
+                log.warning(f"Failed to get default image color: {e}")
+                bgcolor = bordercolor
         else:
             bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
-            bgcolor = await self.get_img_color(bg_bytes)
+            try:
+                bgcolor = await self.get_img_color(bg_bytes)
+            except Exception as e:
+                log.warning(f"Failed to get profile image color: {e}")
+                bgcolor = bordercolor
             if bg_bytes:
                 card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
             else:
