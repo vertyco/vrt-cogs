@@ -8,6 +8,7 @@ import tabulate
 import validators
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box
+from redbot.core.i18n import Translator
 
 from .formatter import (
     time_formatter,
@@ -22,6 +23,7 @@ from .generator import Generator
 from .menus import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.levelup.commands")
+_ = Translator("LevelUp", __file__)
 
 
 class UserCommands(commands.Cog):
@@ -44,7 +46,7 @@ class UserCommands(commands.Cog):
     async def valid_url(self, ctx: commands.Context, image_url: str):
         valid = validators.url(image_url)
         if not valid:
-            await ctx.send("Uh Oh, looks like that is not a valid URL")
+            await ctx.send(_("Uh Oh, looks like that is not a valid URL"))
             return
         try:
             # Try running it through profile generator blind to see if it errors
@@ -52,11 +54,11 @@ class UserCommands(commands.Cog):
             await self.gen_profile_img(args)
         except Exception as e:
             if "cannot identify image file" in str(e):
-                await ctx.send("Uh Oh, looks like that is not a valid image")
+                await ctx.send(_("Uh Oh, looks like that is not a valid image"))
                 return
             else:
                 log.warning(f"background set failed: {e}")
-                await ctx.send("Uh Oh, looks like that is not a valid image")
+                await ctx.send(_("Uh Oh, looks like that is not a valid image"))
                 return
         return True
 
@@ -80,9 +82,9 @@ class UserCommands(commands.Cog):
         star_giver = str(ctx.author.id)
         guild_id = str(ctx.guild.id)
         if ctx.author == user:
-            return await ctx.send("You can't give stars to yourself!")
+            return await ctx.send(_("You can't give stars to yourself!"))
         if user.bot:
-            return await ctx.send("You can't give stars to a bot!")
+            return await ctx.send(_("You can't give stars to a bot!"))
         if guild_id not in self.stars:
             self.stars[guild_id] = {}
         if star_giver not in self.stars[guild_id]:
@@ -97,21 +99,21 @@ class UserCommands(commands.Cog):
             else:
                 time_left = cooldown - td
                 tstring = time_formatter(time_left)
-                msg = f"You need to wait **{tstring}** before you can give more stars!"
+                msg = _(f"You need to wait **{tstring}** before you can give more stars!")
                 return await ctx.send(msg)
         mention = await self.config.guild(ctx.guild).mention()
         async with self.config.guild(ctx.guild).all() as conf:
             users = conf["users"]
             if user_id not in users:
-                return await ctx.send("No data available for that user yet!")
+                return await ctx.send(_("No data available for that user yet!"))
             if "stars" not in users[user_id]:
                 users[user_id]["stars"] = 1
             else:
                 users[user_id]["stars"] += 1
             if mention:
-                await ctx.send(f"You just gave a star to {user.mention}!")
+                await ctx.send(_(f"You just gave a star to {user.mention}!"))
             else:
-                await ctx.send(f"You just gave a star to **{user.name}**!")
+                await ctx.send(_(f"You just gave a star to **{user.name}**!"))
 
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)
@@ -148,7 +150,7 @@ class UserCommands(commands.Cog):
         user_id = str(ctx.author.id)
         async with self.config.guild(ctx.guild).users() as users:
             if user_id not in users:
-                return await ctx.send("You have no information stored about your account yet. Talk for a bit first")
+                return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
             user = users[user_id]
             rgb = hex_to_rgb(hex_color)
             try:
@@ -158,7 +160,7 @@ class UserCommands(commands.Cog):
                 )
                 await ctx.send(embed=embed)
             except Exception as e:
-                await ctx.send(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}")
+                await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
                 return
             if "colors" not in user:
                 user["colors"] = {
@@ -180,12 +182,12 @@ class UserCommands(commands.Cog):
         user_id = str(ctx.author.id)
         async with self.config.guild(ctx.guild).users() as users:
             if user_id not in users:
-                return await ctx.send("You have no information stored about your account yet. Talk for a bit first")
+                return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
             user = users[user_id]
             try:
                 rgb = hex_to_rgb(hex_color)
             except ValueError:
-                return await ctx.send("That is an invalid color, please use a valid integer color code or hex color.")
+                return await ctx.send(_("That is an invalid color, please use a valid integer color code or hex color."))
             try:
                 embed = discord.Embed(
                     description="This is the color you chose",
@@ -193,7 +195,7 @@ class UserCommands(commands.Cog):
                 )
                 await ctx.send(embed=embed)
             except Exception as e:
-                await ctx.send(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}")
+                await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
                 return
             if "colors" not in user:
                 user["colors"] = {
@@ -234,7 +236,7 @@ class UserCommands(commands.Cog):
         user = ctx.author
         async with self.config.guild(ctx.guild).users() as users:
             if str(user.id) not in users:
-                return await ctx.send("You aren't logged in the database yet, give it some time.")
+                return await ctx.send(_("You aren't logged in the database yet, give it some time."))
             if image_url:
                 users[str(user.id)]["background"] = image_url
                 await ctx.send("Your image has been set!")
@@ -244,7 +246,7 @@ class UserCommands(commands.Cog):
                         await ctx.send_help()
                     else:
                         users[str(user.id)]["background"] = None
-                        await ctx.send("Your background has been removed since you did not specify a url!")
+                        await ctx.send(_("Your background has been removed since you did not specify a url!"))
                 else:
                     await ctx.send_help()
 
@@ -257,7 +259,7 @@ class UserCommands(commands.Cog):
         conf = await self.config.guild(ctx.guild).all()
         usepics = conf["usepics"]
         if usepics and not can_send_attachments:
-            return await ctx.send("I don't have permission to send attachments to this channel.")
+            return await ctx.send(_("I don't have permission to send attachments to this channel."))
         users = conf["users"]
         mention = conf["mention"]
         if not user:
@@ -378,14 +380,14 @@ class UserCommands(commands.Cog):
             log.warning("Insufficient perms to assign prestige ranks!")
         required_level = conf["prestige"]
         if not required_level:
-            return await ctx.send("Prestige is disabled on this server!")
+            return await ctx.send(_("Prestige is disabled on this server!"))
         prestige_data = conf["prestigedata"]
         if not prestige_data:
-            return await ctx.send("Prestige levels have not been set yet!")
+            return await ctx.send(_("Prestige levels have not been set yet!"))
         user_id = str(ctx.author.id)
         users = conf["users"]
         if user_id not in users:
-            return await ctx.send("No information available for you yet!")
+            return await ctx.send(_("No information available for you yet!"))
         user = users[user_id]
         current_level = user["level"]
         prestige = user["prestige"]
@@ -406,13 +408,13 @@ class UserCommands(commands.Cog):
                     conf[user_id]["prestige"] = pending_prestige
                     conf[user_id]["emoji"] = emoji
             else:
-                return await ctx.send(f"Prestige level {pending_prestige} has not been set yet!")
+                return await ctx.send(_(f"Prestige level {pending_prestige} has not been set yet!"))
         else:
             msg = f"**You are not eligible to prestige yet!**\n" \
                   f"`Your level:     `{current_level}\n" \
                   f"`Required Level: `{required_level}"
             embed = discord.Embed(
-                description=msg,
+                description=_(msg),
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
@@ -450,7 +452,7 @@ class UserCommands(commands.Cog):
             total_voice += voice
             total_messages += messages
         if not leaderboard:
-            return await ctx.send("No user data yet!")
+            return await ctx.send(_("No user data yet!"))
         voice = time_formatter(total_voice)
         sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
 
@@ -499,14 +501,14 @@ class UserCommands(commands.Cog):
             )
             embed = discord.Embed(
                 title="LevelUp Leaderboard",
-                description=f"{title}{box(msg, lang='python')}",
+                description=f"{_(title)}{box(msg, lang='python')}",
                 color=discord.Color.random()
             )
             embed.set_thumbnail(url=ctx.guild.icon_url)
             if you:
-                embed.set_footer(text=f"Pages {p + 1}/{pages} ｜ {you}")
+                embed.set_footer(text=_(f"Pages {p + 1}/{pages} ｜ {you}"))
             else:
-                embed.set_footer(text=f"Pages {p + 1}/{pages}")
+                embed.set_footer(text=_(f"Pages {p + 1}/{pages}"))
             embeds.append(embed)
             start += 10
             stop += 10
@@ -517,7 +519,7 @@ class UserCommands(commands.Cog):
             else:
                 await menu(ctx, embeds, DEFAULT_CONTROLS)
         else:
-            return await ctx.send("No user data yet!")
+            return await ctx.send(_("No user data yet!"))
 
     @commands.command(name="startop", aliases=["starlb"])
     @commands.guild_only()
@@ -534,7 +536,7 @@ class UserCommands(commands.Cog):
                     leaderboard[user] = stars
                     total_stars += stars
         if not leaderboard:
-            return await ctx.send("Nobody has stars yet 😕")
+            return await ctx.send(_("Nobody has stars yet 😕"))
         sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
 
         # Get your place in the LB
@@ -567,14 +569,14 @@ class UserCommands(commands.Cog):
                 table.append([stars, user])
             data = tabulate.tabulate(table, tablefmt="presto", colalign=("right",))
             embed = discord.Embed(
-                description=f"{title}{box(data, lang='python')}",
+                description=f"{_(title)}{box(data, lang='python')}",
                 color=discord.Color.random()
             )
             embed.set_thumbnail(url=ctx.guild.icon_url)
             if you:
-                embed.set_footer(text=f"Pages {p + 1}/{pages} ｜ {you}")
+                embed.set_footer(text=_(f"Pages {p + 1}/{pages} ｜ {you}"))
             else:
-                embed.set_footer(text=f"Pages {p + 1}/{pages}")
+                embed.set_footer(text=_(f"Pages {p + 1}/{pages}"))
             embeds.append(embed)
             start += 10
             stop += 10
@@ -585,4 +587,4 @@ class UserCommands(commands.Cog):
             else:
                 await menu(ctx, embeds, DEFAULT_CONTROLS)
         else:
-            return await ctx.send("No user data yet!")
+            return await ctx.send(_("No user data yet!"))

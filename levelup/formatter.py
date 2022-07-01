@@ -4,6 +4,9 @@ import typing
 
 import discord
 from redbot.core.utils.chat_formatting import box
+from redbot.core.i18n import Translator
+
+_ = Translator("LevelUp", __file__)
 
 
 # Get a level that would be achieved from the amount of XP
@@ -55,17 +58,17 @@ def time_formatter(time_in_seconds) -> str:
     days, hours = divmod(hours, 24)
     years, days = divmod(days, 365)
     if not any([seconds, minutes, hours, days, years]):
-        tstring = "None"
+        tstring = _("None")
     elif not any([minutes, hours, days, years]):
         if seconds == 1:
-            tstring = f"{seconds} second"
+            tstring = _(f"{seconds} second")
         else:
-            tstring = f"{seconds} seconds"
+            tstring = _(f"{seconds} seconds")
     elif not any([hours, days, years]):
         if minutes == 1:
-            tstring = f"{minutes} minute"
+            tstring = _(f"{minutes} minute")
         else:
-            tstring = f"{minutes} minutes"
+            tstring = _(f"{minutes} minutes")
     elif hours and not days and not years:
         tstring = f"{hours}h {minutes}m"
     elif days and not years:
@@ -174,12 +177,12 @@ async def profile_embed(
            f"🎙｜{voice} in voice\n" \
            f"💡｜{progress} XP"
     embed = discord.Embed(
-        title=f"{user.name}'s Profile",
-        description=msg,
+        title=f"{user.name}'s {_('Profile')}",
+        description=_(msg),
         color=user.colour
     )
-    embed.add_field(name="Progress", value=box(f"{lvlbar} {lvlpercent} %", lang="python"))
+    embed.add_field(name=_("Progress"), value=box(f"{lvlbar} {lvlpercent} %", lang="python"))
     embed.set_thumbnail(url=user.avatar_url)
     if position:
-        embed.set_footer(text=f"Rank {position}, with {percentage}% of global server XP")
+        embed.set_footer(text=_(f"Rank {position}, with {percentage}% of global server XP"))
     return embed

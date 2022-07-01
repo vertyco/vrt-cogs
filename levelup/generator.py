@@ -8,8 +8,10 @@ import aiohttp
 import colorgram
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.data_manager import bundled_data_path
+from redbot.core.i18n import Translator
 
 log = logging.getLogger("red.vrt.levelup.generator")
+_ = Translator("LevelUp", __file__)
 
 
 # Yoinked from disrank and modified to suit this cog's needs
@@ -99,14 +101,14 @@ class Generator:
         def get_str(xp):
             return "{:,}".format(xp)
 
-        rank = f"Rank: #{user_position}"
-        level = f"Level: {level}"
+        rank = _(f"Rank: #{user_position}")
+        level = _(f"Level: {level}")
         exp = f"Exp: {get_str(user_xp)}/{get_str(next_xp)}"
-        messages = f"Messages: {messages}"
-        voice = f"Voice Time: {voice}"
+        messages = _(f"Messages: {messages}")
+        voice = _(f"Voice Time: {voice}")
         name = f"{user_name}"
         if prestige:
-            name += f" - Prestige {prestige}"
+            name += _(f" - Prestige {prestige}")
         stars = str(stars)
 
         # Drawing borders
@@ -250,7 +252,7 @@ class Generator:
 
         MAINCOLOR = color
         BORDER = (0, 0, 0)
-        level = f"Level {level}"
+        level = _(f"Level {level}")
 
         # Drawing borders
         draw.text((73, 16), level, BORDER, font=font_normal, stroke_width=1)
