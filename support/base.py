@@ -5,9 +5,11 @@ from io import StringIO
 import discord
 from redbot.core import commands
 from redbot.core.utils.mod import is_admin_or_superior
+from redbot.core.i18n import Translator
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.support.base")
+_ = Translator("Support", __file__)
 
 
 class BaseCommands(commands.Cog):
