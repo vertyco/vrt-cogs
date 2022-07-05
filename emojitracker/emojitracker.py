@@ -94,7 +94,7 @@ class EmojiTracker(commands.Cog):
             else:
                 users[uid][emoji] += 1
 
-    @commands.command(name="ingoreguild")
+    @commands.command(name="ignoreguild")
     @commands.is_owner()
     async def blacklist_guild(self, ctx, guild_id: int):
         """
