@@ -954,11 +954,11 @@ class LevelUp(UserCommands, commands.Cog):
                 continue
         if not cleanup:
             return await ctx.send(_("Nothing to clean"))
-        async with self.config.guild(ctx.guild).users() as users:
-            cleaned = 0
-            for uid in cleanup:
-                del users[uid]
-                cleaned += 1
+        cleaned = 0
+        for uid in cleanup:
+            del users[uid]
+            cleaned += 1
+        await self.config.guild(ctx.guild).users.set(users)
         await ctx.send(_(f"Deleted {cleaned} user ID's from the config that are no longer in the server"))
 
     @lvl_group.group(name="messages")
