@@ -715,14 +715,9 @@ class LevelUp(UserCommands, commands.Cog):
         settings = await self.config.all_guilds()
         settings = json.dumps(settings)
         filename = f"LevelUp_global_config_{today}.json"
-        with open(filename, "w") as file:
-            file.write(settings)
-        with open(filename, "rb") as file:
-            await ctx.send(file=discord.File(file, filename))
-        try:
-            os.remove(filename)
-        except Exception as e:
-            log.warning(f"Failed to delete txt file: {e}")
+        iofile = io.StringIO(settings)
+        file = discord.File(iofile, filename=filename)
+        await ctx.send("Here is the global LevelUp config for all guilds", file=file)
 
     @admin_group.command(name="guildbackup")
     @commands.guildowner()
@@ -736,14 +731,9 @@ class LevelUp(UserCommands, commands.Cog):
         settings = await self.config.guild(ctx.guild).all()
         settings = json.dumps(settings)
         filename = f"LevelUp_guild_config_{today}.json"
-        with open(filename, "w") as file:
-            file.write(settings)
-        with open(filename, "rb") as file:
-            await ctx.send(file=discord.File(file, filename))
-        try:
-            os.remove(filename)
-        except Exception as e:
-            log.warning(f"Failed to delete txt file: {e}")
+        iofile = io.StringIO(settings)
+        file = discord.File(iofile, filename=filename)
+        await ctx.send("Here is the global LevelUp config for this guilds", file=file)
 
     @admin_group.command(name="globalrestore")
     @commands.is_owner()
