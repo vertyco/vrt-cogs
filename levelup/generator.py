@@ -220,6 +220,7 @@ class Generator:
         final = Image.alpha_composite(pre, blank)
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP')
+        final_bytes.seek(0)
         return final_bytes
 
     async def generate_levelup(
@@ -285,6 +286,7 @@ class Generator:
         final = Image.alpha_composite(pre, pfp_composite_holder)
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP')
+        final_bytes.seek(0)
         return final_bytes
 
     @staticmethod
