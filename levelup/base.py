@@ -32,6 +32,7 @@ class UserCommands(commands.Cog):
     @staticmethod
     async def gen_profile_img(args: dict):
         image = await Generator().generate_profile(**args)
+        image.seek(0)
         file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
@@ -39,6 +40,7 @@ class UserCommands(commands.Cog):
     @staticmethod
     async def gen_levelup_img(args: dict):
         image = await Generator().generate_levelup(**args)
+        image.seek(0)
         file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
