@@ -219,10 +219,7 @@ class Generator:
 
         final = Image.alpha_composite(pre, blank)
         final_bytes = BytesIO()
-        final.save(final_bytes, 'WEBP', quality=100)
-        final_bytes.seek(0)
-        # file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
-        # return file
+        final.save(final_bytes, 'WEBP')
         return final_bytes
 
     async def generate_levelup(
@@ -288,9 +285,6 @@ class Generator:
         final = Image.alpha_composite(pre, pfp_composite_holder)
         final_bytes = BytesIO()
         final.save(final_bytes, 'WEBP')
-        final_bytes.seek(0)
-        # file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
-        # return file
         return final_bytes
 
     @staticmethod
