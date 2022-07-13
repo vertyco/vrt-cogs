@@ -91,8 +91,8 @@ class NoBot(commands.Cog):
             botmember = ctx.guild.get_member(int(bot))
             botlist += f"{botmember.mention}: {bot}\n"
         filters = ""
-        for filter in config["content"]:
-            filters += f"{filter}\n"
+        for filt in config["content"]:
+            filters += f"{filt}\n"
         embed = discord.Embed(
             description=f"**NoBot Setting Overview**",
             color=discord.Color.random()
