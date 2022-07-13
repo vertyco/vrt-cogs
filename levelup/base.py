@@ -358,13 +358,21 @@ class UserCommands(commands.Cog):
                     'stars': stars
                 }
                 file = await self.gen_profile_img(args)
+                if not file:
+                    return await ctx.send(f"Failed to generate profile image :( try again in a bit")
+                failed = False
                 try:
                     await ctx.reply(file=file, mention_author=mention)
                 except discord.HTTPException:
-                    await ctx.send(file=file)
+                    failed = True
                 except Exception as e:
                     log.warning(f"Error sending generated profile: {e}")
-                    await ctx.send(file=file)
+                    failed = True
+                if failed:
+                    try:
+                        await ctx.send(file=file)
+                    except Exception as e:
+                        log.warning(f"Failed AGAIN to send generated profile: {e}")
 
     @commands.command(name="prestige")
     @commands.guild_only()
