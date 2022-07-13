@@ -6,6 +6,7 @@ from math import sqrt
 
 import aiohttp
 import colorgram
+import requests
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator
@@ -29,7 +30,7 @@ class Generator:
         self.streaming = os.path.join(bundled_data_path(self), 'streaming.png')
         self.font1 = os.path.join(bundled_data_path(self), 'font.ttf')
 
-    async def generate_profile(
+    def generate_profile(
             self,
             bg_image: str = None,
             profile_image: str = "https://imgur.com/qvFlyiZ",
@@ -67,7 +68,7 @@ class Generator:
                 log.warning(f"Failed to get default image color: {e}")
                 bgcolor = bordercolor
         else:
-            bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
+            bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
             try:
                 bgcolor = await self.get_img_color(bg_bytes)
             except Exception as e:
@@ -160,7 +161,7 @@ class Generator:
         card.paste(circle_img, (19, 19), circle_img)
 
         # get profile pic
-        pfp_image = await self.get_image_content_from_url(str(profile_image))
+        pfp_image = self.get_image_content_from_url(str(profile_image))
         if pfp_image:
             profile_bytes = BytesIO(pfp_image)
             profile = Image.open(profile_bytes)
@@ -224,7 +225,7 @@ class Generator:
         final.close()
         return final_bytes
 
-    async def generate_levelup(
+    def generate_levelup(
             self,
             bg_image: str = None,
             profile_image: str = None,
@@ -234,7 +235,7 @@ class Generator:
         if not bg_image:
             card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.Resampling.LANCZOS)
         else:
-            bg_bytes = BytesIO(await self.get_image_content_from_url(bg_image))
+            bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
             if bg_bytes:
                 card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.Resampling.LANCZOS)
             else:
@@ -259,7 +260,7 @@ class Generator:
         draw.text((73, 16), level, MAINCOLOR, font=font_normal)
 
         # get profile pic
-        profile_bytes = BytesIO(await self.get_image_content_from_url(str(profile_image)))
+        profile_bytes = BytesIO(self.get_image_content_from_url(str(profile_image)))
         profile = Image.open(profile_bytes)
         profile = profile.convert('RGBA').resize((60, 60), Image.Resampling.LANCZOS)
 
@@ -291,23 +292,32 @@ class Generator:
         final_bytes.seek(0)
         return final_bytes
 
+    # @staticmethod
+    # async def get_image_content_from_url(url: str):
+    #     headers = {'User-Agent': 'Python/3.8'}
+    #     try:
+    #         timeout = aiohttp.ClientTimeout(total=20)
+    #         async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
+    #             async with session.get(url) as r:
+    #                 image = await r.content.read()
+    #                 return image
+    #     except aiohttp.client_exceptions.ClientConnectorError:
+    #         log.error(f"aiohttp failure accessing image at url:\n\t{url}", exc_info=True)
+    #         return None
+    #     except asyncio.TimeoutError:
+    #         log.error(f"asyncio timeout while accessing image at url:\n\t{url}", exc_info=True)
+    #         return None
+    #     except Exception as e:
+    #         log.error(f"General failure accessing image at url:\n\t{url}\nError: {e}", exc_info=True)
+    #         return None
+
     @staticmethod
-    async def get_image_content_from_url(url: str):
-        headers = {'User-Agent': 'Python/3.8'}
+    def get_image_content_from_url(url: str):
         try:
-            timeout = aiohttp.ClientTimeout(total=20)
-            async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
-                async with session.get(url) as r:
-                    image = await r.content.read()
-                    return image
-        except aiohttp.client_exceptions.ClientConnectorError:
-            log.error(f"aiohttp failure accessing image at url:\n\t{url}", exc_info=True)
-            return None
-        except asyncio.TimeoutError:
-            log.error(f"asyncio timeout while accessing image at url:\n\t{url}", exc_info=True)
-            return None
+            res = requests.get(url)
+            return res.content
         except Exception as e:
-            log.error(f"General failure accessing image at url:\n\t{url}\nError: {e}", exc_info=True)
+            log.error(f"Failed to get image from url: {url}\nError: {e}", exc_info=True)
             return None
 
     @staticmethod
