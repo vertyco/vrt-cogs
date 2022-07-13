@@ -63,14 +63,14 @@ class Generator:
         if not bg_image:
             card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
             try:
-                bgcolor = await self.get_img_color(self.default_bg)
+                bgcolor = self.get_img_color(self.default_bg)
             except Exception as e:
                 log.warning(f"Failed to get default image color: {e}")
                 bgcolor = bordercolor
         else:
             bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
             try:
-                bgcolor = await self.get_img_color(bg_bytes)
+                bgcolor = self.get_img_color(bg_bytes)
             except Exception as e:
                 log.warning(f"Failed to get profile image color: {e}")
                 bgcolor = bordercolor
@@ -321,7 +321,7 @@ class Generator:
             return None
 
     @staticmethod
-    async def get_img_color(img) -> tuple:
+    def get_img_color(img) -> tuple:
         colors = colorgram.extract(img, 1)
         return colors[0].rgb
 
