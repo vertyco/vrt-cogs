@@ -16,7 +16,7 @@ class NoBot(commands.Cog):
     message, this cog will delete them.
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.4"
+    __version__ = "1.0.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -34,6 +34,15 @@ class NoBot(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
+        self.cache = {}
+
+    def initialize(self):
+        asyncio.create_task(self.cache_guilds())
+
+    async def cache_guilds(self):
+        await self.bot.wait_until_red_ready()
+        self.cache = await self.config.all_guilds()
+
     @commands.group(name="nobot")
     @commands.admin()
     async def nobot_settings(self, ctx):
@@ -49,6 +58,7 @@ class NoBot(commands.Cog):
                 await ctx.tick()
             else:
                 await ctx.send("Bot already in list")
+        self.initialize()
 
     @nobot_settings.command(name="delbot")
     async def delete_bot(self, ctx, bot: discord.Member):
@@ -59,6 +69,7 @@ class NoBot(commands.Cog):
                 await ctx.tick()
             else:
                 await ctx.send("Bot not found")
+        self.initialize()
 
     @nobot_settings.command(name="addfilter")
     async def add_filter(self, ctx, *, message):
@@ -69,6 +80,7 @@ class NoBot(commands.Cog):
                 await ctx.tick()
             else:
                 await ctx.send("Filter already exists")
+        self.initialize()
 
     @nobot_settings.command(name="view")
     async def no_bot_view(self, ctx):
@@ -123,6 +135,7 @@ class NoBot(commands.Cog):
                 i = int(reply.content) - 1
                 content.pop(i)
                 await ctx.tick()
+        self.initialize()
 
     # Only detects messages from bots set
     @commands.Cog.listener("on_message")
@@ -131,7 +144,7 @@ class NoBot(commands.Cog):
         if not message.author.bot:
             return
         # Check if message author is itself
-        if str(message.author) == str(self.bot.user):
+        if message.author.id == self.bot.user.id:
             return
         # Make sure message is from a guild
         if not message.guild:
@@ -139,8 +152,14 @@ class NoBot(commands.Cog):
         # Make sure its a message?
         if not message:
             return
+        # Make sure config exists in cache
+        if not self.cache:
+            asyncio.create_task(self.cache_guilds())
+            return
         # Pull config
-        config = await self.config.guild(message.guild).all()
+        if message.guild.id not in self.cache:
+            return
+        config = self.cache[message.guild.id]
         # Check if message author is in the config
         if str(message.author.id) not in config["bots"]:
             return
@@ -149,6 +168,10 @@ class NoBot(commands.Cog):
         if not allowed:
             log.warning(f"Insufficient permissions to delete message: {message.content}")
             return
+        asyncio.create_task(self.handle_message(config, message))
+
+    @staticmethod
+    async def handle_message(config: dict, message: discord.Message):
         # Check if filter is contained in message content
         for msg in config["content"]:
             if msg.lower() in message.content.lower():
@@ -156,12 +179,13 @@ class NoBot(commands.Cog):
         # Check if message contains an embed
         if message.embeds:
             for embed in message.embeds:
-                for msg in config["content"]:
-                    if embed.description:  # Make sure embed actually has a description
+                if embed.description:  # Make sure embed actually has a description
+                    for msg in config["content"]:
                         if msg.lower() in embed.description.lower():
                             await message.delete()
                 # Iterate through embed fields
-                for field in embed.fields:
-                    for msg in config["content"]:
-                        if msg.lower() in field.value.lower():
-                            await message.delete()
+                if embed.fields:
+                    for field in embed.fields:
+                        for msg in config["content"]:
+                            if msg.lower() in field.value.lower():
+                                await message.delete()
