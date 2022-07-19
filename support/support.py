@@ -358,7 +358,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     time = "hours" if inactive != 1 else "hour"
                     actasks.append(
                         self.close_ticket(
-                            member, channel, conf, f"Did not say anything after opening a ticket for {inactive} {time}"
+                            member, channel, conf,
+                            f"Did not say anything after opening a ticket for {inactive} {time}", self.bot.user.name
                         )
                     )
         if tasks:
@@ -388,6 +389,6 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             chan = self.bot.get_channel(int(cid))
             if not chan:
                 continue
-            actasks.append(self.close_ticket(member, chan, conf, "User left guild(Auto-Close)"))
+            actasks.append(self.close_ticket(member, chan, conf, "User left guild(Auto-Close)", self.bot.user.name))
         if actasks:
             await asyncio.gather(*actasks)

@@ -97,9 +97,10 @@ class BaseCommands(commands.Cog):
             owner = guild.get_member(int(owner_id))
             if not owner:
                 owner = await self.bot.fetch_user(int(owner_id))
-        await self.close_ticket(owner, chan, conf, reason)
+        await self.close_ticket(owner, chan, conf, reason, ctx.author.name)
 
-    async def close_ticket(self, member: discord.Member, channel: discord.TextChannel, conf: dict, reason: str):
+    async def close_ticket(self, member: discord.Member, channel: discord.TextChannel,
+                           conf: dict, reason: str, closedby = str):
         opened = conf["opened"]
         if not opened:
             return
@@ -120,7 +121,7 @@ class BaseCommands(commands.Cog):
             description=f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
                         f"`Opened on: `{opened}\n"
                         f"`Closed on: `{closed}\n"
-                        f"`Closed by: `{self.bot.user.name}\n"
+                        f"`Closed by: `{closedby}\n"
                         f"`Reason:    `{reason}",
             color=discord.Color.green()
         )
