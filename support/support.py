@@ -28,7 +28,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
     Support ticket system with buttons/logging
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.3"
+    __version__ = "1.2.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -75,11 +75,13 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         }
         self.config.register_guild(**default_guild)
         self.check_listener.start()
+        self.auto_close.start()
         # Dislash monkeypatch
         self.inter_client = InteractionClient(bot)
 
     def cog_unload(self):
         self.check_listener.cancel()
+        self.auto_close.cancel()
         # Cancel all guild tasks
         # Hope nobody else is using asyncio task names!
         # Tasks are named guild.id for each guild so if you are plz DM me and ill make a diff naming scheme
