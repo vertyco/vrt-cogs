@@ -1,10 +1,8 @@
-import asyncio
 import logging
 import os
 from io import BytesIO
 from math import sqrt
 
-import aiohttp
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont
@@ -291,25 +289,6 @@ class Generator:
         final.close()
         final_bytes.seek(0)
         return final_bytes
-
-    # @staticmethod
-    # async def get_image_content_from_url(url: str):
-    #     headers = {'User-Agent': 'Python/3.8'}
-    #     try:
-    #         timeout = aiohttp.ClientTimeout(total=20)
-    #         async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
-    #             async with session.get(url) as r:
-    #                 image = await r.content.read()
-    #                 return image
-    #     except aiohttp.client_exceptions.ClientConnectorError:
-    #         log.error(f"aiohttp failure accessing image at url:\n\t{url}", exc_info=True)
-    #         return None
-    #     except asyncio.TimeoutError:
-    #         log.error(f"asyncio timeout while accessing image at url:\n\t{url}", exc_info=True)
-    #         return None
-    #     except Exception as e:
-    #         log.error(f"General failure accessing image at url:\n\t{url}\nError: {e}", exc_info=True)
-    #         return None
 
     @staticmethod
     def get_image_content_from_url(url: str):

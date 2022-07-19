@@ -7,8 +7,8 @@ import discord
 import tabulate
 import validators
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import box
 
 from .formatter import (
     time_formatter,
@@ -31,14 +31,12 @@ class UserCommands(commands.Cog):
     # Generate rinky dink profile image
     async def gen_profile_img(self, args: dict):
         image = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
-        # image = await Generator().generate_profile(**args)
         file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
     # Generate rinky dink level up image
     async def gen_levelup_img(self, args: dict):
         image = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
-        # image = await Generator().generate_levelup(**args)
         file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
@@ -187,7 +185,8 @@ class UserCommands(commands.Cog):
             try:
                 rgb = hex_to_rgb(hex_color)
             except ValueError:
-                return await ctx.send(_("That is an invalid color, please use a valid integer color code or hex color."))
+                return await ctx.send(
+                    _("That is an invalid color, please use a valid integer color code or hex color."))
             try:
                 embed = discord.Embed(
                     description="This is the color you chose",

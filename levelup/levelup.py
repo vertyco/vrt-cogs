@@ -3,7 +3,6 @@ import datetime
 import io
 import json
 import logging
-import os
 import random
 import sys
 import typing
@@ -16,8 +15,8 @@ import matplotlib.pyplot as plt
 import tabulate
 from discord.ext import tasks
 from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import box
 
 from .base import UserCommands
 from .formatter import (
@@ -43,7 +42,7 @@ _ = Translator("LevelUp", __file__)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.3.25"
+    __version__ = "1.3.26"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
