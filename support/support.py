@@ -28,7 +28,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
     Support ticket system with buttons/logging
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.3"
+    __version__ = "1.2.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -56,9 +56,10 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             "max_tickets": 1,
             "bcolor": "red",
             "embeds": False,
+            "inactive": 0,  # Auto close tickets with X hours of inactivity
             # Ticket data
             "opened": {},
-            "num": 0,
+            "num": 1,
             # Content
             "button_content": "Click To Open A Ticket!",
             "emoji": None,
@@ -327,6 +328,47 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     opened[str(user.id)][str(channel.id)]["logmsg"] = str(log_msg.id)
         return await self.listen(message)
 
+    @tasks.loop(minutes=30)
+    async def auto_close(self):
+        actasks = []
+        for guild in self.bot.guilds:
+            conf = await self.config.guild(guild).all()
+            inactive = conf["inactive"]
+            if not inactive:
+                continue
+            opened = conf["opened"]
+            if not opened:
+                continue
+            for uid, tickets in opened.items():
+                member = guild.get_member(int(uid))
+                if not member:
+                    continue
+                for channel_id, data in tickets.items():
+                    channel = guild.get_channel(int(channel_id))
+                    if not channel:
+                        continue
+                    now = datetime.datetime.now()
+                    opened_on = datetime.datetime.fromisoformat(data["opened"])
+                    hastyped = await self.ticket_owner_hastyped(channel, member)
+                    if hastyped:
+                        continue
+                    td = (now - opened_on).total_seconds() / 3600
+                    if td < inactive:
+                        continue
+                    time = "hours" if inactive != 1 else "hour"
+                    actasks.append(
+                        self.close_ticket(
+                            member, channel, conf, f"Did not say anything after opening a ticket for {inactive} {time}"
+                        )
+                    )
+        if tasks:
+            await asyncio.gather(*actasks)
+
+    @auto_close.before_loop
+    async def before_auto_close(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(30)
+
     # Will automatically close/cleanup any tickets if a member leaves that has an open ticket
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -341,70 +383,11 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         tickets = opened[str(member.id)]
         if not tickets:
             return
-        now = datetime.datetime.now()
+        actasks = []
         for cid, ticket in tickets.items():
-            # Gather data
-            pfp = ticket["pfp"]
-            opened = ticket["opened"]
-            opened = datetime.datetime.fromisoformat(opened)
-            opened = opened.strftime('%m/%d/%y at %I:%M %p')
-            closed = now.strftime('%m/%d/%y at %I:%M %p')
-            embed = discord.Embed(
-                title="Ticket Closed",
-                description=f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
-                            f"`Opened on: `{opened}\n"
-                            f"`Closed on: `{closed}\n"
-                            f"`Closed by: `{self.bot.user.name}\n"
-                            f"`Reason:    `User left guild(Auto-Close)\n",
-                color=discord.Color.green()
-            )
-            embed.set_thumbnail(url=pfp)
             chan = self.bot.get_channel(int(cid))
-            if conf["log"]:
-                log_chan = self.bot.get_channel(conf["log"])
-            else:
-                log_chan = None
-            # Send off log
-            if conf["transcript"]:
-                if chan:
-                    history = await self.fetch_channel_history(chan)
-                    history.reverse()
-                    filename = f"{member.name}-{member.id}.txt"
-                    filename = filename.replace("/", "")
-                    if log_chan:
-                        text = ""
-                        for msg in history:
-                            if msg.author.id == self.bot.user.id:
-                                continue
-                            if not msg:
-                                continue
-                            if not msg.content:
-                                continue
-                            text += f"{msg.author.name}: {msg.content}\n"
-                        iofile = StringIO(text)
-                        file = discord.File(iofile, filename=filename)
-                        await log_chan.send(embed=embed, file=file)
-            else:
-                if log_chan:
-                    await log_chan.send(embed=embed)
-            # Delete old log msg
-            if log_chan:
-                log_msg_id = ticket["logmsg"]
-                try:
-                    log_msg = await log_chan.fetch_message(log_msg_id)
-                except discord.NotFound:
-                    log.warning("Failed to get log channel message")
-                    log_msg = None
-                if log_msg:
-                    try:
-                        await log_msg.delete()
-                    except Exception as e:
-                        log.warning(f"Failed to auto-delete log message: {e}")
-            # Delete ticket channel
-            try:
-                await chan.delete()
-            except Exception as e:
-                log.warning(f"Failed to auto-delete ticket channel: {e}")
-        async with self.config.guild(member.guild).opened() as tickets:
-            if str(member.id) in tickets:
-                del tickets[str(member.id)]
+            if not chan:
+                continue
+            actasks.append(self.close_ticket(member, chan, conf, "User left guild(Auto-Close)"))
+        if actasks:
+            await asyncio.gather(*actasks)
