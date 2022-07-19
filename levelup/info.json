@@ -18,7 +18,7 @@
   "required_cogs": {},
   "requirements": [
     "matplotlib",
-    "aiohttp",
+    "requests",
     "pillow==9.1.1",
     "validators",
     "tabulate",

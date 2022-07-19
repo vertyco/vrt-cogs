@@ -3,8 +3,8 @@ import random
 import typing
 
 import discord
-from redbot.core.utils.chat_formatting import box
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import box
 
 _ = Translator("LevelUp", __file__)
 
