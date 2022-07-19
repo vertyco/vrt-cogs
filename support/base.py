@@ -69,16 +69,13 @@ class BaseCommands(commands.Cog):
         await ctx.send("Ticket has been renamed")
 
     @commands.command(name="sclose")
-    async def close_ticket(self, ctx: commands.Context, *, reason: str = None):
+    async def close_a_ticket(self, ctx: commands.Context, *, reason: str = None):
         """Close your ticket"""
         user = ctx.author
         guild = ctx.guild
         chan = ctx.channel
         conf = await self.config.guild(guild).all()
-        dm = conf["dm"]
-        log_chan = conf["log"]
         opened = conf["opened"]
-        transcript = conf["transcript"]
         owner_id = self.get_ticket_owner(opened, str(chan.id))
         if not owner_id:
             return await ctx.send("This is not a ticket channel, or it has been removed from config")
@@ -100,81 +97,73 @@ class BaseCommands(commands.Cog):
             owner = guild.get_member(int(owner_id))
             if not owner:
                 owner = await self.bot.fetch_user(int(owner_id))
+        await self.close_ticket(owner, chan, conf, reason)
 
-        ticket = opened[owner_id][str(chan.id)]
+    async def close_ticket(self, member: discord.Member, channel: discord.TextChannel, conf: dict, reason: str):
+        opened = conf["opened"]
+        if not opened:
+            return
+        uid = str(member.id)
+        cid = str(channel.id)
+        if uid not in opened:
+            return
+        if cid not in opened[uid]:
+            return
+        ticket = opened[uid][cid]
         pfp = ticket["pfp"]
-
-        now = datetime.datetime.now()
-        now = now.astimezone()
-
-        opened = datetime.datetime.fromisoformat(ticket["opened"])
-        opened = opened.astimezone()
-
-        opened = opened.strftime('%m/%d/%y at %I:%M %p %Z')
-        closed = now.strftime('%m/%d/%y at %I:%M %p %Z')
-
+        opened = ticket["opened"]
+        opened = datetime.datetime.fromisoformat(opened)
+        opened = opened.strftime('%m/%d/%y at %I:%M %p')
+        closed = datetime.datetime.now().strftime('%m/%d/%y at %I:%M %p')
         embed = discord.Embed(
             title="Ticket Closed",
-            description=f"Ticket created by **{owner.name}-{owner_id}** has been closed.\n"
+            description=f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
                         f"`Opened on: `{opened}\n"
                         f"`Closed on: `{closed}\n"
-                        f"`Closed by: `{ctx.author.name}\n"
-                        f"`Reason:    `{reason}\n",
+                        f"`Closed by: `{self.bot.user.name}\n"
+                        f"`Reason:    `{reason}",
             color=discord.Color.green()
         )
         embed.set_thumbnail(url=pfp)
-        async with self.config.guild(ctx.guild).opened() as tickets:
-            del tickets[owner_id][str(chan.id)]
+        log_chan = conf["log"]
         if log_chan:
-            log_chan = guild.get_channel(log_chan)
-        # If transcript is enabled, gather messages before sending to log
-        if transcript:
-            tr = discord.Embed(
+            log_chan = self.bot.get_channel(log_chan)
+
+        if conf["transcript"]:
+            em = discord.Embed(
                 description="Archiving channel...",
                 color=discord.Color.magenta()
             )
-            tr.set_footer(text="This channel will be deleted once complete")
-            tr.set_thumbnail(url=LOADING)
-            await ctx.send(embed=tr)
-            history = await self.fetch_channel_history(chan)
-            history.reverse()
-            filename = f"{owner.name}-{owner_id}.txt"
+            em.set_footer(text="This channel will be deleted once complete")
+            em.set_thumbnail(url=LOADING)
+            await channel.send(embed=em)
+            history = await self.fetch_channel_history(channel)
+            filename = f"{member.name}-{member.id}.txt"
             filename = filename.replace("/", "")
-            if log_chan:
-                text = ""
-                for msg in history:
-                    if msg.author.id == self.bot.user.id:
-                        continue
-                    if not msg:
-                        continue
-                    if not msg.content:
-                        continue
-                    text += f"{msg.author.name}: {msg.content}\n"
-                iofile = StringIO(text)
-                file = discord.File(iofile, filename=filename)
-                await log_chan.send(embed=embed, file=file)
-
-            try:
-                await chan.delete()
-            except Exception as e:
-                log.warning(f"Failed to delete ticket channel: {e}")
-        # Otherwise just delete the channel and send to log
+            text = ""
+            for msg in history:
+                if msg.author.id == self.bot.user.id:
+                    continue
+                if not msg:
+                    continue
+                if not msg.content:
+                    continue
+                text += f"{msg.author.name}: {msg.content}\n"
+            iofile = StringIO(text)
+            file = discord.File(iofile, filename=filename)
         else:
-            try:
-                await chan.delete()
-            except Exception as e:
-                log.warning(f"Failed to delete ticket channel: {e}")
-            if log_chan:
-                await log_chan.send(embed=embed)
+            file = None
 
-        # If DM is on, also send log to ticket owner
-        if dm and owner:
+        # Send off new messages
+        if log_chan:
+            await log_chan.send(embed=embed, file=file)
+        if conf["dm"]:
             try:
-                await owner.send(embed=embed)
-            except discord.Forbidden:  # Bot is either blocked or user has left
+                await member.send(embed=embed, file=file)
+            except discord.Forbidden:
                 pass
 
-        # Delete old log message
+        # Delete old log msg
         if log_chan:
             log_msg_id = ticket["logmsg"]
             try:
@@ -186,14 +175,33 @@ class BaseCommands(commands.Cog):
                 try:
                     await log_msg.delete()
                 except Exception as e:
-                    log.warning(f"Failed to delete log message: {e}")
+                    log.warning(f"Failed to auto-delete log message: {e}")
+
+        # Delete ticket channel
+        try:
+            await channel.delete()
+        except Exception as e:
+            log.warning(f"Failed to delete ticket channel: {e}")
+
+        async with self.config.guild(member.guild).opened() as tickets:
+            if uid not in tickets:
+                return
+            if cid not in tickets[uid]:
+                return
+            del tickets[uid][cid]
 
     @staticmethod
     async def fetch_channel_history(channel: discord.TextChannel):
         history = []
-        async for msg in channel.history():
+        async for msg in channel.history(oldest_first=True):
             history.append(msg)
         return history
+
+    @staticmethod
+    async def ticket_owner_hastyped(channel: discord.TextChannel, user: discord.Member):
+        async for msg in channel.history(limit=50):
+            if msg.author.id == user.id:
+                return True
 
     @staticmethod
     def get_ticket_owner(opened: dict, channel_id: str):

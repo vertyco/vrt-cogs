@@ -34,6 +34,10 @@ class SupportCommands(commands.Cog):
             button_channel = button_channel.mention
         else:
             button_channel = conf['channel_id']
+        inactive = conf["inactive"]
+        no_resp = f"{inactive} {'hours' if inactive != 1 else 'hour'}"
+        if not inactive:
+            no_resp = "Disabled"
         msg = f"`Ticket Category:  `{category}\n" \
               f"`Button MessageID: `{conf['message_id']}\n" \
               f"`Button Channel:   `{button_channel}\n" \
@@ -46,7 +50,8 @@ class SupportCommands(commands.Cog):
               f"`Users can Manage: `{conf['user_can_manage']}\n" \
               f"`Save Transcripts: `{conf['transcript']}\n" \
               f"`Auto Close:       `{conf['auto_close']}\n" \
-              f"`Ticket Name:      `{conf['ticket_name']}\n"
+              f"`Ticket Name:      `{conf['ticket_name']}\n" \
+              f"`NoResponseDelete: `{no_resp}\n"
         log = conf["log"]
         if log:
             lchannel = ctx.guild.get_channel(log)
@@ -137,8 +142,6 @@ class SupportCommands(commands.Cog):
 
         You can set this to {default} to restore original settings
         """
-        if "[" in message or "]" in message:
-            return await ctx.send("Wrong brackets, use { } instead")
         if len(message) > 1024:
             return await ctx.send("Message length is too long! Must be less than 1024 chars")
         await self.config.guild(ctx.guild).message.set(message)
@@ -263,6 +266,16 @@ class SupportCommands(commands.Cog):
         You can set this to {default} to use default "Ticket-Username
         """
         await self.config.guild(ctx.guild).ticket_name.set(default_name)
+        await ctx.tick()
+
+    @support.command(name="noresponse")
+    async def no_response_close(self, ctx: commands.Context, hours: int):
+        """
+        Auto-close ticket if opener doesn't say anything after X hours of opening
+
+        Set to 0 to disable this
+        """
+        await self.config.guild(ctx.guild).inactive.set(hours)
         await ctx.tick()
 
     # TOGGLES --------------------------------------------------------------------------------
