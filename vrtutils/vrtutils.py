@@ -119,11 +119,11 @@ class VrtUtils(commands.Cog):
     @commands.is_owner()
     async def getusernames(self, ctx):
         """Get all usernames of this guild in a json file"""
-        members = []
+        members = {}
         for member in ctx.guild.members:
-            members.append(str(member.name))
+            members[str(member.id)] = member.name
 
         iofile = StringIO(json.dumps(members))
-        filename = f"{ctx.guild.name}-usernames.json"
+        filename = f"users.json"
         file = discord.File(iofile, filename=filename)
         await ctx.send("Here are all usersnames for this guild", file=file)
