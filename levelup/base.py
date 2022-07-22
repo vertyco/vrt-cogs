@@ -30,14 +30,14 @@ class UserCommands(commands.Cog):
 
     # Generate rinky dink profile image
     async def gen_profile_img(self, args: dict):
-        image = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+        file = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
+        # file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
     # Generate rinky dink level up image
     async def gen_levelup_img(self, args: dict):
-        image = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
-        file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+        file = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
+        # file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
         return file
 
     # Function to test a given URL and see if it's valid
