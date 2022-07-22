@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 from io import BytesIO
 from math import sqrt
 
@@ -217,11 +218,11 @@ class Generator:
         blank.paste(rep_icon, (780, 29))
 
         final = Image.alpha_composite(pre, blank)
-        final_bytes = BytesIO()
-        final.save(final_bytes, 'WEBP')
-        final_bytes.seek(0)
-        final.close()
-        return final_bytes
+        with BytesIO() as final_bytes:
+            final.save(final_bytes, 'WEBP')
+            final_bytes.seek(0)
+            file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
+            return file
 
     def generate_levelup(
             self,
@@ -284,11 +285,11 @@ class Generator:
         pre = Image.alpha_composite(card, pfp_composite_holder)
 
         final = Image.alpha_composite(pre, pfp_composite_holder)
-        final_bytes = BytesIO()
-        final.save(final_bytes, 'WEBP')
-        final.close()
-        final_bytes.seek(0)
-        return final_bytes
+        with BytesIO() as final_bytes:
+            final.save(final_bytes, 'WEBP')
+            final_bytes.seek(0)
+            file = discord.File(fp=final_bytes, filename=f"levelup_{random.randint(1000, 99999)}.webp")
+            return file
 
     @staticmethod
     def get_image_content_from_url(url: str):
