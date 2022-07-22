@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import discord
 from io import BytesIO
 from math import sqrt
 
