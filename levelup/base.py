@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import math
@@ -359,19 +360,16 @@ class UserCommands(commands.Cog):
                 file = await self.gen_profile_img(args)
                 if not file:
                     return await ctx.send(f"Failed to generate profile image :( try again in a bit")
-                failed = False
                 try:
                     await ctx.reply(file=file, mention_author=mention)
-                except discord.HTTPException:
-                    failed = True
                 except Exception as e:
-                    log.warning(f"Error sending generated profile: {e}")
-                    failed = True
-                if failed:
+                    log.error(f"Failed to send profile pic: {e}")
+                    await asyncio.sleep(5)
                     try:
-                        await ctx.send(file=file)
+                        await ctx.reply(file=file, mention_author=mention)
                     except Exception as e:
-                        log.warning(f"Failed AGAIN to send generated profile: {e}")
+                        log.error(f"Failed again to send profile pic: {e}")
+                        await ctx.send(f"Failed to send profile pic to discord. Try again in a few minutes.")
 
     @commands.command(name="prestige")
     @commands.guild_only()
