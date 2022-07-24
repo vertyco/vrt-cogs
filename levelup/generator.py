@@ -223,6 +223,7 @@ class Generator:
             final.save(final_bytes, 'WEBP')
             final_bytes.seek(0)
             file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.webp")
+            final.close()
             return file
 
     def generate_levelup(
@@ -290,6 +291,7 @@ class Generator:
             final.save(final_bytes, 'WEBP')
             final_bytes.seek(0)
             file = discord.File(fp=final_bytes, filename=f"levelup_{random.randint(1000, 99999)}.webp")
+            final.close()
             return file
 
     @staticmethod
