@@ -42,7 +42,7 @@ _ = Translator("LevelUp", __file__)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.3.27"
+    __version__ = "1.3.28"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -938,26 +938,20 @@ class LevelUp(UserCommands, commands.Cog):
     async def cleanup_guild(self, ctx: commands.Context):
         """Delete users no longer in the server"""
         guild = ctx.guild
-        members = guild.members
+        members = [u.id for u in guild.members]
         cleanup = []
-        users = await self.config.guild(ctx.guild).users()
-        for user_id in users:
-            user = guild.get_member(int(user_id))
-            if not user:  # Banish the heretics
+        savedusers = await self.config.guild(ctx.guild).users()
+        for user_id in savedusers:
+            if int(user_id) not in members:
                 cleanup.append(user_id)
-            elif user not in members:  # Also banish the heretics
-                cleanup.append(user_id)
-            elif user.bot:  # Cleanup my noob mistakes
-                cleanup.append(user_id)
-            else:
-                continue
         if not cleanup:
             return await ctx.send(_("Nothing to clean"))
         cleaned = 0
-        for uid in cleanup:
-            del users[uid]
-            cleaned += 1
-        await self.config.guild(ctx.guild).users.set(users)
+        async with self.config.guild(ctx.guild).users() as users:
+            for uid in cleanup:
+                if uid in users:
+                    del users[uid]
+                    cleaned += 1
         await ctx.send(_(f"Deleted {cleaned} user ID's from the config that are no longer in the server"))
 
     @lvl_group.group(name="messages")
