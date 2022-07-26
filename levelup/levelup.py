@@ -669,7 +669,7 @@ class LevelUp(UserCommands, commands.Cog):
         """
         Cog admin commands
 
-        Reset levels, bakup and restore cog data
+        Reset levels, backup and restore cog data
         """
         pass
 
@@ -1178,7 +1178,7 @@ class LevelUp(UserCommands, commands.Cog):
 
     @lvl_group.command(name="embeds")
     async def toggle_embeds(self, ctx: commands.Context):
-        """Toggle useing embeds or generated pics"""
+        """Toggle using embeds or generated pics"""
         usepics = await self.config.guild(ctx.guild).usepics()
         if usepics:
             await self.config.guild(ctx.guild).usepics.set(False)
