@@ -85,10 +85,10 @@ class VrtUtils(commands.Cog):
     @staticmethod
     def get_bar(progress, total, perc=None, width: int = 20) -> str:
         if perc is not None:
-            ratio = float(perc) / 100
+            ratio = perc / 100
         else:
             ratio = progress / total
-        bar = "█" * int(ratio * width) + "-" * int(width - (ratio * width))
+        bar = "█" * round(ratio * width) + "-" * round(width - (ratio * width))
         return f"|{bar}| {round(100 * ratio)}%"
 
     @staticmethod
@@ -547,8 +547,8 @@ class VrtUtils(commands.Cog):
                 cpustats += f"{cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
             else:
                 for i, obj in enumerate(cpu_freq):
-                    await ctx.send(str(obj))
-                    cpustats += f"Core {i}: {obj.current}/{obj.max} Mhz\n"
+                    maxfreq = f"/{obj.max}" if obj.max else ""
+                    cpustats += f"Core {i}: {obj.current}{maxfreq} Mhz\n"
             if isinstance(cpu_perc, list):
                 for i, perc in enumerate(cpu_perc):
                     space = " "
