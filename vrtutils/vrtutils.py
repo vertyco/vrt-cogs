@@ -547,8 +547,8 @@ class VrtUtils(commands.Cog):
                 cpustats += f"{cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
             else:
                 for i, obj in enumerate(cpu_freq):
-                    maxfreq = f"/{obj.max}" if obj.max else ""
-                    cpustats += f"Core {i}: {obj.current}{maxfreq} Mhz\n"
+                    maxfreq = f"/{round(obj.max, 2)}" if obj.max else ""
+                    cpustats += f"Core {i}: {round(obj.current, 2)}{maxfreq} Mhz\n"
             if isinstance(cpu_perc, list):
                 for i, perc in enumerate(cpu_perc):
                     space = " "
