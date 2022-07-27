@@ -200,7 +200,7 @@ class BaseCommands(commands.Cog):
 
     @staticmethod
     async def ticket_owner_hastyped(channel: discord.TextChannel, user: discord.Member):
-        async for msg in channel.history(limit=50):
+        async for msg in channel.history(limit=50, oldest_first=True):
             if msg.author.id == user.id:
                 return True
 

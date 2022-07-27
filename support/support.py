@@ -79,6 +79,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         # Dislash monkeypatch
         self.inter_client = InteractionClient(bot)
 
+        self.valid = []  # Valid tickets that owner has typed in(so don't auto-close)
+
     def cog_unload(self):
         self.check_listener.cancel()
         self.auto_close.cancel()
@@ -330,7 +332,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     opened[str(user.id)][str(channel.id)]["logmsg"] = str(log_msg.id)
         return await self.listen(message)
 
-    @tasks.loop(minutes=30)
+    @tasks.loop(minutes=20)
     async def auto_close(self):
         actasks = []
         for guild in self.bot.guilds:
@@ -346,6 +348,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 if not member:
                     continue
                 for channel_id, data in tickets.items():
+                    if channel_id in self.valid:
+                        continue
                     channel = guild.get_channel(int(channel_id))
                     if not channel:
                         continue
@@ -353,6 +357,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     opened_on = datetime.datetime.fromisoformat(data["opened"])
                     hastyped = await self.ticket_owner_hastyped(channel, member)
                     if hastyped:
+                        if channel_id not in self.valid:
+                            self.valid.append(channel_id)
                         continue
                     td = (now - opened_on).total_seconds() / 3600
                     if td < inactive:
@@ -361,9 +367,12 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     actasks.append(
                         self.close_ticket(
                             member, channel, conf,
-                            f"Did not say anything after opening a ticket for {inactive} {time}", self.bot.user.name
+                            f"(Auto-Close) Opened ticket with no response for {inactive} {time}", self.bot.user.name
                         )
                     )
+                    log.info(f"Ticket opened by {member.name} has been auto-closed.\n"
+                             f"Has typed: {hastyped}\n"
+                             f"Hours elapsed: {td}")
         if tasks:
             await asyncio.gather(*actasks)
 
