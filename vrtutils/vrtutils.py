@@ -494,8 +494,8 @@ class VrtUtils(commands.Cog):
                 osdat = platform.mac_ver()
                 ostype = f"Mac OS {osdat[0]} {osdat[1]}"
             elif sys.platform == "linux":
-                osdat = platform.linux_distribution()
-                ostype = f"{osdat[0]} {osdat[1]}"
+                import distro
+                ostype = f"{distro.name()} {distro.version()}"
             else:
                 ostype = "Unknown"
 
