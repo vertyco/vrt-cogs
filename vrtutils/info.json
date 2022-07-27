@@ -2,11 +2,11 @@
   "author": [
     "Vertyco"
   ],
-  "description": "Random utilities for bot owners",
+  "description": "Random utilities for bot/guild owners, inspired by various other utility cogs.",
   "disabled": false,
   "end_user_data_statement": "This cog does not store data about users.",
   "hidden": false,
-  "install_msg": "Thank you for installing.",
+  "install_msg": "Thank you for installing!",
   "min_bot_version": "3.4.0",
   "min_python_version": [
     3,
@@ -16,9 +16,10 @@
   "permissions": [],
   "required_cogs": {},
   "requirements": [
-    "psutil"
+    "psutil",
+    "py-cpuinfo"
   ],
-  "short": "Bot owner utilities",
+  "short": "Bot/Guild owner utilities",
   "tags": [
     "utility"
   ],
