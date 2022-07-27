@@ -43,10 +43,10 @@ class VrtUtils(commands.Cog):
     """
     Utility commands inspired or recycled from various utility cogs.
 
-    **Cog creators whos' code I either took inspiration or recycled functions from**
-    TrustyJAID's Serverstats cog: https://github.com/TrustyJAID/Trusty-cogs
-    Kennnyshiwa's imperialtoolkit cog: https://github.com/kennnyshiwa/kennnyshiwa-cogs
-    PhasecoreX's netspeed cog: https://github.com/PhasecoreX/PCXCogs
+    **Cog creators whos' code I either got inspiration or recycled functions from**
+    TrustyJAID's Serverstats cog(getguild): https://github.com/TrustyJAID/Trusty-cogs
+    Kennnyshiwa's imperialtoolkit cog(botstat): https://github.com/kennnyshiwa/kennnyshiwa-cogs
+    PhasecoreX's netspeed cog(netspeed): https://github.com/PhasecoreX/PCXCogs
 
     This cog was created to condense the amount of cogs I had loaded and to only have the commands I wanted.
     """
@@ -523,7 +523,7 @@ class VrtUtils(commands.Cog):
 
             embed = discord.Embed(
                 title=_(f"Stats for {self.bot.user.name}"),
-                description=_(f"Below are various stats about the bot and the server it runs on."),
+                description=_(f"Below are various stats about the bot and the system it runs on."),
                 color=await ctx.embed_color()
             )
 
@@ -537,7 +537,7 @@ class VrtUtils(commands.Cog):
                        f"Red Version: {red_version}\n" \
                        f"dpy Version: {dpy}"
             embed.add_field(
-                name="\N{ROBOT FACE} Bot",
+                name="\N{ROBOT FACE} BOT",
                 value=box(_(botstats), lang="python"),
                 inline=False
             )
