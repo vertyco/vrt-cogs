@@ -522,7 +522,7 @@ class VrtUtils(commands.Cog):
             red_version = version_info
 
             embed = discord.Embed(
-                title=_(f"Status for {self.bot.user.name}"),
+                title=_(f"Stats for {self.bot.user.name}"),
                 description=_(f"Below are various stats about the bot and the server it runs on."),
                 color=await ctx.embed_color()
             )
