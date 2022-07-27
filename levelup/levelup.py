@@ -125,6 +125,8 @@ class LevelUp(UserCommands, commands.Cog):
     def cog_unload(self):
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
+        for guild in self.bot.guilds:
+            asyncio.create_task(self.dump_cache(guild))
 
     # Add a user to cache
     async def cache_user(self, guild: str, user: str):
