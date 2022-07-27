@@ -3,6 +3,7 @@ from pathlib import Path
 from io import StringIO, BytesIO
 import json
 import datetime
+import speedtest
 import os
 import sys
 import platform
@@ -40,9 +41,16 @@ else:
 
 class VrtUtils(commands.Cog):
     """
-    Assortment of utility commands for bot/guild owners
+    Utility commands inspired or recycled from various utility cogs.
+
+    **Cog creators whos' code I either took inspiration or recycled functions from**
+    TrustyJAID's Serverstats cog: https://github.com/TrustyJAID/Trusty-cogs
+    Kennnyshiwa's imperialtoolkit cog: https://github.com/kennnyshiwa/kennnyshiwa-cogs
+    PhasecoreX's netspeed cog: https://github.com/PhasecoreX/PCXCogs
+
+    This cog was created to condense the amount of cogs I had loaded and to only have the commands I wanted.
     """
-    __author__ = "Vertyco"
+    __author__ = "Vertyco and friends"
     __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
@@ -82,6 +90,34 @@ class VrtUtils(commands.Cog):
             ratio = progress / total
         bar = "█" * int(ratio * width) + "-" * int(width - (ratio * width))
         return f"|{bar}| {round(100 * ratio)}%"
+
+    @staticmethod
+    def speedtest_embed(step: int, results_dict):
+        """Generate the embed."""
+        measuring = ":mag: Measuring..."
+        waiting = ":hourglass: Waiting..."
+        color = discord.Color.dark_orange()
+        title = "Measuring network speed..."
+        message_ping = measuring
+        message_down = waiting
+        message_up = waiting
+        if step > 0:
+            message_ping = f"**{results_dict['ping']}** ms"
+            message_down = measuring
+            color = discord.Color.red()
+        if step > 1:
+            message_down = f"**{round(results_dict['download'] / 1000000, 2)}** mbps"
+            message_up = measuring
+            color = discord.Color.orange()
+        if step > 2:
+            message_up = f"**{round(results_dict['upload'] / 1000000, 2)}** mbps"
+            title = "Speedtest Results"
+            color = discord.Color.green()
+        embed = discord.Embed(title=title, color=color)
+        embed.add_field(name="Ping", value=message_ping)
+        embed.add_field(name="Download", value=message_down)
+        embed.add_field(name="Upload", value=message_up)
+        return embed
 
     async def get_invite(self, guild: discord.Guild, max_age: int = 3600):
         # Yoinked from Trusty with love
@@ -246,10 +282,6 @@ class VrtUtils(commands.Cog):
             description=desc,
             colour=colour,
         )
-        if DPY2:
-            d_empty = None
-        else:
-            d_empty = discord.Embed.Empty
         if "VERIFIED" in guild.features:
             auth_icon = "https://cdn.discordapp.com/emojis/457879292152381443.png"
         elif "PARTNERED" in guild.features:
@@ -428,7 +460,7 @@ class VrtUtils(commands.Cog):
         """
         Get info about the bot
 
-        Inspired by kennnyshiwa's imperialtoolkit command
+        Inspired by kennnyshiwa's imperialtoolkit botstat command
         https://github.com/kennnyshiwa/kennnyshiwa-cogs
         """
         async with ctx.typing():
@@ -563,7 +595,7 @@ class VrtUtils(commands.Cog):
         """
         View info about guilds the bot is in
 
-        Pulled mostly from Trusty's Serverstats cog
+        Pulled mostly from Trusty's Serverstats cog with love
         https://github.com/TrustyJAID/Trusty-cogs
         """
         async with ctx.typing():
@@ -598,3 +630,22 @@ class VrtUtils(commands.Cog):
         else:
             embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.is_owner()
+    async def speedtest(self, ctx):
+        """
+        Test the bot's internet speed
+
+        Pulled from PhasecoreX's netspeed cog with love
+        https://github.com/PhasecoreX/PCXCogs
+        """
+        speed_test = speedtest.Speedtest(secure=True)
+        msg = await ctx.send(embed=self.speedtest_embed(0, speed_test.results.dict()))
+        await self.bot.loop.run_in_executor(None, speed_test.get_servers)
+        await self.bot.loop.run_in_executor(None, speed_test.get_best_server)
+        await msg.edit(embed=self.speedtest_embed(1, speed_test.results.dict()))
+        await self.bot.loop.run_in_executor(None, speed_test.download)
+        await msg.edit(embed=self.speedtest_embed(2, speed_test.results.dict()))
+        await self.bot.loop.run_in_executor(None, speed_test.upload)
+        await msg.edit(embed=self.speedtest_embed(3, speed_test.results.dict()))
