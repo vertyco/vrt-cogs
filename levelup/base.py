@@ -377,7 +377,7 @@ class UserCommands(commands.Cog):
         """
         Prestige your rank!
         Once you have reached this servers prestige level requirement, you can
-        reset your stats to gain a prestige level and any perks associated with it
+        reset your level and experience to gain a prestige level and any perks associated with it
         """
         conf = await self.config.guild(ctx.guild).all()
         perms = ctx.channel.permissions_for(ctx.guild.me).manage_roles
@@ -412,6 +412,8 @@ class UserCommands(commands.Cog):
                 async with self.config.guild(ctx.guild).all() as conf:
                     conf[user_id]["prestige"] = pending_prestige
                     conf[user_id]["emoji"] = emoji
+                    conf[user_id]["level"] = 1
+                    conf[user_id]["xp"] = 0
             else:
                 return await ctx.send(_(f"Prestige level {pending_prestige} has not been set yet!"))
         else:
