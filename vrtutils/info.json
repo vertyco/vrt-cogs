@@ -2,7 +2,7 @@
   "author": [
     "Vertyco"
   ],
-  "description": "Random utilities for bot/guild owners, inspired by various other utility cogs.",
+  "description": "This cog is a conglomerate of commands made for my convenience either from scratch or revised/pulled from other cogs. Notable mentions are Trusty's Serverstats cog, kennnyshiwa's ImperialToolkit cog, and PhasecoreX's netspeed cog.",
   "disabled": false,
   "end_user_data_statement": "This cog does not store data about users.",
   "hidden": false,
@@ -20,7 +20,7 @@
     "py-cpuinfo",
     "speedtest-cli>=2.1.3"
   ],
-  "short": "Bot/Guild owner utilities",
+  "short": "Utility commands inspired or recycled from various utility cogs.",
   "tags": [
     "utility"
   ],
