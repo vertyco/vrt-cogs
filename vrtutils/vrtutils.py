@@ -51,7 +51,7 @@ class VrtUtils(commands.Cog):
     This cog was created to condense the amount of cogs I had loaded and to only have the commands I wanted.
     """
     __author__ = "Vertyco and friends"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
