@@ -378,24 +378,25 @@ class VrtUtils(commands.Cog):
     @commands.is_owner()
     async def getlibs(self, ctx):
         """Get all current installed packages on the bots venv"""
-        packages = [str(p) for p in pkg_resources.working_set]
-        packages = sorted(packages, key=str.lower)
-        text = ""
-        for package in packages:
-            text += f"{package}\n"
-        embeds = []
-        page = 1
-        for p in pagify(text):
-            embed = discord.Embed(
-                description=box(p)
-            )
-            embed.set_footer(text=f"Page {page}")
-            page += 1
-            embeds.append(embed)
-        if len(embeds) > 1:
-            await menu(ctx, embeds, DEFAULT_CONTROLS)
-        else:
-            await ctx.send(embed=embeds[0])
+        async with ctx.typing():
+            packages = [str(p) for p in pkg_resources.working_set]
+            packages = sorted(packages, key=str.lower)
+            text = ""
+            for package in packages:
+                text += f"{package}\n"
+            embeds = []
+            page = 1
+            for p in pagify(text):
+                embed = discord.Embed(
+                    description=box(p)
+                )
+                embed.set_footer(text=f"Page {page}")
+                page += 1
+                embeds.append(embed)
+            if len(embeds) > 1:
+                await menu(ctx, embeds, DEFAULT_CONTROLS)
+            else:
+                await ctx.send(embed=embeds[0])
 
     @commands.command()
     @commands.is_owner()
@@ -424,21 +425,21 @@ class VrtUtils(commands.Cog):
                 results = subprocess.run(command, stdout=subprocess.PIPE).stdout.decode("utf-8")
                 return results
 
-        res = await self.bot.loop.run_in_executor(None, pipexe)
-        embeds = []
-        page = 1
-        for p in pagify(res):
-            embed = discord.Embed(
-                title="Packages Updated",
-                description=box(p)
-            )
-            embed.set_footer(text=f"Page {page}")
-            page += 1
-            embeds.append(embed)
-        if len(embeds) > 1:
-            await menu(ctx, embeds, DEFAULT_CONTROLS)
-        else:
-            await ctx.send(embed=embeds[0])
+            res = await self.bot.loop.run_in_executor(None, pipexe)
+            embeds = []
+            page = 1
+            for p in pagify(res):
+                embed = discord.Embed(
+                    title="Packages Updated",
+                    description=box(p)
+                )
+                embed.set_footer(text=f"Page {page}")
+                page += 1
+                embeds.append(embed)
+            if len(embeds) > 1:
+                await menu(ctx, embeds, DEFAULT_CONTROLS)
+            else:
+                await ctx.send(embed=embeds[0])
 
     @commands.command()
     @commands.is_owner()
@@ -541,8 +542,8 @@ class VrtUtils(commands.Cog):
                 inline=False
             )
 
-            cpustats = f"CPU:   {cpu_type}\n" \
-                       f"Cores: {cpu_count}\n"
+            cpustats = f"CPU:    {cpu_type}\n" \
+                       f"Cores:  {cpu_count}\n"
             if len(cpu_freq) == 1:
                 cpustats += f"{cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
             else:
