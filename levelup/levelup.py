@@ -42,7 +42,7 @@ _ = Translator("LevelUp", __file__)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.3.28"
+    __version__ = "1.3.29"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -157,25 +157,28 @@ class LevelUp(UserCommands, commands.Cog):
         exp = conf["exp"]
         leveluptasks = []
         async with self.config.guild(guild).users() as users:
-            for user, data in usercache.items():
-                if not data:
-                    continue
-                if user not in users:
-                    users[user] = data
-                else:
-                    users[user]["xp"] += data["xp"]
-                    users[user]["voice"] += data["voice"]
-                    users[user]["messages"] += data["messages"]
-                saved_level = users[user]["level"]
-                new_level = get_level(int(users[user]["xp"]), base, exp)
-                if str(new_level) != str(saved_level):
-                    bg = users[user]["background"]
-                    leveluptasks.append(self.level_up(guild, user, new_level, bg))
-                    users[user]["level"] = new_level
-                # Set values back to 0
-                data["xp"] = 0
-                data["voice"] = 0
-                data["messages"] = 0
+            try:
+                for user, data in usercache.items():
+                    if not data:
+                        continue
+                    if user not in users:
+                        users[user] = data
+                    else:
+                        users[user]["xp"] += data["xp"]
+                        users[user]["voice"] += data["voice"]
+                        users[user]["messages"] += data["messages"]
+                    saved_level = users[user]["level"]
+                    new_level = get_level(int(users[user]["xp"]), base, exp)
+                    if str(new_level) != str(saved_level):
+                        bg = users[user]["background"]
+                        leveluptasks.append(self.level_up(guild, user, new_level, bg))
+                        users[user]["level"] = new_level
+                    # Set values back to 0
+                    data["xp"] = 0
+                    data["voice"] = 0
+                    data["messages"] = 0
+            except ValueError:
+                log.error(f"Could not dump cache for {guild.name}\nGuild cache: {usercache}")
         await asyncio.gather(*leveluptasks)
 
     # User has leveled up, send message and check if any roles are associated with it
