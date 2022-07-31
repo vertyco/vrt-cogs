@@ -42,7 +42,7 @@ _ = Translator("LevelUp", __file__)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.3.29"
+    __version__ = "1.3.30"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -261,9 +261,9 @@ class LevelUp(UserCommands, commands.Cog):
             return
         # Role adding/removal
         if not autoremove:  # Level roles stack
-            for level, role in levelroles.items():
+            for level, role_id in levelroles.items():
                 if int(level) <= int(new_level):  # Then give user that role since they should stack
-                    role = guild.get_role(int(role))
+                    role = guild.get_role(int(role_id))
                     if not role:
                         continue
                     if role not in member.roles:
@@ -277,7 +277,7 @@ class LevelUp(UserCommands, commands.Cog):
 
             if new_level > 1:
                 for role in member.roles:
-                    for level, role_id in levelroles:
+                    for level, role_id in levelroles.items():
                         if int(level) < new_level and str(role.id) == str(role_id):
                             await member.remove_roles(role)
 
