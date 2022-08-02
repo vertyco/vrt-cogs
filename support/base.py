@@ -100,7 +100,7 @@ class BaseCommands(commands.Cog):
         await self.close_ticket(owner, chan, conf, reason, ctx.author.name)
 
     async def close_ticket(self, member: discord.Member, channel: discord.TextChannel,
-                           conf: dict, reason: str, closedby = str):
+                           conf: dict, reason: str, closedby: str):
         opened = conf["opened"]
         if not opened:
             return
@@ -151,6 +151,7 @@ class BaseCommands(commands.Cog):
                     continue
                 text += f"{msg.author.name}: {msg.content}\n"
             iofile = StringIO(text)
+            iofile.seek(0)
             file = discord.File(iofile, filename=filename)
         else:
             file = None
