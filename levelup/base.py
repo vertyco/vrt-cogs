@@ -21,7 +21,11 @@ from .formatter import (
     profile_embed,
 )
 from .generator import Generator
-from .menus import menu, DEFAULT_CONTROLS
+if discord.__version__ > "1.7.3":
+    from .bmenu import menu
+    DEFAULT_CONTROLS = None
+else:
+    from .menu import menu, DEFAULT_CONTROLS
 
 log = logging.getLogger("red.vrt.levelup.commands")
 _ = Translator("LevelUp", __file__)
