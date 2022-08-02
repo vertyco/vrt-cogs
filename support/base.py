@@ -23,8 +23,6 @@ class BaseCommands(commands.Cog):
         owner_id = self.get_ticket_owner(opened, str(chan.id))
         if not owner_id:
             return await ctx.send("This is not a ticket channel, or it has been removed from config")
-        if owner_id == str(ctx.author.id) and not conf["user_can_manage"] and ctx.author.id != guild.owner_id:
-            return await ctx.send("You do not have permissions to add users to your ticket")
         # If a mod tries
         can_add = False
         for role in ctx.author.roles:
@@ -51,8 +49,6 @@ class BaseCommands(commands.Cog):
         owner_id = self.get_ticket_owner(opened, str(chan.id))
         if not owner_id:
             return await ctx.send("This is not a ticket channel, or it has been removed from config")
-        if owner_id == str(ctx.author.id) and not conf["user_can_rename"] and ctx.author.id != guild.owner_id:
-            return await ctx.send("You do not have permissions to rename your ticket")
         can_rename = False
         for role in ctx.author.roles:
             if role.id in conf["support"]:
@@ -79,8 +75,6 @@ class BaseCommands(commands.Cog):
         owner_id = self.get_ticket_owner(opened, str(chan.id))
         if not owner_id:
             return await ctx.send("This is not a ticket channel, or it has been removed from config")
-        if owner_id == str(user.id) and not conf["user_can_close"] and user.id != guild.owner_id:
-            return await ctx.send("Users are not allowed to close their own tickets currently")
         can_close = False
         for role in user.roles:
             if role.id in conf["support"]:
