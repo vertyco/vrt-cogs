@@ -6,6 +6,11 @@ import discord
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
+if discord.__version__ > "1.7.3":
+    DPY2 = True
+else:
+    DPY2 = False
+
 _ = Translator("LevelUp", __file__)
 
 
@@ -182,7 +187,10 @@ async def profile_embed(
         color=user.colour
     )
     embed.add_field(name=_("Progress"), value=box(f"{lvlbar} {lvlpercent} %", lang="python"))
-    embed.set_thumbnail(url=user.avatar_url)
+    if DPY2:
+        embed.set_thumbnail(url=user.avatar.url)
+    else:
+        embed.set_thumbnail(url=user.avatar_url)
     if position:
         embed.set_footer(text=_(f"Rank {position}, with {percentage}% of global server XP"))
     return embed
