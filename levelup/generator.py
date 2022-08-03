@@ -219,12 +219,10 @@ class Generator:
         blank.paste(rep_icon, (780, 29))
 
         final = Image.alpha_composite(pre, blank)
-        with BytesIO() as final_bytes:
-            final.save(final_bytes, 'png')
-            final_bytes.seek(0)
-            file = discord.File(fp=final_bytes, filename=f"image_{random.randint(1000, 99999)}.png")
-            final.close()
-            return file
+        temp = BytesIO()
+        final.save(temp, format="webp")
+        temp.name = f"profile_{random.randint(10000, 99999)}.webp"
+        return temp
 
     def generate_levelup(
             self,
@@ -287,12 +285,10 @@ class Generator:
         pre = Image.alpha_composite(card, pfp_composite_holder)
 
         final = Image.alpha_composite(pre, pfp_composite_holder)
-        with BytesIO() as final_bytes:
-            final.save(final_bytes, 'png')
-            final_bytes.seek(0)
-            file = discord.File(fp=final_bytes, filename=f"levelup_{random.randint(1000, 99999)}.png")
-            final.close()
-            return file
+        temp = BytesIO()
+        final.save(temp, format="webp")
+        temp.name = f"profile_{random.randint(10000, 99999)}.webp"
+        return temp
 
     @staticmethod
     def get_image_content_from_url(url: str):
