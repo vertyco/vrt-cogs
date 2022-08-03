@@ -21,6 +21,7 @@ async def menu(
         message: discord.Message = None,
         page: int = 0,
         timeout: float = 30.0,
+        search: bool = False
 ):
     """
     An emoji-based menu
@@ -50,6 +51,8 @@ async def menu(
         The current page number of the menu
     timeout: float
         The time (in seconds) to wait for a reaction
+    search: bool
+        Whether the search button is included
 
     Raises
     ------
