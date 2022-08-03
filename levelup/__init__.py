@@ -9,4 +9,7 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 async def setup(bot):
     cog = LevelUp(bot)
-    bot.add_cog(cog)
+    try:
+        bot.add_cog(cog)
+    except TypeError:
+        await bot.add_cog(cog)
