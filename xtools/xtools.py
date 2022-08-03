@@ -578,7 +578,7 @@ class XTools(commands.Cog):
 
             search_con = DEFAULT_CONTROLS.copy()
             search_con["\N{LEFT-POINTING MAGNIFYING GLASS}"] = self.searching
-            await menu(ctx, pages, search_controls)
+            await menu(ctx, pages, search_con)
 
     async def searching(self,
                         ctx: commands.Context,
