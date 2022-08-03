@@ -578,7 +578,7 @@ class XTools(commands.Cog):
 
             search_con = DEFAULT_CONTROLS.copy()
             search_con["\N{LEFT-POINTING MAGNIFYING GLASS}"] = self.searching
-            await menu(ctx, pages, search_con)
+            await menu(ctx, pages, search_con, search=True)
 
     async def searching(self,
                         ctx: commands.Context,
@@ -586,7 +586,8 @@ class XTools(commands.Cog):
                         controls: dict,
                         msg: discord.Message,
                         page: int,
-                        timeout: float
+                        timeout: float,
+                        emoji: str
                         ):
         data = self.cache[str(ctx.author.id)]
         embed = discord.Embed(
