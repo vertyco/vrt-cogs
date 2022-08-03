@@ -77,8 +77,7 @@ class SearchButton(discord.ui.Button):
         await interaction.response.defer()
         self.view.stop()
         await self.view.controls[self.emoji.name](
-            self.view.ctx, self.view.pages, self.view.controls, self.view.message, self.view.page,
-            self.emoji, self.view.shop
+            self.view.ctx, self.view.pages, self.view.controls, self.view.message, self.view.page, self.view.timeout
         )
 
 
