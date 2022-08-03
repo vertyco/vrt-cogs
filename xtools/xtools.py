@@ -542,43 +542,44 @@ class XTools(commands.Cog):
     @commands.command(name="xfriends")
     async def get_friends(self, ctx, *, gamertag=None):
         """View your friends list"""
-        if not gamertag:
-            gamertag = await self.pull_user(ctx)
+        async with ctx.typing():
             if not gamertag:
-                return
-        async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
-            if not xbl_client:
-                return
-            embed = discord.Embed(
-                description="Gathering data...",
-                color=discord.Color.random()
-            )
-            embed.set_thumbnail(url=LOADING)
-            msg = await ctx.send(embed=embed)
-            try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
-            except aiohttp.ClientResponseError:
-                embed = discord.Embed(description="Invalid Gamertag. Try again.")
-                return await msg.edit(embed=embed)
-            except Exception as e:
-                if "Forbidden" in str(e):
-                    embed = discord.Embed(description="Failed to gather data, Gamertag may be set to private.")
-                    return await msg.edit(embed=embed)
-            gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            friend_data = json.loads((await xbl_client.people.get_friends_by_xuid(xuid)).json())
-            self.cache[str(ctx.author.id)] = friend_data
-            pages = friend_embeds(friend_data, gt)
-            if len(pages) == 0:
+                gamertag = await self.pull_user(ctx)
+                if not gamertag:
+                    return
+            async with aiohttp.ClientSession() as session:
+                xbl_client = await self.auth_manager(ctx, session)
+                if not xbl_client:
+                    return
                 embed = discord.Embed(
-                    description=f"No friends found for {gamertag}."
+                    description="Gathering data...",
+                    color=discord.Color.random()
                 )
-                return await msg.edit(embed=embed)
-            await msg.delete()
+                embed.set_thumbnail(url=LOADING)
+                msg = await ctx.send(embed=embed)
+                try:
+                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                except aiohttp.ClientResponseError:
+                    embed = discord.Embed(description="Invalid Gamertag. Try again.")
+                    return await msg.edit(embed=embed)
+                except Exception as e:
+                    if "Forbidden" in str(e):
+                        embed = discord.Embed(description="Failed to gather data, Gamertag may be set to private.")
+                        return await msg.edit(embed=embed)
+                gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
+                friend_data = json.loads((await xbl_client.people.get_friends_by_xuid(xuid)).json())
+                self.cache[str(ctx.author.id)] = friend_data
+                pages = friend_embeds(friend_data, gt)
+                if len(pages) == 0:
+                    embed = discord.Embed(
+                        description=f"No friends found for {gamertag}."
+                    )
+                    return await msg.edit(embed=embed)
+                await msg.delete()
 
-            search_con = DEFAULT_CONTROLS.copy()
-            search_con["\N{LEFT-POINTING MAGNIFYING GLASS}"] = self.searching
-            await menu(ctx, pages, search_con, search=True)
+                search_con = DEFAULT_CONTROLS.copy()
+                search_con["\N{LEFT-POINTING MAGNIFYING GLASS}"] = self.searching
+                await menu(ctx, pages, search_con, search=True)
 
     async def searching(self,
                         ctx: commands.Context,
