@@ -246,7 +246,6 @@ class LevelUp(UserCommands, commands.Cog):
                 file = await self.gen_levelup_img(args)
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
                 if channel and can_send and can_send_attachments:
-                    file = await self.gen_levelup_img(args)
                     if mention:
                         await channel.send(_(f"**{mentionuser} just leveled up!**"), file=file)
                     else:

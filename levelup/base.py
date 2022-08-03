@@ -35,16 +35,26 @@ _ = Translator("LevelUp", __file__)
 
 class UserCommands(commands.Cog):
 
-    # Generate rinky dink profile image
-    async def gen_profile_img(self, args: dict):
-        file = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
-        # file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+    # Generate level up image
+    async def gen_levelup_img(self, args: dict):
+        task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
+        try:
+            img = await asyncio.wait_for(task, timeout=30)
+        except asyncio.TimeoutError:
+            return None
+        img.seek(0)
+        file = discord.File(img)
         return file
 
-    # Generate rinky dink level up image
-    async def gen_levelup_img(self, args: dict):
-        file = await self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
-        # file = discord.File(fp=image, filename=f"image_{random.randint(1000, 99999)}.webp")
+    # Generate profile image
+    async def gen_profile_img(self, args: dict):
+        task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
+        try:
+            img = await asyncio.wait_for(task, timeout=30)
+        except asyncio.TimeoutError:
+            return None
+        img.seek(0)
+        file = discord.File(img)
         return file
 
     # Function to test a given URL and see if it's valid
@@ -56,7 +66,7 @@ class UserCommands(commands.Cog):
         try:
             # Try running it through profile generator blind to see if it errors
             args = {'bg_image': image_url, 'profile_image': ctx.author.avatar_url}
-            await self.gen_profile_img(args)
+            await self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
         except Exception as e:
             if "cannot identify image file" in str(e):
                 await ctx.send(_("Uh Oh, looks like that is not a valid image"))
@@ -135,7 +145,13 @@ class UserCommands(commands.Cog):
             'level': 69,
             'color': color,
         }
-        file = await self.gen_levelup_img(args)
+        task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
+        try:
+            img = await asyncio.wait_for(task, timeout=30)
+        except asyncio.TimeoutError:
+            return await ctx.send("Image took too long to generate, try again in a few.")
+        img.seek(0)
+        file = discord.File(img)
         await ctx.send(file=file)
 
     @commands.group(name="myprofile", aliases=["mypf", "pfset"])
@@ -363,6 +379,7 @@ class UserCommands(commands.Cog):
                     'prestige': prestige,
                     'stars': stars
                 }
+
                 file = await self.gen_profile_img(args)
                 if not file:
                     return await ctx.send(f"Failed to generate profile image :( try again in a bit")
