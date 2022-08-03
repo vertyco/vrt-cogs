@@ -24,8 +24,10 @@ from .generator import Generator
 if discord.__version__ > "1.7.3":
     from .bmenu import menu
     DEFAULT_CONTROLS = None
+    DPY2 = True
 else:
     from .menu import menu, DEFAULT_CONTROLS
+    DPY2 = False
 
 log = logging.getLogger("red.vrt.levelup.commands")
 _ = Translator("LevelUp", __file__)
@@ -515,7 +517,11 @@ class UserCommands(commands.Cog):
                 description=f"{_(title)}{box(msg, lang='python')}",
                 color=discord.Color.random()
             )
-            embed.set_thumbnail(url=ctx.guild.icon_url)
+            if DPY2:
+                embed.set_thumbnail(url=ctx.guild.icon.url)
+            else:
+                embed.set_thumbnail(url=ctx.guild.icon_url)
+
             if you:
                 embed.set_footer(text=_(f"Pages {p + 1}/{pages} ｜ {you}"))
             else:
@@ -583,7 +589,11 @@ class UserCommands(commands.Cog):
                 description=f"{_(title)}{box(data, lang='python')}",
                 color=discord.Color.random()
             )
-            embed.set_thumbnail(url=ctx.guild.icon_url)
+            if DPY2:
+                embed.set_thumbnail(url=ctx.guild.icon.url)
+            else:
+                embed.set_thumbnail(url=ctx.guild.icon_url)
+                
             if you:
                 embed.set_footer(text=_(f"Pages {p + 1}/{pages} ｜ {you}"))
             else:
