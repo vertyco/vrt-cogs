@@ -4,7 +4,6 @@ import json
 import aiohttp
 import discord
 import xmltojson
-from dislash import ActionRow, Button, ButtonStyle, InteractionClient
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
 from xbox.webapi.api.client import XboxLiveClient
@@ -21,8 +20,14 @@ from .formatter import (profile,
                         gwg_embeds,
                         mostplayed,
                         stats_api_format)
-from .menus import DEFAULT_BUTTON_CONTROLS
-from .menus import buttonmenu as menu
+
+if discord.__version__ > "1.7.3":
+    from .bmenu import menu
+    DEFAULT_CONTROLS = None
+    DPY2 = True
+else:
+    from .menu import menu, DEFAULT_CONTROLS
+    DPY2 = False
 
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -34,7 +39,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.4.13"
+    __version__ = "3.6.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -61,9 +66,6 @@ class XTools(commands.Cog):
 
         # Caching friend list for searching
         self.cache = {}
-
-        # Dislash monkeypatch
-        InteractionClient(bot)
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
@@ -384,8 +386,23 @@ class XTools(commands.Cog):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            data = json.loads(
-                (await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)).json())
+            try:
+                data = json.loads(
+                    (await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)).json())
+            except aiohttp.ClientResponseError as e:
+                if e.message == "Forbidden":
+                    embed = discord.Embed(
+                        description="Forbidden: Cannot get screenshots for user, "
+                                    "they may have their settings on private",
+                        color=discord.Color.red()
+                    )
+                else:
+                    embed = discord.Embed(
+                        description=f"Error: {box(e.message)}",
+                        color=discord.Color.red()
+                    )
+                await msg.edit(embed=embed)
+                return
             pages = screenshot_embeds(data, gamertag)
             if len(pages) == 0:
                 color = discord.Color.red()
@@ -558,27 +575,9 @@ class XTools(commands.Cog):
                 )
                 return await msg.edit(embed=embed)
             await msg.delete()
-            default_buttons = DEFAULT_BUTTON_CONTROLS["buttons"]
-            default_actions = DEFAULT_BUTTON_CONTROLS["actions"]
-            search_action = ActionRow(
-                Button(
-                    style=ButtonStyle.grey,
-                    label="Search Friends",
-                    custom_id="search",
-                    emoji="🔍"
-                )
-            )
-            search_controls = {
-                "buttons": [
-                    default_buttons[0],
-                    search_action
-                ],
-                "actions": {
-                    "search": self.searching
-                }
-            }
-            for k, v in default_actions.items():
-                search_controls["actions"][k] = v
+
+            search_con = DEFAULT_CONTROLS.copy()
+            search_con["\N{LEFT-POINTING MAGNIFYING GLASS}"] = self.searching
             await menu(ctx, pages, search_controls)
 
     async def searching(self,
@@ -616,8 +615,10 @@ class XTools(commands.Cog):
             if reply.content.lower() in player["gamertag"].lower():
                 players.append(player["gamertag"])
         if len(players) == 0:
-            return await msg.edit(
-                embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list."), components=[])
+            if DPY2:
+                await msg.edit(view=None)
+            return await msg.edit(embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list."))
+
         elif len(players) > 1:
             flist = ""
             count = 1
@@ -708,7 +709,8 @@ class XTools(commands.Cog):
     @commands.command(name="gameswithgold")
     async def get_gameswithgold(self, ctx):
         """View this month's free games with Gold"""
-        url = f"https://reco-public.rec.mp.microsoft.com/channels/Reco/V8.0/Lists/Collection/GamesWithGold?ItemTypes=Game&Market=US&deviceFamily=Windows.Xbox"
+        url = f"https://reco-public.rec.mp.microsoft.com/channels/Reco/V8.0/Lists/" \
+              f"Collection/GamesWithGold?ItemTypes=Game&Market=US&deviceFamily=Windows.Xbox"
         async with self.session.post(url=url) as res:
             async with ctx.typing():
                 games_raw = await res.json(content_type=None)
