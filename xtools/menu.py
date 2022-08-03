@@ -29,7 +29,7 @@ async def menu(
 
     .. note:: All functions for handling what a particular emoji does
               should be coroutines (i.e. :code:`async def`). Additionally,
-              they must take all of the parameters of this function, in
+              they must take all the parameters of this function, in
               addition to a string representing the emoji reacted with.
               This parameter should be the last one, and none of the
               parameters in the handling functions are optional
