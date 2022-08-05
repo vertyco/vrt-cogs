@@ -371,7 +371,7 @@ class UserCommands(commands.Cog):
                     'user_xp': xp,  # User current xp
                     'next_xp': goal,  # xp required for next level
                     'user_position': position,  # User position in leaderboard
-                    'user_name': user.name,  # user name with descriminator
+                    'user_name': user.name,  # username with discriminator
                     'user_status': user.status,  # User status eg. online, offline, idle, streaming, dnd
                     'colors': colors,  # User's color
                     'messages': messages,
