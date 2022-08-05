@@ -2,8 +2,11 @@ import logging
 import os
 import random
 import discord
+import asyncio
 from io import BytesIO
 from math import sqrt
+import multiprocessing as mp
+from time import perf_counter
 
 import colorgram
 import requests
@@ -33,7 +36,7 @@ class Generator:
     def generate_profile(
             self,
             bg_image: str = None,
-            profile_image: str = "https://imgur.com/qvFlyiZ",
+            profile_image: str = "https://i.imgur.com/sUYWCve.png",
             level: int = 1,
             current_xp: int = 0,
             user_xp: int = 0,
@@ -322,3 +325,53 @@ class Generator:
     def inv_rgb(rgb: tuple) -> tuple:
         new_rgb = (255 - rgb[0], 255 - rgb[1], 255 - rgb[2])
         return new_rgb
+
+
+def run_it(args, obj=None):
+    test = Generator()
+    img = test.generate_profile(**args)
+    if obj is not None:
+        obj["item"] = img
+    else:
+        obj = img
+    return obj
+
+
+if __name__ == "__main__":
+
+    args = {
+        'bg_image': None,
+        'level': 10,
+        'current_xp': 5,  # Current level minimum xp
+        'user_xp': 100,  # User current xp
+        'next_xp': 1000,  # xp required for next level
+        'user_position': 5,  # User position in leaderboard
+        'user_name': "Testing",  # username with discriminator
+        'user_status': "online",  # User status eg. online, offline, idle, streaming, dnd
+        'colors': None,  # User's color
+        'messages': 420,
+        'voice': "None",
+        'prestige': 1,
+        'stars': 69
+    }
+
+    t1 = perf_counter()
+    manage = mp.Manager()
+    obj = manage.dict()
+
+    p = mp.Process(target=run_it, args=(args, obj))
+    p.start()
+    p.join()
+    print(obj)
+    res = obj["item"]
+    img = Image.open(res)
+    img.show()
+    t2 = perf_counter()
+    td = t2 - t1
+    print(td)
+
+    t1 = perf_counter()
+    img = run_it(args)
+    t2 = perf_counter()
+    td = t2 - t1
+    print(td)
