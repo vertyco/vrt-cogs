@@ -143,6 +143,7 @@ def profile_embed(data):
     if "lastSeen" in presence:
         game = presence["lastSeen"]["titleName"]
         device = presence["lastSeen"]["deviceType"]
+        print(device)
         device = device_check(device)
         time = fix_timestamp(presence["lastSeen"]["timestamp"])
         tdiff = current_time - time
@@ -156,6 +157,7 @@ def profile_embed(data):
         embed.add_field(name="Last Seen", value=lseen)
     if "devices" in presence:
         device = presence["devices"][0]["type"]
+        print(device)
         device = device_check(device)
         gamelist = ""
         for game in presence["devices"][0]["titles"]:
