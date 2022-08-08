@@ -144,14 +144,14 @@ class BaseCommands(commands.Cog):
                 if not msg.content:
                     continue
                 text += f"{msg.author.name}: {msg.content}\n"
-            iofile = StringIO(text)
-            iofile.name = filename
-            # iofile.seek(0)
-            file = discord.File(iofile)
             if log_chan:
+                temp = StringIO(text)
+                file = discord.File(temp, filename=filename)
                 await log_chan.send(embed=embed, file=file)
             if conf["dm"]:
                 try:
+                    temp = StringIO(text)
+                    file = discord.File(temp, filename=filename)
                     await member.send(embed=embed, file=file)
                 except discord.Forbidden:
                     pass
