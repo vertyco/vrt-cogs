@@ -145,19 +145,25 @@ class BaseCommands(commands.Cog):
                     continue
                 text += f"{msg.author.name}: {msg.content}\n"
             iofile = StringIO(text)
-            iofile.seek(0)
-            file = discord.File(iofile, filename=filename)
+            iofile.name = filename
+            # iofile.seek(0)
+            file = discord.File(iofile)
+            if log_chan:
+                await log_chan.send(embed=embed, file=file)
+            if conf["dm"]:
+                try:
+                    await member.send(embed=embed, file=file)
+                except discord.Forbidden:
+                    pass
         else:
-            file = None
-
-        # Send off new messages
-        if log_chan:
-            await log_chan.send(embed=embed, file=file)
-        if conf["dm"]:
-            try:
-                await member.send(embed=embed, file=file)
-            except discord.Forbidden:
-                pass
+            # Send off new messages
+            if log_chan:
+                await log_chan.send(embed=embed)
+            if conf["dm"]:
+                try:
+                    await member.send(embed=embed)
+                except discord.Forbidden:
+                    pass
 
         # Delete old log msg
         if log_chan:
