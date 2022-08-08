@@ -216,18 +216,21 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         button_guild = inter.clicked_button.id
         guild = self.bot.get_guild(int(button_guild))
         if not guild:
-            return await self.listen(message)
+            asyncio.create_task(self.listen(message), name=str(guild.id))
+            return
         user = inter.author
         pfp = user.avatar_url
         conf = await self.config.guild(guild).all()
         if str(inter.author.id) in conf["opened"]:
             tickets = len(conf["opened"][str(inter.author.id)].keys())
             if tickets >= conf["max_tickets"]:
-                return await self.listen(message)
+                asyncio.create_task(self.listen(message), name=str(guild.id))
+                return
         category = self.bot.get_channel(conf["category"])
         if not category:
             asyncio.create_task(inter.reply("The ticket category hasn't been set yet!", ephemeral=True))
-            return await self.listen(message)
+            asyncio.create_task(self.listen(message), name=str(guild.id))
+            return
         can_read = discord.PermissionOverwrite(read_messages=True, send_messages=True)
         read_and_manage = discord.PermissionOverwrite(
             read_messages=True, send_messages=True, manage_channels=True, manage_permissions=True
@@ -330,7 +333,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     embed.set_thumbnail(url=pfp)
                     log_msg = await log_channel.send(embed=embed)
                     opened[str(user.id)][str(channel.id)]["logmsg"] = str(log_msg.id)
-        return await self.listen(message)
+        asyncio.create_task(self.listen(message), name=str(guild.id))
+        return
 
     @tasks.loop(minutes=20)
     async def auto_close(self):
