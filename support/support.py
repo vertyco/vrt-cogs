@@ -173,7 +173,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                         )
                         await message.edit(components=[button])
                         log.warning(f"Error applying button: {e}")
-                asyncio.create_task(self.listen(message), name=str(guild.id))
+                if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
+                    asyncio.create_task(self.listen(message), name=str(guild.id))
 
     # Clean up any ticket data that comes from a deleted channel or unknown user
     async def cleanup(self):
@@ -216,7 +217,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         button_guild = inter.clicked_button.id
         guild = self.bot.get_guild(int(button_guild))
         if not guild:
-            asyncio.create_task(self.listen(message), name=str(guild.id))
+            if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
+                asyncio.create_task(self.listen(message), name=str(guild.id))
             return
         user = inter.author
         pfp = user.avatar_url
@@ -224,12 +226,14 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         if str(inter.author.id) in conf["opened"]:
             tickets = len(conf["opened"][str(inter.author.id)].keys())
             if tickets >= conf["max_tickets"]:
-                asyncio.create_task(self.listen(message), name=str(guild.id))
+                if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
+                    asyncio.create_task(self.listen(message), name=str(guild.id))
                 return
         category = self.bot.get_channel(conf["category"])
         if not category:
             asyncio.create_task(inter.reply("The ticket category hasn't been set yet!", ephemeral=True))
-            asyncio.create_task(self.listen(message), name=str(guild.id))
+            if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
+                asyncio.create_task(self.listen(message), name=str(guild.id))
             return
         can_read = discord.PermissionOverwrite(read_messages=True, send_messages=True)
         read_and_manage = discord.PermissionOverwrite(
@@ -333,7 +337,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     embed.set_thumbnail(url=pfp)
                     log_msg = await log_channel.send(embed=embed)
                     opened[str(user.id)][str(channel.id)]["logmsg"] = str(log_msg.id)
-        asyncio.create_task(self.listen(message), name=str(guild.id))
+        if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
+            asyncio.create_task(self.listen(message), name=str(guild.id))
         return
 
     @tasks.loop(minutes=20)
