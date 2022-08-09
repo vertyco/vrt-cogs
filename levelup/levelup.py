@@ -42,7 +42,7 @@ _ = Translator("LevelUp", __file__)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.3.30"
+    __version__ = "1.3.31"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -106,6 +106,7 @@ class LevelUp(UserCommands, commands.Cog):
         self.stars = {}  # Keep track of star cooldowns
         self.ignored_guilds = []
         self.first_run = True
+        self.profiles = {}
 
         self.looptimes = {
             "checkvoice": 0,
