@@ -7,6 +7,7 @@ import random
 import discord
 import tabulate
 import validators
+from io import BytesIO
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
@@ -53,9 +54,9 @@ class UserCommands(commands.Cog):
             img = await asyncio.wait_for(task, timeout=30)
         except asyncio.TimeoutError:
             return None
-        img.seek(0)
-        file = discord.File(img)
-        return file
+        # img.seek(0)
+        # file = discord.File(img)
+        return img
 
     # Function to test a given URL and see if it's valid
     async def valid_url(self, ctx: commands.Context, image_url: str):
@@ -379,8 +380,25 @@ class UserCommands(commands.Cog):
                     'prestige': prestige,
                     'stars': stars
                 }
+                uid = str(user.id)
+                now = datetime.datetime.now()
+                if uid in self.profiles:
+                    last = self.profiles[uid]["last"]
+                    td = (now - last).total_seconds()
+                    if td > 300:
+                        file_obj = await self.gen_profile_img(args)
+                        self.profile[uid]["file"] = file_obj
+                        self.profiles[uid]["last"] = now
+                    else:
+                        file_obj = self.profile[uid]["file"]
+                else:
+                    file_obj = await self.gen_profile_img(args)
+                    self.profiles[uid] = {"file": file_obj, "last": now}
 
-                file = await self.gen_profile_img(args)
+                temp = BytesIO()
+                file_obj.save(temp, format="WEBP")
+                temp.name = f"{ctx.author.id}.webp"
+                file = discord.File(temp)
                 if not file:
                     return await ctx.send(f"Failed to generate profile image :( try again in a bit")
                 try:

@@ -222,10 +222,11 @@ class Generator:
         blank.paste(rep_icon, (780, 29))
 
         final = Image.alpha_composite(pre, blank)
-        temp = BytesIO()
-        final.save(temp, format="webp")
-        temp.name = f"profile_{random.randint(10000, 99999)}.webp"
-        return temp
+        # temp = BytesIO()
+        # final.save(temp, format="webp")
+        # temp.name = f"profile_{random.randint(10000, 99999)}.webp"
+        # return temp
+        return final
 
     def generate_levelup(
             self,
@@ -330,10 +331,7 @@ class Generator:
 def run_it(args, obj=None):
     test = Generator()
     img = test.generate_profile(**args)
-    if obj is not None:
-        obj["item"] = img
-    else:
-        obj = img
+    obj.append(img)
     return obj
 
 
@@ -357,21 +355,15 @@ if __name__ == "__main__":
 
     t1 = perf_counter()
     manage = mp.Manager()
-    obj = manage.dict()
-
-    p = mp.Process(target=run_it, args=(args, obj))
-    p.start()
-    p.join()
+    obj = manage.list()
+    jobs = []
+    for i in range(10):
+        p = mp.Process(target=run_it, args=(args, obj))
+        p.start()
+        jobs.append(p)
+    for p in jobs:
+        p.join()
     print(obj)
-    res = obj["item"]
-    img = Image.open(res)
-    img.show()
-    t2 = perf_counter()
-    td = t2 - t1
-    print(td)
-
-    t1 = perf_counter()
-    img = run_it(args)
     t2 = perf_counter()
     td = t2 - t1
     print(td)
