@@ -407,27 +407,12 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def usernamestxt(self, ctx):
-        """Get a text file containing all usernames in this guild"""
-        members = []
+    async def usersjson(self, ctx):
+        """Get a json file containing all usernames/ID's in this guild"""
+        members = {}
         for member in ctx.guild.members:
-            members.append(str(member.name))
-
+            members[str(member.id)] = member.name
         iofile = StringIO(json.dumps(members))
-        filename = f"{ctx.guild.name}-usernames.txt"
+        filename = f"users.json"
         file = discord.File(iofile, filename=filename)
-        await ctx.send("Here are all usersnames for this guild", file=file)
-
-    @commands.command()
-    @commands.is_owner()
-    async def useridstxt(self, ctx):
-        """Get a text file containing all user ID's in this guild"""
-        members = []
-        for member in ctx.guild.members:
-            members.append(str(member.id))
-
-        iofile = StringIO(json.dumps(members))
-        filename = f"{ctx.guild.name}-userids.txt"
-        file = discord.File(iofile, filename=filename)
-        await ctx.send("Here are all usersnames for this guild", file=file)
-
+        await ctx.send("Here are all usernames and their ID's for this guild", file=file)
