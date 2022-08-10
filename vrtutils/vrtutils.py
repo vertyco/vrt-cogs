@@ -303,27 +303,6 @@ class VrtUtils(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.is_owner()
-    async def guilds(self, ctx):
-        """
-        View info about guilds the bot is in
-
-        Pulled mostly from Trusty's Serverstats cog with love
-        https://github.com/TrustyJAID/Trusty-cogs
-        """
-        async with ctx.typing():
-            embeds = []
-            page = 0
-            guilds = len(self.bot.guilds)
-            for i, guild in enumerate(self.bot.guilds):
-                em = await self.guild_embed(guild)
-                if guild.id == ctx.guild.id:
-                    page = i
-                em.set_footer(text=f"Page {i + 1}/{guilds}")
-                embeds.append(em)
-            await menu(ctx, embeds, DEFAULT_CONTROLS, page=page, timeout=120)
-
-    @commands.command()
     async def getuser(self, ctx, *, user_id: Union[int, discord.Member, discord.User]):
         """Find a user by ID"""
         member = await self.bot.get_or_fetch_user(int(user_id))
@@ -343,55 +322,6 @@ class VrtUtils(commands.Cog):
         else:
             embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
-
-    @commands.command()
-    @commands.is_owner()
-    async def speedtest(self, ctx):
-        """
-        Test the bots internet speed
-        """
-        def get_em(res: dict, stage: int):
-            measuring = ":mag: Measuring..."
-            waiting = ":hourglass: Waiting..."
-            title = "Measuring network speed..."
-            color = discord.Color.dark_orange()
-            message_ping = measuring
-            message_down = waiting
-            message_up = waiting
-            desc = f"**Server:** Searching..."
-            if stage > 0:
-                message_ping = f"**{res['ping']}** ms"
-                desc = f"**Server:** {res['server']['name']}"
-                message_down = measuring
-                color = discord.Color.red()
-            if stage > 1:
-                message_down = f"**{round(res['download'] / 1000000, 2)}** mbps"
-                message_up = measuring
-                color = discord.Color.orange()
-            if stage > 2:
-                message_up = f"**{round(res['upload'] / 1000000, 2)}** mbps"
-                title = "Speedtest Results"
-                color = discord.Color.green()
-            embed = discord.Embed(
-                title=title,
-                description=desc,
-                color=color
-            )
-            embed.add_field(name="Ping", value=message_ping)
-            embed.add_field(name="Download", value=message_down)
-            embed.add_field(name="Upload", value=message_up)
-            return embed
-
-        async with ctx.typing():
-            test = speedtest.Speedtest(secure=True)
-            msg = await ctx.send(embed=get_em(test.results.dict(), 0))
-            await self.bot.loop.run_in_executor(None, test.get_servers)
-            await self.bot.loop.run_in_executor(None, test.get_best_server)
-            await msg.edit(embed=get_em(test.results.dict(), 1))
-            await self.bot.loop.run_in_executor(None, test.download)
-            await msg.edit(embed=get_em(test.results.dict(), 2))
-            await self.bot.loop.run_in_executor(None, test.upload)
-            await msg.edit(embed=get_em(test.results.dict(), 3))
 
     @commands.command()
     @commands.is_owner()
