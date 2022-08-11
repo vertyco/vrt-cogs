@@ -274,7 +274,7 @@ class UserCommands(commands.Cog):
                     await ctx.send_help()
 
     @commands.command(name="pf")
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
