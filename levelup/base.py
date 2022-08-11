@@ -380,20 +380,20 @@ class UserCommands(commands.Cog):
                     'prestige': prestige,
                     'stars': stars
                 }
-                uid = str(user.id)
+
                 now = datetime.datetime.now()
-                if uid in self.profiles:
-                    last = self.profiles[uid]["last"]
+                if user_id in self.profiles:
+                    last = self.profiles[user_id]["last"]
                     td = (now - last).total_seconds()
                     if td > 300:
                         file_obj = await self.gen_profile_img(args)
-                        self.profile[uid]["file"] = file_obj
-                        self.profiles[uid]["last"] = now
+                        self.profiles[user_id]["file"] = file_obj
+                        self.profiles[user_id]["last"] = now
                     else:
-                        file_obj = self.profile[uid]["file"]
+                        file_obj = self.profile[user_id]["file"]
                 else:
                     file_obj = await self.gen_profile_img(args)
-                    self.profiles[uid] = {"file": file_obj, "last": now}
+                    self.profiles[user_id] = {"file": file_obj, "last": now}
 
                 temp = BytesIO()
                 file_obj.save(temp, format="WEBP")
