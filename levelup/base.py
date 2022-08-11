@@ -382,22 +382,23 @@ class UserCommands(commands.Cog):
                 }
                 uid = str(user.id)
                 now = datetime.datetime.now()
-                # if uid in self.profiles:
-                #     last = self.profiles[uid]["last"]
-                #     td = (now - last).total_seconds()
-                #     if td > 300:
-                #         file_obj = await self.gen_profile_img(args)
-                #         self.profile[uid]["file"] = file_obj
-                #         self.profiles[uid]["last"] = now
-                #     else:
-                #         file_obj = self.profile[uid]["file"]
-                # else:
-                file_obj = await self.gen_profile_img(args)
-                # self.profiles[uid] = {"file": file_obj, "last": now}
+                if uid in self.profiles:
+                    last = self.profiles[uid]["last"]
+                    td = (now - last).total_seconds()
+                    if td > 300:
+                        file_obj = await self.gen_profile_img(args)
+                        self.profile[uid]["file"] = file_obj
+                        self.profiles[uid]["last"] = now
+                    else:
+                        file_obj = self.profile[uid]["file"]
+                else:
+                    file_obj = await self.gen_profile_img(args)
+                    self.profiles[uid] = {"file": file_obj, "last": now}
 
                 temp = BytesIO()
                 file_obj.save(temp, format="WEBP")
                 temp.name = f"{ctx.author.id}.webp"
+                temp.seek(0)
                 file = discord.File(temp)
                 if not file:
                     return await ctx.send(f"Failed to generate profile image :( try again in a bit")
