@@ -390,7 +390,7 @@ class UserCommands(commands.Cog):
                         self.profiles[user_id]["file"] = file_obj
                         self.profiles[user_id]["last"] = now
                     else:
-                        file_obj = self.profile[user_id]["file"]
+                        file_obj = self.profiles[user_id]["file"]
                 else:
                     file_obj = await self.gen_profile_img(args)
                     self.profiles[user_id] = {"file": file_obj, "last": now}
