@@ -13,7 +13,7 @@ class UpgradeChat(commands.Cog):
     https://upgrade.chat/
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
