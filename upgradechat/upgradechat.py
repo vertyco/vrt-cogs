@@ -77,7 +77,13 @@ class UpgradeChat(commands.Cog):
 
     @upgradechat.command()
     async def addproduct(self, ctx: commands.Context, uuid: str):
-        """Add an Upgrade.Chat product by UUID"""
+        """
+        Add an Upgrade.Chat product by UUID
+
+        This can be any type of product, either subscription or one-time purchase.
+        Users will be accredited based on `amount spend * conversion ratio`.
+        Transactions can only be claimed once.
+        """
         async with ctx.typing():
             token = await self.config.guild(ctx.guild).bearer_token()
             if not token:
