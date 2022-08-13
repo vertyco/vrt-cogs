@@ -150,7 +150,10 @@ class VrtUtils(commands.Cog):
             if len(embeds) > 1:
                 await menu(ctx, embeds, DEFAULT_CONTROLS)
             else:
-                await ctx.send(embed=embeds[0])
+                if embeds:
+                    await ctx.send(embed=embeds[0])
+                else:
+                    await ctx.send("Command ran with no results")
 
     @commands.command()
     @commands.is_owner()
