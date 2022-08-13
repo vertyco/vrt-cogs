@@ -1,0 +1,32 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Upgrade.Chat integration for purchasing economy credits directly",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any personal data of users.",
+  "hidden": false,
+  "install_msg": "**NOTE:** You are expected to know how to use Upgrade.Chat and create products ect.. This cog only guides you on how to create/set your API tokens.",
+  "min_bot_version": "3.4.0",
+  "min_python_version": [
+    3,
+    8,
+    1
+  ],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Upgrade.Chat API Economy Integration",
+  "tags": [
+    "utility",
+    "upgrade",
+    "chat",
+    "upgrade.chat",
+    "economy",
+    "supporter",
+    "donate",
+    "donations",
+    "bank"
+  ],
+  "type": "COG"
+}
