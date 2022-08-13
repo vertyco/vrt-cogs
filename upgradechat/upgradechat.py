@@ -113,7 +113,7 @@ class UpgradeChat(commands.Cog):
         currency_name = await bank.get_currency_name(ctx.guild)
         ratio = conf["conversion_ratio"]
         producs = conf["products"]
-        desc = f"`Conversion Ratio: `1 Unit of real currency = {ratio} {currency_name}"
+        desc = f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})"
         if producs:
             text = ""
             for uuid, data in producs.items():
