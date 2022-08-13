@@ -13,7 +13,7 @@ class UpgradeChat(commands.Cog):
     https://upgrade.chat/
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -30,6 +30,7 @@ class UpgradeChat(commands.Cog):
             "bearer_token": None,  # API token created in upgrade.chat portal
             "conversion_ratio": 1000,  # If ratio == 100, then 1 USD = 1000 credits
             "products": {},  # Upgrade.Chat products added by UUID
+            "log": 0,  # Log channel
             "users": {}  # Claimed purchases stored here with str(user.id) as keys
         }
         self.config.register_guild(**default_guild)
@@ -105,6 +106,13 @@ class UpgradeChat(commands.Cog):
                     )
                 await ctx.send(f"Product with title `{products[uuid]['name']}` has been deleted!")
                 del products[uuid]
+
+    @upgradechat.command()
+    async def logchannel(self, ctx: commands.Context, channel: discord.TextChannel):
+        """Set log channel for claims"""
+        async with ctx.typing():
+            await self.config.guild(ctx.guild).log.set(channel.id)
+            await ctx.send(f"Claim log channel has been set to `{channel.name}`")
 
     @upgradechat.command()
     async def view(self, ctx: commands.Context):
@@ -188,3 +196,29 @@ class UpgradeChat(commands.Cog):
             bal = await bank.get_balance(ctx.author)
             em.set_footer(text=f"Your new balance is {'{:,}'.format(bal)}!")
             await ctx.send(embed=em)
+
+            logchan = self.bot.get_channel(conf['log']) if conf['log'] else None
+            if not logchan:
+                return
+
+            # If bot has ArkShop installed, get the user's registered cluster
+            arkshop = self.bot.get_cog("ArkShop")
+            cluster = ""
+            if arkshop:
+                ashopusers = await arkshop.config.guild(ctx.guild).users()
+                if uid in ashopusers:
+                    cluster = ashopusers[uid]["cluster"]
+
+            desc = f"`Spent:   `${amount_spent}\n" \
+                   f"`Awarded: `{'{:,}'.format(amount_to_give)} {currency_name}"
+
+            if cluster:
+                desc += f"\n`Cluster: `{cluster}"
+
+            em = discord.Embed(
+                title=f"{ctx.author.name} has claimed a purchase!",
+                description=desc,
+                color=ctx.author.color
+            )
+            await logchan.send(embed=em)
+
