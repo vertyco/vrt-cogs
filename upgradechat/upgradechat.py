@@ -193,7 +193,7 @@ class UpgradeChat(commands.Cog):
                 await bank.set_balance(ctx.author, e.max_balance)
 
             title = "🎉Purchase claimed successfully!🎉" if valid_purchases == 1 else "🎉Purchases claimed successfully!🎉"
-            desc = f"You have claimed {'{:,}'.format(amount_to_give)} {currency_name}!"
+            desc = f"{ctx.author.display_name}, you have claimed {'{:,}'.format(amount_to_give)} {currency_name}!"
             em = discord.Embed(
                 title=title,
                 description=desc,
@@ -222,7 +222,7 @@ class UpgradeChat(commands.Cog):
                 desc += f"\n`Cluster: `{cluster}"
 
             em = discord.Embed(
-                title=f"{ctx.author.name} has claimed a purchase!",
+                title=f"{ctx.author.name} - {ctx.author.id} has claimed a purchase!",
                 description=desc,
                 color=ctx.author.color
             )
