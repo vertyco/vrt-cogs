@@ -472,9 +472,9 @@ class VrtUtils(commands.Cog):
         guildname = data[0].strip()
         guildid = data[1].strip()
 
-        em = discord.Embed(description=f"Are you sure you want me to leave **{guildname}**?")
-        await message.edit(embed=em)
-        yes = confirm(ctx, message)
+        msg = await ctx.send(f"Are you sure you want me to leave **{guildname}**?")
+        yes = confirm(ctx, msg)
+        await msg.delete()
         if yes is None:
             return
         if yes:
