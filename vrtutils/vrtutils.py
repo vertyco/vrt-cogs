@@ -465,8 +465,7 @@ class VrtUtils(commands.Cog):
             controls: dict,
             message: discord.Message,
             page: int,
-            timeout: float,
-            emoji: str = None
+            timeout: float
     ):
         data = pages[page].author.split("--")
         guildname = data[0].strip()
@@ -492,8 +491,7 @@ class VrtUtils(commands.Cog):
             controls: dict,
             message: discord.Message,
             page: int,
-            timeout: float,
-            emoji: str = None
+            timeout: float
     ):
         data = pages[page].author.split("--")
         guildid = data[1].strip()
