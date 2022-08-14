@@ -1,98 +1,50 @@
+import asyncio
+import functools
+import contextlib
 from typing import List, Union
 
 import discord
 from redbot.core import commands
 
 
-class BackTenButton(discord.ui.Button):
-    """Button which moves the menu back 10 pages."""
+# A red-menu like button menu for dpy2 to support cross-dpy functionality
 
+class MenuButton(discord.ui.Button):
     def __init__(self, emoji: str):
         super().__init__(style=discord.ButtonStyle.primary, emoji=emoji)
+        self.emoji = emoji
 
-    async def callback(self, interaction):
-        if self.view.page < 10:
-            self.view.page = self.view.page + len(self.view.pages) - 10
-        else:
-            self.view.page -= 10
-        await self.view.handle_page(interaction.response.edit_message)
-
-
-class LeftPageButton(discord.ui.Button):
-    """Button which moves the menu back a page."""
-
-    def __init__(self, emoji: str):
-        super().__init__(style=discord.ButtonStyle.primary, emoji=emoji)
-
-    async def callback(self, interaction):
-        self.view.page -= 1
-        self.view.page %= len(self.view.pages)
-        await self.view.handle_page(interaction.response.edit_message)
-
-
-class CloseMenuButton(discord.ui.Button):
-    """Button which closes the menu, deleting the menu message."""
-
-    def __init__(self, emoji: str):
-        super().__init__(style=discord.ButtonStyle.danger, emoji=emoji)
-
-    async def callback(self, interaction):
-        await interaction.response.defer()
-        await interaction.message.delete()
-        self.view.stop()
-
-
-class RightPageButton(discord.ui.Button):
-    """Button which moves the menu forward a page."""
-
-    def __init__(self, emoji: str):
-        super().__init__(style=discord.ButtonStyle.primary, emoji=emoji)
-
-    async def callback(self, interaction):
-        self.view.page += 1
-        self.view.page %= len(self.view.pages)
-        await self.view.handle_page(interaction.response.edit_message)
-
-
-class SkipTenButton(discord.ui.Button):
-    """Button which moves the menu to the next 10 pages ."""
-
-    def __init__(self, emoji: str):
-        super().__init__(style=discord.ButtonStyle.primary, emoji=emoji)
-
-    async def callback(self, interaction):
-        if self.view.page >= len(self.view.pages) - 10:
-            self.view.page = 10 - (len(self.view.pages) - self.view.page)
-        else:
-            self.view.page += 10
-        await self.view.handle_page(interaction.response.edit_message)
+    async def callback(self, inter: discord.Interaction):
+        await self.view.controls[self.emoji.name](
+            self.view.ctx,
+            self.view.pages,
+            self.view.controls,
+            self.view.message,
+            self.view.page,
+            self.view.timeout
+        )
 
 
 class MenuView(discord.ui.View):
-    """View that creates a menu using the List[str] or List[embed] provided."""
-
     def __init__(
             self,
             ctx: commands.Context,
-            pages: List[Union[str, discord.Embed]],
+            pages: Union[List[str], List[discord.Embed]],
+            controls: dict,
             message: discord.Message = None,
             page: int = 0,
-            timeout: int = 60
+            timeout: float = 60.0
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx
         self.pages = pages
+        self.controls = controls
         self.message = message
         self.page = page
-        if len(self.pages) > 10:
-            self.add_item(BackTenButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}"))
-        if len(self.pages) > 1:
-            self.add_item(LeftPageButton("\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}"))
-        self.add_item(CloseMenuButton("\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"))
-        if len(self.pages) > 1:
-            self.add_item(RightPageButton("\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}"))
-        if len(self.pages) > 10:
-            self.add_item(SkipTenButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}"))
+        self.timeout = timeout
+
+        for emoji in self.controls:
+            self.add_item(MenuButton(emoji))
 
     async def interaction_check(self, interaction):
         if interaction.user.id != self.ctx.author.id:
@@ -136,10 +88,10 @@ class MenuView(discord.ui.View):
 async def menu(
         ctx: commands.Context,
         pages: Union[List[str], List[discord.Embed]],
-        controls: dict = None,
+        controls: dict,
         message: discord.Message = None,
         page: int = 0,
-        timeout: int = 60
+        timeout: float = 60.0,
 ):
     if len(pages) < 1:
         raise RuntimeError("Must provide at least 1 page.")
@@ -149,5 +101,88 @@ async def menu(
             isinstance(x, str) for x in pages
     ):
         raise RuntimeError("All pages must be of the same type")
-    m = MenuView(ctx, pages, message, page, timeout)
+    for key, value in controls.items():
+        maybe_coro = value
+        if isinstance(value, functools.partial):
+            maybe_coro = value.func
+        if not asyncio.iscoroutinefunction(maybe_coro):
+            raise RuntimeError("Function must be a coroutine")
+    m = MenuView(ctx, pages, controls, message, page, timeout)
     await m.start()
+
+
+async def close_menu(
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float
+):
+    with contextlib.suppress(discord.NotFound):
+        await message.delete()
+
+
+async def left(
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+):
+    page -= 1
+    page %= len(pages)
+    await menu(ctx, pages, controls, message, page, timeout)
+
+
+async def left10(
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+):
+    if page < 10:
+        page = page + len(pages) - 10
+    else:
+        page -= 10
+    await menu(ctx, pages, controls, message, page, timeout)
+
+
+async def right(
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+):
+    page += 1
+    page %= len(pages)
+    await menu(ctx, pages, controls, message, page, timeout)
+
+
+async def right10(
+        ctx: commands.Context,
+        pages: list,
+        controls: dict,
+        message: discord.Message,
+        page: int,
+        timeout: float,
+):
+    if page >= len(pages) - 10:
+        page = 10 - (len(pages) - page)
+    else:
+        page += 10
+    await menu(ctx, pages, controls, message, page, timeout)
+
+
+DEFAULT_CONTROLS = {
+    "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}": left10,
+    "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": left,
+    "\N{CROSS MARK}": close_menu,
+    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": right,
+    "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}": right10,
+}

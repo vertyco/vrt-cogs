@@ -36,10 +36,10 @@ log = logging.getLogger("red.vrt.vrtutils")
 dpy = discord.__version__
 if dpy > "1.7.3":
     DPY2 = True
-    from .bmenu import menu
+    from .bmenu import menu, DEFAULT_CONTROLS
 else:
     DPY2 = False
-    from .menu import menu
+    from .menu import menu, DEFAULT_CONTROLS
 
 
 class VrtUtils(commands.Cog):
@@ -434,7 +434,24 @@ class VrtUtils(commands.Cog):
             em.set_footer(text=f"Page {i + 1}/{guilds}")
             embeds.append(em)
 
-        await menu(ctx, embeds)
+        controls = DEFAULT_CONTROLS.copy()
+        controls["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.leave_guild
+        await menu(ctx, embeds, controls)
+
+    async def leave_guild(
+            self,
+            ctx: commands.Context,
+            pages: list,
+            controls: dict,
+            message: discord.Message,
+            page: int,
+            timeout: float,
+    ):
+        data = pages[page].author.split("-")
+        guildname = data[0].strip()
+        guildid = data[1].strip()
+
+
 
 
 
