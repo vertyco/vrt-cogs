@@ -149,7 +149,7 @@ async def menu(
             return
     else:
         return await controls[react.emoji](
-            ctx, pages, controls, message, page, timeout, react.emoji
+            ctx, pages, controls, message, page, timeout
         )
 
 
@@ -159,8 +159,7 @@ async def next_page(
         controls: dict,
         message: discord.Message,
         page: int,
-        timeout: float,
-        emoji: str,
+        timeout: float
 ):
     if page == len(pages) - 1:
         page = 0  # Loop around to the first item
@@ -175,8 +174,7 @@ async def skip_ten(
         controls: dict,
         message: discord.Message,
         page: int,
-        timeout: float,
-        emoji: str,
+        timeout: float
 ):
     if len(pages) < 10:
         page = page  # Do nothing if there arent enough pages
@@ -193,8 +191,7 @@ async def prev_page(
         controls: dict,
         message: discord.Message,
         page: int,
-        timeout: float,
-        emoji: str,
+        timeout: float
 ):
     if page == 0:
         page = len(pages) - 1  # Loop around to the last item
@@ -209,8 +206,7 @@ async def back_ten(
         controls: dict,
         message: discord.Message,
         page: int,
-        timeout: float,
-        emoji: str,
+        timeout: float
 ):
     if len(pages) < 10:
         page = page  # Do nothing if there aren't enough pages
