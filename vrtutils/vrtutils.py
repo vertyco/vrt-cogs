@@ -415,10 +415,11 @@ class VrtUtils(commands.Cog):
                    f"`Streaming: `{streaming}\n"
 
             em = discord.Embed(
+                title=f"{guild.name}--{guild.id}",
                 description=desc,
                 color=ctx.author.color
             )
-            em.set_author(name=f"{guild.name}--{guild.id}", url=guild_icon)
+
             if guild_icon:
                 em.set_thumbnail(url=guild_icon)
 
@@ -467,7 +468,7 @@ class VrtUtils(commands.Cog):
             page: int,
             timeout: float
     ):
-        data = pages[page].author.split("--")
+        data = pages[page].title.split("--")
         guildname = data[0].strip()
         guildid = data[1].strip()
 
@@ -493,7 +494,7 @@ class VrtUtils(commands.Cog):
             page: int,
             timeout: float
     ):
-        data = pages[page].author.split("--")
+        data = pages[page].title.split("--")
         guildid = data[1].strip()
         guild = self.bot.get_guild(int(guildid))
         invite = None
