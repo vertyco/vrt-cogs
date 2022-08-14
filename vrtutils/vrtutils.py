@@ -400,7 +400,8 @@ class VrtUtils(commands.Cog):
             online = sum(1 for x in guild.members if x.status is discord.Status.online)
             dnd = sum(1 for x in guild.members if x.status is discord.Status.do_not_disturb)
             offline = sum(1 for x in guild.members if x.status is discord.Status.offline)
-            streaming = sum(1 for x in guild.members if x.activity.type is discord.ActivityType.streaming)
+            streaming = sum(1 for x in guild.members
+                            if x.activity is not None and x.activity.type is discord.ActivityType.streaming)
 
             desc = f"{guild.description}\n\n" \
                    f"`GuildCreated: `{created} ({time_elapsed})\n" \
