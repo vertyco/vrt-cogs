@@ -1,8 +1,6 @@
 import asyncio
 import datetime
 import logging
-import os
-from io import StringIO
 
 import discord
 from discord.ext import tasks

@@ -1,36 +1,31 @@
-import subprocess
-from pathlib import Path
-from io import StringIO, BytesIO
-import json
-import datetime
-import speedtest
-import os
-import sys
-import platform
-import cpuinfo
-import logging
 import asyncio
+import datetime
+import json
+import logging
+import os
+import platform
+import subprocess
+import sys
+from io import StringIO
+from pathlib import Path
+from typing import Union
 
+import cpuinfo
 import discord
 import pkg_resources
 import psutil
+import speedtest
 from redbot.cogs.downloader.repo_manager import Repo
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
-from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 from redbot.core.utils.chat_formatting import (
-    bold,
     box,
-    escape,
-    humanize_list,
-    humanize_number,
     humanize_timedelta,
     pagify,
 )
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
-
 
 _ = Translator("VrtUtils", __file__)
 log = logging.getLogger("red.vrt.vrtutils")

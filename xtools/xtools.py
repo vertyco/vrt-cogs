@@ -23,10 +23,12 @@ from .formatter import (profile,
 
 if discord.__version__ > "1.7.3":
     from .bmenu import menu
+
     DEFAULT_CONTROLS = None
     DPY2 = True
 else:
     from .menu import menu, DEFAULT_CONTROLS
+
     DPY2 = False
 
 REDIRECT_URI = "http://localhost/auth/callback"

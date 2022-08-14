@@ -1,6 +1,6 @@
 import asyncio
-import functools
 import contextlib
+import functools
 import logging
 from typing import List, Union
 
@@ -8,6 +8,7 @@ import discord
 from redbot.core import commands
 
 log = logging.getLogger("red.vrt.utils.bmenu")
+
 
 # A red-menu like button menu for dpy2 to support cross-dpy functionality
 

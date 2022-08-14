@@ -1,11 +1,9 @@
 import logging
+import multiprocessing as mp
 import os
 import random
-import discord
-import asyncio
 from io import BytesIO
 from math import sqrt
-import multiprocessing as mp
 from time import perf_counter
 
 import colorgram

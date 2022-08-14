@@ -2,12 +2,11 @@ import asyncio
 import datetime
 import logging
 import math
-import random
+from io import BytesIO
 
 import discord
 import tabulate
 import validators
-from io import BytesIO
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
@@ -22,6 +21,7 @@ from .formatter import (
     profile_embed,
 )
 from .generator import Generator
+
 if discord.__version__ > "1.7.3":
     from .bmenu import menu
     DEFAULT_CONTROLS = None
@@ -629,7 +629,7 @@ class UserCommands(commands.Cog):
                 embed.set_thumbnail(url=ctx.guild.icon.url)
             else:
                 embed.set_thumbnail(url=ctx.guild.icon_url)
-                
+
             if you:
                 embed.set_footer(text=_(f"Pages {p + 1}/{pages} ｜ {you}"))
             else:

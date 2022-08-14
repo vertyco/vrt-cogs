@@ -9,10 +9,6 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 async def setup(bot):
     cog = Support(bot)
+    bot.add_cog(cog)
     await cog.cleanup()
     await cog.add_components()
-    try:
-        bot.add_cog(cog)
-    except TypeError:
-        await bot.add_cog(cog)
-
