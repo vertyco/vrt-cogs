@@ -473,7 +473,7 @@ class VrtUtils(commands.Cog):
         guildid = data[1].strip()
 
         msg = await ctx.send(f"Are you sure you want me to leave **{guildname}**?")
-        yes = confirm(ctx, msg)
+        yes = await confirm(ctx, msg)
         await msg.delete()
         if yes is None:
             return
