@@ -9,6 +9,7 @@ import sys
 import platform
 import cpuinfo
 import logging
+import asyncio
 
 import discord
 import pkg_resources
@@ -34,12 +35,28 @@ from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 _ = Translator("VrtUtils", __file__)
 log = logging.getLogger("red.vrt.vrtutils")
 dpy = discord.__version__
-if dpy > "1.7.3":
+if dpy > "1.7.4":
     DPY2 = True
-    from .bmenu import menu, DEFAULT_CONTROLS
+    from .bmenu import menu, DEFAULT_CONTROLS, confirm
 else:
     DPY2 = False
-    from .menu import menu, DEFAULT_CONTROLS
+    from .menu import menu, DEFAULT_CONTROLS, confirm
+
+
+async def wait_reply(ctx: commands.Context, timeout: int = 60):
+    def check(message: discord.Message):
+        return message.author == ctx.author and message.channel == ctx.channel
+
+    try:
+        reply = await ctx.bot.wait_for("message", timeout=timeout, check=check)
+        res = reply.content
+        try:
+            await reply.delete()
+        except (discord.Forbidden, discord.NotFound, discord.DiscordServerError):
+            pass
+        return res
+    except asyncio.TimeoutError:
+        return None
 
 
 class VrtUtils(commands.Cog):
@@ -436,6 +453,7 @@ class VrtUtils(commands.Cog):
 
         controls = DEFAULT_CONTROLS.copy()
         controls["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.leave_guild
+        controls["\N{CHAINS}\N{VARIATION SELECTOR-16}"] = self.get_invite
         await menu(ctx, embeds, controls)
 
     async def leave_guild(
@@ -451,7 +469,69 @@ class VrtUtils(commands.Cog):
         guildname = data[0].strip()
         guildid = data[1].strip()
 
+        em = discord.Embed(description=f"Are you sure you want me to leave **{guildname}**?")
+        await message.edit(embed=em)
+        yes = confirm(ctx, message)
+        if yes is None:
+            return
+        if yes:
+            guild = self.bot.get_guild(int(guildid))
+            await guild.leave()
+            await ctx.send(f"I have left **{guildname}**")
+        else:
+            await ctx.send(f"Not leaving **{guildname}**")
+        await menu(ctx, pages, controls, message, page, timeout)
 
-
-
-
+    async def get_invite(
+            self,
+            ctx: commands.Context,
+            pages: list,
+            controls: dict,
+            message: discord.Message,
+            page: int,
+            timeout: float,
+    ):
+        data = pages[page].author.split("-")
+        guildid = data[1].strip()
+        guild = self.bot.get_guild(int(guildid))
+        invite = None
+        my_perms: discord.Permissions = guild.me.guild_permissions
+        if my_perms.manage_guild or my_perms.administrator:
+            if "VANITY_URL" in guild.features:
+                # guild has a vanity url so use it as the one to send
+                try:
+                    return await guild.vanity_invite()
+                except discord.errors.Forbidden:
+                    pass
+            invites = await guild.invites()
+        else:
+            invites = []
+        for inv in invites:  # Loop through the invites for the guild
+            if not (inv.max_uses or inv.max_age or inv.temporary):
+                invite = inv
+                break
+        else:  # No existing invite found that is valid
+            channel = None
+            if not DPY2:
+                channels_and_perms = zip(
+                    guild.text_channels, map(guild.me.permissions_in, guild.text_channels)
+                )
+                channel = next(
+                    (channel for channel, perms in channels_and_perms if perms.create_instant_invite),
+                    None,
+                )
+            else:
+                for channel in guild.text_channels:
+                    if channel.permissions_for(guild.me).create_instant_invite:
+                        break
+            try:
+                if channel is not None:
+                    # Create invite that expires after max_age
+                    invite = await channel.create_invite(max_age=3600)
+            except discord.HTTPException:
+                pass
+        if invite:
+            await ctx.send(str(invite))
+        else:
+            await ctx.send("I could not get an invite for that server!")
+        await menu(ctx, pages, controls, message, page, timeout)

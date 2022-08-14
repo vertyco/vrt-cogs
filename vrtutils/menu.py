@@ -14,6 +14,33 @@ from redbot.core.utils.predicates import ReactionPredicate
 _ReactableEmoji = Union[str, discord.Emoji]
 
 
+async def confirm(
+        ctx: commands.Context,
+        message: discord.Message,
+        timeout: float = 60.0
+) -> bool:
+    start_adding_reactions(message, CONFIRM.keys())
+    try:
+        predicates = ReactionPredicate.with_emojis(tuple(CONFIRM.keys()), message, ctx.author)
+        tasks = [
+            asyncio.ensure_future(ctx.bot.wait_for("reaction_add", check=predicates))
+        ]
+        done, pending = await asyncio.wait(
+            tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+
+        if len(done) == 0:
+            raise asyncio.TimeoutError()
+        react, user = done.pop().result()
+    except asyncio.TimeoutError:
+        if not ctx.me:
+            return False
+    else:
+        return CONFIRM[react.emoji]
+
+
 async def menu(
         ctx: commands.Context,
         pages: Union[List[str], List[discord.Embed]],
@@ -249,4 +276,9 @@ DEFAULT_CONTROLS = {
     "\N{CROSS MARK}": close_menu,
     "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
     "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}": skip_ten,
+}
+
+CONFIRM = {
+    "\N{WHITE HEAVY CHECK MARK}": True,
+    "\N{CROSS MARK}": False,
 }

@@ -1,13 +1,63 @@
 import asyncio
 import functools
 import contextlib
+import logging
 from typing import List, Union
 
 import discord
 from redbot.core import commands
 
+log = logging.getLogger("red.vrt.utils.bmenu")
 
 # A red-menu like button menu for dpy2 to support cross-dpy functionality
+
+
+async def interaction_check(ctx, interaction):
+    if interaction.user.id != ctx.author.id:
+        await interaction.response.send_message(
+            content=_("You are not allowed to interact with this button."),
+            ephemeral=True
+        )
+        return False
+    return True
+
+
+class Confirm(discord.ui.View):
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self.value = None
+        super().__init__(timeout=60)
+
+    @discord.ui.button(label='Yes', style=discord.ButtonStyle.green)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await interaction_check(self.ctx, interaction):
+            return
+        self.value = True
+        self.stop()
+
+    @discord.ui.button(label='No', style=discord.ButtonStyle.red)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await interaction_check(self.ctx, interaction):
+            return
+
+        self.value = False
+        self.stop()
+
+
+async def confirm(ctx, msg: discord.Message):
+    try:
+        view = Confirm(ctx)
+        await msg.edit(view=view)
+        await view.wait()
+        if view.value is None:
+            await msg.delete()
+        else:
+            await msg.edit(view=None)
+        return view.value
+    except Exception as e:
+        log.warning(f"Confirm Error: {e}")
+        return None
+
 
 class MenuButton(discord.ui.Button):
     def __init__(self, emoji: str):
@@ -15,6 +65,8 @@ class MenuButton(discord.ui.Button):
         self.emoji = emoji
 
     async def callback(self, inter: discord.Interaction):
+        await inter.response.defer()
+        self.view.stop()
         await self.view.controls[self.emoji.name](
             self.view.ctx,
             self.view.pages,
@@ -60,12 +112,6 @@ class MenuView(discord.ui.View):
             await self.message.edit(view=None)
         except discord.NotFound:
             pass
-
-    async def handle_page(self, edit_func):
-        if isinstance(self.pages[0], discord.Embed):
-            await edit_func(embed=self.pages[self.page])
-        else:
-            await edit_func(content=self.pages[self.page])
 
     async def start(self):
         current_page = self.pages[self.page]
