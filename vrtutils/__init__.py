@@ -9,4 +9,7 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 async def setup(bot):
     cog = VrtUtils(bot)
-    bot.add_cog(cog)
+    if discord.__version__ > "1.7.3":
+        await bot.add_cog(cog)
+    else:
+        bot.add_cog(cog)
