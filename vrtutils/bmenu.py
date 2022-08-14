@@ -138,6 +138,7 @@ async def menu(
         message: discord.Message = None,
         page: int = 0,
         timeout: float = 60.0,
+        emoji=None,
 ):
     if len(pages) < 1:
         raise RuntimeError("Must provide at least 1 page.")
