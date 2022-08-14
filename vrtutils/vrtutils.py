@@ -418,7 +418,7 @@ class VrtUtils(commands.Cog):
                 description=desc,
                 color=ctx.author.color
             )
-            em.set_author(name=f"{guild.name} - {guild.id}", url=guild_icon)
+            em.set_author(name=f"{guild.name}--{guild.id}", url=guild_icon)
             if guild_icon:
                 em.set_thumbnail(url=guild_icon)
 
@@ -429,7 +429,8 @@ class VrtUtils(commands.Cog):
             filelimit = self.get_size(guild.filesize_limit)
             elimit = guild.emoji_limit
             bits = self.get_bitsize(guild.bitrate_limit)
-            field = f"`Owner:        `{owner} - {owner.id}\n" \
+            field = f"`Owner:        `{owner}\n" \
+                    f"`OwnerID:      `{owner.id}\n" \
                     f"`Verification: `{verlevel}\n" \
                     f"`Nitro Tier:   `{nitro}\n" \
                     f"`Boosters:     `{boosters}\n" \
@@ -466,7 +467,7 @@ class VrtUtils(commands.Cog):
             page: int,
             timeout: float,
     ):
-        data = pages[page].author.split("-")
+        data = pages[page].author.split("--")
         guildname = data[0].strip()
         guildid = data[1].strip()
 
@@ -492,7 +493,7 @@ class VrtUtils(commands.Cog):
             page: int,
             timeout: float,
     ):
-        data = pages[page].author.split("-")
+        data = pages[page].author.split("--")
         guildid = data[1].strip()
         guild = self.bot.get_guild(int(guildid))
         invite = None
