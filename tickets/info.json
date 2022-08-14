@@ -2,13 +2,12 @@
   "author": [
     "Vertyco"
   ],
-  "description": "Discord support ticket system with buttons!",
+  "description": "Multi-Panel Discord support ticket system with buttons!",
   "disabled": false,
   "end_user_data_statement": "This cog does not persistently store data about users.",
   "hidden": false,
-  "install_msg": "Thank you for installing Support! type `[p]help Support` to see all commands.",
-  "min_bot_version": "3.4.0",
-  "max_bot_version": "3.4.9",
+  "install_msg": "Thank you for installing Tickets! type `[p]help Tickets` to see all commands.",
+  "min_bot_version": "3.4.9",
   "permissions": [
     "read_messages",
     "send_messages",
@@ -20,10 +19,8 @@
     "manage_channels"
   ],
   "required_cogs": {},
-  "requirements": [
-    "dislash.py"
-  ],
-  "short": "Support ticket system",
+  "requirements": [],
+  "short": "Advanced support ticket system",
   "tags": [
     "utility",
     "tickets",
