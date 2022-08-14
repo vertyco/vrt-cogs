@@ -29,11 +29,17 @@ class UpgradeChat(commands.Cog):
         default_guild = {
             "bearer_token": None,  # API token created in upgrade.chat portal
             "conversion_ratio": 1000,  # If ratio == 100, then 1 USD = 1000 credits
+            "claim_msg": "default",  # Reply when a user claims a purchase
             "products": {},  # Upgrade.Chat products added by UUID
             "log": 0,  # Log channel
             "users": {}  # Claimed purchases stored here with str(user.id) as keys
         }
         self.config.register_guild(**default_guild)
+
+        if discord.__version__ > "1.7.3":
+            self.dpy2 = True
+        else:
+            self.dpy2 = False
 
     @commands.group(aliases=["upchat"])
     @commands.guild_only()
@@ -74,6 +80,25 @@ class UpgradeChat(commands.Cog):
         async with ctx.typing():
             await self.config.guild(ctx.guild).conversion_ratio.set(credit_worth)
             await ctx.tick()
+
+    @upgradechat.command()
+    async def message(self, ctx: commands.Context, *, claim_message: str):
+        """
+        Set the message the bot sends when a user claims a purchase
+
+        Valid placeholders:
+        {mention} - mention the user
+        {username} - the users discord name
+        {displayname} - the users nickname(if they have one)
+        {uid} - the users Discord ID
+        {guild} - guild name
+        {creditsname} - name of the currency in your guild
+        {amount} - the amount of credits the user has claimed
+
+        set to `default` to use the default message
+        """
+        await self.config.guild(ctx.guild).claim_msg.set(claim_message)
+        await ctx.tick()
 
     @upgradechat.command()
     async def addproduct(self, ctx: commands.Context, uuid: str):
@@ -127,7 +152,8 @@ class UpgradeChat(commands.Cog):
         currency_name = await bank.get_currency_name(ctx.guild)
         ratio = conf["conversion_ratio"]
         producs = conf["products"]
-        desc = f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})"
+        desc = f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n" \
+               f"`Claim Message:    `{conf['claim_msg']}\n"
         if producs:
             text = ""
             for uuid, data in producs.items():
@@ -194,6 +220,19 @@ class UpgradeChat(commands.Cog):
 
             title = "🎉Purchase claimed successfully!🎉" if valid_purchases == 1 else "🎉Purchases claimed successfully!🎉"
             desc = f"{ctx.author.display_name}, you have claimed {'{:,}'.format(amount_to_give)} {currency_name}!"
+            claim_msg = conf["claim_msg"]
+            if "default" not in claim_msg:
+                params = {
+                    "mention": ctx.author.mention,
+                    "username": ctx.author.name,
+                    "displayname": ctx.author.display_name,
+                    "uid": ctx.author.id,
+                    "guild": ctx.guild.name,
+                    "creditsname": currency_name,
+                    "amount": "{:,}".format(amount_to_give)
+                }
+                desc = claim_msg.format(**params)
+
             em = discord.Embed(
                 title=title,
                 description=desc,
@@ -226,5 +265,8 @@ class UpgradeChat(commands.Cog):
                 description=desc,
                 color=ctx.author.color
             )
+            if self.dpy2:
+                em.set_thumbnail(url=ctx.author.avatar.url)
+            else:
+                em.set_thumbnail(url=ctx.author.avatar_url)
             await logchan.send(embed=em)
-
