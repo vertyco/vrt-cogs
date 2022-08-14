@@ -30,13 +30,16 @@ from redbot.core.utils.chat_formatting import (
 )
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
+
 _ = Translator("VrtUtils", __file__)
 log = logging.getLogger("red.vrt.vrtutils")
 dpy = discord.__version__
 if dpy > "1.7.3":
     DPY2 = True
+    from .bmenu import menu
 else:
     DPY2 = False
+    from .menu import menu
 
 
 class VrtUtils(commands.Cog):
@@ -349,3 +352,89 @@ class VrtUtils(commands.Cog):
         filename = f"users.json"
         file = discord.File(iofile, filename=filename)
         await ctx.send("Here are all usernames and their ID's for this guild", file=file)
+
+    @commands.command()
+    @commands.is_owner()
+    async def guilds(self, ctx):
+        """View guilds your bot is in"""
+        # Just wanted a stripped down version of getguild from Trusty's serverstats cog
+        # https://github.com/TrustyJAID/Trusty-cogs
+        embeds = []
+        guilds = len(self.bot.guilds)
+        for i, guild in enumerate(self.bot.guilds):
+            if DPY2:
+                guild_splash = guild.splash.url if guild.splash else None
+                guild_icon = guild.icon.url if guild.icon else None
+            else:
+                guild_splash = guild.splash_url_as(format="png")
+                guild_icon = guild.icon_url_as(format="png")
+            created = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            time_elapsed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            try:
+                joined_at = guild.me.joined_at
+            except AttributeError:
+                joined_at = datetime.datetime.utcnow()
+            bot_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            since_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+
+            humans = sum(1 for x in guild.members if not x.bot)
+            bots = sum(1 for x in guild.members if x.bot)
+            idle = sum(1 for x in guild.members if x.status.idle)
+            online = sum(1 for x in guild.members if x.status.online)
+            dnd = sum(1 for x in guild.members if x.status.do_not_disturb)
+            offline = sum(1 for x in guild.members if x.status.offline)
+            streaming = sum(1 for x in guild.members if x.activity.type is discord.ActivityType.streaming)
+
+            desc = f"{guild.description}\n\n" \
+                   f"`GuildCreated: `{created} ({time_elapsed})\n" \
+                   f"`BotJoined:    `{bot_joined} ({since_joined})\n" \
+                   f"`Humans:    `{humans}\n" \
+                   f"`Bots:      `{bots}\n" \
+                   f"`Online:    `{online}\n" \
+                   f"`Idle:      `{idle}\n" \
+                   f"`DND:       `{dnd}\n" \
+                   f"`Offline:   `{offline}\n" \
+                   f"`Streaming: `{streaming}\n"
+
+            em = discord.Embed(
+                description=desc,
+                color=ctx.author.color
+            )
+            em.set_author(name=f"{guild.name} - {guild.id}", url=guild_icon)
+            if guild_icon:
+                em.set_thumbnail(url=guild_icon)
+
+            owner = guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
+            verlevel = guild.verification_level
+            nitro = guild.premium_tier
+            boosters = guild.premium_subscription_count
+            filelimit = self.get_size(guild.filesize_limit)
+            elimit = guild.emoji_limit
+            bits = self.get_bitsize(guild.bitrate_limit)
+            field = f"`Owner:        `{owner} - {owner.id}\n" \
+                    f"`Verification: `{verlevel}\n" \
+                    f"`Nitro Tier:   `{nitro}\n" \
+                    f"`Boosters:     `{boosters}\n" \
+                    f"`File Limit:   `{filelimit}\n" \
+                    f"`Emoji Limit:  `{elimit}\n" \
+                    f"`Bitrate:      `{bits}"
+            em.add_field(name="Details", value=field)
+
+            text_channels = len(guild.text_channels)
+            nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
+            voice_channels = len(guild.voice_channels)
+            field = f"`Text:  `{text_channels}\n" \
+                    f"`Voice: `{voice_channels}\n" \
+                    f"`NSFW:  `{nsfw_channels}"
+            em.add_field(name="Channels", value=field)
+
+            if guild_splash:
+                em.set_image(url=guild_splash)
+
+            em.set_footer(text=f"Page {i + 1}/{guilds}")
+            embeds.append(em)
+
+        await menu(ctx, embeds)
+
+
+
