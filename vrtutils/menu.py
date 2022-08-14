@@ -223,8 +223,7 @@ async def close_menu(
         controls: dict,
         message: discord.Message,
         page: int,
-        timeout: float,
-        emoji: str,
+        timeout: float
 ):
     with contextlib.suppress(discord.NotFound):
         await message.delete()
