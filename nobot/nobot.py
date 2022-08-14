@@ -1,7 +1,7 @@
-import discord
 import asyncio
 import logging
 
+import discord
 from redbot.core import commands, Config
 
 log = logging.getLogger("red.vrt.nobot")

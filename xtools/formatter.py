@@ -1,13 +1,11 @@
 import datetime
-import pytz
 import json
 import math
-import os
 
 import discord
+import pytz
 import tabulate
 from redbot.core.utils.chat_formatting import box, pagify
-from redbot.core import commands
 
 
 # Check if an object is None
