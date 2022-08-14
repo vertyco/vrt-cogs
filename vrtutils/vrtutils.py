@@ -396,10 +396,10 @@ class VrtUtils(commands.Cog):
 
             humans = sum(1 for x in guild.members if not x.bot)
             bots = sum(1 for x in guild.members if x.bot)
-            idle = sum(1 for x in guild.members if x.status.idle is discord.Status.idle)
-            online = sum(1 for x in guild.members if x.status.online is discord.Status.online)
-            dnd = sum(1 for x in guild.members if x.status.do_not_disturb is discord.Status.do_not_disturb)
-            offline = sum(1 for x in guild.members if x.status.offline is discord.Status.offline)
+            idle = sum(1 for x in guild.members if x.status is discord.Status.idle)
+            online = sum(1 for x in guild.members if x.status is discord.Status.online)
+            dnd = sum(1 for x in guild.members if x.status is discord.Status.do_not_disturb)
+            offline = sum(1 for x in guild.members if x.status is discord.Status.offline)
             streaming = sum(1 for x in guild.members if x.activity.type is discord.ActivityType.streaming)
 
             desc = f"{guild.description}\n\n" \
