@@ -1,10 +1,8 @@
 import logging
-import multiprocessing as mp
 import os
 import random
 from io import BytesIO
 from math import sqrt
-from time import perf_counter
 
 import colorgram
 import requests
@@ -15,8 +13,6 @@ from redbot.core.i18n import Translator
 log = logging.getLogger("red.vrt.levelup.generator")
 _ = Translator("LevelUp", __file__)
 
-
-# Yoinked from disrank and modified to suit this cog's needs
 
 class Generator:
     def __init__(self):
@@ -324,44 +320,3 @@ class Generator:
     def inv_rgb(rgb: tuple) -> tuple:
         new_rgb = (255 - rgb[0], 255 - rgb[1], 255 - rgb[2])
         return new_rgb
-
-
-def run_it(args, obj=None):
-    test = Generator()
-    img = test.generate_profile(**args)
-    obj.append(img)
-    return obj
-
-
-if __name__ == "__main__":
-
-    args = {
-        'bg_image': None,
-        'level': 10,
-        'current_xp': 5,  # Current level minimum xp
-        'user_xp': 100,  # User current xp
-        'next_xp': 1000,  # xp required for next level
-        'user_position': 5,  # User position in leaderboard
-        'user_name': "Testing",  # username with discriminator
-        'user_status': "online",  # User status eg. online, offline, idle, streaming, dnd
-        'colors': None,  # User's color
-        'messages': 420,
-        'voice': "None",
-        'prestige': 1,
-        'stars': 69
-    }
-
-    t1 = perf_counter()
-    manage = mp.Manager()
-    obj = manage.list()
-    jobs = []
-    for i in range(10):
-        p = mp.Process(target=run_it, args=(args, obj))
-        p.start()
-        jobs.append(p)
-    for p in jobs:
-        p.join()
-    print(obj)
-    t2 = perf_counter()
-    td = t2 - t1
-    print(td)
