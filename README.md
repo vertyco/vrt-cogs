@@ -2,21 +2,6 @@
 
 Various utility/random cogs for Red V3.
 
-<p align="center">
-  <a href="https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop">
-    <img src="https://img.shields.io/badge/Red%20DiscordBot-V3-red.svg">
-    </a>
-  <a href="https://github.com/Rapptz/discord.py">
-    <img src="https://img.shields.io/badge/Discord-py-blue.svg">
-    </a>
-  <a href="https://github.com/vertyco">
-    <img src="https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs">
-    </a>
-  <a href="https://github.com/vertyco">
-    <img src="https://img.shields.io/github/repo-size/vertyco/vrt-cogs">
-    </a>
-<p>
-  
 
 ![Python 3.8](https://img.shields.io/badge/python-v3.8-blue?style=for-the-badge)
 ![Discord.py](https://img.shields.io/badge/discord-py-blue?style=for-the-badge)
