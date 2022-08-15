@@ -535,7 +535,7 @@ class VrtUtils(commands.Cog):
         await menu(ctx, pages, controls, message, page, timeout)
 
     @commands.command()
-    @commands.admin_or_can_manage_channel()
+    @commands.admin()
     async def wipevcs(self, ctx):
         """Clear all VC's from a guild"""
         msg = await ctx.send("Are you sure you want to clear **ALL** Voice Channels from this guild?")
