@@ -59,6 +59,9 @@ class Listen:
             pfp = member.avatar.url
         else:
             pfp = member.avatar_url
+
+        logchan = self.settings[guild.id]["log"] if self.settings[guild.id]["log"] else None
+        logchan = guild.get_channel(logchan) if logchan else None
         act = "banned" if action == "ban" else "kicked"
         if dm and action != "notify":
             with contextlib.suppress(discord.HTTPException):
@@ -68,24 +71,38 @@ class Listen:
                     color=discord.Color.red()
                 )
                 await member.send(embed=em)
+        failed = False
         try:
             if action == "kick":
-                await guild.kick(member, reason=audit_reason)
+                if guild.me.guild_permissions.kick_members:
+                    await guild.kick(member, reason=audit_reason)
+                else:
+                    failed = True
             elif action == "ban":
-                await guild.ban(member, reason=audit_reason)
-        except discord.Forbidden:
-            log.warning(f"Could not kick {member.name} from {guild.name}!")
+                if guild.me.guild_permissions.ban_members:
+                    await guild.ban(member, reason=audit_reason)
+                else:
+                    failed = True
+        except Exception as e:
+            log.warning(f"Could not kick {member.name} from {guild.name}!\nException: {e}")
 
-        logchan = self.settings[guild.id]["log"] if self.settings[guild.id]["log"] else None
-        logchan = guild.get_channel(logchan) if logchan else None
         if logchan:
             if action != "notify":
-                em = discord.Embed(
-                    title="Anti-Nuke Triggered!",
-                    description=f"User `{member} - {member.id}` has been {act}!\n"
-                                f"Exceeded {overload} mod actions in {cooldown} seconds",
-                    color=discord.Color.red()
-                )
+                if failed:
+                    em = discord.Embed(
+                        title="Anti-Nuke FAILED!",
+                        description=f"User `{member} - {member.id}` failed to be {act}!\n"
+                                    f"Exceeded {overload} mod actions in {cooldown} seconds\n"
+                                    f"I lack the permission to {action} them!!!",
+                        color=discord.Color.red()
+                    )
+                else:
+                    em = discord.Embed(
+                        title="Anti-Nuke Triggered!",
+                        description=f"User `{member} - {member.id}` has been {act}!\n"
+                                    f"Exceeded {overload} mod actions in {cooldown} seconds",
+                        color=discord.Color.red()
+                    )
             else:
                 em = discord.Embed(
                     title="Anti-Nuke Triggered!",
