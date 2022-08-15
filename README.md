@@ -10,7 +10,7 @@ Various utility/random cogs for Red V3.
     <img src="https://img.shields.io/badge/Discord-py-blue.svg">
     </a>
   <a href="https://github.com/vertyco">
-    <img src="https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs?style=plastic">
+    <img src="https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs">
     </a>
   <a href="https://github.com/vertyco">
     <img src="https://img.shields.io/github/repo-size/vertyco/vrt-cogs">
