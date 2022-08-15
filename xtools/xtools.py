@@ -411,7 +411,7 @@ class XTools(commands.Cog):
                 embed = discord.Embed(description="No screenshots found", color=color)
                 return await msg.edit(embed=embed)
             await msg.delete()
-            await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="xgames")
     async def get_games(self, ctx, *, gamertag=None):
@@ -539,7 +539,7 @@ class XTools(commands.Cog):
             }
             pages = game_embeds(gt, gamename, gs, data)
             await msg.delete()
-            await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="xfriends")
     async def get_friends(self, ctx, *, gamertag=None):
@@ -700,7 +700,7 @@ class XTools(commands.Cog):
                 embed = discord.Embed(description="No game clips found", color=color)
                 return await msg.edit(embed=embed)
             await msg.delete()
-            await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+            await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="xstatus")
     async def get_microsoft_status(self, ctx):
@@ -730,7 +730,7 @@ class XTools(commands.Cog):
                     game_data = json.loads((await xbl_client.catalog.get_products(game_ids)).json())
                     products = game_data["products"]
                     pages = gwg_embeds(products)
-                    return await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+                    return await menu(ctx, pages, DEFAULT_CONTROLS)
 
     @commands.command(name="xmostplayed")
     async def get_mostplayed(self, ctx, *, gamertag=None):
@@ -820,4 +820,4 @@ class XTools(commands.Cog):
             else:
                 await msg.delete()
 
-            return await menu(ctx, pages, DEFAULT_BUTTON_CONTROLS)
+            return await menu(ctx, pages, DEFAULT_CONTROLS)
