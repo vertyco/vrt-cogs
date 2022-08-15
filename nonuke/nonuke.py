@@ -41,7 +41,7 @@ class NoNuke(Listen, commands.Cog):
             "cooldown": 10,  # Seconds in between actions
             "overload": 3,  # Actions within cooldown time
             "dm": False,  # Whether to DM the user the bot kicks
-            "action": "kick",  # Valid types are 'kick', 'ban', and 'notify'
+            "action": "notify",  # Valid types are 'kick', 'ban', and 'notify'
             "whitelist": [],  # Whitelist of trusted users(or bots)
         }
         self.config.register_guild(**default_guild)
@@ -111,6 +111,13 @@ class NoNuke(Listen, commands.Cog):
         Channel Creation/Edit/Deletion
         Role Creation/Edit/Deletion
         """
+        action = await self.config.guild(ctx.guild).action()
+        if action == "kick":
+            if not ctx.guild.me.guild_permissions.kick_members:
+                return await ctx.send("I do not have permission to kick members!")
+        elif action == "ban":
+            if not ctx.guild.me.guild_permissions.ban_members:
+                return await ctx.send("I do not have permission to ban members!")
         await self.config.guild(ctx.guild).overload.set(overload)
         await ctx.tick()
         await self.initialize(ctx.guild)
@@ -126,6 +133,12 @@ class NoNuke(Listen, commands.Cog):
         action = action.lower()
         if action not in ["kick", "ban", "notify"]:
             return await ctx.send("That is not a valid action type!")
+        if action == "kick":
+            if not ctx.guild.me.guild_permissions.kick_members:
+                return await ctx.send("I do not have permission to kick members!")
+        elif action == "ban":
+            if not ctx.guild.me.guild_permissions.ban_members:
+                return await ctx.send("I do not have permission to ban members!")
         await self.config.guild(ctx.guild).action.set(action)
         await ctx.tick()
         await self.initialize(ctx.guild)
