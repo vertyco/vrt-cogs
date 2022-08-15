@@ -538,9 +538,10 @@ class VrtUtils(commands.Cog):
     @commands.guildowner()
     async def wipevcs(self, ctx):
         """
-        Clear all VC's from a guild
+        Clear all voice channels from a guild
 
-        This command was made to recover from Nuked servers that were VC spammed
+        This command was made to recover from Nuked servers that were VC spammed.
+        Hopefully it will never need to be used again.
         """
         msg = await ctx.send("Are you sure you want to clear **ALL** Voice Channels from this guild?")
         yes = await confirm(ctx, msg)
