@@ -552,5 +552,4 @@ class VrtUtils(commands.Cog):
                 await chan.delete()
             except Exception:
                 pass
-
         await msg.edit(content="Finished clearing VC's")
