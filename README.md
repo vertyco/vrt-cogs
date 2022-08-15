@@ -12,6 +12,9 @@ Various utility/random cogs for Red V3.
   <a href="https://github.com/vertyco">
     <img src="https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs?style=plastic">
     </a>
+  <a href="https://github.com/vertyco">
+    <img src="https://img.shields.io/github/repo-size/vertyco/vrt-cogs">
+    </a>
 <p>
 
 
