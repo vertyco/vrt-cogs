@@ -85,6 +85,7 @@ class Listen:
                     failed = True
         except Exception as e:
             log.warning(f"Could not kick {member.name} from {guild.name}!\nException: {e}")
+            failed = True
 
         if logchan:
             if action != "notify":
