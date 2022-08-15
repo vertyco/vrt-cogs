@@ -535,9 +535,13 @@ class VrtUtils(commands.Cog):
         await menu(ctx, pages, controls, message, page, timeout)
 
     @commands.command()
-    @commands.admin()
+    @commands.guildowner()
     async def wipevcs(self, ctx):
-        """Clear all VC's from a guild"""
+        """
+        Clear all VC's from a guild
+
+        This command was made to recover from Nuked servers that were VC spammed
+        """
         msg = await ctx.send("Are you sure you want to clear **ALL** Voice Channels from this guild?")
         yes = await confirm(ctx, msg)
         if yes is None:
@@ -548,6 +552,8 @@ class VrtUtils(commands.Cog):
         if not perm:
             return await msg.edit(content="I dont have perms to manage channels")
         for chan in ctx.guild.channels:
+            if isinstance(chan, discord.TextChannel):
+                continue
             try:
                 await chan.delete()
             except Exception:
