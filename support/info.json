@@ -8,7 +8,7 @@
   "hidden": false,
   "install_msg": "Thank you for installing Support! type `[p]help Support` to see all commands.",
   "min_bot_version": "3.4.0",
-  "max_bot_version": "3.4.9",
+  "max_bot_version": "3.4.99",
   "permissions": [
     "read_messages",
     "send_messages",
