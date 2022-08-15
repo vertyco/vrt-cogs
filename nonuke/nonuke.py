@@ -62,7 +62,20 @@ class NoNuke(Listen, commands.Cog):
     @commands.guildowner()
     @commands.guild_only()
     async def nonuke(self, ctx):
-        """Base command for NoNuke"""
+        """
+        Anti-Nuke System for lazy guild owners!
+
+        Monitors the following events:
+        Kicks & Bans
+        Channel Creation/Edit/Deletion
+        Role Creation/Edit/Deletion
+
+        Set a cooldown(in seconds)
+        Set an overload count(X events in X seconds)
+        Set an action(kick, ban, notify)
+
+        If a user or bot exceeds X mod events within X seconds, the set action will be performed
+        """
 
     @nonuke.command()
     async def enable(self, ctx):
