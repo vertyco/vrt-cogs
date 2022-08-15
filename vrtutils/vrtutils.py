@@ -552,11 +552,16 @@ class VrtUtils(commands.Cog):
         perm = ctx.guild.me.guild_permissions.manage_channels
         if not perm:
             return await msg.edit(content="I dont have perms to manage channels")
+        deleted = 0
         for chan in ctx.guild.channels:
             if isinstance(chan, discord.TextChannel):
                 continue
             try:
                 await chan.delete()
+                deleted += 1
             except Exception:
                 pass
-        await msg.edit(content="Finished clearing VC's")
+        if deleted:
+            await msg.edit(content=f"Deleted {deleted} VCs!")
+        else:
+            await msg.edit(content="No VCs to delete!")
