@@ -5,8 +5,7 @@ Various utility/random cogs for Red V3.
 
 ![Python 3.8](https://img.shields.io/badge/python-v3.8-blue?style=for-the-badge)
 ![Discord.py](https://img.shields.io/badge/discord-py-blue?style=for-the-badge)
-![black](https://img.shields.io/badge/style-black-000000?style=for-the-badge&?link=https://github.com/psf/black)
-  
+ 
   
 ![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3-red.svg)
 ![Lines](https://img.shields.io/tokei/lines/github/vertyco/vrt-cogs)
