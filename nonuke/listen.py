@@ -14,6 +14,7 @@ log = logging.getLogger("red.vrt.antinuke")
 class Listen:
     def __init__(self):
         self.bans = {}
+        self.acting_on = {}
 
     async def action_cooldown(self, guild: discord.Guild, member: Union[discord.Member, discord.User]):
         if member.id == self.bot.user.id:
@@ -42,9 +43,14 @@ class Listen:
 
         td = (now - self.cache[gid][uid]["time"]).total_seconds()
         count = self.cache[gid][uid]["count"]
+        if gid not in self.acting_on:
+            self.acting_on[gid] = []
         if count > overload:
             if td < cooldown:
-                await self.perform_action(guild, member)
+                if uid not in self.acting_on[gid]:
+                    self.acting_on[gid].append(uid)
+                    await self.perform_action(guild, member)
+                    self.acting_on[gid].remove(uid)
 
             self.cache[gid][uid] = {"count": 1, "time": now}
 
