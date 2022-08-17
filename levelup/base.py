@@ -395,6 +395,10 @@ class UserCommands(commands.Cog):
                     file_obj = await self.gen_profile_img(args)
                     self.profiles[user_id] = {"file": file_obj, "last": now}
 
+                if not file_obj:
+                    file_obj = await self.gen_profile_img(args)
+                    self.profiles[user_id] = {"file": file_obj, "last": now}
+
                 temp = BytesIO()
                 file_obj.save(temp, format="WEBP")
                 temp.name = f"{ctx.author.id}.webp"
