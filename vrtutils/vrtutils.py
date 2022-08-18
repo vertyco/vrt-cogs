@@ -259,16 +259,16 @@ class VrtUtils(commands.Cog):
                 color=await ctx.embed_color()
             )
 
-            botstats = f"Servers:     {servers} ({shards} {'shard' if shards == 1 else 'shards'})\n" \
-                       f"Users:       {users}\n" \
-                       f"Channels:    {channels}\n" \
-                       f"Emojis:      {emojis}\n" \
-                       f"Cogs:        {cogs}\n" \
-                       f"Commands:    {commandcount}\n" \
-                       f"Uptime:      {uptime}\n" \
-                       f"Red Version: {red_version}\n" \
-                       f"dpy Version: {dpy}\n" \
-                       f"Python:      {py_version}"
+            botstats = f"Servers:  {servers} ({shards} {'shard' if shards == 1 else 'shards'})\n" \
+                       f"Users:    {users}\n" \
+                       f"Channels: {channels}\n" \
+                       f"Emojis:   {emojis}\n" \
+                       f"Cogs:     {cogs}\n" \
+                       f"Commands: {commandcount}\n" \
+                       f"Uptime:   {uptime}\n" \
+                       f"Red:      {red_version}\n" \
+                       f"DPy:      {dpy}\n" \
+                       f"Python:   {py_version}"
             embed.add_field(
                 name="\N{ROBOT FACE} BOT",
                 value=box(_(botstats), lang="python"),
