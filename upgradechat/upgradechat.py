@@ -267,7 +267,8 @@ class UpgradeChat(commands.Cog):
                 color=ctx.author.color
             )
             if self.dpy2:
-                em.set_thumbnail(url=ctx.author.avatar.url)
+                if ctx.author.avatar:
+                    em.set_thumbnail(url=ctx.author.avatar.url)
             else:
                 em.set_thumbnail(url=ctx.author.avatar_url)
             await logchan.send(embed=em)

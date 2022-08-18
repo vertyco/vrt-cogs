@@ -199,7 +199,8 @@ class SupportButton(discord.ui.Button):
                 description=default_message,
                 color=user.color
             )
-            em.set_thumbnail(url=user.avatar.url)
+            if user.avatar:
+                em.set_thumbnail(url=user.avatar.url)
             msg = await channel.send(user.mention, embed=em)
 
         if logchannel:
@@ -209,7 +210,8 @@ class SupportButton(discord.ui.Button):
                               f"To view this ticket, **[Click Here]({msg.jump_url})**"),
                 color=discord.Color.red()
             )
-            em.set_thumbnail(url=user.avatar.url)
+            if user.avatar:
+                em.set_thumbnail(url=user.avatar.url)
             log_message = await logchannel.send(embed=em)
         else:
             log_message = None
@@ -222,7 +224,7 @@ class SupportButton(discord.ui.Button):
             opened[uid][str(channel.id)] = {
                 "panel": self.panel_name,
                 "opened": now.isoformat(),
-                "pfp": str(user.avatar.url),
+                "pfp": str(user.avatar.url) if user.avatar else None,
                 "logmsg": log_message.id if log_message else None
             }
 

@@ -559,7 +559,8 @@ class UserCommands(commands.Cog):
                 color=discord.Color.random()
             )
             if DPY2:
-                embed.set_thumbnail(url=ctx.guild.icon.url)
+                if ctx.guild.icon:
+                    embed.set_thumbnail(url=ctx.guild.icon.url)
             else:
                 embed.set_thumbnail(url=ctx.guild.icon_url)
 
@@ -631,7 +632,8 @@ class UserCommands(commands.Cog):
                 color=discord.Color.random()
             )
             if DPY2:
-                embed.set_thumbnail(url=ctx.guild.icon.url)
+                if ctx.guild.icon:
+                    embed.set_thumbnail(url=ctx.guild.icon.url)
             else:
                 embed.set_thumbnail(url=ctx.guild.icon_url)
 
