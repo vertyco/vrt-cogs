@@ -8,7 +8,7 @@ import discord
 import tabulate
 import validators
 from redbot.core import commands
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box
 
 from .formatter import (
@@ -34,6 +34,7 @@ log = logging.getLogger("red.vrt.levelup.commands")
 _ = Translator("LevelUp", __file__)
 
 
+@cog_i18n(_)
 class UserCommands(commands.Cog):
 
     # Generate level up image

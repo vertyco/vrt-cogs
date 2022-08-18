@@ -9,41 +9,41 @@ from redbot.core.utils.chat_formatting import box
 from .menu import menu, SMALL_CONTROLS
 from .views import wait_reply, confirm, TestButton
 
-_ = Translator("SupportCommands", __file__)
+_ = Translator("TicketsCommands", __file__)
 
 
-class SupportCommands(commands.Cog):
+class TicketCommands(commands.Cog):
     @commands.group(aliases=["tset"])
     @commands.guild_only()
     @commands.admin()
     async def tickets(self, ctx: commands.Context):
-        """Base support settings"""
+        """Base support ticket settings"""
         pass
 
     @tickets.command()
     async def help(self, ctx: commands.Context):
-        """Support Setup Guide"""
+        """Ticket Setup Guide"""
         em = Embed(
-            title=_("Support Setup Guide"),
-            description=_(f"To create a support panel, type `{ctx.prefix}support addpanel <panel_name>`"),
+            title=_("Ticket Setup Guide"),
+            description=_(f"To create a support ticket panel, type `{ctx.prefix}tickets addpanel <panel_name>`"),
             color=ctx.author.color
         )
         em.add_field(
             name=_(f"Step 1"),
             value=_(f"Set the category ID that new tickets will be created under.\n"
-                    f"`{ctx.prefix}support setcategory <panel_name> <category_id>`"),
+                    f"`{ctx.prefix}tickets setcategory <panel_name> <category_id>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Step 2"),
             value=_(f"Set the channel that the bots ticket panel will be located in.\n"
-                    f"`{ctx.prefix}support setchannel <panel_name> <category_id>`"),
+                    f"`{ctx.prefix}tickets setchannel <panel_name> <category_id>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Step 3"),
             value=_(f"Set the ID of the bots ticket panel message\n"
-                    f"`{ctx.prefix}support panelmessage <panel_name> <message_id>`\n"
+                    f"`{ctx.prefix}tickets panelmessage <panel_name> <message_id>`\n"
                     f"At this point the ticket panel will be activated, all following steps are for "
                     f"extra customization."),
             inline=False
@@ -51,44 +51,44 @@ class SupportCommands(commands.Cog):
         em.add_field(
             name=_(f"Button Text"),
             value=_(f"Set the text of the ticket panel button.\n"
-                    f"`{ctx.prefix}support buttontext <panel_name> <button_text>`"),
+                    f"`{ctx.prefix}tickets buttontext <panel_name> <button_text>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Button Color"),
             value=_(f"Set the ticket panel button color.\n"
                     f"Valid colors are `red`, `blue`, `green`, and `grey`.\n"
-                    f"`{ctx.prefix}support buttoncolor <panel_name> <button_color>`"),
+                    f"`{ctx.prefix}tickets buttoncolor <panel_name> <button_color>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Button Emoji"),
             value=_(f"Set the button emoji for the ticket panel.\n"
-                    f"`{ctx.prefix}support buttonemoji <panel_name> <emoji>`"),
+                    f"`{ctx.prefix}tickets buttonemoji <panel_name> <emoji>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Ticket Messages"),
             value=_(f"Add a message the bot sends to the user in their ticket.\n"
-                    f"`{ctx.prefix}support addmessage <panel_name> <ticket_message>`"),
+                    f"`{ctx.prefix}tickets addmessage <panel_name> <ticket_message>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Remove/View Ticket Messages"),
             value=_(f"Remove a message the bot sends to the user in their ticket.\n"
-                    f"`{ctx.prefix}support viewmessages <panel_name> <message_index>`"),
+                    f"`{ctx.prefix}tickets viewmessages <panel_name> <message_index>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Ticket Channel Name"),
             value=_(f"Set the naming format for ticket channels that are opened.\n"
-                    f"`{ctx.prefix}support ticketname <panel_name> <name_format>`"),
+                    f"`{ctx.prefix}tickets ticketname <panel_name> <name_format>`"),
             inline=False
         )
         em.add_field(
             name=_(f"Log Channel"),
             value=_(f"Set log channel for a ticket panel.\n"
-                    f"`{ctx.prefix}support logchannel <panel_name> <channel>`"),
+                    f"`{ctx.prefix}tickets logchannel <panel_name> <channel>`"),
             inline=False
         )
         await ctx.send(embed=em)
@@ -165,7 +165,7 @@ class SupportCommands(commands.Cog):
 
     @tickets.command()
     async def buttontext(self, ctx: commands.Context, panel_name: str, *, button_text: str):
-        """Set the button text for a support panel"""
+        """Set the button text for a support ticket panel"""
         panel_name = panel_name.lower()
         if len(button_text) > 80:
             return await ctx.send(_("The text content of a button must be less than 80 characters!"))
@@ -180,7 +180,7 @@ class SupportCommands(commands.Cog):
 
     @tickets.command()
     async def buttoncolor(self, ctx: commands.Context, panel_name: str, *, button_color: str):
-        """Set the button color for a support panel"""
+        """Set the button color for a support ticket panel"""
         panel_name = panel_name.lower()
         button_color = button_color.lower()
         valid = ["red", "blue", "green", "grey", "gray"]
@@ -198,7 +198,7 @@ class SupportCommands(commands.Cog):
     @tickets.command()
     async def buttonemoji(self, ctx: commands.Context, panel_name: str, *,
                           emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
-        """Set the button emoji for a support panel"""
+        """Set the button emoji for a support ticket panel"""
         panel_name = panel_name.lower()
         try:
             butt = TestButton(emoji=emoji)  # hehe, butt
@@ -238,7 +238,7 @@ class SupportCommands(commands.Cog):
 
     @tickets.command()
     async def logchannel(self, ctx: commands.Context, panel_name: str, channel: discord.TextChannel):
-        """Set the max tickets a user can have open at one time for a support panel"""
+        """Set the max tickets a user can have open at one time for a support ticket panel"""
         panel_name = panel_name.lower()
         if not channel.permissions_for(ctx.guild.me).view_channel:
             return await ctx.send(_("I cannot see that channel!"))
@@ -329,7 +329,7 @@ class SupportCommands(commands.Cog):
 
     @tickets.command()
     async def viewmessages(self, ctx: commands.Context, panel_name: str):
-        """View/Delete a ticket message for a support panel"""
+        """View/Delete a ticket message for a support ticket panel"""
         panel_name = panel_name.lower()
         panels = await self.config.guild(ctx.guild).panels()
         if panel_name not in panels:
@@ -369,7 +369,7 @@ class SupportCommands(commands.Cog):
 
     @tickets.command()
     async def panels(self, ctx: commands.Context):
-        """View/Delete currently configured support panels"""
+        """View/Delete currently configured support ticket panels"""
         panels = await self.config.guild(ctx.guild).panels()
         if not panels:
             return await ctx.send(_("There are no panels available!\n"
@@ -432,7 +432,7 @@ class SupportCommands(commands.Cog):
 
     @tickets.command(name="view")
     async def view_settings(self, ctx: commands.Context):
-        """View support settings"""
+        """View support ticket settings"""
         conf = await self.config.guild(ctx.guild).all()
         inactive = conf["inactive"]
         no_resp = _(f"{inactive} {'hours' if inactive != 1 else 'hour'}")
@@ -463,7 +463,7 @@ class SupportCommands(commands.Cog):
                 else:
                     busers += f"LeftGuild-{user_id}\n"
         embed = discord.Embed(
-            title=_("Support Core Settings"),
+            title=_("Tickets Core Settings"),
             description=msg,
             color=discord.Color.random()
         )
@@ -558,10 +558,10 @@ class SupportCommands(commands.Cog):
         toggle = await self.config.guild(ctx.guild).user_can_close()
         if toggle:
             await self.config.guild(ctx.guild).user_can_close.set(False)
-            await ctx.send(_("User can no longer close their support channel"))
+            await ctx.send(_("User can no longer close their support ticket channel"))
         else:
             await self.config.guild(ctx.guild).user_can_close.set(True)
-            await ctx.send(_("User can now close their support channel"))
+            await ctx.send(_("User can now close their support ticket channel"))
 
     @tickets.command(name="selfmanage")
     async def toggle_selfmanage(self, ctx: commands.Context):
@@ -573,10 +573,10 @@ class SupportCommands(commands.Cog):
         toggle = await self.config.guild(ctx.guild).user_can_manage()
         if toggle:
             await self.config.guild(ctx.guild).user_can_manage.set(False)
-            await ctx.send(_("User can no longer manage their support channel"))
+            await ctx.send(_("User can no longer manage their support ticket channel"))
         else:
             await self.config.guild(ctx.guild).user_can_manage.set(True)
-            await ctx.send(_("User can now manage their support channel"))
+            await ctx.send(_("User can now manage their support ticket channel"))
 
     @tickets.command(name="transcript")
     async def toggle_transcript(self, ctx: commands.Context):

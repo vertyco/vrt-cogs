@@ -8,14 +8,14 @@ from redbot.core import commands, Config
 from redbot.core.i18n import Translator
 
 from .base import BaseCommands
-from .commands import SupportCommands
+from .commands import TicketCommands
 from .views import start_button
 
 log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
 
 
-class Tickets(BaseCommands, SupportCommands, commands.Cog):
+class Tickets(BaseCommands, TicketCommands, commands.Cog):
     """
     Support ticket system with buttons/logging
     """
