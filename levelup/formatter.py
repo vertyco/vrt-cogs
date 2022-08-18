@@ -188,7 +188,8 @@ async def profile_embed(
     )
     embed.add_field(name=_("Progress"), value=box(f"{lvlbar} {lvlpercent} %", lang="python"))
     if DPY2:
-        embed.set_thumbnail(url=user.avatar.url)
+        if user.avatar:
+            embed.set_thumbnail(url=user.avatar.url)
     else:
         embed.set_thumbnail(url=user.avatar_url)
     if position:

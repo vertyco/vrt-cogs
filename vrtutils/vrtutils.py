@@ -343,7 +343,8 @@ class VrtUtils(commands.Cog):
             color=await ctx.embed_color()
         )
         if DPY2:
-            embed.set_image(url=member.avatar.url)
+            if member.avatar:
+                embed.set_image(url=member.avatar.url)
         else:
             embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
