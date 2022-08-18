@@ -24,7 +24,10 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
-        return f"{helpcmd}\nCog Version: {self.__version__}\nAuthor: {self.__author__}"
+        info = f"{helpcmd}\n" \
+               f"Cog Version: {self.__version__}\n" \
+               f"Author: {self.__author__}\n"
+        return _(info)
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         """No data to delete"""
