@@ -125,7 +125,9 @@ class BaseCommands(commands.Cog):
         )
         embed.set_thumbnail(url=pfp)
         log_chan = self.bot.get_channel(panel["log_channel"]) if panel["log_channel"] else None
-
+        text = ""
+        filename = f"{member.name}-{member.id}.txt"
+        filename = filename.replace("/", "")
         if conf["transcript"]:
             em = discord.Embed(
                 description=_("Archiving channel..."),
@@ -135,9 +137,6 @@ class BaseCommands(commands.Cog):
             em.set_thumbnail(url=LOADING)
             await channel.send(embed=em)
             history = await self.fetch_channel_history(channel)
-            filename = f"{member.name}-{member.id}.txt"
-            filename = filename.replace("/", "")
-            text = ""
             for msg in history:
                 if msg.author.id == self.bot.user.id:
                     continue
@@ -147,28 +146,26 @@ class BaseCommands(commands.Cog):
                     continue
                 text += f"{msg.author.name}: {msg.content}\n"
 
-            # Send off new messages
-            if log_chan:
+        # Send off new messages
+        if log_chan:
+            if text:
+                iofile = StringIO(text)
+                iofile.seek(0)
+                file = discord.File(iofile, filename=filename)
+                await log_chan.send(embed=embed, file=file)
+            else:
+                await log_chan.send(embed=embed)
+        if conf["dm"]:
+            try:
                 if text:
                     iofile = StringIO(text)
                     iofile.seek(0)
                     file = discord.File(iofile, filename=filename)
-                    await log_chan.send(embed=embed, file=file)
+                    await member.send(embed=embed, file=file)
                 else:
-                    await log_chan.send(embed=embed)
-            if conf["dm"]:
-                try:
-                    if text:
-                        iofile = StringIO(text)
-                        iofile.seek(0)
-                        file = discord.File(iofile, filename=filename)
-                        await member.send(embed=embed, file=file)
-                    else:
-                        await member.send(embed=embed)
-                except discord.Forbidden:
-                    pass
-        else:
-            await member.send(embed=embed)
+                    await member.send(embed=embed)
+            except discord.Forbidden:
+                pass
 
         # Delete old log msg
         if log_chan:
