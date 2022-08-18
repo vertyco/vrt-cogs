@@ -19,7 +19,7 @@ from redbot.cogs.downloader.repo_manager import Repo
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_timedelta,
@@ -54,6 +54,7 @@ async def wait_reply(ctx: commands.Context, timeout: int = 60):
         return None
 
 
+@cog_i18n(_)
 class VrtUtils(commands.Cog):
     """
     Random utility commands
@@ -249,6 +250,8 @@ class VrtUtils(commands.Cog):
 
             # -/-/-/LIBS-/-/-/
             red_version = version_info
+            ver = sys.version_info
+            py_version = f"{ver.major}.{ver.minor}.{ver.micro}"
 
             embed = discord.Embed(
                 title=_(f"Stats for {self.bot.user.name}"),
@@ -264,7 +267,8 @@ class VrtUtils(commands.Cog):
                        f"Commands:    {commandcount}\n" \
                        f"Uptime:      {uptime}\n" \
                        f"Red Version: {red_version}\n" \
-                       f"dpy Version: {dpy}"
+                       f"dpy Version: {dpy}\n" \
+                       f"Python:      {py_version}"
             embed.add_field(
                 name="\N{ROBOT FACE} BOT",
                 value=box(_(botstats), lang="python"),
