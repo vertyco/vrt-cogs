@@ -323,7 +323,10 @@ class VrtUtils(commands.Cog):
     @commands.command()
     async def getuser(self, ctx, *, user_id: Union[int, discord.Member, discord.User]):
         """Find a user by ID"""
-        member = await self.bot.get_or_fetch_user(int(user_id))
+        try:
+            member = await self.bot.get_or_fetch_user(int(user_id))
+        except discord.NotFound:
+            return await ctx.send(f"I could not find any users with the ID `{user_id}`")
         since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
         user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
         created_on = _(
