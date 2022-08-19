@@ -185,14 +185,12 @@ class VrtUtils(commands.Cog):
             return await ctx.send(_("Could not find that guild"))
         await ctx.send(_(f"That ID belongs to the guild `{guild.name}`"))
 
+    # Inspired by kennnyshiwa's imperialtoolkit botstat command
+    # https://github.com/kennnyshiwa/kennnyshiwa-cogs
     @commands.command()
-    @commands.is_owner()
     async def botstats(self, ctx):
         """
         Get info about the bot
-
-        Inspired by kennnyshiwa's imperialtoolkit botstat command
-        https://github.com/kennnyshiwa/kennnyshiwa-cogs
         """
         async with ctx.typing():
             # -/-/-/CPU-/-/-/
