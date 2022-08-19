@@ -18,7 +18,7 @@ _ = Translator("Tickets", __file__)
 @cog_i18n(_)
 class Tickets(BaseCommands, TicketCommands, commands.Cog):
     """
-    Support ticket system with buttons/logging
+    Support ticket system with multi-panel functionality
     """
     __author__ = "Vertyco"
     __version__ = "1.0.0"

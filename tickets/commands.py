@@ -21,7 +21,7 @@ class TicketCommands(commands.Cog):
         pass
 
     @tickets.command()
-    async def help(self, ctx: commands.Context):
+    async def setuphelp(self, ctx: commands.Context):
         """Ticket Setup Guide"""
         em = Embed(
             title=_("Ticket Setup Guide"),
