@@ -121,7 +121,7 @@ class SupportButton(discord.ui.Button):
         try:
             await self.create_ticket(interaction)
         except Exception as e:
-            log.error(f"Failed to create ticket: {e}")
+            log.error(f"Failed to create ticket in {interaction.guild.name}: {e}")
 
     async def create_ticket(self, interaction: discord.Interaction):
         guild = interaction.guild
