@@ -186,7 +186,7 @@ class SupportButton(discord.ui.Button):
             embeds = []
             for einfo in messages:
                 em = discord.Embed(
-                    title=einfo["title"].format(**params),
+                    title=einfo["title"].format(**params) if einfo["title"] else None,
                     description=einfo["desc"].format(**params),
                     color=user.color
                 )
