@@ -5,7 +5,7 @@ import logging
 import discord
 from discord.ext import tasks
 from redbot.core import commands, Config
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
 
 from .base import BaseCommands
 from .commands import TicketCommands
@@ -15,6 +15,7 @@ log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
 
 
+@cog_i18n(_)
 class Tickets(BaseCommands, TicketCommands, commands.Cog):
     """
     Support ticket system with buttons/logging

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import tabulate
 from discord.ext import tasks
 from redbot.core import commands, Config
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box
 
 from .base import UserCommands
@@ -39,6 +39,7 @@ _ = Translator("LevelUp", __file__)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
 # Thanks Zephyrkul#1089 for the help with leaderboard formatting!
 
+@cog_i18n(_)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
