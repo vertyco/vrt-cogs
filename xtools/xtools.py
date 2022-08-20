@@ -129,7 +129,7 @@ class XTools(commands.Cog):
         plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
                    f"Copy the ENTIRE contents of the address bar after you authorize, " \
                    f"and reply to this message with what you copied.\n" \
-                   f"**[{auth_url}](Click Here To Authorize Your Account)**"
+                   f"**[Click Here To Authorize Your Account]({auth_url})**"
         embed = discord.Embed(
             description=plz_auth,
             color=ctx.author.color
