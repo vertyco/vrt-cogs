@@ -33,6 +33,9 @@ class EconomyTrackComands(MixinMeta):
         """
         Set the max amount of data points the bot will store
 
+        **Arguments**
+        `<max_points>` Maximum amount of data points to store
+
         The loop runs every minute, so 1440 points equals 1 day
         The default is 43200 (30 days)
         Set to 0 to store data indefinitely (Not Recommended)
@@ -42,7 +45,14 @@ class EconomyTrackComands(MixinMeta):
 
     @economytrack.command()
     async def timezone(self, ctx: commands.Context, timezone: str = None):
-        """Set your desired timezone for the graph"""
+        """
+        Set your desired timezone for the graph
+
+        **Arguments**
+        `<timezone>` A string representing a valid timezone
+
+        Use this command without the argument to get a huge list of valid timezones.
+        """
         tzs = pytz.common_timezones
         timezones = humanize_list(tzs)
         command = f"`{ctx.prefix}ecotrack timezone US/Eastern`"
@@ -102,8 +112,8 @@ class EconomyTrackComands(MixinMeta):
         """
         View bank status over a period of time.
         **Arguments**
-        `<timespan>` How long to look for, or `all` for all-time data. Defaults to 1 day. Must be
-        at least 1 hour.
+        `<timespan>` How long to look for, or `all` for all-time data. Defaults to 1 day.
+        Must be at least 1 hour.
         **Examples:**
             - `[p]bankgraph 3w2d`
             - `[p]bankgraph 5d`
@@ -140,6 +150,14 @@ class EconomyTrackComands(MixinMeta):
             df = pd.DataFrame([total], index=[timestamp])
             frames.append(df)
             totals.append(total)
+
+        if not frames or len(frames) < 10:  # In case there is data but it is old
+            embed = discord.Embed(
+                description=_("There is not enough data collected to generate a graph right now. Try again later."),
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+
         df = pd.concat(frames)
 
         if timespan.lower() == "all":
