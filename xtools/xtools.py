@@ -118,7 +118,7 @@ class XTools(commands.Cog):
             if "Bad Request" in str(e):
                 await ctx.send("Tokens have failed to refresh.\n"
                                "Microsoft API may be having issues.\n"
-                               "Bot owner could try clearing their tokens and re-authorizing them")
+                               "Bot owner will need to re-authorize their tokens")
                 return None
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
         xbl_client = XboxLiveClient(auth_mgr)
@@ -129,14 +129,21 @@ class XTools(commands.Cog):
         plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
                    f"Copy the ENTIRE contents of the address bar after you authorize, " \
                    f"and reply to this message with what you copied.\n" \
-                   f"{auth_url}"
-        await author.send(plz_auth)
+                   f"**[{auth_url}](Click Here To Authorize Your Account)**"
+        embed = discord.Embed(
+            description=plz_auth,
+            color=ctx.author.color
+        )
+        try:
+            await author.send(embed=embed)
+        except discord.Forbidden:
+            return await ctx.send("I am unable to DM you, please open your DMs and try again.")
 
         def check(message):
             return message.author == ctx.author
 
         try:
-            reply = await self.bot.wait_for("message", check=check, timeout=120)
+            reply = await self.bot.wait_for("message", check=check, timeout=240)
         except asyncio.TimeoutError:
             return await author.send("Authorization timeout.")
 
@@ -180,7 +187,7 @@ class XTools(commands.Cog):
         token = auth_mgr.xsts_token.authorization_header_value
         return token
 
-    # Pulls user info if theyve set a Gamertag
+    # Pulls user info if they've set a Gamertag
     async def pull_user(self, ctx):
         users = await self.config.users()
         if str(ctx.author.id) not in users:
@@ -192,8 +199,18 @@ class XTools(commands.Cog):
     @commands.group(name="apiset")
     @commands.is_owner()
     async def api_settings(self, ctx):
-        """Setup the XTools cog"""
-        pass
+        """Set up the XTools cog"""
+
+    @api_settings.command(name="auth")
+    async def auth_user(self, ctx):
+        url = "https://login.live.com/oauth20_authorize.srf?"
+        cid = f"client_id={client_id}"
+        types = "&response_type=code&approval_prompt=auto"
+        scopes = "&scope=Xboxlive.signin+Xboxlive.offline_access&"
+        redirect_uri = "&redirect_uri=http://localhost/auth/callback"
+        auth_url = f"{url}{cid}{types}{scopes}{redirect_uri}"
+        await ctx.send("Sending you a DM to authorize your tokens.")
+        await self.ask_auth(ctx, ctx.author, auth_url)
 
     @api_settings.command(name="help")
     async def get_help(self, ctx):
@@ -234,7 +251,8 @@ class XTools(commands.Cog):
         )
         embed.add_field(
             name="Step 6",
-            value=f"• Try any command and the bot will DM you the link with instructions to authorize your tokens\n"
+            value=f"• Type `{ctx.prefix}apiset auth` and the bot will dm you a link to authorize your tokens\n"
+                  f"• Alternatively, try any command and the bot will DM you the link\n"
                   f"• Make sure to use a **Different** email to sign in than the one you created the Azure app with",
             inline=False
         )
