@@ -110,15 +110,14 @@ class BaseCommands(commands.Cog):
         opened = ticket["opened"]
         panel_name = ticket["panel"]
         panel = conf["panels"][panel_name]
-        opened = datetime.datetime.fromisoformat(opened)
-        opened = opened.strftime('%m/%d/%y at %I:%M %p')
-        closed = datetime.datetime.now().strftime('%m/%d/%y at %I:%M %p')
+        opened = int(datetime.datetime.fromisoformat(opened).timestamp())
+        closed = int(datetime.datetime.now().timestamp())
         embed = discord.Embed(
             title=_("Ticket Closed"),
             description=_(f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
                           f"`PanelType: `{panel_name.capitalize()}\n"
-                          f"`Opened on: `{opened}\n"
-                          f"`Closed on: `{closed}\n"
+                          f"`Opened on: `<t:{opened}:F>\n"
+                          f"`Closed on: `<t:{closed}:F>\n"
                           f"`Closed by: `{closedby}\n"
                           f"`Reason:    `{reason}"),
             color=discord.Color.green()
