@@ -81,12 +81,14 @@ class EconomyTrackComands(MixinMeta):
         else:
             data = await self.config.guild(ctx.guild).data()
             points = len(data)
+        avg_iter = self.looptime if self.looptime else "(N/A)"
         ptime = humanize_timedelta(seconds=int(points * 60))
         mptime = humanize_timedelta(seconds=int(max_points * 60))
         timezone = await self.config.guild(ctx.guild).timezone()
         desc = _(f"`Max Points: `{humanize_number(max_points)} ({mptime})\n"
                  f"`Collected:  `{humanize_number(points)} ({ptime if ptime else 'None'})\n"
-                 f"`Timezone:   `{timezone}")
+                 f"`Timezone:   `{timezone}\n"
+                 f"`LoopTime:   `{avg_iter}ms")
         embed = discord.Embed(
             title=_("EconomyTrack Settings"),
             description=desc,
@@ -114,12 +116,12 @@ class EconomyTrackComands(MixinMeta):
             if delta is None:
                 delta = datetime.timedelta(hours=1)
         is_global = await bank.is_global()
+        currency_name = await bank.get_currency_name(ctx.guild)
+        bank_name = await bank.get_bank_name(ctx.guild)
         if is_global:
             data = await self.config.data()
-            currency_name = "Credits"
         else:
             data = await self.config.guild(ctx.guild).data()
-            currency_name = await bank.get_currency_name(ctx.guild)
         if len(data) < 10:
             embed = discord.Embed(
                 description=_("There is not enough data collected to generate a graph right now. Try again later."),
@@ -130,26 +132,33 @@ class EconomyTrackComands(MixinMeta):
         now = datetime.datetime.now().replace(microsecond=0, second=0).astimezone(tz=pytz.timezone(timezone))
         start = now.timestamp() - delta.total_seconds()
         frames = []
+        totals = []
         for ts_raw, total in data:
             if ts_raw < start:
                 continue
             timestamp = datetime.datetime.fromtimestamp(ts_raw).astimezone(tz=pytz.timezone(timezone))
             df = pd.DataFrame([total], index=[timestamp])
             frames.append(df)
+            totals.append(total)
         df = pd.concat(frames)
 
         if timespan.lower() == "all":
-            title = f"{currency_name} spent for all time"
+            title = f"Total economy stats for all time"
         else:
-            title = f"{currency_name} spend for the last {humanize_timedelta(timedelta=delta)}"
+            title = f"Total economy stats over the last {humanize_timedelta(timedelta=delta)}"
 
-        desc = _(f"Current timezone is **{timezone}**")
+        desc = f"`BankName: `{bank_name}\n" \
+               f"`Lowest:   `{humanize_number(min(totals))} {currency_name}\n" \
+               f"`Highest:  `{humanize_number(max(totals))} {currency_name}\n" \
+               f"`Average:  `{humanize_number(round(sum(totals) / len(totals)))} {currency_name}\n"
+
         embed = discord.Embed(
             title=_(title),
-            description=desc,
+            description=_(desc),
             color=ctx.author.color
         )
         embed.set_image(url="attachment://plot.png")
-
-        file = await self.get_plot(df)
+        embed.set_footer(text=_(f"Timezone: {timezone}"))
+        async with ctx.typing():
+            file = await self.get_plot(df)
         await ctx.send(embed=embed, file=file)
