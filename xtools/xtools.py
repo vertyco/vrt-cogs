@@ -118,7 +118,7 @@ class XTools(commands.Cog):
             if "Bad Request" in str(e):
                 await ctx.send("Tokens have failed to refresh.\n"
                                "Microsoft API may be having issues.\n"
-                               "Bot owner will need to re-authorize their tokens")
+                               f"Bot owner will need to re-authorize their tokens with `{ctx.prefix}apiset auth`")
                 return None
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
         xbl_client = XboxLiveClient(auth_mgr)
