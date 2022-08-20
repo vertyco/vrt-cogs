@@ -60,14 +60,15 @@ class Confirm(discord.ui.View):
         if not await interaction_check(self.ctx, interaction):
             return
         self.value = True
+        await interaction.response.defer()
         self.stop()
 
     @discord.ui.button(label='No', style=discord.ButtonStyle.red)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not await interaction_check(self.ctx, interaction):
             return
-
         self.value = False
+        await interaction.response.defer()
         self.stop()
 
 
