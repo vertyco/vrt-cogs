@@ -293,7 +293,10 @@ class UserCommands(commands.Cog):
         user_id = str(user.id)
         if user_id not in users:
             return await ctx.send("No information available yet!")
-        pfp = user.avatar_url
+        if DPY2:
+            pfp = user.avatar.url if user.avatar else None
+        else:
+            pfp = user.avatar_url
         pos = await get_user_position(conf, user_id)
         position = "{:,}".format(pos["p"])  # int format
         percentage = pos["pr"]  # Float
