@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
+from time import monotonic
 
 from discord.ext import tasks
 from redbot.core import commands, Config, bank
@@ -43,6 +44,7 @@ class EconomyTrack(commands.Cog, EconomyTrackComands, PlotGraph, metaclass=Compo
         default_guild = {"timezone": "UTC", "data": []}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
+        self.looptime = None
         self.bank_loop.start()
 
     def cog_unload(self):
@@ -50,6 +52,7 @@ class EconomyTrack(commands.Cog, EconomyTrackComands, PlotGraph, metaclass=Compo
 
     @tasks.loop(minutes=1)
     async def bank_loop(self):
+        start = monotonic()
         is_global = await bank.is_global()
         max_points = await self.config.max_points()
         if max_points == 0:  # 0 is no limit
@@ -70,6 +73,12 @@ class EconomyTrack(commands.Cog, EconomyTrackComands, PlotGraph, metaclass=Compo
                     data.append((now, total))
                     if len(data) > max_points:
                         del data[0:len(data) - max_points]
+        iter_time = round((monotonic() - start) * 1000)
+        avg_iter = self.looptime
+        if avg_iter is None:
+            self.looptime = iter_time
+        else:
+            self.looptime = round((avg_iter + iter_time) / 2)
 
     @bank_loop.before_loop
     async def before_bank_loop(self):
