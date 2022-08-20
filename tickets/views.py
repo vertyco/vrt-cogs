@@ -205,9 +205,10 @@ class SupportButton(discord.ui.Button):
             msg = await channel.send(user.mention, embed=em)
 
         if logchannel:
+            ts = int(now.timestamp())
             em = discord.Embed(
                 title=_("Ticket opened"),
-                description=_(f"Ticket created by **{user.name}-{user.id}** has been opened\n"
+                description=_(f"Ticket created by **{user.name}-{user.id}** was opened <t:{ts}:R>\n"
                               f"To view this ticket, **[Click Here]({msg.jump_url})**"),
                 color=discord.Color.red()
             )
