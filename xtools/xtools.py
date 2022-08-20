@@ -203,6 +203,11 @@ class XTools(commands.Cog):
 
     @api_settings.command(name="auth")
     async def auth_user(self, ctx):
+        client_id = await self.config.clientid()
+        if not client_id:
+            await ctx.send(f"Client ID and Secret have not been set yet!\n"
+                           f"Bot owner needs to run `{ctx.prefix}apiset tokens`")
+            return None
         url = "https://login.live.com/oauth20_authorize.srf?"
         cid = f"client_id={client_id}"
         types = "&response_type=code&approval_prompt=auto"
