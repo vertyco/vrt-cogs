@@ -139,7 +139,7 @@ class VrtUtils(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def pip(self, ctx, *, command: str):
-        """Run a pip command"""
+        """Run a pip command from within your bots venv"""
         async with ctx.typing():
             command = f"pip {command}"
             res = await self.do_shell_command(command)
@@ -164,7 +164,7 @@ class VrtUtils(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def runshell(self, ctx, *, command: str):
-        """Run a shell command"""
+        """Run a shell command from within your bots venv"""
         async with ctx.typing():
             command = f"{command}"
             res = await self.do_shell_command(command)
