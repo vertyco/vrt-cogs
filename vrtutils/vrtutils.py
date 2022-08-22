@@ -11,7 +11,6 @@ from typing import Union
 
 import cpuinfo
 import discord
-import pkg_resources
 import psutil
 import speedtest
 from redbot.core import commands, version_info
@@ -122,30 +121,6 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def getlibs(self, ctx):
-        """Get all current installed packages on the bots venv"""
-        async with ctx.typing():
-            packages = [str(p) for p in pkg_resources.working_set]
-            packages = sorted(packages, key=str.lower)
-            text = ""
-            for package in packages:
-                text += f"{package}\n"
-            embeds = []
-            page = 1
-            for p in pagify(text):
-                embed = discord.Embed(
-                    description=box(p)
-                )
-                embed.set_footer(text=f"Page {page}")
-                page += 1
-                embeds.append(embed)
-            if len(embeds) > 1:
-                await menu(ctx, embeds, DEFAULT_CONTROLS)
-            else:
-                await ctx.send(embed=embeds[0])
-
-    @commands.command()
-    @commands.is_owner()
     async def pip(self, ctx, *, command: str):
         """Run a pip command"""
         async with ctx.typing():
@@ -160,7 +135,7 @@ class VrtUtils(commands.Cog):
             page = 1
             for p in pagify(res):
                 embed = discord.Embed(
-                    title="Packages Updated",
+                    title="Pip Command Results",
                     description=box(p)
                 )
                 embed.set_footer(text=f"Page {page}")
