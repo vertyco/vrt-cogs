@@ -127,7 +127,7 @@ class VrtUtils(commands.Cog):
             command = f"pip {command}"
 
             def pipexe():
-                results = subprocess.run(command, stdout=subprocess.PIPE).stdout.decode("utf-8")
+                results = subprocess.run(command, stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8")
                 return results
 
             res = await self.bot.loop.run_in_executor(None, pipexe)
