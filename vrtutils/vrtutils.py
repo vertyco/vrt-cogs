@@ -124,7 +124,7 @@ class VrtUtils(commands.Cog):
     @commands.command(aliases=["diskbench"])
     @commands.is_owner()
     async def diskspeed(self, ctx):
-        """Get disk W/R performance for the server your bot is on"""
+        """Get disk R/W performance for the server your bot is on"""
 
         def diskembed(data: dict) -> discord.Embed:
             if data["write4"] != "Waiting..." and data["write4"] != "Running...":
@@ -416,7 +416,7 @@ class VrtUtils(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def getuser(self, ctx, *, user_id: Union[int, discord.Member, discord.User]):
+    async def getuser(self, ctx, *, user_id: Union[int, discord.User]):
         """Find a user by ID"""
         try:
             member = await self.bot.get_or_fetch_user(int(user_id))
