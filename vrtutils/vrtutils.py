@@ -114,8 +114,8 @@ class VrtUtils(commands.Cog):
         read = humanize_number(round(res["read"], 2))
         embed = discord.Embed(
             title="Disk I/O",
-            description=_(f"`Write Speed: `{write}MB/s\n"
-                          f"`Read Speed:  `{read}MB/s"),
+            description=_(f"`Write Speed: `{write} MB/s\n"
+                          f"`Read Speed:  `{read} MB/s"),
             color=ctx.author.color
         )
         await ctx.send(embed=embed)
