@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     Random utility commands
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -485,14 +485,17 @@ class VrtUtils(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def botip(self, ctx):
-        """Get the bots public IP address"""
+        """Get the bots public IP address (in DMs)"""
         async with ctx.typing():
             test = speedtest.Speedtest(secure=True)
             embed = discord.Embed(
                 title=f"{self.bot.user.name}'s public IP",
                 description=test.results.dict()["client"]["ip"]
             )
-            await ctx.send(embed=embed)
+            try:
+                await ctx.author.send(embed=embed)
+            except discord.Forbidden:
+                await ctx.send("Your DMs appear to be disabled, please enable them and try again.")
 
     @commands.command()
     @commands.is_owner()
