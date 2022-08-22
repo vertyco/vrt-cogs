@@ -21,11 +21,23 @@ _ = Translator("EconomyTrackCommands", __file__)
 
 
 @cog_i18n(_)
-class EconomyTrackComands(MixinMeta):
+class EconomyTrackCommands(MixinMeta):
     @commands.group(aliases=["ecotrack"])
     @commands.admin()
     async def economytrack(self, ctx: commands.Context):
         """Configure EconomyTrack"""
+
+    @economytrack.command()
+    @commands.guildowner()
+    async def toggle(self, ctx: commands.Context):
+        """Enable/Disable economy tracking for your server"""
+        async with self.config.guild(ctx.guild).all() as conf:
+            if conf["enabled"]:
+                conf["enabled"] = False
+                await ctx.send(_("Economy tracking has been **Disabled**"))
+            else:
+                conf["enabled"] = True
+                await ctx.send(_("Economy tracking has been **Enabled**"))
 
     @economytrack.command()
     @commands.is_owner()

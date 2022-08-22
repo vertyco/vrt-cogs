@@ -10,7 +10,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 
 from economytrack.abc import CompositeMetaClass
-from economytrack.commands import EconomyTrackComands
+from economytrack.commands import EconomyTrackCommands
 from economytrack.graph import PlotGraph
 
 log = logging.getLogger("red.vrt.economytrack")
@@ -22,7 +22,7 @@ _ = Translator("EconomyTrack", __file__)
 
 
 @cog_i18n(_)
-class EconomyTrack(commands.Cog, EconomyTrackComands, PlotGraph, metaclass=CompositeMetaClass):
+class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=CompositeMetaClass):
     """Track your economy's total balance over time"""
     __author__ = "Vertyco"
     __version__ = "0.0.1"
@@ -41,7 +41,7 @@ class EconomyTrack(commands.Cog, EconomyTrackComands, PlotGraph, metaclass=Compo
         self.bot = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
         default_global = {"max_points": 43200, "data": []}
-        default_guild = {"timezone": "UTC", "data": []}
+        default_guild = {"timezone": "UTC", "data": [], "enabled": False}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
         self.looptime = None
@@ -67,6 +67,8 @@ class EconomyTrack(commands.Cog, EconomyTrackComands, PlotGraph, metaclass=Compo
                     del data[0:len(data) - max_points]
         else:
             async for guild in AsyncIter(self.bot.guilds):
+                if not await self.config.guild(guild).enabled():
+                    continue
                 members = await bank._config.all_members(guild)
                 total = sum(value["balance"] for value in members.values())
                 async with self.config.guild(guild).data() as data:
