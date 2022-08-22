@@ -113,12 +113,25 @@ class VrtUtils(commands.Cog):
         res = await self.bot.loop.run_in_executor(self.threadpool, exe)
         return res
 
-    async def run_disk_speed(self, block_count: int = 128, block_size: int = 1048576) -> dict:
-        res = await self.bot.loop.run_in_executor(
-            self.threadpool,
-            lambda: get_disk_speed(self.path, block_count, block_size)
-        )
-        return res
+    async def run_disk_speed(self, block_count: int = 128, block_size: int = 1048576, passes: int = 1) -> dict:
+        reads = []
+        writes = []
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            futures = [
+                self.bot.loop.run_in_executor(
+                    pool,
+                    lambda: get_disk_speed(self.path, block_count, block_size)
+                ) for _ in range(passes)
+            ]
+            results = await asyncio.gather(*futures)
+            for i in results:
+                reads.append(i["read"])
+                writes.append(i["write"])
+        results = {
+            "read": sum(reads) / len(reads),
+            "write": sum(writes) / len(writes)
+        }
+        return results
 
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
     @commands.command(aliases=["diskbench"])
@@ -136,29 +149,36 @@ class VrtUtils(commands.Cog):
             first = f"Write: {data['write1']}\n" \
                     f"Read:  {data['read1']}"
             embed.add_field(
-                name="64 blocks of 1048576 bytes (64MB)",
+                name="128 blocks of 1048576 bytes (128MB)",
                 value=box(_(first), lang="python"),
                 inline=False
             )
             second = f"Write: {data['write2']}\n" \
                      f"Read:  {data['read2']}"
             embed.add_field(
-                name="128 blocks of 1048576 bytes (128MB)",
+                name="128 blocks of 2097152 bytes (256MB)",
                 value=box(_(second), lang="python"),
                 inline=False
             )
             third = f"Write: {data['write3']}\n" \
                     f"Read:  {data['read3']}"
             embed.add_field(
-                name="256 blocks of 524288 bytes (128MB)",
+                name="256 blocks of 1048576 bytes (256MB)",
                 value=box(_(third), lang="python"),
                 inline=False
             )
             fourth = f"Write: {data['write4']}\n" \
                      f"Read:  {data['read4']}"
             embed.add_field(
-                name="512 blocks of 1048576 bytes (512MB)",
+                name="256 blocks of 2097152 bytes (512MB)",
                 value=box(_(fourth), lang="python"),
+                inline=False
+            )
+            fifth = f"Write: {data['write5']}\n" \
+                    f"Read:  {data['read5']}"
+            embed.add_field(
+                name="256 blocks of 4194304 bytes (1GB)",
+                value=box(_(fifth), lang="python"),
                 inline=False
             )
             return embed
@@ -172,28 +192,33 @@ class VrtUtils(commands.Cog):
             "read3": "Waiting...",
             "write4": "Waiting...",
             "read4": "Waiting...",
+            "write5": "Waiting...",
+            "read5": "Waiting...",
 
         }
         msg = None
-        for i in range(5):
+        for i in range(6):
             stage = i + 1
             em = diskembed(results)
             if not msg:
                 msg = await ctx.send(embed=em)
             else:
                 await msg.edit(embed=em)
-            count = 64
+            count = 128
             size = 1048576
             if stage == 2:
                 count = 128
-                size = 1048576
+                size = 2097152
             elif stage == 3:
                 count = 256
-                size = 524288
-            elif stage == 4:
-                count = 512
                 size = 1048576
-            res = await self.run_disk_speed(block_count=count, block_size=size)
+            elif stage == 4:
+                count = 256
+                size = 2097152
+            elif stage == 6:
+                count = 256
+                size = 4194304
+            res = await self.run_disk_speed(block_count=count, block_size=size, passes=3)
             write = f"{humanize_number(round(res['write'], 2))}MB/s"
             read = f"{humanize_number(round(res['read'], 2))}MB/s"
             results[f"write{stage}"] = write
