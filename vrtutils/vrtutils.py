@@ -137,7 +137,13 @@ class VrtUtils(commands.Cog):
     @commands.command(aliases=["diskbench"])
     @commands.is_owner()
     async def diskspeed(self, ctx):
-        """Get disk R/W performance for the server your bot is on"""
+        """
+        Get disk R/W performance for the server your bot is on
+
+        The results of this test may vary, Python isn't fast enough for this kind of byte-by-byte writing,
+        and the file buffering and similar adds too much overhead.
+        Still this can give a good idea of where the bot is at I/O wise.
+        """
 
         def diskembed(data: dict) -> discord.Embed:
             if data["write4"] != "Waiting..." and data["write4"] != "Running...":
