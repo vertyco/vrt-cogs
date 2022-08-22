@@ -182,7 +182,6 @@ class VrtUtils(commands.Cog):
                 msg = await ctx.send(embed=em)
             else:
                 await msg.edit(embed=em)
-            await asyncio.sleep(2)
             count = 64
             size = 1048576
             if stage == 2:
@@ -202,6 +201,7 @@ class VrtUtils(commands.Cog):
             if f"write{stage + 1}" in results:
                 results[f"write{stage + 1}"] = "Running..."
                 results[f"read{stage + 1}"] = "Running..."
+            await asyncio.sleep(1)
 
     @commands.command()
     @commands.is_owner()
