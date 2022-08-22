@@ -115,10 +115,6 @@ class VrtUtils(commands.Cog):
 
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
     @commands.command()
-    async def test(self, ctx):
-        print(executable)
-
-    @commands.command()
     @commands.is_owner()
     async def diskspeed(self, ctx):
         """Get disk W/R performance for the server your bot is on"""
