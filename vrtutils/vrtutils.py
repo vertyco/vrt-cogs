@@ -191,7 +191,7 @@ class VrtUtils(commands.Cog):
     # Inspired by kennnyshiwa's imperialtoolkit botstat command
     # https://github.com/kennnyshiwa/kennnyshiwa-cogs
     @commands.command()
-    async def botstats(self, ctx):
+    async def botinfo(self, ctx):
         """
         Get info about the bot
         """
