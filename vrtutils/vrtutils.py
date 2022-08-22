@@ -9,6 +9,7 @@ import sys
 from io import StringIO
 from pathlib import Path
 from typing import Union
+import multiprocessing as mp
 
 import cpuinfo
 import discord
@@ -18,14 +19,16 @@ import speedtest
 from redbot.cogs.downloader.repo_manager import Repo
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
-from redbot.core.data_manager import cog_data_path
+from redbot.core.data_manager import cog_data_path, bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_timedelta,
+    humanize_number,
     pagify,
 )
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from .diskspeed import get_disk_speed
 
 _ = Translator("VrtUtils", __file__)
 log = logging.getLogger("red.vrt.vrtutils")
@@ -72,7 +75,7 @@ class VrtUtils(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.LIB_PATH = cog_data_path(self) / "lib"
+        self.path = cog_data_path(self)
 
     # -/-/-/-/-/-/-/-/FORMATTING-/-/-/-/-/-/-/-/
     @staticmethod
@@ -103,6 +106,24 @@ class VrtUtils(commands.Cog):
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
     @commands.command()
     @commands.is_owner()
+    async def diskspeed(self, ctx):
+        """Get disk W/R performance for the server your bot is on"""
+        res = await self.bot.loop.run_in_executor(
+            None,
+            lambda: get_disk_speed(self.path)
+        )
+        write = humanize_number(round(res["write"], 2))
+        read = humanize_number(round(res["read"], 2))
+        embed = discord.Embed(
+            title="Disk I/O",
+            description=_(f"`Write Speed: `{write}MB/s\n"
+                          f"`Read Speed:  `{read}MB/s"),
+            color=ctx.author.color
+        )
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.is_owner()
     async def getlibs(self, ctx):
         """Get all current installed packages on the bots venv"""
         async with ctx.typing():
@@ -124,22 +145,6 @@ class VrtUtils(commands.Cog):
                 await menu(ctx, embeds, DEFAULT_CONTROLS)
             else:
                 await ctx.send(embed=embeds[0])
-
-    @commands.command()
-    @commands.is_owner()
-    async def updatelibs(self, ctx):
-        """Update all installed packages on the bots venv"""
-        async with ctx.typing():
-            packages = [dist.project_name for dist in pkg_resources.working_set]
-            deps = ' '.join(packages)
-            repo = Repo("", "", "", "", Path.cwd())
-            async with ctx.typing():
-                success = await repo.install_raw_requirements(deps, self.LIB_PATH)
-
-            if success:
-                await ctx.send(_("Libraries updated."))
-            else:
-                await ctx.send(_("Some libraries failed to update. Check your logs for details."))
 
     @commands.command()
     @commands.is_owner()
@@ -209,6 +214,12 @@ class VrtUtils(commands.Cog):
             disk = psutil.disk_usage(os.getcwd())
             disk_total = self.get_size(disk.total)
             disk_used = self.get_size(disk.used)
+            res = await self.bot.loop.run_in_executor(
+                None,
+                lambda: get_disk_speed(self.path)
+            )
+            write = humanize_number(round(res["write"], 2))
+            read = humanize_number(round(res["read"], 2))
 
             # -/-/-/NET-/-/-/
             net = psutil.net_io_counters()  # Obj
@@ -299,10 +310,18 @@ class VrtUtils(commands.Cog):
             memtext = f"RAM ({ram_used}/{ram_total})\n" \
                       f"{rambar}\n" \
                       f"DISK ({disk_used}/{disk_total})\n" \
-                      f"{diskbar}"
+                      f"{diskbar}\n"
             embed.add_field(
                 name=f"\N{FLOPPY DISK} MEM",
                 value=box(memtext, lang="python"),
+                inline=False
+            )
+
+            i_o = f"Read Speed:  {read}MB/s\n" \
+                  f"Write Speed: {write}MB/s"
+            embed.add_field(
+                name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
+                value=box(_(i_o), lang="python"),
                 inline=False
             )
 
