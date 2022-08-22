@@ -33,6 +33,11 @@ log = logging.getLogger("red.vrt.levelup")
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 _ = Translator("LevelUp", __file__)
 
+if discord.__version__ > "1.7.3":
+    DPY2 = True
+else:
+    DPY2 = False
+
 
 # CREDITS
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
@@ -211,12 +216,15 @@ class LevelUp(UserCommands, commands.Cog):
             return
         mentionuser = member.mention
         name = member.name
+        if DPY2:
+            pfp = member.avatar.url if member.avatar else None
+        else:
+            pfp = member.avatar_url
         # Send levelup messages
         if not usepics:
             if dm:
                 await member.send(_(f"You have just reached level {new_level} in {guild.name}!"))
             color = member.colour
-            pfp = member.avatar_url
             embed = discord.Embed(
                 description=_(f"**Just reached level {new_level}!**"),
                 color=color
@@ -240,7 +248,7 @@ class LevelUp(UserCommands, commands.Cog):
             color = hex_to_rgb(color)
             args = {
                 'bg_image': banner,
-                'profile_image': member.avatar_url,
+                'profile_image': pfp,
                 'level': new_level,
                 'color': color,
             }
@@ -1552,9 +1560,13 @@ class LevelUp(UserCommands, commands.Cog):
         banner = await self.get_banner(user)
         color = str(user.colour)
         color = hex_to_rgb(color)
+        if DPY2:
+            pfp = user.avatar.url if user.avatar else None
+        else:
+            pfp = user.avatar_url
         args = {
             'bg_image': banner,
-            'profile_image': user.avatar_url,
+            'profile_image': pfp,
             'level': 69,
             'color': color,
         }
