@@ -101,7 +101,7 @@ class VrtUtils(commands.Cog):
         else:
             ratio = progress / total
         bar = "█" * round(ratio * width) + "-" * round(width - (ratio * width))
-        return f"|{bar}| {round(100 * ratio)}%"
+        return f"|{bar}| {round(100 * ratio, 1)}%"
 
     async def do_shell_command(self, command: str):
         cmd = f"{executable} -m {command}"
@@ -322,9 +322,13 @@ class VrtUtils(commands.Cog):
             disk = psutil.disk_usage(os.getcwd())
             disk_total = self.get_size(disk.total)
             disk_used = self.get_size(disk.used)
-            res = await self.run_disk_speed()
-            write = humanize_number(round(res["write"], 2))
-            read = humanize_number(round(res["read"], 2))
+
+            p = psutil.Process()
+            io_counters = p.io_counters()
+            disk_usage_process = io_counters[2] + io_counters[3]  # read_bytes + write_bytes
+            disk_io_counter = psutil.disk_io_counters()
+            disk_io_total = disk_io_counter[2] + disk_io_counter[3]  # read_bytes + write_bytes
+            disk_usage = (disk_usage_process / disk_io_total) * 100
 
             # -/-/-/NET-/-/-/
             net = psutil.net_io_counters()  # Obj
@@ -422,8 +426,9 @@ class VrtUtils(commands.Cog):
                 inline=False
             )
 
-            i_o = f"Read Speed:  {read}MB/s\n" \
-                  f"Write Speed: {write}MB/s"
+            disk_usage_bar = self.get_bar(0, 0, disk_usage, width=30)
+            i_o = f"USAGE\n" \
+                  f"{disk_usage_bar}"
             embed.add_field(
                 name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
                 value=box(_(i_o), lang="python"),
