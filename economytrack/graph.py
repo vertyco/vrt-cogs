@@ -31,7 +31,7 @@ class PlotGraph(MixinMeta):
         fig = px.line(
             df,
             template="plotly_dark",
-            labels={"index": _("Date"), "value": _("Total Economy Credits")}
+            labels={"ts": _("Date"), "value": _("Total Economy Credits")}
         )
         fig.update_xaxes(
             tickformat="%I:%M %p\n%b %d %Y"
