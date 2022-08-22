@@ -151,6 +151,36 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
+    async def shell(self, ctx, *, command: str):
+        """Run a shell command"""
+        async with ctx.typing():
+            command = f"{command}"
+
+            def pipexe():
+                results = subprocess.run(command, stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8")
+                return results
+
+            res = await self.bot.loop.run_in_executor(None, pipexe)
+            embeds = []
+            page = 1
+            for p in pagify(res):
+                embed = discord.Embed(
+                    title="Shell Command Results",
+                    description=box(p)
+                )
+                embed.set_footer(text=f"Page {page}")
+                page += 1
+                embeds.append(embed)
+            if len(embeds) > 1:
+                await menu(ctx, embeds, DEFAULT_CONTROLS)
+            else:
+                if embeds:
+                    await ctx.send(embed=embeds[0])
+                else:
+                    await ctx.send("Command ran with no results")
+
+    @commands.command()
+    @commands.is_owner()
     async def findguildbyid(self, ctx, guild_id: int):
         """Find a guild by ID"""
         guild = self.bot.get_guild(guild_id)
