@@ -494,6 +494,7 @@ class VrtUtils(commands.Cog):
             )
             try:
                 await ctx.author.send(embed=embed)
+                await ctx.tick()
             except discord.Forbidden:
                 await ctx.send("Your DMs appear to be disabled, please enable them and try again.")
 
