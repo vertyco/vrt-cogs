@@ -5,6 +5,8 @@ import logging
 import os
 import platform
 import subprocess
+from sys import executable
+from concurrent.futures import ThreadPoolExecutor
 import sys
 from io import StringIO
 from typing import Union
@@ -73,6 +75,7 @@ class VrtUtils(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.path = cog_data_path(self)
+        self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vrt_utils")
 
     # -/-/-/-/-/-/-/-/FORMATTING-/-/-/-/-/-/-/-/
     @staticmethod
@@ -100,13 +103,27 @@ class VrtUtils(commands.Cog):
         bar = "█" * round(ratio * width) + "-" * round(width - (ratio * width))
         return f"|{bar}| {round(100 * ratio)}%"
 
+    async def do_shell_command(self, command: str):
+        cmd = f"{executable} -m {command}"
+
+        def exe():
+            results = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8")
+            return results
+
+        res = await self.bot.loop.run_in_executor(self.threadpool, exe)
+        return res
+
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
+    @commands.command()
+    async def test(self, ctx):
+        print(executable)
+
     @commands.command()
     @commands.is_owner()
     async def diskspeed(self, ctx):
         """Get disk W/R performance for the server your bot is on"""
         res = await self.bot.loop.run_in_executor(
-            None,
+            self.threadpool,
             lambda: get_disk_speed(self.path)
         )
         write = humanize_number(round(res["write"], 2))
@@ -125,12 +142,7 @@ class VrtUtils(commands.Cog):
         """Run a pip command"""
         async with ctx.typing():
             command = f"pip {command}"
-
-            def pipexe():
-                results = subprocess.run(command, stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8")
-                return results
-
-            res = await self.bot.loop.run_in_executor(None, pipexe)
+            res = await self.do_shell_command(command)
             embeds = []
             page = 1
             for p in pagify(res):
@@ -151,16 +163,11 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def shell(self, ctx, *, command: str):
+    async def runshell(self, ctx, *, command: str):
         """Run a shell command"""
         async with ctx.typing():
             command = f"{command}"
-
-            def pipexe():
-                results = subprocess.run(command, stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8")
-                return results
-
-            res = await self.bot.loop.run_in_executor(None, pipexe)
+            res = await self.do_shell_command(command)
             embeds = []
             page = 1
             for p in pagify(res):
@@ -218,7 +225,7 @@ class VrtUtils(commands.Cog):
             disk_total = self.get_size(disk.total)
             disk_used = self.get_size(disk.used)
             res = await self.bot.loop.run_in_executor(
-                None,
+                self.threadpool,
                 lambda: get_disk_speed(self.path)
             )
             write = humanize_number(round(res["write"], 2))
