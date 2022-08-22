@@ -7,7 +7,8 @@ Arguments:
     block_size = Side of each block (in bytes)
 
 Found source code online and modified to use with my VrtUtils cog
-Original author is Siddhartha
+Original author is thodnev
+https://github.com/thodnev/MonkeyTest
 """
 import os
 import sys
