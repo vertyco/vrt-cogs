@@ -113,24 +113,95 @@ class VrtUtils(commands.Cog):
         res = await self.bot.loop.run_in_executor(self.threadpool, exe)
         return res
 
+    async def run_disk_speed(self, block_count: int = 128, block_size: int = 1048576) -> dict:
+        res = await self.bot.loop.run_in_executor(
+            self.threadpool,
+            lambda: get_disk_speed(self.path, block_count, block_size)
+        )
+        return res
+
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
     @commands.command()
     @commands.is_owner()
     async def diskspeed(self, ctx):
         """Get disk W/R performance for the server your bot is on"""
-        res = await self.bot.loop.run_in_executor(
-            self.threadpool,
-            lambda: get_disk_speed(self.path)
-        )
-        write = humanize_number(round(res["write"], 2))
-        read = humanize_number(round(res["read"], 2))
-        embed = discord.Embed(
-            title="Disk I/O",
-            description=_(f"`Write Speed: `{write} MB/s\n"
-                          f"`Read Speed:  `{read} MB/s"),
-            color=ctx.author.color
-        )
-        await ctx.send(embed=embed)
+
+        def diskembed(data: dict) -> discord.Embed:
+            if data["write4"] != "Waiting..." and data["write4"] != "Running...":
+                embed = discord.Embed(color=discord.Color.green())
+                embed.description = _("Disk Speed Check COMPLETE")
+            else:
+                embed = discord.Embed(color=ctx.author.color)
+                embed.description = _("Running Disk Speed Check")
+            first = f"Write: {data['write1']}\n" \
+                    f"Read:  {data['read1']}"
+            embed.add_field(
+                name="64 blocks of 1048576 bytes (64MB)",
+                value=box(_(first), lang="python"),
+                inline=False
+            )
+            second = f"Write: {data['write2']}\n" \
+                     f"Read:  {data['read2']}"
+            embed.add_field(
+                name="128 blocks of 1048576 bytes (128MB)",
+                value=box(_(second), lang="python"),
+                inline=False
+            )
+            third = f"Write: {data['write3']}\n" \
+                    f"Read:  {data['read3']}"
+            embed.add_field(
+                name="256 blocks of 524288 bytes (128MB)",
+                value=box(_(third), lang="python"),
+                inline=False
+            )
+            fourth = f"Write: {data['write4']}\n" \
+                     f"Read:  {data['read4']}"
+            embed.add_field(
+                name="512 blocks of 1048576 bytes (512MB)",
+                value=box(_(fourth), lang="python"),
+                inline=False
+            )
+            return embed
+
+        results = {
+            "write1": "Running...",
+            "read1": "Running...",
+            "write2": "Waiting...",
+            "read2": "Waiting...",
+            "write3": "Waiting...",
+            "read3": "Waiting...",
+            "write4": "Waiting...",
+            "read4": "Waiting...",
+
+        }
+        msg = None
+        for i in range(5):
+            stage = i + 1
+            em = diskembed(results)
+            if not msg:
+                msg = await ctx.send(embed=em)
+            else:
+                await msg.edit(embed=em)
+            await asyncio.sleep(2)
+            count = 64
+            size = 1048576
+            if stage == 2:
+                count = 128
+                size = 1048576
+            elif stage == 3:
+                count = 256
+                size = 524288
+            elif stage == 4:
+                count = 512
+                size = 1048576
+            res = await self.run_disk_speed(block_count=count, block_size=size)
+            write = f"{humanize_number(round(res['write'], 2))}MB/s"
+            read = f"{humanize_number(round(res['read'], 2))}MB/s"
+            results[f"write{stage}"] = write
+            results[f"read{stage}"] = read
+            if f"write{stage + 1}" in results:
+                results[f"write{stage + 1}"] = "Running..."
+                results[f"read{stage + 1}"] = "Running..."
 
     @commands.command()
     @commands.is_owner()
@@ -220,10 +291,7 @@ class VrtUtils(commands.Cog):
             disk = psutil.disk_usage(os.getcwd())
             disk_total = self.get_size(disk.total)
             disk_used = self.get_size(disk.used)
-            res = await self.bot.loop.run_in_executor(
-                self.threadpool,
-                lambda: get_disk_speed(self.path)
-            )
+            res = await self.run_disk_speed()
             write = humanize_number(round(res["write"], 2))
             read = humanize_number(round(res["read"], 2))
 
