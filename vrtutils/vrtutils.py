@@ -7,19 +7,16 @@ import platform
 import subprocess
 import sys
 from io import StringIO
-from pathlib import Path
 from typing import Union
-import multiprocessing as mp
 
 import cpuinfo
 import discord
 import pkg_resources
 import psutil
 import speedtest
-from redbot.cogs.downloader.repo_manager import Repo
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
-from redbot.core.data_manager import cog_data_path, bundled_data_path
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
@@ -28,6 +25,7 @@ from redbot.core.utils.chat_formatting import (
     pagify,
 )
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+
 from .diskspeed import get_disk_speed
 
 _ = Translator("VrtUtils", __file__)

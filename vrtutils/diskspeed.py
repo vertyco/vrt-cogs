@@ -3,7 +3,6 @@ import sys
 from random import shuffle
 from time import perf_counter as time
 
-
 blocks_count = 256
 block_size = 1048576
 
