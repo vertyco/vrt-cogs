@@ -7,7 +7,6 @@ from math import sqrt
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont
-
 from redbot.core.i18n import Translator
 
 log = logging.getLogger("red.vrt.levelup.generator")

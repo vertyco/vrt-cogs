@@ -24,10 +24,12 @@ from .generator import Generator
 
 if discord.__version__ > "1.7.3":
     from .bmenu import menu
+
     DEFAULT_CONTROLS = None
     DPY2 = True
 else:
     from .menu import menu, DEFAULT_CONTROLS
+
     DPY2 = False
 
 log = logging.getLogger("red.vrt.levelup.commands")
