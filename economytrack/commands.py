@@ -151,36 +151,39 @@ class EconomyTrackCommands(MixinMeta):
             )
             return await ctx.send(embed=embed)
         timezone = await self.config.guild(ctx.guild).timezone()
-        now = datetime.datetime.now().replace(microsecond=0, second=0).astimezone(tz=pytz.timezone(timezone))
-        start = now.timestamp() - delta.total_seconds()
-        frames = []
-        totals = []
-        for ts_raw, total in data:
-            if ts_raw < start:
-                continue
-            timestamp = datetime.datetime.fromtimestamp(ts_raw).astimezone(tz=pytz.timezone(timezone))
-            df = pd.DataFrame([total], index=[timestamp])
-            frames.append(df)
-            totals.append(total)
+        now = datetime.datetime.now().astimezone(tz=pytz.timezone(timezone))
+        start = now - delta
+        columns = ["ts", "total"]
+        rows = [i for i in data]
+        for i in rows:
+            i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
+        df = pd.DataFrame(rows, columns=columns)
+        df = df.set_index(["ts"])
+        df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
+        mask = (df.index > start) & (df.index <= now)
+        df = df.loc[mask]
+        df = pd.DataFrame(df)
 
-        if not frames or len(frames) < 10:  # In case there is data but it is old
+        if df.empty or len(df.values) < 10:  # In case there is data but it is old
             embed = discord.Embed(
                 description=_("There is not enough data collected to generate a graph right now. Try again later."),
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
 
-        df = pd.concat(frames)
-
         if timespan.lower() == "all":
-            title = f"Total economy stats for all time"
+            title = f"Total economy balance for all time"
         else:
-            title = f"Total economy stats over the last {humanize_timedelta(timedelta=delta)}"
+            title = f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
+
+        lowest = df.min().total
+        highest = df.max().total
+        avg = df.mean().total
 
         desc = f"`BankName: `{bank_name}\n" \
-               f"`Lowest:   `{humanize_number(min(totals))} {currency_name}\n" \
-               f"`Highest:  `{humanize_number(max(totals))} {currency_name}\n" \
-               f"`Average:  `{humanize_number(round(sum(totals) / len(totals)))} {currency_name}\n"
+               f"`Lowest:   `{humanize_number(lowest)} {currency_name}\n" \
+               f"`Highest:  `{humanize_number(highest)} {currency_name}\n" \
+               f"`Average:  `{humanize_number(round(avg))} {currency_name}\n"
 
         embed = discord.Embed(
             title=_(title),
