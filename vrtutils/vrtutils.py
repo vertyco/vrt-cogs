@@ -427,7 +427,7 @@ class VrtUtils(commands.Cog):
             )
 
             disk_usage_bar = self.get_bar(0, 0, disk_usage, width=30)
-            i_o = f"DISK USAGE\n" \
+            i_o = f"DISK LOAD\n" \
                   f"{disk_usage_bar}"
             embed.add_field(
                 name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
