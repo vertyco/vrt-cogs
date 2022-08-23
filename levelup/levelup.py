@@ -216,10 +216,16 @@ class LevelUp(UserCommands, commands.Cog):
             return
         mentionuser = member.mention
         name = member.name
-        if DPY2:
-            pfp = member.avatar.url if member.avatar else None
-        else:
-            pfp = member.avatar_url
+        pfp = None
+        try:
+            if DPY2:
+                if member.avatar:
+                    pfp = member.avatar.url
+            else:
+                pfp = member.avatar_url
+        except AttributeError:
+            log.warning(f"Failed to get avatar url for {member.name} in {guild.name}. DPY2 = {DPY2}")
+
         # Send levelup messages
         if not usepics:
             if dm:
