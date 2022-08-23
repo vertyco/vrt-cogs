@@ -8,6 +8,7 @@ import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.i18n import Translator
+from redbot.core.data_manager import bundled_data_path
 
 log = logging.getLogger("red.vrt.levelup.generator")
 _ = Translator("LevelUp", __file__)
