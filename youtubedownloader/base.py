@@ -57,7 +57,10 @@ def fix_filename(name: str):
 
 def download_stream(url: str) -> discord.File:
     yt = YouTube(url)
-    stream = yt.streams.get_audio_only()
+    try:
+        stream = yt.streams.get_audio_only()
+    except KeyError:
+        raise VideoUnavailable
     buffer = BytesIO()
     name = fix_filename(yt.title)
     buffer.name = f"{name}.mp3"
@@ -70,7 +73,10 @@ def download_stream(url: str) -> discord.File:
 def download_local(url: str, path: str) -> None:
     yt = YouTube(url)
     name = fix_filename(yt.title)
-    stream = yt.streams.get_audio_only()
+    try:
+        stream = yt.streams.get_audio_only()
+    except KeyError:
+        raise VideoUnavailable
     stream.download(output_path=path, filename=f"{name}.mp3")
 
 
