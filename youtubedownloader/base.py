@@ -92,7 +92,6 @@ class YouTubeDownloader(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.path = bundled_data_path(self)
         self.config = Config.get_conf(self, 117, force_registration=True)
         default_global = {
             "download_path": None,
@@ -240,7 +239,7 @@ class YouTubeDownloader(commands.Cog):
                 em = discord.Embed(description=text, color=color)
                 return await msg.edit(embed=em)
         if not main_path:
-            main_path = self.path
+            main_path = bundled_data_path(self)
         dirname = os.path.join(main_path, folder_name)
         try:
             os.mkdir(dirname)
