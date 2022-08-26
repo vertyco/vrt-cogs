@@ -158,7 +158,7 @@ class YouTubeDownloader(commands.Cog):
             file=file
         )
         dl = await self.config.downloaded()
-        await self.cinfig.downloaded.set(dl + 1)
+        await self.config.downloaded.set(dl + 1)
 
     @yt.command()
     async def getmp3s(self, ctx, *, link: str):
@@ -215,10 +215,10 @@ class YouTubeDownloader(commands.Cog):
         await ctx.send(embed=embed)
         if downloaded:
             dl = await self.config.downloaded()
-            await self.cinfig.downloaded.set(dl + downloaded)
+            await self.config.downloaded.set(dl + downloaded)
 
     @yt.command()
-    async def playlist(self, ctx, folder_name: str, *, playlist_link: str):
+    async def playlist(self, ctx, folder_name: str, playlist_link: str):
         """Download all videos from a playlist to mp3 files"""
         if "playlist" not in playlist_link and "index" not in playlist_link:
             invalid = f"`{playlist_link}`" + _(" is not a valid playlist link.")
@@ -270,7 +270,7 @@ class YouTubeDownloader(commands.Cog):
         async with ctx.typing():
             for index, url in enumerate(urls):
                 prog = _("Progress")
-                if index % 5 == 0:
+                if (index + 1) % 5 == 0 or (index + 1) == count or not index:
                     bar = get_bar(index + 1, count)
                     em = discord.Embed(
                         title=title,
@@ -308,4 +308,4 @@ class YouTubeDownloader(commands.Cog):
         await msg.edit(embed=em)
         if downloaded:
             dl = await self.config.downloaded()
-            await self.cinfig.downloaded.set(dl + downloaded)
+            await self.config.downloaded.set(dl + downloaded)
