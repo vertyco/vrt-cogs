@@ -152,7 +152,7 @@ class YouTubeDownloader(commands.Cog):
         if filesize > allowedsize:
             return await ctx.send(_(f"Failed to download, file size too big to send."))
 
-        text = _("Here is your mp3 file of")
+        text = _("Here is your mp3 file: ")
         await ctx.send(
             f"{text} `{file.filename}`",
             file=file
