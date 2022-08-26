@@ -1,26 +1,19 @@
-import discord
-from pytube import Playlist, YouTube, Channel
-from pytube.exceptions import VideoUnavailable
-from io import BytesIO
-from tempfile import TemporaryDirectory
 import asyncio
+import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
-import logging
+from io import BytesIO
+
+import discord
+from pytube import Playlist, YouTube, Channel
+from pytube.exceptions import VideoUnavailable
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.data_manager import bundled_data_path
-import zipfile
-import multiprocessing as mp
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import box, humanize_number
 from redbot.core.utils.predicates import MessagePredicate
-from redbot.core.utils.chat_formatting import (
-    box,
-    humanize_timedelta,
-    humanize_number,
-    pagify,
-)
 
 log = logging.getLogger("red.vrt.youtubedownloader")
 _ = Translator("YouTubeDownloader", __file__)
@@ -72,7 +65,14 @@ async def confirm(ctx: commands.Context):
 @cog_i18n(_)
 class YouTubeDownloader(commands.Cog):
     """
-    Download YouTube videos to mp3
+    Download YouTube videos to mp3 files!
+
+    You can either have the mp3 files sent directly to Discord,
+    or downloaded locally to a folder of your choosing.
+
+    **Warning**
+    Heavy usage of this cog may result in your bots ip getting suspended by YouTube,
+    use at your own risk.
     """
     __author__ = "Vertyco"
     __version__ = "0.0.1"
@@ -98,11 +98,19 @@ class YouTubeDownloader(commands.Cog):
             thread_name_prefix="youtube_downloader"
         )
 
-    @commands.group()
+    @commands.group(aliases=["youtubedownloader", "ytdl"])
     @commands.is_owner()
     async def yt(self, ctx):
-        """Download YouTube videos!"""
-        pass
+        """
+        Download YouTube videos to mp3 files!
+
+        You can either have the mp3 files sent directly to Discord,
+        or downloaded locally to a folder of your choosing.
+
+        **Warning**
+        Heavy usage of this cog may result in your bots ip getting suspended by YouTube,
+        use at your own risk.
+        """
 
     @yt.command()
     async def downloadpath(self, ctx, *, path: str):
@@ -279,7 +287,12 @@ class YouTubeDownloader(commands.Cog):
                 return await ctx.send(embed=em)
 
         count = p.length
-        text = _(f"Found `{count}` videos in this playlist, are you sure you want to download them all? ") + "(y/n)"
+        playlist_name = p.title
+        text = _(
+            f"Found `{humanize_number(count)}` videos in the "
+        ) + f"**{playlist_name}** " + _(
+            "playlist, are you sure you want to download them all? "
+        ) + "(y/n)"
         em = discord.Embed(description=text, color=color)
         await msg.edit(embed=em)
         yes = await confirm(ctx)
@@ -288,7 +301,7 @@ class YouTubeDownloader(commands.Cog):
             em = discord.Embed(description=text, color=color)
             return await msg.edit(embed=em)
 
-        title = _(f"Downloading {count} videos...")
+        title = _(f"Downloading {humanize_number(count)} videos from ") + f"{playlist_name}..."
         downloaded = 0
         failed = 0
         index = 1
@@ -297,9 +310,10 @@ class YouTubeDownloader(commands.Cog):
                 prog = _("Progress")
                 if index % 5 == 0 or index == count or index == 1:
                     bar = get_bar(index, count)
+                    desc = f"{prog}: `{humanize_number(index)}/{humanize_number(count)}`\n{box(bar, lang='python')}"
                     em = discord.Embed(
                         title=title,
-                        description=f"{prog}: `{index}/{count}`\n{box(bar, lang='python')}",
+                        description=desc,
                         color=color
                     )
                     em.set_thumbnail(url=DOWNLOADING)
@@ -381,7 +395,8 @@ class YouTubeDownloader(commands.Cog):
             else:
                 return await ctx.send(embed=em)
 
-        text = _(f"Getting video count for ") + f"`{c.channel_name}`, " + _("please wait...")
+        channel_name = c.channel_name
+        text = _(f"Getting video count for ") + f"`{channel_name}`, " + _("please wait...")
         em = discord.Embed(description=text, color=color)
         em.set_thumbnail(url=DOWNLOADING)
         if msg:
@@ -393,7 +408,11 @@ class YouTubeDownloader(commands.Cog):
             self.executor,
             lambda: len(c)
         )
-        text = _(f"Found `{count}` videos in this channel, are you sure you want to download them all? ") + "(y/n)"
+        text = _(
+            f"Found `{humanize_number(count)}` videos in the "
+        ) + f"**{channel_name}** " + _(
+            "channel, are you sure you want to download them all? "
+        ) + "(y/n)"
         em = discord.Embed(description=text, color=color)
         await msg.edit(embed=em)
         yes = await confirm(ctx)
@@ -402,7 +421,7 @@ class YouTubeDownloader(commands.Cog):
             em = discord.Embed(description=text, color=color)
             return await msg.edit(embed=em)
 
-        title = _(f"Downloading {count} videos...")
+        title = _(f"Downloading {humanize_number(count)} videos from ") + f"{channel_name}..."
         downloaded = 0
         failed = 0
         index = 1
@@ -411,9 +430,10 @@ class YouTubeDownloader(commands.Cog):
                 prog = _("Progress")
                 if index % 5 == 0 or index == count or index == 1:
                     bar = get_bar(index, count)
+                    desc = f"{prog}: `{humanize_number(index)}/{humanize_number(count)}`\n{box(bar, lang='python')}"
                     em = discord.Embed(
                         title=title,
-                        description=f"{prog}: `{index}/{count}`\n{box(bar, lang='python')}",
+                        description=desc,
                         color=color
                     )
                     em.set_thumbnail(url=DOWNLOADING)
