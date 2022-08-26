@@ -49,10 +49,10 @@ def download_stream(url: str) -> discord.File:
 def download_local(url: str, path: str) -> None:
     yt = YouTube(url)
     name = fix_filename(yt.title)
-    stream = yt.streams.get_audio_only()
     filename = f"{name}.mp3"
     if os.path.exists(f"{path}/{filename}"):
         return
+    stream = yt.streams.get_audio_only()
     stream.download(output_path=path, filename=filename)
 
 
