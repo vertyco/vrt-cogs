@@ -1,5 +1,5 @@
 import discord
-from pytube import Playlist, YouTube
+from pytube import Playlist, YouTube, Channel
 from pytube.exceptions import VideoUnavailable
 from io import BytesIO
 from tempfile import TemporaryDirectory
@@ -14,6 +14,7 @@ from redbot.core.data_manager import bundled_data_path
 import zipfile
 import multiprocessing as mp
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.predicates import MessagePredicate
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_timedelta,
@@ -24,22 +25,6 @@ from redbot.core.utils.chat_formatting import (
 log = logging.getLogger("red.vrt.youtubedownloader")
 _ = Translator("YouTubeDownloader", __file__)
 DOWNLOADING = "https://i.imgur.com/l3p6EMX.gif"
-
-
-async def wait_reply(ctx):
-    def check(message: discord.Message):
-        return message.author == ctx.author and message.channel == ctx.channel
-
-    try:
-        reply = await ctx.bot.wait_for("message", timeout=60, check=check)
-        res = reply.content
-        try:
-            await reply.delete()
-        except (discord.Forbidden, discord.NotFound, discord.DiscordServerError):
-            pass
-        return res
-    except asyncio.TimeoutError:
-        return None
 
 
 def get_bar(progress, total, width: int = 20) -> str:
@@ -72,6 +57,16 @@ def download_local(url: str, path: str) -> None:
     name = fix_filename(yt.title)
     stream = yt.streams.get_audio_only()
     stream.download(output_path=path, filename=f"{name}.mp3")
+
+
+async def confirm(ctx: commands.Context):
+    pred = MessagePredicate.yes_or_no(ctx)
+    try:
+        await ctx.bot.wait_for("message", check=pred, timeout=30)
+    except asyncio.TimeoutError:
+        return None
+    else:
+        return pred.result
 
 
 @cog_i18n(_)
@@ -252,13 +247,11 @@ class YouTubeDownloader(commands.Cog):
         msg = None
         if main_path is None or not os.path.exists(main_path):
             main_path = None
-            text = _("The download path is not set, would you like to use this cog's data folder instead?")
+            text = _("The download path is not set, would you like to use this cog's data folder instead? ") + "(y/n)"
             em = discord.Embed(description=text, color=color)
             msg = await ctx.send(embed=em)
-            reply = await wait_reply(ctx)
-            if reply is None:
-                return await msg.delete()
-            if "n" in reply.lower():
+            yes = await confirm(ctx)
+            if yes is not True:
                 text = _("Download cancelled, please set a download path with ") + f"`{ctx.prefix}yt downloadpath`"
                 em = discord.Embed(description=text, color=color)
                 return await msg.edit(embed=em)
@@ -286,8 +279,16 @@ class YouTubeDownloader(commands.Cog):
                 return await ctx.send(embed=em)
 
         count = p.length
-        title = _(f"Downloading {count} videos...")
+        text = _(f"Found `{count}` videos in this playlist, are you sure you want to download them all? ") + "(y/n)"
+        em = discord.Embed(description=text, color=color)
+        await msg.edit(embed=em)
+        yes = await confirm(ctx)
+        if yes is not True:
+            text = _("Download cancelled")
+            em = discord.Embed(description=text, color=color)
+            return await msg.edit(embed=em)
 
+        title = _(f"Downloading {count} videos...")
         downloaded = 0
         failed = 0
         index = 1
@@ -306,6 +307,117 @@ class YouTubeDownloader(commands.Cog):
                         await msg.edit(embed=em)
                     else:
                         msg = await ctx.send(embed=em)
+
+                try:
+                    await self.bot.loop.run_in_executor(
+                        self.executor,
+                        lambda: download_local(url, dirname)
+                    )
+                    downloaded += 1
+                except (VideoUnavailable, KeyError):
+                    failed += 1
+
+                index += 1
+
+        unavailable = count - downloaded - failed
+        em = discord.Embed(
+            title=_("Download Complete"),
+            description=_(
+                f"Details\n"
+                f"`Downloaded:  `{downloaded}\n"
+                f"`Failed:      `{failed}\n"
+                f"`Unavailable: `{unavailable}"
+            ),
+            color=discord.Color.green()
+        )
+        em.add_field(
+            name=_("Download Location"),
+            value=box(dirname)
+        )
+        await msg.edit(embed=em)
+        if downloaded:
+            dl = await self.config.downloaded()
+            await self.config.downloaded.set(dl + downloaded)
+
+    @yt.command()
+    async def channel(self, ctx, folder_name: str, channel_link: str):
+        """Download all videos from a YouTube channel to mp3 files"""
+        if "playlist" in channel_link or "index" in channel_link:
+            invalid = f"`{channel_link}`" + _(" is not a valid channel link.")
+            return await ctx.send(invalid)
+        color = ctx.author.color
+        main_path = await self.config.download_path()
+        msg = None
+        if main_path is None or not os.path.exists(main_path):
+            main_path = None
+            text = _("The download path is not set, would you like to use this cog's data folder instead? ") + "(y/n)"
+            em = discord.Embed(description=text, color=color)
+            msg = await ctx.send(embed=em)
+            yes = await confirm(ctx)
+            if yes is not True:
+                text = _("Download cancelled, please set a download path with ") + f"`{ctx.prefix}yt downloadpath`"
+                em = discord.Embed(description=text, color=color)
+                return await msg.edit(embed=em)
+        if not main_path:
+            main_path = bundled_data_path(self)
+        dirname = os.path.join(main_path, folder_name)
+        if not os.path.exists(dirname):
+            try:
+                os.mkdir(dirname)
+            except Exception as e:
+                text = _("Failed to make directory")
+                em = discord.Embed(description=f"{text}\n{box(str(e))}", color=color)
+                if msg:
+                    return await msg.edit(embed=em)
+                else:
+                    return await ctx.send(embed=em)
+        try:
+            c = Channel(channel_link)
+        except Exception as e:
+            text = _(f"Failed to parse ") + f"`{channel_link}`"
+            em = discord.Embed(description=f"{text}\n{box(str(e))}", color=color)
+            if msg:
+                return await msg.edit(embed=em)
+            else:
+                return await ctx.send(embed=em)
+
+        text = _(f"Getting video count for ") + f"`{c.channel_name}`, " + _("please wait...")
+        em = discord.Embed(description=text, color=color)
+        em.set_thumbnail(url=DOWNLOADING)
+        if msg:
+            await msg.edit(embed=em)
+        else:
+            msg = await ctx.send(embed=em)
+
+        count = await self.bot.loop.run_in_executor(
+            self.executor,
+            lambda: len(c)
+        )
+        text = _(f"Found `{count}` videos in this channel, are you sure you want to download them all? ") + "(y/n)"
+        em = discord.Embed(description=text, color=color)
+        await msg.edit(embed=em)
+        yes = await confirm(ctx)
+        if yes is not True:
+            text = _("Download cancelled")
+            em = discord.Embed(description=text, color=color)
+            return await msg.edit(embed=em)
+
+        title = _(f"Downloading {count} videos...")
+        downloaded = 0
+        failed = 0
+        index = 1
+        async with ctx.typing():
+            for url in c.video_urls:
+                prog = _("Progress")
+                if index % 5 == 0 or index == count or index == 1:
+                    bar = get_bar(index, count)
+                    em = discord.Embed(
+                        title=title,
+                        description=f"{prog}: `{index}/{count}`\n{box(bar, lang='python')}",
+                        color=color
+                    )
+                    em.set_thumbnail(url=DOWNLOADING)
+                    await msg.edit(embed=em)
 
                 try:
                     await self.bot.loop.run_in_executor(
