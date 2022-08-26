@@ -358,7 +358,8 @@ class YouTubeDownloader(commands.Cog):
                 index += 1
 
                 iter_time = int(monotonic() - iter_start)
-                times.append(iter_time)
+                if iter_time:
+                    times.append(iter_time)
 
         unavailable = count - downloaded - failed
         em = discord.Embed(
@@ -495,7 +496,8 @@ class YouTubeDownloader(commands.Cog):
                 index += 1
 
                 iter_time = int(monotonic() - iter_start)
-                times.append(iter_time)
+                if iter_time:
+                    times.append(iter_time)
 
         unavailable = count - downloaded - failed
         em = discord.Embed(
