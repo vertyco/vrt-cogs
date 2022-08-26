@@ -241,15 +241,16 @@ class YouTubeDownloader(commands.Cog):
         if not main_path:
             main_path = bundled_data_path(self)
         dirname = os.path.join(main_path, folder_name)
-        try:
-            os.mkdir(dirname)
-        except Exception as e:
-            text = _("Failed to make directory")
-            em = discord.Embed(description=f"{text}\n{box(str(e))}", color=color)
-            if msg:
-                return await msg.edit(embed=em)
-            else:
-                return await ctx.send(embed=em)
+        if not os.path.exists(dirname):
+            try:
+                os.mkdir(dirname)
+            except Exception as e:
+                text = _("Failed to make directory")
+                em = discord.Embed(description=f"{text}\n{box(str(e))}", color=color)
+                if msg:
+                    return await msg.edit(embed=em)
+                else:
+                    return await ctx.send(embed=em)
         try:
             p = Playlist(playlist_link)
         except Exception as e:
