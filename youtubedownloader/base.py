@@ -266,15 +266,15 @@ class YouTubeDownloader(commands.Cog):
 
         downloaded = 0
         failed = 0
+        index = 1
         async with ctx.typing():
             for url in p.video_urls:
-                index = p.index(url)
                 prog = _("Progress")
-                if (index + 1) % 5 == 0 or (index + 1) == count or not index:
-                    bar = get_bar(index + 1, count)
+                if index % 5 == 0 or index == count or index == 1:
+                    bar = get_bar(index, count)
                     em = discord.Embed(
                         title=title,
-                        description=f"{prog}: `{index + 1}/{count}`\n{box(bar, lang='python')}",
+                        description=f"{prog}: `{index}/{count}`\n{box(bar, lang='python')}",
                         color=color
                     )
                     em.set_thumbnail(url=DOWNLOADING)
@@ -291,6 +291,8 @@ class YouTubeDownloader(commands.Cog):
                     downloaded += 1
                 except (VideoUnavailable, KeyError):
                     failed += 1
+
+                index += 1
 
         em = discord.Embed(
             title=_("Download Complete"),
