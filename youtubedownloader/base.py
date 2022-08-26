@@ -50,7 +50,10 @@ def download_local(url: str, path: str) -> None:
     yt = YouTube(url)
     name = fix_filename(yt.title)
     stream = yt.streams.get_audio_only()
-    stream.download(output_path=path, filename=f"{name}.mp3")
+    filename = f"{name}.mp3"
+    if os.path.exists(f"{path}/{filename}"):
+        return
+    stream.download(output_path=path, filename=filename)
 
 
 async def confirm(ctx: commands.Context):
