@@ -318,12 +318,14 @@ class YouTubeDownloader(commands.Cog):
 
                 index += 1
 
+        unavailable = count - downloaded - failed
         em = discord.Embed(
             title=_("Download Complete"),
             description=_(
                 f"Details\n"
-                f"`Downloaded: `{downloaded}\n"
-                f"`Failed:     `{failed}"
+                f"`Downloaded:  `{downloaded}\n"
+                f"`Failed:      `{failed}\n"
+                f"`Unavailable: `{unavailable}"
             ),
             color=discord.Color.green()
         )
