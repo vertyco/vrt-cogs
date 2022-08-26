@@ -28,7 +28,7 @@ def get_bar(progress, total, width: int = 20) -> str:
 
 
 def fix_filename(name: str):
-    bad_chars = ["?", "/", "\\", ":", '"', "<", ">", "|"]
+    bad_chars = ["?", "/", "\\", ":", '"', "<", ">", "|", "*"]
     for k in bad_chars:
         name = name.replace(k, "")
     return name
