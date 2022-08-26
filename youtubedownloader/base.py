@@ -57,10 +57,7 @@ def fix_filename(name: str):
 
 def download_stream(url: str) -> discord.File:
     yt = YouTube(url)
-    try:
-        stream = yt.streams.get_audio_only()
-    except KeyError:
-        raise VideoUnavailable
+    stream = yt.streams.get_audio_only()
     buffer = BytesIO()
     name = fix_filename(yt.title)
     buffer.name = f"{name}.mp3"
@@ -73,10 +70,7 @@ def download_stream(url: str) -> discord.File:
 def download_local(url: str, path: str) -> None:
     yt = YouTube(url)
     name = fix_filename(yt.title)
-    try:
-        stream = yt.streams.get_audio_only()
-    except KeyError:
-        raise VideoUnavailable
+    stream = yt.streams.get_audio_only()
     stream.download(output_path=path, filename=f"{name}.mp3")
 
 
@@ -150,7 +144,7 @@ class YouTubeDownloader(commands.Cog):
                     self.executor,
                     lambda: download_stream(link)
                 )
-            except VideoUnavailable:
+            except (VideoUnavailable, KeyError):
                 return await ctx.send(_("Failed to download YouTube video"))
 
         filesize = sys.getsizeof(file)
@@ -188,7 +182,7 @@ class YouTubeDownloader(commands.Cog):
                         self.executor,
                         lambda: download_stream(url)
                     )
-                except VideoUnavailable:
+                except (VideoUnavailable, KeyError):
                     await ctx.send(_(f"Skipping `{url}`"))
                     failed += 1
                     continue
@@ -275,7 +269,7 @@ class YouTubeDownloader(commands.Cog):
         async with ctx.typing():
             for index, url in enumerate(urls):
                 prog = _("Progress")
-                if index % 10 == 0:
+                if index % 5 == 0:
                     bar = get_bar(index + 1, count)
                     em = discord.Embed(
                         title=title,
@@ -294,7 +288,7 @@ class YouTubeDownloader(commands.Cog):
                         lambda: download_local(url, dirname)
                     )
                     downloaded += 1
-                except VideoUnavailable:
+                except (VideoUnavailable, KeyError):
                     failed += 1
 
         em = discord.Embed(
