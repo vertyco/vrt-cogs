@@ -261,14 +261,14 @@ class YouTubeDownloader(commands.Cog):
             else:
                 return await ctx.send(embed=em)
 
-        urls = list(p.video_urls)
-        count = len(urls)
-        title = _(f"Downloading {len(urls)} videos...")
+        count = p.length
+        title = _(f"Downloading {count} videos...")
 
         downloaded = 0
         failed = 0
         async with ctx.typing():
-            for index, url in enumerate(urls):
+            for url in p.video_urls:
+                index = p.index(url)
                 prog = _("Progress")
                 if (index + 1) % 5 == 0 or (index + 1) == count or not index:
                     bar = get_bar(index + 1, count)
