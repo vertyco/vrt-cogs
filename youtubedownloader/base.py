@@ -157,8 +157,8 @@ class YouTubeDownloader(commands.Cog):
             f"{text} `{file.filename}`",
             file=file
         )
-        async with self.config.downloaded() as dl:
-            dl += 1
+        dl = await self.config.downloaded()
+        await self.cinfig.downloaded.set(dl + 1)
 
     @yt.command()
     async def getmp3s(self, ctx, *, link: str):
@@ -214,8 +214,8 @@ class YouTubeDownloader(commands.Cog):
         )
         await ctx.send(embed=embed)
         if downloaded:
-            async with self.config.downloaded() as dl:
-                dl += downloaded
+            dl = await self.config.downloaded()
+            await self.cinfig.downloaded.set(dl + downloaded)
 
     @yt.command()
     async def playlist(self, ctx, folder_name: str, *, playlist_link: str):
@@ -306,5 +306,5 @@ class YouTubeDownloader(commands.Cog):
         )
         await msg.edit(embed=em)
         if downloaded:
-            async with self.config.downloaded() as dl:
-                dl += downloaded
+            dl = await self.config.downloaded()
+            await self.cinfig.downloaded.set(dl + downloaded)
