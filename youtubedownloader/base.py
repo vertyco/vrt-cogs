@@ -4,6 +4,7 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
+from time import monotonic
 
 import discord
 from pytube import Playlist, YouTube, Channel
@@ -12,7 +13,7 @@ from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number
+from redbot.core.utils.chat_formatting import box, humanize_number, humanize_timedelta
 from redbot.core.utils.predicates import MessagePredicate
 
 log = logging.getLogger("red.vrt.youtubedownloader")
@@ -294,7 +295,10 @@ class YouTubeDownloader(commands.Cog):
             "playlist, are you sure you want to download them all? "
         ) + "(y/n)"
         em = discord.Embed(description=text, color=color)
-        await msg.edit(embed=em)
+        if msg:
+            await msg.edit(embed=em)
+        else:
+            msg = await ctx.send(embed=em)
         yes = await confirm(ctx)
         if yes is not True:
             text = _("Download cancelled")
@@ -305,12 +309,29 @@ class YouTubeDownloader(commands.Cog):
         downloaded = 0
         failed = 0
         index = 1
+        start = monotonic()
+        eta = None
+        times = []
         async with ctx.typing():
             for url in p.video_urls:
-                prog = _("Progress")
+                iter_start = monotonic()
+                time_elapsed = humanize_timedelta(seconds=int(iter_start - start))
+
+                if times:
+                    avg_iter = int(sum(times) / len(times))
+                    eta_raw = int((count - index) * avg_iter)
+                    eta = humanize_timedelta(seconds=eta_raw)
+
+                if eta:
+                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}\n"
+                             f"`Elapsed:  `{time_elapsed}\n"
+                             f"`ETA:      `{eta}")
+                else:
+                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}")
+
                 if index % 5 == 0 or index == count or index == 1:
                     bar = get_bar(index, count)
-                    desc = f"{prog}: `{humanize_number(index)}/{humanize_number(count)}`\n{box(bar, lang='python')}"
+                    desc = f"{prog}\n{box(bar, lang='python')}"
                     em = discord.Embed(
                         title=title,
                         description=desc,
@@ -332,6 +353,9 @@ class YouTubeDownloader(commands.Cog):
                     failed += 1
 
                 index += 1
+
+                iter_time = int(monotonic() - iter_start)
+                times.append(iter_time)
 
         unavailable = count - downloaded - failed
         em = discord.Embed(
@@ -425,12 +449,29 @@ class YouTubeDownloader(commands.Cog):
         downloaded = 0
         failed = 0
         index = 1
+        start = monotonic()
+        eta = None
+        times = []
         async with ctx.typing():
             for url in c.video_urls:
-                prog = _("Progress")
+                iter_start = monotonic()
+                time_elapsed = humanize_timedelta(seconds=int(iter_start - start))
+
+                if times:
+                    avg_iter = int(sum(times) / len(times))
+                    eta_raw = int((count - index) * avg_iter)
+                    eta = humanize_timedelta(seconds=eta_raw)
+
+                if eta:
+                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}\n"
+                             f"`Elapsed:  `{time_elapsed}\n"
+                             f"`ETA:      `{eta}")
+                else:
+                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}")
+
                 if index % 5 == 0 or index == count or index == 1:
                     bar = get_bar(index, count)
-                    desc = f"{prog}: `{humanize_number(index)}/{humanize_number(count)}`\n{box(bar, lang='python')}"
+                    desc = f"{prog}\n{box(bar, lang='python')}"
                     em = discord.Embed(
                         title=title,
                         description=desc,
@@ -450,14 +491,18 @@ class YouTubeDownloader(commands.Cog):
 
                 index += 1
 
+                iter_time = int(monotonic() - iter_start)
+                times.append(iter_time)
+
         unavailable = count - downloaded - failed
         em = discord.Embed(
             title=_("Download Complete"),
             description=_(
                 f"Details\n"
-                f"`Downloaded:  `{downloaded}\n"
-                f"`Failed:      `{failed}\n"
-                f"`Unavailable: `{unavailable}"
+                f"`Downloaded:   `{downloaded}\n"
+                f"`Failed:       `{failed}\n"
+                f"`Unavailable:  `{unavailable}\n"
+                f"`Time Elapsed: `{time_elapsed}"
             ),
             color=discord.Color.green()
         )
