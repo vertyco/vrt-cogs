@@ -1,5 +1,4 @@
 import discord
-import pytube
 from pytube import Playlist, YouTube
 from pytube.exceptions import VideoUnavailable
 from io import BytesIO
@@ -13,6 +12,7 @@ from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.data_manager import bundled_data_path
 import zipfile
+import multiprocessing as mp
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
@@ -166,26 +166,50 @@ class YouTubeDownloader(commands.Cog):
         Get multiple mp3 files from a list of links
 
         To include multiple links, separate them with a linebreak
+        You may also include playlists
         """
         urls = link.split("\n")
-        if any("playlist" in x for x in urls):
-            return await ctx.send(
-                _("One or more of the links you provided are playlist links.\n"
-                  "Please provide links from the videos directly.")
-            )
         downloaded = 0
         failed = 0
         async with ctx.typing():
             for url in urls:
-                try:
-                    file = await self.bot.loop.run_in_executor(
-                        self.executor,
-                        lambda: download_stream(url)
-                    )
-                except (VideoUnavailable, KeyError):
-                    await ctx.send(_(f"Skipping `{url}`"))
-                    failed += 1
-                    continue
+                if "playlist" in url:
+                    try:
+                        p = Playlist(url)
+                    except VideoUnavailable:
+                        failed += 1
+                        continue
+                    for purl in p.video_urls:
+                        try:
+                            file = await self.bot.loop.run_in_executor(
+                                self.executor,
+                                lambda: download_stream(purl)
+                            )
+                        except (VideoUnavailable, KeyError):
+                            failed += 1
+
+                        filesize = sys.getsizeof(file)
+                        allowedsize = ctx.guild.filesize_limit
+                        if filesize > allowedsize:
+                            await ctx.send(_(f"Skipping `{url}`\nFile size too big to send."))
+                            failed += 1
+                            continue
+                        else:
+                            await ctx.send(
+                                file.filename,
+                                file=file
+                            )
+                            downloaded += 1
+                else:
+                    try:
+                        file = await self.bot.loop.run_in_executor(
+                            self.executor,
+                            lambda: download_stream(url)
+                        )
+                    except (VideoUnavailable, KeyError):
+                        await ctx.send(_(f"Skipping `{url}`"))
+                        failed += 1
+                        continue
 
                 filesize = sys.getsizeof(file)
                 allowedsize = ctx.guild.filesize_limit
