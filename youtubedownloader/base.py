@@ -99,7 +99,7 @@ class YouTubeDownloader(commands.Cog):
         }
         self.config.register_global(**default_global)
         self.executor = ThreadPoolExecutor(
-            max_workers=os.cpu_count(),
+            max_workers=1,
             thread_name_prefix="youtube_downloader"
         )
 
