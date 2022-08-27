@@ -529,6 +529,28 @@ class TicketCommands(commands.Cog):
         await self.config.guild(ctx.guild).inactive.set(hours)
         await ctx.tick()
 
+    @tickets.command(name="cleanup")
+    async def cleanup_tickets(self, ctx: commands.Context):
+        """Cleanup tickets that no longer exist"""
+        opened = await self.config.guild(ctx.guild).opened()
+        if not opened:
+            return await ctx.send(_("No old tickets to clean."))
+        cleaned = 0
+        async with self.config.guild(ctx.guild).opened() as op:
+            for uid, tickets in opened.items():
+                if not ctx.guild.get_member(int(uid)):
+                    cleaned += len(tickets.keys())
+                    del op[uid]
+                    continue
+                for channel_id, t_info in opened[uid].items():
+                    if not ctx.guild.get_channel(int(channel_id)):
+                        cleaned += 1
+                        del op[uid][channel_id]
+        if cleaned:
+            await ctx.send(_(f"Pruned `{cleaned}` invalid tickets."))
+        else:
+            await ctx.send(_("There were no tickets to prune."))
+
     # TOGGLES --------------------------------------------------------------------------------
     @tickets.command(name="dm")
     async def toggle_dms(self, ctx: commands.Context):
