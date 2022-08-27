@@ -6,8 +6,8 @@ import logging
 import random
 import sys
 import typing
-from time import monotonic
 from datetime import datetime
+from time import monotonic
 
 import aiohttp
 import discord
@@ -1414,9 +1414,9 @@ class LevelUp(UserCommands, commands.Cog):
         When a user prestiges, they will get that role and the emoji will show on their profile
         """
         self.data[ctx.guild.id]["prestigedata"][prestige_level] = {
-                "role": role.id,
-                "emoji": emoji
-            }
+            "role": role.id,
+            "emoji": emoji
+        }
         await ctx.tick()
         await self.save_cache(ctx.guild)
 
