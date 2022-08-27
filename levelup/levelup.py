@@ -702,7 +702,7 @@ class LevelUp(UserCommands, commands.Cog):
         today = datetime.now().strftime('%m-%d-%y')
         settings = self.data
         settings = json.dumps(settings)
-        filename = f"LevelUp_global_config_{today}.json"
+        filename = f"LevelUp_GLOBAL_{today}.json"
         iofile = io.StringIO(settings)
         file = discord.File(iofile, filename=filename)
         await ctx.send("Here is the global LevelUp config for all guilds", file=file)
@@ -718,7 +718,7 @@ class LevelUp(UserCommands, commands.Cog):
         today = datetime.now().strftime('%m-%d-%y')
         settings = self.data[ctx.guild.id]
         settings = json.dumps(settings)
-        filename = f"LevelUp_guild_config_{today}.json"
+        filename = f"LevelUp_GUILD_{today}.json"
         iofile = io.StringIO(settings)
         file = discord.File(iofile, filename=filename)
         await ctx.send("Here is the global LevelUp config for this guilds", file=file)
