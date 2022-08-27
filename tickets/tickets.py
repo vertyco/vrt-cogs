@@ -126,9 +126,9 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                         new_tickets[cid] = data
                 if new_tickets:
                     current_tickets[uid] = new_tickets
-            if current_tickets:
+
+            if current_tickets and count:
                 await self.config.guild(guild).opened.set(current_tickets)
-            if count:
                 log.info(_(f"{count} tickets pruned from {guild.name}"))
 
     @tasks.loop(minutes=20)
@@ -177,6 +177,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
 
         if tasks:
             await asyncio.gather(*actasks)
+        await self.cleanup()
 
     @auto_close.before_loop
     async def before_auto_close(self):
