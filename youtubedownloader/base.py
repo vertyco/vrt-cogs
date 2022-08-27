@@ -49,7 +49,7 @@ def download_stream(url: str) -> discord.File:
 def download_local(url: str, path: str) -> None:
     yt = YouTube(url)
     name = fix_filename(yt.title)
-    filename = f"{name}.mp3"
+    filename = f"{name}.mp4"
     if os.path.exists(f"{path}/{filename}"):
         return
     stream = yt.streams.get_audio_only()
@@ -69,9 +69,9 @@ async def confirm(ctx: commands.Context):
 @cog_i18n(_)
 class YouTubeDownloader(commands.Cog):
     """
-    Download YouTube videos to mp3 files!
+    Download YouTube videos to mp4 audio files!
 
-    You can either have the mp3 files sent directly to Discord,
+    You can either have the files sent directly to Discord,
     or downloaded locally to a folder of your choosing.
 
     **Warning**
@@ -106,9 +106,9 @@ class YouTubeDownloader(commands.Cog):
     @commands.is_owner()
     async def yt(self, ctx):
         """
-        Download YouTube videos to mp3 files!
+        Download YouTube videos to mp4 audio files!
 
-        You can either have the mp3 files sent directly to Discord,
+        You can either have the files sent directly to Discord,
         or downloaded locally to a folder of your choosing.
 
         **Warning**
@@ -138,8 +138,8 @@ class YouTubeDownloader(commands.Cog):
         await ctx.send(embed=em)
 
     @yt.command()
-    async def getmp3(self, ctx, link: str):
-        """Get an mp3 file from a YouTube link"""
+    async def get(self, ctx, link: str):
+        """Get an audio file from a YouTube link"""
         if "playlist" in link:
             return await ctx.send(
                 _("The link you provided is for a playlist.\n"
@@ -168,9 +168,9 @@ class YouTubeDownloader(commands.Cog):
         await self.config.downloaded.set(dl + 1)
 
     @yt.command()
-    async def getmp3s(self, ctx, *, link: str):
+    async def multi(self, ctx, *, link: str):
         """
-        Get multiple mp3 files from a list of links
+        Get multiple audio files from a list of links
 
         To include multiple links, separate them with a linebreak
         You may also include playlists
@@ -253,7 +253,7 @@ class YouTubeDownloader(commands.Cog):
 
     @yt.command()
     async def playlist(self, ctx, folder_name: str, playlist_link: str):
-        """Download all videos from a playlist to mp3 files"""
+        """Download all videos from a playlist to audio files"""
         if "playlist" not in playlist_link and "index" not in playlist_link:
             invalid = f"`{playlist_link}`" + _(" is not a valid playlist link.")
             return await ctx.send(invalid)
@@ -389,7 +389,7 @@ class YouTubeDownloader(commands.Cog):
 
     @yt.command()
     async def channel(self, ctx, folder_name: str, channel_link: str):
-        """Download all videos from a YouTube channel to mp3 files"""
+        """Download all videos from a YouTube channel to audio files"""
         if "playlist" in channel_link or "index" in channel_link:
             invalid = f"`{channel_link}`" + _(" is not a valid channel link.")
             return await ctx.send(invalid)
