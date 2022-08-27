@@ -99,7 +99,7 @@ class UserCommands(commands.Cog):
         now = datetime.datetime.now()
         user_id = str(user.id)
         star_giver = str(ctx.author.id)
-        guild_id = str(ctx.guild.id)
+        guild_id = ctx.guild.id
         if ctx.author == user:
             return await ctx.send(_("You can't give stars to yourself!"))
         if user.bot:
@@ -109,7 +109,7 @@ class UserCommands(commands.Cog):
         if star_giver not in self.stars[guild_id]:
             self.stars[guild_id][star_giver] = now
         else:
-            cooldown = self.settings[guild_id]["starcooldown"]
+            cooldown = self.data[guild_id]["starcooldown"]
             lastused = self.stars[guild_id][star_giver]
             td = now - lastused
             td = td.total_seconds()
@@ -120,19 +120,15 @@ class UserCommands(commands.Cog):
                 tstring = time_formatter(time_left)
                 msg = _(f"You need to wait **{tstring}** before you can give more stars!")
                 return await ctx.send(msg)
-        mention = await self.config.guild(ctx.guild).mention()
-        async with self.config.guild(ctx.guild).all() as conf:
-            users = conf["users"]
-            if user_id not in users:
-                return await ctx.send(_("No data available for that user yet!"))
-            if "stars" not in users[user_id]:
-                users[user_id]["stars"] = 1
-            else:
-                users[user_id]["stars"] += 1
-            if mention:
-                await ctx.send(_(f"You just gave a star to {user.mention}!"))
-            else:
-                await ctx.send(_(f"You just gave a star to **{user.name}**!"))
+        mention = self.data[guild_id]["mention"]
+        users = self.data[guild_id]["users"]
+        if user_id not in users:
+            return await ctx.send(_("No data available for that user yet!"))
+        self.data[guild_id]["users"][user_id]["stars"] += 1
+        if mention:
+            await ctx.send(_(f"You just gave a star to {user.mention}!"))
+        else:
+            await ctx.send(_(f"You just gave a star to **{user.name}**!"))
 
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)
@@ -172,29 +168,33 @@ class UserCommands(commands.Cog):
         Here is a link to google's color picker:
         https://g.co/kgs/V6jdXj
         """
+        users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
-        async with self.config.guild(ctx.guild).users() as users:
-            if user_id not in users:
-                return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
-            user = users[user_id]
+        if user_id not in users:
+            return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
+        user = users[user_id]
+        try:
             rgb = hex_to_rgb(hex_color)
-            try:
-                embed = discord.Embed(
-                    description="This is the color you chose",
-                    color=discord.Color.from_rgb(rgb[0], rgb[1], rgb[2])
-                )
-                await ctx.send(embed=embed)
-            except Exception as e:
-                await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
-                return
-            if "colors" not in user:
-                user["colors"] = {
-                    "name": hex_color,
-                    "stat": None
-                }
-            else:
-                user["colors"]["name"] = hex_color
-            await ctx.tick()
+        except ValueError:
+            return await ctx.send(
+                _("That is an invalid color, please use a valid integer color code or hex color."))
+        try:
+            embed = discord.Embed(
+                description="This is the color you chose",
+                color=discord.Color.from_rgb(rgb[0], rgb[1], rgb[2])
+            )
+            await ctx.send(embed=embed)
+        except Exception as e:
+            await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
+            return
+        if "colors" not in user:
+            self.data[ctx.guild.id]["users"][user_id]["colors"] = {
+                "name": hex_color,
+                "stat": None
+            }
+        else:
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["name"] = hex_color
+        await ctx.tick()
 
     @set_profile.command(name="statcolor", aliases=["stat"])
     async def set_stat_color(self, ctx: commands.Context, hex_color: str):
@@ -204,33 +204,34 @@ class UserCommands(commands.Cog):
         Here is a link to google's color picker:
         https://g.co/kgs/V6jdXj
         """
+        users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
-        async with self.config.guild(ctx.guild).users() as users:
-            if user_id not in users:
-                return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
-            user = users[user_id]
-            try:
-                rgb = hex_to_rgb(hex_color)
-            except ValueError:
-                return await ctx.send(
-                    _("That is an invalid color, please use a valid integer color code or hex color."))
-            try:
-                embed = discord.Embed(
-                    description="This is the color you chose",
-                    color=discord.Color.from_rgb(rgb[0], rgb[1], rgb[2])
-                )
-                await ctx.send(embed=embed)
-            except Exception as e:
-                await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
-                return
-            if "colors" not in user:
-                user["colors"] = {
-                    "name": None,
-                    "stat": hex_color
-                }
-            else:
-                user["colors"]["stat"] = hex_color
-            await ctx.tick()
+        if user_id not in users:
+            return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
+        user = users[user_id]
+        try:
+            rgb = hex_to_rgb(hex_color)
+        except ValueError:
+            return await ctx.send(
+                _("That is an invalid color, please use a valid integer color code or hex color."))
+
+        try:
+            embed = discord.Embed(
+                description="This is the color you chose",
+                color=discord.Color.from_rgb(rgb[0], rgb[1], rgb[2])
+            )
+            await ctx.send(embed=embed)
+        except Exception as e:
+            await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
+            return
+        if "colors" not in user:
+            self.data[ctx.guild.id]["users"][user_id]["colors"] = {
+                "name": None,
+                "stat": hex_color
+            }
+        else:
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["stat"] = hex_color
+        await ctx.tick()
 
     @set_profile.command(name="background", aliases=["bg"])
     async def set_user_background(self, ctx: commands.Context, image_url: str = None):
@@ -259,22 +260,18 @@ class UserCommands(commands.Cog):
                 image_url = ctx.message.attachments[0].url
                 if not await self.valid_url(ctx, image_url):
                     return
-        user = ctx.author
-        async with self.config.guild(ctx.guild).users() as users:
-            if str(user.id) not in users:
-                return await ctx.send(_("You aren't logged in the database yet, give it some time."))
-            if image_url:
-                users[str(user.id)]["background"] = image_url
-                await ctx.send("Your image has been set!")
-            else:
-                if "background" in users[str(user.id)]:
-                    if not users[str(user.id)]["background"]:
-                        await ctx.send_help()
-                    else:
-                        users[str(user.id)]["background"] = None
-                        await ctx.send(_("Your background has been removed since you did not specify a url!"))
-                else:
-                    await ctx.send_help()
+
+        users = self.data[ctx.guild.id]["users"]
+        user_id = str(ctx.author.id)
+        if user_id not in users:
+            return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
+
+        if image_url:
+            self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
+            await ctx.send("Your image has been set!")
+        else:
+            self.data[ctx.guild.id]["users"][user_id]["background"] = None
+            await ctx.send(_("Your background has been removed since you did not specify a url!"))
 
     @commands.command(name="pf")
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -282,7 +279,7 @@ class UserCommands(commands.Cog):
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
         can_send_attachments = ctx.channel.permissions_for(ctx.guild.me).attach_files
-        conf = await self.config.guild(ctx.guild).all()
+        conf = self.data[ctx.guild.id]
         usepics = conf["usepics"]
         if usepics and not can_send_attachments:
             return await ctx.send(_("I don't have permission to send attachments to this channel."))
@@ -431,7 +428,7 @@ class UserCommands(commands.Cog):
         Once you have reached this servers prestige level requirement, you can
         reset your level and experience to gain a prestige level and any perks associated with it
         """
-        conf = await self.config.guild(ctx.guild).all()
+        conf = self.data[ctx.guild.id]
         perms = ctx.channel.permissions_for(ctx.guild.me).manage_roles
         if not perms:
             log.warning("Insufficient perms to assign prestige ranks!")
@@ -461,11 +458,10 @@ class UserCommands(commands.Cog):
                         await ctx.author.add_roles(role)
                     else:
                         log.warning(f"Prestige {pending_prestige} role ID: {rid} no longer exists!")
-                async with self.config.guild(ctx.guild).all() as conf:
-                    conf[user_id]["prestige"] = pending_prestige
-                    conf[user_id]["emoji"] = emoji
-                    conf[user_id]["level"] = 1
-                    conf[user_id]["xp"] = 0
+                self.data[ctx.guild.id]["users"][user_id]["prestige"] = pending_prestige
+                self.data[ctx.guild.id]["users"][user_id]["emoji"] = emoji
+                self.data[ctx.guild.id]["users"][user_id]["level"] = 1
+                self.data[ctx.guild.id]["users"][user_id]["xp"] = 0
             else:
                 return await ctx.send(_(f"Prestige level {pending_prestige} has not been set yet!"))
         else:
@@ -490,7 +486,7 @@ class UserCommands(commands.Cog):
     @commands.guild_only()
     async def leaderboard(self, ctx: commands.Context):
         """View the Leaderboard"""
-        conf = await self.config.guild(ctx.guild).all()
+        conf = self.data[ctx.guild.id]
         base = conf["base"]
         exp = conf["exp"]
         embeds = []
@@ -589,7 +585,7 @@ class UserCommands(commands.Cog):
     @commands.guild_only()
     async def star_leaderboard(self, ctx: commands.Context):
         """View the star leaderboard"""
-        conf = await self.config.guild(ctx.guild).all()
+        conf = self.data[ctx.guild.id]
         embeds = []
         leaderboard = {}
         total_stars = 0

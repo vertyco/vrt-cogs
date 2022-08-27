@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+# import datetime
 import io
 import json
 import logging
@@ -7,6 +7,7 @@ import random
 import sys
 import typing
 from time import monotonic
+from datetime import datetime
 
 import aiohttp
 import discord
@@ -48,7 +49,7 @@ else:
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.3.32"
+    __version__ = "1.4.32"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -59,15 +60,13 @@ class LevelUp(UserCommands, commands.Cog):
         return _(info)
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
-        full = await self.config.all_guilds()
-        for guild_id in full:
-            guild = self.bot.get_guild(guild_id)
-            if not guild:
-                continue
-            async with self.config.guild(guild).all() as conf:
-                users = conf["users"]
-                if str(user_id) in users:
-                    del users[str(user_id)]
+        deleted = False
+        for gid, data in self.data.copy().items():
+            if str(user_id) in self.data[gid]["users"]:
+                del self.data[gid]["users"][user_id]
+                deleted = True
+        if deleted:
+            await self.save_cache()
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -78,7 +77,7 @@ class LevelUp(UserCommands, commands.Cog):
             "levelroles": {},  # Roles associated with levels
             "ignoredchannels": [],  # Channels that dont gain XP
             "ignoredroles": [],  # Roles that dont gain XP
-            "ignoredusers": [],  # Ignored users wont gain XP
+            "ignoredusers": [],  # Ignored users won't gain XP
             "prestige": 0,  # Level required to prestige, 0 is disabled
             "prestigedata": {},  # Prestige tiers, the role associated with them, and emoji for them
             "xp": [3, 6],  # Min/Max XP per message
@@ -104,9 +103,10 @@ class LevelUp(UserCommands, commands.Cog):
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
 
+        # Main cache
+        self.data = {}
+
         # Guild id's as strings, user id's as strings
-        self.settings = {}  # Cache settings
-        self.cache = {}  # Dumps to config every 60 seconds
         self.lastmsg = {}  # Last sent message for users
         self.voice = {}  # Voice channel info
         self.stars = {}  # Keep track of star cooldowns
@@ -132,14 +132,48 @@ class LevelUp(UserCommands, commands.Cog):
     def cog_unload(self):
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
-        for guild in self.bot.guilds:
-            asyncio.create_task(self.dump_cache(guild))
+        asyncio.create_task(self.save_cache())
 
-    # Add a user to cache
-    async def cache_user(self, guild: str, user: str):
-        if guild not in self.cache:  # Already in init_settings but just in case
-            self.cache[guild] = {}
-        self.cache[guild][user] = {
+    @commands.Cog.listener()
+    async def on_guild_join(self, new_guild: discord.Guild):
+        if new_guild.id not in self.data:
+            await self.initialize()
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, old_guild: discord.Guild):
+        if old_guild.id in self.data:
+            await self.save_cache(old_guild)
+            del self.data[old_guild.id]
+
+    async def initialize(self):
+        self.ignored_guilds = await self.config.ignored_guilds()
+        global_conf = await self.config.all_guilds()
+        for guild in self.bot.guilds:
+            gid = guild.id
+            if gid in global_conf:
+                data = global_conf[gid]
+            else:
+                data = await self.config.guild(guild).all()
+            if gid not in self.data:
+                self.data[gid] = data
+                self.stars[gid] = {}
+                self.voice[gid] = {}
+                self.lastmsg[gid] = {}
+        log.info("Settings initialized to cache")
+        self.first_run = False
+
+    async def save_cache(self, target_guild: discord.guild = None):
+        cache = self.data.copy()
+        for gid, data in cache.items():
+            if target_guild and target_guild.id != gid:
+                continue
+            guild = self.bot.get_guild(gid)
+            if not guild:
+                continue
+            await self.config.guild(guild).set(data)
+
+    def init_user(self, guild_id: int, user_id: str):
+        self.data[guild_id]["users"][user_id] = {
             "xp": 0,
             "voice": 0,  # Seconds
             "messages": 0,
@@ -147,51 +181,30 @@ class LevelUp(UserCommands, commands.Cog):
             "prestige": 0,
             "emoji": None,
             "background": None,
-            "stars": 0
+            "stars": 0,
+            "colors": {"name": None, "stat": None}
         }
 
-    # Dump cache to config
-    async def dump_cache(self, guild: discord.guild):
-        guild_id = str(guild.id)
-        if guild_id not in self.cache:
-            self.cache[guild_id] = {}
-        if not self.cache[guild_id]:  # If there is anything to cache
+    async def check_levelups(self, guild_id: int, user_id: str):
+        base = self.data[guild_id]["base"]
+        exp = self.data[guild_id]["exp"]
+        user = self.data[guild_id]["users"][user_id]
+        background = user["background"]
+        level = user["level"]
+        xp = user["xp"]
+        maybe_new_level = get_level(int(xp), base, exp)
+        if maybe_new_level == level:
             return
-        usercache = self.cache[guild_id].copy()
-        self.cache[guild_id].clear()
-        conf = self.settings[guild_id]
-        base = conf["base"]
-        exp = conf["exp"]
-        leveluptasks = []
-        async with self.config.guild(guild).users() as users:
-            try:
-                for user, data in usercache.items():
-                    if not data:
-                        continue
-                    if user not in users:
-                        users[user] = data
-                    else:
-                        users[user]["xp"] += data["xp"]
-                        users[user]["voice"] += data["voice"]
-                        users[user]["messages"] += data["messages"]
-                    saved_level = users[user]["level"]
-                    new_level = get_level(int(users[user]["xp"]), base, exp)
-                    if str(new_level) != str(saved_level):
-                        bg = users[user]["background"]
-                        leveluptasks.append(self.level_up(guild, user, new_level, bg))
-                        users[user]["level"] = new_level
-                    # Set values back to 0
-                    data["xp"] = 0
-                    data["voice"] = 0
-                    data["messages"] = 0
-            except ValueError:
-                log.error(f"Could not dump cache for {guild.name}\nGuild cache: {usercache}")
-        await asyncio.gather(*leveluptasks)
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            return
+        self.data[guild_id]["users"][user_id]["level"] = maybe_new_level
+        await self.level_up(guild, user_id, maybe_new_level, background)
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
         t1 = monotonic()
-        conf = self.settings[str(guild.id)]
+        conf = self.data[guild.id]
         levelroles = conf["levelroles"]
         roleperms = guild.me.guild_permissions.manage_roles
         autoremove = conf["autoremove"]
@@ -204,8 +217,6 @@ class LevelUp(UserCommands, commands.Cog):
             perms = channel.permissions_for(guild.me).send_messages
             if perms:
                 can_send = True
-            else:
-                log.warning(f"Bot doesnt have perms LevelUp alert to {channel.name} in {guild.name}")
 
         usepics = conf["usepics"]
         can_send_attachments = False
@@ -303,59 +314,16 @@ class LevelUp(UserCommands, commands.Cog):
         else:
             self.looptimes["lvlassignavg"] = int((loop + t) / 2)
 
-    # Cache main settings
-    async def init_settings(self):
-        if self.first_run:
-            await self.cleanup_schema()
-            self.first_run = False
-        ignored = await self.config.ignored_guilds()
-        self.ignored_guilds = ignored
-        for guild in self.bot.guilds:
-            guild_id = str(guild.id)
-            if guild_id not in self.cache:
-                self.cache[guild_id] = {}
-            if guild_id not in self.stars:
-                self.stars[guild_id] = {}
-            if guild_id not in self.voice:
-                self.voice[guild_id] = {}
-            if guild_id not in self.lastmsg:
-                self.lastmsg[guild_id] = {}
-            if guild_id not in self.settings:
-                self.settings[guild_id] = {}
-            # self.settings[guild_id] = await self.config.guild(guild).all()
-            settings = await self.config.guild(guild).all()
-            for k, v in settings.items():
-                if k == "users":
-                    continue
-                self.settings[guild_id][k] = v
-            self.settings[guild_id]["starcooldown"] = settings["starcooldown"]
-        log.info("Settings initialized to cache")
-
-    async def cleanup_schema(self):
-        """Fix small config errors while writing cog"""
-        conf = await self.config.all_guilds()
-        for gid, data in conf.items():
-            if not data:
-                continue
-            guild = self.bot.get_guild(gid)
-            if not guild:
-                continue
-            users = conf[gid]["users"]
-            for uid, userdata in users.items():
-                if "background" not in userdata:
-                    userdata["background"] = None
-            await self.config.guild(guild).set(data)
-
     @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
+        # If message object is None for some reason
+        if not message:
+            return
         # If message was from a bot
         if message.author.bot:
             return
         # If message wasn't sent in a guild
         if not message.guild:
-            return
-        # If message has no content for some reason?
-        if not message:
             return
         # Check if guild is in the master ignore list
         if str(message.guild.id) in self.ignored_guilds:
@@ -369,96 +337,93 @@ class LevelUp(UserCommands, commands.Cog):
         # Check whether the message author isn't on allowlist/blocklist
         if not await self.bot.allowed_by_whitelist_blacklist(message.author):
             return
-        return await self.message_handler(message)
+        await self.message_handler(message)
 
     async def message_handler(self, message: discord.Message):
-        now = datetime.datetime.now()
+        now = datetime.now()
         guild = message.guild
-        guild_id = str(guild.id)
-        if guild_id not in self.cache:
-            self.cache[guild_id] = {}
-        user = str(message.author.id)
-        if guild_id not in self.settings:
-            self.settings[guild_id] = {}
-        conf = self.settings[guild_id]
-        if not conf:
-            return
+        gid = guild.id
+        if gid not in self.data:
+            await self.initialize()
+        conf = self.data[gid]
         xpmin = int(conf["xp"][0])
         xpmax = int(conf["xp"][1]) + 1
         xp = random.choice(range(xpmin, xpmax))
-
         bonuses = conf["rolebonuses"]["msg"]
         bonusrole = None
 
+        users = self.data[gid]["users"]
+        uid = str(message.author.id)
+        if uid not in users:
+            self.init_user(gid, uid)
+
+        # Whether to award xp
         addxp = False
-        if user not in self.cache[guild_id]:
-            await self.cache_user(guild_id, user)
-        if guild_id not in self.lastmsg:
-            self.lastmsg[guild_id] = {}
-        if user not in self.lastmsg[guild_id]:
-            self.lastmsg[guild_id][user] = now
+        if uid not in self.lastmsg[gid]:
             addxp = True
-        td = now - self.lastmsg[guild_id][user]
-        td = int(td.total_seconds())
-        if td > conf["cooldown"]:
-            addxp = True
+        else:
+            td = (now - self.lastmsg[gid][uid]).total_seconds()
+            if td > conf["cooldown"]:
+                addxp = True
+
+        # Ignored stuff
         for role in message.author.roles:
             rid = str(role.id)
             if role.id in conf["ignoredroles"]:
                 addxp = False
             if rid in bonuses:
                 bonusrole = rid
-
         if message.channel.id in conf["ignoredchannels"]:
             addxp = False
-        if int(user) in conf["ignoredusers"]:
+        if int(uid) in conf["ignoredusers"]:
             addxp = False
+
         if conf["length"]:  # Make sure message meets minimum length requirements
             if len(message.content) < conf["length"]:
                 addxp = False
+
         if addxp:  # Give XP
-            self.cache[guild_id][user]["xp"] += xp
+            self.lastmsg[gid][uid] = now
+            self.data[gid]["users"][uid]["xp"] += xp
             if bonusrole:
                 bonusrange = bonuses[bonusrole]
                 bmin = int(bonusrange[0])
                 bmax = int(bonusrange[1]) + 1
                 bxp = random.choice(range(bmin, bmax))
-                self.cache[guild_id][user]["xp"] += bxp
-        self.cache[guild_id][user]["messages"] += 1
+                self.data[gid]["users"][uid]["xp"] += bxp
+        self.data[gid]["users"][uid]["messages"] += 1
+        await self.check_levelups(gid, uid)
 
     async def check_voice(self, guild: discord.guild):
-        guild_id = str(guild.id)
-        if guild_id in self.ignored_guilds:
+        jobs = []
+        gid = guild.id
+        if str(gid) in self.ignored_guilds:
             return
-        if guild_id not in self.settings:
-            self.settings[guild_id] = {}
-        conf = self.settings[guild_id]
-        if not conf:
-            return
-        xp_per_minute = conf["voicexp"]
+        if gid not in self.data:
+            await self.initialize()
 
+        conf = self.data[gid]
+        xp_per_minute = conf["voicexp"]
         bonuses = conf["rolebonuses"]["voice"]
         bonusrole = None
-
-        if guild_id not in self.voice:
-            self.voice[guild_id] = {}
         for member in guild.members:
             if member.bot:
                 continue
-            now = datetime.datetime.now()
-            user_id = str(member.id)
+            now = datetime.now()
+            uid = str(member.id)
             voice_state = member.voice
             if not voice_state:  # Only cache if user is in a vc
-                if user_id in self.voice[guild_id]:
-                    del self.voice[guild_id][user_id]
+                if uid in self.voice[gid]:
+                    del self.voice[gid][uid]
                 continue
-            if user_id not in self.voice[guild_id]:
-                self.voice[guild_id][user_id] = now
-            if user_id not in self.cache[guild_id]:
-                await self.cache_user(guild_id, user_id)
-            ts = self.voice[guild_id][user_id]
-            td = now - ts
-            td = int(td.total_seconds())
+
+            if uid not in self.voice[gid]:
+                self.voice[gid][uid] = now
+            if uid not in self.data[gid]["users"]:
+                self.init_user(gid, uid)
+
+            ts = self.voice[gid][uid]
+            td = (now - ts).total_seconds()
             xp_to_give = (td / 60) * xp_per_minute
             addxp = True
             # Ignore muted users
@@ -486,21 +451,23 @@ class LevelUp(UserCommands, commands.Cog):
                 if rid in bonuses:
                     bonusrole = rid
             # Check ignored users
-            if int(user_id) in conf["ignoredusers"]:
+            if int(uid) in conf["ignoredusers"]:
                 addxp = False
             # Check ignored channels
             if voice_state.channel.id in conf["ignoredchannels"]:
                 addxp = False
             if addxp:
-                self.cache[guild_id][user_id]["xp"] += xp_to_give
+                self.data[gid]["users"][uid]["xp"] += xp_to_give
                 if bonusrole:
                     bonusrange = bonuses[bonusrole]
                     bmin = int(bonusrange[0])
                     bmax = int(bonusrange[1]) + 1
                     bxp = random.choice(range(bmin, bmax))
-                    self.cache[guild_id][user_id]["xp"] += bxp
-            self.cache[guild_id][user_id]["voice"] += td
-            self.voice[guild_id][user_id] = now
+                    self.data[gid]["users"][uid]["xp"] += bxp
+            self.data[gid]["users"][uid]["voice"] += td
+            self.voice[gid][uid] = now
+            jobs.append(self.check_levelups(gid, uid))
+        await asyncio.gather(*jobs)
 
     @tasks.loop(seconds=20)
     async def voice_checker(self):
@@ -519,16 +486,15 @@ class LevelUp(UserCommands, commands.Cog):
     @voice_checker.before_loop
     async def before_voice_checker(self):
         await self.bot.wait_until_red_ready()
-        await self.init_settings()
+        await asyncio.sleep(60)
+        if self.first_run:
+            await self.initialize()
         log.info("Voice checker running")
 
-    @tasks.loop(seconds=45)
+    @tasks.loop(minutes=5)
     async def cache_dumper(self):
         t = monotonic()
-        dumptasks = []
-        for guild in self.bot.guilds:
-            dumptasks.append(self.dump_cache(guild))
-        await asyncio.gather(*dumptasks)
+        await self.save_cache()
         t = int((monotonic() - t) * 1000)
         loop = self.looptimes["cachedump"]
         if not loop:
@@ -539,7 +505,7 @@ class LevelUp(UserCommands, commands.Cog):
     @cache_dumper.before_loop
     async def before_cache_dumper(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(45)
+        await asyncio.sleep(300)
         log.info("Cache dumber ready")
 
     @commands.group(name="levelset", aliases=["lset", "lvlset", "levelup"])
@@ -552,7 +518,8 @@ class LevelUp(UserCommands, commands.Cog):
     @lvl_group.command(name="view")
     async def view_settings(self, ctx: commands.Context):
         """View all LevelUP settings"""
-        conf = await self.config.guild(ctx.guild).all()
+        conf = self.data[ctx.guild.id]
+
         levelroles = conf["levelroles"]
         igchannels = conf["ignoredchannels"]
         igroles = conf["ignoredroles"]
@@ -697,15 +664,17 @@ class LevelUp(UserCommands, commands.Cog):
     @commands.is_owner()
     async def reset_all(self, ctx: commands.Context):
         """Reset cog data for all guilds"""
-        for guild in self.bot.guilds:
-            await self.config.guild(guild).users.set({})
-            await ctx.tick()
+        for data in self.data.values():
+            data.clear()
+        await ctx.tick()
+        await self.save_cache()
 
     @admin_group.command(name="guildreset")
     async def reset_guild(self, ctx: commands.Context):
         """Reset cog data for this guild"""
-        await self.config.guild(ctx.guild).users.set({})
+        self.data[ctx.guild.id] = {}
         await ctx.tick()
+        await self.save_cache()
 
     @admin_group.command(name="looptimes")
     async def get_looptimes(self, ctx: commands.Context):
@@ -730,8 +699,8 @@ class LevelUp(UserCommands, commands.Cog):
 
         Sends the .json to discord
         """
-        today = datetime.datetime.now().strftime('%m-%d-%y')
-        settings = await self.config.all_guilds()
+        today = datetime.now().strftime('%m-%d-%y')
+        settings = self.data
         settings = json.dumps(settings)
         filename = f"LevelUp_global_config_{today}.json"
         iofile = io.StringIO(settings)
@@ -746,8 +715,8 @@ class LevelUp(UserCommands, commands.Cog):
 
         Sends the .json to discord
         """
-        today = datetime.datetime.now().strftime('%m-%d-%y')
-        settings = await self.config.guild(ctx.guild).all()
+        today = datetime.now().strftime('%m-%d-%y')
+        settings = self.data[ctx.guild.id]
         settings = json.dumps(settings)
         filename = f"LevelUp_guild_config_{today}.json"
         iofile = io.StringIO(settings)
@@ -768,14 +737,13 @@ class LevelUp(UserCommands, commands.Cog):
                 async with session.get(attachment_url) as resp:
                     config = await resp.json()
             for guild in self.bot.guilds:
-                async with self.config.guild(guild).all() as conf:
-                    guild_id = str(guild.id)
-                    if guild_id in config:
-                        conf["users"] = config[guild_id]["users"]
-            await self.init_settings()
-            return await ctx.send(_("Config restored from backup file!"))
+                gid = guild.id
+                if str(gid) in config:
+                    self.data[gid] = config[str(gid)]
+            await ctx.send(_("Config restored from backup file!"))
+            await self.save_cache()
         else:
-            return await ctx.send(_("Attach your backup file to the message when using this command."))
+            await ctx.send(_("Attach your backup file to the message when using this command."))
 
     @admin_group.command(name="guildrestore")
     @commands.guildowner()
@@ -790,22 +758,21 @@ class LevelUp(UserCommands, commands.Cog):
             async with aiohttp.ClientSession() as session:
                 async with session.get(attachment_url) as resp:
                     config = await resp.json()
-            await self.config.guild(ctx.guild).set(config)
-            await self.init_settings()
-            return await ctx.send(_("Config restored from backup file!"))
+            self.data[ctx.guild.id] = config
+            await ctx.send(_("Config restored from backup file!"))
+            await self.save_cache()
         else:
-            return await ctx.send(_("Attach your backup file to the message when using this command."))
+            await ctx.send(_("Attach your backup file to the message when using this command."))
 
     @admin_group.command(name="cache")
     @commands.is_owner()
     async def get_cache_size(self, ctx: commands.Context):
         """See how much RAM this cog's cache is using"""
-        s = sys.getsizeof(self.settings)
-        c = sys.getsizeof(self.cache)
+        s = sys.getsizeof(self.data)
         lm = sys.getsizeof(self.lastmsg)
         v = sys.getsizeof(self.voice)
         st = sys.getsizeof(self.stars)
-        total = sum([s, c, lm, v, st])
+        total = sum([s, lm, v, st])
         bytestring = "{:,}".format(total)
         kb = int(total / 1000)
         kbstring = "{:,}".format(kb)
@@ -880,66 +847,50 @@ class LevelUp(UserCommands, commands.Cog):
             xp_range = await leveler.config.xp()
             for guild in self.bot.guilds:
                 guild_id = str(guild.id)
-                async with self.config.guild(guild).all() as conf:
+                ignored_channels = await leveler.config.guild(guild).ignored_channels()
+                self.data[guild.id]["ignoredchannels"] = ignored_channels
+                self.data[guild.id]["length"] = int(min_message_length)
+                self.data[guild.id]["mention"] = True
+                self.data[guild.id]["xp"] = xp_range
 
-                    # IMPORT COG SETTINGS
-                    ignored_channels = await leveler.config.guild(guild).ignored_channels()
-                    if ignored_channels:
-                        conf["ignoredchannels"] = ignored_channels
-                    if min_message_length:
-                        conf["length"] = int(min_message_length)
-                    if mention:
-                        conf["mention"] = True
-                    if xp_range:
-                        conf["xp"] = xp_range
-                    server_roles = await self.db.roles.find_one({"server_id": guild_id})
-                    if server_roles:
-                        for rolename, data in server_roles["roles"].items():
-                            role = guild.get_role(rolename)
-                            if not role:
-                                continue
-                            level_req = data["level"]
-                            conf["levelroles"][level_req] = role.id
+                server_roles = await self.db.roles.find_one({"server_id": guild_id})
+                if server_roles:
+                    for rolename, data in server_roles["roles"].items():
+                        role = guild.get_role(rolename)
+                        if not role:
+                            continue
+                        level_req = data["level"]
+                        self.data[guild.id]["levelroles"][level_req] = role.id
 
-                    # IMPORT USER DATA
-                    users = conf["users"]
-                    for user in guild.members:
-                        user_id = str(user.id)
-                        try:
-                            userinfo = await self.db.users.find_one({"user_id": user_id})
-                        except Exception as e:
-                            log.info(f"No data found for {user.name}: {e}")
-                            continue
-                        if not userinfo:
-                            continue
-                        if user_id not in users:
-                            users[user_id] = {
-                                "xp": 0,
-                                "voice": 0,  # Seconds
-                                "messages": 0,
-                                "level": 0,
-                                "prestige": 0,
-                                "emoji": None,
-                                "background": None,
-                                "stars": 0
-                            }
-                        servers = userinfo["servers"]
-                        # Import levels
-                        if guild_id in servers:
-                            level = servers[guild_id]["level"]
-                        else:
-                            level = None
-                        if level:
-                            base = conf["base"]
-                            exp = conf["exp"]
-                            xp = get_xp(level, base, exp)
-                            users[user_id]["level"] = int(level)
-                            users[user_id]["xp"] = xp
-                        # Import rep
-                        if "stars" in users[user_id]:
-                            users[user_id]["stars"] = int(userinfo["rep"])
-                        if level or "stars" in users[user_id]:
-                            users_imported += 1
+                for user in guild.members:
+                    user_id = str(user.id)
+                    try:
+                        userinfo = await self.db.users.find_one({"user_id": user_id})
+                    except Exception as e:
+                        log.info(f"No data found for {user.name}: {e}")
+                        continue
+                    if not userinfo:
+                        continue
+                    if user_id not in self.data[guild.id]["users"]:
+                        self.init_user(guild.id, user_id)
+                    servers = userinfo["servers"]
+
+                    # Import levels
+                    if guild_id in servers:
+                        level = servers[guild_id]["level"]
+                    else:
+                        level = None
+                    if level:
+                        base = self.data[guild.id]["base"]
+                        exp = self.data[guild.id]["exp"]
+                        xp = get_xp(level, base, exp)
+                        self.data[guild.id]["users"][user_id]["level"] = int(level)
+                        self.data[guild.id]["users"][user_id]["xp"] = xp
+
+                    # Import rep
+                    self.data[guild.id]["users"][user_id]["stars"] = int(userinfo["rep"])
+                    users_imported += 1
+
             embed = discord.Embed(
                 description=_(f"Importing Complete!\n"
                               f"{users_imported} users imported"),
@@ -960,19 +911,18 @@ class LevelUp(UserCommands, commands.Cog):
         guild = ctx.guild
         members = [u.id for u in guild.members]
         cleanup = []
-        savedusers = await self.config.guild(ctx.guild).users()
+        savedusers = self.data[ctx.guild.id]["users"].copy()
         for user_id in savedusers:
             if int(user_id) not in members:
                 cleanup.append(user_id)
         if not cleanup:
             return await ctx.send(_("Nothing to clean"))
         cleaned = 0
-        async with self.config.guild(ctx.guild).users() as users:
-            for uid in cleanup:
-                if uid in users:
-                    del users[uid]
-                    cleaned += 1
+        for uid in cleanup:
+            del self.data[ctx.guild.id]["users"][uid]
+            cleaned += 1
         await ctx.send(_(f"Deleted {cleaned} user ID's from the config that are no longer in the server"))
+        await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="messages")
     async def message_group(self, ctx: commands.Context):
@@ -985,9 +935,9 @@ class LevelUp(UserCommands, commands.Cog):
         Set the Min and Max amount of XP that a message can gain
         """
         xp = [min_xp, max_xp]
-        await self.config.guild(ctx.guild).xp.set(xp)
+        self.data[ctx.guild.id]["xp"] = xp
         await ctx.send(_(f"Message XP range has been set to {min_xp} - {max_xp} per valid message"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @message_group.command(name="rolebonus")
     async def msg_role_bonus(self, ctx: commands.Context, role: discord.Role, min_xp: int, max_xp: int):
@@ -1004,17 +954,17 @@ class LevelUp(UserCommands, commands.Cog):
             return await ctx.send(_("Max xp needs to be higher than min xp"))
         rid = str(role.id)
         xp = [min_xp, max_xp]
-        async with self.config.guild(ctx.guild).rolebonuses() as rb:
-            msg = rb["msg"]
-            if not min_xp and not max_xp:
-                if rid in msg:
-                    del msg[rid]
-                    await ctx.send(_(f"Bonus xp for {role.name} has been removed"))
-                else:
-                    await ctx.send(_("That role has no bonus xp associated with it"))
-            else:
-                msg[rid] = xp
-                await ctx.send(_(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}"))
+        rb = self.data[ctx.guild.id]["rolebonuses"]["msg"]
+
+        if not min_xp and not max_xp:
+            if rid not in rb:
+                return await ctx.send(_("That role has no bonus xp associated with it"))
+            del self.data[ctx.guild.id]["rolebonuses"]["msg"][rid]
+            await ctx.send(_(f"Bonus xp for {role.name} has been removed"))
+        else:
+            self.data[ctx.guild.id]["rolebonuses"]["msg"][rid] = xp
+            await ctx.send(_(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}"))
+        await self.save_cache(ctx.guild)
 
     @message_group.command(name="cooldown")
     async def set_cooldown(self, ctx: commands.Context, cooldown: int):
@@ -1024,9 +974,9 @@ class LevelUp(UserCommands, commands.Cog):
         When a user sends a message they will have to wait X seconds before their message
         counts as XP gained
         """
-        await self.config.guild(ctx.guild).cooldown.set(cooldown)
+        self.data[ctx.guild.id]["cooldown"] = cooldown
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @message_group.command(name="length")
     async def set_length(self, ctx: commands.Context, minimum_length: int):
@@ -1036,9 +986,9 @@ class LevelUp(UserCommands, commands.Cog):
 
         Set to 0 to disable
         """
-        await self.config.guild(ctx.guild).length.set(minimum_length)
+        self.data[ctx.guild.id]["length"] = minimum_length
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="voice")
     async def voice_group(self, ctx: commands.Context):
@@ -1051,9 +1001,9 @@ class LevelUp(UserCommands, commands.Cog):
         Set voice XP gain
         Sets the amount of XP gained per minute in a voice channel (default is 2)
         """
-        await self.config.guild(ctx.guild).voicexp.set(voice_xp)
+        self.data[ctx.guild.id]["voicexp"] = voice_xp
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @voice_group.command(name="rolebonus")
     async def voice_role_bonus(self, ctx: commands.Context, role: discord.Role, min_xp: int, max_xp: int):
@@ -1070,17 +1020,17 @@ class LevelUp(UserCommands, commands.Cog):
             return await ctx.send(_("Max xp needs to be higher than min xp"))
         rid = str(role.id)
         xp = [min_xp, max_xp]
-        async with self.config.guild(ctx.guild).rolebonuses() as rb:
-            msg = rb["voice"]
-            if not min_xp and not max_xp:
-                if rid in msg:
-                    del msg[rid]
-                    await ctx.send(_(f"Bonus xp for {role.name} has been removed"))
-                else:
-                    await ctx.send(_("That role has no bonus xp associated with it"))
-            else:
-                msg[rid] = xp
-                await ctx.send(_(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}"))
+
+        rb = self.data[ctx.guild.id]["rolebonuses"]["voice"]
+        if not min_xp and not max_xp:
+            if rid not in rb:
+                return await ctx.send(_("That role has no bonus xp associated with it"))
+            del self.data[ctx.guild.id]["rolebonuses"]["voice"][rid]
+            await ctx.send(_(f"Bonus xp for {role.name} has been removed"))
+        else:
+            self.data[ctx.guild.id]["rolebonuses"]["voice"][rid] = xp
+            await ctx.send(_(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}"))
+        await self.save_cache(ctx.guild)
 
     @voice_group.command(name="muted")
     async def ignore_muted(self, ctx: commands.Context):
@@ -1088,14 +1038,14 @@ class LevelUp(UserCommands, commands.Cog):
         Ignore muted voice users
         Toggle whether self-muted users in a voice channel can gain voice XP
         """
-        muted = await self.config.guild(ctx.guild).muted()
+        muted = self.data[ctx.guild.id]["muted"]
         if muted:
-            await self.config.guild(ctx.guild).muted.set(False)
+            self.data[ctx.guild.id]["muted"] = False
             await ctx.send(_("Self-Muted users can now gain XP while in a voice channel"))
         else:
-            await self.config.guild(ctx.guild).muted.set(True)
+            self.data[ctx.guild.id]["muted"] = True
             await ctx.send(_("Self-Muted users can no longer gain XP while in a voice channel"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @voice_group.command(name="solo")
     async def ignore_solo(self, ctx: commands.Context):
@@ -1103,14 +1053,14 @@ class LevelUp(UserCommands, commands.Cog):
         Ignore solo voice users
         Toggle whether solo users in a voice channel can gain voice XP
         """
-        solo = await self.config.guild(ctx.guild).solo()
+        solo = self.data[ctx.guild.id]["solo"]
         if solo:
-            await self.config.guild(ctx.guild).solo.set(False)
+            self.data[ctx.guild.id]["solo"] = False
             await ctx.send(_("Solo users can now gain XP while in a voice channel"))
         else:
-            await self.config.guild(ctx.guild).solo.set(True)
+            self.data[ctx.guild.id]["solo"] = True
             await ctx.send(_("Solo users can no longer gain XP while in a voice channel"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @voice_group.command(name="deafened")
     async def ignore_deafened(self, ctx: commands.Context):
@@ -1118,14 +1068,14 @@ class LevelUp(UserCommands, commands.Cog):
         Ignore deafened voice users
         Toggle whether deafened users in a voice channel can gain voice XP
         """
-        deafened = await self.config.guild(ctx.guild).deafened()
+        deafened = self.data[ctx.guild.id]["deafened"]
         if deafened:
-            await self.config.guild(ctx.guild).deafened.set(False)
+            self.data[ctx.guild.id]["deafened"] = False
             await ctx.send(_("Deafened users can now gain XP while in a voice channel"))
         else:
-            await self.config.guild(ctx.guild).deafened.set(True)
+            self.data[ctx.guild.id]["deafened"] = True
             await ctx.send(_("Deafened users can no longer gain XP while in a voice channel"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @voice_group.command(name="invisible")
     async def ignore_invisible(self, ctx: commands.Context):
@@ -1133,28 +1083,26 @@ class LevelUp(UserCommands, commands.Cog):
         Ignore invisible voice users
         Toggle whether invisible users in a voice channel can gain voice XP
         """
-        invisible = await self.config.guild(ctx.guild).invisible()
+        invisible = self.data[ctx.guild.id]["invisible"]
         if invisible:
-            await self.config.guild(ctx.guild).invisible.set(False)
+            self.data[ctx.guild.id]["invisible"] = False
             await ctx.send(_("Invisible users can now gain XP while in a voice channel"))
         else:
-            await self.config.guild(ctx.guild).invisible.set(True)
+            self.data[ctx.guild.id]["invisible"] = True
             await ctx.send(_("Invisible users can no longer gain XP while in a voice channel"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="addxp")
     async def add_xp(self, ctx: commands.Context, user_or_role: typing.Union[discord.Member, discord.Role], xp: int):
         """Add XP to a user or role"""
-        gid = str(ctx.guild.id)
-        if gid not in self.cache:
-            self.cache[gid] = {}
+        gid = ctx.guild.id
         if not user_or_role:
             return await ctx.send(_("I cannot find that user or role"))
         if isinstance(user_or_role, discord.Member):
             uid = str(user_or_role.id)
-            if uid not in self.cache[gid]:
-                await self.cache_user(gid, uid)
-            self.cache[gid][uid]["xp"] += xp
+            if uid not in self.data[gid]["users"]:
+                self.init_user(gid, uid)
+            self.data[gid]["users"][uid]["xp"] += xp
             await ctx.send(_(f"{xp} xp has been added to {user_or_role.name}"))
         else:
             users = []
@@ -1164,10 +1112,11 @@ class LevelUp(UserCommands, commands.Cog):
                 if user_or_role in user.roles:
                     users.append(str(user.id))
             for uid in users:
-                if uid not in self.cache[gid]:
-                    await self.cache_user(gid, uid)
-                self.cache[gid][uid]["xp"] += xp
+                if uid not in self.data[gid]["users"]:
+                    self.init_user(gid, uid)
+                self.data[gid]["users"][uid]["xp"] += xp
             await ctx.send(_(f"Added {xp} xp to {len(users)} users that had the {user_or_role.name} role"))
+        await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="algorithm")
     async def algo_edit(self, ctx: commands.Context):
@@ -1181,9 +1130,9 @@ class LevelUp(UserCommands, commands.Cog):
 
         Affects leveling on a more linear scale(higher values makes leveling take longer)
         """
-        await self.config.guild(ctx.guild).base.set(base_multiplier)
+        self.data[ctx.guild.id]["base"] = base_multiplier
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @algo_edit.command(name="exp")
     async def set_exp(self, ctx: commands.Context, exponent_multiplier: typing.Union[int, float]):
@@ -1192,21 +1141,21 @@ class LevelUp(UserCommands, commands.Cog):
 
         Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)
         """
-        await self.config.guild(ctx.guild).exp.set(exponent_multiplier)
+        self.data[ctx.guild.id]["exp"] = exponent_multiplier
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="embeds")
     async def toggle_embeds(self, ctx: commands.Context):
         """Toggle using embeds or generated pics"""
-        usepics = await self.config.guild(ctx.guild).usepics()
+        usepics = self.data[ctx.guild.id]["usepics"]
         if usepics:
-            await self.config.guild(ctx.guild).usepics.set(False)
-            await ctx.send(_("LevelUp will now use embeds instead of generated images"))
+            self.data[ctx.guild.id]["usepics"] = False
+            await ctx.send(_("LevelUp will now use **embeds** instead of generated images"))
         else:
-            await self.config.guild(ctx.guild).usepics.set(True)
-            await ctx.send(_("LevelUp will now use generated images instead of embeds"))
-        await self.init_settings()
+            self.data[ctx.guild.id]["usepics"] = True
+            await ctx.send(_("LevelUp will now use **generated images** instead of embeds"))
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="seelevels")
     async def see_levels(self, ctx: commands.Context):
@@ -1214,7 +1163,7 @@ class LevelUp(UserCommands, commands.Cog):
         Test the level algorithm
         View the first 20 levels using the current algorithm to test experience curve
         """
-        conf = await self.config.guild(ctx.guild).all()
+        conf = self.data[ctx.guild.id]
         base = conf["base"]
         exp = conf["exp"]
         cd = conf["cooldown"]
@@ -1269,14 +1218,14 @@ class LevelUp(UserCommands, commands.Cog):
         Toggle DM notifications
         Toggle whether LevelUp messages are DM'd to the user
         """
-        notifydm = await self.config.guild(ctx.guild).notifydm()
+        notifydm = self.data[ctx.guild.id]["notifydm"]
         if notifydm:
-            await self.config.guild(ctx.guild).notifydm.set(False)
+            self.data[ctx.guild.id]["notifydm"] = False
             await ctx.send(_("Users will no longer be DM'd when they level up"))
         else:
-            await self.config.guild(ctx.guild).notifydm.set(True)
+            self.data[ctx.guild.id]["notifydm"] = True
             await ctx.send(_("Users will now be DM'd when they level up"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="mention")
     async def toggle_mention(self, ctx: commands.Context):
@@ -1284,14 +1233,14 @@ class LevelUp(UserCommands, commands.Cog):
         Toggle levelup mentions
         Toggle whether the user in mentioned in LevelUp messages
         """
-        mention = await self.config.guild(ctx.guild).mention()
+        mention = self.data[ctx.guild.id]["mention"]
         if mention:
-            await self.config.guild(ctx.guild).mention.set(False)
+            self.data[ctx.guild.id]["mention"] = False
             await ctx.send(_("Mentions **Disabled**"))
         else:
-            await self.config.guild(ctx.guild).mention.set(True)
+            self.data[ctx.guild.id]["mention"] = True
             await ctx.send(_("Mentions **Enabled**"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="levelchannel")
     async def set_level_channel(self, ctx: commands.Context, levelup_channel: discord.TextChannel = None):
@@ -1300,12 +1249,15 @@ class LevelUp(UserCommands, commands.Cog):
         Set a channel for all level up messages to send to
         """
         if not levelup_channel:
-            await self.config.guild(ctx.guild).notifylog.set(None)
+            self.data[ctx.guild.id]["notifylog"] = None
             await ctx.send(_("LevelUp channel has been **Disabled**"))
         else:
-            await self.config.guild(ctx.guild).notifylog.set(levelup_channel.id)
+            perms = levelup_channel.permissions_for(ctx.guild.me).send_messages
+            if not perms:
+                return await ctx.send(_(f"I do not have permission to send messages to that channel."))
+            self.data[ctx.guild.id]["notifylog"] = levelup_channel.id
             await ctx.send(_(f"LevelUp channel has been set to {levelup_channel.mention}"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="starcooldown")
     async def set_star_cooldown(self, ctx: commands.Context, time_in_seconds: int):
@@ -1314,9 +1266,9 @@ class LevelUp(UserCommands, commands.Cog):
 
         Users can give another user a star every X seconds
         """
-        await self.config.guild(ctx.guild).starcooldown.set(time_in_seconds)
+        self.data[ctx.guild.id]["starcooldown"] = time_in_seconds
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="roles")
     async def level_roles(self, ctx: commands.Context):
@@ -1343,70 +1295,70 @@ class LevelUp(UserCommands, commands.Cog):
         embed.set_thumbnail(url=LOADING)
         msg = await ctx.send(embed=embed)
         async with ctx.typing():
-            async with self.config.guild(guild).all() as conf:
-                level_roles = conf["levelroles"]
-                prestiges = conf["prestigedata"]
-                autoremove = conf["autoremove"]
-                users = conf["users"]
-                for user_id, data in users.items():
-                    user = guild.get_member(int(user_id))
-                    if not user:
-                        continue
-                    user_level = data["level"]
-                    prestige_level = data["prestige"]
-                    if autoremove:
-                        highest_level = ""
-                        for lvl, role_id in level_roles.items():
-                            if int(lvl) <= int(user_level):
-                                highest_level = lvl
-                        if highest_level:
-                            role = level_roles[highest_level]
-                            role = guild.get_role(int(role))
-                            if role:
-                                await user.add_roles(role)
-                                roles_added += 1
-                                for r in user.roles:
-                                    if r.id in level_roles.values() and r.id != role.id:
-                                        await user.remove_roles(r)
-                                        roles_removed += 1
-                        highest_prestige = ""
-                        for plvl, prole in prestiges.items():
-                            if int(plvl) <= int(prestige_level):
-                                highest_prestige = plvl
-                        if highest_prestige:
-                            role = prestiges[highest_prestige]
-                            role = guild.get_role(int(role))
-                            if role:
-                                await user.add_roles(role)
-                                roles_added += 1
-                    else:
-                        for lvl, role_id in level_roles.items():
-                            role = guild.get_role(int(role_id))
-                            if role and int(lvl) <= int(user_level):
-                                await user.add_roles(role)
-                                roles_added += 1
-                        for lvl, role_id in prestiges.items():
-                            role = guild.get_role(int(role_id))
-                            if role and int(lvl) <= int(prestige_level):
-                                await user.add_roles(role)
-                                roles_added += 1
-                embed = discord.Embed(
-                    description=_(f"Initialization complete! Added {roles_added} roles and removed {roles_removed}."),
-                    color=discord.Color.green()
-                )
-                await msg.edit(embed=embed)
+            conf = self.data[ctx.guild.id].copy()
+            level_roles = conf["levelroles"]
+            prestiges = conf["prestigedata"]
+            autoremove = conf["autoremove"]
+            users = conf["users"]
+            for user_id, data in users.items():
+                user = guild.get_member(int(user_id))
+                if not user:
+                    continue
+                user_level = data["level"]
+                prestige_level = data["prestige"]
+                if autoremove:
+                    highest_level = ""
+                    for lvl, role_id in level_roles.items():
+                        if int(lvl) <= int(user_level):
+                            highest_level = lvl
+                    if highest_level:
+                        role = level_roles[highest_level]
+                        role = guild.get_role(int(role))
+                        if role:
+                            await user.add_roles(role)
+                            roles_added += 1
+                            for r in user.roles:
+                                if r.id in level_roles.values() and r.id != role.id:
+                                    await user.remove_roles(r)
+                                    roles_removed += 1
+                    highest_prestige = ""
+                    for plvl, prole in prestiges.items():
+                        if int(plvl) <= int(prestige_level):
+                            highest_prestige = plvl
+                    if highest_prestige:
+                        role = prestiges[highest_prestige]
+                        role = guild.get_role(int(role))
+                        if role:
+                            await user.add_roles(role)
+                            roles_added += 1
+                else:
+                    for lvl, role_id in level_roles.items():
+                        role = guild.get_role(int(role_id))
+                        if role and int(lvl) <= int(user_level):
+                            await user.add_roles(role)
+                            roles_added += 1
+                    for lvl, role_id in prestiges.items():
+                        role = guild.get_role(int(role_id))
+                        if role and int(lvl) <= int(prestige_level):
+                            await user.add_roles(role)
+                            roles_added += 1
+        embed = discord.Embed(
+            description=_(f"Initialization complete! Added {roles_added} roles and removed {roles_removed}."),
+            color=discord.Color.green()
+        )
+        await msg.edit(embed=embed)
 
     @level_roles.command(name="autoremove")
     async def toggle_autoremove(self, ctx: commands.Context):
         """Automatic removal of previous level roles"""
-        autoremove = await self.config.guild(ctx.guild).autoremove()
+        autoremove = self.data[ctx.guild.id]["autoremove"]
         if autoremove:
-            await self.config.guild(ctx.guild).autoremove.set(False)
+            self.data[ctx.guild.id]["autoremove"] = False
             await ctx.send(_("Automatic role removal **Disabled**"))
         else:
-            await self.config.guild(ctx.guild).autoremove.set(True)
+            self.data[ctx.guild.id]["autoremove"] = True
             await ctx.send(_("Automatic role removal **Enabled**"))
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @level_roles.command(name="add")
     async def add_level_role(self, ctx: commands.Context, level: str, role: discord.Role):
@@ -1414,25 +1366,23 @@ class LevelUp(UserCommands, commands.Cog):
         perms = ctx.guild.me.guild_permissions.manage_roles
         if not perms:
             return await ctx.send(_("I do not have permission to manage roles"))
-        async with self.config.guild(ctx.guild).levelroles() as roles:
-            if level in roles:
-                overwrite = "Overwritten"
-            else:
-                overwrite = "Set"
-            roles[level] = role.id
-            await ctx.send(_(f"Level {level} has been {overwrite} as {role.mention}"))
-            await self.init_settings()
+        if level in self.data[ctx.guild.id]["levelroles"]:
+            overwrite = "Overwritten"
+        else:
+            overwrite = "Set"
+        self.data[ctx.guild.id]["levelroles"][level] = role.id
+        await ctx.send(_(f"Level {level} has been {overwrite} as {role.mention}"))
+        await self.save_cache(ctx.guild)
 
     @level_roles.command(name="del")
     async def del_level_role(self, ctx: commands.Context, level: str):
         """Assign a role to a level"""
-        async with self.config.guild(ctx.guild).levelroles() as roles:
-            if level in roles:
-                del roles[level]
-                await ctx.send(_("Level role has been deleted!"))
-            else:
-                await ctx.send(_("Level doesnt exist!"))
-            await self.init_settings()
+        if level in self.data[ctx.guild.id]["levelroles"]:
+            del self.data[ctx.guild.id]["levelroles"][level]
+            await ctx.send(_("Level role has been deleted!"))
+            await self.save_cache(ctx.guild)
+        else:
+            await ctx.send(_("Level doesnt exist!"))
 
     @lvl_group.group(name="prestige")
     async def prestige_settings(self, ctx: commands.Context):
@@ -1445,9 +1395,9 @@ class LevelUp(UserCommands, commands.Cog):
         Set the level required to prestige
         Set to 0 to disable prestige
         """
-        await self.config.guild(ctx.guild).prestige.set(level)
+        self.data[ctx.guild.id]["prestige"] = level
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @prestige_settings.command(name="add")
     async def add_pres_data(
@@ -1463,24 +1413,23 @@ class LevelUp(UserCommands, commands.Cog):
 
         When a user prestiges, they will get that role and the emoji will show on their profile
         """
-        async with self.config.guild(ctx.guild).prestigedata() as data:
-            data[prestige_level] = {
+        self.data[ctx.guild.id]["prestigedata"][prestige_level] = {
                 "role": role.id,
                 "emoji": emoji
             }
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @prestige_settings.command(name="del")
     async def del_pres_data(self, ctx: commands.Context, prestige_level: str):
         """Delete a prestige level role"""
-        async with self.config.guild(ctx.guild).prestigedata() as data:
-            if prestige_level in data:
-                del data[prestige_level]
-            else:
-                return await ctx.send(_("That prestige level doesnt exist!"))
+        pd = self.data[ctx.guild.id]["prestigedata"]
+        if prestige_level in pd:
+            del self.data[ctx.guild.id]["prestigedata"][prestige_level]
+        else:
+            return await ctx.send(_("That prestige level doesnt exist!"))
         await ctx.tick()
-        await self.init_settings()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="ignored")
     async def ignore_group(self, ctx: commands.Context):
@@ -1504,7 +1453,7 @@ class LevelUp(UserCommands, commands.Cog):
             else:
                 ignored.append(guild_id)
                 await ctx.send(_("Guild added to ignore list"))
-            await self.init_settings()
+            await self.initialize()
 
     @ignore_group.command(name="channel")
     async def ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel):
@@ -1514,14 +1463,14 @@ class LevelUp(UserCommands, commands.Cog):
 
         Use the command with a channel already in the ignore list to remove it
         """
-        async with self.config.guild(ctx.guild).ignoredchannels() as ignored:
-            if channel.id in ignored:
-                ignored.remove(channel.id)
-                await ctx.send(_("Channel removed from ignore list"))
-            else:
-                ignored.append(channel.id)
-                await ctx.send(_("Channel added to ignore list"))
-        await self.init_settings()
+        ig = self.data[ctx.guild.id]["ignoredchannels"]
+        if channel.id in ig:
+            self.data[ctx.guild.id]["ignoredchannels"].remove(channel.id)
+            await ctx.send(_("Channel removed from ignore list"))
+        else:
+            self.data[ctx.guild.id]["ignoredchannels"].append(channel.id)
+            await ctx.send(_("Channel added to ignore list"))
+        await self.save_cache(ctx.guild)
 
     @ignore_group.command(name="role")
     async def ignore_role(self, ctx: commands.Context, role: discord.Role):
@@ -1531,14 +1480,14 @@ class LevelUp(UserCommands, commands.Cog):
 
         Use the command with a role already in the ignore list to remove it
         """
-        async with self.config.guild(ctx.guild).ignoredroles() as ignored:
-            if role.id in ignored:
-                ignored.remove(role.id)
-                await ctx.send(_("Role removed from ignore list"))
-            else:
-                ignored.append(role.id)
-                await ctx.send(_("Role added to ignore list"))
-        await self.init_settings()
+        ig = self.data[ctx.guild.id]["ignoredroles"]
+        if role.id in ig:
+            self.data[ctx.guild.id]["ignoredroles"].remove(role.id)
+            await ctx.send(_("Role removed from ignore list"))
+        else:
+            self.data[ctx.guild.id]["ignoredroles"].append(role.id)
+            await ctx.send(_("Role added to ignore list"))
+        await self.save_cache(ctx.guild)
 
     @ignore_group.command(name="member")
     async def ignore_member(self, ctx: commands.Context, member: discord.Member):
@@ -1548,36 +1497,14 @@ class LevelUp(UserCommands, commands.Cog):
 
         Use the command with a member already in the ignore list to remove them
         """
-        async with self.config.guild(ctx.guild).ignoredusers() as ignored:
-            if member.id in ignored:
-                ignored.remove(member.id)
-                await ctx.send(_("Member removed from ignore list"))
-            else:
-                ignored.append(member.id)
-                await ctx.send(_("Member added to ignore list"))
-        await self.init_settings()
-
-    # For testing purposes
-    @commands.command(name="mocklvl", hidden=True)
-    async def get_lvl_test(self, ctx, *, user: discord.Member = None):
-        """Test levelup image gen"""
-        if not user:
-            user = ctx.author
-        banner = await self.get_banner(user)
-        color = str(user.colour)
-        color = hex_to_rgb(color)
-        if DPY2:
-            pfp = user.avatar.url if user.avatar else None
+        ig = self.data[ctx.guild.id]["ignoredusers"]
+        if member.id in ig:
+            self.data[ctx.guild.id]["ignoredusers"].remove(member.id)
+            await ctx.send(_("Member removed from ignore list"))
         else:
-            pfp = user.avatar_url
-        args = {
-            'bg_image': banner,
-            'profile_image': pfp,
-            'level': 69,
-            'color': color,
-        }
-        file = await self.gen_levelup_img(args)
-        await ctx.send(file=file)
+            self.data[ctx.guild.id]["ignoredusers"].append(member.id)
+            await ctx.send(_("Member added to ignore list"))
+        await self.save_cache(ctx.guild)
 
     # For testing purposes
     @commands.command(name="mocklvlup", hidden=True)
@@ -1587,28 +1514,24 @@ class LevelUp(UserCommands, commands.Cog):
         """Force level a user or yourself"""
         if not person:
             person = ctx.author
-        user_id = str(person.id)
-        guild_id = str(ctx.guild.id)
-        if guild_id not in self.cache:
-            self.cache[guild_id] = {}
-        if user_id not in self.cache[guild_id]:
-            await self.cache_user(guild_id, user_id)
-        conf = self.settings[guild_id]
-        if not conf:
-            await self.init_settings()
+        uid = str(person.id)
+        gid = ctx.guild.id
+        conf = self.data[gid]
         base = conf["base"]
         exp = conf["exp"]
-        users = await self.config.guild(ctx.guild).users()
-        user = users[user_id]
+        users = conf["users"]
+        if uid not in users:
+            self.init_user(gid, uid)
+        user = users[uid]
         currentxp = user["xp"]
         level = user["level"]
         level = level + 1
         new_xp = get_xp(level, base, exp)
         xp = new_xp - currentxp + 10
-        self.cache[guild_id][user_id]["xp"] = xp
+        self.data[gid]["users"][uid]["xp"] = xp
         await asyncio.sleep(2)
-        await self.dump_cache(ctx.guild)
         await ctx.send(_(f"Forced {person.name} to level up!"))
+        await self.save_cache(ctx.guild)
 
     # For testing purposes
     @commands.command(name="mocklvldown", hidden=True)
@@ -1618,33 +1541,29 @@ class LevelUp(UserCommands, commands.Cog):
         """Force de-level a user or yourself"""
         if not person:
             person = ctx.author
-        user_id = str(person.id)
-        guild_id = str(ctx.guild.id)
-        if guild_id not in self.cache:
-            self.cache[guild_id] = {}
-        if user_id not in self.cache[guild_id]:
-            await self.cache_user(guild_id, user_id)
-        conf = self.settings[guild_id]
-        if not conf:
-            await self.init_settings()
+        uid = str(person.id)
+        gid = ctx.guild.id
+        conf = self.data[gid]
         base = conf["base"]
         exp = conf["exp"]
-        users = await self.config.guild(ctx.guild).users()
-        user = users[user_id]
+        users = conf["users"]
+        if uid not in users:
+            self.init_user(gid, uid)
+        user = users[uid]
         currentxp = user["xp"]
         level = user["level"]
         level = level - 1
         new_xp = get_xp(level, base, exp)
         xp = new_xp - currentxp + 10
-        self.cache[guild_id][user_id]["xp"] = xp
+        self.data[gid]["users"][uid]["xp"] = xp
         await asyncio.sleep(2)
-        await self.dump_cache(ctx.guild)
         await ctx.send(_(f"Forced {person.name} to level down!"))
+        await self.save_cache(ctx.guild)
 
     # For testing purposes
     @commands.command(name="forceinit", hidden=True)
     @commands.is_owner()
     async def force_init(self, ctx):
         """Force Initialization"""
-        await self.init_settings()
+        await self.initialize()
         await ctx.tick()

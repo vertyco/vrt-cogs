@@ -15,3 +15,4 @@ async def setup(bot):
         await bot.add_cog(cog)
     else:
         bot.add_cog(cog)
+    await cog.initialize()
