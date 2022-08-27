@@ -850,7 +850,7 @@ class LevelUp(UserCommands, commands.Cog):
                 ignored_channels = await leveler.config.guild(guild).ignored_channels()
                 self.data[guild.id]["ignoredchannels"] = ignored_channels
                 self.data[guild.id]["length"] = int(min_message_length)
-                self.data[guild.id]["mention"] = True
+                self.data[guild.id]["mention"] = mention
                 self.data[guild.id]["xp"] = xp_range
 
                 server_roles = await self.db.roles.find_one({"server_id": guild_id})
