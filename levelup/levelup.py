@@ -134,6 +134,14 @@ class LevelUp(UserCommands, commands.Cog):
         self.voice_checker.cancel()
         asyncio.create_task(self.save_cache())
 
+    @staticmethod
+    def get_size(num: float) -> str:
+        for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+            if abs(num) < 1024.0:
+                return "{0:.1f}{1}".format(num, unit)
+            num /= 1024.0
+        return "{0:.1f}{1}".format(num, "YB")
+
     @commands.Cog.listener()
     async def on_guild_join(self, new_guild: discord.Guild):
         if new_guild.id not in self.data:
@@ -768,20 +776,21 @@ class LevelUp(UserCommands, commands.Cog):
     @commands.is_owner()
     async def get_cache_size(self, ctx: commands.Context):
         """See how much RAM this cog's cache is using"""
-        s = sys.getsizeof(self.data)
-        lm = sys.getsizeof(self.lastmsg)
-        v = sys.getsizeof(self.voice)
-        st = sys.getsizeof(self.stars)
-        total = sum([s, lm, v, st])
-        bytestring = "{:,}".format(total)
-        kb = int(total / 1000)
-        kbstring = "{:,}".format(kb)
-        mb = int(kb / 1000)
-        mbstring = "{:,}".format(mb)
-        sizes = f"{bytestring} bytes\n" \
-                f"{kbstring} Kb\n" \
-                f"{mbstring} Mb\n"
-        await ctx.send(_(f"**Total Cache Size**\n{box(sizes)}"))
+        main = sys.getsizeof(self.data)
+        voice = sys.getsizeof(self.voice)
+        stars = sys.getsizeof(self.stars)
+        profile = sys.getsizeof(self.profiles)
+
+        total = sum([main, voice, stars, profile])
+
+        text = f"`Main:     `{self.get_size(main)}\n" \
+               f"`Voice:    `{self.get_size(voice)}\n" \
+               f"`Stars:    `{self.get_size(stars)}\n" \
+               f"`Profiles: `{self.get_size(profile)}\n" \
+               f"`Total:    `{self.get_size(total)}"
+
+        em = discord.Embed(title=f"LevelUp {_('Cache')}", description=_(text), color=ctx.author.color)
+        await ctx.send(embed=em)
 
     @admin_group.command(name="importleveler")
     @commands.is_owner()
