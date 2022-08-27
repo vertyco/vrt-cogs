@@ -547,7 +547,7 @@ class TicketCommands(commands.Cog):
                         cleaned += 1
                         del op[uid][channel_id]
         if cleaned:
-            await ctx.send(_(f"Pruned `{cleaned}` invalid tickets."))
+            await ctx.send(_(f"Pruned `{cleaned}` invalid {'ticket' if cleaned == 1 else 'tickets'}."))
         else:
             await ctx.send(_("There were no tickets to prune."))
 
