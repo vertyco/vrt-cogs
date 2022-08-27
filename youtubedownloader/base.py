@@ -194,6 +194,9 @@ class YouTubeDownloader(commands.Cog):
                             )
                         except (VideoUnavailable, KeyError):
                             failed += 1
+                        except Exception as e:
+                            log.error(f"mp3s download exception: {e}")
+                            failed += 1
 
                         filesize = sys.getsizeof(file)
                         allowedsize = ctx.guild.filesize_limit
@@ -354,6 +357,9 @@ class YouTubeDownloader(commands.Cog):
                     downloaded += 1
                 except (VideoUnavailable, KeyError):
                     failed += 1
+                except Exception as e:
+                    log.error(f"Playlist download exception: {e}")
+                    failed += 1
 
                 index += 1
 
@@ -491,6 +497,9 @@ class YouTubeDownloader(commands.Cog):
                     )
                     downloaded += 1
                 except (VideoUnavailable, KeyError):
+                    failed += 1
+                except Exception as e:
+                    log.error(f"Channel download exception: {e}")
                     failed += 1
 
                 index += 1
