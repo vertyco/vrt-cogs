@@ -303,17 +303,23 @@ class LevelUp(UserCommands, commands.Cog):
                     if role not in member.roles:
                         await member.add_roles(role)
         else:  # No stacking so add role and remove the others below that level
+            role_applied = False
             if str(new_level) in levelroles:
                 role_id = levelroles[str(new_level)]
                 role = guild.get_role(int(role_id))
                 if role not in member.roles:
                     await member.add_roles(role)
+                    role_applied = True
 
-            if new_level > 1:
+            # Remove any previous roles, but only if a new role was applied
+            if new_level > 1 and role_applied:
                 for role in member.roles:
                     for level, role_id in levelroles.items():
-                        if int(level) < new_level and str(role.id) == str(role_id):
-                            await member.remove_roles(role)
+                        if role.id != role_id:
+                            continue
+                        if int(level) >= new_level:
+                            continue
+                        await member.remove_roles(role)
 
         t = int((monotonic() - t1) * 1000)
         loop = self.looptimes["lvlassignavg"]
