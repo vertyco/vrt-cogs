@@ -146,7 +146,7 @@ class VrtUtils(commands.Cog):
         """
 
         def diskembed(data: dict) -> discord.Embed:
-            if data["write4"] != "Waiting..." and data["write4"] != "Running...":
+            if data["write5"] != "Waiting..." and data["write5"] != "Running...":
                 embed = discord.Embed(title=_("Disk I/O"), color=discord.Color.green())
                 embed.description = _("Disk Speed Check COMPLETE")
             else:
