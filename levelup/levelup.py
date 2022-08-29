@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 # import datetime
 import io
 import json
@@ -152,6 +153,95 @@ class LevelUp(UserCommands, commands.Cog):
         if old_guild.id in self.data:
             await self.save_cache(old_guild)
             del self.data[old_guild.id]
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.emoij.name != "\N{WHITE MEDIUM STAR}":
+            return
+        # Ignore reactions added by the bot
+        if payload.user_id == self.bot.user.id:
+            return
+        # Ignore reactions added in DMs
+        if not payload.guild_id:
+            return
+        if not payload.member:
+            return
+        if payload.member.bot:
+            return
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
+        chan = guild.get_channel(payload.channel_id)
+        if not chan:
+            return
+        try:
+            msg = await chan.fetch_message(payload.message_id)
+            if not msg:
+                return
+        except (discord.NotFound, discord.Forbidden):
+            return
+        # Ignore reactions added to a message that a bot sent
+        if msg.author.bot:
+            return
+        # Ignore people adding reactions to their own messages
+        if msg.author.id == payload.user_id:
+            return
+
+        now = datetime.now()
+        gid = payload.guild_id
+        giver_id = str(payload.user_id)
+        giver = payload.member
+        receiver = msg.author
+
+        can_give = False
+        if giver_id not in self.stars[gid]:
+            self.stars[gid][giver_id] = now
+            can_give = True
+
+        if not can_give:
+            cooldown = self.data[gid]["starcooldown"]
+            last_given = self.stars[gid][giver_id]
+            td = (now - last_given).total_seconds()
+            if td > cooldown:
+                self.stars[gid][giver_id] = now
+                can_give = True
+
+        if not can_give:
+            return
+
+        self.data[gid]["users"][str(receiver.id)]["stars"] += 1
+        if chan.permissions_for(guild.me).send_messages:
+            with contextlib.suppress(discord.HTTPException):
+                await chan.send(
+                    _(
+                        f"**{giver.name}** just gave a star to **{receiver.name}**!"
+                    )
+                )
+
+    @commands.Cog.listener("on_message")
+    async def messages(self, message: discord.Message):
+        # If message object is None for some reason
+        if not message:
+            return
+        # If message was from a bot
+        if message.author.bot:
+            return
+        # If message wasn't sent in a guild
+        if not message.guild:
+            return
+        # Check if guild is in the master ignore list
+        if str(message.guild.id) in self.ignored_guilds:
+            return
+        # Check whether the cog isn't disabled
+        if await self.bot.cog_disabled_in_guild(self, message.guild):
+            return
+        # Check whether the channel isn't on the ignore list
+        if not await self.bot.ignored_channel_or_guild(message):
+            return
+        # Check whether the message author isn't on allowlist/blocklist
+        if not await self.bot.allowed_by_whitelist_blacklist(message.author):
+            return
+        await self.message_handler(message)
 
     async def initialize(self):
         self.ignored_guilds = await self.config.ignored_guilds()
@@ -327,31 +417,6 @@ class LevelUp(UserCommands, commands.Cog):
             self.looptimes["lvlassignavg"] = t
         else:
             self.looptimes["lvlassignavg"] = int((loop + t) / 2)
-
-    @commands.Cog.listener("on_message")
-    async def messages(self, message: discord.Message):
-        # If message object is None for some reason
-        if not message:
-            return
-        # If message was from a bot
-        if message.author.bot:
-            return
-        # If message wasn't sent in a guild
-        if not message.guild:
-            return
-        # Check if guild is in the master ignore list
-        if str(message.guild.id) in self.ignored_guilds:
-            return
-        # Check whether the cog isn't disabled
-        if await self.bot.cog_disabled_in_guild(self, message.guild):
-            return
-        # Check whether the channel isn't on the ignore list
-        if not await self.bot.ignored_channel_or_guild(message):
-            return
-        # Check whether the message author isn't on allowlist/blocklist
-        if not await self.bot.allowed_by_whitelist_blacklist(message.author):
-            return
-        await self.message_handler(message)
 
     async def message_handler(self, message: discord.Message):
         now = datetime.now()
