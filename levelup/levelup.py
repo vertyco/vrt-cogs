@@ -217,7 +217,8 @@ class LevelUp(UserCommands, commands.Cog):
                 await chan.send(
                     _(
                         f"**{giver.name}** just gave a star to **{receiver.name}**!"
-                    )
+                    ),
+                    delete_after=60
                 )
 
     @commands.Cog.listener("on_message")
