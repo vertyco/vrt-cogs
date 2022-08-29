@@ -156,7 +156,10 @@ class LevelUp(UserCommands, commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if payload.emoij.name != "\N{WHITE MEDIUM STAR}":
+        if not payload:
+            return
+        print(payload.emoij)
+        if payload.emoij != "\N{WHITE MEDIUM STAR}":
             return
         # Ignore reactions added by the bot
         if payload.user_id == self.bot.user.id:
