@@ -263,7 +263,7 @@ class SupportCommands(commands.Cog):
         `{longdate}` - mm-dd-yyyy
         `{time}` - hh-mm AM/PM according to bot host system time
 
-        You can set this to {default} to use default "Ticket-Username
+        You can set this to {default} to use the default "Ticket-Username"
         """
         await self.config.guild(ctx.guild).ticket_name.set(default_name)
         await ctx.tick()
