@@ -5,10 +5,10 @@ import logging
 import os
 import platform
 import subprocess
-from sys import executable
-from concurrent.futures import ThreadPoolExecutor
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
+from sys import executable
 from typing import Union
 
 import cpuinfo

@@ -248,13 +248,9 @@ class LevelUp(UserCommands, commands.Cog):
 
     async def initialize(self):
         self.ignored_guilds = await self.config.ignored_guilds()
-        global_conf = await self.config.all_guilds()
         for guild in self.bot.guilds:
             gid = guild.id
-            if gid in global_conf:
-                data = global_conf[gid]
-            else:
-                data = await self.config.guild(guild).all()
+            data = await self.config.guild(guild).all()
             if gid not in self.data:
                 self.data[gid] = data
                 self.stars[gid] = {}
