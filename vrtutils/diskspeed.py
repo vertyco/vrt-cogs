@@ -11,7 +11,6 @@ Original author is thodnev
 https://github.com/thodnev/MonkeyTest
 """
 import os
-import sys
 from random import shuffle
 from time import perf_counter as time
 
