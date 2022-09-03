@@ -270,7 +270,6 @@ class Pupper(commands.Cog):
         if message.author.bot:
             return
         if isinstance(message.channel, discord.abc.PrivateChannel):
-            print(f"{message.channel} is private")
             return
         if not self.cache:
             await self.initialize()
@@ -296,9 +295,7 @@ class Pupper(commands.Cog):
         last_time = datetime.fromtimestamp(guild_data["last_pet"])
         now = datetime.now()
         if int((now - last_time).total_seconds()) > guild_data["cooldown"]:
-            print("waiting to pounce")
-            # await asyncio.sleep(random.randint(30, 300))
-            await asyncio.sleep(random.randint(1, 3))
+            await asyncio.sleep(random.randint(30, 480))
             while True:
                 if not guild_data["channel"]:
                     return
