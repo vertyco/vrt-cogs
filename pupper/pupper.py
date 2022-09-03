@@ -81,7 +81,11 @@ class Pupper(commands.Cog):
                     channel_obj = self.bot.get_channel(channel_id)
                     if channel_obj:
                         channel_names.append(channel_obj.name)
-            last_pet = int(guild_data["last_pet"])
+
+            last_pet = guild_data["last_pet"]
+            if isinstance(last_pet, str):
+                await self.config.guild(ctx.guild).last_pet.set(0)
+                await self.initialize(ctx.guild)
 
             space = "\N{EN SPACE}"
             toggle = "Active" if guild_data["toggle"] else "Inactive"
@@ -98,7 +102,7 @@ class Pupper(commands.Cog):
 
             for page in pagify(msg, delims=["\n"]):
                 await ctx.send(box(page, lang="ini"))
-            await ctx.send(f"Last pet: <t:{last_pet}:R>")
+            await ctx.send(f"Last pet: <t:{int(last_pet)}:R>")
 
     @pets.command()
     async def toggle(self, ctx):
