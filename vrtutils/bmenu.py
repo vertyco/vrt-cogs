@@ -6,8 +6,10 @@ from typing import List, Union
 
 import discord
 from redbot.core import commands
+from redbot.core.i18n import Translator
 
 log = logging.getLogger("red.vrt.utils.bmenu")
+_ = Translator("VrtUtils", __file__)
 
 
 # A red-menu like button menu for dpy2 to support cross-dpy functionality
