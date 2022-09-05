@@ -22,13 +22,10 @@ from .formatter import (profile,
                         stats_api_format)
 
 if discord.__version__ > "1.7.3":
-    from .bmenu import menu
-
-    DEFAULT_CONTROLS = None
+    from .dpymenu import menu, DEFAULT_CONTROLS
     DPY2 = True
 else:
-    from .menu import menu, DEFAULT_CONTROLS
-
+    from .dislashmenu import menu, DEFAULT_CONTROLS
     DPY2 = False
 
 REDIRECT_URI = "http://localhost/auth/callback"
@@ -41,7 +38,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.6.13"
+    __version__ = "3.7.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -56,6 +53,9 @@ class XTools(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        if not DPY2:
+            from dislash import InteractionClient
+            InteractionClient(bot)
         self.session = aiohttp.ClientSession()
         self.config = Config.get_conf(self, 117117117117, force_registration=True)
         default_global = {
