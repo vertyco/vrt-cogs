@@ -97,6 +97,9 @@ class EconomyTrackCommands(MixinMeta):
         """View EconomyTrack Settings"""
         max_points = await self.config.max_points()
         is_global = await bank.is_global()
+        conf = await self.config.guild(ctx.guild).all()
+        timezone = conf["timezone"]
+        enabled = conf["enabled"]
         if is_global:
             data = await self.config.data()
             points = len(data)
@@ -106,8 +109,9 @@ class EconomyTrackCommands(MixinMeta):
         avg_iter = self.looptime if self.looptime else "(N/A)"
         ptime = humanize_timedelta(seconds=int(points * 60))
         mptime = humanize_timedelta(seconds=int(max_points * 60))
-        timezone = await self.config.guild(ctx.guild).timezone()
-        desc = _(f"`Max Points: `{humanize_number(max_points)} ({mptime})\n"
+        desc = _(f"`Enabled:    `{enabled}\n"
+                 f"`Timezone:   `{timezone}\n"
+                 f"`Max Points: `{humanize_number(max_points)} ({mptime})\n"
                  f"`Collected:  `{humanize_number(points)} ({ptime if ptime else 'None'})\n"
                  f"`Timezone:   `{timezone}\n"
                  f"`LoopTime:   `{avg_iter}ms")
@@ -172,7 +176,8 @@ class EconomyTrackCommands(MixinMeta):
             return await ctx.send(embed=embed)
 
         if timespan.lower() == "all":
-            title = f"Total economy balance for all time"
+            alltime = humanize_timedelta(seconds=len(data) * 60)
+            title = f"Total economy balance for all time ({alltime})"
         else:
             title = f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
 
@@ -180,10 +185,11 @@ class EconomyTrackCommands(MixinMeta):
         highest = df.max().total
         avg = df.mean().total
 
-        desc = f"`BankName: `{bank_name}\n" \
-               f"`Lowest:   `{humanize_number(lowest)} {currency_name}\n" \
-               f"`Highest:  `{humanize_number(highest)} {currency_name}\n" \
-               f"`Average:  `{humanize_number(round(avg))} {currency_name}\n"
+        desc = f"`DataPoints: `{humanize_number(len(data))}\n" \
+               f"`BankName:   `{bank_name}\n" \
+               f"`Lowest:     `{humanize_number(lowest)} {currency_name}\n" \
+               f"`Highest:    `{humanize_number(highest)} {currency_name}\n" \
+               f"`Average:    `{humanize_number(round(avg))} {currency_name}\n"
 
         embed = discord.Embed(
             title=_(title),
