@@ -51,7 +51,8 @@ class XTools(commands.Cog):
             if str(user_id) in users:
                 del users[str(user_id)]
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         if not DPY2:
             from dislash import InteractionClient
@@ -73,7 +74,8 @@ class XTools(commands.Cog):
         self.bot.loop.create_task(self.session.close())
 
     # Get Microsoft services status
-    async def microsoft_services_status(self):
+    @staticmethod
+    async def microsoft_services_status():
         async with aiohttp.ClientSession() as session:
             async with session.get("https://xnotify.xboxlive.com/servicestatusv6/US/en-US") as resp:
                 data = xmltojson.parse(await resp.text())  # Parse HTML response to JSON
@@ -306,7 +308,7 @@ class XTools(commands.Cog):
     @commands.command(name="xuid")
     async def get_xuid(self, ctx, *, gamertag=None):
         """Get a player's XUID"""
-        # If user didnt enter Gamertag, check if theyve set one
+        # If user didn't enter Gamertag, check if they've set one
         if not gamertag:
             gamertag = await self.pull_user(ctx)
             if not gamertag:
@@ -339,7 +341,7 @@ class XTools(commands.Cog):
     @commands.command(name="xprofile")
     async def get_profile(self, ctx, *, gamertag: str = None):
         """View your Xbox profile"""
-        # If user didnt enter Gamertag, check if theyve set one
+        # If user didn't enter Gamertag, check if they've set one
         if not gamertag:
             gamertag = await self.pull_user(ctx)
             if not gamertag:
@@ -604,28 +606,22 @@ class XTools(commands.Cog):
 
                 search_con = DEFAULT_CONTROLS.copy()
                 search_con["\N{LEFT-POINTING MAGNIFYING GLASS}"] = self.searching
-                await menu(ctx, pages, search_con, search=True)
+                await menu(ctx, pages, search_con)
 
-    async def searching(self,
-                        ctx: commands.Context,
-                        pages: list,
-                        controls: dict,
-                        msg: discord.Message,
-                        page: int,
-                        timeout: float,
-                        emoji: str
-                        ):
+    async def searching(self, instance, interaction):
+        ctx = instance.ctx
         data = self.cache[str(ctx.author.id)]
         embed = discord.Embed(
             description="Type in a Gamertag to search",
             color=discord.Color.random()
         )
         embed.set_footer(text='Reply "cancel" to close the menu')
-        await msg.edit(embed=embed)
-        try:
-            await msg.clear_reactions()
-        except discord.Forbidden:
-            pass
+        await instance.respond_embed(interaction, embed)
+        msg = interaction.message
+        if DPY2:
+            await msg.edit(view=None)
+        else:
+            await msg.edit(components=[])
 
         # Check if reply is from author
         def mcheck(message: discord.Message):
@@ -642,8 +638,6 @@ class XTools(commands.Cog):
             if reply.content.lower() in player["gamertag"].lower():
                 players.append(player["gamertag"])
         if len(players) == 0:
-            if DPY2:
-                await msg.edit(view=None)
             return await msg.edit(embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list."))
 
         elif len(players) > 1:
