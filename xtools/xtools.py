@@ -23,9 +23,11 @@ from .formatter import (profile,
 
 if discord.__version__ > "1.7.3":
     from .dpymenu import menu, DEFAULT_CONTROLS
+
     DPY2 = True
 else:
     from .dislashmenu import menu, DEFAULT_CONTROLS
+
     DPY2 = False
 
 REDIRECT_URI = "http://localhost/auth/callback"
