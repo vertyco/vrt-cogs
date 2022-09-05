@@ -23,12 +23,11 @@ from .formatter import (
 from .generator import Generator
 
 if discord.__version__ > "1.7.3":
-    from .bmenu import menu
+    from .dpymenu import menu, DEFAULT_CONTROLS
 
-    DEFAULT_CONTROLS = None
     DPY2 = True
 else:
-    from .menu import menu, DEFAULT_CONTROLS
+    from .dislashmenu import menu, DEFAULT_CONTROLS
 
     DPY2 = False
 
@@ -38,7 +37,6 @@ _ = Translator("LevelUp", __file__)
 
 @cog_i18n(_)
 class UserCommands(commands.Cog):
-
     # Generate level up image
     async def gen_levelup_img(self, args: dict):
         task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
