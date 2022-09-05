@@ -7,6 +7,7 @@ from discord.ext.commands.cooldowns import BucketType
 from redbot.core import commands, bank
 from redbot.core.commands import parse_timedelta
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_list,
@@ -69,6 +70,7 @@ class EconomyTrackCommands(MixinMeta):
         timezones = humanize_list(tzs)
         command = f"`{ctx.prefix}ecotrack timezone US/Eastern`"
         text = _(f"Use one of these timezones with this command\n") + _("Example: ") + command
+        embeds = []
         if not timezone:
             embed = discord.Embed(
                 title=_("Valid Timezones"),
@@ -77,9 +79,8 @@ class EconomyTrackCommands(MixinMeta):
             )
             await ctx.send(embed=embed)
             for p in pagify(timezones):
-                await ctx.send(embed=discord.Embed(description=box(p)))
-            return
-        if timezone not in tzs:
+                embeds.append(discord.Embed(description=box(p)))
+        elif timezone not in tzs:
             embed = discord.Embed(
                 title=_("Invalid Timezone!"),
                 description=text,
@@ -87,8 +88,11 @@ class EconomyTrackCommands(MixinMeta):
             )
             await ctx.send(embed=embed)
             for p in pagify(timezones):
-                await ctx.send(embed=discord.Embed(description=box(p)))
-            return
+                embeds.append(discord.Embed(description=box(p)))
+
+        if embeds:
+            return await menu(ctx, embeds, DEFAULT_CONTROLS)
+
         await self.config.guild(ctx.guild).timezone.set(timezone)
         await ctx.tick()
 
