@@ -50,7 +50,7 @@ else:
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.4.33"
+    __version__ = "1.5.33"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -72,6 +72,9 @@ class LevelUp(UserCommands, commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
+        if not DPY2:
+            from dislash import InteractionClient
+            InteractionClient(bot)
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         default_guild = {
             "users": {},  # All user level data
@@ -1538,7 +1541,7 @@ class LevelUp(UserCommands, commands.Cog):
     async def ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """
         Add/Remove a channel in the ignore list
-        Channels in the ignore list dont gain XP
+        Channels in the ignore list don't gain XP
 
         Use the command with a channel already in the ignore list to remove it
         """
@@ -1555,7 +1558,7 @@ class LevelUp(UserCommands, commands.Cog):
     async def ignore_role(self, ctx: commands.Context, role: discord.Role):
         """
         Add/Remove a role from the ignore list
-        Roles in the ignore list dont gain XP
+        Roles in the ignore list don't gain XP
 
         Use the command with a role already in the ignore list to remove it
         """
@@ -1572,7 +1575,7 @@ class LevelUp(UserCommands, commands.Cog):
     async def ignore_member(self, ctx: commands.Context, member: discord.Member):
         """
         Add/Remove a member from the ignore list
-        Members in the ignore list dont gain XP
+        Members in the ignore list don't gain XP
 
         Use the command with a member already in the ignore list to remove them
         """
