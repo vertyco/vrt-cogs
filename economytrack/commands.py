@@ -30,7 +30,7 @@ class EconomyTrackCommands(MixinMeta):
     @economytrack.command()
     @commands.guildowner()
     async def toggle(self, ctx: commands.Context):
-        """Enable/Disable economy tracking for a server"""
+        """Enable/Disable economy tracking for this server"""
         async with self.config.guild(ctx.guild).all() as conf:
             if conf["enabled"]:
                 conf["enabled"] = False
