@@ -33,11 +33,11 @@ _ = Translator("VrtUtils", __file__)
 log = logging.getLogger("red.vrt.vrtutils")
 dpy = discord.__version__
 if dpy > "1.7.4":
+    from .dpymenu import menu, DEFAULT_CONTROLS, confirm
     DPY2 = True
-    from .bmenu import menu, DEFAULT_CONTROLS, confirm
 else:
+    from .dislashmenu import menu, DEFAULT_CONTROLS, confirm
     DPY2 = False
-    from .menu import menu, DEFAULT_CONTROLS, confirm
 
 
 async def wait_reply(ctx: commands.Context, timeout: int = 60):
@@ -74,6 +74,9 @@ class VrtUtils(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
+        if not DPY2:
+            from dislash import InteractionClient
+            InteractionClient(bot)
         self.path = cog_data_path(self)
         self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vrt_utils")
 
