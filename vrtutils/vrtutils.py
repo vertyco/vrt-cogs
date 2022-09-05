@@ -34,9 +34,11 @@ log = logging.getLogger("red.vrt.vrtutils")
 dpy = discord.__version__
 if dpy > "1.7.4":
     from .dpymenu import menu, DEFAULT_CONTROLS, confirm
+
     DPY2 = True
 else:
     from .dislashmenu import menu, DEFAULT_CONTROLS, confirm
+
     DPY2 = False
 
 
