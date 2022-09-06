@@ -447,15 +447,11 @@ class UserCommands(commands.Cog):
         # First add new prestige role
         if current_level >= required_level:
             if pending_prestige in prestige_data:
-                role = prestige_data["role"]
-                rid = role
-                emoji = prestige_data["emoji"]
-                if perms:
-                    role = ctx.guild.get_role(role)
-                    if role:
-                        await ctx.author.add_roles(role)
-                    else:
-                        log.warning(f"Prestige {pending_prestige} role ID: {rid} no longer exists!")
+                role_id = prestige_data[pending_prestige]["role"]
+                role = ctx.guild.get_role(role_id) if role_id else None
+                emoji = prestige_data[pending_prestige]["emoji"]
+                if perms and role:
+                    await ctx.author.add_roles(role)
                 self.data[ctx.guild.id]["users"][user_id]["prestige"] = pending_prestige
                 self.data[ctx.guild.id]["users"][user_id]["emoji"] = emoji
                 self.data[ctx.guild.id]["users"][user_id]["level"] = 1
@@ -473,7 +469,7 @@ class UserCommands(commands.Cog):
             return await ctx.send(embed=embed)
 
         # Then remove old prestige role if autoremove is toggled
-        if prestige > 0 and conf["stackprestigeroles"]:
+        if prestige > 0 and not conf["stackprestigeroles"]:
             if str(prestige) in prestige_data:
                 role_id = prestige_data[str(prestige)]["role"]
                 role = ctx.guild.get_role(role_id)

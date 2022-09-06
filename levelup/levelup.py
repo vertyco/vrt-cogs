@@ -50,7 +50,7 @@ else:
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.5.33"
+    __version__ = "1.5.34"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1479,6 +1479,18 @@ class LevelUp(UserCommands, commands.Cog):
         """
         self.data[ctx.guild.id]["prestige"] = level
         await ctx.tick()
+        await self.save_cache(ctx.guild)
+
+    @prestige_settings.command(name="autoremove")
+    async def toggle_prestige_autoremove(self, ctx: commands.Context):
+        """Automatic removal of previous prestige level roles"""
+        autoremove = self.data[ctx.guild.id]["stackprestigeroles"]
+        if autoremove:
+            self.data[ctx.guild.id]["stackprestigeroles"] = False
+            await ctx.send(_("Automatic prestige role removal **Disabled**"))
+        else:
+            self.data[ctx.guild.id]["stackprestigeroles"] = True
+            await ctx.send(_("Automatic prestige role removal **Enabled**"))
         await self.save_cache(ctx.guild)
 
     @prestige_settings.command(name="add")
