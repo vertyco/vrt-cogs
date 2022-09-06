@@ -1497,7 +1497,7 @@ class LevelUp(UserCommands, commands.Cog):
     async def add_pres_data(
             self,
             ctx: commands.Context,
-            prestige_level: int,
+            prestige_level: str,
             role: discord.Role,
             emoji: str
     ):

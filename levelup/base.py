@@ -452,10 +452,15 @@ class UserCommands(commands.Cog):
                 emoji = prestige_data[pending_prestige]["emoji"]
                 if perms and role:
                     await ctx.author.add_roles(role)
-                self.data[ctx.guild.id]["users"][user_id]["prestige"] = pending_prestige
+                self.data[ctx.guild.id]["users"][user_id]["prestige"] = int(pending_prestige)
                 self.data[ctx.guild.id]["users"][user_id]["emoji"] = emoji
                 self.data[ctx.guild.id]["users"][user_id]["level"] = 1
                 self.data[ctx.guild.id]["users"][user_id]["xp"] = 0
+                embed = discord.Embed(
+                    description=f"You have reached Prestige {pending_prestige}!",
+                    color=ctx.author.color
+                )
+                await ctx.send(embed=embed)
             else:
                 return await ctx.send(_(f"Prestige level {pending_prestige} has not been set yet!"))
         else:

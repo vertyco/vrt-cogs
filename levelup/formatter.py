@@ -92,7 +92,7 @@ async def get_user_position(conf: dict, user_id: str) -> dict:
     user_xp = 0
     for user, data in conf["users"].items():
         xp = int(data["xp"])
-        prestige = data["prestige"]
+        prestige = int(data["prestige"])
         if prestige:
             add_xp = get_xp(prestige_req, base, exp)
             xp = int(xp + (prestige * add_xp))
