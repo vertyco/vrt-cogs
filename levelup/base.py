@@ -442,7 +442,7 @@ class UserCommands(commands.Cog):
             return await ctx.send(_("No information available for you yet!"))
         user = users[user_id]
         current_level = user["level"]
-        prestige = user["prestige"]
+        prestige = int(user["prestige"])
         pending_prestige = str(prestige + 1)
         # First add new prestige role
         if current_level >= required_level:
