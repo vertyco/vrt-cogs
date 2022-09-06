@@ -238,11 +238,8 @@ class LevelUp(UserCommands, commands.Cog):
         # Check if guild is in the master ignore list
         if str(message.guild.id) in self.ignored_guilds:
             return
-        # Check whether the cog isn't disabled
+        # Check if cog is disabled
         if await self.bot.cog_disabled_in_guild(self, message.guild):
-            return
-        # Check whether the channel isn't on the ignore list
-        if not await self.bot.ignored_channel_or_guild(message):
             return
         # Check whether the message author isn't on allowlist/blocklist
         if not await self.bot.allowed_by_whitelist_blacklist(message.author):
