@@ -134,18 +134,15 @@ class SupportButton(discord.ui.Button):
         user_can_close = conf["user_can_close"]
         logchannel = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
         uid = str(user.id)
-        if uid in opened:
-            if max_tickets <= len(opened[uid]):
-                em = discord.Embed(description=_("You have the maximum amount of tickets opened already!"),
-                                   color=user.color)
-                await interaction.response.send_message(embed=em, ephemeral=True)
-                return
+        if uid in opened and max_tickets <= len(opened[uid]):
+            em = discord.Embed(description=_("You have the maximum amount of tickets opened already!"),
+                               color=user.color)
+            return await interaction.response.send_message(embed=em, ephemeral=True)
         category = guild.get_channel(panel["category_id"]) if panel["category_id"] else None
         if not category:
             em = discord.Embed(description=_(f"The category for this support panel cannot be found!\n"
                                              f"please contact an admin!"), color=discord.Color.red())
-            await interaction.response.send_message(embed=em, ephemeral=True)
-            return
+            return await interaction.response.send_message(embed=em, ephemeral=True)
         can_read = discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True)
         read_and_manage = discord.PermissionOverwrite(read_messages=True, send_messages=True, manage_channels=True)
         support = [

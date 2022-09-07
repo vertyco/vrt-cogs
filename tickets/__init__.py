@@ -12,5 +12,3 @@ with open(Path(__file__).parent / "info.json") as fp:
 async def setup(bot: Red):
     cog = Tickets(bot)
     await bot.add_cog(cog)
-    await cog.initialize()
-    await cog.cleanup()
