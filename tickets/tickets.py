@@ -21,7 +21,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     Support ticket system with multi-panel functionality
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -94,7 +94,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                     continue
                 if not panel["channel_id"]:
                     continue
-                chan = self.bot.get_channel(panel["channel_id"])
+                chan = guild.get_channel(panel["channel_id"])
                 if not chan:
                     continue
                 if not panel["message_id"]:
@@ -182,6 +182,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     @auto_close.before_loop
     async def before_auto_close(self):
         await self.bot.wait_until_red_ready()
+        await self.initialize()
         await asyncio.sleep(30)
 
     # Will automatically close/cleanup any tickets if a member leaves that has an open ticket
