@@ -251,6 +251,9 @@ class LevelUp(UserCommands, commands.Cog):
         for guild in self.bot.guilds:
             gid = guild.id
             data = await self.config.guild(guild).all()
+            cleaned, newdata = self.cleanup(data)
+            if cleaned:
+                data = newdata
             if gid not in self.data:
                 self.data[gid] = data
                 self.stars[gid] = {}
@@ -258,6 +261,16 @@ class LevelUp(UserCommands, commands.Cog):
                 self.lastmsg[gid] = {}
         log.info("Settings initialized to cache")
         self.first_run = False
+
+    @staticmethod
+    def cleanup(data: dict) -> tuple:
+        cleaned = False
+        for uid, info in data["users"].items():
+            for k, v in info.items():
+                if isinstance(v, str) and k not in ["background", "emoji", "colors"]:
+                    cleaned = True
+                    info[k] = int(v)
+        return cleaned, data
 
     async def save_cache(self, target_guild: discord.guild = None):
         cache = self.data.copy()
