@@ -96,7 +96,9 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                     continue
                 chan = guild.get_channel(panel["channel_id"])
                 if not chan:
-                    continue
+                    chan = self.bot.get_channel(panel["channel_id"])
+                    if not chan:
+                        continue
                 if not panel["message_id"]:
                     continue
                 try:
