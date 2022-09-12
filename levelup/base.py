@@ -272,7 +272,7 @@ class UserCommands(commands.Cog):
             await ctx.send(_("Your background has been removed since you did not specify a url!"))
 
     @commands.command(name="pf")
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""

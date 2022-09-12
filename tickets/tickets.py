@@ -21,7 +21,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     Support ticket system with multi-panel functionality
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.3"
+    __version__ = "1.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -77,15 +77,14 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     def cog_unload(self):
         self.auto_close.cancel()
 
-    async def initialize(self, guild: discord.Guild = None):
+    async def initialize(self, target_guild: discord.Guild = None):
         conf = await self.config.all_guilds()
         for gid, data in conf.items():
             if not data:
                 continue
-            if guild and guild.id != gid:
+            if target_guild and target_guild.id != int(gid):
                 continue
-            if not guild:
-                guild = self.bot.get_guild(gid)
+            guild = self.bot.get_guild(int(gid))
             if not guild:
                 continue
             panels = data["panels"]
