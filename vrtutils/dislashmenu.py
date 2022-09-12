@@ -14,6 +14,8 @@ from redbot.core import commands
 color_map = {
     "\N{CROSS MARK}": ButtonStyle.grey,
     "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}": ButtonStyle.red,
+    "\N{WASTEBASKET}\N{VARIATION SELECTOR-16}": ButtonStyle.red,
+    "\N{CHAINS}\N{VARIATION SELECTOR-16}": ButtonStyle.success
 }
 
 

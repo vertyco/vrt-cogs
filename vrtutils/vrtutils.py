@@ -64,7 +64,7 @@ class VrtUtils(commands.Cog):
     Random utility commands
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.3"
+    __version__ = "1.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -560,7 +560,7 @@ class VrtUtils(commands.Cog):
                    f"`Streaming: `{streaming}\n"
 
             em = discord.Embed(
-                title=f"{guild.name}--{guild.id}",
+                title=f"{guild.name} -- {guild.id}",
                 description=desc,
                 color=ctx.author.color
             )
@@ -604,19 +604,11 @@ class VrtUtils(commands.Cog):
         controls["\N{CHAINS}\N{VARIATION SELECTOR-16}"] = self.get_invite
         await menu(ctx, embeds, controls)
 
-    async def leave_guild(
-            self,
-            ctx: commands.Context,
-            pages: list,
-            controls: dict,
-            message: discord.Message,
-            page: int,
-            timeout: float
-    ):
-        data = pages[page].title.split("--")
+    async def leave_guild(self, instance, interaction):
+        ctx = instance.ctx
+        data = instance.pages[instance.page].title.split("--")
         guildname = data[0].strip()
         guildid = data[1].strip()
-
         msg = await ctx.send(f"Are you sure you want me to leave **{guildname}**?")
         yes = await confirm(ctx, msg)
         await msg.delete()
@@ -625,21 +617,14 @@ class VrtUtils(commands.Cog):
         if yes:
             guild = self.bot.get_guild(int(guildid))
             await guild.leave()
-            await ctx.send(f"I have left **{guildname}**")
+            await instance.respond(interaction, f"I have left **{guildname}**")
         else:
-            await ctx.send(f"Not leaving **{guildname}**")
-        await menu(ctx, pages, controls, message, page, timeout)
+            await instance.respond(interaction, f"Not leaving **{guildname}**")
+        await menu(ctx, instance.pages, instance.controls, instance.message, instance.page, instance.timeout)
 
-    async def get_invite(
-            self,
-            ctx: commands.Context,
-            pages: list,
-            controls: dict,
-            message: discord.Message,
-            page: int,
-            timeout: float
-    ):
-        data = pages[page].title.split("--")
+    async def get_invite(self, instance, interaction):
+        ctx = instance.ctx
+        data = instance.pages[instance.page].title.split("--")
         guildid = data[1].strip()
         guild = self.bot.get_guild(int(guildid))
         invite = None
@@ -679,10 +664,10 @@ class VrtUtils(commands.Cog):
             except discord.HTTPException:
                 pass
         if invite:
-            await ctx.send(str(invite))
+            await instance.respond(interaction, str(invite))
         else:
-            await ctx.send("I could not get an invite for that server!")
-        await menu(ctx, pages, controls, message, page, timeout)
+            await instance.respond(interaction, "I could not get an invite for that server!")
+        await menu(ctx, instance.pages, instance.controls, instance.message, instance.page, instance.timeout)
 
     @commands.command()
     @commands.guildowner()
