@@ -201,6 +201,11 @@ class SupportButton(discord.ui.Button):
                 em.set_thumbnail(url=user.avatar.url)
             msg = await channel.send(user.mention, embed=em)
 
+        em = discord.Embed(description=_(f"Your ticket channel has been created!\n"
+                                         f"**[Click Here]({msg.jump_url})** to jump to it."),
+                           color=user.color)
+        await interaction.response.send_message(embed=em, ephemeral=True)
+
         if logchannel:
             ts = int(now.timestamp())
             em = discord.Embed(
@@ -226,11 +231,6 @@ class SupportButton(discord.ui.Button):
                 "pfp": str(user.avatar.url) if user.avatar else None,
                 "logmsg": log_message.id if log_message else None
             }
-
-        em = discord.Embed(description=_(f"Your ticket channel has been created!\n"
-                                         f"**[Click Here]({msg.jump_url})** to jump to it."),
-                           color=user.color)
-        await interaction.response.send_message(embed=em, ephemeral=True)
 
 
 class SupportView(discord.ui.View):

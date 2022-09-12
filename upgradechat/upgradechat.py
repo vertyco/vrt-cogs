@@ -14,7 +14,7 @@ class UpgradeChat(commands.Cog):
     https://upgrade.chat/
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -181,7 +181,7 @@ class UpgradeChat(commands.Cog):
             if status != 200:
                 return await ctx.send("I could not find any users associated with your ID!")
             if not purchases:
-                return await ctx.send("I could not find purchases for your account!")
+                return await ctx.send("I could not find any purchases for your account!")
 
             products = conf["products"]
             users = conf["users"]
