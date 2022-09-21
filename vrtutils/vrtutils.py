@@ -64,7 +64,7 @@ class VrtUtils(commands.Cog):
     Random utility commands
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.4"
+    __version__ = "1.0.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -78,7 +78,7 @@ class VrtUtils(commands.Cog):
         self.bot = bot
         if not DPY2:
             from dislash import InteractionClient
-            InteractionClient(bot)
+            InteractionClient(bot, sync_commands=False)
         self.path = cog_data_path(self)
         self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vrt_utils")
 
@@ -238,6 +238,14 @@ class VrtUtils(commands.Cog):
                 results[f"write{stage + 1}"] = "Running..."
                 results[f"read{stage + 1}"] = "Running..."
             await asyncio.sleep(1)
+
+    # @commands.command()
+    # async def latency(self, ctx):
+    #     """Check the bots latency"""
+    #     try:
+    #         socket_latency = round(self.bot.latency * 1000)
+    #     except OverflowError:
+    #         return await ctx.send("Bot is up but missed had connection issues the last few seconds.")
 
     @commands.command()
     @commands.is_owner()
