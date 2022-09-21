@@ -22,8 +22,7 @@
     "pillow==9.2.0",
     "validators",
     "tabulate",
-    "colorgram.py",
-    "dislash.py"
+    "colorgram.py"
   ],
   "short": "Leveling System",
   "tags": [

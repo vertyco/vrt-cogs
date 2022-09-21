@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-# import datetime
 import io
 import json
 import logging
@@ -72,9 +71,6 @@ class LevelUp(UserCommands, commands.Cog):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        if not DPY2:
-            from dislash import InteractionClient
-            InteractionClient(bot)
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         default_guild = {
             "users": {},  # All user level data
@@ -365,10 +361,8 @@ class LevelUp(UserCommands, commands.Cog):
 
         else:
             # Generate LevelUP Image
-            if bg:
-                banner = bg
-            else:
-                banner = await self.get_banner(member)
+            banner = bg if bg else await self.get_banner(member)
+
             color = str(member.colour)
             if color == "#000000":  # Don't use default color
                 color = str(discord.Color.random())
@@ -379,9 +373,11 @@ class LevelUp(UserCommands, commands.Cog):
                 'level': new_level,
                 'color': color,
             }
+            file = await self.gen_levelup_img(args)
             if dm:
-                file = await self.gen_levelup_img(args)
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
+
+            else:
                 if channel and can_send and can_send_attachments:
                     if mention:
                         await channel.send(_(f"**{mentionuser} just leveled up!**"), file=file)
