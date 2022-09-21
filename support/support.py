@@ -75,7 +75,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         self.check_listener.start()
         self.auto_close.start()
         # Dislash monkeypatch
-        self.inter_client = InteractionClient(bot)
+        InteractionClient(bot, sync_commands=False)
 
         self.valid = []  # Valid tickets that owner has typed in(so don't auto-close)
 
@@ -233,7 +233,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
                 asyncio.create_task(self.listen(message), name=str(guild.id))
             return
-        can_read = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        can_read = discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True)
         read_and_manage = discord.PermissionOverwrite(
             read_messages=True, send_messages=True, manage_channels=True, manage_permissions=True
         )
