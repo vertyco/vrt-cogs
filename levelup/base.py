@@ -24,11 +24,10 @@ from .generator import Generator
 
 if discord.__version__ > "1.7.3":
     from .dpymenu import menu, DEFAULT_CONTROLS
-
     DPY2 = True
 else:
-    from .dislashmenu import menu, DEFAULT_CONTROLS
-
+    # from .dislashmenu import menu, DEFAULT_CONTROLS
+    from .menus import menu, DEFAULT_CONTROLS
     DPY2 = False
 
 log = logging.getLogger("red.vrt.levelup.commands")
@@ -98,6 +97,8 @@ class UserCommands(commands.Cog):
         user_id = str(user.id)
         star_giver = str(ctx.author.id)
         guild_id = ctx.guild.id
+        if guild_id not in self.data:
+            return await ctx.send(_("Cache not loaded yet, wait a few more seconds."))
         if ctx.author == user:
             return await ctx.send(_("You can't give stars to yourself!"))
         if user.bot:
@@ -151,6 +152,12 @@ class UserCommands(commands.Cog):
         img.seek(0)
         file = discord.File(img)
         await ctx.send(file=file)
+
+    @commands.command(name="lvltest", hidden=True)
+    @commands.is_owner()
+    async def test_pf_gen(self, ctx):
+        Generator().image_test()
+
 
     @commands.group(name="myprofile", aliases=["mypf", "pfset"])
     @commands.guild_only()
@@ -272,11 +279,13 @@ class UserCommands(commands.Cog):
             await ctx.send(_("Your background has been removed since you did not specify a url!"))
 
     @commands.command(name="pf")
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    # @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
         can_send_attachments = ctx.channel.permissions_for(ctx.guild.me).attach_files
+        if ctx.guild.id not in self.data:
+            await self.initialize()
         conf = self.data[ctx.guild.id]
         usepics = conf["usepics"]
         if usepics and not can_send_attachments:
@@ -386,7 +395,8 @@ class UserCommands(commands.Cog):
                 if user_id in self.profiles:
                     last = self.profiles[user_id]["last"]
                     td = (now - last).total_seconds()
-                    if td > 300:
+                    # if td > 300:
+                    if td > 1:
                         file_obj = await self.gen_profile_img(args)
                         self.profiles[user_id]["file"] = file_obj
                         self.profiles[user_id]["last"] = now
