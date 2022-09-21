@@ -40,7 +40,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.7.13"
+    __version__ = "3.7.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -58,7 +58,7 @@ class XTools(commands.Cog):
         self.bot = bot
         if not DPY2:
             from dislash import InteractionClient
-            InteractionClient(bot)
+            InteractionClient(bot, sync_commands=False)
         self.session = aiohttp.ClientSession()
         self.config = Config.get_conf(self, 117117117117, force_registration=True)
         default_global = {
