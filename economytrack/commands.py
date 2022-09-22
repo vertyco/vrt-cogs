@@ -7,7 +7,6 @@ from discord.ext.commands.cooldowns import BucketType
 from redbot.core import commands, bank
 from redbot.core.commands import parse_timedelta
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_list,
@@ -15,6 +14,7 @@ from redbot.core.utils.chat_formatting import (
     humanize_timedelta,
     pagify,
 )
+from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
 from economytrack.abc import MixinMeta
 
