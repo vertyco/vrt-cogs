@@ -250,18 +250,23 @@ class LevelUp(UserCommands, commands.Cog):
 
     async def initialize(self):
         self.ignored_guilds = await self.config.ignored_guilds()
+        allclean = []
         for guild in self.bot.guilds:
             gid = guild.id
             data = await self.config.guild(guild).all()
             cleaned, newdata = self.cleanup(data.copy())
             if cleaned:
                 data = newdata
+                allclean = allclean.extend(cleaned)
                 log.info(f"Cleaned up {guild.name} config")
             if gid not in self.data:
                 self.data[gid] = data
                 self.stars[gid] = {}
                 self.voice[gid] = {}
                 self.lastmsg[gid] = {}
+        allclean = set(allclean)
+        if allclean and self.first_run:
+            log.info(allclean)
         self.first_run = False
 
     @staticmethod
@@ -877,16 +882,13 @@ class LevelUp(UserCommands, commands.Cog):
         if not all([key.isdigit() for key in config.keys()]):
             return await ctx.send(_("This is an invalid global config!"))
 
-        allclean = []
         for gid, data in config.items():
             cleaned, newdata = self.cleanup(data.copy())
             if cleaned:
                 data = newdata
-                allclean = allclean.extend(cleaned)
+
             self.data[int(gid)] = data
-        allclean = set(allclean)
-        if allclean:
-            log.info(allclean)
+
         await self.save_cache()
         await ctx.send(_("Config restored from backup file!"))
 
