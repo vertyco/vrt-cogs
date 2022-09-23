@@ -313,14 +313,14 @@ class LevelUp(UserCommands, commands.Cog):
                 if t not in cleaned:
                     cleaned.append(t)
                 info["colors"]["levelbar"] = None
-            prestige = str(info["prestige"])
-            if prestige not in data["prestigedata"]:
+            prestige = str(info["prestige"]) if info["prestige"] else None
+            if prestige and prestige not in data["prestigedata"]:
                 t = "prestige no longer exists"
                 if t not in cleaned:
                     cleaned.append(t)
                 info["emoji"] = None
                 info["prestige"] = 0
-            if info["emoji"] is not None:
+            if info["emoji"] is not None and prestige:
                 emoji = pdata[prestige]["emoji"]
                 if isinstance(emoji, str):
                     t = "emoji str instead of dict"
