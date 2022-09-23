@@ -17,7 +17,7 @@ import tabulate
 from discord.ext import tasks
 from redbot.core import commands, Config
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, humanize_number
 
 from .base import UserCommands
 from .formatter import (
@@ -33,11 +33,7 @@ plt.switch_backend("agg")
 log = logging.getLogger("red.vrt.levelup")
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 _ = Translator("LevelUp", __file__)
-
-if discord.__version__ > "1.7.3":
-    DPY2 = True
-else:
-    DPY2 = False
+DPY2 = True if discord.__version__ > "1.7.3" else False
 
 
 # CREDITS
@@ -101,18 +97,21 @@ class LevelUp(UserCommands, commands.Cog):
             "mention": False,  # Toggle whether to mention the user
             "notifylog": None,  # Notify member of level up in a set channel
         }
-        default_global = {"ignored_guilds": []}
+        default_global = {"ignored_guilds": [], "cache_seconds": 15}
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
 
         # Main cache
         self.data = {}
 
+        # Global conf cache
+        self.ignored_guilds = []
+        self.cache_seconds = 15
+
         # Guild id's as strings, user id's as strings
         self.lastmsg = {}  # Last sent message for users
         self.voice = {}  # Voice channel info
         self.stars = {}  # Keep track of star cooldowns
-        self.ignored_guilds = []
         self.first_run = True
         self.profiles = {}
 
@@ -250,6 +249,7 @@ class LevelUp(UserCommands, commands.Cog):
 
     async def initialize(self):
         self.ignored_guilds = await self.config.ignored_guilds()
+        self.cache_seconds = await self.config.cache_seconds()
         allclean = []
         for guild in self.bot.guilds:
             gid = guild.id
@@ -927,17 +927,23 @@ class LevelUp(UserCommands, commands.Cog):
     async def get_cache_size(self, ctx: commands.Context):
         """See how much RAM this cog's cache is using"""
         main = sys.getsizeof(self.data)
+        msize = 0
+        for conf in self.data.copy().values():
+            msize += len(conf["users"].keys())
         voice = sys.getsizeof(self.voice)
         stars = sys.getsizeof(self.stars)
         profile = sys.getsizeof(self.profiles)
 
+        cache_sec = self.cache_seconds
+
         total = sum([main, voice, stars, profile])
 
-        text = f"`Main:     `{self.get_size(main)}\n" \
-               f"`Voice:    `{self.get_size(voice)}\n" \
-               f"`Stars:    `{self.get_size(stars)}\n" \
-               f"`Profiles: `{self.get_size(profile)}\n" \
-               f"`Total:    `{self.get_size(total)}"
+        text = f"`Main:      `{self.get_size(main)} ({humanize_number(msize)} users)\n" \
+               f"`Voice:     `{self.get_size(voice)}\n" \
+               f"`Stars:     `{self.get_size(stars)}\n" \
+               f"`Profiles:  `{self.get_size(profile)}\n" \
+               f"`Total:     `{self.get_size(total)}\n\n" \
+               f"`CacheTime: `{cache_sec} seconds"
 
         em = discord.Embed(title=f"LevelUp {_('Cache')}", description=_(text), color=ctx.author.color)
         await ctx.send(embed=em)
