@@ -257,14 +257,15 @@ class LevelUp(UserCommands, commands.Cog):
             cleaned, newdata = self.cleanup(data.copy())
             if cleaned:
                 data = newdata
-                allclean = allclean.extend(cleaned)
+                for i in cleaned:
+                    if i not in allclean:
+                        allclean.append(i)
                 log.info(f"Cleaned up {guild.name} config")
             if gid not in self.data:
                 self.data[gid] = data
                 self.stars[gid] = {}
                 self.voice[gid] = {}
                 self.lastmsg[gid] = {}
-        allclean = set(allclean)
         if allclean and self.first_run:
             log.info(allclean)
         self.first_run = False
