@@ -3,6 +3,7 @@ import os
 import random
 from io import BytesIO
 from math import sqrt
+from typing import Union
 
 import colorgram
 import requests
@@ -32,36 +33,6 @@ class Generator:
         }
 
         self.font1 = os.path.join(bundled_data_path(self), 'font.ttf')
-
-    @staticmethod
-    def force_aspect_ratio(image: Image, aspect_ratio: tuple = ASPECT_RATIO) -> Image:
-        x, y = aspect_ratio
-        w, h = image.size
-        new_res = []
-        for i in range(1, 10000):
-            nw = i * x
-            nh = i * y
-            if not new_res:
-                new_res = [nw, nh]
-            elif nw <= w and nh <= h:
-                new_res = [nw, nh]
-            else:
-                break
-        x_split = int((w - new_res[0]) / 2)
-        x1 = x_split
-        x2 = w - x_split
-        y_split = int((h - new_res[1]) / 2)
-        y1 = y_split
-        y2 = h - y_split
-        box = (x1, y1, x2, y2)
-        cropped = image.crop(box)
-        return cropped
-
-    def get_random_background(self) -> Image:
-        bg_dir = os.path.join(bundled_data_path(self), "backgrounds")
-        choice = random.choice(os.listdir(bg_dir))
-        bg_file = os.path.join(bg_dir, choice)
-        return Image.open(bg_file)
 
     def generate_profile(
             self,
@@ -95,7 +66,6 @@ class Generator:
             namecolor = self.rand_rgb()
             statcolor = self.rand_rgb()
             lvlbarcolor = self.rand_rgb()
-        outlinecolor = (0, 0, 0)
         text_bg = (0, 0, 0)
 
         # Set canvas
@@ -109,21 +79,33 @@ class Generator:
             card = self.get_random_background()
         card = self.force_aspect_ratio(card).convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
 
-        # Make sure name, level bar and stat color aren't too close to the background color
-        try:
-            bgcolor = self.get_img_color(card)
-        except Exception as e:
-            log.warning(f"Failed to get full profile image color: {e}")
-            bgcolor = base
+        # Coord setup
+        name_y = 50
+        stats_y = 170
+        bar_start = 400
+        bar_end = 980
+        bar_top = 380
+        bar_bottom = 420
+        circle_x = 60
+        circle_y = 75
 
-        while self.distance(namecolor, bgcolor) < 50:
+        # Get sample color for text areas to make sure colors don't blend too much with background
+        # x1, y1, x2, y2
+        namebox = (bar_start, name_y, bar_start + 50, name_y + 50)
+        namesection = self.get_sample_section(card, namebox)
+        namebg = self.get_img_color(namesection)
+        while self.distance(namecolor, namebg) < 200:
             namecolor = self.rand_rgb()
-        while self.distance(statcolor, bgcolor) < 50:
+        statbox = (bar_start, stats_y, bar_start + 400, bar_top)
+        statsection = self.get_sample_section(card, statbox)
+        statbg = self.get_img_color(statsection)
+        while self.distance(statcolor, statbg) < 200:
             statcolor = self.rand_rgb()
-        while self.distance(lvlbarcolor, bgcolor) < 50:
+        lvlbox = (bar_start, bar_top, bar_end, bar_bottom)
+        barsection = self.get_sample_section(card, lvlbox)
+        barbg = self.get_img_color(barsection)
+        while self.distance(lvlbarcolor, barbg) < 200:
             lvlbarcolor = self.rand_rgb()
-        while self.distance(outlinecolor, bgcolor) < 55:
-            outlinecolor = self.rand_rgb()
 
         # get profile pic
         pfp_image = self.get_image_content_from_url(str(profile_image))
@@ -133,9 +115,6 @@ class Generator:
         else:
             profile = Image.open(self.default_pfp)
         profile = profile.convert('RGBA').resize((300, 300), Image.Resampling.LANCZOS)
-
-        circle_x = 60
-        circle_y = 75
 
         # pfp border - draw at 4x and resample down to 1x for nice smooth circles
         circle_img = Image.new("RGBA", (1600, 1600))
@@ -164,34 +143,30 @@ class Generator:
         final = Image.alpha_composite(card, pfp_composite_holder)
 
         # Make the level progress bar
-        progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
+        progress_bar = Image.new("RGBA", (card.size[0] * 4, card.size[1] * 4), (255, 255, 255, 0))
         progress_bar_draw = ImageDraw.Draw(progress_bar)
-
         # Calculate data for level bar
         xpneed = next_xp - current_xp
         xphave = user_xp - current_xp
         xp_ratio = xphave / xpneed
-
-        # Coord setup
-        name_y = 50
-        stats_y = 170
-        bar_start = 400
-        bar_end = 1030
-        bar_top = 380
-        bar_bottom = 420
-
         end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + 400
-
         # Rectangle 0:left x, 1:top y, 2:right x, 3:bottom y
         # Draw level bar outline
-        progress_bar_draw.rectangle(
-            (bar_start, bar_top, bar_end, bar_bottom), fill=(255, 255, 255, 0), outline=lvlbarcolor, width=2
+        progress_bar_draw.rounded_rectangle(
+            (bar_start * 4, bar_top * 4, bar_end * 4, bar_bottom * 4),
+            fill=(255, 255, 255, 0),
+            outline=lvlbarcolor,
+            width=8,
+            radius=90
         )
         # Draw inner level bar 1 pixel smaller on each side
         if end_of_inner_bar > bar_start:
-            progress_bar_draw.rectangle(
-                (bar_start + 2, bar_top + 2, end_of_inner_bar - 2, bar_bottom - 2), fill=lvlbarcolor
+            progress_bar_draw.rounded_rectangle(
+                (bar_start * 4 + 1, bar_top * 4 + 2, end_of_inner_bar * 4 - 1, bar_bottom * 4 - 2),
+                fill=lvlbarcolor,
+                radius=89
             )
+        progress_bar = progress_bar.resize(card.size, Image.Resampling.LANCZOS)
         # Image with level bar and pfp on background
         final = Image.alpha_composite(final, progress_bar)
 
@@ -532,7 +507,7 @@ class Generator:
         return temp
 
     @staticmethod
-    def get_image_content_from_url(url: str):
+    def get_image_content_from_url(url: str) -> Union[bytes, None]:
         try:
             res = requests.get(url)
             return res.content
@@ -541,7 +516,7 @@ class Generator:
             return None
 
     @staticmethod
-    def get_img_color(img: Image) -> tuple:
+    def get_img_color(img: Union[Image.Image, str, bytes]) -> tuple:
         try:
             colors = colorgram.extract(img, 1)
             return colors[0].rgb
@@ -550,7 +525,7 @@ class Generator:
             return 0, 0, 0
 
     @staticmethod
-    def distance(color: tuple, background_color: tuple):
+    def distance(color: tuple, background_color: tuple) -> float:
         # Values
         x1, y1, z1 = color
         x2, y2, z2 = background_color
@@ -561,7 +536,7 @@ class Generator:
         dz = z1 - z2
 
         # Final distance
-        return int(sqrt(dx ** 2 + dy ** 2 + dz ** 2))
+        return sqrt(dx ** 2 + dy ** 2 + dz ** 2)
 
     @staticmethod
     def inv_rgb(rgb: tuple) -> tuple:
@@ -570,7 +545,42 @@ class Generator:
 
     @staticmethod
     def rand_rgb() -> tuple:
-        r = random.randint(1, 256)
-        g = random.randint(1, 256)
-        b = random.randint(1, 256)
+        r = random.randint(0, 256)
+        g = random.randint(0, 256)
+        b = random.randint(0, 256)
         return r, g, b
+
+    @staticmethod
+    def get_sample_section(image: Image, box: tuple) -> Image:
+        # x1, y1, x2, y2
+        return image.crop((box[0], box[1], box[2], box[3]))
+
+    @staticmethod
+    def force_aspect_ratio(image: Image, aspect_ratio: tuple = ASPECT_RATIO) -> Image:
+        x, y = aspect_ratio
+        w, h = image.size
+        new_res = []
+        for i in range(1, 10000):
+            nw = i * x
+            nh = i * y
+            if not new_res:
+                new_res = [nw, nh]
+            elif nw <= w and nh <= h:
+                new_res = [nw, nh]
+            else:
+                break
+        x_split = int((w - new_res[0]) / 2)
+        x1 = x_split
+        x2 = w - x_split
+        y_split = int((h - new_res[1]) / 2)
+        y1 = y_split
+        y2 = h - y_split
+        box = (x1, y1, x2, y2)
+        cropped = image.crop(box)
+        return cropped
+
+    def get_random_background(self) -> Image:
+        bg_dir = os.path.join(bundled_data_path(self), "backgrounds")
+        choice = random.choice(os.listdir(bg_dir))
+        bg_file = os.path.join(bg_dir, choice)
+        return Image.open(bg_file)
