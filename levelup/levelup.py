@@ -296,7 +296,7 @@ class LevelUp(UserCommands, commands.Cog):
                 t = "stars not in playerstats"
                 if t not in cleaned:
                     cleaned.append(t)
-                info["stars"] = None
+                info["stars"] = 0
             for k, v in info.items():
                 if isinstance(v, str) and k not in ["background", "emoji", "colors"]:
                     t = "stat should be int"
