@@ -645,7 +645,7 @@ class LevelUp(UserCommands, commands.Cog):
         #     await self.initialize()
         log.info("Voice checker running")
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=3)
     async def cache_dumper(self):
         t = monotonic()
         await self.save_cache()
