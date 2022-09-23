@@ -481,8 +481,7 @@ class UserCommands(commands.Cog):
                 if user_id in self.profiles:
                     last = self.profiles[user_id]["last"]
                     td = (now - last).total_seconds()
-                    # if td > 300:
-                    if td > 1:
+                    if td > 120:
                         file_obj = await self.gen_profile_img(args, full)
                         self.profiles[user_id]["file"] = file_obj
                         self.profiles[user_id]["last"] = now
