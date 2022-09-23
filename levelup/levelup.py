@@ -312,7 +312,7 @@ class LevelUp(UserCommands, commands.Cog):
                     continue
                 if isinstance(v, int) or isinstance(v, float):
                     continue
-                conf["users"][uid][k] = int(v)
+                conf["users"][uid][k] = int(v) if v is not None else 0
                 cleaned.append(f"{k} stat should be int")
 
             # Check prestige settings
@@ -963,10 +963,15 @@ class LevelUp(UserCommands, commands.Cog):
                f"`Voice:     `{self.get_size(voice)}\n" \
                f"`Stars:     `{self.get_size(stars)}\n" \
                f"`Profiles:  `{self.get_size(profile)}\n" \
-               f"`Total:     `{self.get_size(total)}\n\n" \
-               f"`CacheTime: `{cache_sec} seconds"
+               f"`Total:     `{self.get_size(total)}"
 
         em = discord.Embed(title=f"LevelUp {_('Cache')}", description=_(text), color=ctx.author.color)
+        em.add_field(
+            name=_("Profile Cache Time"),
+            value=_(f"Generated profile images will stay in cache to be reused for {cache_sec} "
+                    f"{'second' if cache_sec == 1 else 'seconds'} "
+                    f"before being re-generated when a user runs the profile command")
+        )
         await ctx.send(embed=em)
 
     @admin_group.command(name="importleveler")
