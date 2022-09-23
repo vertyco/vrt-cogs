@@ -322,7 +322,7 @@ class LevelUp(UserCommands, commands.Cog):
                 info["prestige"] = 0
             if info["emoji"] is not None and prestige:
                 emoji = pdata[prestige]["emoji"]
-                if isinstance(emoji, str):
+                if not isinstance(emoji, dict):
                     t = "emoji str instead of dict"
                     if t not in cleaned:
                         cleaned.append(t)
