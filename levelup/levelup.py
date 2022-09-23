@@ -701,6 +701,7 @@ class LevelUp(UserCommands, commands.Cog):
         notifydm = conf["notifydm"]
         mention = conf["mention"]
         starcooldown = conf["starcooldown"]
+        starmention = conf["starmention"]
         sc = time_formatter(starcooldown)
         notifylog = ctx.guild.get_channel(conf["notifylog"])
         if not notifylog:
@@ -727,7 +728,8 @@ class LevelUp(UserCommands, commands.Cog):
               f"`AutoRemove Roles: `{autoremove}\n" \
               f"`LevelUp Channel:  `{notifylog}\n" \
               f"**Stars**\n" \
-              f"`Cooldown:         `{sc}\n"
+              f"`Cooldown:         `{sc}\n" \
+              f"`React Mention:    `{starmention}\n"
         if levelroles:
             msg += "**Levels**\n"
             for level, role_id in levelroles.items():
@@ -776,7 +778,7 @@ class LevelUp(UserCommands, commands.Cog):
                 else:
                     role = role_id
                 emoji = data["emoji"]
-                msg += f"`Prestige {level}: `{role} - {emoji}\n"
+                msg += f"`Prestige {level}: `{role} - {emoji['str']}\n"
         embed = discord.Embed(
             title="LevelUp Settings",
             description=_(msg),
