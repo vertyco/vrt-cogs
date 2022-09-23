@@ -408,7 +408,7 @@ class UserCommands(commands.Cog):
         emoji = stats["e"]  # Str
         prestige = stats["pr"]  # Int
         bg = stats["bg"]  # Str
-        stars = "{:,}".format(stats["stars"])
+        stars = "{:,}".format(stats["stars"]) if stats["stars"] else 0
 
         if not usepics:
             embed = await profile_embed(
