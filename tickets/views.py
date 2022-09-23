@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Union
+import traceback
 
 import discord
 from redbot.core import commands, Config
@@ -122,7 +123,9 @@ class SupportButton(discord.ui.Button):
         try:
             await self.create_ticket(interaction)
         except Exception as e:
-            log.error(f"Failed to create ticket in {interaction.guild.name}: {e}")
+            log.error(f"Failed to create ticket in {interaction.guild.name}: {e}\n"
+                      f"TRACEBACK\n"
+                      f"{traceback.format_exc()}")
 
     async def create_ticket(self, interaction: discord.Interaction):
         guild = interaction.guild
@@ -154,7 +157,7 @@ class SupportButton(discord.ui.Button):
             user: can_read_send
         }
         for role in support:
-            overwrite[role] = can_read
+            overwrite[role] = can_read_send
         num = conf["panels"][self.panel_name]["ticket_num"]
         now = datetime.now()
         name_fmt = conf["panels"][self.panel_name]["ticket_name"]
