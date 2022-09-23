@@ -391,7 +391,7 @@ class UserCommands(commands.Cog):
         else:
             pfp = user.avatar_url
 
-        role_icon = user.top_role.display_icon
+        role_icon = user.top_role.display_icon if DPY2 else None
         full = users[user_id]["full"]
 
         pos = await get_user_position(conf, user_id)
