@@ -1,6 +1,6 @@
 import math
 import random
-import typing
+from typing import Union
 
 import discord
 from redbot.core.i18n import Translator
@@ -21,7 +21,7 @@ def get_xp(level: int, base: int, exp: int) -> int:
 
 
 # Estimate how much time it would take to reach a certain level based on curent algorithm
-def time_to_level(level: int, base: int, exp: typing.Union[int, float], cooldown: int, xp_range: list) -> int:
+def time_to_level(level: int, base: int, exp: Union[int, float], cooldown: int, xp_range: list) -> int:
     xp_needed = get_xp(level, base, exp)
     xp_obtained = 0
     time_to_reach_level = 0  # Seconds
@@ -163,7 +163,7 @@ async def profile_embed(
         stars: str,
         bal: int,
         currency: str,
-        role_icon: str
+        role_icon: Union[str, None]
 ) -> discord.Embed:
     msg = f"🎖｜Level {level}\n"
     if prestige:
@@ -178,7 +178,10 @@ async def profile_embed(
         color=user.color
     )
     embed.add_field(name=_("Progress"), value=box(lvlbar, lang="python"))
-    embed.set_author(name=f"{user.name}'s {_('Profile')}", icon_url=role_icon)
+    if role_icon:
+        embed.set_author(name=f"{user.name}'s {_('Profile')}", icon_url=role_icon)
+    else:
+        embed.set_author(name=f"{user.name}'s {_('Profile')}")
     if DPY2:
         if user.avatar:
             embed.set_thumbnail(url=user.avatar.url)
