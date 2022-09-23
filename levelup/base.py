@@ -362,7 +362,6 @@ class UserCommands(commands.Cog):
             await ctx.send(_("Your background has been removed since you did not specify a url!"))
 
     @commands.command(name="pf")
-    # @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
@@ -481,7 +480,7 @@ class UserCommands(commands.Cog):
                 if user_id in self.profiles:
                     last = self.profiles[user_id]["last"]
                     td = (now - last).total_seconds()
-                    if td > 120:
+                    if td > 15:
                         file_obj = await self.gen_profile_img(args, full)
                         self.profiles[user_id]["file"] = file_obj
                         self.profiles[user_id]["last"] = now
@@ -520,6 +519,8 @@ class UserCommands(commands.Cog):
         Prestige your rank!
         Once you have reached this servers prestige level requirement, you can
         reset your level and experience to gain a prestige level and any perks associated with it
+
+        If you are over level and xp when you prestige, your xp and levels will carry over
         """
         conf = self.data[ctx.guild.id]
         perms = ctx.channel.permissions_for(ctx.guild.me).manage_roles
@@ -540,28 +541,7 @@ class UserCommands(commands.Cog):
         prestige = int(user["prestige"])
         pending_prestige = str(prestige + 1)
         # First add new prestige role
-        if current_level >= required_level:
-            if pending_prestige in prestige_data:
-                role_id = prestige_data[pending_prestige]["role"]
-                role = ctx.guild.get_role(role_id) if role_id else None
-                emoji = prestige_data[pending_prestige]["emoji"]
-                if perms and role:
-                    try:
-                        await ctx.author.add_roles(role)
-                    except discord.Forbidden:
-                        await ctx.send(_(f"I do not have the proper permissions to assign you the {role.mention} role"))
-                self.data[ctx.guild.id]["users"][user_id]["prestige"] = int(pending_prestige)
-                self.data[ctx.guild.id]["users"][user_id]["emoji"] = emoji
-                self.data[ctx.guild.id]["users"][user_id]["level"] = 1
-                self.data[ctx.guild.id]["users"][user_id]["xp"] = 0
-                embed = discord.Embed(
-                    description=f"You have reached Prestige {pending_prestige}!",
-                    color=ctx.author.color
-                )
-                await ctx.send(embed=embed)
-            else:
-                return await ctx.send(_(f"Prestige level {pending_prestige} has not been set yet!"))
-        else:
+        if current_level < required_level:
             msg = f"**You are not eligible to prestige yet!**\n" \
                   f"`Your level:     `{current_level}\n" \
                   f"`Required Level: `{required_level}"
@@ -570,6 +550,33 @@ class UserCommands(commands.Cog):
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
+
+        if pending_prestige not in prestige_data:
+            return await ctx.send(_(f"Prestige level {pending_prestige} has not been set yet!"))
+
+        role_id = prestige_data[pending_prestige]["role"]
+        role = ctx.guild.get_role(role_id) if role_id else None
+        emoji = prestige_data[pending_prestige]["emoji"]
+        if perms and role:
+            try:
+                await ctx.author.add_roles(role)
+            except discord.Forbidden:
+                await ctx.send(_(f"I do not have the proper permissions to assign you the {role.mention} role"))
+
+        current_xp = user["xp"]
+        xp_at_prestige = get_xp(required_level, conf["base"], conf["exp"])
+        leftover_xp = current_xp - xp_at_prestige if current_xp > xp_at_prestige else 0
+        newlevel = get_level(leftover_xp, conf["base"], conf["exp"]) if leftover_xp > 0 else 1
+
+        self.data[ctx.guild.id]["users"][user_id]["prestige"] = int(pending_prestige)
+        self.data[ctx.guild.id]["users"][user_id]["emoji"] = emoji
+        self.data[ctx.guild.id]["users"][user_id]["level"] = newlevel
+        self.data[ctx.guild.id]["users"][user_id]["xp"] = leftover_xp
+        embed = discord.Embed(
+            description=f"You have reached Prestige {pending_prestige}!",
+            color=ctx.author.color
+        )
+        await ctx.send(embed=embed)
 
         # Then remove old prestige role if autoremove is toggled
         if prestige > 0 and not conf["stackprestigeroles"]:
