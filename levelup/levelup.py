@@ -266,42 +266,60 @@ class LevelUp(UserCommands, commands.Cog):
 
     @staticmethod
     def cleanup(data: dict) -> tuple:
-        cleaned = False
+        cleaned = []
         pdata = data["prestigedata"]
         if pdata:
             for p, dat in pdata.items():
                 if not isinstance(dat["emoji"], dict):
-                    cleaned = True
+                    t = "prestige data"
+                    if t not in cleaned:
+                        cleaned.append(t)
                     dat["emoji"] = {"str": dat["emoji"], "url": None}
         for uid, info in data["users"].items():
             if "full" not in info:
-                cleaned = True
+                t = "full not in playerstats"
+                if t not in cleaned:
+                    cleaned.append(t)
                 info["full"] = True
             if "background" not in info:
-                cleaned = True
+                t = "background not in playerstats"
+                if t not in cleaned:
+                    cleaned.append(t)
                 info["background"] = None
             if "stars" not in info:
-                cleaned = True
+                t = "stars not in playerstats"
+                if t not in cleaned:
+                    cleaned.append(t)
                 info["stars"] = None
             for k, v in info.items():
                 if isinstance(v, str) and k not in ["background", "emoji", "colors"]:
-                    cleaned = True
+                    t = "stat should be int"
+                    if t not in cleaned:
+                        cleaned.append(t)
                     info[k] = int(v)
             if "colors" not in info:
-                cleaned = True
+                t = "colors not in playerstats"
+                if t not in cleaned:
+                    cleaned.append(t)
                 info["colors"] = {"name": None, "stat": None, "levelbar": None}
             if "levelbar" not in info["colors"]:
-                cleaned = True
+                t = "levelbar not in colors"
+                if t not in cleaned:
+                    cleaned.append(t)
                 info["colors"]["levelbar"] = None
             prestige = str(info["prestige"])
             if prestige not in data["prestigedata"]:
-                cleaned = True
+                t = "prestige no longer exists"
+                if t not in cleaned:
+                    cleaned.append(t)
                 info["emoji"] = None
                 info["prestige"] = 0
             if info["emoji"] is not None:
                 emoji = pdata[prestige]["emoji"]
                 if isinstance(emoji, str):
-                    cleaned = True
+                    t = "emoji str instead of dict"
+                    if t not in cleaned:
+                        cleaned.append(t)
                     url = pdata[prestige]["url"]
                     info["emoji"] = {"str": info["emoji"], "url": url}
         return cleaned, data
@@ -859,12 +877,16 @@ class LevelUp(UserCommands, commands.Cog):
         if not all([key.isdigit() for key in config.keys()]):
             return await ctx.send(_("This is an invalid global config!"))
 
+        allclean = []
         for gid, data in config.items():
             cleaned, newdata = self.cleanup(data.copy())
             if cleaned:
                 data = newdata
+                allclean = allclean.extend(cleaned)
             self.data[int(gid)] = data
-
+        allclean = set(allclean)
+        if allclean:
+            log.info(allclean)
         await self.save_cache()
         await ctx.send(_("Config restored from backup file!"))
 
