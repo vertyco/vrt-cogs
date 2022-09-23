@@ -185,7 +185,7 @@ class Generator:
         # Rectangle 0:left x, 1:top y, 2:right x, 3:bottom y
         # Draw level bar outline
         progress_bar_draw.rectangle(
-            (bar_start, bar_top, bar_end, bar_bottom), fill=(255, 255, 255, 0), outline=outlinecolor, width=2
+            (bar_start, bar_top, bar_end, bar_bottom), fill=(255, 255, 255, 0), outline=lvlbarcolor, width=2
         )
         # Draw inner level bar 1 pixel smaller on each side
         if end_of_inner_bar > bar_start:
