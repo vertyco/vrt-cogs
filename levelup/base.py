@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import json
 import logging
 import math
 import traceback
@@ -43,7 +44,7 @@ class UserCommands(commands.Cog):
     async def gen_levelup_img(self, args: dict):
         task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
         try:
-            img = await asyncio.wait_for(task, timeout=30)
+            img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return None
         img.seek(0)
@@ -56,12 +57,11 @@ class UserCommands(commands.Cog):
             task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
         else:
             task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_slim_profile(**args))
+
         try:
-            img = await asyncio.wait_for(task, timeout=30)
+            img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return None
-        # img.seek(0)
-        # file = discord.File(img)
         return img
 
     # Function to test a given URL and see if it's valid
@@ -366,9 +366,10 @@ class UserCommands(commands.Cog):
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
         can_send_attachments = ctx.channel.permissions_for(ctx.guild.me).attach_files
-        if ctx.guild.id not in self.data:
+        gid = ctx.guild.id
+        if gid not in self.data:
             await self.initialize()
-        conf = self.data[ctx.guild.id]
+        conf = self.data[gid]
         usepics = conf["usepics"]
         if usepics and not can_send_attachments:
             return await ctx.send(_("I don't have permission to send attachments to this channel."))
@@ -477,22 +478,32 @@ class UserCommands(commands.Cog):
                 }
 
                 now = datetime.datetime.now()
-                if user_id in self.profiles:
-                    last = self.profiles[user_id]["last"]
-                    td = (now - last).total_seconds()
-                    if td > 15:
-                        file_obj = await self.gen_profile_img(args, full)
-                        self.profiles[user_id]["file"] = file_obj
-                        self.profiles[user_id]["last"] = now
-                    else:
-                        file_obj = self.profiles[user_id]["file"]
-                else:
+                if gid not in self.profiles:
+                    self.profiles[gid] = {}
+
+                if user_id not in self.profiles[gid]:
                     file_obj = await self.gen_profile_img(args, full)
-                    self.profiles[user_id] = {"file": file_obj, "last": now}
+                    self.profiles[gid][user_id] = {"file": file_obj, "last": now}
+
+                last = self.profiles[gid][user_id]["last"]
+                td = (now - last).total_seconds()
+                if td > 15:
+                    file_obj = await self.gen_profile_img(args, full)
+                    self.profiles[gid][user_id]["file"] = file_obj
+                    self.profiles[gid][user_id]["last"] = now
+                else:
+                    file_obj = self.profiles[gid][user_id]["file"]
 
                 if not file_obj:
                     file_obj = await self.gen_profile_img(args, full)
-                    self.profiles[user_id] = {"file": file_obj, "last": now}
+                    self.profiles[gid][user_id] = {"file": file_obj, "last": now}
+
+                # If file_obj is STILL None
+                if not file_obj:
+                    msg = f"Something went wrong while generating your profile image!\n" \
+                          f"Image may be returning `None` if it takes longer than 60 seconds to generate.\n" \
+                          f"**Debug Data**\n{box(json.dumps(args, indent=2))}"
+                    return await ctx.send(msg)
 
                 temp = BytesIO()
                 file_obj.save(temp, format="WEBP")
