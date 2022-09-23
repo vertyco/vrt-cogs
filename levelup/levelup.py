@@ -268,6 +268,7 @@ class LevelUp(UserCommands, commands.Cog):
                 self.lastmsg[gid] = {}
         if allclean and self.first_run:
             log.info(allclean)
+            await self.save_cache()
         self.first_run = False
 
     @staticmethod
@@ -1671,6 +1672,8 @@ class LevelUp(UserCommands, commands.Cog):
 
         When a user prestiges, they will get that role and the emoji will show on their profile
         """
+        if not prestige_level.isdigit():
+            return await ctx.send(_("prestige_level must be a number!"))
         url = self.get_twemoji(emoji) if isinstance(emoji, str) else emoji.url
         self.data[ctx.guild.id]["prestigedata"][prestige_level] = {
             "role": role.id,
@@ -1691,6 +1694,8 @@ class LevelUp(UserCommands, commands.Cog):
     @prestige_settings.command(name="del")
     async def del_pres_data(self, ctx: commands.Context, prestige_level: str):
         """Delete a prestige level role"""
+        if not prestige_level.isdigit():
+            return await ctx.send(_("prestige_level must be a number!"))
         pd = self.data[ctx.guild.id]["prestigedata"]
         if prestige_level in pd:
             del self.data[ctx.guild.id]["prestigedata"][prestige_level]
