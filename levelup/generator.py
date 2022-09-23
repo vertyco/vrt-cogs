@@ -220,38 +220,36 @@ class Generator:
         prestige_str = _(f"Prestige {prestige}")
 
         # Name text
-        draw.text((bar_start, name_y), name, text_bg, font=name_font, stroke_width=1)
-        draw.text((bar_start, name_y), name, namecolor, font=name_font)
-
+        draw.text((bar_start, name_y), name, namecolor,
+                  font=name_font, stroke_width=1, stroke_fill=text_bg)
         # Prestige
         if prestige:
-            draw.text((bar_start, name_y + 55), prestige_str, text_bg, font=stats_font, stroke_width=1)
-            draw.text((bar_start, name_y + 55), prestige_str, statcolor, font=stats_font)
-
+            draw.text((bar_start, name_y + 55), prestige_str, statcolor,
+                      font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Stats text
         # Rank
-        draw.text((bar_start, stats_y), rank, text_bg, font=stats_font, stroke_width=1)
-        draw.text((bar_start, stats_y), rank, statcolor, font=stats_font)
+        draw.text((bar_start, stats_y), rank, statcolor,
+                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Level
-        draw.text((bar_start, stats_y + stat_offset), level, text_bg, font=stats_font, stroke_width=1)
-        draw.text((bar_start, stats_y + stat_offset), level, statcolor, font=stats_font)
+        draw.text((bar_start, stats_y + stat_offset), level, statcolor,
+                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Balance
-        draw.text((bar_start, stats_y + stat_offset * 2), bal, text_bg, font=stats_font, stroke_width=1)
-        draw.text((bar_start, stats_y + stat_offset * 2), bal, statcolor, font=stats_font)
+        draw.text((bar_start, stats_y + stat_offset * 2), bal, statcolor,
+                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Exp
-        draw.text((bar_start, bar_top - 50), exp, text_bg, font=stats_font, stroke_width=1)
-        draw.text((bar_start, bar_top - 50), exp, statcolor, font=stats_font)
+        draw.text((bar_start, bar_top - 50), exp, statcolor,
+                  ont=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Messages
-        draw.text((bar_start + 210, stats_y), messages, text_bg, font=stats_font, stroke_width=1)
-        draw.text((bar_start + 210, stats_y), messages, statcolor, font=stats_font)
+        draw.text((bar_start + 210, stats_y), messages, statcolor,
+                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Voice
-        draw.text((bar_start + 210, stats_y + stat_offset), voice, text_bg, font=stats_font, stroke_width=1)
-        draw.text((bar_start + 210, stats_y + stat_offset), voice, statcolor, font=stats_font)
+        draw.text((bar_start + 210, stats_y + stat_offset), voice, statcolor,
+                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Stars
         starfont = name_font if len(stars) < 3 else stats_font
         startop = 42 if len(stars) < 3 else 52
-        draw.text((960, startop), stars, text_bg, font=starfont, stroke_width=1)
-        draw.text((960, startop), stars, statcolor, font=starfont)
+        draw.text((960, startop), stars, statcolor,
+                  font=starfont, stroke_width=1, stroke_fill=text_bg)
 
         return final
 
@@ -341,32 +339,22 @@ class Generator:
             name += _(f" - Prestige {prestige}")
         stars = str(stars)
 
-        # Drawing borders
-        draw.text((245, 22), name, text_bg, font=font_normal, stroke_width=1)
-        draw.text((245, 95), rank, text_bg, font=font_small, stroke_width=1)
-        draw.text((245, 125), level, text_bg, font=font_small, stroke_width=1)
-        draw.text((245, 160), exp, text_bg, font=font_small, stroke_width=1)
-        # Borders for 2nd column
-        draw.text((450, 95), messages, text_bg, font=font_small, stroke_width=1)
-        draw.text((450, 125), voice, text_bg, font=font_small, stroke_width=1)
         # Filling text
-        draw.text((245, 22), name, namecolor, font=font_normal)
-        draw.text((245, 95), rank, statcolor, font=font_small)
-        draw.text((245, 125), level, statcolor, font=font_small)
-        draw.text((245, 160), exp, statcolor, font=font_small)
+        draw.text((245, 22), name, namecolor, font=font_normal, stroke_width=1, stroke_fill=text_bg)
+        draw.text((245, 95), rank, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((245, 125), level, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((245, 160), exp, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
         # Filling text for 2nd column
-        draw.text((450, 95), messages, statcolor, font=font_small)
-        draw.text((450, 125), voice, statcolor, font=font_small)
+        draw.text((450, 95), messages, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((450, 125), voice, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
 
         # STAR TEXT
         if len(str(stars)) < 3:
             star_font = ImageFont.truetype(self.font1, 35)
-            draw.text((825, 25), stars, text_bg, font=star_font, stroke_width=1)
-            draw.text((825, 25), stars, statcolor, font=star_font)
+            draw.text((825, 25), stars, statcolor, font=star_font, stroke_width=1, stroke_fill=text_bg)
         else:
             star_font = ImageFont.truetype(self.font1, 30)
-            draw.text((825, 28), stars, text_bg, font=star_font, stroke_width=1)
-            draw.text((825, 28), stars, statcolor, font=star_font)
+            draw.text((825, 28), stars, statcolor, font=star_font, stroke_width=1, stroke_fill=text_bg)
 
         # Adding another blank layer for the progress bar
         progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -469,10 +457,8 @@ class Generator:
         BORDER = (0, 0, 0)
         level = _(f"Level {level}")
 
-        # Drawing borders
-        draw.text((73, 16), level, BORDER, font=font_normal, stroke_width=1)
         # Filling text
-        draw.text((73, 16), level, MAINCOLOR, font=font_normal)
+        draw.text((73, 16), level, MAINCOLOR, font=font_normal, stroke_width=1, stroke_fill=BORDER)
 
         # get profile pic
         profile_bytes = BytesIO(self.get_image_content_from_url(str(profile_image)))
@@ -516,7 +502,7 @@ class Generator:
             return None
 
     @staticmethod
-    def get_img_color(img: Union[Image.Image, str, bytes]) -> tuple:
+    def get_img_color(img: Union[Image.Image, str, bytes, BytesIO]) -> tuple:
         try:
             colors = colorgram.extract(img, 1)
             return colors[0].rgb
