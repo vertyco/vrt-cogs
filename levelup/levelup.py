@@ -331,6 +331,10 @@ class LevelUp(UserCommands, commands.Cog):
         return cleaned, data
 
     async def save_cache(self, target_guild: discord.guild = None):
+        if not target_guild:
+            await self.config.ignored_guilds.set(self.ignored_guilds)
+            await self.config.cache_seconds.set(self.cache_seconds)
+
         cache = self.data.copy()
         for gid, data in cache.items():
             if target_guild and target_guild.id != gid:
@@ -809,6 +813,20 @@ class LevelUp(UserCommands, commands.Cog):
         Reset levels, backup and restore cog data
         """
         pass
+
+    @admin_group.command(name="profilecache")
+    @commands.is_owner()
+    async def set_profile_cache(self, ctx: commands.Context, seconds: int):
+        """
+        Set how long to keep profile images in cache
+        When a user runs the profile command their generated image will be stored in cache to be reused for X seconds
+
+        If profile embeds are enabled this setting will have no effect
+        Set to 0 to effectively disable the cache
+        """
+        self.cache_seconds = int(seconds)
+        await ctx.tick()
+        await self.save_cache()
 
     @admin_group.command(name="globalreset")
     @commands.is_owner()
@@ -1640,7 +1658,7 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.tick()
         await self.save_cache(ctx.guild)
 
-    @commands.command(name="etest")
+    @commands.command(name="etest", hidden=True)
     async def e_test(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
         """Test emoji urls"""
         if isinstance(emoji, str):
@@ -1675,14 +1693,13 @@ class LevelUp(UserCommands, commands.Cog):
 
         Use the command with a guild already in the ignore list to remove it
         """
-        async with self.config.ignored_guilds() as ignored:
-            if guild_id in ignored:
-                ignored.remove(guild_id)
-                await ctx.send(_("Guild removed from ignore list"))
-            else:
-                ignored.append(guild_id)
-                await ctx.send(_("Guild added to ignore list"))
-            await self.initialize()
+        if guild_id in self.ignored_guilds:
+            self.ignored_guilds.remove(guild_id)
+            await ctx.send(_("Guild removed from ignore list"))
+        else:
+            self.ignored_guilds.append(guild_id)
+            await ctx.send(_("Guild added to ignore list"))
+        await self.save_cache()
 
     @ignore_group.command(name="channel")
     async def ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel):
