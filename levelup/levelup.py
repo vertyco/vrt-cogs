@@ -49,7 +49,7 @@ else:
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.6.34"
+    __version__ = "1.7.34"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1287,8 +1287,8 @@ class LevelUp(UserCommands, commands.Cog):
 
         base = conf["base"]
         exp = conf["exp"]
-        xp = get_xp(level, base, exp)
-        conf["users"][uid]["level"] = level
+        xp = get_xp(int(level), base, exp)
+        conf["users"][uid]["level"] = int(level)
         conf["users"][uid]["xp"] = xp
         await ctx.send(_(f"User {user.name} is now level {level}"))
 
