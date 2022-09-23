@@ -272,62 +272,65 @@ class LevelUp(UserCommands, commands.Cog):
 
     @staticmethod
     def cleanup(data: dict) -> tuple:
+        conf = data.copy()
         cleaned = []
-        pdata = data["prestigedata"]
-        if pdata:
-            for p, dat in pdata.items():
-                if not isinstance(dat["emoji"], dict):
-                    t = "prestige data"
-                    if t not in cleaned:
-                        cleaned.append(t)
-                    dat["emoji"] = {"str": dat["emoji"], "url": None}
-        for uid, info in data["users"].items():
-            if "full" not in info:
-                t = "full not in playerstats"
+        # Check prestige data
+        if conf["prestigedata"]:
+            for prestige_level, prestige_data in conf["prestigedata"].items():
+                # Make sure emoji data is a dict
+                if isinstance(prestige_data["emoji"], dict):
+                    continue
+                # Fix old string emoji data
+                conf["prestigedata"][prestige_level]["emoji"] = {"str": prestige_data["emoji"], "url": None}
+                t = "prestige data fix"
                 if t not in cleaned:
                     cleaned.append(t)
-                info["full"] = True
-            if "background" not in info:
-                t = "background not in playerstats"
-                if t not in cleaned:
-                    cleaned.append(t)
-                info["background"] = None
-            if "stars" not in info:
-                t = "stars not in playerstats"
-                if t not in cleaned:
-                    cleaned.append(t)
-                info["stars"] = 0
-            for k, v in info.items():
-                if isinstance(v, str) and k not in ["background", "emoji", "colors"]:
-                    t = "stat should be int"
-                    if t not in cleaned:
-                        cleaned.append(t)
-                    info[k] = int(v)
-            if "colors" not in info:
-                t = "colors not in playerstats"
-                if t not in cleaned:
-                    cleaned.append(t)
-                info["colors"] = {"name": None, "stat": None, "levelbar": None}
-            if "levelbar" not in info["colors"]:
-                t = "levelbar not in colors"
-                if t not in cleaned:
-                    cleaned.append(t)
-                info["colors"]["levelbar"] = None
-            prestige = str(info["prestige"]) if info["prestige"] else None
-            if prestige and prestige not in data["prestigedata"]:
-                t = "prestige no longer exists"
-                if t not in cleaned:
-                    cleaned.append(t)
-                info["emoji"] = None
-                info["prestige"] = 0
-            if info["emoji"] is not None and prestige:
-                emoji = pdata[prestige]["emoji"]
-                if not isinstance(emoji, dict):
-                    t = "emoji str instead of dict"
-                    if t not in cleaned:
-                        cleaned.append(t)
-                    url = pdata[prestige]["url"]
-                    info["emoji"] = {"str": info["emoji"], "url": url}
+
+        # Check players
+        for uid, user in conf["users"].items():
+            # Fix any missing keys
+            if "full" not in user:
+                conf["users"][uid]["full"] = True
+                cleaned.append("background not in playerstats")
+            if "background" not in user:
+                conf["users"][uid]["background"] = None
+                cleaned.append("background not in playerstats")
+            if "stars" not in user:
+                conf["users"][uid]["stars"] = 0
+                cleaned.append("stars not in playerstats")
+            if "colors" not in user:
+                conf["users"][uid]["colors"] = {"name": None, "stat": None, "levelbar": None}
+                cleaned.append("colors not in playerstats")
+            if "levelbar" not in conf["users"][uid]["colors"]:
+                conf["users"][uid]["colors"]["levelbar"] = None
+                cleaned.append("levelbar not in colors")
+
+            # Make sure all related stats are not strings
+            for k, v in user.items():
+                skip = ["background", "emoji", "full", "colors"]
+                if k in skip:
+                    continue
+                if isinstance(v, int) or isinstance(v, float):
+                    continue
+                conf["users"][uid][k] = int(v)
+                cleaned.append(f"{k} stat should be int")
+
+            # Check prestige settings
+            if not user["prestige"]:
+                continue
+            if user["emoji"] is None:
+                continue
+            # Fix profiles with the old prestige emoji string
+            if isinstance(user["emoji"], str):
+                conf["users"][uid]["emoji"] = {"str": user["emoji"], "url": None}
+                cleaned.append("old emoji schema in profile")
+            prest_key = str(user["prestige"])
+            if prest_key not in data["prestigedata"]:
+                continue
+            # See if there are updated prestige settings to get the new url from
+            if conf["users"][uid]["emoji"]["url"] != data["prestigedata"][prest_key]["emoji"]["url"]:
+                conf["users"][uid]["emoji"]["url"] = data["prestigedata"][prest_key]["emoji"]["url"]
+                cleaned.append("updated profile emoji url")
         return cleaned, data
 
     async def save_cache(self, target_guild: discord.guild = None):
@@ -1090,7 +1093,11 @@ class LevelUp(UserCommands, commands.Cog):
     @admin_group.command(name="cleanup")
     @commands.guildowner()
     async def cleanup_guild(self, ctx: commands.Context):
-        """Delete users no longer in the server"""
+        """
+        Delete users no longer in the server
+
+        Also cleans up any missing keys or discrepancies in the config
+        """
         guild = ctx.guild
         members = [u.id for u in guild.members]
         cleanup = []
@@ -1098,13 +1105,22 @@ class LevelUp(UserCommands, commands.Cog):
         for user_id in savedusers:
             if int(user_id) not in members:
                 cleanup.append(user_id)
-        if not cleanup:
-            return await ctx.send(_("Nothing to clean"))
         cleaned = 0
         for uid in cleanup:
             del self.data[ctx.guild.id]["users"][uid]
             cleaned += 1
-        await ctx.send(_(f"Deleted {cleaned} user ID's from the config that are no longer in the server"))
+        cleaned_data, newdat = self.cleanup(self.data[ctx.guild.id].copy())
+        if not cleanup and not cleaned:
+            return await ctx.send(_("Nothing to clean"))
+        if cleaned:
+            await ctx.send(
+                _(
+                    f"Deleted {cleaned} user IDs from the config that are no longer in the server.\n"
+                    f"Also cleaned {len(cleaned_data)} config discrepancies in the process."
+                )
+            )
+        else:
+            await ctx.send(_(f"Deleted {cleaned} user IDs from the config that are no longer in the server"))
         await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="messages")
