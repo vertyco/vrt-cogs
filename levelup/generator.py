@@ -94,17 +94,17 @@ class Generator:
         namebox = (bar_start, name_y, bar_start + 50, name_y + 50)
         namesection = self.get_sample_section(card, namebox)
         namebg = self.get_img_color(namesection)
-        while self.distance(namecolor, namebg) < 200:
+        while self.distance(namecolor, namebg) < 220:
             namecolor = self.rand_rgb()
         statbox = (bar_start, stats_y, bar_start + 400, bar_top)
         statsection = self.get_sample_section(card, statbox)
         statbg = self.get_img_color(statsection)
-        while self.distance(statcolor, statbg) < 200:
+        while self.distance(statcolor, statbg) < 220:
             statcolor = self.rand_rgb()
         lvlbox = (bar_start, bar_top, bar_end, bar_bottom)
         barsection = self.get_sample_section(card, lvlbox)
         barbg = self.get_img_color(barsection)
-        while self.distance(lvlbarcolor, barbg) < 200:
+        while self.distance(lvlbarcolor, barbg) < 220:
             lvlbarcolor = self.rand_rgb()
 
         # get profile pic
