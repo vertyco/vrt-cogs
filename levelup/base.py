@@ -230,13 +230,20 @@ class UserCommands(commands.Cog):
 
         Here is a link to google's color picker:
         **[Hex Color Picker](https://htmlcolorcodes.com/)**
+
+        Set to `default` to randomize your name color each time you run the command
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(_("Image profiles are disabled on this server, this setting has no effect"))
         users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
         if user_id not in users:
-            return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
+            self.init_user(ctx.guild.id, user_id)
+
+        if hex_color == "default":
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = None
+            return await ctx.send(_("Your name color has been reset to default"))
+
         try:
             rgb = hex_to_rgb(hex_color)
         except ValueError:
@@ -261,13 +268,20 @@ class UserCommands(commands.Cog):
 
         Here is a link to google's color picker:
         **[Hex Color Picker](https://htmlcolorcodes.com/)**
+
+        Set to `default` to randomize your name color each time you run the command
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(_("Image profiles are disabled on this server, this setting has no effect"))
         users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
         if user_id not in users:
-            return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
+            self.init_user(ctx.guild.id, user_id)
+
+        if hex_color == "default":
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = None
+            return await ctx.send(_("Your stats color has been reset to default"))
+
         try:
             rgb = hex_to_rgb(hex_color)
         except ValueError:
@@ -293,13 +307,20 @@ class UserCommands(commands.Cog):
 
         Here is a link to google's color picker:
         **[Hex Color Picker](https://htmlcolorcodes.com/)**
+
+        Set to `default` to randomize your name color each time you run the command
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(_("Image profiles are disabled on this server, this setting has no effect"))
         users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
         if user_id not in users:
-            return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
+            self.init_user(ctx.guild.id, user_id)
+
+        if hex_color == "default":
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = None
+            return await ctx.send(_("Your level bar color has been reset to default"))
+
         try:
             rgb = hex_to_rgb(hex_color)
         except ValueError:
@@ -336,9 +357,17 @@ class UserCommands(commands.Cog):
         [setaswall](https://www.setaswall.com/dual-monitor-wallpapers/)
         [pexels](https://www.pexels.com/photo/panoramic-photography-of-trees-and-lake-358482/)
         [teahub](https://www.teahub.io/searchw/dual-monitor/)
+
+        Leave image_url blank to reset back to randomized default profile backgrounds
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(_("Image profiles are disabled on this server, this setting has no effect"))
+
+        users = self.data[ctx.guild.id]["users"]
+        user_id = str(ctx.author.id)
+        if user_id not in users:
+            self.init_user(ctx.guild.id, user_id)
+
         # If image url is given, run some checks
         if image_url:
             if not await self.valid_url(ctx, image_url):
@@ -348,11 +377,6 @@ class UserCommands(commands.Cog):
                 image_url = ctx.message.attachments[0].url
                 if not await self.valid_url(ctx, image_url):
                     return
-
-        users = self.data[ctx.guild.id]["users"]
-        user_id = str(ctx.author.id)
-        if user_id not in users:
-            return await ctx.send(_("You have no information stored about your account yet. Talk for a bit first"))
 
         if image_url:
             self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
