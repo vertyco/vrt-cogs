@@ -116,11 +116,11 @@ class Generator:
             log.warning(f"Failed to get full profile image color: {e}")
             bgcolor = base
 
-        while self.distance(namecolor, bgcolor) < 45:
+        while self.distance(namecolor, bgcolor) < 50:
             namecolor = self.rand_rgb()
-        while self.distance(statcolor, bgcolor) < 45:
+        while self.distance(statcolor, bgcolor) < 50:
             statcolor = self.rand_rgb()
-        while self.distance(lvlbarcolor, bgcolor) < 45:
+        while self.distance(lvlbarcolor, bgcolor) < 50:
             lvlbarcolor = self.rand_rgb()
         while self.distance(outlinecolor, bgcolor) < 55:
             outlinecolor = self.rand_rgb()
