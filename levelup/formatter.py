@@ -129,7 +129,7 @@ async def get_user_stats(conf: dict, user_id: str) -> dict:
     level = user["level"]
     prestige = user["prestige"]
     emoji = user["emoji"]
-    stars = int(user["stars"])
+    stars = user["stars"]
     bg = user["background"]
     next_level = level + 1
     xp_needed = get_xp(next_level, base, exp)
