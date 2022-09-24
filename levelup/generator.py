@@ -209,15 +209,15 @@ class Generator:
         stats_font = ImageFont.truetype(self.font1, stats_size)
 
         # Stat strings
-        rank = _(f"Rank: #{user_position}")
-        level = _(f"Level: {level}")
-        exp = f"Exp: {humanize_number(user_xp)}/{humanize_number(next_xp)}"
-        messages = _(f"Messages: {messages}")
-        voice = _(f"Voice Time: {voice}")
+        rank = _(f"Rank: #") + str(user_position)
+        leveltxt = _(f"Level: ") + str(level)
+        exp = _("Exp: ") + f"{humanize_number(user_xp)}/{humanize_number(next_xp)}"
+        message_count = _(f"Messages: ") + messages
+        voice = _(f"Voice Time: ") + voice
         name = f"{user_name}"
         stars = str(stars)
-        bal = _(f"Balance: {humanize_number(balance)}") + f" {currency}"
-        prestige_str = _(f"Prestige {prestige}")
+        bal = _("Balance: ") + f"{humanize_number(balance)} {currency}"
+        prestige_str = _(f"Prestige ") + str(prestige)
 
         # Name text
         draw.text((bar_start, name_y), name, namecolor,
@@ -231,16 +231,16 @@ class Generator:
         draw.text((bar_start, stats_y), rank, statcolor,
                   font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Level
-        draw.text((bar_start, stats_y + stat_offset), level, statcolor,
+        draw.text((bar_start, stats_y + stat_offset), leveltxt, statcolor,
                   font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Balance
-        draw.text((bar_start, stats_y + stat_offset * 2), bal, statcolor,
+        draw.text((bar_start, bar_top - 100), bal, statcolor,
                   font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Exp
         draw.text((bar_start, bar_top - 50), exp, statcolor,
-                  ont=stats_font, stroke_width=1, stroke_fill=text_bg)
+                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Messages
-        draw.text((bar_start + 210, stats_y), messages, statcolor,
+        draw.text((bar_start + 210, stats_y), message_count, statcolor,
                   font=stats_font, stroke_width=1, stroke_fill=text_bg)
         # Voice
         draw.text((bar_start + 210, stats_y + stat_offset), voice, statcolor,
@@ -339,12 +339,11 @@ class Generator:
             name += _(f" - Prestige {prestige}")
         stars = str(stars)
 
-        # Filling text
+        # stat text
         draw.text((245, 22), name, namecolor, font=font_normal, stroke_width=1, stroke_fill=text_bg)
         draw.text((245, 95), rank, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
         draw.text((245, 125), level, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
         draw.text((245, 160), exp, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        # Filling text for 2nd column
         draw.text((450, 95), messages, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
         draw.text((450, 125), voice, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
 
