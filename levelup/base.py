@@ -546,6 +546,11 @@ class UserCommands(commands.Cog):
                 except Exception as e:
                     log.error(f"Failed to send profile pic: {e}")
                     try:
+                        temp = BytesIO()
+                        file_obj.save(temp, format="WEBP")
+                        temp.name = f"{ctx.author.id}.webp"
+                        temp.seek(0)
+                        file = discord.File(temp)
                         if mention:
                             await ctx.send(ctx.author.mention, file=file)
                         else:
