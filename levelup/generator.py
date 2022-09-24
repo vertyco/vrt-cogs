@@ -69,7 +69,7 @@ class Generator:
         text_bg = (0, 0, 0)
 
         # Set canvas
-        if bg_image:
+        if bg_image and bg_image != "random":
             bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
             if bg_bytes:
                 card = Image.open(bg_bytes)
@@ -289,14 +289,7 @@ class Generator:
         text_bg = (0, 0, 0)
 
         # Set canvas
-        if not bg_image:
-            card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
-            try:
-                bgcolor = self.get_img_color(self.default_bg)
-            except Exception as e:
-                log.warning(f"Failed to get default image color: {e}")
-                bgcolor = base
-        else:
+        if bg_image and bg_image != "random":
             bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
             try:
                 bgcolor = self.get_img_color(bg_bytes)
@@ -307,6 +300,13 @@ class Generator:
                 card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
             else:
                 card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
+        else:
+            card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
+            try:
+                bgcolor = self.get_img_color(self.default_bg)
+            except Exception as e:
+                log.warning(f"Failed to get default image color: {e}")
+                bgcolor = base
 
         # Compare text colors to BG
         while self.distance(namecolor, bgcolor) < 45:
