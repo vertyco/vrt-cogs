@@ -89,7 +89,7 @@ class Generator:
         circle_x = 60
         circle_y = 75
 
-        stroke_width = 2
+        stroke_width = 1
 
         # get profile pic
         pfp_image = self.get_image_content_from_url(str(profile_image))
