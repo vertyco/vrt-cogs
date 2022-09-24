@@ -97,7 +97,9 @@ class Generator:
         namesection = self.get_sample_section(card, namebox)
         namebg = self.get_img_color(namesection)
         namefill = default_fill
-        if self.distance(namefill, namebg) < 220:
+        while self.distance(namecolor, namebg) < 240:
+            namecolor = self.rand_rgb()
+        if self.distance(namefill, namecolor) < 230:
             namefill = self.inv_rgb(namefill)
 
         # Sample stat box colors and make sure they're not too similar with the background
@@ -105,7 +107,9 @@ class Generator:
         statsection = self.get_sample_section(card, statbox)
         statbg = self.get_img_color(statsection)
         statstxtfil = default_fill
-        if self.distance(statstxtfil, statbg) < 220 or self.distance(statstxtfil, statcolor) < 220:
+        while self.distance(statcolor, statbg) < 240:
+            statcolor = self.rand_rgb()
+        if self.distance(statstxtfil, statcolor) < 230:
             statstxtfil = self.inv_rgb(statstxtfil)
 
         # get profile pic
@@ -200,7 +204,7 @@ class Generator:
             blank.paste(prestige_img, (bar_start - 50, bar_top))
 
         # Paste star and status to profile
-        blank.paste(status, (285, 320))
+        blank.paste(status, (circle_x + 230, circle_y + 240))
         blank.paste(star, (900, 50))
 
         # New final
@@ -220,7 +224,7 @@ class Generator:
         leveltxt = _(f"Level: ") + str(level)
         exp = _("Exp: ") + f"{humanize_number(user_xp)}/{humanize_number(next_xp)}"
         message_count = _(f"Messages: ") + messages
-        voice = _(f"Voice Time: ") + voice
+        voice = _(f"Voice: ") + voice
         name = f"{user_name}"
         stars = str(stars)
         bal = _("Balance: ") + f"{humanize_number(balance)} {currency}"
@@ -256,7 +260,7 @@ class Generator:
         # Stars
         starfont = name_font if len(stars) < 3 else stats_font
         startop = 42 if len(stars) < 3 else 52
-        draw.text((960, startop), stars, statcolor,
+        draw.text((960, startop), stars, namecolor,
                   font=starfont, stroke_width=stroke_width, stroke_fill=namefill)
 
         return final
