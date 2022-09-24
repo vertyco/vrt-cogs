@@ -545,12 +545,14 @@ class UserCommands(commands.Cog):
                     await ctx.reply(file=file, mention_author=mention)
                 except Exception as e:
                     log.error(f"Failed to send profile pic: {e}")
-                    await asyncio.sleep(5)
                     try:
-                        await ctx.reply(file=file, mention_author=mention)
+                        if mention:
+                            await ctx.send(ctx.author.mention, file=file)
+                        else:
+                            await ctx.send(file=file)
                     except Exception as e:
-                        log.error(f"Failed again to send profile pic: {e}")
-                        await ctx.send(f"Failed to send profile pic to discord. Try again in a few minutes.")
+                        log.error(f"Failed AGAIN to send profile pic: {e}")
+                    await asyncio.sleep(5)
 
     @commands.command(name="prestige")
     @commands.guild_only()
