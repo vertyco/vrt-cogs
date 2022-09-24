@@ -241,7 +241,7 @@ class UserCommands(commands.Cog):
             self.init_user(ctx.guild.id, user_id)
 
         if hex_color == "default":
-            self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = None
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["name"] = None
             return await ctx.send(_("Your name color has been reset to default"))
 
         try:
@@ -279,7 +279,7 @@ class UserCommands(commands.Cog):
             self.init_user(ctx.guild.id, user_id)
 
         if hex_color == "default":
-            self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = None
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["name"] = None
             return await ctx.send(_("Your stats color has been reset to default"))
 
         try:
