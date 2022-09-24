@@ -359,6 +359,7 @@ class UserCommands(commands.Cog):
         [teahub](https://www.teahub.io/searchw/dual-monitor/)
 
         Leave image_url blank to reset back to randomized default profile backgrounds
+        Set image_url as `random` to have a randomized background each time
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(_("Image profiles are disabled on this server, this setting has no effect"))
@@ -369,7 +370,7 @@ class UserCommands(commands.Cog):
             self.init_user(ctx.guild.id, user_id)
 
         # If image url is given, run some checks
-        if image_url:
+        if image_url and image_url != "random":
             if not await self.valid_url(ctx, image_url):
                 return
         else:
@@ -380,7 +381,10 @@ class UserCommands(commands.Cog):
 
         if image_url:
             self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
-            await ctx.send("Your image has been set!")
+            if image_url == "random":
+                await ctx.send("Your profile background will be randomized each time you run the profile command!")
+            else:
+                await ctx.send("Your image has been set!")
         else:
             self.data[ctx.guild.id]["users"][user_id]["background"] = None
             await ctx.send(_("Your background has been removed since you did not specify a url!"))
