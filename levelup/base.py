@@ -197,7 +197,7 @@ class UserCommands(commands.Cog):
                 description=_(desc),
                 color=ctx.author.color
             )
-            if bg:
+            if bg and bg != "random":
                 em.set_image(url=bg)
             await ctx.send(embed=em)
 

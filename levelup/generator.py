@@ -89,23 +89,7 @@ class Generator:
         circle_x = 60
         circle_y = 75
 
-        # Get sample color for text areas to make sure colors don't blend too much with background
-        # x1, y1, x2, y2
-        namebox = (bar_start, name_y, bar_start + 50, name_y + 50)
-        namesection = self.get_sample_section(card, namebox)
-        namebg = self.get_img_color(namesection)
-        while self.distance(namecolor, namebg) < 220:
-            namecolor = self.rand_rgb()
-        statbox = (bar_start, stats_y, bar_start + 400, bar_top)
-        statsection = self.get_sample_section(card, statbox)
-        statbg = self.get_img_color(statsection)
-        while self.distance(statcolor, statbg) < 220:
-            statcolor = self.rand_rgb()
-        lvlbox = (bar_start, bar_top, bar_end, bar_bottom)
-        barsection = self.get_sample_section(card, lvlbox)
-        barbg = self.get_img_color(barsection)
-        while self.distance(lvlbarcolor, barbg) < 220:
-            lvlbarcolor = self.rand_rgb()
+        stroke_width = 2
 
         # get profile pic
         pfp_image = self.get_image_content_from_url(str(profile_image))
@@ -220,36 +204,66 @@ class Generator:
         prestige_str = _(f"Prestige ") + str(prestige)
 
         # Name text
+        # x1, y1, x2, y2
+        # Sample name box colors and make sure they're not too similar with the background
+        namebox = (bar_start, name_y, bar_start + 50, name_y + 100)
+        namesection = self.get_sample_section(card, namebox)
+        namebg = self.get_img_color(namesection)
+        while self.distance(namecolor, namebg) < 220:
+            namecolor = self.rand_rgb()
+        namefill = text_bg
+        if self.distance(namefill, namebg) < 220:
+            namefill = (255, 255, 255)
         draw.text((bar_start, name_y), name, namecolor,
-                  font=name_font, stroke_width=1, stroke_fill=text_bg)
+                  font=name_font, stroke_width=stroke_width, stroke_fill=namefill)
         # Prestige
         if prestige:
             draw.text((bar_start, name_y + 55), prestige_str, statcolor,
-                      font=stats_font, stroke_width=1, stroke_fill=text_bg)
+                      font=stats_font, stroke_width=stroke_width, stroke_fill=namefill)
         # Stats text
+        # Sample stat box colors and make sure they're not too similar with the background
+        statbox = (bar_start, stats_y, bar_start + 400, stats_y + stat_offset + 50)
+        statsection = self.get_sample_section(card, statbox)
+        statbg = self.get_img_color(statsection)
+        while self.distance(statcolor, statbg) < 220:
+            statcolor = self.rand_rgb()
+        statstxtfil = text_bg
+        if self.distance(statstxtfil, statbg) < 220:
+            statstxtfil = (255, 255, 255)
         # Rank
         draw.text((bar_start, stats_y), rank, statcolor,
-                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
         # Level
         draw.text((bar_start, stats_y + stat_offset), leveltxt, statcolor,
-                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
-        # Balance
-        draw.text((bar_start, bar_top - 100), bal, statcolor,
-                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
-        # Exp
-        draw.text((bar_start, bar_top - 50), exp, statcolor,
-                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
         # Messages
         draw.text((bar_start + 210, stats_y), message_count, statcolor,
-                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
         # Voice
         draw.text((bar_start + 210, stats_y + stat_offset), voice, statcolor,
-                  font=stats_font, stroke_width=1, stroke_fill=text_bg)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+
+        # Sample section for balance and exp to make sure they're not too similar to the background
+        expbalbox = (bar_start, bar_top - 100, bar_end, bar_top)
+        expbalsection = self.get_sample_section(card, expbalbox)
+        expbalbg = self.get_img_color(expbalsection)
+        while self.distance(statcolor, expbalbg) < 220:
+            statcolor = self.rand_rgb()
+        expbalfill = text_bg
+        if self.distance(expbalfill, expbalbg) < 220:
+            expbalfill = (255, 255, 255)
+        # Balance
+        draw.text((bar_start, bar_top - 100), bal, statcolor,
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=expbalfill)
+        # Exp
+        draw.text((bar_start, bar_top - 50), exp, statcolor,
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=expbalfill)
+
         # Stars
         starfont = name_font if len(stars) < 3 else stats_font
         startop = 42 if len(stars) < 3 else 52
         draw.text((960, startop), stars, statcolor,
-                  font=starfont, stroke_width=1, stroke_fill=text_bg)
+                  font=starfont, stroke_width=stroke_width, stroke_fill=text_bg)
 
         return final
 
