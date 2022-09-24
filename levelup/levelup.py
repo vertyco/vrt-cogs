@@ -865,22 +865,22 @@ class LevelUp(UserCommands, commands.Cog):
         embed.set_footer(text=_("Units are the average times in milliseconds"))
         await ctx.send(embed=embed)
 
-    @lvl_group.command(name="globalbackup")
+    @admin_group.command(name="globalbackup")
     @commands.is_owner()
     async def backup_cog(self, ctx):
         """Create a backup of the LevelUp config"""
         buffer = BytesIO(json.dumps(self.data).encode())
-        buffer.name = f"LevelUp_GLOBAL_config_{int(datetime.now().timestamp())}"
+        buffer.name = f"LevelUp_GLOBAL_config_{int(datetime.now().timestamp())}.json"
         buffer.seek(0)
         file = discord.File(buffer)
         await ctx.send("Here is your LevelUp config", file=file)
 
-    @lvl_group.command(name="guildbackup")
+    @admin_group.command(name="guildbackup")
     @commands.is_owner()
     async def backup_guild(self, ctx):
         """Create a backup of the LevelUp config"""
         buffer = BytesIO(json.dumps(self.data[ctx.guild.id]).encode())
-        buffer.name = f"LevelUp_guild_config_{int(datetime.now().timestamp())}"
+        buffer.name = f"LevelUp_guild_config_{int(datetime.now().timestamp())}.json"
         buffer.seek(0)
         file = discord.File(buffer)
         await ctx.send("Here is your LevelUp config", file=file)
