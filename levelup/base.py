@@ -279,7 +279,7 @@ class UserCommands(commands.Cog):
             self.init_user(ctx.guild.id, user_id)
 
         if hex_color == "default":
-            self.data[ctx.guild.id]["users"][user_id]["colors"]["name"] = None
+            self.data[ctx.guild.id]["users"][user_id]["colors"]["stat"] = None
             return await ctx.send(_("Your stats color has been reset to default"))
 
         try:
