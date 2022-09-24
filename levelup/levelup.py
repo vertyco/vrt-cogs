@@ -45,7 +45,7 @@ DPY2 = True if discord.__version__ > "1.7.3" else False
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.7.34"
+    __version__ = "1.8.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
