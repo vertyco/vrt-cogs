@@ -66,7 +66,7 @@ class Generator:
             namecolor = self.rand_rgb()
             statcolor = self.rand_rgb()
             lvlbarcolor = self.rand_rgb()
-        text_bg = (0, 0, 0)
+        default_fill = (0, 0, 0)
 
         # Set canvas
         if bg_image and bg_image != "random":
@@ -80,16 +80,33 @@ class Generator:
         card = self.force_aspect_ratio(card).convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
 
         # Coord setup
-        name_y = 50
-        stats_y = 170
-        bar_start = 400
-        bar_end = 980
+        name_y = 40
+        stats_y = 160
+        bar_start = 450
+        bar_end = 1030
         bar_top = 380
         bar_bottom = 420
         circle_x = 60
         circle_y = 75
 
-        stroke_width = 1
+        stroke_width = 2
+
+        # x1, y1, x2, y2
+        # Sample name box colors and make sure they're not too similar with the background
+        namebox = (bar_start, name_y, bar_start + 50, name_y + 100)
+        namesection = self.get_sample_section(card, namebox)
+        namebg = self.get_img_color(namesection)
+        namefill = default_fill
+        if self.distance(namefill, namebg) < 220:
+            namefill = self.inv_rgb(namefill)
+
+        # Sample stat box colors and make sure they're not too similar with the background
+        statbox = (bar_start, stats_y, bar_start + 400, bar_top)
+        statsection = self.get_sample_section(card, statbox)
+        statbg = self.get_img_color(statsection)
+        statstxtfil = default_fill
+        if self.distance(statstxtfil, statbg) < 220 or self.distance(statstxtfil, statcolor) < 220:
+            statstxtfil = self.inv_rgb(statstxtfil)
 
         # get profile pic
         pfp_image = self.get_image_content_from_url(str(profile_image))
@@ -126,6 +143,12 @@ class Generator:
         # Profile image is on the background tile now
         final = Image.alpha_composite(card, pfp_composite_holder)
 
+        # Place semi-transparent box over right side
+        blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
+        transparent_box = Image.new("RGBA", card.size, (0, 0, 0, 100))
+        blank.paste(transparent_box, (bar_start - 20, 0))
+        final = Image.alpha_composite(final, blank)
+
         # Make the level progress bar
         progress_bar = Image.new("RGBA", (card.size[0] * 4, card.size[1] * 4), (255, 255, 255, 0))
         progress_bar_draw = ImageDraw.Draw(progress_bar)
@@ -144,7 +167,7 @@ class Generator:
             radius=90
         )
         # Draw inner level bar 1 pixel smaller on each side
-        if end_of_inner_bar > bar_start:
+        if end_of_inner_bar > bar_start + 10:
             progress_bar_draw.rounded_rectangle(
                 (bar_start * 4 + 1, bar_top * 4 + 2, end_of_inner_bar * 4 - 1, bar_bottom * 4 - 2),
                 fill=lvlbarcolor,
@@ -204,66 +227,37 @@ class Generator:
         prestige_str = _(f"Prestige ") + str(prestige)
 
         # Name text
-        # x1, y1, x2, y2
-        # Sample name box colors and make sure they're not too similar with the background
-        namebox = (bar_start, name_y, bar_start + 50, name_y + 100)
-        namesection = self.get_sample_section(card, namebox)
-        namebg = self.get_img_color(namesection)
-        # while self.distance(namecolor, namebg) < 220:
-        #     namecolor = self.rand_rgb()
-        namefill = text_bg
-        if self.distance(namefill, namebg) < 220:
-            namefill = (255, 255, 255)
-        draw.text((bar_start, name_y), name, namecolor,
+        draw.text((bar_start + 10, name_y), name, namecolor,
                   font=name_font, stroke_width=stroke_width, stroke_fill=namefill)
         # Prestige
         if prestige:
-            draw.text((bar_start, name_y + 55), prestige_str, statcolor,
+            draw.text((bar_start + 10, name_y + 55), prestige_str, statcolor,
                       font=stats_font, stroke_width=stroke_width, stroke_fill=namefill)
         # Stats text
-        # Sample stat box colors and make sure they're not too similar with the background
-        statbox = (bar_start, stats_y, bar_start + 400, stats_y + stat_offset + 50)
-        statsection = self.get_sample_section(card, statbox)
-        statbg = self.get_img_color(statsection)
-        # while self.distance(statcolor, statbg) < 220:
-        #     statcolor = self.rand_rgb()
-        statstxtfil = text_bg
-        if self.distance(statstxtfil, statbg) < 220:
-            statstxtfil = (255, 255, 255)
         # Rank
-        draw.text((bar_start, stats_y), rank, statcolor,
+        draw.text((bar_start + 10, stats_y), rank, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
         # Level
-        draw.text((bar_start, stats_y + stat_offset), leveltxt, statcolor,
+        draw.text((bar_start + 10, stats_y + stat_offset), leveltxt, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
         # Messages
-        draw.text((bar_start + 210, stats_y), message_count, statcolor,
+        draw.text((bar_start + 210 + 10, stats_y), message_count, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
         # Voice
-        draw.text((bar_start + 210, stats_y + stat_offset), voice, statcolor,
+        draw.text((bar_start + 210 + 10, stats_y + stat_offset), voice, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
-
-        # Sample section for balance and exp to make sure they're not too similar to the background
-        expbalbox = (bar_start, bar_top - 100, bar_end, bar_top)
-        expbalsection = self.get_sample_section(card, expbalbox)
-        expbalbg = self.get_img_color(expbalsection)
-        # while self.distance(statcolor, expbalbg) < 220:
-        #     statcolor = self.rand_rgb()
-        expbalfill = text_bg
-        if self.distance(expbalfill, expbalbg) < 220:
-            expbalfill = (255, 255, 255)
         # Balance
-        draw.text((bar_start, bar_top - 100), bal, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=expbalfill)
+        draw.text((bar_start + 10, bar_top - 110), bal, statcolor,
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
         # Exp
-        draw.text((bar_start, bar_top - 50), exp, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=expbalfill)
+        draw.text((bar_start + 10, bar_top - 60), exp, statcolor,
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
 
         # Stars
         starfont = name_font if len(stars) < 3 else stats_font
         startop = 42 if len(stars) < 3 else 52
         draw.text((960, startop), stars, statcolor,
-                  font=starfont, stroke_width=stroke_width, stroke_fill=text_bg)
+                  font=starfont, stroke_width=stroke_width, stroke_fill=namefill)
 
         return final
 
