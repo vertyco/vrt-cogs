@@ -7,7 +7,7 @@ from typing import Union
 
 import colorgram
 import requests
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
@@ -70,10 +70,10 @@ class Generator:
 
         # Set canvas
         if bg_image and bg_image != "random":
-            bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
-            if bg_bytes:
-                card = Image.open(bg_bytes)
-            else:
+            bg_bytes = self.get_image_content_from_url(bg_image)
+            try:
+                card = Image.open(BytesIO(bg_bytes))
+            except UnidentifiedImageError:
                 card = self.get_random_background()
         else:
             card = self.get_random_background()
@@ -302,16 +302,17 @@ class Generator:
 
         # Set canvas
         if bg_image and bg_image != "random":
+            bg_bytes = self.get_image_content_from_url(bg_image)
+            try:
+                card = Image.open(BytesIO(bg_bytes)).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
+            except UnidentifiedImageError:
+                card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
             bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
             try:
                 bgcolor = self.get_img_color(bg_bytes)
             except Exception as e:
                 log.warning(f"Failed to get profile image color: {e}")
                 bgcolor = base
-            if bg_bytes:
-                card = Image.open(bg_bytes).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
-            else:
-                card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
         else:
             card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
             try:
