@@ -544,7 +544,8 @@ class UserCommands(commands.Cog):
                 try:
                     await ctx.reply(file=file, mention_author=mention)
                 except Exception as e:
-                    log.error(f"Failed to send profile pic: {e}")
+                    if "In message_reference: Unknown message" not in str(e):
+                        log.error(f"Failed to send profile pic: {e}")
                     try:
                         temp = BytesIO()
                         file_obj.save(temp, format="WEBP")
