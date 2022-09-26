@@ -878,14 +878,16 @@ class LevelUp(UserCommands, commands.Cog):
     @admin_group.command(name="statreset")
     async def reset_xp(self, ctx: commands.Context):
         """Reset everyone's exp and level"""
-        text = _("Are you sure you want to reset all user stats for this guild?") + " (y/n)"
+        users = self.data[ctx.guild.id]["users"].copy()
+        count = len(users.keys())
+        text = _("Are you sure you want to reset ") + str(count) + _(" users' stats?") + " (y/n)"
+        text += _("\nThis will reset their exp, voice time, messages, level, prestige and stars")
         msg = await ctx.send(text)
         yes = await confirm(ctx)
         if not yes:
             text = _("Not resetting user stats")
             return await msg.edit(content=text)
         async with ctx.typing():
-            users = self.data[ctx.guild.id]["users"].copy()
             deleted = 0
             for uid, data in users.items():
                 self.data[ctx.guild.id]["users"][uid]["xp"] = 0
