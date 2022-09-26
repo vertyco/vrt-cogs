@@ -47,9 +47,7 @@ class UserCommands(commands.Cog):
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return None
-        img.seek(0)
-        file = discord.File(img)
-        return file
+        return img
 
     # Generate profile image
     async def gen_profile_img(self, args: dict, full: bool = True):
@@ -155,13 +153,12 @@ class UserCommands(commands.Cog):
             'level': 69,
             'color': color,
         }
-        task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
-        try:
-            img = await asyncio.wait_for(task, timeout=30)
-        except asyncio.TimeoutError:
-            return await ctx.send("Image took too long to generate, try again in a few.")
-        img.seek(0)
-        file = discord.File(img)
+        img = await self.gen_levelup_img(args)
+        temp = BytesIO()
+        temp.name = f"{ctx.author.id}.webp"
+        img.save(temp, format="WEBP")
+        temp.seek(0)
+        file = discord.File(temp)
         await ctx.send(file=file)
 
     @commands.group(name="myprofile", aliases=["mypf", "pfset"])

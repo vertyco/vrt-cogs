@@ -32,7 +32,7 @@ class Generator:
             "streaming": os.path.join(bundled_data_path(self), 'streaming.png')
         }
 
-        self.font1 = os.path.join(bundled_data_path(self), 'font.ttf')
+        self.font = os.path.join(bundled_data_path(self), 'font.ttf')
 
     def generate_profile(
             self,
@@ -136,6 +136,7 @@ class Generator:
             [circle_x * 4, circle_y * 4, (300 + circle_x) * 4, (300 + circle_y) * 4], fill=(255, 255, 255, 255)
         )
         mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+
         # make a new Image to set up card-sized image for pfp layer and the circle mask for it
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
         # paste on square profile pic in appropriate spot
@@ -213,11 +214,11 @@ class Generator:
         # Add stats text
         draw = ImageDraw.Draw(final)
         name_size = 50
-        name_font = ImageFont.truetype(self.font1, name_size)
+        name_font = ImageFont.truetype(self.font, name_size)
 
         stats_size = 35
         stat_offset = stats_size + 5
-        stats_font = ImageFont.truetype(self.font1, stats_size)
+        stats_font = ImageFont.truetype(self.font, stats_size)
 
         # Stat strings
         rank = _(f"Rank: #") + str(user_position)
@@ -336,8 +337,8 @@ class Generator:
 
         # Editing stuff here
         # ======== Fonts to use =============
-        font_normal = ImageFont.truetype(self.font1, 40)
-        font_small = ImageFont.truetype(self.font1, 25)
+        font_normal = ImageFont.truetype(self.font, 40)
+        font_small = ImageFont.truetype(self.font, 25)
 
         def get_str(xp):
             return "{:,}".format(xp)
@@ -362,10 +363,10 @@ class Generator:
 
         # STAR TEXT
         if len(str(stars)) < 3:
-            star_font = ImageFont.truetype(self.font1, 35)
+            star_font = ImageFont.truetype(self.font, 35)
             draw.text((825, 25), stars, statcolor, font=star_font, stroke_width=1, stroke_fill=text_bg)
         else:
-            star_font = ImageFont.truetype(self.font1, 30)
+            star_font = ImageFont.truetype(self.font, 30)
             draw.text((825, 28), stars, statcolor, font=star_font, stroke_width=1, stroke_fill=text_bg)
 
         # Adding another blank layer for the progress bar
@@ -447,62 +448,78 @@ class Generator:
             level: int = 1,
             color: tuple = (0, 0, 0),
     ):
-        if not bg_image:
-            card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.Resampling.LANCZOS)
+        if bg_image and bg_image != "random":
+            bg_bytes = self.get_image_content_from_url(bg_image)
+            try:
+                card = Image.open(BytesIO(bg_bytes))
+            except UnidentifiedImageError:
+                card = self.get_random_background()
         else:
-            bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
-            if bg_bytes:
-                card = Image.open(bg_bytes).convert("RGBA").resize((180, 70), Image.Resampling.LANCZOS)
-            else:
-                card = Image.open(self.default_lvlup).convert("RGBA").resize((180, 70), Image.Resampling.LANCZOS)
+            card = self.get_random_background()
+        fillcolor = (0, 0, 0)
+        txtcolor = color
+
+        card_size = (180, 60)
+        aspect_ratio = (18, 6)
+        card = self.force_aspect_ratio(card, aspect_ratio).convert("RGBA").resize(card_size, Image.Resampling.LANCZOS)
+
+        # Draw rounded rectangle at 4x size and scale down to crop card to
+        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        mask_draw.rounded_rectangle(
+            (0, 0, card.size[0] * 4, card.size[1] * 4),
+            fill=fillcolor,
+            width=2,
+            radius=120
+        )
+        mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+
+        # Make new Image to create composite
+        composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
+        card = Image.composite(card, composite_holder, mask)
+
+        # Prep profile to paste
+        pfp_image = self.get_image_content_from_url(str(profile_image))
+        if pfp_image:
+            profile_bytes = BytesIO(pfp_image)
+            profile = Image.open(profile_bytes)
+        else:
+            profile = Image.open(self.default_pfp)
+        profile = profile.convert('RGBA').resize((60, 60), Image.Resampling.LANCZOS)
+
+        # Create mask for profile image crop
+        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        mask_draw.ellipse((0, 0, 60 * 4, 60 * 4), fill=fillcolor)
+        mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+
+        pfp_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
+        pfp_holder.paste(profile, (0, 0))
+
+        pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
+        pfp_composite_holder = Image.composite(pfp_holder, pfp_composite_holder, mask)
+
+        final = Image.alpha_composite(card, pfp_composite_holder)
+
+        string = _("Level ") + str(level)
+        fontsize = 24
+        if len(str(level)) > 2:
+            fontsize = 19
 
         # Draw
-        draw = ImageDraw.Draw(card)
+        draw = ImageDraw.Draw(final)
 
         if len(str(level)) > 2:
             size = 19
         else:
             size = 24
-        font_normal = ImageFont.truetype(self.font1, size)
-
-        MAINCOLOR = color
-        BORDER = (0, 0, 0)
-        level = _(f"Level {level}")
+        font = ImageFont.truetype(self.font, size)
 
         # Filling text
-        draw.text((73, 16), level, MAINCOLOR, font=font_normal, stroke_width=1, stroke_fill=BORDER)
-
-        # get profile pic
-        profile_bytes = BytesIO(self.get_image_content_from_url(str(profile_image)))
-        profile = Image.open(profile_bytes)
-        profile = profile.convert('RGBA').resize((60, 60), Image.Resampling.LANCZOS)
-
-        # Mask to crop profile image
-        # draw at 4x size and resample down to 1x for a nice smooth circle
-        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        # Profile pic border at 4x
-        mask_draw.ellipse((36, 36, 240, 240), fill=(255, 255, 255, 255))
-        mask = mask.resize(card.size, Image.Resampling.LANCZOS)
-
-        # Is used as a blank image for mask
-        profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
-
-        # paste on square profile pic in appropriate spot
-        profile_pic_holder.paste(profile, (5, 5))
-
-        # make a new Image at card size to crop pfp with transparency to the circle mask
-        pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
-        pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
-
-        # layer the pfp_composite_holder onto the card
-        pre = Image.alpha_composite(card, pfp_composite_holder)
-
-        final = Image.alpha_composite(pre, pfp_composite_holder)
-        temp = BytesIO()
-        final.save(temp, format="webp")
-        temp.name = f"profile_{random.randint(10000, 99999)}.webp"
-        return temp
+        text_x = 65
+        text_y = int((card.size[1] / 2) - (fontsize / 1.4))
+        draw.text((text_x, text_y), string, txtcolor, font=font, stroke_width=1, stroke_fill=fillcolor)
+        return final
 
     @staticmethod
     def get_image_content_from_url(url: str) -> Union[bytes, None]:

@@ -56,7 +56,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.9.35"
+    __version__ = "1.10.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -373,7 +373,7 @@ class LevelUp(UserCommands, commands.Cog):
             "colors": {"name": None, "stat": None, "levelbar": None}
         }
 
-    async def check_levelups(self, guild_id: int, user_id: str):
+    async def check_levelups(self, guild_id: int, user_id: str, message: discord.Message = None):
         base = self.data[guild_id]["base"]
         exp = self.data[guild_id]["exp"]
         user = self.data[guild_id]["users"][user_id]
@@ -387,10 +387,11 @@ class LevelUp(UserCommands, commands.Cog):
         if not guild:
             return
         self.data[guild_id]["users"][user_id]["level"] = maybe_new_level
-        await self.level_up(guild, user_id, maybe_new_level, background)
+        await self.level_up(guild, user_id, maybe_new_level, background, message)
 
     # User has leveled up, send message and check if any roles are associated with it
-    async def level_up(self, guild: discord.guild, user: str, new_level: int, bg: str = None):
+    async def level_up(
+            self, guild: discord.guild, user: str, new_level: int, bg: str = None, message: discord.Message = None):
         t1 = monotonic()
         conf = self.data[guild.id]
         levelroles = conf["levelroles"]
@@ -399,12 +400,13 @@ class LevelUp(UserCommands, commands.Cog):
         dm = conf["notifydm"]
         mention = conf["mention"]
         channel = conf["notifylog"]
-        can_send = False
-        if channel:
-            channel = guild.get_channel(channel)
-            perms = channel.permissions_for(guild.me).send_messages
-            if perms:
-                can_send = True
+
+        channel = guild.get_channel(channel) if channel else None
+        if message and not channel:
+            channel = message.channel
+
+        perms = channel.permissions_for(guild.me).send_messages if channel else False
+        can_send = True if perms else False
 
         usepics = conf["usepics"]
         can_send_attachments = False
@@ -455,7 +457,12 @@ class LevelUp(UserCommands, commands.Cog):
                 'level': new_level,
                 'color': color,
             }
-            file = await self.gen_levelup_img(args)
+            img = await self.gen_levelup_img(args)
+            temp = BytesIO()
+            temp.name = f"{member.id}.webp"
+            img.save(temp, format="WEBP")
+            temp.seek(0)
+            file = discord.File(temp)
             if dm:
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
 
@@ -561,7 +568,7 @@ class LevelUp(UserCommands, commands.Cog):
                 bxp = random.choice(range(bmin, bmax))
                 self.data[gid]["users"][uid]["xp"] += bxp
         self.data[gid]["users"][uid]["messages"] += 1
-        await self.check_levelups(gid, uid)
+        await self.check_levelups(gid, uid, message)
 
     async def check_voice(self, guild: discord.guild):
         jobs = []
@@ -1539,7 +1546,10 @@ class LevelUp(UserCommands, commands.Cog):
         """
         if not levelup_channel:
             self.data[ctx.guild.id]["notifylog"] = None
-            await ctx.send(_("LevelUp channel has been **Disabled**"))
+            await ctx.send(
+                _("LevelUp channel has been **Disabled**\n"
+                  "level up messages will now happen in the channel the user is in")
+            )
         else:
             perms = levelup_channel.permissions_for(ctx.guild.me).send_messages
             if not perms:
