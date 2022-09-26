@@ -465,6 +465,7 @@ class LevelUp(UserCommands, commands.Cog):
             img.save(temp, format="WEBP")
             temp.seek(0)
             file = discord.File(temp)
+
             if dm:
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
 
@@ -1570,6 +1571,7 @@ class LevelUp(UserCommands, commands.Cog):
         else:
             self.data[ctx.guild.id]["notify"] = True
             await ctx.send("LevelUp notifications have been **Enabled**")
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="starcooldown")
     async def set_star_cooldown(self, ctx: commands.Context, time_in_seconds: int):
