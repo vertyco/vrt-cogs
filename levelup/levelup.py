@@ -18,6 +18,7 @@ from discord.ext import tasks
 from redbot.core import commands, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
+from redbot.core.utils.predicates import MessagePredicate
 
 from .base import UserCommands
 from .formatter import (
@@ -36,6 +37,16 @@ _ = Translator("LevelUp", __file__)
 DPY2 = True if discord.__version__ > "1.7.3" else False
 
 
+async def confirm(ctx: commands.Context):
+    pred = MessagePredicate.yes_or_no(ctx)
+    try:
+        await ctx.bot.wait_for("message", check=pred, timeout=30)
+    except asyncio.TimeoutError:
+        return None
+    else:
+        return pred.result
+
+
 # CREDITS
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
@@ -45,7 +56,7 @@ DPY2 = True if discord.__version__ > "1.7.3" else False
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.8.35"
+    __version__ = "1.9.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -838,17 +849,56 @@ class LevelUp(UserCommands, commands.Cog):
     @commands.is_owner()
     async def reset_all(self, ctx: commands.Context):
         """Reset cog data for all guilds"""
+        text = _("Are you sure you want to reset all stats and settings for the entire cog?") + " (y/n)"
+        msg = await ctx.send(text)
+        yes = await confirm(ctx)
+        if not yes:
+            text = _("Not resetting all guilds")
+            return await msg.edit(content=text)
         for gid in self.data.copy():
             self.data[gid] = self.config.defaults["GUILD"]
+        await msg.edit(content=_("Settings and stats for all guilds have been reset"))
         await ctx.tick()
         await self.save_cache()
 
     @admin_group.command(name="guildreset")
     async def reset_guild(self, ctx: commands.Context):
         """Reset cog data for this guild"""
+        text = _("Are you sure you want to reset all stats and settings for this guild?") + " (y/n)"
+        msg = await ctx.send(text)
+        yes = await confirm(ctx)
+        if not yes:
+            text = _("Not resetting config")
+            return await msg.edit(content=text)
         self.data[ctx.guild.id] = self.config.defaults["GUILD"]
+        await msg.edit(content=_("All settings and stats reset"))
         await ctx.tick()
-        await self.save_cache()
+        await self.save_cache(ctx.guild)
+
+    @admin_group.command(name="statreset")
+    async def reset_xp(self, ctx: commands.Context):
+        """Reset everyone's exp and level"""
+        text = _("Are you sure you want to reset all user stats for this guild?") + " (y/n)"
+        msg = await ctx.send(text)
+        yes = await confirm(ctx)
+        if not yes:
+            text = _("Not resetting user stats")
+            return await msg.edit(content=text)
+        async with ctx.typing():
+            users = self.data[ctx.guild.id]["users"].copy()
+            deleted = 0
+            for uid, data in users.items():
+                self.data[ctx.guild.id]["users"][uid]["xp"] = 0
+                self.data[ctx.guild.id]["users"][uid]["voice"] = 0
+                self.data[ctx.guild.id]["users"][uid]["messages"] = 0
+                self.data[ctx.guild.id]["users"][uid]["level"] = 0
+                self.data[ctx.guild.id]["users"][uid]["prestige"] = 0
+                self.data[ctx.guild.id]["users"][uid]["stars"] = 0
+                deleted += 1
+            text = _("Reset stats for ") + str(deleted) + _(" users")
+            await msg.edit(content=text)
+        await ctx.tick()
+        await self.save_cache(ctx.guild)
 
     @admin_group.command(name="looptimes")
     async def get_looptimes(self, ctx: commands.Context):
