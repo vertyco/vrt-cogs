@@ -13,7 +13,7 @@ from redbot.core import commands, bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box
 
-from .formatter import (
+from levelup.utils.formatter import (
     time_formatter,
     hex_to_rgb,
     get_level,

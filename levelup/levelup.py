@@ -21,7 +21,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from redbot.core.utils.predicates import MessagePredicate
 
 from .base import UserCommands
-from .formatter import (
+from levelup.utils.formatter import (
     time_formatter,
     hex_to_rgb,
     get_level,
@@ -107,6 +107,7 @@ class LevelUp(UserCommands, commands.Cog):
             "notifydm": False,  # Toggle notify member of level up in DMs
             "mention": False,  # Toggle whether to mention the user
             "notifylog": None,  # Notify member of level up in a set channel
+            "notify": True,  # Toggle whether to notify member of levelups if notify log channel is not set
         }
         default_global = {"ignored_guilds": [], "cache_seconds": 15}
         self.config.register_guild(**default_guild)
@@ -400,6 +401,7 @@ class LevelUp(UserCommands, commands.Cog):
         dm = conf["notifydm"]
         mention = conf["mention"]
         channel = conf["notifylog"]
+        notify = conf["notify"]
 
         channel = guild.get_channel(channel) if channel else None
         if message and not channel:
@@ -467,7 +469,7 @@ class LevelUp(UserCommands, commands.Cog):
                 await member.send(f"You just leveled up in {guild.name}!", file=file)
 
             else:
-                if channel and can_send and can_send_attachments:
+                if channel and can_send and can_send_attachments and notify:
                     if mention:
                         await channel.send(_(f"**{mentionuser} just leveled up!**"), file=file)
                     else:
@@ -1557,6 +1559,17 @@ class LevelUp(UserCommands, commands.Cog):
             self.data[ctx.guild.id]["notifylog"] = levelup_channel.id
             await ctx.send(_(f"LevelUp channel has been set to {levelup_channel.mention}"))
         await self.save_cache(ctx.guild)
+
+    @lvl_group.command(name="levelupnotify")
+    async def toggle_levelup_notifications(self, ctx: commands.Context):
+        """Toggle the level up message when a user levels up"""
+        notify = self.data[ctx.guild.id]["notify"]
+        if notify:
+            self.data[ctx.guild.id]["notify"] = False
+            await ctx.send("LevelUp notifications have been **Disabled**")
+        else:
+            self.data[ctx.guild.id]["notify"] = True
+            await ctx.send("LevelUp notifications have been **Enabled**")
 
     @lvl_group.command(name="starcooldown")
     async def set_star_cooldown(self, ctx: commands.Context, time_in_seconds: int):
