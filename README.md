@@ -34,7 +34,7 @@ below!
 | VrtUtils          |   ✓    | <details><summary>Random utility commands.</summary> Small collection of commands used for my personal bot.</details>                                                                                                                                                                                                                                                                                               |
 | WarnTransfer      |   ✓    | <details><summary>Import El Laggron's WarnSystem modlog cases to core ModLogs.</summary> This cog has one command, which simply imports all WarnSystem cases to core modlogs. Only the owner can run it and it imports the data globally for all guilds the bot is in.</details>                                                                                                                                    |
 | XTools            |   ✓    | <details><summary>View your Xbox profile, friends, screenshots and game clips using simple commands and interactive menus.</summary> Various tools for Xbox using Microsoft's XSAPI. (You will need to register a Microsoft Azure application to use this cog. Type "[p]apiset help" after install for more info)</details>                                                                                         |
-| YouTubeDownloader |   ✓    | <details><summary>Download YouTube videos as mp3 files.</summary> Allows you to download entire playlists, all videos from a channel, or individual videos as mp3 files. You can either download them locally or have them sent directly to discord. WARNING: Downloading YouTube videos via 3rd party methods is against their ToS and I am not responsible if you get your bots ip suspended.</details>           |
+| YouTubeDownloader |   ✓    | <details><summary>Download YouTube videos as audio files.</summary> Allows you to download entire playlists, all videos from a channel, or individual videos as audio files. You can either download them locally or have them sent directly to discord. WARNING: Downloading YouTube videos via 3rd party methods is against their ToS and I am not responsible if you get your bots ip suspended.</details>       |
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vertyco)
 
@@ -46,7 +46,7 @@ If you haven't loaded the Downloader cog already, go ahead and do that first wit
 
 ```ini
 [p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs
-                                               [p]cog install vrt-cogs <list of cogs>
+[p]cog install vrt-cogs <list of cogs>
 [p]load <list of cogs>
 ```
 
