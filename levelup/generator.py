@@ -234,6 +234,10 @@ class Generator:
         # Name text
         draw.text((bar_start + 10, name_y), name, namecolor,
                   font=name_font, stroke_width=stroke_width, stroke_fill=namefill)
+        # Balance
+        draw.text((bar_start + 10, bar_top - 110), bal, statcolor,
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+
         # Prestige
         if prestige:
             draw.text((bar_start + 10, name_y + 55), prestige_str, statcolor,
@@ -251,9 +255,7 @@ class Generator:
         # Voice
         draw.text((bar_start + 210 + 10, stats_y + stat_offset), voice, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
-        # Balance
-        draw.text((bar_start + 10, bar_top - 110), bal, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+
         # Exp
         draw.text((bar_start + 10, bar_top - 60), exp, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
@@ -599,3 +601,12 @@ class Generator:
         choice = random.choice(os.listdir(bg_dir))
         bg_file = os.path.join(bg_dir, choice)
         return Image.open(bg_file)
+
+    @staticmethod
+    def has_emoji(text: str) -> Union[str, bool]:
+        if text.count(":") < 2:
+            return False
+        if "<" in text:
+            return "custom"
+        else:
+            return "unicode"
