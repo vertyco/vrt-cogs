@@ -105,7 +105,7 @@ class Generator:
         namesection = self.get_sample_section(card, namebox)
         namebg = self.get_img_color(namesection)
         namefill = default_fill
-        while self.distance(namecolor, namebg) < 240:
+        while self.distance(namecolor, namebg) < 230:
             namecolor = self.rand_rgb()
         if self.distance(namefill, namecolor) < 230:
             namefill = self.inv_rgb(namefill)
@@ -115,7 +115,7 @@ class Generator:
         statsection = self.get_sample_section(card, statbox)
         statbg = self.get_img_color(statsection)
         statstxtfil = default_fill
-        while self.distance(statcolor, statbg) < 240:
+        while self.distance(statcolor, statbg) < 230:
             statcolor = self.rand_rgb()
         if self.distance(statstxtfil, statcolor) < 230:
             statstxtfil = self.inv_rgb(statstxtfil)
