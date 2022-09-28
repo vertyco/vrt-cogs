@@ -115,6 +115,11 @@ class Generator:
         if self.distance(statstxtfil, statcolor) < 230:
             statstxtfil = self.inv_rgb(statstxtfil)
 
+        lvlbaroutline = base
+        while self.distance(lvlbaroutline, default_fill) < 100:
+            lvlbaroutline = self.rand_rgb()
+
+
         # get profile pic
         pfp_image = self.get_image_content_from_url(str(profile_image))
         if pfp_image:
@@ -170,7 +175,7 @@ class Generator:
         progress_bar_draw.rounded_rectangle(
             (bar_start * 4, bar_top * 4, bar_end * 4, bar_bottom * 4),
             fill=(255, 255, 255, 0),
-            outline=lvlbarcolor,
+            outline=lvlbaroutline,
             width=8,
             radius=90
         )
