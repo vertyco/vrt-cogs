@@ -565,7 +565,7 @@ class Generator:
             img = self.force_aspect_ratio(Image.open(filepath))
             img = img.convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
             draw = ImageDraw.Draw(img)
-            draw.text((10, 10), filename.replace(".png", ""), font=ImageFont.truetype(self.font, 80))
+            draw.text((10, 10), filename.replace(".png", ""), font=ImageFont.truetype(self.font, 100))
             imgs.append((img, filename))
 
         # Sort by name

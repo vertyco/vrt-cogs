@@ -221,7 +221,7 @@ class UserCommands(commands.Cog):
             file = discord.File(buffer)
             txt = _("Here are the current default backgrounds, to set one permanently you can use the ")
             txt += f"`{ctx.prefix}mypf background <filename>` " + _("command")
-            await ctx.send(_("Sample Backgrounds"), file=file)
+            await ctx.send(txt, file=file)
 
     @set_profile.command(name="type")
     async def toggle_profile_type(self, ctx: commands.Context):
