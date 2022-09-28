@@ -382,7 +382,7 @@ class UserCommands(commands.Cog):
     async def get_bg_path(self, ctx: commands.Context):
         """Get folder path for this cog's default backgrounds"""
         bgpath = os.path.join(bundled_data_path(self), "backgrounds")
-        txt = _("Your default background folder path is ")
+        txt = _("Your default background folder path is \n")
         await ctx.send(f"{txt}`{bgpath}`")
 
     @set_profile.command(name="background", aliases=["bg"])
