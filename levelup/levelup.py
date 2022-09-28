@@ -1048,6 +1048,7 @@ class LevelUp(UserCommands, commands.Cog):
                     f"{'second' if cache_sec == 1 else 'seconds'} "
                     f"before being re-generated when a user runs the profile command")
         )
+
         await ctx.send(embed=em)
 
     @admin_group.command(name="importleveler")
