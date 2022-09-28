@@ -223,6 +223,7 @@ class UserCommands(commands.Cog):
             await ctx.send(embed=em, file=file)
 
     @set_profile.command(name="backgrounds")
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def view_default_backgrounds(self, ctx: commands.Context):
         """View the default backgrounds"""
         async with ctx.typing():
@@ -376,7 +377,16 @@ class UserCommands(commands.Cog):
         self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = hex_color
         await ctx.tick()
 
+    @set_profile.command(name="bgpath")
+    @commands.is_owner()
+    async def get_bg_path(self, ctx: commands.Context):
+        """Get folder path for this cog's default backgrounds"""
+        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+        txt = _("Your default background folder path is ")
+        await ctx.send(f"{txt}`{bgpath}`")
+
     @set_profile.command(name="background", aliases=["bg"])
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def set_user_background(self, ctx: commands.Context, image_url: str = None):
         """
         Set a background for your profile
