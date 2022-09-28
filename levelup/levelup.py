@@ -56,7 +56,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.11.35"
+    __version__ = "1.12.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -481,9 +481,9 @@ class LevelUp(UserCommands, commands.Cog):
                         pass
                 elif all(perms) and channel:
                     if mention:
-                        await channel.send(f"**{mentionuser}**" + _(" just leveled up!**"), file=file)
+                        await channel.send(f"**{mentionuser}" + _(" just leveled up!**"), file=file)
                     else:
-                        await channel.send(f"**{name}**" + _(" just leveled up!**"), file=file)
+                        await channel.send(f"**{name}" + _(" just leveled up!**"), file=file)
 
         if not roleperms:
             # log.warning(f"Bot can't manage roles in {guild.name}")
@@ -923,20 +923,32 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.tick()
         await self.save_cache(ctx.guild)
 
-    @admin_group.command(name="looptimes")
-    async def get_looptimes(self, ctx: commands.Context):
-        """View current looptimes"""
+    @admin_group.command(name="view")
+    async def admin_view(self, ctx: commands.Context):
+        """View current loop times and cached data"""
+        cache = [
+            self.data.copy(),
+            self.voice.copy(),
+            self.stars.copy(),
+            self.profiles.copy()
+        ]
+        cachesize = self.get_size(sum(sys.getsizeof(i) for i in cache))
         lt = self.looptimes
-        text = f"`Voice Checker: `{lt['checkvoice']}ms\n" \
-               f"`Cache Dumper:  `{lt['cachedump']}ms\n" \
-               f"`Lvl Assignment: `{lt['lvlassignavg']}ms"
-        embed = discord.Embed(
-            title="Task Loop Times",
-            description=_(text),
-            color=discord.Color.random()
-        )
-        embed.set_footer(text=_("Units are the average times in milliseconds"))
-        await ctx.send(embed=embed)
+        ct = self.cache_seconds
+
+        em = discord.Embed(description=_("Cog Stats"), color=ctx.author.color)
+
+        looptimes = _("`Voice Checker: `") + humanize_number(lt["checkvoice"]) + "ms\n"
+        looptimes += _("`Cache Dumping: `") + humanize_number(lt["cachedump"]) + "ms\n"
+        looptimes += _("`Lvl Assign:    `") + humanize_number(lt["lvlassignavg"]) + "ms\n"
+        em.add_field(name=_("Loop Times"), value=looptimes, inline=False)
+
+        cachetxt = _("`Profile Cache Time: `") + (_("Disabled\n") if not ct else f"{humanize_number(ct)} seconds\n")
+        cachetxt += _("`Cache Size:         `") + cachesize
+        em.add_field(name=_("Cache"), value=cachetxt, inline=False)
+
+        em.set_footer(text=_("Units are the average times in milliseconds"))
+        await ctx.send(embed=em)
 
     @admin_group.command(name="globalbackup")
     @commands.is_owner()
@@ -1155,7 +1167,7 @@ class LevelUp(UserCommands, commands.Cog):
                         self.data[guild.id]["users"][user_id]["xp"] = xp
 
                     # Import rep
-                    self.data[guild.id]["users"][user_id]["stars"] = int(userinfo["rep"])
+                    self.data[guild.id]["users"][user_id]["stars"] = int(userinfo["rep"]) if userinfo["rep"] else 0
                     users_imported += 1
 
             embed = discord.Embed(
