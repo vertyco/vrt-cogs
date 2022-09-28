@@ -407,13 +407,13 @@ class LevelUp(UserCommands, commands.Cog):
         if message and not channel:
             channel = message.channel
 
-        perms = channel.permissions_for(guild.me).send_messages if channel else False
-        can_send = True if perms else False
+        perms = [
+            channel.permissions_for(guild.me).send_messages if channel else False,
+            channel.permissions_for(guild.me).attach_files if channel else False,
+            channel.permissions_for(guild.me).embed_links if channel else False
+        ]
 
         usepics = conf["usepics"]
-        can_send_attachments = False
-        if channel:
-            can_send_attachments = channel.permissions_for(guild.me).attach_files
         member = guild.get_member(int(user))
         if not member:
             return
@@ -466,17 +466,17 @@ class LevelUp(UserCommands, commands.Cog):
             temp.seek(0)
             file = discord.File(temp)
 
-            if dm:
-                await member.send(f"You just leveled up in {guild.name}!", file=file)
-
-            else:
-                if channel and can_send and can_send_attachments and notify:
+            if notify:
+                if dm:
+                    try:
+                        await member.send(f"You just leveled up in {guild.name}!", file=file)
+                    except discord.Forbidden:
+                        pass
+                elif all(perms):
                     if mention:
-                        await channel.send(_(f"**{mentionuser} just leveled up!**"), file=file)
+                        await channel.send(f"**{mentionuser}**" + _(" just leveled up!**"), file=file)
                     else:
-                        await channel.send(_(f"**{name} just leveled up!**"), file=file)
-                else:
-                    log.warning(f"Bot cant send LevelUp alert to log channel in {guild.name}")
+                        await channel.send(f"**{name}**" + _(" just leveled up!**"), file=file)
 
         if not roleperms:
             # log.warning(f"Bot can't manage roles in {guild.name}")
@@ -720,6 +720,7 @@ class LevelUp(UserCommands, commands.Cog):
         deafended = conf["deafened"]
         invisible = conf["invisible"]
         notifydm = conf["notifydm"]
+        lvlmessage = conf["notify"]
         mention = conf["mention"]
         starcooldown = conf["starcooldown"]
         starmention = conf["starmention"]
@@ -744,6 +745,7 @@ class LevelUp(UserCommands, commands.Cog):
               f"`Base Multiplier:  `{base}\n" \
               f"`Exp Multiplier:   `{exp}\n" \
               f"**LevelUps**\n" \
+              f"`LevelUp Notify:   `{lvlmessage}\n" \
               f"`Notify in DMs:    `{notifydm}\n" \
               f"`Mention User:     `{mention}\n" \
               f"`AutoRemove Roles: `{autoremove}\n" \
@@ -1561,7 +1563,7 @@ class LevelUp(UserCommands, commands.Cog):
             await ctx.send(_(f"LevelUp channel has been set to {levelup_channel.mention}"))
         await self.save_cache(ctx.guild)
 
-    @lvl_group.command(name="levelupnotify")
+    @lvl_group.command(name="levelnotify")
     async def toggle_levelup_notifications(self, ctx: commands.Context):
         """Toggle the level up message when a user levels up"""
         notify = self.data[ctx.guild.id]["notify"]
