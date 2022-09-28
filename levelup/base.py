@@ -192,20 +192,33 @@ class UserCommands(commands.Cog):
             stat = user["colors"]["stat"]
             levelbar = user["colors"]["levelbar"]
 
-            desc = f"`Profile Size:    `{full}\n" \
-                   f"`Name Color:      `{name}\n" \
-                   f"`Stat Color:      `{stat}\n" \
-                   f"`Level Bar Color: `{levelbar}\n" \
-                   f"`Background URL:  `{bg}"
+            desc = _("`Profile Size:    `") + full
+            desc += _("`Name Color:      `") + name
+            desc += _("`Stat Color:      `") + stat
+            desc += _("`Level Bar Color: `") + levelbar
+            desc += _("`Background:      `") + bg
 
             em = discord.Embed(
                 title="Your Profile Settings",
-                description=_(desc),
+                description=desc,
                 color=ctx.author.color
             )
-            if bg and "http" in bg.lower():
-                em.set_image(url=bg)
-            await ctx.send(embed=em)
+            file = None
+            if bg:
+                if "http" in bg.lower():
+                    em.set_image(url=bg)
+                elif bg != "random":
+                    bgpaths = os.path.join(bundled_data_path(self), "backgrounds")
+                    defaults = [i for i in os.listdir(bgpaths)]
+                    if bg in defaults:
+                        bgpath = os.path.join(bgpaths, bg)
+                        try:
+                            file = discord.File(bgpath, filename=bg)
+                            em.set_image(url=f"attachment://{bg}")
+                        except (WindowsError, PermissionError, OSError):
+                            print("permission error")
+                            pass
+            await ctx.send(embed=em, file=file)
 
     @set_profile.command(name="backgrounds")
     async def view_default_backgrounds(self, ctx: commands.Context):
