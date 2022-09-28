@@ -485,110 +485,110 @@ class UserCommands(commands.Cog):
         xp_needed = get_xp(next_level, base=conf["base"], exp=conf["exp"])
         lvlbar = get_bar(xp, xp_needed, width=15)
 
-        if not usepics:
-            msg = "🎖｜" + _("Level ") + humanize_number(level) + "\n"
-            if prestige:
-                msg += "🏆｜" + _("Prestige ") + humanize_number(prestige) + f" {emoji['str']}\n"
-            msg += f"⭐｜{humanize_number(stars)}" + _(" stars\n")
-            msg += f"💬｜{humanize_number(messages)}" + _(" messages sent\n")
-            msg += f"🎙｜{time_formatter(voice)}" + _(" in voice\n")
-            msg += f"💡｜{humanize_number(xp)}/{humanize_number(xp_needed)} Exp\n"
-            msg += f"💰｜{humanize_number(bal)} {currency_name}"
-            em = discord.Embed(description=msg, color=user.color)
-            footer = _("Rank ") + position + _(", with ") + str(percentage) + _("% of global server Exp")
-            em.set_footer(text=footer)
-            em.add_field(
-                name=_("Progress"),
-                value=box(lvlbar, "py")
-            )
-            txt = _("Profile")
-            if role_icon:
-                em.set_author(name=f"{user.name}'s {txt}", icon_url=role_icon)
-            else:
-                em.set_author(name=f"{user.name}'s {txt}")
-            if pfp:
-                em.set_thumbnail(url=pfp)
-            try:
-                await ctx.reply(embed=em, mention_author=mention)
-            except discord.HTTPException:
-                await ctx.send(embed=em)
-
-        else:
-            bg_image = bg if bg else await self.get_banner(user)
-            colors = users[user_id]["colors"]
-            usercolors = {
-                "base": hex_to_rgb(str(user.colour)),
-                "name": hex_to_rgb(colors["name"]) if colors["name"] else None,
-                "stat": hex_to_rgb(colors["stat"]) if colors["stat"] else None,
-                "levelbar": hex_to_rgb(colors["levelbar"]) if colors["levelbar"] else None
-            }
-
-            args = {
-                'bg_image': bg_image,  # Background image link
-                'profile_image': pfp,  # User profile picture link
-                'level': level,  # User current level
-                'user_xp': xp,  # User current xp
-                'next_xp': xp_needed,  # xp required for next level
-                'user_position': position,  # User position in leaderboard
-                'user_name': user.name,  # username with discriminator
-                'user_status': str(user.status).strip(),  # User status eg. online, offline, idle, streaming, dnd
-                'colors': usercolors,  # User's color
-                'messages': humanize_number(messages),
-                'voice': time_formatter(voice),
-                'prestige': prestige,
-                'emoji': emoji["url"] if emoji and isinstance(emoji, dict) else None,
-                'stars': stars,
-                'balance': bal,
-                'currency': currency_name,
-                'role_icon': role_icon
-            }
-
-            now = datetime.datetime.now()
-            if gid not in self.profiles:
-                self.profiles[gid] = {}
-            if user_id not in self.profiles[gid]:
-                self.profiles[gid][user_id] = {"file": None, "last": now}
-
-            last = self.profiles[gid][user_id]
-            td = (now - last["last"]).total_seconds()
-            if td > self.cache_seconds or not last["file"]:
-                file_obj = await self.gen_profile_img(args, full)
-                self.profiles[gid][user_id] = {"file": file_obj, "last": now}
-            else:
-                file_obj = self.profiles[gid][user_id]["file"]
-
-            # If file_obj is STILL None
-            if not file_obj:
-                msg = f"Something went wrong while generating your profile image!\n" \
-                      f"Image may be returning `None` if it takes longer than 60 seconds to generate.\n" \
-                      f"**Debug Data**\n{box(json.dumps(args, indent=2))}"
-                return await ctx.send(msg)
-
-            temp = BytesIO()
-            file_obj.save(temp, format="WEBP")
-            temp.name = f"{ctx.author.id}.webp"
-            temp.seek(0)
-            file = discord.File(temp)
-            if not file:
-                return await ctx.send(f"Failed to generate profile image :( try again in a bit")
-            try:
-                await ctx.reply(file=file, mention_author=mention)
-            except Exception as e:
-                if "In message_reference: Unknown message" not in str(e):
-                    log.error(f"Failed to send profile pic: {e}")
+        async with ctx.typing():
+            if not usepics:
+                msg = "🎖｜" + _("Level ") + humanize_number(level) + "\n"
+                if prestige:
+                    msg += "🏆｜" + _("Prestige ") + humanize_number(prestige) + f" {emoji['str']}\n"
+                msg += f"⭐｜{humanize_number(stars)}" + _(" stars\n")
+                msg += f"💬｜{humanize_number(messages)}" + _(" messages sent\n")
+                msg += f"🎙｜{time_formatter(voice)}" + _(" in voice\n")
+                msg += f"💡｜{humanize_number(xp)}/{humanize_number(xp_needed)} Exp\n"
+                msg += f"💰｜{humanize_number(bal)} {currency_name}"
+                em = discord.Embed(description=msg, color=user.color)
+                footer = _("Rank ") + position + _(", with ") + str(percentage) + _("% of global server Exp")
+                em.set_footer(text=footer)
+                em.add_field(
+                    name=_("Progress"),
+                    value=box(lvlbar, "py")
+                )
+                txt = _("Profile")
+                if role_icon:
+                    em.set_author(name=f"{user.name}'s {txt}", icon_url=role_icon)
+                else:
+                    em.set_author(name=f"{user.name}'s {txt}")
+                if pfp:
+                    em.set_thumbnail(url=pfp)
                 try:
-                    temp = BytesIO()
-                    file_obj.save(temp, format="WEBP")
-                    temp.name = f"{ctx.author.id}.webp"
-                    temp.seek(0)
-                    file = discord.File(temp)
-                    if mention:
-                        await ctx.send(ctx.author.mention, file=file)
-                    else:
-                        await ctx.send(file=file)
+                    await ctx.reply(embed=em, mention_author=mention)
+                except discord.HTTPException:
+                    await ctx.send(embed=em)
+
+            else:
+                bg_image = bg if bg else await self.get_banner(user)
+                colors = users[user_id]["colors"]
+                usercolors = {
+                    "base": hex_to_rgb(str(user.colour)),
+                    "name": hex_to_rgb(colors["name"]) if colors["name"] else None,
+                    "stat": hex_to_rgb(colors["stat"]) if colors["stat"] else None,
+                    "levelbar": hex_to_rgb(colors["levelbar"]) if colors["levelbar"] else None
+                }
+
+                args = {
+                    'bg_image': bg_image,  # Background image link
+                    'profile_image': pfp,  # User profile picture link
+                    'level': level,  # User current level
+                    'user_xp': xp,  # User current xp
+                    'next_xp': xp_needed,  # xp required for next level
+                    'user_position': position,  # User position in leaderboard
+                    'user_name': user.name,  # username with discriminator
+                    'user_status': str(user.status).strip(),  # User status eg. online, offline, idle, streaming, dnd
+                    'colors': usercolors,  # User's color
+                    'messages': humanize_number(messages),
+                    'voice': time_formatter(voice),
+                    'prestige': prestige,
+                    'emoji': emoji["url"] if emoji and isinstance(emoji, dict) else None,
+                    'stars': stars,
+                    'balance': bal,
+                    'currency': currency_name,
+                    'role_icon': role_icon
+                }
+
+                now = datetime.datetime.now()
+                if gid not in self.profiles:
+                    self.profiles[gid] = {}
+                if user_id not in self.profiles[gid]:
+                    self.profiles[gid][user_id] = {"file": None, "last": now}
+
+                last = self.profiles[gid][user_id]
+                td = (now - last["last"]).total_seconds()
+                if td > self.cache_seconds or not last["file"]:
+                    file_obj = await self.gen_profile_img(args, full)
+                    self.profiles[gid][user_id] = {"file": file_obj, "last": now}
+                else:
+                    file_obj = self.profiles[gid][user_id]["file"]
+
+                # If file_obj is STILL None
+                if not file_obj:
+                    msg = f"Something went wrong while generating your profile image!\n" \
+                          f"Image may be returning `None` if it takes longer than 60 seconds to generate.\n" \
+                          f"**Debug Data**\n{box(json.dumps(args, indent=2))}"
+                    return await ctx.send(msg)
+
+                temp = BytesIO()
+                file_obj.save(temp, format="WEBP")
+                temp.name = f"{ctx.author.id}.webp"
+                temp.seek(0)
+                file = discord.File(temp)
+                if not file:
+                    return await ctx.send(f"Failed to generate profile image :( try again in a bit")
+                try:
+                    await ctx.reply(file=file, mention_author=mention)
                 except Exception as e:
-                    log.error(f"Failed AGAIN to send profile pic: {e}")
-                await asyncio.sleep(5)
+                    if "In message_reference: Unknown message" not in str(e):
+                        log.error(f"Failed to send profile pic: {e}")
+                    try:
+                        temp = BytesIO()
+                        file_obj.save(temp, format="WEBP")
+                        temp.name = f"{ctx.author.id}.webp"
+                        temp.seek(0)
+                        file = discord.File(temp)
+                        if mention:
+                            await ctx.send(ctx.author.mention, file=file)
+                        else:
+                            await ctx.send(file=file)
+                    except Exception as e:
+                        log.error(f"Failed AGAIN to send profile pic: {e}")
 
     @commands.command(name="prestige")
     @commands.guild_only()
