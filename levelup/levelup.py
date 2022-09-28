@@ -228,15 +228,16 @@ class LevelUp(UserCommands, commands.Cog):
 
         if not self.data[gid]["starmention"]:
             return
-
-        if chan.permissions_for(guild.me).send_messages:
-            with contextlib.suppress(discord.HTTPException):
-                await chan.send(
-                    _(
-                        f"**{giver.name}** just gave a star to **{receiver.name}**!"
-                    ),
-                    delete_after=60
-                )
+        del_after = self.data[gid]["starmentionautodelete"]
+        star_giver = f"**{giver.name}** "
+        star_reciever = f" **{receiver.name}**!"
+        if not chan.permissions_for(guild.me).send_messages:
+            return
+        with contextlib.suppress(discord.HTTPException):
+            if del_after:
+                await chan.send(star_giver + _("just gave a star to") + star_reciever, del_after=del_after)
+            else:
+                await chan.send(star_giver + _("just gave a star to") + star_reciever)
 
     @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
