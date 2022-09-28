@@ -188,14 +188,16 @@ class UserCommands(commands.Cog):
             user = users[uid]
             bg = user["background"]
             full = "full" if user["full"] else "slim"
-            name = user["colors"]["name"]
-            stat = user["colors"]["stat"]
-            levelbar = user["colors"]["levelbar"]
 
-            desc = _("`Profile Size:    `") + full
-            desc += _("`Name Color:      `") + name
-            desc += _("`Stat Color:      `") + stat
-            desc += _("`Level Bar Color: `") + levelbar
+            colors = user["colors"]
+            name = colors["name"] if colors["name"] else _("Not Set")
+            stat = colors["stat"] if colors["stat"] else _("Not Set")
+            levelbar = colors["levelbar"] if colors["levelbar"] else _("Not Set")
+
+            desc = _("`Profile Size:    `") + full + "\n"
+            desc += _("`Name Color:      `") + name + "\n"
+            desc += _("`Stat Color:      `") + stat + "\n"
+            desc += _("`Level Bar Color: `") + levelbar + "\n"
             desc += _("`Background:      `") + bg
 
             em = discord.Embed(
