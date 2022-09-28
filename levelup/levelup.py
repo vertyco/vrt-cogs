@@ -431,19 +431,23 @@ class LevelUp(UserCommands, commands.Cog):
 
         # Send levelup messages
         if not usepics:
-            if dm:
-                await member.send(_(f"You have just reached level {new_level} in {guild.name}!"))
-            color = member.colour
-            embed = discord.Embed(
-                description=_(f"**Just reached level {new_level}!**"),
-                color=color
-            )
-            embed.set_author(name=name, icon_url=pfp)
-            if channel and can_send:
-                if mention:
-                    await channel.send(mentionuser, embed=embed)
-                else:
-                    await channel.send(embed=embed)
+            if notify:
+                if dm:
+                    dmtxt = _("You have just reached level ") + str(new_level) + _(" in ") + guild.name + "!"
+                    dmembed = discord.Embed(description=dmtxt, color=member.color)
+                    dmembed.set_thumbnail(url=pfp)
+                    try:
+                        await member.send(embed=dmembed)
+                    except discord.Forbidden:
+                        pass
+                elif all(perms) and channel:
+                    channeltxt = _("Just reached level ") + str(new_level) + "!"
+                    channelembed = discord.Embed(description=channeltxt, color=member.color)
+                    channelembed.set_author(name=name, icon_url=pfp)
+                    if mention:
+                        await channel.send(mentionuser, embed=channelembed)
+                    else:
+                        await channel.send(embed=channelembed)
 
         else:
             # Generate LevelUP Image
@@ -468,11 +472,12 @@ class LevelUp(UserCommands, commands.Cog):
 
             if notify:
                 if dm:
+                    txt = _("You just leveled up in ") + guild.name
                     try:
-                        await member.send(f"You just leveled up in {guild.name}!", file=file)
+                        await member.send(txt, file=file)
                     except discord.Forbidden:
                         pass
-                elif all(perms):
+                elif all(perms) and channel:
                     if mention:
                         await channel.send(f"**{mentionuser}**" + _(" just leveled up!**"), file=file)
                     else:
@@ -1533,6 +1538,20 @@ class LevelUp(UserCommands, commands.Cog):
         """
         Toggle star reaction mentions
         Toggle whether the bot mentions that a user reacted to a message with a star
+        """
+        mention = self.data[ctx.guild.id]["starmention"]
+        if mention:
+            self.data[ctx.guild.id]["starmention"] = False
+            await ctx.send(_("Star reaction mentions **Disabled**"))
+        else:
+            self.data[ctx.guild.id]["starmention"] = True
+            await ctx.send(_("Star reaction mention **Enabled**"))
+        await self.save_cache(ctx.guild)
+
+    @lvl_group.command(name="starmentiondelete")
+    async def toggle_starmention_autodelete(self, ctx: commands.Context):
+        """
+        Toggle whether the bot auto-deletes the star mentions
         """
         mention = self.data[ctx.guild.id]["starmention"]
         if mention:
