@@ -8,9 +8,12 @@ from typing import Union
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
+
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
+
+from levelup.utils.core import Pilmoji
 
 log = logging.getLogger("red.vrt.levelup.generator")
 _ = Translator("LevelUp", __file__)
@@ -231,12 +234,29 @@ class Generator:
         bal = _("Balance: ") + f"{humanize_number(balance)} {currency}"
         prestige_str = _(f"Prestige ") + str(prestige)
 
-        # Name text
-        draw.text((bar_start + 10, name_y), name, namecolor,
-                  font=name_font, stroke_width=stroke_width, stroke_fill=namefill)
-        # Balance
-        draw.text((bar_start + 10, bar_top - 110), bal, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+        # Render name and credits text through pilmoji in case there are emojis
+        with Pilmoji(final) as pilmoji:
+            # Name text
+            pilmoji.text((bar_start + 10, name_y), name, namecolor,
+                         font=name_font,
+                         stroke_width=stroke_width,
+                         stroke_fill=namefill,
+                         emoji_scale_factor=1.2,
+                         emoji_position_offset=(0, 5))
+            # Balance
+            pilmoji.text((bar_start + 10, bar_top - 110), bal, statcolor,
+                         font=stats_font,
+                         stroke_width=stroke_width,
+                         stroke_fill=statstxtfil,
+                         emoji_scale_factor=1.2,
+                         emoji_position_offset=(0, 5))
+
+        # # Name text
+        # draw.text((bar_start + 10, name_y), name, namecolor,
+        #           font=name_font, stroke_width=stroke_width, stroke_fill=namefill)
+        # # Balance
+        # draw.text((bar_start + 10, bar_top - 110), bal, statcolor,
+        #           font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
 
         # Prestige
         if prestige:
