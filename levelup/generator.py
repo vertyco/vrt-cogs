@@ -2,7 +2,7 @@ import logging
 import os
 import random
 from io import BytesIO
-from math import sqrt
+from math import sqrt, ceil
 from typing import Union
 
 import colorgram
@@ -42,7 +42,6 @@ class Generator:
             bg_image: str = None,
             profile_image: str = "https://i.imgur.com/sUYWCve.png",
             level: int = 1,
-            current_xp: int = 0,
             user_xp: int = 0,
             next_xp: int = 100,
             user_position: str = "1",
@@ -73,13 +72,19 @@ class Generator:
 
         # Set canvas
         if bg_image and bg_image != "random":
-            bg_bytes = self.get_image_content_from_url(bg_image)
-            try:
-                card = Image.open(BytesIO(bg_bytes))
-            except UnidentifiedImageError:
-                card = self.get_random_background()
+            bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+            defaults = [i for i in os.listdir(bgpath)]
+            if bg_image in defaults:
+                card = Image.open(os.path.join(bgpath, bg_image))
+            else:
+                bg_bytes = self.get_image_content_from_url(bg_image)
+                try:
+                    card = Image.open(BytesIO(bg_bytes))
+                except UnidentifiedImageError:
+                    card = self.get_random_background()
         else:
             card = self.get_random_background()
+
         card = self.force_aspect_ratio(card).convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
 
         # Coord setup
@@ -118,7 +123,6 @@ class Generator:
         lvlbaroutline = base
         while self.distance(lvlbaroutline, default_fill) < 100:
             lvlbaroutline = self.rand_rgb()
-
 
         # get profile pic
         pfp_image = self.get_image_content_from_url(str(profile_image))
@@ -166,9 +170,7 @@ class Generator:
         progress_bar = Image.new("RGBA", (card.size[0] * 4, card.size[1] * 4), (255, 255, 255, 0))
         progress_bar_draw = ImageDraw.Draw(progress_bar)
         # Calculate data for level bar
-        xpneed = next_xp - current_xp
-        xphave = user_xp - current_xp
-        xp_ratio = xphave / xpneed
+        xp_ratio = user_xp / next_xp
         end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + 400
         # Rectangle 0:left x, 1:top y, 2:right x, 3:bottom y
         # Draw level bar outline
@@ -298,7 +300,6 @@ class Generator:
             bg_image: str = None,
             profile_image: str = "https://i.imgur.com/sUYWCve.png",
             level: int = 1,
-            current_xp: int = 0,
             user_xp: int = 0,
             next_xp: int = 100,
             user_position: str = "1",
@@ -329,25 +330,28 @@ class Generator:
         text_bg = (0, 0, 0)
 
         # Set canvas
+        aspect_ratio = (27, 7)
         if bg_image and bg_image != "random":
-            bg_bytes = self.get_image_content_from_url(bg_image)
-            try:
-                card = Image.open(BytesIO(bg_bytes)).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
-            except UnidentifiedImageError:
-                card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
-            bg_bytes = BytesIO(self.get_image_content_from_url(bg_image))
-            try:
-                bgcolor = self.get_img_color(bg_bytes)
-            except Exception as e:
-                log.warning(f"Failed to get profile image color: {e}")
-                bgcolor = base
+            bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+            defaults = [i for i in os.listdir(bgpath)]
+            if bg_image in defaults:
+                card = Image.open(os.path.join(bgpath, bg_image))
+            else:
+                bg_bytes = self.get_image_content_from_url(bg_image)
+                try:
+                    card = Image.open(BytesIO(bg_bytes))
+                except UnidentifiedImageError:
+                    card = self.get_random_background()
         else:
-            card = Image.open(self.default_bg).convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
-            try:
-                bgcolor = self.get_img_color(self.default_bg)
-            except Exception as e:
-                log.warning(f"Failed to get default image color: {e}")
-                bgcolor = base
+            card = self.get_random_background()
+
+        card = self.force_aspect_ratio(card, aspect_ratio)
+        card = card.convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
+        try:
+            bgcolor = self.get_img_color(card)
+        except Exception as e:
+            log.error(f"Failed to get slim profile BG color: {e}")
+            bgcolor = base
 
         # Compare text colors to BG
         while self.distance(namecolor, bgcolor) < 45:
@@ -402,10 +406,7 @@ class Generator:
         # rectangle 0:x, 1:top y, 2:length, 3:bottom y
         progress_bar_draw.rectangle((246, 200, 741, 215), fill=(255, 255, 255, 0), outline=lvlbarcolor)
 
-        xpneed = next_xp - current_xp
-        xphave = user_xp - current_xp
-
-        current_percentage = (xphave / xpneed) * 100
+        current_percentage = (user_xp / next_xp) * 100
         length_of_bar = (current_percentage * 4.9) + 248
 
         progress_bar_draw.rectangle((248, 203, length_of_bar, 212), fill=statcolor)
@@ -476,20 +477,25 @@ class Generator:
             color: tuple = (0, 0, 0),
     ):
         if bg_image and bg_image != "random":
-            bg_bytes = self.get_image_content_from_url(bg_image)
-            try:
-                card = Image.open(BytesIO(bg_bytes))
-            except UnidentifiedImageError:
-                card = self.get_random_background()
+            bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+            defaults = [i for i in os.listdir(bgpath)]
+            if bg_image in defaults:
+                card = Image.open(os.path.join(bgpath, bg_image))
+            else:
+                bg_bytes = self.get_image_content_from_url(bg_image)
+                try:
+                    card = Image.open(BytesIO(bg_bytes))
+                except UnidentifiedImageError:
+                    card = self.get_random_background()
         else:
             card = self.get_random_background()
-        fillcolor = (0, 0, 0)
-        txtcolor = color
 
         card_size = (180, 60)
         aspect_ratio = (18, 6)
         card = self.force_aspect_ratio(card, aspect_ratio).convert("RGBA").resize(card_size, Image.Resampling.LANCZOS)
 
+        fillcolor = (0, 0, 0)
+        txtcolor = color
         # Draw rounded rectangle at 4x size and scale down to crop card to
         mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
@@ -547,6 +553,73 @@ class Generator:
         text_y = int((card.size[1] / 2) - (fontsize / 1.4))
         draw.text((text_x, text_y), string, txtcolor, font=font, stroke_width=1, stroke_fill=fillcolor)
         return final
+
+    def get_all_backgrounds(self):
+        backgrounds = os.path.join(bundled_data_path(self), "backgrounds")
+        choices = os.listdir(backgrounds)
+        if not choices:
+            return None
+        imgs = []
+        for filename in choices:
+            filepath = os.path.join(backgrounds, filename)
+            img = self.force_aspect_ratio(Image.open(filepath))
+            img = img.convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
+            draw = ImageDraw.Draw(img)
+            draw.text((10, 10), filename.replace(".png", ""), font=ImageFont.truetype(self.font, 80))
+            imgs.append((img, filename))
+
+        # Sort by name
+        imgs = sorted(imgs, key=lambda key: key[1])
+
+        # Make grid 4 wide by however many tall
+        rowcount = ceil(len(imgs) / 4)
+        # Make a bunch of rows of 4
+        rows = []
+        index = 0
+        for i in range(rowcount):
+            first = None
+            final = None
+            for x in range(4):
+                if index >= len(imgs):
+                    continue
+                img_obj = imgs[index][0]
+                index += 1
+                if first is None:
+                    first = img_obj
+                    continue
+                if final is None:
+                    final = self.concat_img_h(first, img_obj)
+                else:
+                    final = self.concat_img_h(final, img_obj)
+            rows.append(final)
+
+        # Now concat the rows vertically
+        first = None
+        final = None
+        for row_img_obj in rows:
+            if first is None:
+                first = row_img_obj
+                continue
+            if final is None:
+                final = self.concat_img_v(first, row_img_obj)
+            else:
+                final = self.concat_img_v(final, row_img_obj)
+
+        return final
+
+    @staticmethod
+    def concat_img_v(im1: Image, im2: Image) -> Image:
+        new = Image.new("RGBA", (im1.width, im1.height + im2.height))
+        new.paste(im1, (0, 0))
+        new.paste(im2, (0, im1.height))
+        return new
+
+    @staticmethod
+    def concat_img_h(im1: Image, im2: Image) -> Image:
+        new = Image.new("RGBA", (im1.width + im2.width, im1.height))
+        new.paste(im1, (0, 0))
+        new.paste(im2, (im1.width, 0))
+        return new
 
     @staticmethod
     def get_image_content_from_url(url: str) -> Union[bytes, None]:
