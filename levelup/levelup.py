@@ -97,6 +97,7 @@ class LevelUp(UserCommands, commands.Cog):
             "length": 0,  # Minimum length of message to be considered eligible for XP gain
             "starcooldown": 3600,  # Cooldown in seconds for users to give each other stars
             "starmention": True,  # Mention when users add a star
+            "starmentionautodelete": 30,  # Auto delete star mention reactions (0 to disable)
             "usepics": False,  # Use Pics instead of embeds for leveling, Embeds are default
             "autoremove": False,  # Remove previous role on level up
             "stackprestigeroles": True,  # Toggle whether to stack prestige roles
@@ -729,6 +730,7 @@ class LevelUp(UserCommands, commands.Cog):
         mention = conf["mention"]
         starcooldown = conf["starcooldown"]
         starmention = conf["starmention"]
+        stardelete = conf["starmentionautodelete"] if conf["starmentionautodelete"] else "Disabled"
         sc = time_formatter(starcooldown)
         notifylog = ctx.guild.get_channel(conf["notifylog"])
         if not notifylog:
@@ -737,27 +739,28 @@ class LevelUp(UserCommands, commands.Cog):
             notifylog = notifylog.mention
 
         msg = f"**Messages**\n" \
-              f"`Message XP:       `{xp[0]}-{xp[1]}\n" \
-              f"`Min Msg Length:   `{length}\n" \
-              f"`Cooldown:         `{cooldown} seconds\n" \
+              f"`Message XP:        `{xp[0]}-{xp[1]}\n" \
+              f"`Min Msg Length:    `{length}\n" \
+              f"`Cooldown:          `{cooldown} seconds\n" \
               f"**Voice**\n" \
-              f"`Voice XP:         `{voicexp} per minute\n" \
-              f"`Ignore Muted:     `{muted}\n" \
-              f"`Ignore Solo:      `{solo}\n" \
-              f"`Ignore Deafened:  `{deafended}\n" \
-              f"`Ignore Invisible: `{invisible}\n" \
+              f"`Voice XP:          `{voicexp} per minute\n" \
+              f"`Ignore Muted:      `{muted}\n" \
+              f"`Ignore Solo:       `{solo}\n" \
+              f"`Ignore Deafened:   `{deafended}\n" \
+              f"`Ignore Invisible:  `{invisible}\n" \
               f"**Level Algorithm**\n" \
-              f"`Base Multiplier:  `{base}\n" \
-              f"`Exp Multiplier:   `{exp}\n" \
+              f"`Base Multiplier:   `{base}\n" \
+              f"`Exp Multiplier:    `{exp}\n" \
               f"**LevelUps**\n" \
-              f"`LevelUp Notify:   `{lvlmessage}\n" \
-              f"`Notify in DMs:    `{notifydm}\n" \
-              f"`Mention User:     `{mention}\n" \
-              f"`AutoRemove Roles: `{autoremove}\n" \
-              f"`LevelUp Channel:  `{notifylog}\n" \
+              f"`LevelUp Notify:    `{lvlmessage}\n" \
+              f"`Notify in DMs:     `{notifydm}\n" \
+              f"`Mention User:      `{mention}\n" \
+              f"`AutoRemove Roles:  `{autoremove}\n" \
+              f"`LevelUp Channel:   `{notifylog}\n" \
               f"**Stars**\n" \
-              f"`Cooldown:         `{sc}\n" \
-              f"`React Mention:    `{starmention}\n"
+              f"`Cooldown:          `{sc}\n" \
+              f"`React Mention:     `{starmention}\n" \
+              f"`MentionAutoDelete: `{stardelete}\n"
         if levelroles:
             msg += "**Levels**\n"
             for level, role_id in levelroles.items():
@@ -1549,17 +1552,16 @@ class LevelUp(UserCommands, commands.Cog):
         await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="starmentiondelete")
-    async def toggle_starmention_autodelete(self, ctx: commands.Context):
+    async def toggle_starmention_autodelete(self, ctx: commands.Context, deleted_after: int):
         """
         Toggle whether the bot auto-deletes the star mentions
+        Set to 0 to disable auto-delete
         """
-        mention = self.data[ctx.guild.id]["starmention"]
-        if mention:
-            self.data[ctx.guild.id]["starmention"] = False
-            await ctx.send(_("Star reaction mentions **Disabled**"))
+        self.data[ctx.guild.id]["starmentionautodelete"] = int(deleted_after)
+        if deleted_after:
+            await ctx.send(_("Star reaction mentions will auto-delete after ") + str(deleted_after) + _(" seconds"))
         else:
-            self.data[ctx.guild.id]["starmention"] = True
-            await ctx.send(_("Star reaction mention **Enabled**"))
+            await ctx.send(_("Star reaction mentions will not be deleted"))
         await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="levelchannel")
