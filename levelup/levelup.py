@@ -946,8 +946,6 @@ class LevelUp(UserCommands, commands.Cog):
         cachetxt = _("`Profile Cache Time: `") + (_("Disabled\n") if not ct else f"{humanize_number(ct)} seconds\n")
         cachetxt += _("`Cache Size:         `") + cachesize
         em.add_field(name=_("Cache"), value=cachetxt, inline=False)
-
-        em.set_footer(text=_("Units are the average times in milliseconds"))
         await ctx.send(embed=em)
 
     @admin_group.command(name="globalbackup")
