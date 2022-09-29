@@ -242,6 +242,8 @@ class UserCommands(commands.Cog):
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def view_default_backgrounds(self, ctx: commands.Context):
         """View the default backgrounds"""
+        if not self.data[ctx.guild.id]["usepics"]:
+            return await ctx.send(_("Image profiles are disabled on this server so this command is off"))
         async with ctx.typing():
             img = await self.get_backgrounds()
             if img is None:
@@ -265,6 +267,8 @@ class UserCommands(commands.Cog):
     @set_profile.command(name="fonts")
     async def view_fonts(self, ctx: commands.Context):
         """View available fonts to use"""
+        if not self.data[ctx.guild.id]["usepics"]:
+            return await ctx.send(_("Image profiles are disabled on this server so this command is off"))
         async with ctx.typing():
             img = await self.get_fonts()
             if img is None:
