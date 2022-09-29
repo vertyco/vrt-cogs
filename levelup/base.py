@@ -260,6 +260,7 @@ class UserCommands(commands.Cog):
         else:
             self.data[ctx.guild.id]["users"][user_id]["full"] = True
             await ctx.send(_("Your profile image has been set to **Full**"))
+        await ctx.tick()
 
     @set_profile.command(name="namecolor", aliases=["name"])
     async def set_name_color(self, ctx: commands.Context, hex_color: str):
@@ -452,6 +453,7 @@ class UserCommands(commands.Cog):
         else:
             self.data[ctx.guild.id]["users"][user_id]["background"] = None
             await ctx.send(_("Your background has been removed since you did not specify a url!"))
+        await ctx.tick()
 
     @commands.command(name="pf")
     @commands.guild_only()
