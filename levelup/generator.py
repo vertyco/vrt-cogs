@@ -219,11 +219,16 @@ class Generator:
         prestige_str = _(f"Prestige ") + str(prestige)
 
         # Setup font sizes
-        base_font = self.font
-        if font_name:
-            fontfile = os.path.join(self.fonts, font_name)
-            if os.path.exists(fontfile):
-                base_font = fontfile
+        fonts = [i for i in os.listdir(self.fonts)]
+        font = random.choice(fonts)
+        base_font = os.path.join(self.fonts, font)
+
+        # base_font = self.font
+        # if font_name:
+        #     fontfile = os.path.join(self.fonts, font_name)
+        #     if os.path.exists(fontfile):
+        #         base_font = fontfile
+
         draw = ImageDraw.Draw(final)
         name_size = 60
         name_font = ImageFont.truetype(base_font, name_size)
@@ -233,19 +238,23 @@ class Generator:
         nameht = name_font.getbbox(user_name)
         name_y = name_y - int(nameht[1] * 0.6)
 
+        emoji_scale = 1.2
         stats_size = 35
         stat_offset = stats_size + 5
         stats_font = ImageFont.truetype(base_font, stats_size)
         while (stats_font.getlength(leveltxt) + bar_start + 10) > bar_start + 210:
             stats_size -= 1
+            emoji_scale += 0.1
             stats_font = ImageFont.truetype(base_font, stats_size)
         # Also check message box
         while (stats_font.getlength(message_count) + bar_start + 220) > final.width - 10:
             stats_size -= 1
+            emoji_scale += 0.1
             stats_font = ImageFont.truetype(base_font, stats_size)
         # And rank box
         while (stats_font.getlength(rank) + bar_start + 10) > bar_start + 210:
             stats_size -= 1
+            emoji_scale += 0.1
             stats_font = ImageFont.truetype(base_font, stats_size)
 
         star_fontsize = 60
@@ -258,19 +267,23 @@ class Generator:
         # Render name and credits text through pilmoji in case there are emojis
         with Pilmoji(final) as pilmoji:
             # Name text
+            name_bbox = name_font.getbbox(user_name)
+            name_emoji_y = name_bbox[3] - name_size
             pilmoji.text((bar_start + 10, name_y), user_name, namecolor,
                          font=name_font,
                          stroke_width=stroke_width,
                          stroke_fill=namefill,
-                         emoji_scale_factor=1.2,
-                         emoji_position_offset=(0, 5))
+                         emoji_scale_factor=emoji_scale,
+                         emoji_position_offset=(0, name_emoji_y))
             # Balance
+            bal_bbox = stats_font.getbbox(bal)
+            bal_emoji_y = bal_bbox[3] - int(stats_size * emoji_scale)
             pilmoji.text((bar_start + 10, bar_top - 110), bal, statcolor,
                          font=stats_font,
                          stroke_width=stroke_width,
                          stroke_fill=statstxtfill,
-                         emoji_scale_factor=1.2,
-                         emoji_position_offset=(0, 5))
+                         emoji_scale_factor=emoji_scale,
+                         emoji_position_offset=(0, bal_emoji_y))
 
         # # Name text
         # draw.text((bar_start + 10, name_y), name, namecolor,
@@ -324,8 +337,14 @@ class Generator:
         if prestige_bytes:
             prestige_bytes = BytesIO(prestige_bytes)
             prestige_img = Image.open(prestige_bytes).resize((stats_size, stats_size), Image.Resampling.LANCZOS)
-            pr_x = int(stats_font.getlength(prestige_str) + bar_start + 20)
-            blank.paste(prestige_img, (pr_x, stats_y - stats_size - 5))
+            # Adjust prestige icon placement
+            p_bbox = stats_font.getbbox(prestige_str)
+            # Middle of stat text
+            pmiddle = stats_y - stats_size - 10 + int(p_bbox[3] / 2)
+            # Paste prestige image appropriately
+            pr_x = p_bbox[2] + bar_start + 20
+            pr_y = pmiddle - int(stats_size / 2)
+            blank.paste(prestige_img, (pr_x, pr_y))
 
         # Paste star and status to profile
         blank.paste(status, (circle_x + 230, circle_y + 240))
