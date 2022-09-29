@@ -109,7 +109,6 @@ class Generator:
         circle_x = 60
         circle_y = 75
         star_x = 960
-        star_y = name_y
 
         stroke_width = 2
 
@@ -233,7 +232,7 @@ class Generator:
 
         # Paste star and status to profile
         blank.paste(status, (circle_x + 230, circle_y + 240))
-        blank.paste(star, (star_x - 60, star_y))
+        blank.paste(star, (star_x - 60, name_y + 5))
 
         # New final
         final = Image.alpha_composite(final, blank)
@@ -261,7 +260,7 @@ class Generator:
             name_size -= 1
             name_font = ImageFont.truetype(base_font, name_size)
         nameht = name_font.getbbox(user_name)
-        name_y = name_y - int(nameht[1] / 2)
+        name_y = name_y - int(nameht[1] * 0.6)
 
         stats_size = 45
         stat_offset = stats_size + 5
@@ -283,7 +282,6 @@ class Generator:
         while (star_font.getlength(stars) + 960) > final.width - 10:
             star_fontsize -= 1
             star_font = ImageFont.truetype(base_font, star_fontsize)
-        star_text_y = name_y
 
         # Add stats text
         # Render name and credits text through pilmoji in case there are emojis
@@ -333,7 +331,7 @@ class Generator:
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
 
         # Stars
-        draw.text((star_x, star_text_y), stars, namecolor,
+        draw.text((star_x, name_y), stars, namecolor,
                   font=star_font, stroke_width=stroke_width, stroke_fill=namefill)
 
         return final
