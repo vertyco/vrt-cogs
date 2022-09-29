@@ -184,7 +184,7 @@ class Generator:
         progress_bar_draw = ImageDraw.Draw(progress_bar)
         # Calculate data for level bar
         xp_ratio = user_xp / next_xp
-        end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + 400
+        end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + bar_start
         # Rectangle 0:left x, 1:top y, 2:right x, 3:bottom y
         # Draw level bar outline
         progress_bar_draw.rounded_rectangle(
@@ -435,13 +435,15 @@ class Generator:
         # Adding another blank layer for the progress bar
         progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
         progress_bar_draw = ImageDraw.Draw(progress_bar)
+        bar_start = 260
+        bar_end = 740
         # rectangle 0:x, 1:top y, 2:length, 3:bottom y
-        progress_bar_draw.rectangle((260, 200, 741, 215), fill=(255, 255, 255, 0), outline=lvlbarcolor)
+        progress_bar_draw.rectangle((bar_start, 200, bar_end, 215), fill=(255, 255, 255, 0), outline=lvlbarcolor)
 
-        current_percentage = (user_xp / next_xp) * 100
-        length_of_bar = (current_percentage * 4.9) + 262
+        xp_ratio = user_xp / next_xp
+        end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + bar_start
 
-        progress_bar_draw.rectangle((262, 203, length_of_bar, 212), fill=statcolor)
+        progress_bar_draw.rectangle((bar_start + 2, 203, end_of_inner_bar - 2, 212), fill=statcolor)
 
         # pfp border - draw at 4x and resample down to 1x for nice smooth circles
         circle_img = Image.new("RGBA", (800, 800))
