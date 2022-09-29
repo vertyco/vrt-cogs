@@ -58,16 +58,29 @@ class Generator:
             role_icon: str = None
     ):
         # Colors
+        base = self.rand_rgb()
+        namecolor = self.rand_rgb()
+        statcolor = self.rand_rgb()
+        lvlbarcolor = self.rand_rgb()
+        # Color distancing is more strict if user hasn't defined color
+        namedistance = 250
+        statdistance = 250
+        lvldistance = 250
         if colors:
+            # Relax distance for colors that are defined
             base = colors["base"]
-            namecolor = colors["name"] if colors["name"] else self.rand_rgb()
-            statcolor = colors["stat"] if colors["stat"] else self.rand_rgb()
-            lvlbarcolor = colors["levelbar"] if colors["levelbar"] else base
-        else:
-            base = self.rand_rgb()
-            namecolor = self.rand_rgb()
-            statcolor = self.rand_rgb()
-            lvlbarcolor = self.rand_rgb()
+            if colors["name"]:
+                namecolor = colors["name"]
+                namedistance = 100
+            if colors["stat"]:
+                statcolor = colors["stat"]
+                statdistance = 100
+            if colors["levelbar"]:
+                lvlbarcolor = colors["levelbar"]
+                lvldistance = 100
+            else:
+                lvlbarcolor = base
+
         default_fill = (0, 0, 0)
 
         # Set canvas
@@ -105,9 +118,9 @@ class Generator:
         namesection = self.get_sample_section(card, namebox)
         namebg = self.get_img_color(namesection)
         namefill = default_fill
-        while self.distance(namecolor, namebg) < 230:
+        while self.distance(namecolor, namebg) < namedistance:
             namecolor = self.rand_rgb()
-        if self.distance(namefill, namecolor) < 230:
+        if self.distance(namefill, namecolor) < namedistance - 50:
             namefill = self.inv_rgb(namefill)
 
         # Sample stat box colors and make sure they're not too similar with the background
@@ -115,13 +128,13 @@ class Generator:
         statsection = self.get_sample_section(card, statbox)
         statbg = self.get_img_color(statsection)
         statstxtfil = default_fill
-        while self.distance(statcolor, statbg) < 230:
+        while self.distance(statcolor, statbg) < statdistance:
             statcolor = self.rand_rgb()
-        if self.distance(statstxtfil, statcolor) < 230:
+        if self.distance(statstxtfil, statcolor) < statdistance - 50:
             statstxtfil = self.inv_rgb(statstxtfil)
 
         lvlbaroutline = base
-        while self.distance(lvlbaroutline, default_fill) < 100:
+        while self.distance(lvlbaroutline, default_fill) < lvldistance:
             lvlbaroutline = self.rand_rgb()
 
         # get profile pic
@@ -316,16 +329,29 @@ class Generator:
             role_icon: str = None
     ):
         # Colors
+        base = self.rand_rgb()
+        namecolor = self.rand_rgb()
+        statcolor = self.rand_rgb()
+        lvlbarcolor = self.rand_rgb()
+        # Color distancing is more strict if user hasn't defined color
+        namedistance = 250
+        statdistance = 250
+        lvldistance = 250
         if colors:
+            # Relax distance for colors that are defined
             base = colors["base"]
-            namecolor = colors["name"] if colors["name"] else self.rand_rgb()
-            statcolor = colors["stat"] if colors["stat"] else self.rand_rgb()
-            lvlbarcolor = colors["levelbar"] if colors["levelbar"] else base
-        else:
-            base = self.rand_rgb()
-            namecolor = self.rand_rgb()
-            statcolor = self.rand_rgb()
-            lvlbarcolor = self.rand_rgb()
+            if colors["name"]:
+                namecolor = colors["name"]
+                namedistance = 100
+            if colors["stat"]:
+                statcolor = colors["stat"]
+                statdistance = 100
+            if colors["levelbar"]:
+                lvlbarcolor = colors["levelbar"]
+                lvldistance = 100
+            else:
+                lvlbarcolor = base
+
         outlinecolor = (0, 0, 0)
         text_bg = (0, 0, 0)
 
@@ -354,14 +380,20 @@ class Generator:
             bgcolor = base
 
         # Compare text colors to BG
-        while self.distance(namecolor, bgcolor) < 45:
+        while self.distance(namecolor, bgcolor) < namedistance:
             namecolor = self.rand_rgb()
-        while self.distance(statcolor, bgcolor) < 45:
+        while self.distance(statcolor, bgcolor) < statdistance:
             statcolor = self.rand_rgb()
-        while self.distance(lvlbarcolor, bgcolor) < 45:
+        while self.distance(lvlbarcolor, bgcolor) < lvldistance:
             lvlbarcolor = self.rand_rgb()
         while self.distance(outlinecolor, bgcolor) < 50:
             outlinecolor = self.rand_rgb()
+
+        # Place semi-transparent box over right side
+        blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
+        transparent_box = Image.new("RGBA", card.size, (0, 0, 0, 100))
+        blank.paste(transparent_box, (240, 0))
+        card = Image.alpha_composite(card, blank)
 
         # Draw
         draw = ImageDraw.Draw(card)
@@ -385,12 +417,12 @@ class Generator:
         stars = str(stars)
 
         # stat text
-        draw.text((245, 22), name, namecolor, font=font_normal, stroke_width=1, stroke_fill=text_bg)
-        draw.text((245, 95), rank, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((245, 125), level, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((245, 160), exp, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((450, 95), messages, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((450, 125), voice, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((260, 20), name, namecolor, font=font_normal, stroke_width=1, stroke_fill=text_bg)
+        draw.text((260, 95), rank, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((260, 125), level, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((260, 160), exp, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((465, 95), messages, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        draw.text((465, 125), voice, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
 
         # STAR TEXT
         if len(str(stars)) < 3:
@@ -404,12 +436,12 @@ class Generator:
         progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
         progress_bar_draw = ImageDraw.Draw(progress_bar)
         # rectangle 0:x, 1:top y, 2:length, 3:bottom y
-        progress_bar_draw.rectangle((246, 200, 741, 215), fill=(255, 255, 255, 0), outline=lvlbarcolor)
+        progress_bar_draw.rectangle((260, 200, 741, 215), fill=(255, 255, 255, 0), outline=lvlbarcolor)
 
         current_percentage = (user_xp / next_xp) * 100
-        length_of_bar = (current_percentage * 4.9) + 248
+        length_of_bar = (current_percentage * 4.9) + 262
 
-        progress_bar_draw.rectangle((248, 203, length_of_bar, 212), fill=statcolor)
+        progress_bar_draw.rectangle((262, 203, length_of_bar, 212), fill=statcolor)
 
         # pfp border - draw at 4x and resample down to 1x for nice smooth circles
         circle_img = Image.new("RGBA", (800, 800))
