@@ -26,4 +26,3 @@ async def setup_after_ready(bot: Red):
     else:
         bot.add_cog(cog)
     await cog.initialize()
-    log.info("Config initialized")

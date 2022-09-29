@@ -71,6 +71,14 @@ class UserCommands(commands.Cog):
             img = None
         return img
 
+    async def get_fonts(self):
+        task = self.bot.loop.run_in_executor(None, lambda: Generator().get_all_fonts())
+        try:
+            img = await asyncio.wait_for(task, timeout=60)
+        except asyncio.TimeoutError:
+            img = None
+        return img
+
     # Function to test a given URL and see if it's valid
     async def valid_url(self, ctx: commands.Context, image_url: str):
         valid = validators.url(image_url)
@@ -152,6 +160,11 @@ class UserCommands(commands.Cog):
         banner = await self.get_banner(user)
         color = str(user.colour)
         color = hex_to_rgb(color)
+        font = None
+        uid = str(user.id)
+        conf = self.data[ctx.guild.id]["users"]
+        if uid in conf:
+            font = conf[uid]["font"]
         if DPY2:
             pfp = user.avatar.url if user.avatar else None
         else:
@@ -161,6 +174,7 @@ class UserCommands(commands.Cog):
             'profile_image': pfp,
             'level': 69,
             'color': color,
+            'font_name': font
         }
         img = await self.gen_levelup_img(args)
         temp = BytesIO()
@@ -193,11 +207,13 @@ class UserCommands(commands.Cog):
             name = colors["name"] if colors["name"] else _("Not Set")
             stat = colors["stat"] if colors["stat"] else _("Not Set")
             levelbar = colors["levelbar"] if colors["levelbar"] else _("Not Set")
+            font = user["font"] if user["font"] else _("Not Set")
 
             desc = _("`Profile Size:    `") + full + "\n"
             desc += _("`Name Color:      `") + name + "\n"
             desc += _("`Stat Color:      `") + stat + "\n"
             desc += _("`Level Bar Color: `") + levelbar + "\n"
+            desc += _("`Font:            `") + font + "\n"
             desc += _("`Background:      `") + bg
 
             em = discord.Embed(
@@ -245,6 +261,29 @@ class UserCommands(commands.Cog):
                 await ctx.send(txt, file=file)
             except discord.HTTPException:
                 await ctx.send(_("Could not send background collage, file size may be too large."))
+
+    @set_profile.command(name="fonts")
+    async def view_fonts(self, ctx: commands.Context):
+        """View available fonts to use"""
+        async with ctx.typing():
+            img = await self.get_fonts()
+            if img is None:
+                await ctx.send(_("Failed to generate background samples"))
+            buffer = BytesIO()
+            try:
+                img.save(buffer, format="WEBP")
+                buffer.name = f"{ctx.author.id}.webp"
+            except ValueError:
+                img.save(buffer, format="PNG", quality=50)
+                buffer.name = f"{ctx.author.id}.png"
+            buffer.seek(0)
+            file = discord.File(buffer)
+            txt = _("Here are the current fonts, to set one permanently you can use the ")
+            txt += f"`{ctx.prefix}mypf font <fontname>` " + _("command")
+            try:
+                await ctx.send(txt, file=file)
+            except discord.HTTPException:
+                await ctx.send(_("Could not send font collage, file size may be too large."))
 
     @set_profile.command(name="type")
     async def toggle_profile_type(self, ctx: commands.Context):
@@ -462,6 +501,36 @@ class UserCommands(commands.Cog):
             await ctx.send(_("Your background has been removed since you did not specify a url!"))
         await ctx.tick()
 
+    @set_profile.command(name="font")
+    async def set_user_font(self, ctx: commands.Context, *, font_name: str):
+        """
+        Set a font for your profile
+
+        To view available fonts, type `[p]myprofile fonts`
+        To revert to the default font, use `default` for the `font_name` argument
+        """
+        if not self.data[ctx.guild.id]["usepics"]:
+            return await ctx.send(_("Image profiles are disabled on this server, this setting has no effect"))
+
+        users = self.data[ctx.guild.id]["users"]
+        user_id = str(ctx.author.id)
+        if user_id not in users:
+            self.init_user(ctx.guild.id, user_id)
+
+        if font_name.lower() == "default":
+            self.data[ctx.guild.id]["users"][user_id]["font"] = None
+            return await ctx.send(_("Your profile font has been reverted to default"))
+
+        fonts = os.path.join(bundled_data_path(self), "fonts")
+        for filename in os.listdir(fonts):
+            if font_name.lower() in filename.lower():
+                break
+        else:
+            return await ctx.send(_("I could not find a font file with that name"))
+
+        self.data[ctx.guild.id]["users"][user_id]["font"] = filename
+        await ctx.send(_("Your profile font has been set to ") + filename)
+
     @commands.command(name="pf")
     @commands.guild_only()
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
@@ -513,6 +582,7 @@ class UserCommands(commands.Cog):
         stars: int = p["stars"]  # Int
         emoji: dict = p["emoji"]  # Dict
         bg = p["background"]  # Either None, random, or a filename
+        font = p["font"]  # Either None or a filename
 
         # Calculate remaining needed stats
         next_level = level + 1
@@ -575,7 +645,8 @@ class UserCommands(commands.Cog):
                     'stars': stars,
                     'balance': bal,
                     'currency': currency_name,
-                    'role_icon': role_icon
+                    'role_icon': role_icon,
+                    'font_name': font
                 }
 
                 now = datetime.datetime.now()

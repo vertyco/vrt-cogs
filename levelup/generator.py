@@ -23,10 +23,7 @@ ASPECT_RATIO = (21, 9)
 class Generator:
     def __init__(self):
         self.star = os.path.join(bundled_data_path(self), 'star.png')
-        self.default_lvlup = os.path.join(bundled_data_path(self), 'lvlup.png')
-        self.default_bg = os.path.join(bundled_data_path(self), 'card.png')
         self.default_pfp = os.path.join(bundled_data_path(self), 'defaultpfp.png')
-
         self.status = {
             "online": os.path.join(bundled_data_path(self), 'online.png'),
             "offline": os.path.join(bundled_data_path(self), 'offline.png'),
@@ -34,8 +31,9 @@ class Generator:
             "dnd": os.path.join(bundled_data_path(self), 'dnd.png'),
             "streaming": os.path.join(bundled_data_path(self), 'streaming.png')
         }
-
         self.font = os.path.join(bundled_data_path(self), 'font.ttf')
+
+        self.fonts = os.path.join(bundled_data_path(self), 'fonts')
 
     def generate_profile(
             self,
@@ -55,7 +53,8 @@ class Generator:
             stars: str = "0",
             balance: int = 0,
             currency: str = "credits",
-            role_icon: str = None
+            role_icon: str = None,
+            font_name: str = None
     ):
         # Colors
         base = self.rand_rgb()
@@ -109,6 +108,8 @@ class Generator:
         bar_bottom = 420
         circle_x = 60
         circle_y = 75
+        star_x = 960
+        star_y = name_y
 
         stroke_width = 2
 
@@ -232,7 +233,7 @@ class Generator:
 
         # Paste star and status to profile
         blank.paste(status, (circle_x + 230, circle_y + 240))
-        blank.paste(star, (900, name_y + 5))
+        blank.paste(star, (star_x - 60, star_y))
 
         # New final
         final = Image.alpha_composite(final, blank)
@@ -248,36 +249,38 @@ class Generator:
         prestige_str = _(f"Prestige ") + str(prestige)
 
         # Setup font sizes
+        base_font = self.font
+        if font_name:
+            fontfile = os.path.join(self.fonts, font_name)
+            if os.path.exists(fontfile):
+                base_font = fontfile
         draw = ImageDraw.Draw(final)
-
-        name_size = 50
-        name_font = ImageFont.truetype(self.font, name_size)
-        decrement = True
+        name_size = 60
+        name_font = ImageFont.truetype(base_font, name_size)
         while (name_font.getlength(user_name) + bar_start + 20) > 900:
             name_size -= 1
-            if decrement:
-                name_y += 1
-                decrement = False
-            else:
-                decrement = True
-            name_font = ImageFont.truetype(self.font, name_size)
+            name_font = ImageFont.truetype(base_font, name_size)
+        nameht = name_font.getbbox(user_name)
+        name_y = name_y - int(nameht[1] / 2)
 
-        stats_size = 35
+        stats_size = 45
         stat_offset = stats_size + 5
-        stats_font = ImageFont.truetype(self.font, stats_size)
+        stats_font = ImageFont.truetype(base_font, stats_size)
+        while (stats_font.getlength(leveltxt) + bar_start + 10) > bar_start + 210:
+            stats_size -= 1
+            stats_font = ImageFont.truetype(base_font, stats_size)
+        # Also check message box
+        while (stats_font.getlength(message_count) + bar_start + 220) > final.width - 10:
+            stats_size -= 1
+            stats_font = ImageFont.truetype(base_font, stats_size)
 
-        star_fontsize = 50
-        star_font = ImageFont.truetype(self.font, star_fontsize)
-        startop = name_y - 3
-        decrement = True
+        star_fontsize = 60
+        star_font = ImageFont.truetype(base_font, star_fontsize)
         while (star_font.getlength(stars) + 960) > final.width - 10:
             star_fontsize -= 1
-            if decrement:
-                startop += 1
-                decrement = False
-            else:
-                decrement = True
-            star_font = ImageFont.truetype(self.font, star_fontsize)
+            star_font = ImageFont.truetype(base_font, star_fontsize)
+        starht = star_font.getbbox(stars)
+        star_text_y = star_y + starht[1]
 
         # Add stats text
         # Render name and credits text through pilmoji in case there are emojis
@@ -316,10 +319,10 @@ class Generator:
         draw.text((bar_start + 10, stats_y + stat_offset), leveltxt, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
         # Messages
-        draw.text((bar_start + 210 + 10, stats_y), message_count, statcolor,
+        draw.text((bar_start + 220, stats_y), message_count, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
         # Voice
-        draw.text((bar_start + 210 + 10, stats_y + stat_offset), voice, statcolor,
+        draw.text((bar_start + 220, stats_y + stat_offset), voice, statcolor,
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
 
         # Exp
@@ -327,7 +330,7 @@ class Generator:
                   font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
 
         # Stars
-        draw.text((960, startop), stars, namecolor,
+        draw.text((star_x, star_text_y), stars, namecolor,
                   font=star_font, stroke_width=stroke_width, stroke_fill=namefill)
 
         return final
@@ -350,7 +353,8 @@ class Generator:
             stars: str = "0",
             balance: int = 0,
             currency: str = "credits",
-            role_icon: str = None
+            role_icon: str = None,
+            font_name: str = None
     ):
         # Colors
         base = self.rand_rgb()
@@ -424,9 +428,6 @@ class Generator:
 
         # Editing stuff here
         # ======== Fonts to use =============
-        font_normal = ImageFont.truetype(self.font, 40)
-        font_small = ImageFont.truetype(self.font, 25)
-
         def get_str(xp):
             return "{:,}".format(xp)
 
@@ -440,21 +441,39 @@ class Generator:
             name += _(f" - Prestige {prestige}")
         stars = str(stars)
 
-        # stat text
-        draw.text((260, 20), name, namecolor, font=font_normal, stroke_width=1, stroke_fill=text_bg)
-        draw.text((260, 95), rank, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((260, 125), level, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((260, 160), exp, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((465, 95), messages, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
-        draw.text((465, 125), voice, statcolor, font=font_small, stroke_width=1, stroke_fill=text_bg)
+        base_font = self.font
+        if font_name:
+            fontfile = os.path.join(self.fonts, font_name)
+            if os.path.exists(fontfile):
+                base_font = fontfile
+        namesize = 45
+        statsize = 30
+        starsize = 45
+        namefont = ImageFont.truetype(base_font, namesize)
+        statfont = ImageFont.truetype(base_font, statsize)
+        starfont = ImageFont.truetype(base_font, starsize)
 
-        # STAR TEXT
-        if len(str(stars)) < 3:
-            star_font = ImageFont.truetype(self.font, 35)
-            draw.text((825, 25), stars, statcolor, font=star_font, stroke_width=1, stroke_fill=text_bg)
-        else:
-            star_font = ImageFont.truetype(self.font, 30)
-            draw.text((825, 28), stars, statcolor, font=star_font, stroke_width=1, stroke_fill=text_bg)
+        while (namefont.getlength(name) + 260) > 770:
+            namesize -= 1
+            namefont = ImageFont.truetype(base_font, namesize)
+        while (statfont.getlength(messages) + 465) > 890:
+            statsize -= 1
+            statfont = ImageFont.truetype(base_font, statsize)
+        while (statfont.getlength(level) + 260) > 455:
+            statsize -= 1
+            statfont = ImageFont.truetype(base_font, statsize)
+        while (starfont.getlength(stars) + 825) > 890:
+            starsize -= 1
+            starfont = ImageFont.truetype(base_font, starsize)
+
+        # Stat text
+        draw.text((260, 20), name, namecolor, font=namefont, stroke_width=1, stroke_fill=text_bg)
+        draw.text((260, 95), rank, statcolor, font=statfont, stroke_width=1, stroke_fill=text_bg)
+        draw.text((260, 125), level, statcolor, font=statfont, stroke_width=1, stroke_fill=text_bg)
+        draw.text((260, 160), exp, statcolor, font=statfont, stroke_width=1, stroke_fill=text_bg)
+        draw.text((465, 95), messages, statcolor, font=statfont, stroke_width=1, stroke_fill=text_bg)
+        draw.text((465, 125), voice, statcolor, font=statfont, stroke_width=1, stroke_fill=text_bg)
+        draw.text((825, 28), stars, statcolor, font=starfont, stroke_width=1, stroke_fill=text_bg)
 
         # Adding another blank layer for the progress bar
         progress_bar = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -514,9 +533,6 @@ class Generator:
         rep_icon = Image.open(self.star)
         rep_icon = rep_icon.convert("RGBA").resize((40, 40), Image.Resampling.LANCZOS)
 
-        blank = Image.new("RGBA", pre.size, (255, 255, 255, 0))
-        blank.paste(status, (500, 50))
-
         # Status badge
         # Another blank
         blank = Image.new("RGBA", pre.size, (255, 255, 255, 0))
@@ -533,6 +549,7 @@ class Generator:
             profile_image: str = None,
             level: int = 1,
             color: tuple = (0, 0, 0),
+            font_name: str = None
     ):
         if bg_image and bg_image != "random":
             bgpath = os.path.join(bundled_data_path(self), "backgrounds")
@@ -558,9 +575,15 @@ class Generator:
         pfpsize = (card.height, card.height)
         fontsize = int(card.height / 2.5)
         string = _("Level ") + str(level)
-        font = ImageFont.truetype(self.font, fontsize)
-        while font.getlength(string) + int(card.height * 1.2) > card.width:
+        base_font = self.font
+        if font_name:
+            fontfile = os.path.join(self.fonts, font_name)
+            if os.path.exists(fontfile):
+                base_font = fontfile
+        font = ImageFont.truetype(base_font, fontsize)
+        while font.getlength(string) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
             fontsize -= 1
+            font = ImageFont.truetype(base_font, fontsize)
         textpos = (int(card.height * 1.2), int((card.height / 2) - (fontsize / 1.4)))
 
         # Draw rounded rectangle at 4x size and scale down to crop card to
@@ -607,6 +630,26 @@ class Generator:
         # Finally resize the image
         final = final.resize(card_size, Image.Resampling.LANCZOS)
         return final
+
+    def get_all_fonts(self):
+        fonts = [i for i in os.listdir(self.fonts)]
+        count = len(fonts)
+        fontsize = 50
+        res = (650, fontsize * count + (count * 15))
+        img = Image.new("RGBA", res, 0)
+        color = (255, 255, 255)
+        draw = ImageDraw.Draw(img)
+        for index, i in enumerate(fonts):
+            fontname = i.replace(".ttf", "")
+            font = ImageFont.truetype(
+                os.path.join(self.fonts, i),
+                fontsize
+            )
+            draw.text(
+                (5, index * (fontsize + 15)), fontname, color,
+                font=font, stroke_width=1, stroke_fill=(0, 0, 0)
+            )
+        return img
 
     def get_all_backgrounds(self):
         backgrounds = os.path.join(bundled_data_path(self), "backgrounds")

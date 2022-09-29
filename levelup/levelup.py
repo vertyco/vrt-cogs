@@ -56,7 +56,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.12.35"
+    __version__ = "1.13.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -283,6 +283,8 @@ class LevelUp(UserCommands, commands.Cog):
         if allclean and self.first_run:
             log.info(allclean)
             await self.save_cache()
+        if self.first_run:
+            log.info("Config initialized")
         self.first_run = False
 
     @staticmethod
@@ -319,10 +321,13 @@ class LevelUp(UserCommands, commands.Cog):
             if "levelbar" not in conf["users"][uid]["colors"]:
                 conf["users"][uid]["colors"]["levelbar"] = None
                 cleaned.append("levelbar not in colors")
+            if "font" not in user:
+                conf["users"][uid]["font"] = None
+                cleaned.append("font not in user")
 
             # Make sure all related stats are not strings
             for k, v in user.items():
-                skip = ["background", "emoji", "full", "colors"]
+                skip = ["background", "emoji", "full", "colors", "font"]
                 if k in skip:
                     continue
                 if isinstance(v, int) or isinstance(v, float):
@@ -373,7 +378,8 @@ class LevelUp(UserCommands, commands.Cog):
             "stars": 0,
             "background": None,
             "full": True,
-            "colors": {"name": None, "stat": None, "levelbar": None}
+            "colors": {"name": None, "stat": None, "levelbar": None},
+            "font": None
         }
 
     async def check_levelups(self, guild_id: int, user_id: str, message: discord.Message = None):
@@ -459,11 +465,13 @@ class LevelUp(UserCommands, commands.Cog):
             if color == "#000000":  # Don't use default color
                 color = str(discord.Color.random())
             color = hex_to_rgb(color)
+            font = conf["users"][str(user)]["font"]
             args = {
                 'bg_image': banner,
                 'profile_image': pfp,
                 'level': new_level,
                 'color': color,
+                'font_name': font
             }
             img = await self.gen_levelup_img(args)
             temp = BytesIO()
