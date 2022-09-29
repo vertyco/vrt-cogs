@@ -599,7 +599,11 @@ class Generator:
             img = self.force_aspect_ratio(Image.open(filepath))
             img = img.convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
             draw = ImageDraw.Draw(img)
-            draw.text((10, 10), filename.replace(".png", ""), font=ImageFont.truetype(self.font, 100))
+            ext_replace = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+            txt = filename
+            for ext in ext_replace:
+                txt = txt.replace(ext, "")
+            draw.text((10, 10), txt, font=ImageFont.truetype(self.font, 100))
             if not img:
                 log.error(f"Failed to load image for default background '{filename}`")
                 continue
