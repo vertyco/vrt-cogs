@@ -219,15 +219,15 @@ class Generator:
         prestige_str = _(f"Prestige ") + str(prestige)
 
         # Setup font sizes
-        fonts = [i for i in os.listdir(self.fonts)]
-        font = random.choice(fonts)
-        base_font = os.path.join(self.fonts, font)
+        # fonts = [i for i in os.listdir(self.fonts)]
+        # font = random.choice(fonts)
+        # base_font = os.path.join(self.fonts, font)
 
-        # base_font = self.font
-        # if font_name:
-        #     fontfile = os.path.join(self.fonts, font_name)
-        #     if os.path.exists(fontfile):
-        #         base_font = fontfile
+        base_font = self.font
+        if font_name:
+            fontfile = os.path.join(self.fonts, font_name)
+            if os.path.exists(fontfile):
+                base_font = fontfile
 
         draw = ImageDraw.Draw(final)
         name_size = 60
