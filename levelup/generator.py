@@ -548,13 +548,21 @@ class Generator:
         else:
             card = self.get_random_background()
 
+        # Get coords and fonts setup
         card_size = (180, 60)
         aspect_ratio = (18, 6)
-        card = self.force_aspect_ratio(card, aspect_ratio).convert("RGBA")
-        card = card.resize(card_size, Image.Resampling.LANCZOS)
-
+        card: Image = self.force_aspect_ratio(card, aspect_ratio).convert("RGBA")
         fillcolor = (0, 0, 0)
         txtcolor = color
+
+        pfpsize = (card.height, card.height)
+        fontsize = int(card.height / 2.5)
+        string = _("Level ") + str(level)
+        font = ImageFont.truetype(self.font, fontsize)
+        while font.getlength(string) + int(card.height * 1.2) > card.width:
+            fontsize -= 1
+        textpos = (int(card.height * 1.2), int((card.height / 2) - (fontsize / 1.4)))
+
         # Draw rounded rectangle at 4x size and scale down to crop card to
         mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
@@ -562,7 +570,7 @@ class Generator:
             (0, 0, card.size[0] * 4, card.size[1] * 4),
             fill=fillcolor,
             width=2,
-            radius=120
+            radius=int(card.height * 2.5)
         )
         mask = mask.resize(card.size, Image.Resampling.LANCZOS)
 
@@ -577,40 +585,26 @@ class Generator:
             profile = Image.open(profile_bytes)
         else:
             profile = Image.open(self.default_pfp)
-        profile = profile.convert('RGBA').resize((60, 60), Image.Resampling.LANCZOS)
+        profile = profile.convert('RGBA').resize(pfpsize, Image.Resampling.LANCZOS)
 
         # Create mask for profile image crop
         mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((0, 0, 60 * 4, 60 * 4), fill=fillcolor)
+        mask_draw.ellipse((0, 0, pfpsize[0] * 4, pfpsize[1] * 4), fill=fillcolor)
         mask = mask.resize(card.size, Image.Resampling.LANCZOS)
-
         pfp_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
         pfp_holder.paste(profile, (0, 0))
-
         pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
         pfp_composite_holder = Image.composite(pfp_holder, pfp_composite_holder, mask)
 
         final = Image.alpha_composite(card, pfp_composite_holder)
 
-        string = _("Level ") + str(level)
-        fontsize = 24
-        if len(str(level)) > 2:
-            fontsize = 19
-
         # Draw
         draw = ImageDraw.Draw(final)
-
-        if len(str(level)) > 2:
-            size = 19
-        else:
-            size = 24
-        font = ImageFont.truetype(self.font, size)
-
         # Filling text
-        text_x = 65
-        text_y = int((card.size[1] / 2) - (fontsize / 1.4))
-        draw.text((text_x, text_y), string, txtcolor, font=font, stroke_width=1, stroke_fill=fillcolor)
+        draw.text(textpos, string, txtcolor, font=font, stroke_width=3, stroke_fill=fillcolor)
+        # Finally resize the image
+        final = final.resize(card_size, Image.Resampling.LANCZOS)
         return final
 
     def get_all_backgrounds(self):
