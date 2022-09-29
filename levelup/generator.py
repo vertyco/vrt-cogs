@@ -127,15 +127,17 @@ class Generator:
         statbox = (bar_start, stats_y, bar_start + 400, bar_top)
         statsection = self.get_sample_section(card, statbox)
         statbg = self.get_img_color(statsection)
-        statstxtfil = default_fill
+        statstxtfill = default_fill
         while self.distance(statcolor, statbg) < statdistance:
             statcolor = self.rand_rgb()
-        if self.distance(statstxtfil, statcolor) < statdistance - 50:
-            statstxtfil = self.inv_rgb(statstxtfil)
+        if self.distance(statstxtfill, statcolor) < statdistance - 50:
+            statstxtfill = self.inv_rgb(statstxtfill)
 
-        lvlbaroutline = base
-        while self.distance(lvlbaroutline, default_fill) < lvldistance:
-            lvlbaroutline = self.rand_rgb()
+        lvlbox = (bar_start, bar_top, bar_end, bar_bottom)
+        lvlsection = self.get_sample_section(card, lvlbox)
+        lvlbg = self.get_img_color(lvlsection)
+        while self.distance(lvlbarcolor, lvlbg) < lvldistance:
+            lvlbarcolor = self.rand_rgb()
 
         # get profile pic
         pfp_image = self.get_image_content_from_url(str(profile_image))
@@ -187,17 +189,18 @@ class Generator:
         end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + bar_start
         # Rectangle 0:left x, 1:top y, 2:right x, 3:bottom y
         # Draw level bar outline
+        thickness = 8
         progress_bar_draw.rounded_rectangle(
             (bar_start * 4, bar_top * 4, bar_end * 4, bar_bottom * 4),
             fill=(255, 255, 255, 0),
-            outline=lvlbaroutline,
-            width=8,
+            outline=lvlbarcolor,
+            width=thickness,
             radius=90
         )
         # Draw inner level bar 1 pixel smaller on each side
         if end_of_inner_bar > bar_start + 10:
             progress_bar_draw.rounded_rectangle(
-                (bar_start * 4 + 1, bar_top * 4 + 2, end_of_inner_bar * 4 - 1, bar_bottom * 4 - 2),
+                (bar_start * 4 + thickness, bar_top * 4 + thickness, end_of_inner_bar * 4 - thickness, bar_bottom * 4 - thickness),
                 fill=lvlbarcolor,
                 radius=89
             )
@@ -229,19 +232,10 @@ class Generator:
 
         # Paste star and status to profile
         blank.paste(status, (circle_x + 230, circle_y + 240))
-        blank.paste(star, (900, 50))
+        blank.paste(star, (900, name_y + 5))
 
         # New final
         final = Image.alpha_composite(final, blank)
-
-        # Add stats text
-        draw = ImageDraw.Draw(final)
-        name_size = 50
-        name_font = ImageFont.truetype(self.font, name_size)
-
-        stats_size = 35
-        stat_offset = stats_size + 5
-        stats_font = ImageFont.truetype(self.font, stats_size)
 
         # Stat strings
         rank = _(f"Rank: #") + str(user_position)
@@ -249,15 +243,41 @@ class Generator:
         exp = _("Exp: ") + f"{humanize_number(user_xp)}/{humanize_number(next_xp)}"
         message_count = _(f"Messages: ") + messages
         voice = _(f"Voice: ") + voice
-        name = f"{user_name}"
         stars = str(stars)
         bal = _("Balance: ") + f"{humanize_number(balance)} {currency}"
         prestige_str = _(f"Prestige ") + str(prestige)
 
+        # Setup font sizes
+        draw = ImageDraw.Draw(final)
+
+        name_size = 50
+        name_font = ImageFont.truetype(self.font, name_size)
+        while (name_font.getlength(user_name) + bar_start + 20) > 900:
+            name_size -= 1
+            name_font = ImageFont.truetype(self.font, name_size)
+
+        stats_size = 35
+        stat_offset = stats_size + 5
+        stats_font = ImageFont.truetype(self.font, stats_size)
+
+        star_font = name_font
+        star_fontsize = 50
+        startop = name_y
+        decrement = True
+        while (star_font.getlength(stars) + 960) > final.width - 10:
+            star_fontsize -= 1
+            if decrement:
+                startop += 1
+                decrement = False
+            else:
+                decrement = True
+            star_font = ImageFont.truetype(self.font, star_fontsize)
+
+        # Add stats text
         # Render name and credits text through pilmoji in case there are emojis
         with Pilmoji(final) as pilmoji:
             # Name text
-            pilmoji.text((bar_start + 10, name_y), name, namecolor,
+            pilmoji.text((bar_start + 10, name_y), user_name, namecolor,
                          font=name_font,
                          stroke_width=stroke_width,
                          stroke_fill=namefill,
@@ -267,7 +287,7 @@ class Generator:
             pilmoji.text((bar_start + 10, bar_top - 110), bal, statcolor,
                          font=stats_font,
                          stroke_width=stroke_width,
-                         stroke_fill=statstxtfil,
+                         stroke_fill=statstxtfill,
                          emoji_scale_factor=1.2,
                          emoji_position_offset=(0, 5))
 
@@ -285,26 +305,24 @@ class Generator:
         # Stats text
         # Rank
         draw.text((bar_start + 10, stats_y), rank, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
         # Level
         draw.text((bar_start + 10, stats_y + stat_offset), leveltxt, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
         # Messages
         draw.text((bar_start + 210 + 10, stats_y), message_count, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
         # Voice
         draw.text((bar_start + 210 + 10, stats_y + stat_offset), voice, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
 
         # Exp
         draw.text((bar_start + 10, bar_top - 60), exp, statcolor,
-                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
+                  font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
 
         # Stars
-        starfont = name_font if len(stars) < 3 else stats_font
-        startop = 42 if len(stars) < 3 else 52
         draw.text((960, startop), stars, namecolor,
-                  font=starfont, stroke_width=stroke_width, stroke_fill=namefill)
+                  font=star_font, stroke_width=stroke_width, stroke_fill=namefill)
 
         return final
 
@@ -526,7 +544,8 @@ class Generator:
 
         card_size = (180, 60)
         aspect_ratio = (18, 6)
-        card = self.force_aspect_ratio(card, aspect_ratio).convert("RGBA").resize(card_size, Image.Resampling.LANCZOS)
+        card = self.force_aspect_ratio(card, aspect_ratio).convert("RGBA")
+        card = card.resize(card_size, Image.Resampling.LANCZOS)
 
         fillcolor = (0, 0, 0)
         txtcolor = color
