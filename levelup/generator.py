@@ -600,6 +600,9 @@ class Generator:
             img = img.convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
             draw = ImageDraw.Draw(img)
             draw.text((10, 10), filename.replace(".png", ""), font=ImageFont.truetype(self.font, 100))
+            if not img:
+                log.error(f"Failed to load image for default background '{filename}`")
+                continue
             imgs.append((img, filename))
 
         # Sort by name
