@@ -252,8 +252,14 @@ class Generator:
 
         name_size = 50
         name_font = ImageFont.truetype(self.font, name_size)
+        decrement = True
         while (name_font.getlength(user_name) + bar_start + 20) > 900:
             name_size -= 1
+            if decrement:
+                name_y += 1
+                decrement = False
+            else:
+                decrement = True
             name_font = ImageFont.truetype(self.font, name_size)
 
         stats_size = 35
