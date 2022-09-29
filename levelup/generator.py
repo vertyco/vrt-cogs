@@ -208,35 +208,6 @@ class Generator:
         # Image with level bar and pfp on background
         final = Image.alpha_composite(final, progress_bar)
 
-        # Get status and star image and paste to profile
-        blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
-
-        status = self.status[user_status] if user_status in self.status else self.status["offline"]
-        status_img = Image.open(status)
-        status = status_img.convert("RGBA").resize((60, 60), Image.Resampling.LANCZOS)
-        star = Image.open(self.star).resize((50, 50), Image.Resampling.LANCZOS)
-        # Role icon
-        role_bytes = self.get_image_content_from_url(role_icon) if role_icon else None
-        if role_bytes:
-            role_bytes = BytesIO(role_bytes)
-            role_icon_img = Image.open(role_bytes).resize((40, 40), Image.Resampling.LANCZOS)
-            blank.paste(
-                role_icon_img, (bar_start - 50, name_y + 10)
-            )
-        # Prestige icon
-        prestige_bytes = self.get_image_content_from_url(emoji) if prestige else None
-        if prestige_bytes:
-            prestige_bytes = BytesIO(prestige_bytes)
-            prestige_img = Image.open(prestige_bytes).resize((40, 40), Image.Resampling.LANCZOS)
-            blank.paste(prestige_img, (bar_start - 50, bar_top))
-
-        # Paste star and status to profile
-        blank.paste(status, (circle_x + 230, circle_y + 240))
-        blank.paste(star, (star_x - 60, name_y))
-
-        # New final
-        final = Image.alpha_composite(final, blank)
-
         # Stat strings
         rank = _(f"Rank: #") + str(user_position)
         leveltxt = _(f"Level: ") + str(level)
@@ -262,7 +233,7 @@ class Generator:
         nameht = name_font.getbbox(user_name)
         name_y = name_y - int(nameht[1] * 0.6)
 
-        stats_size = 45
+        stats_size = 35
         stat_offset = stats_size + 5
         stats_font = ImageFont.truetype(base_font, stats_size)
         while (stats_font.getlength(leveltxt) + bar_start + 10) > bar_start + 210:
@@ -310,7 +281,7 @@ class Generator:
 
         # Prestige
         if prestige:
-            draw.text((bar_start + 10, name_y + 55), prestige_str, statcolor,
+            draw.text((bar_start + 10, stats_y - stats_size - 10), prestige_str, statcolor,
                       font=stats_font, stroke_width=stroke_width, stroke_fill=namefill)
         # Stats text
         # Rank
@@ -333,6 +304,34 @@ class Generator:
         # Stars
         draw.text((star_x, name_y), stars, namecolor,
                   font=star_font, stroke_width=stroke_width, stroke_fill=namefill)
+
+        # Get status and star image and paste to profile
+        blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
+        status = self.status[user_status] if user_status in self.status else self.status["offline"]
+        status_img = Image.open(status)
+        status = status_img.convert("RGBA").resize((60, 60), Image.Resampling.LANCZOS)
+        star = Image.open(self.star).resize((name_size, name_size), Image.Resampling.LANCZOS)
+        # Role icon
+        role_bytes = self.get_image_content_from_url(role_icon) if role_icon else None
+        if role_bytes:
+            role_bytes = BytesIO(role_bytes)
+            role_icon_img = Image.open(role_bytes).resize((50, 50), Image.Resampling.LANCZOS)
+            blank.paste(
+                role_icon_img, (5, 5)
+            )
+        # Prestige icon
+        prestige_bytes = self.get_image_content_from_url(emoji) if prestige else None
+        if prestige_bytes:
+            prestige_bytes = BytesIO(prestige_bytes)
+            prestige_img = Image.open(prestige_bytes).resize((stats_size, stats_size), Image.Resampling.LANCZOS)
+            pr_x = int(stats_font.getlength(prestige_str) + bar_start + 20)
+            blank.paste(prestige_img, (pr_x, stats_y - stats_size - 5))
+        # Paste star and status to profile
+        blank.paste(status, (circle_x + 230, circle_y + 240))
+        star_bbox = star_font.getbbox(stars)
+        blank.paste(star, (star_x - 60, name_y + int(star_bbox[1] / 2)))
+        # New final
+        final = Image.alpha_composite(final, blank)
 
         return final
 
