@@ -232,7 +232,7 @@ class Generator:
 
         # Paste star and status to profile
         blank.paste(status, (circle_x + 230, circle_y + 240))
-        blank.paste(star, (star_x - 60, name_y + 5))
+        blank.paste(star, (star_x - 60, name_y))
 
         # New final
         final = Image.alpha_composite(final, blank)
