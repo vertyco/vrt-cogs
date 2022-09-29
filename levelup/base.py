@@ -231,13 +231,20 @@ class UserCommands(commands.Cog):
             if img is None:
                 await ctx.send(_("Failed to generate background samples"))
             buffer = BytesIO()
-            img.save(buffer, format="WEBP")
-            buffer.name = f"{ctx.author.id}.webp"
+            try:
+                img.save(buffer, format="WEBP")
+                buffer.name = f"{ctx.author.id}.webp"
+            except ValueError:
+                img.save(buffer, format="PNG", quality=50)
+                buffer.name = f"{ctx.author.id}.png"
             buffer.seek(0)
             file = discord.File(buffer)
             txt = _("Here are the current default backgrounds, to set one permanently you can use the ")
             txt += f"`{ctx.prefix}mypf background <filename>` " + _("command")
-            await ctx.send(txt, file=file)
+            try:
+                await ctx.send(txt, file=file)
+            except discord.HTTPException:
+                await ctx.send(_("Could not send background collage, file size may be too large."))
 
     @set_profile.command(name="type")
     async def toggle_profile_type(self, ctx: commands.Context):
