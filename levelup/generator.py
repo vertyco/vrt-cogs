@@ -310,7 +310,7 @@ class Generator:
         status = self.status[user_status] if user_status in self.status else self.status["offline"]
         status_img = Image.open(status)
         status = status_img.convert("RGBA").resize((60, 60), Image.Resampling.LANCZOS)
-        star = Image.open(self.star).resize((name_size, name_size), Image.Resampling.LANCZOS)
+        star = Image.open(self.star).resize((50, 50), Image.Resampling.LANCZOS)
         # Role icon
         role_bytes = self.get_image_content_from_url(role_icon) if role_icon else None
         if role_bytes:
@@ -326,10 +326,17 @@ class Generator:
             prestige_img = Image.open(prestige_bytes).resize((stats_size, stats_size), Image.Resampling.LANCZOS)
             pr_x = int(stats_font.getlength(prestige_str) + bar_start + 20)
             blank.paste(prestige_img, (pr_x, stats_y - stats_size - 5))
+
         # Paste star and status to profile
         blank.paste(status, (circle_x + 230, circle_y + 240))
+
+        # Adjust star placement
         star_bbox = star_font.getbbox(stars)
-        blank.paste(star, (star_x - 60, name_y + int(star_bbox[1] / 2)))
+        # Middle of star text
+        stmiddle = name_y + int(star_bbox[3] / 2)
+        # Paste star appropriately
+        star_y = stmiddle - 21
+        blank.paste(star, (star_x - 60, star_y))
         # New final
         final = Image.alpha_composite(final, blank)
 
