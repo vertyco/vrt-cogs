@@ -214,7 +214,7 @@ class UserCommands(commands.Cog):
             desc += _("`Stat Color:      `") + stat + "\n"
             desc += _("`Level Bar Color: `") + levelbar + "\n"
             desc += _("`Font:            `") + font + "\n"
-            desc += _("`Background:      `") + bg
+            desc += _("`Background:      `") + str(bg)
 
             em = discord.Embed(
                 title="Your Profile Settings",
