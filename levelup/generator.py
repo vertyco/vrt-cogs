@@ -567,10 +567,10 @@ class Generator:
         mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.rounded_rectangle(
-            (0, 0, card.size[0] * 4, card.size[1] * 4),
+            (int(pfpsize[0] / 2), 0, card.size[0] * 4, card.size[1] * 4),
             fill=fillcolor,
-            width=2,
-            radius=int(card.height * 2.5)
+            width=4,
+            radius=int(card.height * 2)
         )
         mask = mask.resize(card.size, Image.Resampling.LANCZOS)
 
@@ -590,8 +590,9 @@ class Generator:
         # Create mask for profile image crop
         mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((0, 0, pfpsize[0] * 4, pfpsize[1] * 4), fill=fillcolor)
+        mask_draw.ellipse((0, 0, pfpsize[0] * 4, pfpsize[1] * 4), fill=(255, 255, 255, 255))
         mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+
         pfp_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
         pfp_holder.paste(profile, (0, 0))
         pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
