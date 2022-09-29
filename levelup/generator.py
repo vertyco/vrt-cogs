@@ -564,15 +564,15 @@ class Generator:
         textpos = (int(card.height * 1.2), int((card.height / 2) - (fontsize / 1.4)))
 
         # Draw rounded rectangle at 4x size and scale down to crop card to
-        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+        mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.rounded_rectangle(
-            (int(pfpsize[0] / 2), 0, card.size[0] * 4, card.size[1] * 4),
+            (10, 0, card.width, card.height),
             fill=fillcolor,
-            width=4,
-            radius=int(card.height * 2)
+            width=5,
+            radius=card.height
         )
-        mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+        # mask = mask.resize(card.size, Image.Resampling.LANCZOS)
 
         # Make new Image to create composite
         composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
@@ -588,10 +588,10 @@ class Generator:
         profile = profile.convert('RGBA').resize(pfpsize, Image.Resampling.LANCZOS)
 
         # Create mask for profile image crop
-        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+        mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
         mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((0, 0, pfpsize[0] * 4, pfpsize[1] * 4), fill=(255, 255, 255, 255))
-        mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+        mask_draw.ellipse((0, 0, pfpsize[0], pfpsize[1]), fill=(255, 255, 255, 255))
+        # mask = mask.resize(card.size, Image.Resampling.LANCZOS)
 
         pfp_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
         pfp_holder.paste(profile, (0, 0))
