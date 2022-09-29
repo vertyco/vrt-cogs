@@ -279,8 +279,7 @@ class Generator:
         while (star_font.getlength(stars) + 960) > final.width - 10:
             star_fontsize -= 1
             star_font = ImageFont.truetype(base_font, star_fontsize)
-        starht = star_font.getbbox(stars)
-        star_text_y = star_y + starht[1]
+        star_text_y = star_y
 
         # Add stats text
         # Render name and credits text through pilmoji in case there are emojis
