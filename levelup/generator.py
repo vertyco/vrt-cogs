@@ -631,6 +631,8 @@ class Generator:
         first = None
         final = None
         for row_img_obj in rows:
+            if row_img_obj is None:
+                continue
             if first is None:
                 first = row_img_obj
                 continue
