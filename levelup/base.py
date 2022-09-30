@@ -6,14 +6,17 @@ import math
 import os.path
 import traceback
 from io import BytesIO
+from typing import Union
 
+import aiohttp
 import discord
 import tabulate
 import validators
 from redbot.core import commands, bank
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number
+from redbot.core.utils.chat_formatting import box, humanize_number, humanize_list
 from redbot.core.data_manager import bundled_data_path
+from PIL import Image
 
 from levelup.utils.formatter import (
     time_formatter,
@@ -52,11 +55,8 @@ class UserCommands(commands.Cog):
 
     # Generate profile image
     async def gen_profile_img(self, args: dict, full: bool = True):
-        if full:
-            task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
-        else:
-            task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_slim_profile(**args))
-
+        func = Generator().generate_profile(**args) if full else Generator().generate_slim_profile(**args)
+        task = self.bot.loop.run_in_executor(None, lambda: func)
         try:
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -100,6 +100,37 @@ class UserCommands(commands.Cog):
                 return
         return True
 
+    async def get_or_fetch_profile(self, user: discord.Member, args: dict, full: bool) -> Union[discord.File, None]:
+        gid = user.guild.id
+        uid = str(user.id)
+        now = datetime.datetime.now()
+        if gid not in self.profiles:
+            self.profiles[gid] = {}
+        if uid not in self.profiles[gid]:
+            self.profiles[gid][uid] = {"img": None, "ts": now}
+
+        cache = self.profiles[gid][uid]
+        td = (now - cache["ts"]).total_seconds()
+        if td > self.cache_seconds or not cache["img"]:
+            img = await self.gen_profile_img(args, full)
+            self.profiles[gid][uid] = {"img": img, "ts": now}
+        else:
+            img = self.profiles[gid][uid]["img"]
+
+        if not img:
+            return None
+        ext = "WEBP"
+        try:
+            if img.is_animated:
+                ext = "GIF"
+        except AttributeError:
+            pass
+        buffer = BytesIO()
+        buffer.name = f"{user.id}.{ext.lower()}"
+        img.save(buffer, save_all=True, format=ext)
+        buffer.seek(0)
+        return discord.File(buffer, filename=buffer.name)
+
     # Hacky way to get user banner
     async def get_banner(self, user: discord.Member) -> str:
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
@@ -107,6 +138,39 @@ class UserCommands(commands.Cog):
         if banner_id:
             banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
             return banner_url
+
+    @staticmethod
+    def merge_frames(frames: list, duration: int) -> Image:
+        buffer = BytesIO()
+        frames[0].save(buffer, save_all=True, append_images=frames[1:], duration=duration, format="GIF")
+        buffer.seek(0)
+        return Image.open(buffer)
+
+    @staticmethod
+    def get_attachments(ctx) -> list:
+        """Get all attachments from context"""
+        content = []
+        if ctx.message.attachments:
+            atchmts = [a for a in ctx.message.attachments]
+            content.extend(atchmts)
+        if hasattr(ctx.message, "reference"):
+            try:
+                atchmts = [a for a in ctx.message.reference.resolved.attachments]
+                content.extend(atchmts)
+            except AttributeError:
+                pass
+        return content
+
+    @staticmethod
+    async def get_content_from_url(url: str):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    file = await resp.content.read()
+                    return file
+        except Exception as e:
+            log.error(f"Could not get file content from url: {e}", exc_info=True)
+            return None
 
     @commands.command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
@@ -184,6 +248,36 @@ class UserCommands(commands.Cog):
         file = discord.File(temp)
         await ctx.send(file=file)
 
+    @commands.command(name="mywebp", hidden=True)
+    async def get_webp(self, ctx: commands.Context):
+        """Get a webp or webm of your profile avatar"""
+        user = ctx.author
+        if DPY2:
+            pfp = user.avatar.url if user.avatar else None
+        else:
+            pfp = user.avatar_url
+        img_bytes = await self.bot.loop.run_in_executor(
+            None,
+            lambda: Generator().get_image_content_from_url(pfp)
+        )
+        async with ctx.typing():
+            img = Image.open(BytesIO(img_bytes))
+            duration = Generator().get_avg_duration(img)
+            frames = []
+            for i in range(img.n_frames):
+                img.seek(i)
+                frames.append(img)
+            img = await self.bot.loop.run_in_executor(
+                None,
+                lambda: self.merge_frames(frames, duration)
+            )
+            await ctx.send(f"Is animated: {img.is_animated}")
+            buffer = BytesIO()
+            img.save(buffer, save_all=True, format="GIF")
+            buffer.seek(0)
+            file = discord.File(buffer, filename=f"{ctx.author.id}.gif")
+            await ctx.send(file=file)
+
     @commands.group(name="myprofile", aliases=["mypf", "pfset"])
     @commands.guild_only()
     async def set_profile(self, ctx: commands.Context):
@@ -237,6 +331,124 @@ class UserCommands(commands.Cog):
                             print("permission error")
                             pass
             await ctx.send(embed=em, file=file)
+
+    @set_profile.command(name="bgpath")
+    @commands.is_owner()
+    async def get_bg_path(self, ctx: commands.Context):
+        """Get folder path for this cog's default backgrounds"""
+        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+        txt = _("Your default background folder path is \n")
+        await ctx.send(f"{txt}`{bgpath}`")
+
+    @set_profile.command(name="addbackground")
+    @commands.is_owner()
+    async def add_background(self, ctx: commands.Context, preferred_filename: str = None):
+        """
+        Add a custom background to the cog from discord
+
+        **Arguments**
+        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename
+        **Note:** do not include the file extension in the preferred name, it will be added automatically
+        """
+        content = self.get_attachments(ctx)
+        if not content:
+            return await ctx.send(_("I was not able to find any attachments"))
+        valid = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+        url = content[0].url
+        filename = content[0].filename
+        if not any([i in filename.lower() for i in valid]):
+            return await ctx.send(
+                _("That is not a valid format, must be on of the following extensions: ") + humanize_list(valid)
+            )
+        ext = ".png"
+        for ext in valid:
+            if ext in filename.lower():
+                break
+        bytes_file = await self.get_content_from_url(url)
+        if not bytes_file:
+            return await ctx.send(_("I was not able to get the file from Discord"))
+        if preferred_filename:
+            filename = f"{preferred_filename}{ext}"
+        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+        filepath = os.path.join(bgpath, filename)
+        with open(filepath, "wb") as f:
+            f.write(bytes_file)
+        await ctx.send(_("Your custom background has been saved as ") + f"`{filename}`")
+
+    @set_profile.command(name="rembackground")
+    @commands.is_owner()
+    async def remove_background(self, ctx: commands.Context, *, filename: str):
+        """Remove a default background from the cog's backgrounds folder"""
+        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+        for f in os.listdir(bgpath):
+            if filename.lower() in f.lower():
+                break
+        else:
+            return await ctx.send(_("I could not find any background images with that name"))
+        file = os.path.join(bgpath, f)
+        try:
+            os.remove(file)
+        except Exception as e:
+            return await ctx.send(_("Could not delete file: ") + str(e))
+        await ctx.send(_("Background `") + f + _("` Has been removed!"))
+
+    @set_profile.command(name="fontpath")
+    @commands.is_owner()
+    async def get_font_path(self, ctx: commands.Context):
+        """Get folder path for this cog's default backgrounds"""
+        fpath = os.path.join(bundled_data_path(self), "fonts")
+        txt = _("Your custom font folder path is \n")
+        await ctx.send(f"{txt}`{fpath}`")
+
+    @set_profile.command(name="addfont")
+    @commands.is_owner()
+    async def add_font(self, ctx: commands.Context, preferred_filename: str = None):
+        """
+        Add a custom font to the cog from discord
+
+        **Arguments**
+        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename
+        **Note:** do not include the file extension in the preferred name, it will be added automatically
+        """
+        content = self.get_attachments(ctx)
+        if not content:
+            return await ctx.send(_("I was not able to find any attachments"))
+        valid = [".ttf", ".otf"]
+        url = content[0].url
+        filename = content[0].filename
+        if not any([i in filename.lower() for i in valid]):
+            return await ctx.send(_("That is not a valid format, must be `.ttf` or `.otf` extensions"))
+        ext = ".ttf"
+        for ext in valid:
+            if ext in filename.lower():
+                break
+        bytes_file = await self.get_content_from_url(url)
+        if not bytes_file:
+            return await ctx.send(_("I was not able to get the file from Discord"))
+        if preferred_filename:
+            filename = f"{preferred_filename}{ext}"
+        fpath = os.path.join(bundled_data_path(self), "fonts")
+        filepath = os.path.join(fpath, filename)
+        with open(filepath, "wb") as f:
+            f.write(bytes_file)
+        await ctx.send(_("Your custom font file has been saved as ") + f"`{filename}`")
+
+    @set_profile.command(name="remfont")
+    @commands.is_owner()
+    async def remove_font(self, ctx: commands.Context, *, filename: str):
+        """Remove a font from the cog's font folder"""
+        fpath = os.path.join(bundled_data_path(self), "fonts")
+        for f in os.listdir(fpath):
+            if filename.lower() in f.lower():
+                break
+        else:
+            return await ctx.send(_("I could not find any fonts with that name"))
+        file = os.path.join(fpath, f)
+        try:
+            os.remove(file)
+        except Exception as e:
+            return await ctx.send(_("Could not delete file: ") + str(e))
+        await ctx.send(_("Font `") + f + _("` Has been removed!"))
 
     @set_profile.command(name="backgrounds")
     @commands.cooldown(1, 60, commands.BucketType.user)
@@ -427,14 +639,6 @@ class UserCommands(commands.Cog):
             return
         self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = hex_color
         await ctx.tick()
-
-    @set_profile.command(name="bgpath")
-    @commands.is_owner()
-    async def get_bg_path(self, ctx: commands.Context):
-        """Get folder path for this cog's default backgrounds"""
-        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
-        txt = _("Your default background folder path is \n")
-        await ctx.send(f"{txt}`{bgpath}`")
 
     @set_profile.command(name="background", aliases=["bg"])
     @commands.cooldown(1, 30, commands.BucketType.user)
@@ -653,32 +857,7 @@ class UserCommands(commands.Cog):
                     'font_name': font
                 }
 
-                now = datetime.datetime.now()
-                if gid not in self.profiles:
-                    self.profiles[gid] = {}
-                if user_id not in self.profiles[gid]:
-                    self.profiles[gid][user_id] = {"file": None, "last": now}
-
-                last = self.profiles[gid][user_id]
-                td = (now - last["last"]).total_seconds()
-                if td > self.cache_seconds or not last["file"]:
-                    file_obj = await self.gen_profile_img(args, full)
-                    self.profiles[gid][user_id] = {"file": file_obj, "last": now}
-                else:
-                    file_obj = self.profiles[gid][user_id]["file"]
-
-                # If file_obj is STILL None
-                if not file_obj:
-                    msg = f"Something went wrong while generating your profile image!\n" \
-                          f"Image may be returning `None` if it takes longer than 60 seconds to generate.\n" \
-                          f"**Debug Data**\n{box(json.dumps(args, indent=2))}"
-                    return await ctx.send(msg)
-
-                temp = BytesIO()
-                file_obj.save(temp, format="WEBP")
-                temp.name = f"{ctx.author.id}.webp"
-                temp.seek(0)
-                file = discord.File(temp)
+                file = await self.get_or_fetch_profile(user, args, full)
                 if not file:
                     return await ctx.send(f"Failed to generate profile image :( try again in a bit")
                 try:
@@ -687,11 +866,7 @@ class UserCommands(commands.Cog):
                     if "In message_reference: Unknown message" not in str(e):
                         log.error(f"Failed to send profile pic: {e}")
                     try:
-                        temp = BytesIO()
-                        file_obj.save(temp, format="WEBP")
-                        temp.name = f"{ctx.author.id}.webp"
-                        temp.seek(0)
-                        file = discord.File(temp)
+                        file = await self.get_or_fetch_profile(user, args, full)
                         if mention:
                             await ctx.send(ctx.author.mention, file=file)
                         else:

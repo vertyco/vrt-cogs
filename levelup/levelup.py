@@ -19,6 +19,7 @@ from redbot.core import commands, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
 from redbot.core.utils.predicates import MessagePredicate
+from redbot.core.utils import AsyncIter
 
 from .base import UserCommands
 from levelup.utils.formatter import (
@@ -186,6 +187,8 @@ class LevelUp(UserCommands, commands.Cog):
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
+        if str(guild.id) in self.ignored_guilds:
+            return
         chan = guild.get_channel(payload.channel_id)
         if not chan:
             return
@@ -201,12 +204,19 @@ class LevelUp(UserCommands, commands.Cog):
         # Ignore people adding reactions to their own messages
         if msg.author.id == payload.user_id:
             return
-
         now = datetime.now()
         gid = payload.guild_id
         giver_id = str(payload.user_id)
         giver = payload.member
         receiver = msg.author
+
+        if guild.id not in self.data:
+            await self.initialize()
+
+        if chan.id in self.data[gid]["ignoredchannels"]:
+            return
+        if giver.id in self.data[gid]["ignoredusers"]:
+            return
 
         can_give = False
         if giver_id not in self.stars[gid]:
@@ -258,6 +268,15 @@ class LevelUp(UserCommands, commands.Cog):
             return
         # Check whether the message author isn't on allowlist/blocklist
         if not await self.bot.allowed_by_whitelist_blacklist(message.author):
+            return
+        gid = message.guild.id
+        uid = message.author.id
+        cid = message.channel.id
+        if gid not in self.data:
+            await self.initialize()
+        if uid in self.data[gid]["ignoredusers"]:
+            return
+        if cid in self.data[gid]["ignoredchannels"]:
             return
         await self.message_handler(message)
 
@@ -600,7 +619,7 @@ class LevelUp(UserCommands, commands.Cog):
         xp_per_minute = conf["voicexp"]
         bonuses = conf["rolebonuses"]["voice"]
         bonusrole = None
-        for member in guild.members:
+        async for member in AsyncIter(guild.members):
             if member.bot:
                 continue
             now = datetime.now()
