@@ -119,12 +119,8 @@ class UserCommands(commands.Cog):
 
         if not img:
             return None
-        ext = "WEBP"
-        try:
-            if img.is_animated:
-                ext = "GIF"
-        except AttributeError:
-            pass
+        animated = getattr(img, "is_animated", False)
+        ext = "GIF" if animated else "WEBP"
         buffer = BytesIO()
         buffer.name = f"{user.id}.{ext.lower()}"
         img.save(buffer, save_all=True, format=ext)
@@ -854,7 +850,8 @@ class UserCommands(commands.Cog):
                     'balance': bal,
                     'currency': currency_name,
                     'role_icon': role_icon,
-                    'font_name': font
+                    'font_name': font,
+                    'render_gifs': self.render_gifs
                 }
 
                 file = await self.get_or_fetch_profile(user, args, full)

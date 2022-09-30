@@ -57,7 +57,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.13.35"
+    __version__ = "1.14.35"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -111,7 +111,7 @@ class LevelUp(UserCommands, commands.Cog):
             "notifylog": None,  # Notify member of level up in a set channel
             "notify": True,  # Toggle whether to notify member of levelups if notify log channel is not set
         }
-        default_global = {"ignored_guilds": [], "cache_seconds": 15}
+        default_global = {"ignored_guilds": [], "cache_seconds": 15, "render_gifs": False}
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
 
@@ -121,6 +121,7 @@ class LevelUp(UserCommands, commands.Cog):
         # Global conf cache
         self.ignored_guilds = []
         self.cache_seconds = 15
+        self.render_gifs = False
 
         # Guild id's as strings, user id's as strings
         self.lastmsg = {}  # Last sent message for users
@@ -283,6 +284,7 @@ class LevelUp(UserCommands, commands.Cog):
     async def initialize(self):
         self.ignored_guilds = await self.config.ignored_guilds()
         self.cache_seconds = await self.config.cache_seconds()
+        self.render_gifs = await self.config.render_gifs()
         allclean = []
         for guild in self.bot.guilds:
             gid = guild.id
@@ -376,6 +378,7 @@ class LevelUp(UserCommands, commands.Cog):
         if not target_guild:
             await self.config.ignored_guilds.set(self.ignored_guilds)
             await self.config.cache_seconds.set(self.cache_seconds)
+            await self.config.render_gifs.set(self.render_gifs)
 
         cache = self.data.copy()
         for gid, data in cache.items():
@@ -893,6 +896,20 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.tick()
         await self.save_cache()
 
+    @admin_group.command(name="rendergifs")
+    @commands.is_owner()
+    async def toggle_gif_render(self, ctx: commands.Context):
+        """Toggle whether to render profiles as gifs if the user's discord profile is animated"""
+        r = self.render_gifs
+        if r:
+            self.render_gifs = False
+            await ctx.send(_("I will no longer render profiles with GIFs"))
+        else:
+            self.render_gifs = True
+            await ctx.send(_("I will now render GIFs with user profiles"))
+        await ctx.tick()
+        await self.save_cache()
+
     @admin_group.command(name="globalreset")
     @commands.is_owner()
     async def reset_all(self, ctx: commands.Context):
@@ -973,6 +990,15 @@ class LevelUp(UserCommands, commands.Cog):
         cachetxt = _("`Profile Cache Time: `") + (_("Disabled\n") if not ct else f"{humanize_number(ct)} seconds\n")
         cachetxt += _("`Cache Size:         `") + cachesize
         em.add_field(name=_("Cache"), value=cachetxt, inline=False)
+
+        render = _("(Disabled)")
+        txt = _("Profiles will be static regardless of if the user has an animated profile")
+        if self.render_gifs:
+            render = _("(Enabled)")
+            txt = _("Users with animated profiles will render as a gif")
+
+        em.add_field(name=_("GIF Rendering ") + render, value=txt, inline=False)
+
         await ctx.send(embed=em)
 
     @admin_group.command(name="globalbackup")
@@ -1055,37 +1081,6 @@ class LevelUp(UserCommands, commands.Cog):
         self.data[ctx.guild.id] = config
         await self.save_cache()
         await ctx.send(_("Config restored from backup file!"))
-
-    @admin_group.command(name="cache")
-    @commands.is_owner()
-    async def get_cache_size(self, ctx: commands.Context):
-        """See how much RAM this cog's cache is using"""
-        main = sys.getsizeof(self.data)
-        msize = 0
-        for conf in self.data.copy().values():
-            msize += len(conf["users"].keys())
-        voice = sys.getsizeof(self.voice)
-        stars = sys.getsizeof(self.stars)
-        profile = sys.getsizeof(self.profiles)
-
-        cache_sec = self.cache_seconds
-
-        total = sum([main, voice, stars, profile])
-
-        text = f"`Main:      `{self.get_size(main)} ({humanize_number(msize)} users)\n" \
-               f"`Voice:     `{self.get_size(voice)}\n" \
-               f"`Stars:     `{self.get_size(stars)}\n" \
-               f"`Profiles:  `{self.get_size(profile)}\n" \
-               f"`Total:     `{self.get_size(total)}"
-
-        em = discord.Embed(title=f"LevelUp {_('Cache')}", description=_(text), color=ctx.author.color)
-        em.add_field(
-            name=_("Profile Cache Time"),
-            value=_(f"Generated profile images will stay in cache to be reused for {cache_sec} "
-                    f"{'second' if cache_sec == 1 else 'seconds'} "
-                    f"before being re-generated when a user runs the profile command")
-        )
-        await ctx.send(embed=em)
 
     @admin_group.command(name="importleveler")
     @commands.is_owner()

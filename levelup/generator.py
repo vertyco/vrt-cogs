@@ -54,7 +54,8 @@ class Generator:
             balance: int = 0,
             currency: str = "credits",
             role_icon: str = None,
-            font_name: str = None
+            font_name: str = None,
+            render_gifs: bool = False
     ):
         # Colors
         base = self.rand_rgb()
@@ -139,47 +140,11 @@ class Generator:
         while self.distance(lvlbarcolor, lvlbg) < lvldistance:
             lvlbarcolor = self.rand_rgb()
 
-        # get profile pic
-        pfp_image = self.get_image_content_from_url(str(profile_image))
-        if pfp_image:
-            profile_bytes = BytesIO(pfp_image)
-            profile = Image.open(profile_bytes)
-        else:
-            profile = Image.open(self.default_pfp)
-        profile = profile.convert('RGBA').resize((300, 300), Image.Resampling.LANCZOS)
-
-        # pfp border - draw at 4x and resample down to 1x for nice smooth circles
-        circle_img = Image.new("RGBA", (1600, 1600))
-        pfp_border = ImageDraw.Draw(circle_img)
-        pfp_border.ellipse([4, 4, 1596, 1596], fill=(255, 255, 255, 0), outline=base, width=20)
-        circle_img = circle_img.resize((330, 330), Image.Resampling.LANCZOS)
-        card.paste(circle_img, (circle_x - 15, circle_y - 15), circle_img)
-
-        # Mask to crop profile pic image to a circle
-        # draw at 4x size and resample down to 1x for a nice smooth circle
-        mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse(
-            [circle_x * 4, circle_y * 4, (300 + circle_x) * 4, (300 + circle_y) * 4], fill=(255, 255, 255, 255)
-        )
-        mask = mask.resize(card.size, Image.Resampling.LANCZOS)
-
-        # make a new Image to set up card-sized image for pfp layer and the circle mask for it
-        profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
-        # paste on square profile pic in appropriate spot
-        profile_pic_holder.paste(profile, (circle_x, circle_y))
-        # make a new Image at card size to crop pfp with transparency to the circle mask
-        pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
-        pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
-
-        # Profile image is on the background tile now
-        final = Image.alpha_composite(card, pfp_composite_holder)
-
         # Place semi-transparent box over right side
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
         transparent_box = Image.new("RGBA", card.size, (0, 0, 0, 100))
         blank.paste(transparent_box, (bar_start - 20, 0))
-        final = Image.alpha_composite(final, blank)
+        final = Image.alpha_composite(card, blank)
 
         # Make the level progress bar
         progress_bar = Image.new("RGBA", (card.size[0] * 4, card.size[1] * 4), (255, 255, 255, 0))
@@ -285,13 +250,6 @@ class Generator:
                          emoji_scale_factor=emoji_scale,
                          emoji_position_offset=(0, bal_emoji_y))
 
-        # # Name text
-        # draw.text((bar_start + 10, name_y), name, namecolor,
-        #           font=name_font, stroke_width=stroke_width, stroke_fill=namefill)
-        # # Balance
-        # draw.text((bar_start + 10, bar_top - 110), bal, statcolor,
-        #           font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfil)
-
         # Prestige
         if prestige:
             draw.text((bar_start + 10, stats_y - stats_size - 10), prestige_str, statcolor,
@@ -346,9 +304,6 @@ class Generator:
             pr_y = pmiddle - int(stats_size / 2)
             blank.paste(prestige_img, (pr_x, pr_y))
 
-        # Paste star and status to profile
-        blank.paste(status, (circle_x + 230, circle_y + 240))
-
         # Adjust star placement
         star_bbox = star_font.getbbox(stars)
         # Middle of star text
@@ -358,6 +313,79 @@ class Generator:
         blank.paste(star, (star_x - 60, star_y))
         # New final
         final = Image.alpha_composite(final, blank)
+
+        # pfp border - draw at 4x and resample down to 1x for nice smooth circles then paste to the image
+        circle_img = Image.new("RGBA", (1600, 1600))
+        pfp_border = ImageDraw.Draw(circle_img)
+        pfp_border.ellipse([4, 4, 1596, 1596], fill=(255, 255, 255, 0), outline=base, width=20)
+        circle_img = circle_img.resize((330, 330), Image.Resampling.LANCZOS)
+        final.paste(circle_img, (circle_x - 15, circle_y - 15), circle_img)
+
+        # get profile pic
+        pfp_image = self.get_image_content_from_url(str(profile_image))
+        if pfp_image:
+            profile_bytes = BytesIO(pfp_image)
+            profile = Image.open(profile_bytes)
+        else:
+            profile = Image.open(self.default_pfp)
+
+        if getattr(profile, "is_animated") and render_gifs:
+            duration = self.get_avg_duration(profile)
+            frames = []
+            for i in range(profile.n_frames):
+                profile.seek(i)
+                prof_img = profile.convert('RGBA').resize((300, 300), Image.Resampling.LANCZOS)
+                # Mask to crop profile pic image to a circle
+                # draw at 4x size and resample down to 1x for a nice smooth circle
+                mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+                mask_draw = ImageDraw.Draw(mask)
+                mask_draw.ellipse(
+                    [circle_x * 4, circle_y * 4, (300 + circle_x) * 4, (300 + circle_y) * 4], fill=(255, 255, 255, 255)
+                )
+                mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+                # make a new Image to set up card-sized image for pfp layer and the circle mask for it
+                profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
+                # paste on square profile pic in appropriate spot
+                profile_pic_holder.paste(prof_img, (circle_x, circle_y))
+                # make a new Image at card size to crop pfp with transparency to the circle mask
+                pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
+                pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
+                # Profile image is on the background tile now
+                pre = Image.alpha_composite(final, pfp_composite_holder)
+                # Paste status over profile ring
+                blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
+                blank.paste(status, (circle_x + 230, circle_y + 240))
+                pre = Image.alpha_composite(pre, blank)
+                frames.append(pre)
+
+            tmp = BytesIO()
+            frames[0].save(tmp, save_all=True, append_images=frames[1:], duration=duration, format="GIF")
+            tmp.seek(0)
+            final = Image.open(tmp)
+
+        else:
+            profile = profile.convert('RGBA').resize((300, 300), Image.Resampling.LANCZOS)
+            # Mask to crop profile pic image to a circle
+            # draw at 4x size and resample down to 1x for a nice smooth circle
+            mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            mask_draw.ellipse(
+                [circle_x * 4, circle_y * 4, (300 + circle_x) * 4, (300 + circle_y) * 4], fill=(255, 255, 255, 255)
+            )
+            mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+            # make a new Image to set up card-sized image for pfp layer and the circle mask for it
+            profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
+            # paste on square profile pic in appropriate spot
+            profile_pic_holder.paste(profile, (circle_x, circle_y))
+            # make a new Image at card size to crop pfp with transparency to the circle mask
+            pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
+            pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
+            # Profile image is on the background tile now
+            final = Image.alpha_composite(final, pfp_composite_holder)
+            # Paste status over profile ring
+            blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
+            blank.paste(status, (circle_x + 230, circle_y + 240))
+            final = Image.alpha_composite(final, blank)
 
         return final
 
@@ -380,7 +408,8 @@ class Generator:
             balance: int = 0,
             currency: str = "credits",
             role_icon: str = None,
-            font_name: str = None
+            font_name: str = None,
+            render_gifs: bool = False
     ):
         # Colors
         base = self.rand_rgb()
@@ -844,7 +873,7 @@ class Generator:
     @staticmethod
     def get_avg_duration(image: Image) -> Union[int, None]:
         """Get average duration sequence of gif frames"""
-        if not image.is_animated:
+        if not getattr(image, "is_animated"):
             return None
         times = []
         for i in range(1, image.n_frames):
