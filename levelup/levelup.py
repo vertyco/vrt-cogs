@@ -898,7 +898,7 @@ class LevelUp(UserCommands, commands.Cog):
         When a user runs the profile command their generated image will be stored in cache to be reused for X seconds
 
         If profile embeds are enabled this setting will have no effect
-        Set to 0 to effectively disable the cache
+        Anything less than 10 seconds will effectively disable the cache
         """
         self.cache_seconds = int(seconds)
         await ctx.tick()
