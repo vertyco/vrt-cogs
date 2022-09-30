@@ -359,7 +359,8 @@ class Generator:
                 frames.append(pre)
 
             tmp = BytesIO()
-            frames[0].save(tmp, save_all=True, append_images=frames[1:], duration=duration, format="GIF", loop=0)
+            frames[0].save(tmp, save_all=True, append_images=frames[1:], duration=duration,
+                           format="GIF", loop=0, quality=25)
             tmp.seek(0)
             final = Image.open(tmp)
 

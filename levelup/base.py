@@ -1,12 +1,12 @@
 import asyncio
 import datetime
-import json
 import logging
 import math
 import os.path
 import traceback
 from io import BytesIO
 from typing import Union
+from time import perf_counter
 
 import aiohttp
 import discord
@@ -853,10 +853,12 @@ class UserCommands(commands.Cog):
                     'font_name': font,
                     'render_gifs': self.render_gifs
                 }
-
+                start = perf_counter()
                 file = await self.get_or_fetch_profile(user, args, full)
+                rtime = round((perf_counter() - start) * 1000)
                 if not file:
                     return await ctx.send(f"Failed to generate profile image :( try again in a bit")
+                start2 = perf_counter()
                 try:
                     await ctx.reply(file=file, mention_author=mention)
                 except Exception as e:
@@ -870,6 +872,10 @@ class UserCommands(commands.Cog):
                             await ctx.send(file=file)
                     except Exception as e:
                         log.error(f"Failed AGAIN to send profile pic: {e}")
+                mtime = round((perf_counter() - start2) * 1000)
+                if ctx.author.id == 350053505815281665:
+                    await ctx.send(f"`Render: `{humanize_number(rtime)}ms\n"
+                                   f"`Send:   `{humanize_number(mtime)}ms\n")
 
     @commands.command(name="prestige")
     @commands.guild_only()
