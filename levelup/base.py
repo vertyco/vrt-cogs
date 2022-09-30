@@ -63,22 +63,6 @@ class UserCommands(commands.Cog):
             return None
         return img
 
-    async def get_backgrounds(self):
-        task = self.bot.loop.run_in_executor(None, lambda: Generator().get_all_backgrounds())
-        try:
-            img = await asyncio.wait_for(task, timeout=60)
-        except asyncio.TimeoutError:
-            img = None
-        return img
-
-    async def get_fonts(self):
-        task = self.bot.loop.run_in_executor(None, lambda: Generator().get_all_fonts())
-        try:
-            img = await asyncio.wait_for(task, timeout=60)
-        except asyncio.TimeoutError:
-            img = None
-        return img
-
     # Function to test a given URL and see if it's valid
     async def valid_url(self, ctx: commands.Context, image_url: str):
         valid = validators.url(image_url)
@@ -99,6 +83,36 @@ class UserCommands(commands.Cog):
                 await ctx.send(_("Uh Oh, looks like that is not a valid image"))
                 return
         return True
+
+    async def get_or_fetch_fonts(self):
+        fonts = os.listdir(os.path.join(bundled_data_path(self), "fonts"))
+        same = all([name in self.fdata["names"] for name in fonts])
+        if same and self.fdata["img"]:
+            img = self.fdata["img"]
+        else:
+            task = self.bot.loop.run_in_executor(None, lambda: Generator().get_all_fonts())
+            try:
+                img = await asyncio.wait_for(task, timeout=60)
+                self.fdata["img"] = img
+                self.fdata["names"] = fonts
+            except asyncio.TimeoutError:
+                img = None
+        return img
+
+    async def get_or_fetch_backgrounds(self):
+        backgrounds = os.listdir(os.path.join(bundled_data_path(self), "backgrounds"))
+        same = all([name in self.fdata["names"] for name in backgrounds])
+        if same and self.fdata["img"]:
+            img = self.fdata["img"]
+        else:
+            task = self.bot.loop.run_in_executor(None, lambda: Generator().get_all_backgrounds())
+            try:
+                img = await asyncio.wait_for(task, timeout=60)
+                self.bgdata["img"] = img
+                self.bgdata["names"] = backgrounds
+            except asyncio.TimeoutError:
+                img = None
+        return img
 
     async def get_or_fetch_profile(self, user: discord.Member, args: dict, full: bool) -> Union[discord.File, None]:
         gid = user.guild.id
@@ -447,13 +461,13 @@ class UserCommands(commands.Cog):
         await ctx.send(_("Font `") + f + _("` Has been removed!"))
 
     @set_profile.command(name="backgrounds")
-    @commands.cooldown(1, 60, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def view_default_backgrounds(self, ctx: commands.Context):
         """View the default backgrounds"""
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(_("Image profiles are disabled on this server so this command is off"))
         async with ctx.typing():
-            img = await self.get_backgrounds()
+            img = await self.get_or_fetch_backgrounds()
             if img is None:
                 await ctx.send(_("Failed to generate background samples"))
             buffer = BytesIO()
@@ -473,12 +487,13 @@ class UserCommands(commands.Cog):
                 await ctx.send(_("Could not send background collage, file size may be too large."))
 
     @set_profile.command(name="fonts")
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def view_fonts(self, ctx: commands.Context):
         """View available fonts to use"""
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(_("Image profiles are disabled on this server so this command is off"))
         async with ctx.typing():
-            img = await self.get_fonts()
+            img = await self.get_or_fetch_fonts()
             if img is None:
                 await ctx.send(_("Failed to generate background samples"))
             buffer = BytesIO()

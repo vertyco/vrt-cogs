@@ -122,6 +122,14 @@ class LevelUp(UserCommands, commands.Cog):
         self.ignored_guilds = []
         self.cache_seconds = 15
         self.render_gifs = False
+        self.bgdata = {
+            "img": None,
+            "names": []
+        }
+        self.fdata = {
+            "img": None,
+            "names": []
+        }
 
         # Guild id's as strings, user id's as strings
         self.lastmsg = {}  # Last sent message for users
