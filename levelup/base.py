@@ -752,6 +752,7 @@ class UserCommands(commands.Cog):
 
     @commands.command(name="pf")
     @commands.guild_only()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
         if not user:
