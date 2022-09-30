@@ -840,3 +840,28 @@ class Generator:
             return "custom"
         else:
             return "unicode"
+
+    @staticmethod
+    def get_avg_duration(image: Image) -> Union[int, None]:
+        """Get average duration sequence of gif frames"""
+        if not image.is_animated:
+            return None
+        times = []
+        for i in range(1, image.n_frames):
+            image.seek(i)
+            times.append(image.info["duration"])
+        if not times:
+            return None
+        return int(sum(times) / len(times))
+
+    @staticmethod
+    def get_durations(image: Image) -> Union[tuple, None]:
+        if not image.is_animated:
+            return None
+        times = []
+        for i in range(image.n_frames):
+            image.seek(i)
+            times.append(image.info["duration"])
+        if not times:
+            return None
+        return tuple(times)
