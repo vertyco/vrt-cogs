@@ -197,9 +197,13 @@ class Generator:
         draw = ImageDraw.Draw(final)
         name_size = 60
         name_font = ImageFont.truetype(base_font, name_size)
+        iters = 0
         while (name_font.getlength(user_name) + bar_start + 20) > 900:
             name_size -= 1
             name_font = ImageFont.truetype(base_font, name_size)
+            if iters > 20:
+                iters = 0
+                break
         nameht = name_font.getbbox(user_name)
         name_y = name_y - int(nameht[1] * 0.6)
 
@@ -211,22 +215,34 @@ class Generator:
             stats_size -= 1
             emoji_scale += 0.1
             stats_font = ImageFont.truetype(base_font, stats_size)
+            if iters > 20:
+                iters = 0
+                break
         # Also check message box
         while (stats_font.getlength(message_count) + bar_start + 220) > final.width - 10:
             stats_size -= 1
             emoji_scale += 0.1
             stats_font = ImageFont.truetype(base_font, stats_size)
+            if iters > 20:
+                iters = 0
+                break
         # And rank box
         while (stats_font.getlength(rank) + bar_start + 10) > bar_start + 210:
             stats_size -= 1
             emoji_scale += 0.1
             stats_font = ImageFont.truetype(base_font, stats_size)
+            if iters > 20:
+                iters = 0
+                break
 
         star_fontsize = 60
         star_font = ImageFont.truetype(base_font, star_fontsize)
         while (star_font.getlength(stars) + 960) > final.width - 10:
             star_fontsize -= 1
             star_font = ImageFont.truetype(base_font, star_fontsize)
+            if iters > 20:
+                iters = 0
+                break
 
         # Add stats text
         # Render name and credits text through pilmoji in case there are emojis
@@ -464,14 +480,27 @@ class Generator:
             bgcolor = base
 
         # Compare text colors to BG
+        iters = 0
         while self.distance(namecolor, bgcolor) < namedistance:
             namecolor = self.rand_rgb()
+            if iters > 20:
+                iters = 0
+                break
         while self.distance(statcolor, bgcolor) < statdistance:
             statcolor = self.rand_rgb()
+            if iters > 20:
+                iters = 0
+                break
         while self.distance(lvlbarcolor, bgcolor) < lvldistance:
             lvlbarcolor = self.rand_rgb()
+            if iters > 20:
+                iters = 0
+                break
         while self.distance(outlinecolor, bgcolor) < 50:
             outlinecolor = self.rand_rgb()
+            if iters > 20:
+                iters = 0
+                break
 
         # Place semi-transparent box over right side
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
