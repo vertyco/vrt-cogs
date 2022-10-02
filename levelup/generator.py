@@ -63,9 +63,9 @@ class Generator:
         statcolor = self.rand_rgb()
         lvlbarcolor = self.rand_rgb()
         # Color distancing is more strict if user hasn't defined color
-        namedistance = 250
-        statdistance = 250
-        lvldistance = 250
+        namedistance = 240
+        statdistance = 240
+        lvldistance = 240
         if colors:
             # Relax distance for colors that are defined
             base = colors["base"]
@@ -434,9 +434,9 @@ class Generator:
         statcolor = self.rand_rgb()
         lvlbarcolor = self.rand_rgb()
         # Color distancing is more strict if user hasn't defined color
-        namedistance = 250
-        statdistance = 250
-        lvldistance = 250
+        namedistance = 240
+        statdistance = 240
+        lvldistance = 240
         if colors:
             # Relax distance for colors that are defined
             base = colors["base"]
