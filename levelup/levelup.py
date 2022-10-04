@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import os
 import random
 import sys
 from datetime import datetime
@@ -9,6 +10,7 @@ from io import BytesIO
 from time import monotonic
 from typing import Union
 
+import functools
 import aiohttp
 import discord
 import matplotlib
@@ -20,6 +22,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
 from redbot.core.utils.predicates import MessagePredicate
 from redbot.core.utils import AsyncIter
+from concurrent.futures import ThreadPoolExecutor
 
 from .base import UserCommands
 from levelup.utils.formatter import (
@@ -114,6 +117,8 @@ class LevelUp(UserCommands, commands.Cog):
         default_global = {"ignored_guilds": [], "cache_seconds": 15, "render_gifs": False}
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
+
+        self.threadpool = ThreadPoolExecutor(thread_name_prefix="levelup")
 
         # Main cache
         self.data = {}

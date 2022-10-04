@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import functools
 import logging
 import math
 import os.path
@@ -46,7 +47,8 @@ _ = Translator("LevelUp", __file__)
 class UserCommands(commands.Cog):
     # Generate level up image
     async def gen_levelup_img(self, args: dict):
-        task = self.bot.loop.run_in_executor(None, lambda: Generator().generate_levelup(**args))
+        func = functools.partial(Generator().generate_levelup, **args)
+        task = self.bot.loop.run_in_executor(self.threadpool, func)
         try:
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -55,8 +57,11 @@ class UserCommands(commands.Cog):
 
     # Generate profile image
     async def gen_profile_img(self, args: dict, full: bool = True):
-        func = Generator().generate_profile(**args) if full else Generator().generate_slim_profile(**args)
-        task = self.bot.loop.run_in_executor(None, lambda: func)
+        if full:
+            func = functools.partial(Generator().generate_profile, **args)
+        else:
+            func = functools.partial(Generator().generate_slim_profile, **args)
+        task = self.bot.loop.run_in_executor(self.threadpool, func)
         try:
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -73,7 +78,8 @@ class UserCommands(commands.Cog):
             # Try running it through profile generator blind to see if it errors
 
             args = {'bg_image': image_url}
-            await self.bot.loop.run_in_executor(None, lambda: Generator().generate_profile(**args))
+            func = functools.partial(Generator().generate_profile, **args)
+            await self.bot.loop.run_in_executor(None, func)
         except Exception as e:
             if "cannot identify image file" in str(e):
                 await ctx.send(_("Uh Oh, looks like that is not a valid image, cannot identify the file"))
@@ -90,7 +96,8 @@ class UserCommands(commands.Cog):
         if same and self.fdata["img"]:
             img = self.fdata["img"]
         else:
-            task = self.bot.loop.run_in_executor(None, lambda: Generator().get_all_fonts())
+            func = functools.partial(Generator().get_all_fonts)
+            task = self.bot.loop.run_in_executor(None, func)
             try:
                 img = await asyncio.wait_for(task, timeout=60)
                 self.fdata["img"] = img
@@ -105,7 +112,8 @@ class UserCommands(commands.Cog):
         if same and self.fdata["img"]:
             img = self.fdata["img"]
         else:
-            task = self.bot.loop.run_in_executor(None, lambda: Generator().get_all_backgrounds())
+            func = functools.partial(Generator().get_all_backgrounds)
+            task = self.bot.loop.run_in_executor(None, func)
             try:
                 img = await asyncio.wait_for(task, timeout=60)
                 self.bgdata["img"] = img
@@ -148,13 +156,6 @@ class UserCommands(commands.Cog):
         if banner_id:
             banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
             return banner_url
-
-    @staticmethod
-    def merge_frames(frames: list, duration: int) -> Image:
-        buffer = BytesIO()
-        frames[0].save(buffer, save_all=True, append_images=frames[1:], duration=duration, format="GIF")
-        buffer.seek(0)
-        return Image.open(buffer)
 
     @staticmethod
     def get_attachments(ctx) -> list:
@@ -257,36 +258,6 @@ class UserCommands(commands.Cog):
         temp.seek(0)
         file = discord.File(temp)
         await ctx.send(file=file)
-
-    @commands.command(name="mywebp", hidden=True)
-    async def get_webp(self, ctx: commands.Context):
-        """Get a webp or webm of your profile avatar"""
-        user = ctx.author
-        if DPY2:
-            pfp = user.avatar.url if user.avatar else None
-        else:
-            pfp = user.avatar_url
-        img_bytes = await self.bot.loop.run_in_executor(
-            None,
-            lambda: Generator().get_image_content_from_url(pfp)
-        )
-        async with ctx.typing():
-            img = Image.open(BytesIO(img_bytes))
-            duration = Generator().get_avg_duration(img)
-            frames = []
-            for i in range(img.n_frames):
-                img.seek(i)
-                frames.append(img)
-            img = await self.bot.loop.run_in_executor(
-                None,
-                lambda: self.merge_frames(frames, duration)
-            )
-            await ctx.send(f"Is animated: {img.is_animated}")
-            buffer = BytesIO()
-            img.save(buffer, save_all=True, format="GIF")
-            buffer.seek(0)
-            file = discord.File(buffer, filename=f"{ctx.author.id}.gif")
-            await ctx.send(file=file)
 
     @commands.group(name="myprofile", aliases=["mypf", "pfset"])
     @commands.guild_only()
