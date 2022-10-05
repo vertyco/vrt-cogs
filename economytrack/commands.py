@@ -25,11 +25,13 @@ _ = Translator("EconomyTrackCommands", __file__)
 class EconomyTrackCommands(MixinMeta):
     @commands.group(aliases=["ecotrack"])
     @commands.admin()
+    @commands.guild_only()
     async def economytrack(self, ctx: commands.Context):
         """Configure EconomyTrack"""
 
     @economytrack.command()
     @commands.guildowner()
+    @commands.guild_only()
     async def toggle(self, ctx: commands.Context):
         """Enable/Disable economy tracking for this server"""
         async with self.config.guild(ctx.guild).all() as conf:
@@ -126,8 +128,36 @@ class EconomyTrackCommands(MixinMeta):
         )
         await ctx.send(embed=embed)
 
+    @commands.command()
+    @commands.guildowner()
+    @commands.guild_only()
+    async def cleanoutliers(self, ctx: commands.Context, max_value: int):
+        """Cleanup data above a certain total economy balance"""
+        is_global = await bank.is_global()
+        if is_global:
+            data = await self.config.data()
+        else:
+            data = await self.config.guild(ctx.guild).data()
+        if len(data) < 10:
+            embed = discord.Embed(
+                description=_("There is not enough data collected. Try again later."),
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
+
+        newrows = [i for i in data if i["total"] <= max_value]
+        deleted = len(data) - len(newrows)
+        if not deleted:
+            return await ctx.send(_("No data to delete"))
+        await ctx.send(_("Deleted all data points above ") + str(max_value))
+        if is_global:
+            await self.config.data.set(newrows)
+        else:
+            await self.config.guild(ctx.guild).data.set(newrows)
+
     @commands.command(aliases=["bgraph"])
     @commands.cooldown(5, 60.0, BucketType.user)
+    @commands.guild_only()
     async def bankgraph(self, ctx: commands.Context, timespan: str = "1d"):
         """
         View bank status over a period of time.
