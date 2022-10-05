@@ -131,7 +131,7 @@ class EconomyTrackCommands(MixinMeta):
     @commands.command()
     @commands.guildowner()
     @commands.guild_only()
-    async def cleanoutliers(self, ctx: commands.Context, max_value: int):
+    async def remoutliers(self, ctx: commands.Context, max_value: int):
         """Cleanup data above a certain total economy balance"""
         is_global = await bank.is_global()
         if is_global:
@@ -145,7 +145,7 @@ class EconomyTrackCommands(MixinMeta):
             )
             return await ctx.send(embed=embed)
 
-        newrows = [i for i in data if i["total"] <= max_value]
+        newrows = [i for i in data if i[1] <= max_value]
         deleted = len(data) - len(newrows)
         if not deleted:
             return await ctx.send(_("No data to delete"))
