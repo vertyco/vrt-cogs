@@ -25,7 +25,7 @@ _ = Translator("EconomyTrack", __file__)
 class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=CompositeMetaClass):
     """Track your economy's total balance over time"""
     __author__ = "Vertyco"
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
