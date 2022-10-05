@@ -149,11 +149,13 @@ class EconomyTrackCommands(MixinMeta):
         deleted = len(data) - len(newrows)
         if not deleted:
             return await ctx.send(_("No data to delete"))
-        await ctx.send(_("Deleted all data points above ") + str(max_value))
-        if is_global:
-            await self.config.data.set(newrows)
-        else:
-            await self.config.guild(ctx.guild).data.set(newrows)
+        async with ctx.typing():
+            if is_global:
+                await self.config.data.set(newrows)
+            else:
+                await self.config.guild(ctx.guild).data.set(newrows)
+            await ctx.send(_("Deleted all data points above ") + str(max_value))
+
 
     @commands.command(aliases=["bgraph"])
     @commands.cooldown(5, 60.0, BucketType.user)
