@@ -1333,10 +1333,10 @@ class LevelUp(UserCommands, commands.Cog):
             if rid not in rb:
                 return await ctx.send(_("That role has no bonus xp associated with it"))
             del self.data[ctx.guild.id]["rolebonuses"]["msg"][rid]
-            await ctx.send(_("Bonus xp for ") + role.name + _(" has been removed"))
+            await ctx.send(_("Bonus xp for ") + role.mention + _(" has been removed"))
         else:
             self.data[ctx.guild.id]["rolebonuses"]["msg"][rid] = xp
-            await ctx.send(_("Bonus xp for ") + role.name + _(" has been set to ") + str(xp))
+            await ctx.send(_("Bonus xp for ") + role.mention + _(" has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
     @message_group.command(name="channelbonus")
@@ -1359,10 +1359,10 @@ class LevelUp(UserCommands, commands.Cog):
             if cid not in cb:
                 return await ctx.send(_("That channel has no bonus xp associated with it"))
             del self.data[ctx.guild.id]["channelbonuses"]["msg"][cid]
-            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been removed"))
+            await ctx.send(_("Bonus xp for ") + channel.mention + _(" has been removed"))
         else:
             self.data[ctx.guild.id]["channelbonuses"]["msg"][cid] = xp
-            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been set to ") + str(xp))
+            await ctx.send(_("Bonus xp for ") + channel.mention + _(" has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
     @message_group.command(name="cooldown")
@@ -1424,10 +1424,10 @@ class LevelUp(UserCommands, commands.Cog):
             if rid not in rb:
                 return await ctx.send(_("That role has no bonus xp associated with it"))
             del self.data[ctx.guild.id]["rolebonuses"]["voice"][rid]
-            await ctx.send(_("Bonus xp for ") + role.name + _(" has been removed"))
+            await ctx.send(_("Bonus xp for ") + role.mention + _(" has been removed"))
         else:
             self.data[ctx.guild.id]["rolebonuses"]["voice"][rid] = xp
-            await ctx.send(_("Bonus xp for ") + role.name + _(" has been set to ") + str(xp))
+            await ctx.send(_("Bonus xp for ") + role.mention + _(" has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
     @voice_group.command(name="channelbonus")
@@ -1450,10 +1450,10 @@ class LevelUp(UserCommands, commands.Cog):
             if cid not in cb:
                 return await ctx.send(_("That channel has no bonus xp associated with it"))
             del self.data[ctx.guild.id]["channelbonuses"]["voice"][cid]
-            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been removed"))
+            await ctx.send(_("Bonus xp for ") + channel.mention + _(" has been removed"))
         else:
             self.data[ctx.guild.id]["channelbonuses"]["voice"][cid] = xp
-            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been set to ") + str(xp))
+            await ctx.send(_("Bonus xp for ") + channel.mention + _(" has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
     @voice_group.command(name="muted")
