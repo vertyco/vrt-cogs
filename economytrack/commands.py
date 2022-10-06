@@ -69,30 +69,26 @@ class EconomyTrackCommands(MixinMeta):
         Use this command without the argument to get a huge list of valid timezones.
         """
         tzs = pytz.common_timezones
-        timezones = humanize_list(tzs)
+        timezones = "\n".join([t for t in tzs])
         command = f"`{ctx.prefix}ecotrack timezone US/Eastern`"
         text = _(f"Use one of these timezones with this command\n") + _("Example: ") + command
         embeds = []
-        if not timezone:
-            embed = discord.Embed(
-                title=_("Valid Timezones"),
-                description=text,
-                color=ctx.author.color
-            )
-            await ctx.send(embed=embed)
-            for p in pagify(timezones):
-                embeds.append(discord.Embed(description=box(p)))
-        elif timezone not in tzs:
-            embed = discord.Embed(
-                title=_("Invalid Timezone!"),
-                description=text,
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed)
-            for p in pagify(timezones):
-                embeds.append(discord.Embed(description=box(p)))
+        if not timezone or timezone not in tzs:
+            if not timezone:
+                title = _("Valid Timezones")
+            else:
+                title = _("Invalid Arg, Here are Valid Timezones")
+            for p in pagify(timezones, page_length=500):
+                em = discord.Embed(
+                    title=title,
+                    description=f"{text}\n{box(p)}",
+                    color=ctx.author.color
+                )
+                embeds.append(em)
 
         if embeds:
+            for i, em in enumerate(embeds):
+                em.set_footer(text=f"Page {i + 1}/{len(embeds)}")
             return await menu(ctx, embeds, DEFAULT_CONTROLS)
 
         await self.config.guild(ctx.guild).timezone.set(timezone)
@@ -220,7 +216,8 @@ class EconomyTrackCommands(MixinMeta):
         lowest = df.min().total
         highest = df.max().total
         avg = df.mean().total
-        current = await self.get_total_bal(ctx.guild)
+        current = df.values[-1][0]
+        # current = await self.get_total_bal(ctx.guild)
 
         desc = f"`DataPoints: `{humanize_number(len(data))}\n" \
                f"`BankName:   `{bank_name}\n" \
@@ -229,7 +226,12 @@ class EconomyTrackCommands(MixinMeta):
         field = f"`Current: `{humanize_number(current)}\n" \
                 f"`Average: `{humanize_number(round(avg))}\n" \
                 f"`Highest: `{humanize_number(highest)}\n" \
-                f"`Lowest:  `{humanize_number(lowest)}"
+                f"`Lowest:  `{humanize_number(lowest)}\n" \
+                f"`Diff:    `{humanize_number(highest - lowest)}"
+
+        first = df.values[0][0]
+        diff = '+' if current > first else '-'
+        field2 = f"{diff} {abs(current - first)}"
 
         embed = discord.Embed(
             title=title,
@@ -237,6 +239,8 @@ class EconomyTrackCommands(MixinMeta):
             color=ctx.author.color
         )
         embed.add_field(name=_("Statistics"), value=field)
+        embed.add_field(name=_("Change"), value=f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field2, 'diff')}")
+
         embed.set_image(url="attachment://plot.png")
         embed.set_footer(text=_(f"Timezone: {timezone}"))
         async with ctx.typing():
