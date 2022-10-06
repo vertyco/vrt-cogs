@@ -323,6 +323,10 @@ class LevelUp(UserCommands, commands.Cog):
     @staticmethod
     def cleanup(data: dict) -> tuple:
         conf = data.copy()
+        if isinstance(conf["channelbonuses"]["msg"], list):
+            conf["channelbonuses"]["msg"] = {}
+        if isinstance(conf["channelbonuses"]["voice"], list):
+            conf["channelbonuses"]["voice"] = {}
         cleaned = []
         # Check prestige data
         if conf["prestigedata"]:
@@ -776,6 +780,7 @@ class LevelUp(UserCommands, commands.Cog):
         xp = conf["xp"]
         xpbonus = conf["rolebonuses"]["msg"]
         xpchanbonus = conf["channelbonuses"]["msg"]
+        print(xpchanbonus)
         voicexp = conf["voicexp"]
         voicexpbonus = conf["rolebonuses"]["voice"]
         voicechanbonus = conf["channelbonuses"]["voice"]
