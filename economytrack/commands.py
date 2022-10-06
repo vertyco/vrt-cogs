@@ -211,7 +211,6 @@ class EconomyTrackCommands(MixinMeta):
             title = f"Total economy balance for all time ({alltime})"
         else:
             delta: datetime.timedelta = df.index[-1] - df.index[0]
-            print(delta.total_seconds())
             title = f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
 
         lowest = df.min().total
