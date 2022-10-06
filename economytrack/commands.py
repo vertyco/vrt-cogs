@@ -210,7 +210,8 @@ class EconomyTrackCommands(MixinMeta):
             alltime = humanize_timedelta(seconds=len(data) * 60)
             title = f"Total economy balance for all time ({alltime})"
         else:
-            delta = df.index[0] - df.index[-1]
+            delta: datetime.timedelta = df.index[-1] - df.index[0]
+            print(delta.total_seconds())
             title = f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
 
         lowest = df.min().total
@@ -231,7 +232,7 @@ class EconomyTrackCommands(MixinMeta):
 
         first = df.values[0][0]
         diff = '+' if current > first else '-'
-        field2 = f"{diff} {abs(current - first)}"
+        field2 = f"{diff} {humanize_number(abs(current - first))}"
 
         embed = discord.Embed(
             title=title,
