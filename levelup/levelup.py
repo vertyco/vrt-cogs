@@ -780,7 +780,6 @@ class LevelUp(UserCommands, commands.Cog):
         xp = conf["xp"]
         xpbonus = conf["rolebonuses"]["msg"]
         xpchanbonus = conf["channelbonuses"]["msg"]
-        print(xpchanbonus)
         voicexp = conf["voicexp"]
         voicexpbonus = conf["rolebonuses"]["voice"]
         voicechanbonus = conf["channelbonuses"]["voice"]
@@ -862,7 +861,7 @@ class LevelUp(UserCommands, commands.Cog):
                 role = ctx.guild.get_role(int(rid))
                 if not role:
                     continue
-                text += f"{role.name} - {bonusrange}\n"
+                text += f"{role.mention} - {bonusrange}\n"
             if text:
                 embed.add_field(
                     name=_("Voice XP Bonus Roles"),
@@ -886,7 +885,7 @@ class LevelUp(UserCommands, commands.Cog):
                 role = ctx.guild.get_role(int(rid))
                 if not role:
                     continue
-                text += f"{role.name} - {bonusrange}\n"
+                text += f"{role.mention} - {bonusrange}\n"
             if text:
                 embed.add_field(
                     name=_("Message XP Bonus Roles"),
