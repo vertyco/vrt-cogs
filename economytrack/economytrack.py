@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from time import monotonic
 
+import discord
 from discord.ext import tasks
 from redbot.core import commands, Config, bank
 from redbot.core.bot import Red
@@ -25,7 +26,7 @@ _ = Translator("EconomyTrack", __file__)
 class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=CompositeMetaClass):
     """Track your economy's total balance over time"""
     __author__ = "Vertyco"
-    __version__ = "0.0.4"
+    __version__ = "0.1.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -59,8 +60,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
             max_points = 52560000  # 100 years is plenty
         now = datetime.now().replace(microsecond=0, second=0).timestamp()
         if is_global:
-            members = await bank._config.all_users()
-            total = sum(value["balance"] for value in members.values())
+            total = await self.get_total_bal()
             async with self.config.data() as data:
                 data.append((now, total))
                 if len(data) > max_points:
@@ -69,8 +69,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
             async for guild in AsyncIter(self.bot.guilds):
                 if not await self.config.guild(guild).enabled():
                     continue
-                members = await bank._config.all_members(guild)
-                total = sum(value["balance"] for value in members.values())
+                total = await self.get_total_bal(guild)
                 async with self.config.guild(guild).data() as data:
                     data.append((now, total))
                     if len(data) > max_points:
@@ -81,6 +80,15 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
             self.looptime = iter_time
         else:
             self.looptime = round((avg_iter + iter_time) / 2)
+
+    async def get_total_bal(self, guild: discord.guild = None) -> int:
+        is_global = await bank.is_global()
+        if is_global:
+            members = await bank._config.all_users()
+        else:
+            members = await bank._config.all_members(guild)
+        total = sum(value["balance"] for value in members.values())
+        return int(total)
 
     @bank_loop.before_loop
     async def before_bank_loop(self):

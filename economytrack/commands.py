@@ -156,7 +156,6 @@ class EconomyTrackCommands(MixinMeta):
                 await self.config.guild(ctx.guild).data.set(newrows)
             await ctx.send(_("Deleted all data points above ") + str(max_value))
 
-
     @commands.command(aliases=["bgraph"])
     @commands.cooldown(5, 60.0, BucketType.user)
     @commands.guild_only()
@@ -215,23 +214,29 @@ class EconomyTrackCommands(MixinMeta):
             alltime = humanize_timedelta(seconds=len(data) * 60)
             title = f"Total economy balance for all time ({alltime})"
         else:
+            delta = df.index[0] - df.index[-1]
             title = f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
 
         lowest = df.min().total
         highest = df.max().total
         avg = df.mean().total
+        current = await self.get_total_bal(ctx.guild)
 
         desc = f"`DataPoints: `{humanize_number(len(data))}\n" \
                f"`BankName:   `{bank_name}\n" \
-               f"`Lowest:     `{humanize_number(lowest)} {currency_name}\n" \
-               f"`Highest:    `{humanize_number(highest)} {currency_name}\n" \
-               f"`Average:    `{humanize_number(round(avg))} {currency_name}\n"
+               f"`Currency:   `{currency_name}"
+
+        field = f"`Current: `{humanize_number(current)}\n" \
+                f"`Average: `{humanize_number(round(avg))}\n" \
+                f"`Highest: `{humanize_number(highest)}\n" \
+                f"`Lowest:  `{humanize_number(lowest)}"
 
         embed = discord.Embed(
-            title=_(title),
-            description=_(desc),
+            title=title,
+            description=desc,
             color=ctx.author.color
         )
+        embed.add_field(name=_("Statistics"), value=field)
         embed.set_image(url="attachment://plot.png")
         embed.set_footer(text=_(f"Timezone: {timezone}"))
         async with ctx.typing():
