@@ -6,18 +6,17 @@ import math
 import os.path
 import traceback
 from io import BytesIO
-from typing import Union
 from time import perf_counter
+from typing import Union
 
 import aiohttp
 import discord
 import tabulate
 import validators
 from redbot.core import commands, bank
+from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, humanize_list
-from redbot.core.data_manager import bundled_data_path
-from PIL import Image
 
 from levelup.utils.formatter import (
     time_formatter,

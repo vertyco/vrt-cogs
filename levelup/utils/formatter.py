@@ -4,7 +4,6 @@ from typing import Union
 
 import discord
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, humanize_number
 
 DPY2 = True if discord.__version__ > "1.7.3" else False
 _ = Translator("LevelUp", __file__)

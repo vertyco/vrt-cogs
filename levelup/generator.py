@@ -8,7 +8,6 @@ from typing import Union
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
-
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
@@ -179,7 +178,8 @@ class Generator:
         # Draw inner level bar 1 pixel smaller on each side
         if end_of_inner_bar > bar_start + 10:
             progress_bar_draw.rounded_rectangle(
-                (bar_start * 4 + thickness, bar_top * 4 + thickness, end_of_inner_bar * 4 - thickness, bar_bottom * 4 - thickness),
+                (bar_start * 4 + thickness, bar_top * 4 + thickness, end_of_inner_bar * 4 - thickness,
+                 bar_bottom * 4 - thickness),
                 fill=lvlbarcolor,
                 radius=89
             )
