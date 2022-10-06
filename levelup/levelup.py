@@ -1431,7 +1431,7 @@ class LevelUp(UserCommands, commands.Cog):
         await self.save_cache(ctx.guild)
 
     @voice_group.command(name="channelbonus")
-    async def voice_chan_bonus(self, ctx: commands.Context, channel: discord.TextChannel, min_xp: int, max_xp: int):
+    async def voice_chan_bonus(self, ctx: commands.Context, channel: discord.VoiceChannel, min_xp: int, max_xp: int):
         """
         Add a range of bonus XP to apply to certain channels
 
