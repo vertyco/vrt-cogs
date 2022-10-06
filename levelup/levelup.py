@@ -2,15 +2,14 @@ import asyncio
 import contextlib
 import json
 import logging
-import os
 import random
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 from time import monotonic
 from typing import Union
 
-import functools
 import aiohttp
 import discord
 import matplotlib
@@ -19,12 +18,10 @@ import tabulate
 from discord.ext import tasks
 from redbot.core import commands, Config
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number
-from redbot.core.utils.predicates import MessagePredicate
 from redbot.core.utils import AsyncIter
-from concurrent.futures import ThreadPoolExecutor
+from redbot.core.utils.chat_formatting import box, humanize_number, humanize_list
+from redbot.core.utils.predicates import MessagePredicate
 
-from .base import UserCommands
 from levelup.utils.formatter import (
     time_formatter,
     hex_to_rgb,
@@ -32,6 +29,7 @@ from levelup.utils.formatter import (
     get_xp,
     time_to_level
 )
+from .base import UserCommands
 
 matplotlib.use("agg")
 plt.switch_backend("agg")
@@ -54,13 +52,13 @@ async def confirm(ctx: commands.Context):
 # CREDITS
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
-# Thanks Zephyrkul#1089 for the help with leaderboard formatting!
+# Thanks Zephyrkul#1089 for the leaderboard formatting ideas!
 
 @cog_i18n(_)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "1.14.36"
+    __version__ = "1.15.36"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -95,6 +93,7 @@ class LevelUp(UserCommands, commands.Cog):
             "xp": [3, 6],  # Min/Max XP per message
             "voicexp": 2,  # XP per minute in voice
             "rolebonuses": {"msg": {}, "voice": {}},  # Roles that give a bonus range of XP
+            "channelbonuses": {"msg": {}, "voice": {}},  # ChannelID keys, list values for bonus xp range
             "cooldown": 60,  # Only gives XP every 30 seconds
             "base": 100,  # Base denominator for level algorithm, higher takes longer to level
             "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve
@@ -579,6 +578,7 @@ class LevelUp(UserCommands, commands.Cog):
         xpmax = int(conf["xp"][1]) + 1
         xp = random.choice(range(xpmin, xpmax))
         bonuses = conf["rolebonuses"]["msg"]
+        channel_bonuses = conf["channelbonuses"]["msg"]
         bonusrole = None
 
         users = self.data[gid]["users"]
@@ -612,14 +612,23 @@ class LevelUp(UserCommands, commands.Cog):
                 addxp = False
 
         if addxp:  # Give XP
-            self.lastmsg[gid][uid] = now
-            self.data[gid]["users"][uid]["xp"] += xp
+            xp_to_give = xp
             if bonusrole:
                 bonusrange = bonuses[bonusrole]
                 bmin = int(bonusrange[0])
                 bmax = int(bonusrange[1]) + 1
                 bxp = random.choice(range(bmin, bmax))
-                self.data[gid]["users"][uid]["xp"] += bxp
+                xp_to_give += bxp
+            cid = str(message.channel.id)
+            if cid in channel_bonuses:
+                bonuschannelrange = channel_bonuses[cid]
+                bmin = int(bonuschannelrange[0])
+                bmax = int(bonuschannelrange[1]) + 1
+                bxp = random.choice(range(bmin, bmax))
+                xp_to_give += bxp
+            self.lastmsg[gid][uid] = now
+            self.data[gid]["users"][uid]["xp"] += xp_to_give
+
         self.data[gid]["users"][uid]["messages"] += 1
         await self.check_levelups(gid, uid, message)
 
@@ -634,6 +643,7 @@ class LevelUp(UserCommands, commands.Cog):
         conf = self.data[gid]
         xp_per_minute = conf["voicexp"]
         bonuses = conf["rolebonuses"]["voice"]
+        channel_bonuses = conf["channelbonuses"]["voice"]
         bonusrole = None
         async for member in AsyncIter(guild.members):
             if member.bot:
@@ -686,13 +696,20 @@ class LevelUp(UserCommands, commands.Cog):
             if voice_state.channel.id in conf["ignoredchannels"]:
                 addxp = False
             if addxp:
-                self.data[gid]["users"][uid]["xp"] += xp_to_give
                 if bonusrole:
                     bonusrange = bonuses[bonusrole]
                     bmin = int(bonusrange[0])
                     bmax = int(bonusrange[1]) + 1
                     bxp = random.choice(range(bmin, bmax))
-                    self.data[gid]["users"][uid]["xp"] += bxp
+                    xp_to_give += bxp
+                cid = str(voice_state.channel.id)
+                if cid in channel_bonuses:
+                    bonuschannelrange = channel_bonuses[cid]
+                    bmin = int(bonuschannelrange[0])
+                    bmax = int(bonuschannelrange[1]) + 1
+                    bxp = random.choice(range(bmin, bmax))
+                    xp_to_give += bxp
+                self.data[gid]["users"][uid]["xp"] += xp_to_give
             self.data[gid]["users"][uid]["voice"] += td
             self.voice[gid][uid] = now
             jobs.append(self.check_levelups(gid, uid))
@@ -758,8 +775,10 @@ class LevelUp(UserCommands, commands.Cog):
         stacking = conf["stackprestigeroles"]
         xp = conf["xp"]
         xpbonus = conf["rolebonuses"]["msg"]
+        xpchanbonus = conf["channelbonuses"]["msg"]
         voicexp = conf["voicexp"]
         voicexpbonus = conf["rolebonuses"]["voice"]
+        voicechanbonus = conf["channelbonuses"]["voice"]
         cooldown = conf["cooldown"]
         base = conf["base"]
         exp = conf["exp"]
@@ -814,33 +833,6 @@ class LevelUp(UserCommands, commands.Cog):
                 else:
                     role = role_id
                 msg += f"`Level {level}: `{role}\n"
-        if igchannels:
-            msg += "**Ignored Channels**\n"
-            for channel_id in igchannels:
-                channel = ctx.guild.get_channel(channel_id)
-                if channel:
-                    channel = channel.mention
-                else:
-                    channel = channel_id
-                msg += f"{channel}\n"
-        if igroles:
-            msg += "**Ignored Roles**\n"
-            for role_id in igroles:
-                role = ctx.guild.get_role(role_id)
-                if role:
-                    role = role.mention
-                else:
-                    role = role_id
-                msg += f"{role}\n"
-        if igusers:
-            msg += "**Ignored Users**\n"
-            for user_id in igusers:
-                user = ctx.guild.get_member(user_id)
-                if user:
-                    user = user.mention
-                else:
-                    user = user_id
-                msg += f"{user}\n"
         if prestige and pdata:
             msg += "**Prestige**\n" \
                    f"`Stack Roles: `{stacking}\n" \
@@ -871,6 +863,18 @@ class LevelUp(UserCommands, commands.Cog):
                     name=_("Voice XP Bonus Roles"),
                     value=text
                 )
+        if voicechanbonus:
+            text = ""
+            for cid, bonusrange in voicechanbonus.items():
+                chan = ctx.guild.get_channel(int(cid))
+                if not chan:
+                    continue
+                text += f"{chan.mention} - {bonusrange}"
+            if text:
+                embed.add_field(
+                    name=_("Voice XP Bonus Channels"),
+                    value=text
+                )
         if xpbonus:
             text = ""
             for rid, bonusrange in xpbonus.items():
@@ -883,6 +887,46 @@ class LevelUp(UserCommands, commands.Cog):
                     name=_("Message XP Bonus Roles"),
                     value=text
                 )
+        if xpchanbonus:
+            text = ""
+            for cid, bonusrange in xpchanbonus.items():
+                chan = ctx.guild.get_channel(int(cid))
+                if not chan:
+                    continue
+                text += f"{chan.mention} - {bonusrange}"
+            if text:
+                embed.add_field(
+                    name=_("Message XP Bonus Channels"),
+                    value=text
+                )
+        if igroles:
+            ignored = [ctx.guild.get_role(rid).mention for rid in igroles if ctx.guild.get_role(rid)]
+            text = humanize_list(ignored)
+            if ignored:
+                embed.add_field(
+                    name=_("Ignored Roles"),
+                    value=text,
+                    inline=False
+                )
+        if igchannels:
+            ignored = [ctx.guild.get_channel(cid).mention for cid in igchannels if ctx.guild.get_channel(cid)]
+            text = humanize_list(ignored)
+            if ignored:
+                embed.add_field(
+                    name=_("Ignored Channels"),
+                    value=text,
+                    inline=False
+                )
+        if igusers:
+            ignored = [ctx.guild.get_member(uid).mention for uid in igusers if ctx.guild.get_member(uid)]
+            text = humanize_list(ignored)
+            if ignored:
+                embed.add_field(
+                    name=_("Ignored Users"),
+                    value=text,
+                    inline=False
+                )
+
         await ctx.send(embed=embed)
 
     @lvl_group.group(name="admin")
@@ -1269,7 +1313,7 @@ class LevelUp(UserCommands, commands.Cog):
         """
         Add a range of bonus XP to apply to certain roles
 
-        This bonus applies to both messages and voice time
+        This bonus applies to message xp
 
         Set both min and max to 0 to remove the role bonus
         """
@@ -1280,15 +1324,40 @@ class LevelUp(UserCommands, commands.Cog):
         rid = str(role.id)
         xp = [min_xp, max_xp]
         rb = self.data[ctx.guild.id]["rolebonuses"]["msg"]
-
         if not min_xp and not max_xp:
             if rid not in rb:
                 return await ctx.send(_("That role has no bonus xp associated with it"))
             del self.data[ctx.guild.id]["rolebonuses"]["msg"][rid]
-            await ctx.send(_(f"Bonus xp for {role.name} has been removed"))
+            await ctx.send(_("Bonus xp for ") + role.name + _(" has been removed"))
         else:
             self.data[ctx.guild.id]["rolebonuses"]["msg"][rid] = xp
-            await ctx.send(_(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}"))
+            await ctx.send(_("Bonus xp for ") + role.name + _(" has been set to ") + str(xp))
+        await self.save_cache(ctx.guild)
+
+    @message_group.command(name="channelbonus")
+    async def msg_chan_bonus(self, ctx: commands.Context, channel: discord.TextChannel, min_xp: int, max_xp: int):
+        """
+        Add a range of bonus XP to apply to certain channels
+
+        This bonus applies to message xp
+
+        Set both min and max to 0 to remove the role bonus
+        """
+        if not channel:
+            return await ctx.send(_("I cannot find that channel"))
+        if min_xp > max_xp:
+            return await ctx.send(_("Max xp needs to be higher than min xp"))
+        cid = str(channel.id)
+        xp = [min_xp, max_xp]
+        cb = self.data[ctx.guild.id]["channelbonuses"]["msg"]
+        if not min_xp and not max_xp:
+            if cid not in cb:
+                return await ctx.send(_("That channel has no bonus xp associated with it"))
+            del self.data[ctx.guild.id]["channelbonuses"]["msg"][cid]
+            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been removed"))
+        else:
+            self.data[ctx.guild.id]["channelbonuses"]["msg"] = xp
+            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
     @message_group.command(name="cooldown")
@@ -1345,16 +1414,41 @@ class LevelUp(UserCommands, commands.Cog):
             return await ctx.send(_("Max xp needs to be higher than min xp"))
         rid = str(role.id)
         xp = [min_xp, max_xp]
-
         rb = self.data[ctx.guild.id]["rolebonuses"]["voice"]
         if not min_xp and not max_xp:
             if rid not in rb:
                 return await ctx.send(_("That role has no bonus xp associated with it"))
             del self.data[ctx.guild.id]["rolebonuses"]["voice"][rid]
-            await ctx.send(_(f"Bonus xp for {role.name} has been removed"))
+            await ctx.send(_("Bonus xp for ") + role.name + _(" has been removed"))
         else:
             self.data[ctx.guild.id]["rolebonuses"]["voice"][rid] = xp
-            await ctx.send(_(f"Bonus xp for {role.name} has been set to {min_xp} - {max_xp}"))
+            await ctx.send(_("Bonus xp for ") + role.name + _(" has been set to ") + str(xp))
+        await self.save_cache(ctx.guild)
+
+    @voice_group.command(name="channelbonus")
+    async def voice_chan_bonus(self, ctx: commands.Context, channel: discord.TextChannel, min_xp: int, max_xp: int):
+        """
+        Add a range of bonus XP to apply to certain channels
+
+        This bonus applies to voice time xp
+
+        Set both min and max to 0 to remove the role bonus
+        """
+        if not channel:
+            return await ctx.send(_("I cannot find that role"))
+        if min_xp > max_xp:
+            return await ctx.send(_("Max xp needs to be higher than min xp"))
+        cid = str(channel.id)
+        xp = [min_xp, max_xp]
+        cb = self.data[ctx.guild.id]["channelbonuses"]["voice"]
+        if not min_xp and not max_xp:
+            if cid not in cb:
+                return await ctx.send(_("That channel has no bonus xp associated with it"))
+            del self.data[ctx.guild.id]["channelbonuses"]["voice"][cid]
+            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been removed"))
+        else:
+            self.data[ctx.guild.id]["channelbonuses"]["voice"][cid] = xp
+            await ctx.send(_("Bonus xp for ") + channel.name + _(" has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
     @voice_group.command(name="muted")

@@ -11,7 +11,6 @@ import discord
 from redbot.core import commands
 from redbot.core.utils.predicates import ReactionPredicate
 
-
 _ReactableEmoji = Union[str, discord.Emoji]
 
 
