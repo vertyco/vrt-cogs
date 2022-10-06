@@ -1356,7 +1356,7 @@ class LevelUp(UserCommands, commands.Cog):
             del self.data[ctx.guild.id]["channelbonuses"]["msg"][cid]
             await ctx.send(_("Bonus xp for ") + channel.name + _(" has been removed"))
         else:
-            self.data[ctx.guild.id]["channelbonuses"]["msg"] = xp
+            self.data[ctx.guild.id]["channelbonuses"]["msg"][cid] = xp
             await ctx.send(_("Bonus xp for ") + channel.name + _(" has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
