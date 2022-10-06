@@ -342,8 +342,8 @@ class Generator:
             profile = Image.open(profile_bytes)
         else:
             profile = Image.open(self.default_pfp)
-
-        if getattr(profile, "is_animated") and render_gifs:
+        is_animated = getattr(profile, "is_animated", False)
+        if is_animated and render_gifs:
             duration = self.get_avg_duration(profile)
             frames = []
             for i in range(profile.n_frames):
@@ -667,11 +667,11 @@ class Generator:
             fontfile = os.path.join(self.fonts, font_name)
             if os.path.exists(fontfile):
                 base_font = fontfile
+        # base_font = self.get_random_font()
         font = ImageFont.truetype(base_font, fontsize)
         while font.getlength(string) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
             fontsize -= 1
             font = ImageFont.truetype(base_font, fontsize)
-        textpos = (int(card.height * 1.2), int((card.height / 2) - (fontsize / 1.4)))
 
         # Draw rounded rectangle at 4x size and scale down to crop card to
         mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
@@ -713,6 +713,16 @@ class Generator:
         # Draw
         draw = ImageDraw.Draw(final)
         # Filling text
+        text_x = int(card.height * 1.2)
+        text_y = int((card.height / 2.05) - (font.getbbox(string)[3] / 2))
+        if font_name:
+            if font_name == "default":
+                text_y -= 6
+            elif "Avenger" in font_name:
+                text_y += 3
+        else:
+            text_y -= 6
+        textpos = (text_x, text_y)
         draw.text(textpos, string, txtcolor, font=font, stroke_width=3, stroke_fill=fillcolor)
         # Finally resize the image
         final = final.resize(card_size, Image.Resampling.LANCZOS)
@@ -892,6 +902,12 @@ class Generator:
         choice = random.choice(os.listdir(bg_dir))
         bg_file = os.path.join(bg_dir, choice)
         return Image.open(bg_file)
+
+    def get_random_font(self) -> str:
+        fdir = os.path.join(bundled_data_path(self), "fonts")
+        choice = random.choice(os.listdir(fdir))
+        f_file = os.path.join(fdir, choice)
+        return f_file
 
     @staticmethod
     def has_emoji(text: str) -> Union[str, bool]:
