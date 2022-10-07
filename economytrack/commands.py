@@ -219,7 +219,7 @@ class EconomyTrackCommands(MixinMeta):
         current = df.values[-1][0]
         # current = await self.get_total_bal(ctx.guild)
 
-        desc = f"`DataPoints: `{humanize_number(len(data))}\n" \
+        desc = f"`DataPoints: `{humanize_number(len(df.values))}\n" \
                f"`BankName:   `{bank_name}\n" \
                f"`Currency:   `{currency_name}"
 
