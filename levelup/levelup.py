@@ -1612,7 +1612,7 @@ class LevelUp(UserCommands, commands.Cog):
             text = _("Embed profiles are disabled. Enable them to set the progress bar length with ")
             text += f"`{ctx.prefix}levelset barlength`"
             return await ctx.send(text)
-        if not 15 <= bar_length >= 40:
+        if bar_length < 15 or bar_length > 50:
             return await ctx.send(_("Progress bar length must be a minimum of 15 and maximum of 40"))
         self.data[ctx.guild.id]["barlength"] = bar_length
         await ctx.send(_("Progress bar length has been set to ") + str(bar_length))
