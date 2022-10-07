@@ -668,7 +668,7 @@ class Generator:
             fontfile = os.path.join(self.fonts, font_name)
             if os.path.exists(fontfile):
                 base_font = fontfile
-        # base_font = self.get_random_font()
+        base_font = self.get_random_font()
         font = ImageFont.truetype(base_font, fontsize)
         while font.getlength(string) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
             fontsize -= 1
@@ -683,11 +683,10 @@ class Generator:
             width=5,
             radius=card.height
         )
-        # mask = mask.resize(card.size, Image.Resampling.LANCZOS)
 
         # Make new Image to create composite
         composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
-        card = Image.composite(card, composite_holder, mask)
+        final = Image.composite(card, composite_holder, mask)
 
         # Prep profile to paste
         pfp_image = self.get_image_content_from_url(str(profile_image))
@@ -709,13 +708,13 @@ class Generator:
         pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
         pfp_composite_holder = Image.composite(pfp_holder, pfp_composite_holder, mask)
 
-        final = Image.alpha_composite(card, pfp_composite_holder)
+        final = Image.alpha_composite(final, pfp_composite_holder)
 
         # Draw
         draw = ImageDraw.Draw(final)
         # Filling text
-        text_x = int(card.height * 1.2)
-        text_y = int(card.height / 2)
+        text_x = int(final.height * 1.2)
+        text_y = int(final.height / 2)
         textpos = (text_x, text_y)
         draw.text(textpos, string, txtcolor, font=font, anchor="lm", stroke_width=3, stroke_fill=fillcolor)
         # Finally resize the image
