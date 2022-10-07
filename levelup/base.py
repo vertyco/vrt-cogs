@@ -4,6 +4,7 @@ import functools
 import logging
 import math
 import os.path
+import random
 import traceback
 from io import BytesIO
 from time import perf_counter
@@ -246,7 +247,7 @@ class UserCommands(commands.Cog):
         args = {
             'bg_image': banner,
             'profile_image': pfp,
-            'level': 69,
+            'level': random.randint(1, 999),
             'color': color,
             'font_name': font
         }

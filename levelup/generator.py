@@ -715,16 +715,9 @@ class Generator:
         draw = ImageDraw.Draw(final)
         # Filling text
         text_x = int(card.height * 1.2)
-        text_y = int((card.height / 2.05) - (font.getbbox(string)[3] / 2))
-        if font_name:
-            if font_name == "default":
-                text_y -= 6
-            elif "Avenger" in font_name:
-                text_y += 3
-        else:
-            text_y -= 6
+        text_y = int(card.height / 2)
         textpos = (text_x, text_y)
-        draw.text(textpos, string, txtcolor, font=font, stroke_width=3, stroke_fill=fillcolor)
+        draw.text(textpos, string, txtcolor, font=font, anchor="lm", stroke_width=3, stroke_fill=fillcolor)
         # Finally resize the image
         final = final.resize(card_size, Image.Resampling.LANCZOS)
         return final
