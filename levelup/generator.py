@@ -8,7 +8,6 @@ from typing import Union
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
-from aiocache import cached, SimpleMemoryCache
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
@@ -825,7 +824,6 @@ class Generator:
         return new
 
     @staticmethod
-    @cached(ttl=3600, cache=SimpleMemoryCache)
     def get_image_content_from_url(url: str) -> Union[bytes, None]:
         try:
             res = requests.get(url)
