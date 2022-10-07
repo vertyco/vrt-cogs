@@ -14,6 +14,7 @@ import aiohttp
 import discord
 import tabulate
 import validators
+from aiocache import cached, SimpleMemoryCache
 from redbot.core import commands, bank
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
@@ -150,6 +151,7 @@ class UserCommands(commands.Cog):
         return discord.File(buffer, filename=buffer.name)
 
     # Hacky way to get user banner
+    @cached(ttl=3600, cache=SimpleMemoryCache)
     async def get_banner(self, user: discord.Member) -> str:
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
         banner_id = req["banner"]
@@ -173,6 +175,7 @@ class UserCommands(commands.Cog):
         return content
 
     @staticmethod
+    @cached(ttl=3600, cache=SimpleMemoryCache)
     async def get_content_from_url(url: str):
         try:
             async with aiohttp.ClientSession() as session:
