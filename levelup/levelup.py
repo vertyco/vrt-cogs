@@ -1646,7 +1646,7 @@ class LevelUp(UserCommands, commands.Cog):
         with plt.style.context("dark_background"):
             plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
             plt.xlabel(f"Level", fontsize=10)
-            plt.ylabel(f"Experience", fontsize=10)
+            plt.ylabel(f"Experience Required", fontsize=10)
             plt.title("XP Curve")
             plt.grid(axis="y")
             plt.grid(axis="x")
