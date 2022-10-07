@@ -102,6 +102,7 @@ class LevelUp(UserCommands, commands.Cog):
             "starmention": True,  # Mention when users add a star
             "starmentionautodelete": 30,  # Auto delete star mention reactions (0 to disable)
             "usepics": False,  # Use Pics instead of embeds for leveling, Embeds are default
+            "barlength": 15,  # Progress bar length for embed profiles
             "autoremove": False,  # Remove previous role on level up
             "stackprestigeroles": True,  # Toggle whether to stack prestige roles
             "muted": True,  # Ignore XP while being muted in voice
@@ -111,7 +112,8 @@ class LevelUp(UserCommands, commands.Cog):
             "notifydm": False,  # Toggle notify member of level up in DMs
             "mention": False,  # Toggle whether to mention the user
             "notifylog": None,  # Notify member of level up in a set channel
-            "notify": True,  # Toggle whether to notify member of levelups if notify log channel is not set
+            "notify": True,  # Toggle whether to notify member of levelups if notify log channel is not set,
+            "showbal": True,  # Show economy balance
         }
         default_global = {"ignored_guilds": [], "cache_seconds": 15, "render_gifs": False}
         self.config.register_guild(**default_guild)
@@ -769,7 +771,7 @@ class LevelUp(UserCommands, commands.Cog):
     async def view_settings(self, ctx: commands.Context):
         """View all LevelUP settings"""
         conf = self.data[ctx.guild.id]
-
+        usepics = conf["usepics"]
         levelroles = conf["levelroles"]
         igchannels = conf["ignoredchannels"]
         igroles = conf["ignoredroles"]
@@ -798,14 +800,21 @@ class LevelUp(UserCommands, commands.Cog):
         starcooldown = conf["starcooldown"]
         starmention = conf["starmention"]
         stardelete = conf["starmentionautodelete"] if conf["starmentionautodelete"] else "Disabled"
+        showbal = conf["showbal"]
+        barlength = conf["barlength"]
         sc = time_formatter(starcooldown)
         notifylog = ctx.guild.get_channel(conf["notifylog"])
         if not notifylog:
             notifylog = conf["notifylog"]
         else:
             notifylog = notifylog.mention
+        ptype = "Image" if usepics else "Embed"
 
-        msg = f"**Messages**\n" \
+        msg = f"**Cog**\n" \
+              f"`Profile Type:      `{ptype}\n" \
+              f"`Include Balance:   `{showbal}\n" \
+              f"`Progress Bar:      `{barlength} chars long\n" \
+              f"**Messages**\n" \
               f"`Message XP:        `{xp[0]}-{xp[1]}\n" \
               f"`Min Msg Length:    `{length}\n" \
               f"`Cooldown:          `{cooldown} seconds\n" \
@@ -1595,6 +1604,20 @@ class LevelUp(UserCommands, commands.Cog):
             await ctx.send(_("LevelUp will now use **generated images** instead of embeds"))
         await self.save_cache(ctx.guild)
 
+    @lvl_group.command(name="barlength")
+    async def set_bar_length(self, ctx: commands.Context, bar_length: int):
+        """Set the progress bar length for embed profiles"""
+        conf = self.data[ctx.guild.id]
+        if conf["usepics"]:
+            text = _("Embed profiles are disabled. Enable them to set the progress bar length with ")
+            text += f"`{ctx.prefix}levelset barlength`"
+            return await ctx.send(text)
+        if not 15 < bar_length > 40:
+            return await ctx.send(_("Progress bar length must be a minimum of 15 and maximum of 40"))
+        self.data[ctx.guild.id]["barlength"] = bar_length
+        await ctx.send(_("Progress bar length has been set to ") + str(bar_length))
+        await self.save_cache(ctx.guild)
+
     @lvl_group.command(name="seelevels")
     async def see_levels(self, ctx: commands.Context):
         """
@@ -1726,6 +1749,18 @@ class LevelUp(UserCommands, commands.Cog):
                 return await ctx.send(_(f"I do not have permission to send messages to that channel."))
             self.data[ctx.guild.id]["notifylog"] = levelup_channel.id
             await ctx.send(_(f"LevelUp channel has been set to {levelup_channel.mention}"))
+        await self.save_cache(ctx.guild)
+
+    @lvl_group.command(name="showbalance")
+    async def toggle_profile_balance(self, ctx: commands.Context):
+        """Toggle whether to show user's economy credit balance in their profile"""
+        showbal = self.data[ctx.guild.id]["showbal"]
+        if showbal:
+            self.data[ctx.guild.id]["showbal"] = False
+            await ctx.send(_("I will no longer include economy balance in user profiles"))
+        else:
+            self.data[ctx.guild.id]["showbal"] = True
+            await ctx.send(_("I will now include economy balance in user profiles"))
         await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="levelnotify")

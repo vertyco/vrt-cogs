@@ -255,14 +255,15 @@ class Generator:
                          emoji_scale_factor=emoji_scale,
                          emoji_position_offset=(0, name_emoji_y))
             # Balance
-            bal_bbox = stats_font.getbbox(bal)
-            bal_emoji_y = bal_bbox[3] - int(stats_size * emoji_scale)
-            pilmoji.text((bar_start + 10, bar_top - 110), bal, statcolor,
-                         font=stats_font,
-                         stroke_width=stroke_width,
-                         stroke_fill=statstxtfill,
-                         emoji_scale_factor=emoji_scale,
-                         emoji_position_offset=(0, bal_emoji_y))
+            if balance:
+                bal_bbox = stats_font.getbbox(bal)
+                bal_emoji_y = bal_bbox[3] - int(stats_size * emoji_scale)
+                pilmoji.text((bar_start + 10, bar_top - 110), bal, statcolor,
+                             font=stats_font,
+                             stroke_width=stroke_width,
+                             stroke_fill=statstxtfill,
+                             emoji_scale_factor=emoji_scale,
+                             emoji_position_offset=(0, bal_emoji_y))
 
         # Prestige
         if prestige:
