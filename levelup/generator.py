@@ -112,7 +112,7 @@ class Generator:
         default_fill = (0, 0, 0)
 
         # Coord setup
-        name_y = 35
+        name_y = 40
         stats_y = 160
         bar_start = 450
         bar_end = 1030
