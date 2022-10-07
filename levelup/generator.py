@@ -668,7 +668,7 @@ class Generator:
             fontfile = os.path.join(self.fonts, font_name)
             if os.path.exists(fontfile):
                 base_font = fontfile
-        base_font = self.get_random_font()
+        # base_font = self.get_random_font()
         font = ImageFont.truetype(base_font, fontsize)
         while font.getlength(string) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
             fontsize -= 1
