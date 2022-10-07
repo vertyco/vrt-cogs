@@ -738,6 +738,8 @@ class UserCommands(commands.Cog):
         usepics = conf["usepics"]
         users = conf["users"]
         mention = conf["mention"]
+        showbal = conf["showbal"]
+        barlength = conf["barlength"]
         user_id = str(user.id)
         if user_id not in users:
             return await ctx.send(_("No information available yet!"))
@@ -777,7 +779,7 @@ class UserCommands(commands.Cog):
         # Calculate remaining needed stats
         next_level = level + 1
         xp_needed = get_xp(next_level, base=conf["base"], exp=conf["exp"])
-        lvlbar = get_bar(xp, xp_needed, width=15)
+        lvlbar = get_bar(xp, xp_needed, width=barlength)
 
         async with ctx.typing():
             if not usepics:
@@ -788,7 +790,8 @@ class UserCommands(commands.Cog):
                 msg += f"💬｜{humanize_number(messages)}" + _(" messages sent\n")
                 msg += f"🎙｜{time_formatter(voice)}" + _(" in voice\n")
                 msg += f"💡｜{humanize_number(xp)}/{humanize_number(xp_needed)} Exp\n"
-                msg += f"💰｜{humanize_number(bal)} {currency_name}"
+                if showbal:
+                    msg += f"💰｜{humanize_number(bal)} {currency_name}"
                 em = discord.Embed(description=msg, color=user.color)
                 footer = _("Rank ") + position + _(", with ") + str(percentage) + _("% of global server Exp")
                 em.set_footer(text=footer)
@@ -833,7 +836,7 @@ class UserCommands(commands.Cog):
                     'prestige': prestige,
                     'emoji': emoji["url"] if emoji and isinstance(emoji, dict) else None,
                     'stars': stars,
-                    'balance': bal,
+                    'balance': bal if showbal else 0,
                     'currency': currency_name,
                     'role_icon': role_icon,
                     'font_name': font,
@@ -984,28 +987,25 @@ class UserCommands(commands.Cog):
                 stop = len(sorted_users)
             table = []
             for i in range(start, stop, 1):
-                label = i + 1
+                # Place, level, xp, user
+                place = i + 1
                 uid = sorted_users[i][0]
-                user = ctx.guild.get_member(int(uid))
-                if user:
-                    user = user.name
-                else:
-                    user = uid
+                user = ctx.guild.get_member(int(uid)).name if ctx.guild.get_member(int(uid)) else uid
                 xp = sorted_users[i][1]
                 xptext = str(xp)
                 if xp > 1000:
-                    xptext = f"{round(xp / 1000, 1)}K"
+                    xptext = f"{round(xp / 1000)}K"
                 if xp > 1000000:
-                    xptext = f"{round(xp / 1000000, 1)}M"
+                    xptext = f"{round(xp / 1000000)}M"
                 level = get_level(int(xp), base, exp)
-                level = f"{level}"
-                table.append([label, f"{level}", xptext, user])
+                place = f"{place}. {user[:20]}"
+                stats = f"lvl {level} / {xptext} xp"
+                table.append([place, stats])
 
-            headers = ["#", "Lvl", "XP", "Name"]
+            headers = ["Place", "Stats"]
             msg = tabulate.tabulate(
                 tabular_data=table,
                 headers=headers,
-                tablefmt="presto",
                 numalign="left",
                 stralign="left"
             )
