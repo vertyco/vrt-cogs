@@ -82,22 +82,21 @@ class Generator:
         card = self.force_aspect_ratio(card).convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
 
         # Colors
-        # base = self.rand_rgb()
-        # namecolor = self.rand_rgb()
-        # statcolor = self.rand_rgb()
-        # lvlbarcolor = self.rand_rgb()
-        rgbs = self.get_img_colors(profile, 4)
-        base = rgbs[0]
-        namecolor = rgbs[1]
-        statcolor = rgbs[2]
-        lvlbarcolor = rgbs[3]
+        # Sample colors from profile pic to use for default colors
+        rgbs = self.get_img_colors(profile, 8)
+        base = random.choice(rgbs)
+        namecolor = random.choice(rgbs)
+        statcolor = random.choice(rgbs)
+        lvlbarcolor = random.choice(rgbs)
         # Color distancing is more strict if user hasn't defined color
-        namedistance = 240
-        statdistance = 240
-        lvldistance = 240
+        namedistance = 200
+        statdistance = 200
+        lvldistance = 100
+        # Will always have colors dict unless testing
         if colors:
             # Relax distance for colors that are defined
-            base = colors["base"]
+            if colors["base"] != (0, 0, 0):
+                base = colors["base"]
             if colors["name"]:
                 namecolor = colors["name"]
                 namedistance = 100
@@ -318,7 +317,7 @@ class Generator:
         # Prestige
         if prestige:
             draw.text((bar_start + 10, stats_y - stats_size - 10), prestige_str, statcolor,
-                      font=stats_font, stroke_width=stroke_width, stroke_fill=namefill)
+                      font=stats_font, stroke_width=stroke_width, stroke_fill=statstxtfill)
         # Stats text
         # Rank
         draw.text((bar_start + 10, stats_y), rank, statcolor,
