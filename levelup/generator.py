@@ -112,7 +112,7 @@ class Generator:
         default_fill = (0, 0, 0)
 
         # Coord setup
-        name_y = 40
+        name_y = 35
         stats_y = 160
         bar_start = 450
         bar_end = 1030
@@ -297,7 +297,7 @@ class Generator:
             name_emoji_y = name_bbox[3] - name_size
             pilmoji.text((bar_start + 10, name_y), user_name, namecolor,
                          font=name_font,
-                         anchor="lt",
+                         # anchor="lt",
                          stroke_width=stroke_width,
                          stroke_fill=namefill,
                          emoji_scale_factor=emoji_scale,
