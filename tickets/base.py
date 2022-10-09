@@ -4,6 +4,7 @@ from io import StringIO
 from typing import Union
 
 import discord
+from discord.utils import escape_markdown
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
@@ -112,13 +113,14 @@ class BaseCommands(commands.Cog):
         panel = conf["panels"][panel_name]
         opened = int(datetime.datetime.fromisoformat(opened).timestamp())
         closed = int(datetime.datetime.now().timestamp())
+        closer_name = escape_markdown(closedby)
         embed = discord.Embed(
             title=_("Ticket Closed"),
             description=_(f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
                           f"`PanelType: `{panel_name.capitalize()}\n"
                           f"`Opened on: `<t:{opened}:F>\n"
                           f"`Closed on: `<t:{closed}:F>\n"
-                          f"`Closed by: `{closedby}\n"
+                          f"`Closed by: `{closer_name}\n"
                           f"`Reason:    `{reason}"),
             color=discord.Color.green()
         )
