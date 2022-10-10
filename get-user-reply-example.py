@@ -10,6 +10,7 @@ class GetReply:
     """
     A simple async context manager I use for getting message responses while deleting the replies
 
+    Default timeout is 120 seconds
     If timeout occurs, reply will be None
     """
 
