@@ -260,7 +260,7 @@ class LevelUp(UserCommands, commands.Cog):
             return
         with contextlib.suppress(discord.HTTPException):
             if del_after:
-                await chan.send(star_giver + _("just gave a star to") + star_reciever, del_after=del_after)
+                await chan.send(star_giver + _("just gave a star to") + star_reciever, delete_after=del_after)
             else:
                 await chan.send(star_giver + _("just gave a star to") + star_reciever)
 
