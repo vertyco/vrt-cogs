@@ -208,7 +208,8 @@ class Events(commands.Cog):
         grammar = "s one at a time" if per_user != 1 else ""
         if filesub:
             txt = f"**Enter your file submission{grammar} below.**\n" \
-                  f"Include some text with your upload for the entry description"
+                  f"Include some text with your upload for the entry description\n" \
+                  f"If you don't have permission to send attachments, you can DM me instead."
         else:
             txt = f"**Enter your submission{grammar} below.**"
 

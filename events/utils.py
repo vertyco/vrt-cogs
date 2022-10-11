@@ -24,7 +24,11 @@ class GetReply:
         self.reply = None
 
     def check(self, message: discord.Message):
-        return message.author == self.ctx.author and message.channel == self.ctx.channel
+        conditions = [
+            message.author == self.ctx.author and message.channel == self.ctx.channel,
+            message.author == self.ctx.author and not message.guild
+        ]
+        return any(conditions)
 
     async def __aenter__(self) -> Optional[discord.Message]:
         tasks = [asyncio.ensure_future(self.ctx.bot.wait_for("message", check=self.check))]
