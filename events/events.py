@@ -657,7 +657,8 @@ class Events(commands.Cog):
         event: dict = res["event"]
         msg: discord.Message = res["msg"]
         channel: discord.TextChannel = ctx.guild.get_channel(event["channel_id"])
-        if event["submissions"] and channel:
+        messages = [event["submissions"], event["messages"]]
+        if any(messages) and channel:
             await msg.edit(content="Would you like to cleanup the related messages for this event as well? (y/n)",
                            embed=None)
             async with GetReply(ctx) as reply:
