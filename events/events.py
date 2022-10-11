@@ -704,16 +704,16 @@ class Events(commands.Cog):
                 await ctx.send(f"The event `{name}` already exists!", delete_after=10)
                 return await cancel(msg)
 
-        await msg.edit(content="Enter a short description of this event (1000 characters or less)")
-        descriptin = None
+        await msg.edit(content="Enter a short description of this event (1024 characters or less)")
         while True:
-            async with GetReply(ctx) as reply:
+            async with GetReply(ctx, timeout=600) as reply:
                 if reply is None:
                     return await cancel(msg)
-                if len(reply.content) > 1000:
-                    await ctx.send("Keep the event description limited to 1000 characters or less", delete_after=10)
+                if len(reply.content) > 1024:
+                    await ctx.send("Keep the event description limited to 1024 characters or less", delete_after=10)
                     continue
                 description = reply.content
+                break
 
         await msg.edit(content="What channel would you like submissions to be sent to?\n"
                                "Mention a channel or say `here` for this one.")
@@ -939,6 +939,8 @@ class Events(commands.Cog):
                     value=f"Must have at least one role\n{humanize_list(mentions)}",
                     inline=False
                 )
+        if description:
+            embed.add_field(name="Event Details", value=description, inline=False)
         mentions = discord.AllowedMentions(roles=True, users=True)
         announcement = await channel.send(txt, embed=embed, allowed_mentions=mentions)
         event["messages"].append(announcement.id)
