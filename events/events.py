@@ -7,11 +7,13 @@ from typing import Optional
 
 import discord
 from discord.ext import tasks
-from redbot.core import commands, Config
+from redbot.core import commands, Config, bank
+from redbot.core.errors import BalanceTooHigh
 from redbot.core.commands import parse_timedelta
 from redbot.core.utils.chat_formatting import (
     humanize_list,
     humanize_timedelta,
+    humanize_number,
     box
 )
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
@@ -72,6 +74,7 @@ class Events(commands.Cog):
             "file_submission": bool,  # Either media/file or text submissions
             "submissions_per_user": int,  # Example 1 picture or file per user
             "winners": int,  # How many winners to select
+            "rewards": dict,  # Rewards for each winner according to their place
             "submissions": dict,  # User ID keys with list of their submission entries
             "start_date": int,  # Timestamp
             "end_date": int,  # Timestamp
@@ -214,7 +217,7 @@ class Events(commands.Cog):
             txt = f"**Enter your submission{grammar} below.**"
 
         if per_user > 1:
-            txt += f"\n\nWhen you are done, type `finished`.\n" \
+            txt += f"\n\nWhen you are finished, type `done`.\n" \
                    f"This event allows up to `{per_user}` submissions per user."
         txt += f"\n\nType `cancel` at any time to cancel."
         em = discord.Embed(
@@ -232,7 +235,7 @@ class Events(commands.Cog):
                     return
                 if reply.content.lower() == "cancel":
                     return await cancel(msg)
-                if reply.content.lower() == "finished":
+                if reply.content.lower() == "done":
                     break
                 attachments = get_attachments(reply)
                 text = str(reply.content)
@@ -378,6 +381,7 @@ class Events(commands.Cog):
         await ctx.send(embed=em)
         if not conf["events"]:
             return await ctx.send("There are no events to display")
+        currency = await bank.get_currency_name(ctx.guild)
         pagecount = len(conf["events"].keys())
         for index, i in enumerate(conf["events"].values()):
             page = index + 1
@@ -394,6 +398,7 @@ class Events(commands.Cog):
             required = [ctx.guild.get_role(rid).mention for rid in roles] if roles else []
             need_all_roles = i["need_all_roles"]
             days_in_server = i["days_in_server"]
+            rewards = i["rewards"]
             status = "**COMPLETED**" if i["completed"] else "In Progress"
             desc = f"`Event Name:     `{name}\n" \
                    f"`Status:         `{status}\n" \
@@ -414,7 +419,20 @@ class Events(commands.Cog):
             if required:
                 em.add_field(
                     name="Required Roles",
-                    value=f"{humanize_list(required)}\n`All Roles Required: `{need_all_roles}"
+                    value=f"{humanize_list(required)}\n`All Roles Required: `{need_all_roles}",
+                    inline=False
+                )
+            if rewards:
+                val = ""
+                for place, reward in rewards.items():
+                    if isinstance(reward, int):
+                        val += f"`{place} place: `{humanize_number(reward)} {currency}\n"
+                    else:
+                        val += f"`{place} place: `{reward}\n"
+                em.add_field(
+                    name="Rewards",
+                    value=val,
+                    inline=False
                 )
             em.set_footer(text=f"Page {page}/{pagecount}")
             pages.append(em)
@@ -798,6 +816,47 @@ class Events(commands.Cog):
                 winners = int(reply.content)
                 break
 
+        await msg.edit(content="Would you like to include reward descriptions for the winners? (y/n)")
+        rewards = {}
+        do_rewards = False
+        async with GetReply(ctx) as reply:
+            if reply is None:
+                return await cancel(msg)
+            if reply.content.lower() == "cancel":
+                return await cancel(msg)
+            if "y" in reply.content.lower():
+                do_rewards = True
+        if do_rewards:
+            done = False
+            for i in range(winners):
+                place = get_place(i + 1)
+                await msg.edit(
+                    content=f"Enter the reward for **{place} place**\n"
+                            f"If the reward is a `number`, "
+                            f"the user will be rewarded that amount of economy credits automatically.\n"
+                            f"If the reward is `text`, the reward description will be included in the announcement.\n\n"
+                            f"You can type `done` to skip any remaining winner reward places.\n"
+                            f"*Alternatively, you can type `skip` to skip the reward for a specific place.*"
+                )
+                while True:
+                    async with GetReply(ctx) as reply:
+                        if reply is None:
+                            return await cancel(msg)
+                        if reply.content.lower() == "cancel":
+                            return await cancel(msg)
+                        if reply.content.lower() == "done":
+                            done = True
+                            break
+                        if reply.content.lower() == "skip":
+                            break
+                        if reply.content.isdigit():
+                            rewards[place] = int(reply.content)
+                        else:
+                            rewards[place] = reply.content
+                        break
+                if done:
+                    break
+
         await msg.edit(content="How long will this event be running for?\n"
                                "**Example Replies**\n10d\n7d4h\n2w3d10h")
         delta = timedelta(days=1)
@@ -880,6 +939,7 @@ class Events(commands.Cog):
             "file_submission": filesubmission,  # Either media/file or text submissions
             "submissions_per_user": submissions,  # Example 1 picture or file per user
             "winners": winners,  # How many winners to select
+            "rewards": rewards,  # Rewards for each winner according to their place
             "submissions": {},  # User ID keys with list of their submission message ID's
             "start_date": start_date,  # Timestamp
             "end_date": end_date,  # Timestamp
@@ -949,6 +1009,15 @@ class Events(commands.Cog):
                 )
         if description:
             embed.add_field(name="Event Details", value=description, inline=False)
+        if rewards:
+            currency = await bank.get_currency_name(ctx.guild)
+            val = ""
+            for place, reward in rewards.items():
+                if isinstance(reward, int):
+                    val += f"`{place} place: `{humanize_number(reward)} {currency}\n"
+                else:
+                    val += f"`{place} place: `{reward}"
+            embed.add_field(name="Rewards", value=val, inline=False)
         mentions = discord.AllowedMentions(roles=True, users=True)
         announcement = await channel.send(txt, embed=embed, allowed_mentions=mentions)
         event["messages"].append(announcement.id)
@@ -970,6 +1039,8 @@ class Events(commands.Cog):
             emoji = self.bot.get_emoji(event["emoji"])
         channel: discord.TextChannel = guild.get_channel(event["channel_id"])
         subs = event["submissions"]
+        rewards = event["rewards"]
+        currency = await bank.get_currency_name(guild)
         results = {}
         for uid, message_ids in subs.items():
             submitter: discord.Member = guild.get_member(int(uid))
@@ -1050,10 +1121,21 @@ class Events(commands.Cog):
                     pfp = profile_icon(user)
                     if pfp:
                         thumbnail = pfp
+                value = f"{user.mention} with **[{votes} {grammar}!]({jump_url})**"
+                if place in rewards:
+                    reward = rewards[place]
+                    if isinstance(reward, int):
+                        value += f"\n`Reward: `{humanize_number(reward)} {currency}"
+                        try:
+                            await bank.deposit_credits(user, reward)
+                        except BalanceTooHigh as e:
+                            await bank.set_balance(user, e.max_balance)
+                    else:
+                        value += f"\n`Reward: `{reward}"
 
                 embed.add_field(
                     name=f"{medal}{place} Place!",
-                    value=f"{user.mention} with **[{votes} {grammar}!]({jump_url})**",
+                    value=value,
                     inline=False
                 )
             if image_url:
