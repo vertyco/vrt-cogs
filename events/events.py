@@ -114,6 +114,7 @@ class Events(commands.Cog):
         await self.bot.wait_until_red_ready()
 
     @commands.command(name="enotify")
+    @commands.guild_only()
     async def toggle_user_notify(self, ctx: commands.Context):
         """
         Enable/Disable event notifications for yourself
@@ -132,6 +133,7 @@ class Events(commands.Cog):
             await ctx.send("I will notify you when events start or end")
 
     @commands.command(name="enter")
+    @commands.guild_only()
     async def enter_event(self, ctx: commands.Context):
         """Enter an event if one exists"""
 
@@ -233,7 +235,7 @@ class Events(commands.Cog):
                 if reply.content.lower() == "finished":
                     break
                 attachments = get_attachments(reply)
-                text = reply.content
+                text = str(reply.content)
 
             if filesub and not attachments:
                 await ctx.send("Upload an image to add it to your submissions", delete_after=8)
@@ -337,6 +339,7 @@ class Events(commands.Cog):
                 events[event_name]["submissions"][uid] = to_save
 
     @commands.group(name="events")
+    @commands.guild_only()
     @commands.admin()
     async def events_group(self, ctx: commands.Context):
         """Create, manage and view events"""
@@ -890,11 +893,12 @@ class Events(commands.Cog):
         }
 
         await msg.edit(content="Event creation complete!")
+        etype = "File submissions" if filesubmission else "Text submissions"
         embed = discord.Embed(
             title="Event Details",
             description=f"`Event Name:      `{name}\n"
                         f"`Channel:         `{channel.mention}\n"
-                        f"`File Submission: `{filesubmission}\n"
+                        f"`Event Type:      `{etype}\n"
                         f"`Winner Count:    `{winners}\n"
                         f"`Days In Server:  `{days_in_server}\n"
                         f"`Start Date:      `<t:{start_date}:D> (<t:{start_date}:R>)\n"
@@ -916,7 +920,7 @@ class Events(commands.Cog):
         notify_users = [ctx.guild.get_member(m).mention for m in notify_users if ctx.guild.get_member(m)]
         txt = f"{humanize_list(notify_users)}\n" \
               f"{humanize_list(notify_roles)}"
-        etype = "File submissions" if filesubmission else "Text submissions"
+
         embed = discord.Embed(
             title="A new event has started!",
             description=f"`Event Name:     `**{name}**\n"
