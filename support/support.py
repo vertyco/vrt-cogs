@@ -282,6 +282,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 else:
                     msg = await channel.send(f"{user.mention}, {text}")
         else:
+            mentions = discord.AllowedMentions(users=True, roles=True)
             try:
                 params = {
                     "username": user.name,
@@ -291,11 +292,16 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 tmessage = conf["message"].format(**params)
                 if embeds:
                     if "mention" in conf["message"]:
-                        msg = await channel.send(user.mention, embed=discord.Embed(description=tmessage, color=color))
+                        msg = await channel.send(
+                            user.mention,
+                            embed=discord.Embed(description=tmessage, color=color)
+                        )
                     else:
-                        msg = await channel.send(embed=discord.Embed(description=tmessage, color=color))
+                        msg = await channel.send(
+                            embed=discord.Embed(description=tmessage, color=color)
+                        )
                 else:
-                    msg = await channel.send(tmessage, allowed_mentions=discord.AllowedMentions(users=True, roles=True))
+                    msg = await channel.send(tmessage, allowed_mentions=mentions)
             except Exception as e:
                 log.warning(f"An error occurred while sending a ticket message: {e}")
                 # Revert to default message
@@ -305,13 +311,13 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     if embeds:
                         msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
                     else:
-                        msg = await channel.send(f"{user.mention}, {text}")
+                        msg = await channel.send(f"{user.mention}, {text}", allowed_mentions=mentions)
                 else:
                     text = f"Welcome to your ticket channel"
                     if embeds:
                         msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
                     else:
-                        msg = await channel.send(f"{user.mention}, {text}")
+                        msg = await channel.send(f"{user.mention}, {text}", allowed_mentions=mentions)
 
         async with self.config.guild(guild).all() as settings:
             settings["num"] += 1
