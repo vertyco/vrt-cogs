@@ -216,12 +216,11 @@ class Events(commands.Cog):
         if per_user > 1:
             txt += f"\n\nWhen you are done, type `finished`.\n" \
                    f"This event allows up to `{per_user}` submissions per user."
-
+        txt += f"\n\nType `cancel` at any time to cancel."
         em = discord.Embed(
             description=txt,
             color=ctx.author.color
         )
-        em.set_footer(text="Type `cancel` at any time to cancel.")
         await msg.edit(embed=em)
 
         submissions = []
@@ -672,14 +671,13 @@ class Events(commands.Cog):
                 if reply is None:
                     return await msg.edit(content="Deletion cancelled, did not respond")
                 if "y" in reply.content.lower():
-                    for message_ids in event["submissions"].values():
-                        for message_id in message_ids:
-                            message = await channel.fetch_message(message_id)
-                            with contextlib.suppress(discord.NotFound, discord.Forbidden, AttributeError):
+                    with contextlib.suppress(discord.NotFound, discord.Forbidden, AttributeError):
+                        for message_ids in event["submissions"].values():
+                            for message_id in message_ids:
+                                message = await channel.fetch_message(message_id)
                                 await message.delete()
-                    for message_id in event["messages"]:
-                        message = await channel.fetch_message(message_id)
-                        with contextlib.suppress(discord.NotFound, discord.Forbidden, AttributeError):
+                        for message_id in event["messages"]:
+                            message = await channel.fetch_message(message_id)
                             await message.delete()
 
         async with self.config.guild(ctx.guild).events() as events:
@@ -929,7 +927,8 @@ class Events(commands.Cog):
                         f"`Winner Count:   `{winners}\n"
                         f"`Days In Server: `{days_in_server}\n"
                         f"`Start Date:     `<t:{start_date}:D> (<t:{start_date}:R>)\n"
-                        f"`End Date:       `<t:{end_date}:D> (<t:{end_date}:R>)",
+                        f"`End Date:       `<t:{end_date}:D> (<t:{end_date}:R>)\n\n"
+                        f"Type `{ctx.prefix}enter` to enter this event",
             color=ctx.author.color
         )
         icon = guild_icon(ctx.guild)
@@ -950,7 +949,6 @@ class Events(commands.Cog):
                 )
         if description:
             embed.add_field(name="Event Details", value=description, inline=False)
-        embed.set_footer(text=f"Enter this event with '{ctx.prefix}enter'")
         mentions = discord.AllowedMentions(roles=True, users=True)
         announcement = await channel.send(txt, embed=embed, allowed_mentions=mentions)
         event["messages"].append(announcement.id)
