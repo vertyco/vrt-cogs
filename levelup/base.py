@@ -1004,8 +1004,8 @@ class UserCommands(commands.Cog):
                     xptext = f"{round(xp / 1000000)}M"
                 level = get_level(int(xp), base, exp)
                 name = escape_markdown(user)
-                if len(name) > 17:
-                    name = f"{name[:17]}..."
+                if len(name) > 14:
+                    name = f"{name[:14]}..."
                 table.append([place, name, level, xptext])
 
             headers = ["Pos", "Name", "lvl", "exp"]
