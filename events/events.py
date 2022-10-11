@@ -203,15 +203,17 @@ class Events(commands.Cog):
         event_name = event["event_name"]
         await ctx.send(f"You have selected the **{event_name}** event!", delete_after=30)
 
+        grammar = "s one at a time" if per_user != 1 else ""
         if filesub:
-            txt = f"**Enter your file submissions one at a time below.**\n" \
-                  f"Include some text with your upload for the entry description\n\n" \
-                  f"When you are done, type `finished`.\n" \
-                  f"This event allows up to `{per_user}` submission(s) per user."
+            txt = f"**Enter your file submission{grammar} below.**\n" \
+                  f"Include some text with your upload for the entry description"
         else:
-            txt = f"**Enter your submissions one at a time below.**\n\n" \
-                  f"When you are done, type `finished`.\n" \
-                  f"This event allows up to `{per_user}` submission(s) per user."
+            txt = f"**Enter your submission{grammar} below.**"
+
+        if per_user > 1:
+            txt += f"\n\nWhen you are done, type `finished`.\n" \
+                   f"This event allows up to `{per_user}` submissions per user."
+
         em = discord.Embed(
             description=txt,
             color=ctx.author.color
@@ -708,6 +710,8 @@ class Events(commands.Cog):
         while True:
             async with GetReply(ctx, timeout=600) as reply:
                 if reply is None:
+                    return await cancel(msg)
+                if reply.content.lower() == "cancel":
                     return await cancel(msg)
                 if len(reply.content) > 1024:
                     await ctx.send("Keep the event description limited to 1024 characters or less", delete_after=10)
