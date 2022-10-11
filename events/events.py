@@ -364,10 +364,12 @@ class Events(commands.Cog):
         role_blacklist = [ctx.guild.get_role(rid).mention for rid in conf["role_blacklist"] if ctx.guild.get_role(rid)]
         user_blacklist = [str(ctx.guild.get_member(uid)) for uid in conf["user_blacklist"] if ctx.guild.get_member(uid)]
         auto_delete = "Enabled" if conf["auto_delete"] else "Disabled"
+        results_delete = "Enabled" if conf["result_delete"] else "Disabled"
         em = discord.Embed(
             title="Main Settings",
             description=f"`Ping Staff:    `{ping_staff}\n"
                         f"`Auto Delete:   `{auto_delete}\n"
+                        f"`Result Delete: `{results_delete}\n"
                         f"`Default Emoji: `{emoji}",
             color=ctx.author.color
         )
