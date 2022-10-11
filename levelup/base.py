@@ -9,13 +9,13 @@ import traceback
 from io import BytesIO
 from time import perf_counter
 from typing import Union
-from discord.utils import escape_markdown
 
 import aiohttp
 import discord
 import tabulate
 import validators
 from aiocache import cached, SimpleMemoryCache
+from discord.utils import escape_markdown
 from redbot.core import commands, bank
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
