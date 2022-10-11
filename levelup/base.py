@@ -1003,7 +1003,9 @@ class UserCommands(commands.Cog):
                 if xp > 1000000:
                     xptext = f"{round(xp / 1000000)}M"
                 level = get_level(int(xp), base, exp)
-                name = escape_markdown(user)[:20]
+                name = escape_markdown(user)
+                if len(name) > 17:
+                    name = f"{name[:17]}..."
                 table.append([place, name, level, xptext])
 
             headers = ["Pos", "Name", "lvl", "exp"]
