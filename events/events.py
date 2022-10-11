@@ -92,6 +92,7 @@ class Events(commands.Cog):
             str(int): list
         }
 
+        self._lock = set()
         # Event check loop
         self.check_events.start()
 
@@ -140,6 +141,15 @@ class Events(commands.Cog):
     @commands.guild_only()
     async def enter_event(self, ctx: commands.Context):
         """Enter an event if one exists"""
+        if ctx.author.id in self._lock:
+            return await ctx.send("You are already in the middle of entering an event!", delete_after=10)
+        try:
+            self._lock.add(ctx.author.id)
+            await self._enter_event(ctx)
+        finally:
+            self._lock.discard(ctx.author.id)
+
+    async def _enter_event(self, ctx: commands.Context):
 
         async def cancel(message):
             await message.edit(content="Event entry cancelled", embed=None)
@@ -156,7 +166,6 @@ class Events(commands.Cog):
             return await ctx.send("You cannot enter events because you have been blacklisted!")
         if any([r.id in rblacklist for r in author.roles]):
             return await ctx.send("You cannot enter events because one of your roles has been blacklisted!")
-
         res = await select_event(ctx, existing)
         if not res:
             return await ctx.send("There are no events to enter at this time")
@@ -225,8 +234,8 @@ class Events(commands.Cog):
             description=txt,
             color=ctx.author.color
         )
-        await msg.edit(embed=em)
 
+        await msg.edit(embed=em)
         submissions = []
         while True:
             if (len(submissions) + already_submitted) >= per_user:
