@@ -603,7 +603,7 @@ class Events(commands.Cog):
             embed=None
         )
         chan = ctx.guild.get_channel(event["channel_id"])
-        if chan:
+        if chan and chan.id != ctx.channel.id:
             message = await chan.send(txt)
             async with self.config.guild(ctx.guild).events() as events:
                 events[event["event_name"]]["messages"].append(message.id)
@@ -640,7 +640,7 @@ class Events(commands.Cog):
             embed=None
         )
         chan = ctx.guild.get_channel(event["channel_id"])
-        if chan:
+        if chan and chan.id != ctx.channel.id:
             message = await chan.send(txt)
             async with self.config.guild(ctx.guild).events() as events:
                 events[event["event_name"]]["messages"].append(message.id)
@@ -889,7 +889,8 @@ class Events(commands.Cog):
                 value=f"{humanize_list(mentions)}\n`All Roles Required: `{need_all_roles}",
                 inline=False
             )
-        await ctx.send(embed=embed)
+        if ctx.channel.id != channel.id:
+            await ctx.send(embed=embed)
 
         notify_roles = conf["notify_roles"]
         notify_roles = [ctx.guild.get_role(r).mention for r in notify_roles if ctx.guild.get_role(r)]
