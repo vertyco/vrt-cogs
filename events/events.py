@@ -1102,12 +1102,13 @@ class Events(commands.Cog):
                 if attachment:
                     attachment_url = attachment.url
                     filename = attachment.filename
-
+                posted_on = message.created_at.timestamp()
                 submission = {
                     "votes": votes,
                     "entry": message.jump_url,
                     "attachment_url": attachment_url,
-                    "filename": filename
+                    "filename": filename,
+                    "timestamp": posted_on
                 }
 
                 if submitter in results:
@@ -1120,7 +1121,9 @@ class Events(commands.Cog):
                 else:
                     results[submitter] = submission
 
-        final = sorted(results.items(), key=lambda x: x[1]["votes"], reverse=True)
+        # Sort by timestamp first, then votes. Ties will go to the person who posted first
+        pre = sorted(results.items(), key=lambda x: x[1]["timestamp"])
+        final = sorted(pre, key=lambda x: x[1]["votes"], reverse=True)
         winners = event["winners"]
         title = f"The {event['event_name']} event has ended!"
         thumbnail = None
