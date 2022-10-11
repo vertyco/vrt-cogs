@@ -225,7 +225,7 @@ class Events(commands.Cog):
         while True:
             if (len(submissions) + already_submitted) >= per_user:
                 break
-            async with GetReply(ctx, timeout=300) as reply:
+            async with GetReply(ctx, timeout=600) as reply:
                 if reply is None:
                     return
                 if reply.content.lower() == "cancel":
@@ -482,7 +482,7 @@ class Events(commands.Cog):
         """
         Add/Remove blacklisted roles
 
-        These roles are not allowed to enter events
+        These roles are not allowed to enter events, but can still vote on them
         """
         roles = await self.config.guild(ctx.guild).role_blacklist()
         if role.id in roles:
@@ -499,7 +499,7 @@ class Events(commands.Cog):
         """
         Add/Remove blacklisted users
 
-        These users are not allowed to enter events
+        These users are not allowed to enter events, but can still vote on them
         """
         users = await self.config.guild(ctx.guild).user_blacklist()
         if user.id in users:
@@ -945,6 +945,7 @@ class Events(commands.Cog):
                 )
         if description:
             embed.add_field(name="Event Details", value=description, inline=False)
+        embed.set_footer(text=f"Enter this event with '{ctx.prefix}enter'")
         mentions = discord.AllowedMentions(roles=True, users=True)
         announcement = await channel.send(txt, embed=embed, allowed_mentions=mentions)
         event["messages"].append(announcement.id)
