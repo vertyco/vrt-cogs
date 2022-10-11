@@ -1016,7 +1016,7 @@ class Events(commands.Cog):
                         f"`Days In Server: `{days_in_server}\n"
                         f"`Start Date:     `<t:{start_date}:D> (<t:{start_date}:R>)\n"
                         f"`End Date:       `<t:{end_date}:D> (<t:{end_date}:R>)\n\n"
-                        f"Type `{ctx.prefix}enter` to enter this event",
+                        f"Use the `{ctx.prefix}enter` command to enter this event",
             color=ctx.author.color
         )
         icon = guild_icon(ctx.guild)
