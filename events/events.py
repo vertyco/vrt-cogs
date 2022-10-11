@@ -484,7 +484,7 @@ class Events(commands.Cog):
             await ctx.send("I will also delete the results announcement when cleaning up")
 
     @events_group.command(name="staffrole")
-    async def add_rem_staff_roles(self, ctx: commands.Context, role: discord.Role):
+    async def add_rem_staff_roles(self, ctx: commands.Context, *, role: discord.Role):
         """
         Add/Remove staff roles
 
@@ -501,7 +501,7 @@ class Events(commands.Cog):
             await ctx.send(f"I have added {role.mention} to the staff roles")
 
     @events_group.command(name="notifyrole")
-    async def add_rem_notify_roles(self, ctx: commands.Context, role: discord.Role):
+    async def add_rem_notify_roles(self, ctx: commands.Context, *, role: discord.Role):
         """
         Add/Remove notify roles
 
@@ -518,7 +518,7 @@ class Events(commands.Cog):
             await ctx.send(f"I have added {role.mention} to the notify roles")
 
     @events_group.command(name="blacklistrole")
-    async def add_rem_blacklist_role(self, ctx: commands.Context, role: discord.Role):
+    async def add_rem_blacklist_role(self, ctx: commands.Context, *, role: discord.Role):
         """
         Add/Remove blacklisted roles
 
@@ -535,7 +535,7 @@ class Events(commands.Cog):
             await ctx.send(f"I have added {role.mention} to the role blacklist")
 
     @events_group.command(name="blacklistuser")
-    async def add_rem_blacklist_user(self, ctx: commands.Context, user: discord.Member):
+    async def add_rem_blacklist_user(self, ctx: commands.Context, *, user: discord.Member):
         """
         Add/Remove blacklisted users
 
