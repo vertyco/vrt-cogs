@@ -334,7 +334,7 @@ class Events(commands.Cog):
                 events[event_name]["submissions"][uid] = to_save
 
     @commands.group(name="events")
-    @commands.admin()
+    @commands.mod()
     async def events_group(self, ctx: commands.Context):
         """Create, manage and view events"""
 
@@ -570,144 +570,6 @@ class Events(commands.Cog):
         async with ctx.typing():
             await self._end_event(ctx.guild, event)
         await msg.edit(content=f"**{event['event_name']}** has ended! Check the event channel for the results")
-
-    async def _end_event(self, guild: discord.guild, event: dict):
-        conf = await self.config.guild(guild).all()
-        rblacklist = conf["role_blacklist"]
-        ublacklist = conf["user_blacklist"]
-        emoji_id = conf["default_emoji"]
-        if emoji_id:
-            emoji = self.bot.get_emoji(emoji_id)
-        else:
-            emoji = DEFAULT_EMOJI
-
-        # If emoji was changed after event was created
-        if event["emoji"] and event["emoji"] != emoji_id:
-            emoji = self.bot.get_emoji(event["emoji"])
-        channel: discord.TextChannel = guild.get_channel(event["channel_id"])
-        subs = event["submissions"]
-        results = {}
-        for uid, message_ids in subs.items():
-            submitter: discord.Member = guild.get_member(int(uid))
-            # Ignore users no longer in the server
-            if not submitter:
-                continue
-            if submitter.id in ublacklist:
-                continue
-            if any(r.id in rblacklist for r in submitter.roles):
-                continue
-            for message_id in message_ids:
-                message = await channel.fetch_message(message_id)
-                votes = 0
-                for reaction in message.reactions:
-                    if reaction.emoji != emoji:
-                        continue
-                    voters = await reaction.users().flatten()
-                    for voter in voters:
-                        # Ignore votes from bots, the submitter, and users not in the guild
-                        dont_want = [voter.bot, voter.id == submitter.id, voter.guild is None]
-                        if any(dont_want):
-                            continue
-                        votes += 1
-
-                attachment = message.embeds[0].image
-                attachment_url = None
-                filename = None
-                if attachment:
-                    attachment_url = attachment.url
-                    filename = attachment.filename
-
-                submission = {
-                    "votes": votes,
-                    "entry": message.jump_url,
-                    "attachment_url": attachment_url,
-                    "filename": filename
-                }
-
-                if submitter in results:
-                    if results[submitter]["votes"] == votes:
-                        # Pick which one to use at random since votes are equal
-                        if random.random() < 0.5:
-                            results[submitter] = submission
-                    elif results[submitter]["votes"] < votes:
-                        results[submitter] = submission
-                else:
-                    results[submitter] = submission
-
-        final = sorted(results.items(), key=lambda x: x[1]["votes"], reverse=True)
-        winners = event["winners"]
-        title = f"The {event['event_name']} event has ended!"
-        thumbnail = None
-        if final:
-            entries = len(final)
-            if entries != 1:
-                grammar = ["were a total of", "participants"]
-            else:
-                grammar = ["was", "participant"]
-            image_url = None
-            winner_color = final[0][0].color
-            embed = discord.Embed(
-                description=f"There {grammar[0]} {entries} {grammar[1]}!",
-                color=winner_color
-            )
-            places = {"1st": "🥇 ", "2nd": "🥈 ", "3rd": "🥉 "}
-            for index, entry in enumerate(final[:winners]):
-                place = get_place(index + 1)
-                user = entry[0]
-                medal = places[place] if place in places else ""
-                i = entry[1]
-                votes = i["votes"]
-                grammar = "votes" if votes != 1 else "vote"
-                jump_url = i["entry"]
-                if index == 0:
-                    image_url = i["attachment_url"]
-                    if image_url:
-                        embed.set_footer(text=f"1st place entry submitted by {user}")
-                    pfp = profile_icon(user)
-                    if pfp:
-                        thumbnail = pfp
-
-                embed.add_field(
-                    name=f"{medal}{place} Place!",
-                    value=f"{user.mention} with **[{votes} {grammar}!]({jump_url})**",
-                    inline=False
-                )
-            if image_url:
-                embed.set_image(url=image_url)
-        else:
-            embed = discord.Embed(
-                title=f"The {event['event_name']} event has ended!",
-                description="Sadly there were no participants 😢",
-                color=discord.Color.red()
-            )
-
-        if thumbnail:
-            embed.set_thumbnail(url=thumbnail)
-        icon = guild_icon(guild)
-        if icon:
-            embed.set_author(name=title, icon_url=icon)
-        else:
-            embed.set_author(name=title)
-
-        notify_roles = conf["notify_roles"]
-        notify_roles = [guild.get_role(r).mention for r in notify_roles if guild.get_role(r)]
-        notify_users = conf["notify_users"]
-        notify_users = [guild.get_member(m).mention for m in notify_users if guild.get_member(m)]
-        notify_staff = conf["ping_staff"]
-        staff_roles = conf["staff_roles"]
-        staff_roles = [guild.get_role(r).mention for r in staff_roles if guild.get_role(r)]
-        txt = f"{humanize_list(notify_users)}\n" \
-              f"{humanize_list(notify_roles)}"
-        if notify_staff and staff_roles:
-            txt += f"\n{humanize_list(staff_roles)}"
-        mentions = discord.AllowedMentions(roles=True, users=True)
-        msg = await channel.send(txt, embed=embed, allowed_mentions=mentions)
-        async with self.config.guild(guild).events() as events:
-            if conf["auto_delete"]:
-                del events[event["event_name"]]
-            else:
-                events[event["event_name"]]["completed"] = True
-                events[event["event_name"]]["messages"].append(msg.id)
 
     @events_group.command(name="extend")
     async def extend_event(self, ctx: commands.Context, *, time_string: str):
@@ -1067,3 +929,141 @@ class Events(commands.Cog):
         event["messages"].append(announcement.id)
         async with self.config.guild(ctx.guild).events() as events:
             events[name] = event
+            
+    async def _end_event(self, guild: discord.guild, event: dict):
+        conf = await self.config.guild(guild).all()
+        rblacklist = conf["role_blacklist"]
+        ublacklist = conf["user_blacklist"]
+        emoji_id = conf["default_emoji"]
+        if emoji_id:
+            emoji = self.bot.get_emoji(emoji_id)
+        else:
+            emoji = DEFAULT_EMOJI
+
+        # If emoji was changed after event was created
+        if event["emoji"] and event["emoji"] != emoji_id:
+            emoji = self.bot.get_emoji(event["emoji"])
+        channel: discord.TextChannel = guild.get_channel(event["channel_id"])
+        subs = event["submissions"]
+        results = {}
+        for uid, message_ids in subs.items():
+            submitter: discord.Member = guild.get_member(int(uid))
+            # Ignore users no longer in the server
+            if not submitter:
+                continue
+            if submitter.id in ublacklist:
+                continue
+            if any(r.id in rblacklist for r in submitter.roles):
+                continue
+            for message_id in message_ids:
+                message = await channel.fetch_message(message_id)
+                votes = 0
+                for reaction in message.reactions:
+                    if reaction.emoji != emoji:
+                        continue
+                    voters = await reaction.users().flatten()
+                    for voter in voters:
+                        # Ignore votes from bots, the submitter, and users not in the guild
+                        dont_want = [voter.bot, voter.id == submitter.id, voter.guild is None]
+                        if any(dont_want):
+                            continue
+                        votes += 1
+
+                attachment = message.embeds[0].image
+                attachment_url = None
+                filename = None
+                if attachment:
+                    attachment_url = attachment.url
+                    filename = attachment.filename
+
+                submission = {
+                    "votes": votes,
+                    "entry": message.jump_url,
+                    "attachment_url": attachment_url,
+                    "filename": filename
+                }
+
+                if submitter in results:
+                    if results[submitter]["votes"] == votes:
+                        # Pick which one to use at random since votes are equal
+                        if random.random() < 0.5:
+                            results[submitter] = submission
+                    elif results[submitter]["votes"] < votes:
+                        results[submitter] = submission
+                else:
+                    results[submitter] = submission
+
+        final = sorted(results.items(), key=lambda x: x[1]["votes"], reverse=True)
+        winners = event["winners"]
+        title = f"The {event['event_name']} event has ended!"
+        thumbnail = None
+        if final:
+            entries = len(final)
+            if entries != 1:
+                grammar = ["were a total of", "participants"]
+            else:
+                grammar = ["was", "participant"]
+            image_url = None
+            winner_color = final[0][0].color
+            embed = discord.Embed(
+                description=f"There {grammar[0]} {entries} {grammar[1]}!",
+                color=winner_color
+            )
+            places = {"1st": "🥇 ", "2nd": "🥈 ", "3rd": "🥉 "}
+            for index, entry in enumerate(final[:winners]):
+                place = get_place(index + 1)
+                user = entry[0]
+                medal = places[place] if place in places else ""
+                i = entry[1]
+                votes = i["votes"]
+                grammar = "votes" if votes != 1 else "vote"
+                jump_url = i["entry"]
+                if index == 0:
+                    image_url = i["attachment_url"]
+                    if image_url:
+                        embed.set_footer(text=f"1st place entry submitted by {user}")
+                    pfp = profile_icon(user)
+                    if pfp:
+                        thumbnail = pfp
+
+                embed.add_field(
+                    name=f"{medal}{place} Place!",
+                    value=f"{user.mention} with **[{votes} {grammar}!]({jump_url})**",
+                    inline=False
+                )
+            if image_url:
+                embed.set_image(url=image_url)
+        else:
+            embed = discord.Embed(
+                title=f"The {event['event_name']} event has ended!",
+                description="Sadly there were no participants 😢",
+                color=discord.Color.red()
+            )
+
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail)
+        icon = guild_icon(guild)
+        if icon:
+            embed.set_author(name=title, icon_url=icon)
+        else:
+            embed.set_author(name=title)
+
+        notify_roles = conf["notify_roles"]
+        notify_roles = [guild.get_role(r).mention for r in notify_roles if guild.get_role(r)]
+        notify_users = conf["notify_users"]
+        notify_users = [guild.get_member(m).mention for m in notify_users if guild.get_member(m)]
+        notify_staff = conf["ping_staff"]
+        staff_roles = conf["staff_roles"]
+        staff_roles = [guild.get_role(r).mention for r in staff_roles if guild.get_role(r)]
+        txt = f"{humanize_list(notify_users)}\n" \
+              f"{humanize_list(notify_roles)}"
+        if notify_staff and staff_roles:
+            txt += f"\n{humanize_list(staff_roles)}"
+        mentions = discord.AllowedMentions(roles=True, users=True)
+        msg = await channel.send(txt, embed=embed, allowed_mentions=mentions)
+        async with self.config.guild(guild).events() as events:
+            if conf["auto_delete"]:
+                del events[event["event_name"]]
+            else:
+                events[event["event_name"]]["completed"] = True
+                events[event["event_name"]]["messages"].append(msg.id)
