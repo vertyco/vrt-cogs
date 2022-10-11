@@ -1127,6 +1127,7 @@ class Events(commands.Cog):
         winners = event["winners"]
         title = f"The {event['event_name']} event has ended!"
         thumbnail = None
+        to_mention = []
         if final:
             entries = len(final)
             if entries != 1:
@@ -1143,6 +1144,7 @@ class Events(commands.Cog):
             for index, entry in enumerate(final[:winners]):
                 place = get_place(index + 1)
                 user = entry[0]
+                to_mention.append(user.mention)
                 medal = places[place] if place in places else ""
                 i = entry[1]
                 votes = i["votes"]
@@ -1155,7 +1157,7 @@ class Events(commands.Cog):
                     pfp = profile_icon(user)
                     if pfp:
                         thumbnail = pfp
-                value = f"{user.mention} with **[{votes} {grammar}!]({jump_url})**"
+                value = f"{user} with **[{votes} {grammar}!]({jump_url})**"
                 if place in rewards:
                     reward = rewards[place]
                     if isinstance(reward, int):
@@ -1196,7 +1198,8 @@ class Events(commands.Cog):
         notify_staff = conf["ping_staff"]
         staff_roles = conf["staff_roles"]
         staff_roles = [guild.get_role(r).mention for r in staff_roles if guild.get_role(r)]
-        txt = f"{humanize_list(notify_users)}\n" \
+        txt = f"{humanize_list(to_mention)}\n" \
+              f"{humanize_list(notify_users)}\n" \
               f"{humanize_list(notify_roles)}"
         if notify_staff and staff_roles:
             txt += f"\n{humanize_list(staff_roles)}"
