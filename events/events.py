@@ -62,7 +62,8 @@ class Events(commands.Cog):
             "role_blacklist": [],
             "user_blacklist": [],
             "default_emoji": None,
-            "auto_delete": False
+            "auto_delete": False,
+            "result_delete": False
         }
         self.config.register_guild(**default_guild)
 
@@ -463,6 +464,22 @@ class Events(commands.Cog):
         else:
             await self.config.guild(ctx.guild).auto_delete.set(True)
             await ctx.send("I will delete events from the config when they complete")
+
+    @events_group.command(name="resultdelete")
+    async def toggle_result_delete(self, ctx: commands.Context):
+        """
+        (Toggle) Include event results in the messages to delete on cleanup
+
+        If this is on when an event is deleted and the user chooses to clean up the messages,
+        the results announcement will also be deleted
+        """
+        toggle = await self.config.guild(ctx.guild).result_delete()
+        if toggle:
+            await self.config.guild(ctx.guild).result_delete.set(False)
+            await ctx.send("I will no longer delete the results announcement when cleaning up")
+        else:
+            await self.config.guild(ctx.guild).result_delete.set(True)
+            await ctx.send("I will also delete the results announcement when cleaning up")
 
     @events_group.command(name="staffrole")
     async def add_rem_staff_roles(self, ctx: commands.Context, role: discord.Role):
@@ -1052,7 +1069,10 @@ class Events(commands.Cog):
             if any(r.id in rblacklist for r in submitter.roles):
                 continue
             for message_id in message_ids:
-                message = await channel.fetch_message(message_id)
+                try:
+                    message = await channel.fetch_message(message_id)
+                except discord.NotFound:
+                    continue
                 votes = 0
                 for reaction in message.reactions:
                     if reaction.emoji != emoji:
@@ -1173,4 +1193,5 @@ class Events(commands.Cog):
                 del events[event["event_name"]]
             else:
                 events[event["event_name"]]["completed"] = True
-                events[event["event_name"]]["messages"].append(msg.id)
+                if conf["result_delete"]:
+                    events[event["event_name"]]["messages"].append(msg.id)
