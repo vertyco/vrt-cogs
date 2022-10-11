@@ -753,7 +753,7 @@ class UserCommands(commands.Cog):
         if not usepics and not ctx.channel.permissions_for(ctx.me).embed_links:
             return await ctx.send(_("I do not have permission to send embeds to this channel"))
 
-        bal = await bank.get_balance(ctx.author)
+        bal = await bank.get_balance(user)
         currency_name = await bank.get_currency_name(ctx.guild)
 
         if DPY2:
