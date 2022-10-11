@@ -334,7 +334,7 @@ class Events(commands.Cog):
                 events[event_name]["submissions"][uid] = to_save
 
     @commands.group(name="events")
-    @commands.mod()
+    @commands.admin()
     async def events_group(self, ctx: commands.Context):
         """Create, manage and view events"""
 
@@ -929,7 +929,7 @@ class Events(commands.Cog):
         event["messages"].append(announcement.id)
         async with self.config.guild(ctx.guild).events() as events:
             events[name] = event
-            
+
     async def _end_event(self, guild: discord.guild, event: dict):
         conf = await self.config.guild(guild).all()
         rblacklist = conf["role_blacklist"]
