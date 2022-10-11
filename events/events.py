@@ -67,6 +67,7 @@ class Events(commands.Cog):
         # These aren't used in the code, just helps me remember the schema
         self.event_schema = {
             "event_name": str,
+            "description": str,
             "channel_id": int,
             "file_submission": bool,  # Either media/file or text submissions
             "submissions_per_user": int,  # Example 1 picture or file per user
@@ -703,6 +704,17 @@ class Events(commands.Cog):
                 await ctx.send(f"The event `{name}` already exists!", delete_after=10)
                 return await cancel(msg)
 
+        await msg.edit(content="Enter a short description of this event (1000 characters or less)")
+        descriptin = None
+        while True:
+            async with GetReply(ctx) as reply:
+                if reply is None:
+                    return await cancel(msg)
+                if len(reply.content) > 1000:
+                    await ctx.send("Keep the event description limited to 1000 characters or less", delete_after=10)
+                    continue
+                description = reply.content
+
         await msg.edit(content="What channel would you like submissions to be sent to?\n"
                                "Mention a channel or say `here` for this one.")
         channel = ctx.channel
@@ -857,6 +869,7 @@ class Events(commands.Cog):
 
         event = {
             "event_name": name,
+            "description": description,
             "channel_id": channel.id,
             "file_submission": filesubmission,  # Either media/file or text submissions
             "submissions_per_user": submissions,  # Example 1 picture or file per user
