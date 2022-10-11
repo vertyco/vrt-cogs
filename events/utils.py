@@ -79,7 +79,7 @@ def profile_icon(user: discord.Member) -> Optional[str]:
     return icon
 
 
-async def select_event(ctx: commands.Context, events: dict) -> Union[dict, None]:
+async def select_event(ctx: commands.Context, events: dict, skip_completed: bool = True) -> Union[dict, None]:
     selectable = {}
     if len(events.keys()) > 1:
         grammar = "are"
@@ -96,8 +96,12 @@ async def select_event(ctx: commands.Context, events: dict) -> Union[dict, None]
     for index, info in enumerate(events.values()):
         if not ctx.guild.get_channel(info["channel_id"]):
             continue
+        if skip_completed and info["completed"]:
+            continue
+        status = "**COMPLETED**" if info["completed"] else "In Progress"
         etype = "File submissions" if info["file_submission"] else "Text submissions"
-        field = f"`Started on: `<t:{info['start_date']}:f>\n" \
+        field = f"`Status:     `{status}\n" \
+                f"`Started on: `<t:{info['start_date']}:f>\n" \
                 f"`Ends on:    `<t:{info['end_date']}:f>\n" \
                 f"`Event Type: `{etype}\n" \
                 f"`Winners:    `{info['winners']}\n" \
@@ -120,6 +124,9 @@ async def select_event(ctx: commands.Context, events: dict) -> Union[dict, None]
             inline=False
         )
         selectable[str(index + 1)] = info
+
+    if not selectable:
+        return None
 
     embed.set_footer(text="Type 'cancel' to cancel.")
     msg = await ctx.send(embed=embed)

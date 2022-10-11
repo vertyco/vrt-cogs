@@ -155,7 +155,7 @@ class Events(commands.Cog):
 
         res = await select_event(ctx, existing)
         if not res:
-            return
+            return await ctx.send("There are no events to enter at this time")
 
         uid = str(author.id)
         event: dict = res["event"]
@@ -543,10 +543,10 @@ class Events(commands.Cog):
         """
         existing = await self.config.guild(ctx.guild).events()
         if not existing:
-            return await ctx.send("There are no events to delete")
+            return await ctx.send("There are no events to end")
         res = await select_event(ctx, existing)
         if not res:
-            return
+            return await ctx.send("There are no in-progress events to end")
         event: dict = res["event"]
         msg: discord.Message = res["msg"]
         if event["completed"]:
@@ -588,10 +588,10 @@ class Events(commands.Cog):
         """
         existing = await self.config.guild(ctx.guild).events()
         if not existing:
-            return await ctx.send("There are no events to edit")
+            return await ctx.send("There are no events to extend")
         res = await select_event(ctx, existing)
         if not res:
-            return
+            return await ctx.send("There are no in-progress events to extend")
         event: dict = res["event"]
         msg: discord.Message = res["msg"]
         delta = parse_timedelta(time_string, minimum=timedelta(minutes=1))
@@ -625,10 +625,10 @@ class Events(commands.Cog):
         """
         existing = await self.config.guild(ctx.guild).events()
         if not existing:
-            return await ctx.send("There are no events to edit")
+            return await ctx.send("There are no events to shorten the runtime of")
         res = await select_event(ctx, existing)
         if not res:
-            return
+            return await ctx.send("There are no in-progress events to shorten the runtime of")
         event: dict = res["event"]
         msg: discord.Message = res["msg"]
         delta = parse_timedelta(time_string, minimum=timedelta(minutes=1))
@@ -657,7 +657,7 @@ class Events(commands.Cog):
         existing = await self.config.guild(ctx.guild).events()
         if not existing:
             return await ctx.send("There are no events to delete")
-        res = await select_event(ctx, existing)
+        res = await select_event(ctx, existing, skip_completed=False)
         if not res:
             return
         event: dict = res["event"]
