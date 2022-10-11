@@ -39,8 +39,11 @@ class GetReply:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.reply:
-            with contextlib.suppress(discord.NotFound, discord.Forbidden):
-                await self.reply.delete()
+            if self.reply.guild:
+                with contextlib.suppress(discord.NotFound, discord.Forbidden):
+                    await self.reply.delete()
+            else:
+                await self.reply.add_reaction("✅")
 
 
 def get_size(num: float) -> str:
