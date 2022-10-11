@@ -9,6 +9,7 @@ import traceback
 from io import BytesIO
 from time import perf_counter
 from typing import Union
+from discord.utils import escape_markdown
 
 import aiohttp
 import discord
@@ -1002,11 +1003,10 @@ class UserCommands(commands.Cog):
                 if xp > 1000000:
                     xptext = f"{round(xp / 1000000)}M"
                 level = get_level(int(xp), base, exp)
-                place = f"{place}. {user[:20]}"
-                stats = f"lvl {level} / {xptext} xp"
-                table.append([place, stats])
+                name = escape_markdown(user)[:20]
+                table.append([place, name, level, xptext])
 
-            headers = ["Place", "Stats"]
+            headers = ["Pos", "Name", "lvl", "exp"]
             msg = tabulate.tabulate(
                 tabular_data=table,
                 headers=headers,
