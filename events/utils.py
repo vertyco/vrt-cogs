@@ -126,6 +126,7 @@ async def select_event(ctx: commands.Context, events: dict, skip_completed: bool
         selectable[str(index + 1)] = info
 
     if not selectable:
+        await ctx.send("There are no in-progress events to select")
         return None
 
     embed.set_footer(text="Type 'cancel' to cancel.")
