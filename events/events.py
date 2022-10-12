@@ -168,7 +168,7 @@ class Events(commands.Cog):
             return await ctx.send("You cannot enter events because one of your roles has been blacklisted!")
         res = await select_event(ctx, existing)
         if not res:
-            return await ctx.send("There are no events to enter at this time")
+            return
 
         uid = str(author.id)
         event: dict = res["event"]
@@ -592,7 +592,7 @@ class Events(commands.Cog):
             return await ctx.send("There are no events to end")
         res = await select_event(ctx, existing)
         if not res:
-            return await ctx.send("There are no in-progress events to end")
+            return
         event: dict = res["event"]
         msg: discord.Message = res["msg"]
         if event["completed"]:
@@ -637,7 +637,7 @@ class Events(commands.Cog):
             return await ctx.send("There are no events to extend")
         res = await select_event(ctx, existing)
         if not res:
-            return await ctx.send("There are no in-progress events to extend")
+            return
         event: dict = res["event"]
         msg: discord.Message = res["msg"]
         delta = parse_timedelta(time_string, minimum=timedelta(minutes=1))
@@ -674,7 +674,7 @@ class Events(commands.Cog):
             return await ctx.send("There are no events to shorten the runtime of")
         res = await select_event(ctx, existing)
         if not res:
-            return await ctx.send("There are no in-progress events to shorten the runtime of")
+            return
         event: dict = res["event"]
         msg: discord.Message = res["msg"]
         delta = parse_timedelta(time_string, minimum=timedelta(minutes=1))
