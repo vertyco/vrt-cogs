@@ -679,6 +679,24 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.guildowner()
+    @commands.guild_only()
+    async def oldestchannels(self, ctx, amount: int = 10):
+        """See which channel is the oldest"""
+        channels = [c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)]
+        c_sort = sorted(channels, key=lambda x: x.created_at)
+        txt = "\n".join(
+            [
+                f"{i + 1}. {c.mention} "
+                f"created <t:{int(c.created_at.timestamp())}:f> (<t:{int(c.created_at.timestamp())}:R>)"
+                for i, c in enumerate(c_sort[:amount])
+            ]
+        )
+        for p in pagify(txt, page_length=2000):
+            await ctx.send(p)
+
+    @commands.command()
+    @commands.guildowner()
+    @commands.guild_only()
     async def wipevcs(self, ctx):
         """
         Clear all voice channels from a guild
