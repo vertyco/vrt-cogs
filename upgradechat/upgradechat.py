@@ -6,6 +6,8 @@ from redbot.core.utils.chat_formatting import box
 
 from .api import API
 
+DPY2 = True if discord.__version__ > "1.7.3" else False
+
 
 class UpgradeChat(commands.Cog):
     """
@@ -28,6 +30,8 @@ class UpgradeChat(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 117, force_registration=True)
         default_guild = {
+            "id": None,
+            "secret": None,
             "bearer_token": None,  # API token created in upgrade.chat portal
             "conversion_ratio": 1000,  # If ratio == 100, then 1 USD = 1000 credits
             "claim_msg": "default",  # Reply when a user claims a purchase
@@ -37,11 +41,6 @@ class UpgradeChat(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
-        if discord.__version__ > "1.7.3":
-            self.dpy2 = True
-        else:
-            self.dpy2 = False
-
     @commands.group(aliases=["upchat"])
     @commands.guild_only()
     @commands.guildowner()
@@ -49,27 +48,29 @@ class UpgradeChat(commands.Cog):
         """Base command for cog settings"""
 
     @upgradechat.command()
-    async def token(self, ctx: commands.Context, bearer_token: str):
+    async def tokens(self, ctx: commands.Context, client_id: str, client_secret: str):
         """
-        Set your Upgrade.Chat bearer token
+        Set your Upgrade.Chat api tokens
+        By using this feature it is assumed that you are already familiar with Upgrade.Chat
 
         1. Create your api keys here: https://upgrade.chat/developers
 
-        2. Then head here: https://upgrade.chat/developers/documentation
+        2. Copy your client ID and Client Secret
 
-        3. Click the `Authorize` button and then confirm by clicking authorize again
+        3. Run this command with your credentials
 
-        4. Get your bearer token by clicking one of the endpoint dropdowns and click `Try it out`
-
-        5. Click `Execute` and copy your bearer token from the `Curl` example below it
-
-        6. You now have your token
+        **Enjoy!**
         """
         async with ctx.typing():
             await ctx.message.delete()
-            await self.config.guild(ctx.guild).bearer_token.set(bearer_token)
-            await ctx.send("Your API token has been set!")
-            await ctx.tick()
+            token = await API().get_auth(client_id, client_secret)
+            if not token:
+                return await ctx.send(f"Failed to authorize your tokens!")
+            async with self.config.guild(ctx.guild).all() as conf:
+                conf["id"] = client_id
+                conf["secret"] = client_secret
+                conf["bearer_token"] = token
+            await ctx.send("Your API tokens have been set!")
 
     @upgradechat.command()
     async def ratio(self, ctx: commands.Context, credit_worth: int):
@@ -111,17 +112,20 @@ class UpgradeChat(commands.Cog):
         Transactions can only be claimed once.
         """
         async with ctx.typing():
-            token = await self.config.guild(ctx.guild).bearer_token()
-            if not token:
-                return await ctx.send("API token has not been set yet!")
-            status, results = await API().get_product(token, uuid)
+            conf = await self.config.guild(ctx.guild).all()
+            if not conf["id"] or not conf["secret"]:
+                return await ctx.send("UpgradeChat API credentials have not been set yet!")
+            status, results, newtoken = await API().get_product(conf, uuid)
             if status != 200:
-                return await ctx.send("I could not find any products with that UUID!")
+                return await ctx.send(f"I could not find any products with that UUID!\n"
+                                      f"`status {status}`")
             product = results["data"]
             async with self.config.guild(ctx.guild).products() as products:
                 products[uuid] = product
             await ctx.send(f"Your product with the title `{product['name']}` has been added!")
             await ctx.tick()
+            if newtoken:
+                await self.config.guild(ctx.guild).bearer_token.set(newtoken)
 
     @upgradechat.command()
     async def delproduct(self, ctx: commands.Context, uuid: str):
@@ -151,11 +155,17 @@ class UpgradeChat(commands.Cog):
         """View your current products"""
         conf = await self.config.guild(ctx.guild).all()
         currency_name = await bank.get_currency_name(ctx.guild)
-        token = await self.config.guild(ctx.guild).bearer_token()
+        token = conf["bearer_token"] if conf["bearer_token"] else "Not Authorized Yet"
+        cid = conf["id"]
+        secret = conf["secret"]
+        txt = f"UpgradeChat secrets\n" \
+              f"`client_id:     `{cid}\n" \
+              f"`client_secret: `{secret}\n" \
+              f"`bearer_token:  `{token}"
         try:
-            await ctx.author.send(f"Bearer Token for UpgradeChat: `{token}`")
+            await ctx.author.send(txt)
         except discord.Forbidden:
-            await ctx.send("I was unable to DM you your bearer token")
+            await ctx.send("I was unable to DM your api credentials")
         ratio = conf["conversion_ratio"]
         producs = conf["products"]
         desc = f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n" \
@@ -179,14 +189,15 @@ class UpgradeChat(commands.Cog):
         """Claim your Upgrade.Chat purchases!"""
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
-            token = conf["bearer_token"]
-            if not token:
+            if not conf["id"] or not conf["secret"]:
                 return await ctx.send("The owner of this guild has not set up their API tokens for Upgrade.Chat yet!")
-            status, purchases = await API().get_user_purchases(token, ctx.author.id)
+            status, purchases, newtoken = await API().get_user_purchases(conf, ctx.author.id)
+            if newtoken:
+                await self.config.guild(ctx.guild).bearer_token.set(newtoken)
             if status != 200:
                 return await ctx.send("I could not find any users associated with your ID!")
             if not purchases:
-                return await ctx.send("I could not find any purchases for your account!")
+                return await ctx.send("I could not find any valid purchases for your account!")
 
             products = conf["products"]
             users = conf["users"]
@@ -271,9 +282,11 @@ class UpgradeChat(commands.Cog):
                 description=desc,
                 color=ctx.author.color
             )
-            if self.dpy2:
-                if ctx.author.avatar:
-                    em.set_thumbnail(url=ctx.author.avatar.url)
+            if DPY2:
+                pfp = ctx.author.avatar.url if ctx.author.avatar else None
             else:
-                em.set_thumbnail(url=ctx.author.avatar_url)
+                pfp = ctx.author.avatar_url
+
+            if pfp:
+                em.set_thumbnail(url=pfp)
             await logchan.send(embed=em)
