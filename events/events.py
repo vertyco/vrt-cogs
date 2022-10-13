@@ -154,6 +154,14 @@ class Events(commands.Cog):
         async def cancel(message):
             await message.edit(content="Event entry cancelled", embed=None)
 
+        async def edit(message, content, title=None, footer=None):
+            embed = discord.Embed(description=content, color=ctx.author.color)
+            if title:
+                embed.title = title
+            if footer:
+                embed.set_footer(text=footer)
+            await message.edit(content=None, embed=embed)
+
         conf = await self.config.guild(ctx.guild).all()
         existing = conf["events"]
         if not existing:
@@ -178,10 +186,7 @@ class Events(commands.Cog):
         already_submitted = 0
         if uid in event["submissions"]:
             if len(event["submissions"][uid]) >= per_user:
-                return await msg.edit(
-                    content=f"You have already submitted the max amount of entries for this event!",
-                    embed=None
-                )
+                return await edit(msg, "You have already submitted the max amount of entries for this event!")
             else:
                 already_submitted = len(event["submissions"][uid])
 
@@ -192,31 +197,23 @@ class Events(commands.Cog):
             user_roles = [role.id for role in author.roles]
             role_matches = [rid in user_roles for rid in required_roles]
             if not need_all and not any(role_matches):
-                return await msg.edit(
-                    content=f"You do not have any of the required roles to enter.\n"
-                            f"You must have at least one of these roles to enter: {humanize_list(mentions)}",
-                    embed=None
-                )
+                txt = f"You do not have any of the required roles to enter.\n" \
+                      f"You must have at least one of these roles to enter: {humanize_list(mentions)}"
+                return await edit(msg, txt)
             elif need_all and not all(role_matches):
-                return await msg.edit(
-                    content=f"You do not have the required roles to enter.\n"
-                            f"You must have **ALL** of these roles to enter: {humanize_list(mentions)}",
-                    embed=None
-                )
+                txt = f"You do not have the required roles to enter.\n" \
+                      f"You must have **ALL** of these roles to enter: {humanize_list(mentions)}"
+                return await edit(msg, txt)
 
         days_required = event["days_in_server"]
         if days_required:
             now = datetime.now()
             joined_on = author.joined_at
             if (now - joined_on).days < days_required:
-                return await msg.edit(
-                    content=f"You must be in the server for at least `{days_required}` day(s) "
-                            f"in order to enter this event.",
-                    embed=None
-                )
+                txt = f"You must be in the server for at least `{days_required}` day(s) in order to enter this event."
+                return await edit(msg, txt)
 
         event_name = event["event_name"]
-        await ctx.send(f"You have selected the **{event_name}** event!", delete_after=30)
 
         grammar = "s one at a time" if per_user != 1 else ""
         if filesub:
@@ -230,12 +227,8 @@ class Events(commands.Cog):
             txt += f"\n\nWhen you are finished, type `done`.\n" \
                    f"This event allows up to `{per_user}` submissions per user."
         txt += f"\n\nType `cancel` at any time to cancel."
-        em = discord.Embed(
-            description=txt,
-            color=ctx.author.color
-        )
+        await edit(msg, txt, title=event_name)
 
-        await msg.edit(embed=em)
         submissions = []
         while True:
             if (len(submissions) + already_submitted) >= per_user:
@@ -251,7 +244,7 @@ class Events(commands.Cog):
                 text = str(reply.content)
 
             if filesub and not attachments:
-                await ctx.send("Upload an image to add it to your submissions", delete_after=8)
+                await ctx.send("**UPLOAD A FILE**", delete_after=3)
                 continue
 
             file = None
@@ -262,12 +255,7 @@ class Events(commands.Cog):
                 size_limit = ctx.guild.filesize_limit
                 if size_limit < att.size:
                     guildsize = get_size(size_limit)
-                    filesize = get_size(att.size)
-                    await ctx.send(
-                        f"File size is `{filesize}` and this guild's max upload size is `{guildsize}`.\n"
-                        f"Your file uploads need to be less than or equal to the guild's max upload size.",
-                        delete_after=60
-                    )
+                    await ctx.send(f"**FILE SIZE TOO LARGE!** Upload a file `{guildsize}` or smaller.", delete_after=10)
                     continue
                 async with ctx.typing():
                     file = await att.read()
@@ -280,24 +268,21 @@ class Events(commands.Cog):
                 "url": url
             }
             submissions.append(sub)
-            await ctx.send("Entry added!", delete_after=6)
+            await ctx.send("Entry added!", delete_after=5)
 
         if not submissions:
-            return await msg.edit(content="No submissions sent, event entry cancelled", embed=None)
+            return await edit(msg, "No submissions send, entry cancelled")
 
-        msg2 = await ctx.send(f"Are you sure you want to enter with these submissions? (y/n)")
+        await edit(msg, "Are you sure you want to enter with these submissions? (y/n)")
         async with GetReply(ctx) as reply:
             if reply is None:
-                await msg2.delete()
                 return await cancel(msg)
             if reply.content.lower() == "cancel":
-                await msg2.delete()
                 return await cancel(msg)
             if "n" in reply.content.lower():
-                await msg2.delete()
                 return await cancel(msg)
-        await msg2.delete()
-        await msg.edit(content="Your entries have been submitted!", embed=None)
+
+        await edit(msg, "Your entries have been submitted!")
 
         channel = ctx.guild.get_channel(event["channel_id"])
         emoji = conf["default_emoji"]
@@ -317,15 +302,16 @@ class Events(commands.Cog):
             ts = int(datetime.now().timestamp())
             dtype = "Description" if filesub else "Entry"
             desc = f"`Author:    `{author}\n" \
-                   f"`Submitted: `<t:{ts}:f>\n"
+                   f"`Submitted: `<t:{ts}:f>\n\n"
             if text.strip():
                 desc += f"**{dtype}**\n{text}"
+
             em = discord.Embed(
                 description=desc,
                 color=author.color
             )
-            if filename:
-                em.set_footer(text=filename)
+            em.set_footer(text=f"Click the emoji below to vote")
+
             if bytesfile:
                 em.set_author(name=f"New {event_name} submission!", url=i["url"])
                 em.set_image(url=f"attachment://{filename}")
@@ -768,7 +754,7 @@ class Events(commands.Cog):
                 break
 
         await msg.edit(content="What channel would you like submissions to be sent to?\n"
-                               "Mention a channel or say `here` for this one.")
+                               "`Mention a channel`, or say `here` for this one.")
         channel = ctx.channel
         while True:
             async with GetReply(ctx) as reply:
@@ -1008,6 +994,12 @@ class Events(commands.Cog):
         txt = f"{humanize_list(notify_users)}\n" \
               f"{humanize_list(notify_roles)}"
 
+        emoji_id = conf["default_emoji"]
+        if emoji_id:
+            emoji = self.bot.get_emoji(emoji_id)
+        else:
+            emoji = DEFAULT_EMOJI
+
         embed = discord.Embed(
             title="A new event has started!",
             description=f"`Event Name:     `**{name}**\n"
@@ -1016,7 +1008,8 @@ class Events(commands.Cog):
                         f"`Days In Server: `{days_in_server}\n"
                         f"`Start Date:     `<t:{start_date}:D> (<t:{start_date}:R>)\n"
                         f"`End Date:       `<t:{end_date}:D> (<t:{end_date}:R>)\n\n"
-                        f"Use the `{ctx.prefix}enter` command to enter this event",
+                        f"Use the `{ctx.prefix}enter` command to enter.\n"
+                        f"React with {emoji} to vote on submissions.",
             color=ctx.author.color
         )
         icon = guild_icon(ctx.guild)
@@ -1046,6 +1039,7 @@ class Events(commands.Cog):
                 else:
                     val += f"`{place} place: `{reward}"
             embed.add_field(name="Rewards", value=val, inline=False)
+
         mentions = discord.AllowedMentions(roles=True, users=True)
         announcement = await channel.send(txt, embed=embed, allowed_mentions=mentions)
         event["messages"].append(announcement.id)

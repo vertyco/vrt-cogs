@@ -89,8 +89,7 @@ async def select_event(ctx: commands.Context, events: dict, skip_completed: bool
         grammar2 = "event"
     embed = discord.Embed(
         title="Select an Event",
-        description=f"There {grammar} currently {len(events.keys())} {grammar2} to choose from.\n"
-                    f"Select the **Number** of the event you would like below.",
+        description=f"There {grammar} currently {len(events.keys())} {grammar2} to choose from.",
         color=ctx.author.color
     )
     for index, info in enumerate(events.values()):
@@ -119,7 +118,7 @@ async def select_event(ctx: commands.Context, events: dict, skip_completed: bool
             field += f"• Need at least one role: {humanize_list(roles)}"
 
         embed.add_field(
-            name=f"{index + 1}. {info['event_name']}",
+            name=f"#{index + 1}. {info['event_name']}",
             value=field,
             inline=False
         )
@@ -129,7 +128,7 @@ async def select_event(ctx: commands.Context, events: dict, skip_completed: bool
         await ctx.send("There are no in-progress events to select")
         return None
 
-    embed.set_footer(text="Type 'cancel' to cancel.")
+    embed.set_footer(text="TYPE THE NUMBER OF THE EVENT BELOW")
     msg = await ctx.send(embed=embed)
     async with GetReply(ctx) as reply:
         if reply is None:
