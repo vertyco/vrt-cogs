@@ -738,8 +738,6 @@ class LevelUp(UserCommands, commands.Cog):
     async def before_voice_checker(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(60)
-        # if self.first_run:
-        #     await self.initialize()
         log.info("Voice checker running")
 
     @tasks.loop(minutes=3)

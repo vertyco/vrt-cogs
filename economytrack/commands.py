@@ -9,7 +9,6 @@ from redbot.core.commands import parse_timedelta
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
-    humanize_list,
     humanize_number,
     humanize_timedelta,
     pagify,
