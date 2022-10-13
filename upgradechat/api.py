@@ -1,4 +1,7 @@
 import aiohttp
+import logging
+
+log = logging.getLogger("red.vrt.upgradechatapi")
 
 
 class API:
@@ -22,9 +25,10 @@ class API:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url=url, headers=header) as res:
                     status = res.status
-                    results = await res.json()
                     if status != 200:
+                        log.error(f"Error calling API ({status}) - {res.text}")
                         break
+                    results = await res.json()
                     purchases.extend(results["data"])
                     if not results["has_more"]:
                         break
