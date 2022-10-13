@@ -14,7 +14,7 @@ class UpgradeChat(commands.Cog):
     https://upgrade.chat/
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -151,6 +151,11 @@ class UpgradeChat(commands.Cog):
         """View your current products"""
         conf = await self.config.guild(ctx.guild).all()
         currency_name = await bank.get_currency_name(ctx.guild)
+        token = await self.config.guild(ctx.guild).bearer_token()
+        try:
+            await ctx.author.send(f"Bearer Token for UpgradeChat: `{token}`")
+        except discord.Forbidden:
+            await ctx.send("I was unable to DM you your bearer token")
         ratio = conf["conversion_ratio"]
         producs = conf["products"]
         desc = f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n" \
