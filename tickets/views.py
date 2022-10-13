@@ -1,8 +1,8 @@
 import asyncio
 import logging
+import traceback
 from datetime import datetime
 from typing import Union
-import traceback
 
 import discord
 from redbot.core import commands, Config

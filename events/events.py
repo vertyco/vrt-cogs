@@ -8,8 +8,8 @@ from typing import Optional
 import discord
 from discord.ext import tasks
 from redbot.core import commands, Config, bank
-from redbot.core.errors import BalanceTooHigh
 from redbot.core.commands import parse_timedelta
+from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import (
     humanize_list,
     humanize_timedelta,

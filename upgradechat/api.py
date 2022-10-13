@@ -1,5 +1,6 @@
-import aiohttp
 import logging
+
+import aiohttp
 
 log = logging.getLogger("red.vrt.upgradechatapi")
 
