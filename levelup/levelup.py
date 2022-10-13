@@ -228,11 +228,6 @@ class LevelUp(UserCommands, commands.Cog):
         if guild.id not in self.data:
             await self.initialize()
 
-        if chan.id in self.data[gid]["ignoredchannels"]:
-            return
-        if giver.id in self.data[gid]["ignoredusers"]:
-            return
-
         can_give = False
         if giver_id not in self.stars[gid]:
             self.stars[gid][giver_id] = now
@@ -257,6 +252,10 @@ class LevelUp(UserCommands, commands.Cog):
         star_giver = f"**{giver.name}** "
         star_reciever = f" **{receiver.name}**!"
         if not chan.permissions_for(guild.me).send_messages:
+            return
+        if chan.id in self.data[gid]["ignoredchannels"]:
+            return
+        if giver.id in self.data[gid]["ignoredusers"]:
             return
         with contextlib.suppress(discord.HTTPException):
             if del_after:
