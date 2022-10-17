@@ -58,7 +58,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.16.38"
+    __version__ = "2.16.39"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2006,7 +2006,7 @@ class LevelUp(UserCommands, commands.Cog):
         await self.save_cache()
 
     @ignore_group.command(name="channel")
-    async def ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel):
+    async def ignore_channel(self, ctx: commands.Context, channel: Union[discord.TextChannel, discord.VoiceChannel]):
         """
         Add/Remove a channel in the ignore list
         Channels in the ignore list don't gain XP
