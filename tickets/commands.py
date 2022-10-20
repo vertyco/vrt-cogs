@@ -491,7 +491,7 @@ class TicketCommands(commands.Cog):
 
     @tickets.command(name="supportrole")
     async def set_support_role(
-        self, ctx: commands.Context, add_or_remove, roles: commands.Greedy[discord.Role] = None
+        self, ctx: commands.Context, add_or_remove: commands.Literal["add", "remove"], roles: commands.Greedy[discord.Role] = None
     ):
         """
         Add/Remove ticket support roles.
@@ -519,7 +519,7 @@ class TicketCommands(commands.Cog):
 
     @tickets.command(name="blacklist")
     async def set_user_blacklist(
-        self, ctx: commands.Context, add_or_remove, users: commands.Greedy[discord.Member] = None
+        self, ctx: commands.Context, add_or_remove: commands.Literal["add", "remove"], users: commands.Greedy[discord.Member] = None
     ):
         """
         Add/Remove users from the blacklist
