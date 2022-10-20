@@ -513,7 +513,9 @@ class TicketCommands(commands.Cog):
                         
         return await ctx.send(
             _(
-                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([role for role in roles])} roles {'to' if add_or_remove.lower() == 'add' else 'from'} support roles."
+                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
+                f"{len([role for role in roles])} {'role' if len([role for role in roles]) == 1 else 'roles'} "
+                f"{'to' if add_or_remove.lower() == 'add' else 'from'} support roles."
             )
         )
 
@@ -543,7 +545,9 @@ class TicketCommands(commands.Cog):
                         
         return await ctx.send(
             _(
-                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([user for user in users])} users {'to' if add_or_remove.lower() == 'add' else 'from'} the blacklist."
+                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
+                f"{len([user for user in users])} {'user' if len([user for user in users]) == 1 else 'users'} "
+                f"{'to' if add_or_remove.lower() == 'add' else 'from'} the blacklist."
             )
         )
 
