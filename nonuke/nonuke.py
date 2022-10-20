@@ -166,7 +166,7 @@ class NoNuke(Listen, commands.Cog):
         `<add_or_remove>` should be either `add` to add users or `remove` to remove users.
         """
         if users is None:
-            return await ctx.send(_("`Users` is a required argument."))
+            return await ctx.send("`Users` is a required argument.")
         
         async with self.config.guild(ctx.guild).whitelist() as wl:
             for user in users:
@@ -179,9 +179,7 @@ class NoNuke(Listen, commands.Cog):
                         wl.remove(user.id)
                         
         return await ctx.send(
-            _(
-                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([user for user in users])} users {'to' if add_or_remove.lower() == 'add' else 'from'} the whitelist."
-            )
+            f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([user for user in users])} users {'to' if add_or_remove.lower() == 'add' else 'from'} the whitelist."
         )
 
     @nonuke.command()
