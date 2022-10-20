@@ -158,9 +158,13 @@ class NoNuke(Listen, commands.Cog):
 
     @nonuke.command()
     async def whitelist(
-        self, ctx: commands.Context, add_or_remove, users: commands.Greedy[discord.Member] = None
+        self, ctx: commands.Context, add_or_remove: commands.Literal["add", "remove"], users: commands.Greedy[discord.Member] = None
     ):
-        """Add/Remove users from the whitelist"""
+        """
+        Add/Remove users from the whitelist
+        
+        `<add_or_remove>` should be either `add` to add users or `remove` to remove users.
+        """
         if users is None:
             return await ctx.send(_("`Users` is a required argument."))
         
