@@ -528,7 +528,7 @@ class TicketCommands(commands.Cog):
 
         Users in the blacklist will not be able to create a ticket.
         
-        `<add_or_remove>` should be either `add` to add roles or `remove` to remove users.
+        `<add_or_remove>` should be either `add` to add users or `remove` to remove users.
         """
         if users is None:
             return await ctx.send(_("`Users` is a required argument."))
