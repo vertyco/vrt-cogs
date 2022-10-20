@@ -21,7 +21,7 @@ class NoNuke(Listen, commands.Cog):
     If a user or bot exceeds X mod events within X seconds, the set action will be performed
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -61,7 +61,7 @@ class NoNuke(Listen, commands.Cog):
     @commands.group()
     @commands.guildowner()
     @commands.guild_only()
-    async def nonuke(self, ctx):
+    async def nonuke(self, ctx: commands.Context):
         """
         Anti-Nuke System for lazy guild owners!
 
@@ -78,7 +78,7 @@ class NoNuke(Listen, commands.Cog):
         """
 
     @nonuke.command()
-    async def enable(self, ctx):
+    async def enable(self, ctx: commands.Context):
         """Enable/Disable the NoNuke system"""
         toggle = await self.config.guild(ctx.guild).enabled()
         if toggle:
@@ -90,7 +90,7 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def dm(self, ctx):
+    async def dm(self, ctx: commands.Context):
         """Toggle whether the bot sends the user a DM when a kick or ban action is performed"""
         toggle = await self.config.guild(ctx.guild).dm()
         if toggle:
@@ -102,21 +102,21 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def logchannel(self, ctx, channel: discord.TextChannel):
+    async def logchannel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set the log channel for Anti-Nuke kicks"""
         await self.config.guild(ctx.guild).log.set(channel.id)
         await ctx.tick()
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def cooldown(self, ctx, cooldown: int):
+    async def cooldown(self, ctx: commands.Context, cooldown: int):
         """Cooldown (in seconds) for NoNuke to trigger"""
         await self.config.guild(ctx.guild).cooldown.set(cooldown)
         await ctx.tick()
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def overload(self, ctx, overload: int):
+    async def overload(self, ctx: commands.Context, overload: int):
         """How many mod actions can be done within the set cooldown
 
         **Mod actions include:**
@@ -136,7 +136,7 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def action(self, ctx, action: str):
+    async def action(self, ctx: commands.Context, action: str):
         """
         Set the action for the bot to take when NoNuke is triggered
 
@@ -181,7 +181,7 @@ class NoNuke(Listen, commands.Cog):
         )
 
     @nonuke.command()
-    async def view(self, ctx):
+    async def view(self, ctx: commands.Context):
         """View the NoNuke settings"""
         conf = await self.config.guild(ctx.guild).all()
         lchan = self.bot.get_channel(conf['log']) if conf['log'] else "Not Set"
