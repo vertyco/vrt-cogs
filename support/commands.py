@@ -157,7 +157,7 @@ class SupportCommands(commands.Cog):
         """
         Add/Remove ticket support roles (one at a time)
 
-        To remove a role, simply run this command with it again to remove it
+        `<add_or_remove>` should be either `add` to add roles or `remove` to remove roles.
         """
         if roles is None:
             return await ctx.send("`Roles` is a required argument.")
@@ -185,7 +185,7 @@ class SupportCommands(commands.Cog):
         """
         Add/Remove users from the blacklist
 
-        Users in the blacklist will not be able to create a ticket
+        `<add_or_remove>` should be either `add` to add users or `remove` to remove users.
         """
         if users is None:
             return await ctx.send("`Users` is a required argument.")
