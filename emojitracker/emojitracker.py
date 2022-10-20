@@ -97,7 +97,7 @@ class EmojiTracker(commands.Cog):
     @commands.command(name="ignoreguild")
     @commands.is_owner()
     async def blacklist_guild(
-        self, ctx: commands.Context, add_or_remove, guild_ids: commands.Greedy[int] = None
+        self, ctx: commands.Context, add_or_remove: commands.Literal["add", "remove"], guild_ids: commands.Greedy[int] = None
     ):
         """
         Add/Remove guilds from the blacklist
