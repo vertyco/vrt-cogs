@@ -26,7 +26,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
     Support ticket system with buttons/logging
     """
     __author__ = "Vertyco"
-    __version__ = "1.2.6"
+    __version__ = "1.2.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
