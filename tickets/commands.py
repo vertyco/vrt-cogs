@@ -490,34 +490,62 @@ class TicketCommands(commands.Cog):
         await ctx.tick()
 
     @tickets.command(name="supportrole")
-    async def set_support_role(self, ctx: commands.Context, *, role: discord.Role):
+    async def set_support_role(
+        self, ctx: commands.Context, add_or_remove, roles: commands.Greedy[discord.Role] = None
+    ):
         """
-        Add/Remove ticket support roles (one at a time)
+        Add/Remove ticket support roles.
 
-        To remove a role, simply run this command with it again to remove it
+        `<add_or_remove>` should be either `add` to add roles or `remove` to remove roles.
         """
-        async with self.config.guild(ctx.guild).support_roles() as roles:
-            if role.id in roles:
-                roles.remove(role.id)
-                await ctx.send(_(f"{role.name} has been removed from support roles"))
-            else:
-                roles.append(role.id)
-                await ctx.send(_(f"{role.name} has been added to support roles"))
+        if roles is None:
+            return await ctx.send(_("`Roles` is a required argument."))
+        
+        async with self.config.guild(ctx.guild).support_roles() as r:
+            for role in roles:
+                if add_or_remove.lower() == "add":
+                    if not role.id in r:
+                        r.append(role.id)
+                        
+                elif add_or_remove.lower() == "remove":
+                    if role.id in r:
+                        r.remove(role.id)
+                        
+        return await ctx.send(
+            _(
+                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([role for role in roles])} roles {'to' if add_or_remove.lower() == 'add' else 'from'} support roles."
+            )
+        )
 
     @tickets.command(name="blacklist")
-    async def set_user_blacklist(self, ctx: commands.Context, *, user: discord.Member):
+    async def set_user_blacklist(
+        self, ctx: commands.Context, add_or_remove, users: commands.Greedy[discord.Member] = None
+    ):
         """
         Add/Remove users from the blacklist
 
-        Users in the blacklist will not be able to create a ticket
+        Users in the blacklist will not be able to create a ticket.
+        
+        `<add_or_remove>` should be either `add` to add roles or `remove` to remove users.
         """
+        if users is None:
+            return await ctx.send(_("`Users` is a required argument."))
+        
         async with self.config.guild(ctx.guild).blacklist() as bl:
-            if user.id in bl:
-                bl.remove(user.id)
-                await ctx.send(_(f"{user.name} has been removed from the blacklist"))
-            else:
-                bl.append(user.id)
-                await ctx.send(_(f"{user.name} has been added to the blacklist"))
+            for user in users:
+                if add_or_remove.lower() == "add":
+                    if not user.id in bl:
+                        bl.append(user.id)
+                        
+                elif add_or_remove.lower() == "remove":
+                    if user.id in bl:
+                        bl.remove(user.id)
+                        
+        return await ctx.send(
+            _(
+                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([user for user in users])} users {'to' if add_or_remove.lower() == 'add' else 'from'} the blacklist."
+            )
+        )
 
     @tickets.command(name="noresponse")
     async def no_response_close(self, ctx: commands.Context, hours: int):
