@@ -157,15 +157,28 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def whitelist(self, ctx, user: discord.Member):
+    async def whitelist(
+        self, ctx: commands.Context, add_or_remove, users: commands.Greedy[discord.Member] = None
+    ):
         """Add/Remove users from the whitelist"""
-        async with self.config.guild(ctx.guild).whitelist() as whitelist:
-            if user.id in whitelist:
-                whitelist.remove(user.id)
-                await ctx.send(f"{user} has been removed from the whitelist!")
-            else:
-                whitelist.append(user.id)
-                await ctx.send(f"{user} has been added to the whitelist!")
+        if users is None:
+            return await ctx.send(_("`Users` is a required argument."))
+        
+        async with self.config.guild(ctx.guild).whitelist() as wl:
+            for user in users:
+                if add_or_remove.lower() == "add":
+                    if not user.id in wl:
+                        wl.append(user.id)
+                        
+                elif add_or_remove.lower() == "remove":
+                    if user.id in wl:
+                        wl.remove(user.id)
+                        
+        return await ctx.send(
+            _(
+                f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([user for user in users])} users {'to' if add_or_remove.lower() == 'add' else 'from'} the whitelist."
+            )
+        )
 
     @nonuke.command()
     async def view(self, ctx):
