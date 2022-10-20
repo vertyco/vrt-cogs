@@ -179,7 +179,9 @@ class NoNuke(Listen, commands.Cog):
                         wl.remove(user.id)
                         
         return await ctx.send(
-            f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} {len([user for user in users])} users {'to' if add_or_remove.lower() == 'add' else 'from'} the whitelist."
+            f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
+            f"{len([user for user in users])} {'user' if len([user for user in users]) == 1 else 'users'} "
+            f"{'to' if add_or_remove.lower() == 'add' else 'from'} the whitelist."
         )
 
     @nonuke.command()
