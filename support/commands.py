@@ -172,9 +172,11 @@ class SupportCommands(commands.Cog):
                     if role.id in r:
                         r.remove(role.id)
                         
+        ids = len(list(roles))
+                        
         return await ctx.send(
             f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} " 
-            f"{len([role for role in roles])} {'role' if len([role for role in roles]) == 1 else 'roles'} "
+            f"{ids} {'role' if ids == 1 else 'roles'} "
             f"{'to' if add_or_remove.lower() == 'add' else 'from'} support roles."
         )
 
@@ -200,9 +202,11 @@ class SupportCommands(commands.Cog):
                     if user.id in bl:
                         bl.remove(user.id)
                         
+        ids = len(list(users))
+                        
         return await ctx.send(
             f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
-            f"{len([user for user in users])} {'user' if len([user for user in users]) == 1 else 'users'} "
+            f"{ids} {'user' if ids == 1 else 'users'} "
             f"{'to' if add_or_remove.lower() == 'add' else 'from'} the blacklist."
         )
 

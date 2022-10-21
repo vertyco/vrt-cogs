@@ -178,9 +178,11 @@ class NoNuke(Listen, commands.Cog):
                     if user.id in wl:
                         wl.remove(user.id)
                         
+        ids = len(list(users))
+                        
         return await ctx.send(
             f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
-            f"{len([user for user in users])} {'user' if len([user for user in users]) == 1 else 'users'} "
+            f"{ids} {'user' if ids == 1 else 'users'} "
             f"{'to' if add_or_remove.lower() == 'add' else 'from'} the whitelist."
         )
 
