@@ -117,9 +117,11 @@ class EmojiTracker(commands.Cog):
                     if guild_id in bl:
                         bl.remove(guild_id)
                         
+        ids = len(list(guild_ids))
+                        
         return await ctx.send(
             f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
-            f"{len([guild for guild in guild_ids])} guilds {'guild' if len([guild for guild in guild_ids]) == 1 else 'guilds'} "
+            f"{ids} {'guild' if ids == 1 else 'guilds'} "
             f"{'to' if add_or_remove.lower() == 'add' else 'from'} the blacklist."
         )
 
