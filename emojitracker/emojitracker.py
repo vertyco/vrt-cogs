@@ -16,7 +16,7 @@ class EmojiTracker(commands.Cog):
     It will also only count one reaction per emoji for each user on a message so user's can't spam react/unreact
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -96,19 +96,34 @@ class EmojiTracker(commands.Cog):
 
     @commands.command(name="ignoreguild")
     @commands.is_owner()
-    async def blacklist_guild(self, ctx, guild_id: int):
+    async def blacklist_guild(
+        self, ctx: commands.Context, add_or_remove: commands.Literal["add", "remove"], guild_ids: commands.Greedy[int] = None
+    ):
         """
-        Add/Remove a guild from the blacklist
+        Add/Remove guilds from the blacklist
 
-        Enter a Guild ID to add it to the blacklist, to remove, simply enter it again
+        `<add_or_remove>` should be either `add` to add GUILD IDs or `remove` to remove GUILD IDs.
         """
+        if guild_ids is None:
+            return await ctx.send("`Guild_ids` is a required argument.")
+        
         async with self.config.blacklist() as bl:
-            if guild_id in bl:
-                bl.remove(guild_id)
-                await ctx.send(f"Guild {guild_id} removed from the blacklist")
-            else:
-                bl.append(guild_id)
-                await ctx.send(f"Guild {guild_id} added to the blacklist")
+            for guild_id in guild_ids:
+                if add_or_remove.lower() == "add":
+                    if not guild_id in bl:
+                        bl.append(guild_id)
+                        
+                elif add_or_remove.lower() == "remove":
+                    if guild_id in bl:
+                        bl.remove(guild_id)
+                        
+        ids = len(list(guild_ids))
+                        
+        return await ctx.send(
+            f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
+            f"{ids} {'guild' if ids == 1 else 'guilds'} "
+            f"{'to' if add_or_remove.lower() == 'add' else 'from'} the blacklist."
+        )
 
     @commands.command(name="viewblacklist")
     @commands.is_owner()
