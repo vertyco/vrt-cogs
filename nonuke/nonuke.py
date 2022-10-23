@@ -21,7 +21,7 @@ class NoNuke(Listen, commands.Cog):
     If a user or bot exceeds X mod events within X seconds, the set action will be performed
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.2"
+    __version__ = "0.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -61,7 +61,7 @@ class NoNuke(Listen, commands.Cog):
     @commands.group()
     @commands.guildowner()
     @commands.guild_only()
-    async def nonuke(self, ctx: commands.Context):
+    async def nonuke(self, ctx):
         """
         Anti-Nuke System for lazy guild owners!
 
@@ -78,7 +78,7 @@ class NoNuke(Listen, commands.Cog):
         """
 
     @nonuke.command()
-    async def enable(self, ctx: commands.Context):
+    async def enable(self, ctx):
         """Enable/Disable the NoNuke system"""
         toggle = await self.config.guild(ctx.guild).enabled()
         if toggle:
@@ -90,7 +90,7 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def dm(self, ctx: commands.Context):
+    async def dm(self, ctx):
         """Toggle whether the bot sends the user a DM when a kick or ban action is performed"""
         toggle = await self.config.guild(ctx.guild).dm()
         if toggle:
@@ -102,21 +102,21 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def logchannel(self, ctx: commands.Context, channel: discord.TextChannel):
+    async def logchannel(self, ctx, channel: discord.TextChannel):
         """Set the log channel for Anti-Nuke kicks"""
         await self.config.guild(ctx.guild).log.set(channel.id)
         await ctx.tick()
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def cooldown(self, ctx: commands.Context, cooldown: int):
+    async def cooldown(self, ctx, cooldown: int):
         """Cooldown (in seconds) for NoNuke to trigger"""
         await self.config.guild(ctx.guild).cooldown.set(cooldown)
         await ctx.tick()
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def overload(self, ctx: commands.Context, overload: int):
+    async def overload(self, ctx, overload: int):
         """How many mod actions can be done within the set cooldown
 
         **Mod actions include:**
@@ -136,7 +136,7 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def action(self, ctx: commands.Context, action: str):
+    async def action(self, ctx, action: str):
         """
         Set the action for the bot to take when NoNuke is triggered
 
@@ -157,37 +157,18 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def whitelist(
-        self, ctx: commands.Context, add_or_remove: commands.Literal["add", "remove"], users: commands.Greedy[discord.Member] = None
-    ):
-        """
-        Add/Remove users from the whitelist
-        
-        `<add_or_remove>` should be either `add` to add users or `remove` to remove users.
-        """
-        if users is None:
-            return await ctx.send("`Users` is a required argument.")
-        
-        async with self.config.guild(ctx.guild).whitelist() as wl:
-            for user in users:
-                if add_or_remove.lower() == "add":
-                    if not user.id in wl:
-                        wl.append(user.id)
-                        
-                elif add_or_remove.lower() == "remove":
-                    if user.id in wl:
-                        wl.remove(user.id)
-                        
-        ids = len(list(users))
-                        
-        return await ctx.send(
-            f"Successfully {'added' if add_or_remove.lower() == 'add' else 'removed'} "
-            f"{ids} {'user' if ids == 1 else 'users'} "
-            f"{'to' if add_or_remove.lower() == 'add' else 'from'} the whitelist."
-        )
+    async def whitelist(self, ctx, user: discord.Member):
+        """Add/Remove users from the whitelist"""
+        async with self.config.guild(ctx.guild).whitelist() as whitelist:
+            if user.id in whitelist:
+                whitelist.remove(user.id)
+                await ctx.send(f"{user} has been removed from the whitelist!")
+            else:
+                whitelist.append(user.id)
+                await ctx.send(f"{user} has been added to the whitelist!")
 
     @nonuke.command()
-    async def view(self, ctx: commands.Context):
+    async def view(self, ctx):
         """View the NoNuke settings"""
         conf = await self.config.guild(ctx.guild).all()
         lchan = self.bot.get_channel(conf['log']) if conf['log'] else "Not Set"
