@@ -58,7 +58,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.16.39"
+    __version__ = "2.16.40"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -957,7 +957,7 @@ class LevelUp(UserCommands, commands.Cog):
         When a user runs the profile command their generated image will be stored in cache to be reused for X seconds
 
         If profile embeds are enabled this setting will have no effect
-        Anything less than 10 seconds will effectively disable the cache
+        Anything less than 5 seconds will effectively disable the cache
         """
         self.cache_seconds = int(seconds)
         await ctx.tick()

@@ -727,7 +727,7 @@ class UserCommands(commands.Cog):
 
     @commands.command(name="pf")
     @commands.guild_only()
-    # @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
         if not user:
@@ -868,8 +868,8 @@ class UserCommands(commands.Cog):
                         log.error(f"Failed AGAIN to send profile pic: {e}")
                 mtime = round((perf_counter() - start2) * 1000)
                 if ctx.author.id == 350053505815281665:
-                    await ctx.send(f"`Render: `{humanize_number(rtime)}ms\n"
-                                   f"`Send:   `{humanize_number(mtime)}ms\n")
+                    log.info(f"Render time: {humanize_number(rtime)}ms\n"
+                             f"Send Time: {humanize_number(mtime)}ms")
 
     @commands.command(name="prestige")
     @commands.guild_only()
