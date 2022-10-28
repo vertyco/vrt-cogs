@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 
@@ -15,4 +16,4 @@ async def setup(bot):
         await bot.add_cog(cog)
     else:
         bot.add_cog(cog)
-    await cog.initialize()
+    asyncio.create_task(cog.initialize())
