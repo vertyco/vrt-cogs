@@ -24,7 +24,9 @@
     "tabulate",
     "colorgram.py",
     "emoji",
-    "aiocache"
+    "aiocache",
+    "ujson",
+    "msgpack"
   ],
   "short": "Leveling System",
   "tags": [
