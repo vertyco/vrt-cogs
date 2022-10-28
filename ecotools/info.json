@@ -13,7 +13,7 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "rcon==1.3.7"
+    "rcon>=2.1.1"
   ],
   "short": "ECO Game Server RCON Tools",
   "tags": [
