@@ -1,6 +1,6 @@
 import discord
 
-from rcon.asyncio import rcon
+from rcon.source import rcon
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box
 
