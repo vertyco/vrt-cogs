@@ -44,18 +44,16 @@ class BaseCommands(commands.Cog):
     @commands.command(name="renameticket", aliases=["renamet"])
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
         """Rename your ticket channel"""
-        guild = ctx.guild
-        chan = ctx.channel
-        conf = await self.config.guild(guild).all()
+        conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
-        owner_id = self.get_ticket_owner(opened, str(chan.id))
+        owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
             return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
         can_rename = False
         for role in ctx.author.roles:
             if role.id in conf["support_roles"]:
                 can_rename = True
-        if ctx.author.id == guild.owner_id:
+        if ctx.author.id == ctx.guild.owner_id:
             can_rename = True
         if await is_admin_or_superior(self.bot, ctx.author):
             can_rename = True
