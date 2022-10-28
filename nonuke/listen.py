@@ -68,15 +68,35 @@ class Listen:
 
         logchan = self.settings[guild.id]["log"] if self.settings[guild.id]["log"] else None
         logchan = guild.get_channel(logchan) if logchan else None
-        act = "banned" if action == "ban" else "kicked"
-        if dm and action != "notify":
+
+        userwarn = f"Slow down there! You have exceeded {overload} mod actions in {cooldown} seconds."
+        failwarn = None
+        success = None
+        if action == "ban":
+            userwarn = f"You have been banned from {guild.name} " \
+                       f"for exceeding {overload} mod actions in {cooldown} seconds"
+            failwarn = "Failed to ban"
+            success = "been banned"
+        elif action == "kick":
+            userwarn = f"You have been kicked from {guild.name} " \
+                       f"for exceeding {overload} mod actions in {cooldown} seconds"
+            failwarn = "Failed to kick"
+            success = "been kicked"
+        elif action == "strip":
+            userwarn = f"You have had your roles stripped in {guild.name} " \
+                       f"for exceeding {overload} mod actions in {cooldown} seconds"
+            failwarn = "Failed to strip roles from"
+            success = "had their roles stripped"
+
+        if dm:
             with contextlib.suppress(discord.HTTPException):
                 em = discord.Embed(
-                    title=f"You have been {act} from {guild}.",
-                    description=f"You have exceeded {overload} mod actions in {cooldown} seconds.",
+                    title="Anti-Nuke Warning",
+                    description=userwarn,
                     color=discord.Color.red()
                 )
                 await member.send(embed=em)
+
         failed = False
         try:
             if action == "kick":
@@ -89,36 +109,53 @@ class Listen:
                     await guild.ban(member, reason=audit_reason)
                 else:
                     failed = True
+            elif action == "strip":
+                to_strip = ["administrator", "ban_members", "kick_members", "manage_channels",
+                            "manage_guild", "manage_emojis", "manage_messages", "manage_roles",
+                            "manage_webhooks", "manage_nicknames", "mute_members", "moderate_members",
+                            "move_members", "deafen_members"]
+                to_remove = []
+                for role in member.roles:
+                    perms = [p[0] for p in role.permissions if p[1]]
+                    if any([perm in to_strip for perm in perms]):
+                        to_remove.append(role)
+                if to_remove and guild.me.guild_permissions.manage_roles:
+                    await member.remove_roles(*to_remove, reason=audit_reason)
+                else:
+                    failed = True
         except Exception as e:
             log.warning(f"Could not kick {member.name} from {guild.name}!\nException: {e}")
             failed = True
 
-        if logchan:
-            if action != "notify":
-                if failed:
-                    em = discord.Embed(
-                        title="Anti-Nuke FAILED!",
-                        description=f"User `{member} - {member.id}` failed to be {act}!\n"
-                                    f"Exceeded {overload} mod actions in {cooldown} seconds\n"
-                                    f"I lack the permission to {action} them!!!",
-                        color=discord.Color.red()
-                    )
-                else:
-                    em = discord.Embed(
-                        title="Anti-Nuke Triggered!",
-                        description=f"User `{member} - {member.id}` has been {act}!\n"
-                                    f"Exceeded {overload} mod actions in {cooldown} seconds",
-                        color=discord.Color.red()
-                    )
-            else:
-                em = discord.Embed(
-                    title="Anti-Nuke Triggered!",
-                    description=f"User `{member} - {member.id}` has triggered NoNuke!\n"
-                                f"Exceeded {overload} mod actions in {cooldown} seconds",
-                    color=discord.Color.red()
-                )
+        if not logchan:
+            return
+        if action == "notify":
+            em = discord.Embed(
+                title="Anti-Nuke Triggered!",
+                description=f"User `{member} - {member.id}` has triggered NoNuke!\n"
+                            f"Exceeded {overload} mod actions in {cooldown} seconds",
+                color=discord.Color.red()
+            )
             em.set_thumbnail(url=pfp)
-            await logchan.send(embed=em)
+            return await logchan.send(embed=em)
+        if failed:
+            em = discord.Embed(
+                title="Anti-Nuke FAILED!",
+                description=f"{failwarn} `{member.name} - {member.id}`\n"
+                            f"Exceeded {overload} mod actions in {cooldown} seconds\n"
+                            f"I lack the permission to {action if action != 'strip' else 'de-role'} them!!!",
+                color=discord.Color.red()
+            )
+            em.set_thumbnail(url=pfp)
+            return await logchan.send(embed=em)
+        em = discord.Embed(
+            title="Anti-Nuke Triggered!",
+            description=f"User `{member} - {member.id}` has {success}!\n"
+                        f"Exceeded {overload} mod actions in {cooldown} seconds",
+            color=discord.Color.red()
+        )
+        em.set_thumbnail(url=pfp)
+        await logchan.send(embed=em)
 
     @staticmethod
     async def get_audit_log_reason(

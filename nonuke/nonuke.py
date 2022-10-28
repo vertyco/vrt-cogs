@@ -1,6 +1,7 @@
 import discord
 from redbot.core import commands, Config
 from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import box, humanize_list
 
 from .listen import Listen
 
@@ -16,12 +17,12 @@ class NoNuke(Listen, commands.Cog):
 
     Set a cooldown(in seconds)
     Set an overload count(X events in X seconds)
-    Set an action(kick, ban, notify)
+    Set an action(kick, ban, strip, notify)
 
     If a user or bot exceeds X mod events within X seconds, the set action will be performed
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -41,15 +42,17 @@ class NoNuke(Listen, commands.Cog):
             "cooldown": 10,  # Seconds in between actions
             "overload": 3,  # Actions within cooldown time
             "dm": False,  # Whether to DM the user the bot kicks
-            "action": "notify",  # Valid types are 'kick', 'ban', and 'notify'
+            "action": "notify",  # Valid types are 'kick', 'ban', 'strip', and 'notify'
             "whitelist": [],  # Whitelist of trusted users(or bots)
         }
         self.config.register_guild(**default_guild)
 
         self.settings = {}
         self.cache = {}
+        self.first_run = True
 
     async def initialize(self, guild_id: int = 0):
+        await self.bot.wait_until_red_ready()
         conf = await self.config.all_guilds()
         for gid, settings in conf.items():
             if not settings:
@@ -72,7 +75,7 @@ class NoNuke(Listen, commands.Cog):
 
         Set a cooldown(in seconds)
         Set an overload count(X events in X seconds)
-        Set an action(kick, ban, notify)
+        Set an action(kick, ban, strip, notify)
 
         If a user or bot exceeds X mod events within X seconds, the set action will be performed
         """
@@ -124,6 +127,8 @@ class NoNuke(Listen, commands.Cog):
         Channel Creation/Edit/Deletion
         Role Creation/Edit/Deletion
         """
+        if not ctx.guild.me.guild_permissions.view_audit_log:
+            return await ctx.send("I do not have permission to view the audit log for this server!")
         action = await self.config.guild(ctx.guild).action()
         if action == "kick":
             if not ctx.guild.me.guild_permissions.kick_members:
@@ -131,6 +136,9 @@ class NoNuke(Listen, commands.Cog):
         elif action == "ban":
             if not ctx.guild.me.guild_permissions.ban_members:
                 return await ctx.send("I do not have permission to ban members!")
+        elif action == "strip":
+            if not ctx.guild.me.guild_permissions.manage_roles:
+                return await ctx.send("I do not have permission to manage roles!")
         await self.config.guild(ctx.guild).overload.set(overload)
         await ctx.tick()
         await self.initialize(ctx.guild)
@@ -140,11 +148,16 @@ class NoNuke(Listen, commands.Cog):
         """
         Set the action for the bot to take when NoNuke is triggered
 
-        Valid actions are `kick`, `ban`, and `notify`
-        notify just sends a report to the log channel
+        **Actions**
+        `kick` - kick the user
+        `ban` - ban the user
+        `strip` - strip all roles with permissions from user
+        `notify` - just sends a report to the log channel
         """
+        if not ctx.guild.me.guild_permissions.view_audit_log:
+            return await ctx.send("I do not have permission to view the audit log for this server!")
         action = action.lower()
-        if action not in ["kick", "ban", "notify"]:
+        if action not in ["kick", "ban", "notify", "strip"]:
             return await ctx.send("That is not a valid action type!")
         if action == "kick":
             if not ctx.guild.me.guild_permissions.kick_members:
@@ -152,8 +165,12 @@ class NoNuke(Listen, commands.Cog):
         elif action == "ban":
             if not ctx.guild.me.guild_permissions.ban_members:
                 return await ctx.send("I do not have permission to ban members!")
+        elif action == "strip":
+            if not ctx.guild.me.guild_permissions.manage_roles:
+                return await ctx.send("I do not have permission to manage roles!")
         await self.config.guild(ctx.guild).action.set(action)
         await ctx.tick()
+        await ctx.send(f"Action has been set to `{action}`")
         await self.initialize(ctx.guild)
 
     @nonuke.command()
@@ -182,3 +199,12 @@ class NoNuke(Listen, commands.Cog):
                         f"`LogChannel: `{lchan}"
         )
         await ctx.send(embed=em)
+        perms = {
+            ctx.guild.me.guild_permissions.manage_roles: "manage_roles",
+            ctx.guild.me.guild_permissions.ban_members: "ban_members",
+            ctx.guild.me.guild_permissions.kick_members: "kick_members",
+            ctx.guild.me.guild_permissions.view_audit_log: "view_audit_log"
+        }
+        missing = [v for k, v in perms.items() if k]
+        if missing:
+            await ctx.send(f"Just a heads up, I do not have the following permissions\n{box(humanize_list(missing))}")
