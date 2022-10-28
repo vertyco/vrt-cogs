@@ -41,7 +41,7 @@ class BaseCommands(commands.Cog):
         await ctx.channel.set_permissions(user, read_messages=True, send_messages=True)
         await ctx.send(_(f"**{user.name}** has been added to this ticket!"))
 
-    @commands.command(name="rename")
+    @commands.command(name="renameticket", aliases=["renamet"])
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
         """Rename your ticket channel"""
         guild = ctx.guild
