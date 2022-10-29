@@ -218,7 +218,7 @@ class UserCommands(commands.Cog):
             else:
                 time_left = cooldown - td
                 tstring = time_formatter(time_left)
-                msg = _(f"You need to wait **{tstring}** before you can give more stars!")
+                msg = _("You need to wait ") + f"**{tstring}**" + _(" before you can give more stars!")
                 return await ctx.send(msg)
         mention = self.data[guild_id]["mention"]
         users = self.data[guild_id]["users"]
@@ -226,9 +226,9 @@ class UserCommands(commands.Cog):
             return await ctx.send(_("No data available for that user yet!"))
         self.data[guild_id]["users"][user_id]["stars"] += 1
         if mention:
-            await ctx.send(_(f"You just gave a star to {user.mention}!"))
+            await ctx.send(_("You just gave a star to ") + f"{user.mention}!")
         else:
-            await ctx.send(_(f"You just gave a star to **{user.name}**!"))
+            await ctx.send(_("You just gave a star to ") + f"**{user.name}**!")
 
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)
@@ -296,7 +296,7 @@ class UserCommands(commands.Cog):
             desc += _("`Background:      `") + str(bg)
 
             em = discord.Embed(
-                title="Your Profile Settings",
+                title=_("Your Profile Settings"),
                 description=desc,
                 color=ctx.author.color
             )
@@ -313,7 +313,6 @@ class UserCommands(commands.Cog):
                             file = discord.File(bgpath, filename=bg)
                             em.set_image(url=f"attachment://{bg}")
                         except (WindowsError, PermissionError, OSError):
-                            print("permission error")
                             pass
             await ctx.send(embed=em, file=file)
 
@@ -543,7 +542,7 @@ class UserCommands(commands.Cog):
             )
             await ctx.send(embed=embed)
         except Exception as e:
-            await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
+            await ctx.send(_("Failed to set color, the following error occurred:\n") + f"{box(str(e), lang='python')}")
             return
         self.data[ctx.guild.id]["users"][user_id]["colors"]["name"] = hex_color
         await ctx.tick()
@@ -582,7 +581,7 @@ class UserCommands(commands.Cog):
             )
             await ctx.send(embed=embed)
         except Exception as e:
-            await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
+            await ctx.send(_("Failed to set color, the following error occurred:\n") + f"{box(str(e), lang='python')}")
             return
         self.data[ctx.guild.id]["users"][user_id]["colors"]["stat"] = hex_color
         await ctx.tick()
@@ -621,7 +620,7 @@ class UserCommands(commands.Cog):
             )
             await ctx.send(embed=embed)
         except Exception as e:
-            await ctx.send(_(f"Failed to set color, the following error occurred:\n{box(str(e), lang='python')}"))
+            await ctx.send(_("Failed to set color, the following error occurred:\n") + f"{box(str(e), lang='python')}")
             return
         self.data[ctx.guild.id]["users"][user_id]["colors"]["levelbar"] = hex_color
         await ctx.tick()
@@ -901,17 +900,17 @@ class UserCommands(commands.Cog):
         pending_prestige = str(prestige + 1)
         # First add new prestige role
         if current_level < required_level:
-            msg = f"**You are not eligible to prestige yet!**\n" \
-                  f"`Your level:     `{current_level}\n" \
-                  f"`Required Level: `{required_level}"
+            msg = _("**You are not eligible to prestige yet!**\n")
+            msg += _("`Your level:     `") + f"{current_level}\n"
+            msg += _("`Required Level: `") + f"{required_level}"
             embed = discord.Embed(
-                description=_(msg),
+                description=msg,
                 color=discord.Color.red()
             )
             return await ctx.send(embed=embed)
 
         if pending_prestige not in prestige_data:
-            return await ctx.send(_(f"Prestige level {pending_prestige} has not been set yet!"))
+            return await ctx.send(_("Prestige level ") + str(pending_prestige) + _(" has not been set yet!"))
 
         role_id = prestige_data[pending_prestige]["role"]
         role = ctx.guild.get_role(role_id) if role_id else None
@@ -920,7 +919,7 @@ class UserCommands(commands.Cog):
             try:
                 await ctx.author.add_roles(role)
             except discord.Forbidden:
-                await ctx.send(_(f"I do not have the proper permissions to assign you the {role.mention} role"))
+                await ctx.send(_("I do not have the proper permissions to assign you to the role ") + role.mention)
 
         current_xp = user["xp"]
         xp_at_prestige = get_xp(required_level, conf["base"], conf["exp"])
@@ -932,7 +931,7 @@ class UserCommands(commands.Cog):
         self.data[ctx.guild.id]["users"][user_id]["level"] = newlevel
         self.data[ctx.guild.id]["users"][user_id]["xp"] = leftover_xp
         embed = discord.Embed(
-            description=f"You have reached Prestige {pending_prestige}!",
+            description=_("You have reached Prestige ") + f"{pending_prestige}!",
             color=ctx.author.color
         )
         await ctx.send(embed=embed)
@@ -985,9 +984,9 @@ class UserCommands(commands.Cog):
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
+        title = _("**Total Messages:** `") + humanize_number(total_messages)
+        title += _("\n**Total VoiceTime:** `") + voice + "\n"
         for p in range(pages):
-            title = f"**Total Messages:** `{'{:,}'.format(total_messages)}`\n" \
-                    f"**Total VoiceTime:** `{voice}`\n"
             if stop > len(sorted_users):
                 stop = len(sorted_users)
             table = []
@@ -1016,8 +1015,8 @@ class UserCommands(commands.Cog):
                 stralign="left"
             )
             embed = discord.Embed(
-                title="LevelUp Leaderboard",
-                description=f"{_(title)}{box(msg, lang='python')}",
+                title=_("LevelUp Leaderboard"),
+                description=f"{title}{box(msg, lang='python')}",
                 color=discord.Color.random()
             )
             if DPY2:
@@ -1027,9 +1026,9 @@ class UserCommands(commands.Cog):
                 embed.set_thumbnail(url=ctx.guild.icon_url)
 
             if you:
-                embed.set_footer(text=_(f"Pages {p + 1}/{pages} ｜ {you}"))
+                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} ｜ {you}")
             else:
-                embed.set_footer(text=_(f"Pages {p + 1}/{pages}"))
+                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages}")
             embeds.append(embed)
             start += 10
             stop += 10
@@ -1071,10 +1070,8 @@ class UserCommands(commands.Cog):
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
-        startotal = "{:,}".format(total_stars)
+        title = _("**Star Leaderboard**\n") + _("**Total ⭐'s: ") + humanize_number(total_stars) + "**\n"
         for p in range(pages):
-            title = f"**Star Leaderboard**\n" \
-                    f"**Total ⭐'s: {startotal}**\n"
             if stop > len(sorted_users):
                 stop = len(sorted_users)
             table = []
@@ -1090,7 +1087,7 @@ class UserCommands(commands.Cog):
                 table.append([stars, user])
             data = tabulate.tabulate(table, tablefmt="presto", colalign=("right",))
             embed = discord.Embed(
-                description=f"{_(title)}{box(data, lang='python')}",
+                description=f"{title}{box(data, lang='python')}",
                 color=discord.Color.random()
             )
             if DPY2:
@@ -1100,9 +1097,9 @@ class UserCommands(commands.Cog):
                 embed.set_thumbnail(url=ctx.guild.icon_url)
 
             if you:
-                embed.set_footer(text=_(f"Pages {p + 1}/{pages} ｜ {you}"))
+                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} ｜ {you}")
             else:
-                embed.set_footer(text=_(f"Pages {p + 1}/{pages}"))
+                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages}")
             embeds.append(embed)
             start += 10
             stop += 10
