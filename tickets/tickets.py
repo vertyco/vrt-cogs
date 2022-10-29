@@ -21,7 +21,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     Support ticket system with multi-panel functionality
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.5"
+    __version__ = "1.0.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -130,7 +130,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
 
             if current_tickets and count:
                 await self.config.guild(guild).opened.set(current_tickets)
-                log.info(_(f"{count} tickets pruned from {guild.name}"))
+                log.info(f"{count} tickets pruned from {guild.name}")
 
     @tasks.loop(minutes=20)
     async def auto_close(self):
@@ -167,14 +167,14 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                     try:
                         await self.close_ticket(
                             member, channel, conf,
-                            _(f"(Auto-Close) Opened ticket with no response for {inactive} {time}"),
+                            _(f"(Auto-Close) Opened ticket with no response for ") + f"{inactive} {time}",
                             self.bot.user.name
                         )
-                        log.info(_(f"Ticket opened by {member.name} has been auto-closed.\n"
-                                   f"Has typed: {hastyped}\n"
-                                   f"Hours elapsed: {td}"))
+                        log.info(f"Ticket opened by {member.name} has been auto-closed.\n"
+                                 f"Has typed: {hastyped}\n"
+                                 f"Hours elapsed: {td}")
                     except Exception as e:
-                        log.error(_(f"Failed to auto-close ticket for {member} in {guild.name}\nException: {e}"))
+                        log.error(f"Failed to auto-close ticket for {member} in {guild.name}\nException: {e}")
 
         if tasks:
             await asyncio.gather(*actasks)
@@ -207,4 +207,4 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                 await self.close_ticket(
                     member, chan, conf, _("User left guild(Auto-Close)"), self.bot.user.display_name)
             except Exception as e:
-                log.error(_(f"Failed to auto-close ticket for {member} leaving {member.guild}\nException: {e}"))
+                log.error(f"Failed to auto-close ticket for {member} leaving {member.guild}\nException: {e}")

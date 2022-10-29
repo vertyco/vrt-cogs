@@ -172,7 +172,7 @@ class SupportButton(discord.ui.Button):
         channel_name = name_fmt.format(**params) if name_fmt else user.name
         channel = await category.create_text_channel(channel_name, overwrites=overwrite)
 
-        default_message = _(f"Welcome to your ticket channel {user.display_name}!")
+        default_message = _(f"Welcome to your ticket channel ") + f"{user.display_name}!"
         if user_can_close:
             default_message += _(f"\nYou or an admin can close this with the `close` command")
 
@@ -204,17 +204,18 @@ class SupportButton(discord.ui.Button):
                 em.set_thumbnail(url=user.avatar.url)
             msg = await channel.send(user.mention, embed=em)
 
-        em = discord.Embed(description=_(f"Your ticket channel has been created!\n"
-                                         f"**[Click Here]({msg.jump_url})** to jump to it."),
+        desc = _("Your ticket channel has been created, **[CLICK HERE]") + f"({msg.jump_url})**"
+        em = discord.Embed(description=desc,
                            color=user.color)
         await interaction.response.send_message(embed=em, ephemeral=True)
 
         if logchannel:
             ts = int(now.timestamp())
+            desc = _("Ticket created by ") + f"**{user.name}-{user.id}**" + _(" was opened ") + f"<t:{ts}:R>\n"
+            desc += _("To view this ticket, **[Click Here]") + f"({msg.jump_url})**"
             em = discord.Embed(
                 title=_("Ticket opened"),
-                description=_(f"Ticket created by **{user.name}-{user.id}** was opened <t:{ts}:R>\n"
-                              f"To view this ticket, **[Click Here]({msg.jump_url})**"),
+                description=desc,
                 color=discord.Color.red()
             )
             if user.avatar:
