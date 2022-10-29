@@ -151,6 +151,20 @@ class BaseCommands(commands.Cog):
                 await log_chan.send(embed=embed, file=file)
             else:
                 await log_chan.send(embed=embed)
+
+            # Delete old log msg
+            log_msg_id = ticket["logmsg"]
+            try:
+                log_msg = await log_chan.fetch_message(log_msg_id)
+            except discord.NotFound:
+                log.warning("Failed to get log channel message")
+                log_msg = None
+            if log_msg:
+                try:
+                    await log_msg.delete()
+                except Exception as e:
+                    log.warning(f"Failed to auto-delete log message: {e}")
+
         if conf["dm"]:
             try:
                 if text:
@@ -163,25 +177,11 @@ class BaseCommands(commands.Cog):
             except discord.Forbidden:
                 pass
 
-        # Delete old log msg
-        if log_chan:
-            log_msg_id = ticket["logmsg"]
-            try:
-                log_msg = await log_chan.fetch_message(log_msg_id)
-            except discord.NotFound:
-                log.warning(_("Failed to get log channel message"))
-                log_msg = None
-            if log_msg:
-                try:
-                    await log_msg.delete()
-                except Exception as e:
-                    log.warning(_(f"Failed to auto-delete log message: {e}"))
-
         # Delete ticket channel
         try:
             await channel.delete()
         except Exception as e:
-            log.warning(_(f"Failed to delete ticket channel: {e}"))
+            log.warning(f"Failed to delete ticket channel: {e}")
 
         async with self.config.guild(member.guild).opened() as tickets:
             if uid not in tickets:

@@ -23,7 +23,7 @@ class TicketCommands(commands.Cog):
     @tickets.command()
     async def setuphelp(self, ctx: commands.Context):
         """Ticket Setup Guide"""
-        desc = _(f"To create a support ticket panel, type ") + f"`{ctx.prefix}tickets addpanel" + _(" <panel_name>`")
+        desc = _("To create a support ticket panel, type ") + f"`{ctx.prefix}tickets addpanel" + _(" <panel_name>`")
         em = Embed(
             title=_("Ticket Setup Guide"),
             description=desc,
@@ -32,14 +32,14 @@ class TicketCommands(commands.Cog):
         step1 = _("Set the category ID that new tickets will be created under.\n")
         step1 += f"`{ctx.prefix}tickets setcategory " + _("<panel_name> <category_id>`")
         em.add_field(
-            name=_(f"Step 1"),
+            name=_("Step 1"),
             value=step1,
             inline=False
         )
         step2 = _("Set the channel that the bots ticket panel will be located in.\n")
         step2 += f"`{ctx.prefix}tickets setchannel " + _("<panel_name> <category_id>`")
         em.add_field(
-            name=_(f"Step 2"),
+            name=_("Step 2"),
             value=step2,
             inline=False
         )
@@ -47,14 +47,14 @@ class TicketCommands(commands.Cog):
         step3 += f"`{ctx.prefix}tickets panelmessage " + _("<panel_name> <message_id>`\n")
         step3 += "At this point the ticket panel will be activated, all following steps are for extra customization."
         em.add_field(
-            name=_(f"Step 3"),
+            name=_("Step 3"),
             value=step3,
             inline=False
         )
         step4 = _("Set the text of the ticket panel button.\n")
         step4 += f"`{ctx.prefix}tickets buttontext " + _("<panel_name> <button_text>`")
         em.add_field(
-            name=_(f"Button Text"),
+            name=_("Button Text"),
             value=step4,
             inline=False
         )
@@ -62,42 +62,42 @@ class TicketCommands(commands.Cog):
         step5 += _("Valid colors are ") + "`red`, `blue`, `green`, and `grey`.\n"
         step5 += f"`{ctx.prefix}tickets buttoncolor " + _("<panel_name> <button_color>`")
         em.add_field(
-            name=_(f"Button Color"),
+            name=_("Button Color"),
             value=step5,
             inline=False
         )
         step6 = _("Set the button emoji for the ticket panel.\n")
         step6 += f"`{ctx.prefix}tickets buttonemoji " + _("<panel_name> <emoji>`")
         em.add_field(
-            name=_(f"Button Emoji"),
+            name=_("Button Emoji"),
             value=step6,
             inline=False
         )
         step7 = _("Add a message the bot sends to the user in their ticket.\n")
         step7 += f"`{ctx.prefix}tickets addmessage " + _("<panel_name>`")
         em.add_field(
-            name=_(f"Ticket Messages"),
+            name=_("Ticket Messages"),
             value=step7,
             inline=False
         )
         step8 = _("View and remove a messages the bot sends to the user in their ticket.\n")
         step8 += f"`{ctx.prefix}tickets viewmessages " + _("<panel_name>`")
         em.add_field(
-            name=_(f"Remove/View Ticket Messages"),
+            name=_("Remove/View Ticket Messages"),
             value=step8,
             inline=False
         )
         step9 = _("Set the naming format for ticket channels that are opened.\n")
         step9 += f"`{ctx.prefix}tickets ticketname " + _("<panel_name> <name_format>`")
         em.add_field(
-            name=_(f"Ticket Channel Name"),
+            name=_("Ticket Channel Name"),
             value=step9,
             inline=False
         )
         step10 = _("Set log channel for a ticket panel.\n")
         step10 += f"`{ctx.prefix}tickets logchannel " + _("<panel_name> <channel>`")
         em.add_field(
-            name=_(f"Log Channel"),
+            name=_("Log Channel"),
             value=step10,
             inline=False
         )
@@ -109,7 +109,7 @@ class TicketCommands(commands.Cog):
         panel_name = panel_name.lower()
         em = Embed(
             title=panel_name + _("Panel Saved"),
-            description=_(f"Your panel has been added and will need to be configured."),
+            description=_("Your panel has been added and will need to be configured."),
             color=ctx.author.color
         )
         async with self.config.guild(ctx.guild).panels() as panels:
@@ -195,7 +195,7 @@ class TicketCommands(commands.Cog):
         button_color = button_color.lower()
         valid = ["red", "blue", "green", "grey", "gray"]
         if button_color not in valid:
-            return await ctx.send(button_color + _(f" is not valid, must be one of the following\n") + f"`{valid}`")
+            return await ctx.send(button_color + _(" is not valid, must be one of the following\n") + f"`{valid}`")
         butt = TestButton(style=button_color)  # hehe, butt
         await ctx.send(_("This is what your button will look like with this color!"), view=butt)
         async with self.config.guild(ctx.guild).panels() as panels:
@@ -357,7 +357,7 @@ class TicketCommands(commands.Cog):
                 description=desc,
                 color=ctx.author.color
             )
-            em.set_footer(text=_(f"Page") + f" {i + 1}/{len(messages)}")
+            em.set_footer(text=_("Page") + f" {i + 1}/{len(messages)}")
             embeds.append(em)
 
         controls = SMALL_CONTROLS.copy()
@@ -369,7 +369,7 @@ class TicketCommands(commands.Cog):
         panel_name = instance.view.pages[index].title.replace(_("Ticket Messages for: "), "")
         async with self.config.guild(interaction.guild).panels() as panels:
             del panels[panel_name]["ticket_messages"][index]
-            em = Embed(description=_(f"Ticket message has been deleted from ") + f"{panel_name}!")
+            em = Embed(description=_("Ticket message has been deleted from ") + f"{panel_name}!")
             await interaction.response.send_message(embed=em, ephemeral=True)
             del instance.view.pages[index]
             instance.view.page += 1
@@ -410,7 +410,7 @@ class TicketCommands(commands.Cog):
                 description=desc,
                 color=ctx.author.color
             )
-            em.set_footer(text=_(f"Page ") + f"{page}/{pages}")
+            em.set_footer(text=_("Page ") + f"{page}/{pages}")
             page += 1
             embeds.append(em)
         controls = SMALL_CONTROLS.copy()
@@ -507,10 +507,10 @@ class TicketCommands(commands.Cog):
         async with self.config.guild(ctx.guild).support_roles() as roles:
             if role.id in roles:
                 roles.remove(role.id)
-                await ctx.send(role.name + _(f" has been removed from support roles"))
+                await ctx.send(role.name + _(" has been removed from support roles"))
             else:
                 roles.append(role.id)
-                await ctx.send(role.name + _(f" has been added to support roles"))
+                await ctx.send(role.name + _(" has been added to support roles"))
 
     @tickets.command(name="blacklist")
     async def set_user_blacklist(self, ctx: commands.Context, *, user: discord.Member):

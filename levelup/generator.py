@@ -204,14 +204,14 @@ class Generator:
         final = Image.alpha_composite(final, progress_bar)
 
         # Stat strings
-        rank = _(f"Rank: #") + str(user_position)
-        leveltxt = _(f"Level: ") + str(level)
+        rank = _("Rank: #") + str(user_position)
+        leveltxt = _("Level: ") + str(level)
         exp = _("Exp: ") + f"{humanize_number(user_xp)}/{humanize_number(next_xp)}"
-        message_count = _(f"Messages: ") + messages
-        voice = _(f"Voice: ") + voice
+        message_count = _("Messages: ") + messages
+        voice = _("Voice: ") + voice
         stars = str(stars)
         bal = _("Balance: ") + f"{humanize_number(balance)} {currency}"
-        prestige_str = _(f"Prestige ") + str(prestige)
+        prestige_str = _("Prestige ") + str(prestige)
 
         # Get base font
         base_font = self.font
@@ -525,14 +525,14 @@ class Generator:
         def get_str(xp):
             return "{:,}".format(xp)
 
-        rank = _(f"Rank: #{user_position}")
-        level = _(f"Level: {level}")
+        rank = _("Rank: #") + str(user_position)
+        level = _("Level: ") + str(level)
         exp = f"Exp: {get_str(user_xp)}/{get_str(next_xp)}"
-        messages = _(f"Messages: {messages}")
-        voice = _(f"Voice Time: {voice}")
-        name = f"{user_name}"
+        messages = _("Messages: ") + str(messages)
+        voice = _("Voice Time: ") + str(voice)
+        name = user_name
         if prestige:
-            name += _(f" - Prestige {prestige}")
+            name += _(" - Prestige ") + str(prestige)
         stars = str(stars)
 
         base_font = self.font

@@ -28,7 +28,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
         info = f"{helpcmd}\n" \
                f"Cog Version: {self.__version__}\n" \
                f"Author: {self.__author__}\n"
-        return _(info)
+        return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         """No data to delete"""
@@ -167,7 +167,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                     try:
                         await self.close_ticket(
                             member, channel, conf,
-                            _(f"(Auto-Close) Opened ticket with no response for ") + f"{inactive} {time}",
+                            _("(Auto-Close) Opened ticket with no response for ") + f"{inactive} {time}",
                             self.bot.user.name
                         )
                         log.info(f"Ticket opened by {member.name} has been auto-closed.\n"

@@ -58,7 +58,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.16.40"
+    __version__ = "2.16.41"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -66,7 +66,7 @@ class LevelUp(UserCommands, commands.Cog):
                f"Cog Version: {self.__version__}\n" \
                f"Author: {self.__author__}\n" \
                f"Contributors: aikaterna#1393"
-        return _(info)
+        return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         deleted = False
@@ -805,48 +805,47 @@ class LevelUp(UserCommands, commands.Cog):
             notifylog = conf["notifylog"]
         else:
             notifylog = notifylog.mention
-        ptype = "Image" if usepics else "Embed"
+        ptype = _("Image") if usepics else _("Embed")
 
-        msg = f"**Cog**\n" \
-              f"`Profile Type:      `{ptype}\n" \
-              f"`Include Balance:   `{showbal}\n" \
-              f"`Progress Bar:      `{barlength} chars long\n" \
-              f"**Messages**\n" \
-              f"`Message XP:        `{xp[0]}-{xp[1]}\n" \
-              f"`Min Msg Length:    `{length}\n" \
-              f"`Cooldown:          `{cooldown} seconds\n" \
-              f"**Voice**\n" \
-              f"`Voice XP:          `{voicexp} per minute\n" \
-              f"`Ignore Muted:      `{muted}\n" \
-              f"`Ignore Solo:       `{solo}\n" \
-              f"`Ignore Deafened:   `{deafended}\n" \
-              f"`Ignore Invisible:  `{invisible}\n" \
-              f"**Level Algorithm**\n" \
-              f"`Base Multiplier:   `{base}\n" \
-              f"`Exp Multiplier:    `{exp}\n" \
-              f"**LevelUps**\n" \
-              f"`LevelUp Notify:    `{lvlmessage}\n" \
-              f"`Notify in DMs:     `{notifydm}\n" \
-              f"`Mention User:      `{mention}\n" \
-              f"`AutoRemove Roles:  `{autoremove}\n" \
-              f"`LevelUp Channel:   `{notifylog}\n" \
-              f"**Stars**\n" \
-              f"`Cooldown:          `{sc}\n" \
-              f"`React Mention:     `{starmention}\n" \
-              f"`MentionAutoDelete: `{stardelete}\n"
+        msg = _("**Cog**\n")
+        msg += _("`Profile Type:      `") + f"{ptype}\n"
+        msg += _("`Include Balance:   `") + f"{showbal}\n"
+        msg += _("`Progress Bar:      `") + f"{barlength} chars long\n"
+        msg += _("**Messages**\n")
+        msg += _("`Message XP:        `") + f"{xp[0]}-{xp[1]}\n"
+        msg += _("`Min Msg Length:    `") + f"{length}\n"
+        msg += _("`Cooldown:          `") + f"{cooldown} seconds\n"
+        msg += _("**Voice**\n")
+        msg += _("`Voice XP:          `") + f"{voicexp} per minute\n"
+        msg += _("`Ignore Muted:      `") + f"{muted}\n"
+        msg += _("`Ignore Solo:       `") + f"{solo}\n"
+        msg += _("`Ignore Deafened:   `") + f"{deafended}\n"
+        msg += _("`Ignore Invisible:  `") + f"{invisible}\n"
+        msg += _("**Level Algorithm**\n")
+        msg += _("`Base Multiplier:   `") + f"{base}\n"
+        msg += _("`Exp Multiplier:    `") + f"{exp}\n"
+        msg += _("**LevelUps**\n")
+        msg += _("`LevelUp Notify:    `") + f"{lvlmessage}\n"
+        msg += _("`Notify in DMs:     `") + f"{notifydm}\n"
+        msg += _("`Mention User:      `") + f"{mention}\n"
+        msg += _("`AutoRemove Roles:  `") + f"{autoremove}\n"
+        msg += _("`LevelUp Channel:   `") + f"{notifylog}\n"
+        msg += _("**Stars**\n")
+        msg += _("`Cooldown:          `") + f"{sc}\n"
+        msg += _("`React Mention:     `") + f"{starmention}\n"
+        msg += _("`MentionAutoDelete: `") + f"{stardelete}\n"
         if levelroles:
-            msg += "**Levels**\n"
+            msg += _("**Levels**\n")
             for level, role_id in levelroles.items():
                 role = ctx.guild.get_role(role_id)
                 if role:
                     role = role.mention
                 else:
                     role = role_id
-                msg += f"`Level {level}: `{role}\n"
+                msg += _("`Level ") + f"{level}: `{role}\n"
         if prestige and pdata:
-            msg += "**Prestige**\n" \
-                   f"`Stack Roles: `{stacking}\n" \
-                   f"`Level Req:  `{prestige}\n"
+            msg += _("**Prestige**\n`Stack Roles: `") + f"{stacking}\n"
+            msg += _("`Level Req:  `") + f"{prestige}\n"
             for level, data in pdata.items():
                 role_id = data["role"]
                 role = ctx.guild.get_role(role_id)
@@ -855,10 +854,10 @@ class LevelUp(UserCommands, commands.Cog):
                 else:
                     role = role_id
                 emoji = data["emoji"]
-                msg += f"`Prestige {level}: `{role} - {emoji['str']}\n"
+                msg += _("`Prestige ") + f"{level}: `{role} - {emoji['str']}\n"
         embed = discord.Embed(
-            title="LevelUp Settings",
-            description=_(msg),
+            title=_("LevelUp Settings"),
+            description=msg,
             color=discord.Color.random()
         )
         if voicexpbonus:
@@ -1200,7 +1199,7 @@ class LevelUp(UserCommands, commands.Cog):
 
         # If everything is okay so far let the user know its working
         embed = discord.Embed(
-            description=_(f"Importing users from Leveler..."),
+            description=_("Importing users from Leveler..."),
             color=discord.Color.orange()
         )
         embed.set_thumbnail(url=LOADING)
@@ -1258,8 +1257,7 @@ class LevelUp(UserCommands, commands.Cog):
                     users_imported += 1
 
             embed = discord.Embed(
-                description=_(f"Importing Complete!\n"
-                              f"{users_imported} users imported"),
+                description=_("Importing Complete!\n") + f"{users_imported}" + _(" users imported"),
                 color=discord.Color.green()
             )
             embed.set_thumbnail(url=LOADING)
@@ -1292,15 +1290,9 @@ class LevelUp(UserCommands, commands.Cog):
         cleaned_data, newdat = self.cleanup(self.data[ctx.guild.id].copy())
         if not cleanup and not cleaned:
             return await ctx.send(_("Nothing to clean"))
-        if cleaned:
-            await ctx.send(
-                _(
-                    f"Deleted {cleaned} user IDs from the config that are no longer in the server.\n"
-                    f"Also cleaned {len(cleaned_data)} config discrepancies in the process."
-                )
-            )
-        else:
-            await ctx.send(_(f"Deleted {cleaned} user IDs from the config that are no longer in the server"))
+
+        txt = _("Deleted ") + str(cleaned) + _("user IDs from the config that are no longer in the server.")
+        await ctx.send(txt)
         await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="messages")
@@ -1315,7 +1307,7 @@ class LevelUp(UserCommands, commands.Cog):
         """
         xp = [min_xp, max_xp]
         self.data[ctx.guild.id]["xp"] = xp
-        await ctx.send(_(f"Message XP range has been set to {min_xp} - {max_xp} per valid message"))
+        await ctx.send(_("Message XP range has been set to ") + f"{min_xp} - {max_xp}" + _(" per valid message"))
         await self.save_cache(ctx.guild)
 
     @message_group.command(name="rolebonus")
@@ -1532,7 +1524,8 @@ class LevelUp(UserCommands, commands.Cog):
             if uid not in self.data[gid]["users"]:
                 self.init_user(gid, uid)
             self.data[gid]["users"][uid]["xp"] += xp
-            await ctx.send(_(f"{xp} xp has been added to {user_or_role.name}"))
+            txt = str(xp) + _("xp has been added to ") + user_or_role.name
+            await ctx.send(txt)
         else:
             users = []
             for user in ctx.guild.members:
@@ -1544,7 +1537,9 @@ class LevelUp(UserCommands, commands.Cog):
                 if uid not in self.data[gid]["users"]:
                     self.init_user(gid, uid)
                 self.data[gid]["users"][uid]["xp"] += xp
-            await ctx.send(_(f"Added {xp} xp to {len(users)} users that had the {user_or_role.name} role"))
+            txt = _("Added ") + str(xp) + _(" xp to ") + humanize_number(len(users)) + _(" users that had the ")
+            txt += user_or_role.name + _("role")
+            await ctx.send(txt)
         await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="setlevel")
@@ -1560,7 +1555,8 @@ class LevelUp(UserCommands, commands.Cog):
         xp = get_xp(int(level), base, exp)
         conf["users"][uid]["level"] = int(level)
         conf["users"][uid]["xp"] = xp
-        await ctx.send(_(f"User {user.name} is now level {level}"))
+        txt = _("User ") + user.name + _(" is now level ") + str(level)
+        await ctx.send(txt)
 
     @lvl_group.group(name="algorithm")
     async def algo_edit(self, ctx: commands.Context):
@@ -1653,18 +1649,17 @@ class LevelUp(UserCommands, commands.Cog):
             result.seek(0)
             file = discord.File(result, filename="lvlexample.png")
             img = "attachment://lvlexample.png"
-        example = "XP required for a level = Base * Level^Exp\n\n" \
-                  "Approx time is the time it would take for a user to reach a level if they " \
-                  "typed every time the cooldown expired non stop without sleeping or taking " \
-                  "potty breaks."
+        example = _("XP required for a level = Base * Level^Exp\n\n"
+                    "Approx time is the time it would take for a user to reach a level if they "
+                    "typed every time the cooldown expired non stop without sleeping or taking "
+                    "potty breaks.")
+        desc = _("`Base Multiplier:  `") + f"{base}\n"
+        desc += _("`Exp Multiplier:   `") + f"{exp}\n"
+        desc += _("`Experience Range: `") + f"{xp_range}\n"
+        desc += _("`Message Cooldown: `") + f"{cd}\n" + f"{box(example)}\n" + f"{box(data, lang='python')}"
         embed = discord.Embed(
             title="Level Example",
-            description=_(f"`Base Multiplier:  `{base}\n"
-                          f"`Exp Multiplier:   `{exp}\n"
-                          f"`Experience Range: `{xp_range}\n"
-                          f"`Message Cooldown: `{cd}\n"
-                          f"{box(example)}\n"
-                          f"{box(data, lang='python')}"),
+            description=desc,
             color=discord.Color.random()
         )
         embed.set_image(url=img)
@@ -1743,9 +1738,9 @@ class LevelUp(UserCommands, commands.Cog):
         else:
             perms = levelup_channel.permissions_for(ctx.guild.me).send_messages
             if not perms:
-                return await ctx.send(_(f"I do not have permission to send messages to that channel."))
+                return await ctx.send(_("I do not have permission to send messages to that channel."))
             self.data[ctx.guild.id]["notifylog"] = levelup_channel.id
-            await ctx.send(_(f"LevelUp channel has been set to {levelup_channel.mention}"))
+            await ctx.send(_("LevelUp channel has been set to ") + levelup_channel.mention)
         await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="showbalance")
@@ -1855,8 +1850,9 @@ class LevelUp(UserCommands, commands.Cog):
                         if role and int(lvl) <= int(prestige_level):
                             await user.add_roles(role)
                             roles_added += 1
+        desc = _("Initialization complete! Added ") + str(roles_added) + _(" roles and removed ") + str(roles_removed)
         embed = discord.Embed(
-            description=_(f"Initialization complete! Added {roles_added} roles and removed {roles_removed}."),
+            description=desc,
             color=discord.Color.green()
         )
         await msg.edit(embed=embed)
@@ -1880,11 +1876,12 @@ class LevelUp(UserCommands, commands.Cog):
         if not perms:
             return await ctx.send(_("I do not have permission to manage roles"))
         if level in self.data[ctx.guild.id]["levelroles"]:
-            overwrite = "Overwritten"
+            overwrite = _("Overwritten")
         else:
-            overwrite = "Set"
+            overwrite = _("Set")
         self.data[ctx.guild.id]["levelroles"][level] = role.id
-        await ctx.send(_(f"Level {level} has been {overwrite} as {role.mention}"))
+        txt = _("Level ") + str(level) + _("has been ") + overwrite + _(" as ") + role.mention
+        await ctx.send(txt)
         await self.save_cache(ctx.guild)
 
     @level_roles.command(name="del")
@@ -2078,7 +2075,8 @@ class LevelUp(UserCommands, commands.Cog):
         xp = get_xp(level, base, exp)
         self.data[gid]["users"][uid]["xp"] = xp
         await asyncio.sleep(2)
-        await ctx.send(_(f"Forced {person.name} to level up!"))
+        txt = _("Forced ") + person.name + _(" to level up!")
+        await ctx.send(txt)
         await self.save_cache(ctx.guild)
 
     # For testing purposes
@@ -2103,7 +2101,8 @@ class LevelUp(UserCommands, commands.Cog):
         xp = get_xp(level, base, exp)
         self.data[gid]["users"][uid]["xp"] = xp
         await asyncio.sleep(2)
-        await ctx.send(_(f"Forced {person.name} to level down!"))
+        txt = _("Forced ") + person.name + _(" to level down!")
+        await ctx.send(txt)
         await self.save_cache(ctx.guild)
 
     # For testing purposes
