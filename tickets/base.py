@@ -18,11 +18,9 @@ class BaseCommands(commands.Cog):
     @commands.command(name="add")
     async def add_user_to_ticket(self, ctx: commands.Context, *, user: discord.Member):
         """Add a user to your ticket"""
-        guild = ctx.guild
-        chan = ctx.channel
-        conf = await self.config.guild(guild).all()
+        conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
-        owner_id = self.get_ticket_owner(opened, str(chan.id))
+        owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
             return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
         # If a mod tries
@@ -30,7 +28,7 @@ class BaseCommands(commands.Cog):
         for role in ctx.author.roles:
             if role.id in conf["support_roles"]:
                 can_add = True
-        if ctx.author.id == guild.owner_id:
+        if ctx.author.id == ctx.guild.owner_id:
             can_add = True
         if await is_admin_or_superior(self.bot, ctx.author):
             can_add = True
@@ -39,7 +37,7 @@ class BaseCommands(commands.Cog):
         if not can_add:
             return await ctx.send(_("You do not have permissions to add users to this ticket"))
         await ctx.channel.set_permissions(user, read_messages=True, send_messages=True)
-        await ctx.send(_(f"**{user.name}** has been added to this ticket!"))
+        await ctx.send(f"**{user.name}** " + _("has been added to this ticket!"))
 
     @commands.command(name="renameticket", aliases=["renamet"])
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
@@ -68,18 +66,16 @@ class BaseCommands(commands.Cog):
     async def close_a_ticket(self, ctx: commands.Context, *, reason: str = None):
         """Close your ticket"""
         user = ctx.author
-        guild = ctx.guild
-        chan = ctx.channel
-        conf = await self.config.guild(guild).all()
+        conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
-        owner_id = self.get_ticket_owner(opened, str(chan.id))
+        owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
             return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
         can_close = False
         for role in user.roles:
             if role.id in conf["support_roles"]:
                 can_close = True
-        if user.id == guild.owner_id:
+        if user.id == ctx.guild.owner_id:
             can_close = True
         if await is_admin_or_superior(self.bot, user):
             can_close = True
@@ -88,10 +84,10 @@ class BaseCommands(commands.Cog):
         if not can_close:
             return await ctx.send(_("You do not have permissions to close this ticket"))
         else:
-            owner = guild.get_member(int(owner_id))
+            owner = ctx.guild.get_member(int(owner_id))
             if not owner:
                 owner = await self.bot.fetch_user(int(owner_id))
-        await self.close_ticket(owner, chan, conf, reason, ctx.author.name)
+        await self.close_ticket(owner, ctx.channel, conf, reason, ctx.author.name)
 
     async def close_ticket(self, member: Union[discord.Member, discord.User], channel: discord.TextChannel,
                            conf: dict, reason: str, closedby: str):
@@ -112,14 +108,15 @@ class BaseCommands(commands.Cog):
         opened = int(datetime.datetime.fromisoformat(opened).timestamp())
         closed = int(datetime.datetime.now().timestamp())
         closer_name = escape_markdown(closedby)
+        desc = _("Ticket created by ") + f"**{member.name}-{member.id}**" + _(" has been closed.\n")
+        desc += _("`PanelType: `") + f"{panel_name.capitalize()}\n"
+        desc += _("`Opened on: `") + f"<t:{opened}:F>\n"
+        desc += _("`Closed on: `") + f"<t:{closed}:F>\n"
+        desc += _("`Closed by: `") + f"{closer_name}\n"
+        desc += _("`Reason:    `") + reason
         embed = discord.Embed(
             title=_("Ticket Closed"),
-            description=_(f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
-                          f"`PanelType: `{panel_name.capitalize()}\n"
-                          f"`Opened on: `<t:{opened}:F>\n"
-                          f"`Closed on: `<t:{closed}:F>\n"
-                          f"`Closed by: `{closer_name}\n"
-                          f"`Reason:    `{reason}"),
+            description=desc,
             color=discord.Color.green()
         )
         embed.set_thumbnail(url=pfp)
