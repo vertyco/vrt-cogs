@@ -248,7 +248,7 @@ class TicketCommands(commands.Cog):
 
     @tickets.command()
     async def logchannel(self, ctx: commands.Context, panel_name: str, channel: discord.TextChannel):
-        """Set the max tickets a user can have open at one time for a support ticket panel"""
+        """Set the logging channel for each panel's tickets"""
         panel_name = panel_name.lower()
         if not channel.permissions_for(ctx.guild.me).view_channel:
             return await ctx.send(_("I cannot see that channel!"))
