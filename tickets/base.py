@@ -113,7 +113,7 @@ class BaseCommands(commands.Cog):
         desc += _("`Opened on: `") + f"<t:{opened}:F>\n"
         desc += _("`Closed on: `") + f"<t:{closed}:F>\n"
         desc += _("`Closed by: `") + f"{closer_name}\n"
-        desc += _("`Reason:    `") + reason
+        desc += _("`Reason:    `") + str(reason)
         embed = discord.Embed(
             title=_("Ticket Closed"),
             description=desc,
