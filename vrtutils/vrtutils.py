@@ -18,7 +18,6 @@ import speedtest
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
-from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_timedelta,
@@ -29,7 +28,6 @@ from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
 from .diskspeed import get_disk_speed
 
-_ = Translator("VrtUtils", __file__)
 log = logging.getLogger("red.vrt.vrtutils")
 dpy = discord.__version__
 if dpy > "1.7.4":
@@ -58,13 +56,12 @@ async def wait_reply(ctx: commands.Context, timeout: int = 60):
         return None
 
 
-@cog_i18n(_)
 class VrtUtils(commands.Cog):
     """
     Random utility commands
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.5"
+    __version__ = "1.0.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -152,44 +149,44 @@ class VrtUtils(commands.Cog):
 
         def diskembed(data: dict) -> discord.Embed:
             if data["write5"] != "Waiting..." and data["write5"] != "Running...":
-                embed = discord.Embed(title=_("Disk I/O"), color=discord.Color.green())
-                embed.description = _("Disk Speed Check COMPLETE")
+                embed = discord.Embed(title="Disk I/O", color=discord.Color.green())
+                embed.description = "Disk Speed Check COMPLETE"
             else:
-                embed = discord.Embed(title=_("Disk I/O"), color=ctx.author.color)
-                embed.description = _("Running Disk Speed Check")
+                embed = discord.Embed(title="Disk I/O", color=ctx.author.color)
+                embed.description = "Running Disk Speed Check"
             first = f"Write: {data['write1']}\n" \
                     f"Read:  {data['read1']}"
             embed.add_field(
                 name="128 blocks of 1048576 bytes (128MB)",
-                value=box(_(first), lang="python"),
+                value=box(first, lang="python"),
                 inline=False
             )
             second = f"Write: {data['write2']}\n" \
                      f"Read:  {data['read2']}"
             embed.add_field(
                 name="128 blocks of 2097152 bytes (256MB)",
-                value=box(_(second), lang="python"),
+                value=box(second, lang="python"),
                 inline=False
             )
             third = f"Write: {data['write3']}\n" \
                     f"Read:  {data['read3']}"
             embed.add_field(
                 name="256 blocks of 1048576 bytes (256MB)",
-                value=box(_(third), lang="python"),
+                value=box(third, lang="python"),
                 inline=False
             )
             fourth = f"Write: {data['write4']}\n" \
                      f"Read:  {data['read4']}"
             embed.add_field(
                 name="256 blocks of 2097152 bytes (512MB)",
-                value=box(_(fourth), lang="python"),
+                value=box(fourth, lang="python"),
                 inline=False
             )
             fifth = f"Write: {data['write5']}\n" \
                     f"Read:  {data['read5']}"
             embed.add_field(
                 name="256 blocks of 4194304 bytes (1GB)",
-                value=box(_(fifth), lang="python"),
+                value=box(fifth, lang="python"),
                 inline=False
             )
             return embed
@@ -308,8 +305,8 @@ class VrtUtils(commands.Cog):
             except discord.Forbidden:
                 guild = None
         if not guild:
-            return await ctx.send(_("Could not find that guild"))
-        await ctx.send(_(f"That ID belongs to the guild `{guild.name}`"))
+            return await ctx.send("Could not find that guild")
+        await ctx.send(f"That ID belongs to the guild `{guild.name}`")
 
     # Inspired by kennnyshiwa's imperialtoolkit botstat command
     # https://github.com/kennnyshiwa/kennnyshiwa-cogs
@@ -385,8 +382,8 @@ class VrtUtils(commands.Cog):
             py_version = f"{ver.major}.{ver.minor}.{ver.micro}"
 
             embed = discord.Embed(
-                title=_(f"Stats for {self.bot.user.name}"),
-                description=_(f"Below are various stats about the bot and the system it runs on."),
+                title=f"Stats for {self.bot.user.name}",
+                description=f"Below are various stats about the bot and the system it runs on.",
                 color=await ctx.embed_color()
             )
 
@@ -402,7 +399,7 @@ class VrtUtils(commands.Cog):
                        f"Python:   {py_version}"
             embed.add_field(
                 name="\N{ROBOT FACE} BOT",
-                value=box(_(botstats), lang="python"),
+                value=box(botstats, lang="python"),
                 inline=False
             )
 
@@ -423,7 +420,7 @@ class VrtUtils(commands.Cog):
                     cpustats += f"Core {i}:{space} {bar}\n"
             embed.add_field(
                 name="\N{DESKTOP COMPUTER} CPU",
-                value=box(_(cpustats), lang="python"),
+                value=box(cpustats, lang="python"),
                 inline=False
             )
 
@@ -444,7 +441,7 @@ class VrtUtils(commands.Cog):
                   f"{disk_usage_bar}"
             embed.add_field(
                 name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
-                value=box(_(i_o), lang="python"),
+                value=box(i_o, lang="python"),
                 inline=False
             )
 
@@ -452,7 +449,7 @@ class VrtUtils(commands.Cog):
                       f"Received: {recv}"
             embed.add_field(
                 name="\N{SATELLITE ANTENNA} Network",
-                value=box(_(netstat), lang="python"),
+                value=box(netstat, lang="python"),
                 inline=False
             )
 
@@ -461,7 +458,7 @@ class VrtUtils(commands.Cog):
             else:
                 bot_icon = self.bot.user.avatar_url_as(format="png")
             embed.set_thumbnail(url=bot_icon)
-            embed.set_footer(text=_(f"System: {ostype}\nUptime: {sys_uptime}"))
+            embed.set_footer(text=f"System: {ostype}\nUptime: {sys_uptime}")
             await ctx.send(embed=embed)
 
     @commands.command()
@@ -479,10 +476,7 @@ class VrtUtils(commands.Cog):
                 return await ctx.send(f"I could not find any users with the ID `{user_id.id}`")
         since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
         user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-        created_on = _(
-            f"Joined Discord on {user_created}\n"
-            f"({since_created})"
-        )
+        created_on = f"Joined Discord on {user_created}\n({since_created})"
         embed = discord.Embed(
             title=f"{member.name} - {member.id}",
             description=created_on,
@@ -529,15 +523,23 @@ class VrtUtils(commands.Cog):
         """View guilds your bot is in"""
         # Just wanted a stripped down version of getguild from Trusty's serverstats cog
         # https://github.com/TrustyJAID/Trusty-cogs
+        elevated_perms = ["administrator", "ban_members", "kick_members", "manage_channels",
+                          "manage_guild", "manage_emojis", "manage_messages", "manage_roles",
+                          "manage_webhooks", "manage_nicknames", "mute_members", "moderate_members",
+                          "move_members", "deafen_members"]
         embeds = []
         guilds = len(self.bot.guilds)
+        page = 0
         for i, guild in enumerate(self.bot.guilds):
+            guild: discord.Guild = guild
+            if guild.id == ctx.guild.id:
+                page = i
             if DPY2:
                 guild_splash = guild.splash.url if guild.splash else None
                 guild_icon = guild.icon.url if guild.icon else None
             else:
-                guild_splash = guild.splash_url_as(format="png")
-                guild_icon = guild.icon_url_as(format="png")
+                guild_splash = guild.splash_url
+                guild_icon = guild.icon_url
             created = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
             time_elapsed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
             try:
@@ -601,6 +603,13 @@ class VrtUtils(commands.Cog):
                     f"`NSFW:  `{nsfw_channels}"
             em.add_field(name="Channels", value=field)
 
+            elevated_roles = [r for r in guild.roles if any([p[0] in elevated_perms for p in r.permissions if p[1]])]
+            normal_roles = [r for r in guild.roles if not any([p[0] in elevated_perms for p in r.permissions if p[1]])]
+            field = f"`Elevated: `{len(elevated_roles)}\n" \
+                    f"`Normal:   `{len(normal_roles)}\n" \
+                    f"`Total:    `{len(elevated_roles) + len(normal_roles)}"
+            em.add_field(name="Roles", value=field)
+
             if guild_splash:
                 em.set_image(url=guild_splash)
 
@@ -610,7 +619,7 @@ class VrtUtils(commands.Cog):
         controls = DEFAULT_CONTROLS.copy()
         controls["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.leave_guild
         controls["\N{CHAINS}\N{VARIATION SELECTOR-16}"] = self.get_invite
-        await menu(ctx, embeds, controls)
+        await menu(ctx, embeds, controls, page=page)
 
     async def leave_guild(self, instance, interaction):
         ctx = instance.ctx
