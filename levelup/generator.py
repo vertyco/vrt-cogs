@@ -57,8 +57,8 @@ class Generator:
             render_gifs: bool = False
     ):
         # get profile pic
-        pfp_image = self.get_image_content_from_url(str(profile_image))
-        if pfp_image:
+        if profile_image:
+            pfp_image = self.get_image_content_from_url(str(profile_image))
             profile_bytes = BytesIO(pfp_image)
             profile = Image.open(profile_bytes)
         else:
@@ -590,8 +590,8 @@ class Generator:
         card.paste(circle_img, (19, 19), circle_img)
 
         # get profile pic
-        pfp_image = self.get_image_content_from_url(str(profile_image))
-        if pfp_image:
+        if profile_image:
+            pfp_image = self.get_image_content_from_url(str(profile_image))
             profile_bytes = BytesIO(pfp_image)
             profile = Image.open(profile_bytes)
         else:

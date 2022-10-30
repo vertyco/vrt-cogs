@@ -58,7 +58,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.16.41"
+    __version__ = "2.16.42"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
