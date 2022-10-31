@@ -41,7 +41,7 @@ class Events(commands.Cog):
     Users can enter the event and make submissions according to the parameters set.
     """
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

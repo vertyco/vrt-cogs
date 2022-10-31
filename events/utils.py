@@ -93,8 +93,6 @@ async def select_event(ctx: commands.Context, events: dict, skip_completed: bool
         color=ctx.author.color
     )
     for index, info in enumerate(events.values()):
-        if not ctx.guild.get_channel(info["channel_id"]):
-            continue
         if skip_completed and info["completed"]:
             continue
         status = "**COMPLETED**" if info["completed"] else "In Progress"
