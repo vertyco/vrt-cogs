@@ -29,7 +29,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.0.6"
+    __version__ = "0.0.7"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,6 +54,8 @@ class Pixl(commands.Cog):
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
         self.config.register_member(wins=0, games=0, score=0)
+
+        self.active = set()
 
     @commands.command(name="pixlboard", aliases=["pixlb", "pixelb", "pixlelb", "pixleaderboard"])
     @commands.guild_only()
@@ -135,10 +137,19 @@ class Pixl(commands.Cog):
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command(name="pixl", aliases=["pixle", "pixlguess", "pixelguess", "pixleguess"])
-    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.guild_only()
     async def pixl(self, ctx: commands.Context):
         """Guess the image as it is slowly revealed"""
+        cid = ctx.channel.id
+        if cid in self.active:
+            return await ctx.send("There is already a Pixl game going on in this channel")
+        self.active.add(cid)
+        try:
+            await self.start_pixl(ctx)
+        finally:
+            self.active.discard(cid)
+
+    async def start_pixl(self, ctx: commands.Context):
         conf = await self.config.guild(ctx.guild).all()
         delay = await self.config.delay()
 
