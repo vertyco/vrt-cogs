@@ -139,7 +139,7 @@ class PixlGrids:
         return discord.File(buffer, filename=buffer.name)
 
     def have_winner(self) -> bool:
-        responses = sorted(self.data["responses"].copy(), key=lambda x: x[2], reverse=True)
+        responses = sorted(self.data["responses"].copy(), key=lambda x: x[2], reverse=False)
         self.data["responses"].clear()
         for author, answer, _ in responses:
             if any([fuzz.ratio(answer, a) > 92 for a in self.answers]):
