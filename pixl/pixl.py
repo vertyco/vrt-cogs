@@ -201,11 +201,10 @@ class Pixl(commands.Cog):
         if winner:  # Chicken dinner
             thumb = (winner.avatar.url if winner.avatar else None) if dpy2 else winner.avatar_url
             title = "Winner!"
-            desc = f"{winner.name} guessed correctly after {shown} blocks!\n"
-            if participants >= min_p:
-                desc += f"`Points Awarded:  `{points}\n"
-                if reward:
-                    desc += f"`Credits Awarded: `{humanize_number(reward)}"
+            desc = f"{winner.name} guessed correctly after {shown} blocks!\n" \
+                   f"`Points Awarded:  `{points}\n"
+            if participants >= min_p and reward:
+                desc += f"`Credits Awarded: `{humanize_number(reward)}"
         else:
             title = "Game Over!"
             if points > 0:  # Time ran out
@@ -301,7 +300,7 @@ class Pixl(commands.Cog):
 
     @pixlset.command(name="participants")
     async def set_participants(self, ctx: commands.Context, amount: int):
-        """Set the minimum amount of participants for the game to reward users points and/or credits"""
+        """Set the minimum amount of participants for the game to reward users credits"""
         if amount < 1:
             return await ctx.send("Minimum participants must be greater than 0...")
         async with ctx.typing():
