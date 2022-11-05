@@ -990,7 +990,7 @@ class UserCommands(commands.Cog):
             if stop > len(sorted_users):
                 stop = len(sorted_users)
             table = []
-            for i in range(start, stop, 1):
+            for i in range(start, stop):
                 # Place, level, xp, user
                 place = i + 1
                 uid = sorted_users[i][0]

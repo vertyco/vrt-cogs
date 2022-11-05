@@ -3,7 +3,7 @@ This is a red-like recursive menu for dpy2
 """
 import asyncio
 import functools
-from typing import List, Union
+from typing import List, Union, Optional
 
 import discord
 from discord import ButtonStyle, Interaction
@@ -50,7 +50,7 @@ class Confirm(View):
         self.stop()
 
 
-async def confirm(ctx: commands.Context, msg: discord.Message) -> Union[bool, None]:
+async def confirm(ctx: commands.Context, msg: discord.Message) -> Optional[bool]:
     """
     A 'yes' or 'no' confirmation menu
 
@@ -76,12 +76,12 @@ async def confirm(ctx: commands.Context, msg: discord.Message) -> Union[bool, No
 
 
 class MenuButton(Button):
-    def __init__(self, emoji: str, style: ButtonStyle):
-        super().__init__(style=style, emoji=emoji)
+    def __init__(self, emoji: str, style: ButtonStyle, row: Optional[int] = 1, label: Optional[str] = None):
+        super().__init__(style=style, emoji=emoji, row=row, label=label)
         self.emoji = emoji
 
     async def callback(self, inter: Interaction):
-        await self.view.controls[self.emoji.name](self.view, inter)
+        await self.view.controls[str(self.emoji)](instance=self.view, interaction=inter)
 
 
 class MenuView(View):
@@ -90,9 +90,9 @@ class MenuView(View):
             ctx: commands.Context,
             pages: Union[List[str], List[discord.Embed]],
             controls: dict,
-            message: discord.Message = None,
-            page: int = 0,
-            timeout: float = 60.0
+            message: Optional[discord.Message] = None,
+            page: Optional[int] = 0,
+            timeout: Optional[float] = 60.0
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx
@@ -161,9 +161,9 @@ async def menu(
         ctx: commands.Context,
         pages: Union[List[str], List[discord.Embed]],
         controls: dict,
-        message: discord.Message = None,
-        page: int = 0,
-        timeout: float = 60.0
+        message: Optional[discord.Message] = None,
+        page: Optional[int] = 0,
+        timeout: Optional[float] = 60.0
 ):
     """
     An emoji-based dpy2 menu

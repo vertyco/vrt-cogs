@@ -22,6 +22,3 @@ class MixinMeta(ABC):
     async def get_plot(self, df: pd.DataFrame) -> discord.File:
         raise NotImplementedError
 
-    @abstractmethod
-    async def get_total_bal(self, guild: discord.guild = None) -> int:
-        raise NotImplementedError
