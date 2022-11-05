@@ -8,7 +8,7 @@ from typing import Optional
 
 import discord
 from PIL import Image
-from aiocache import cached, SimpleMemoryCache
+from aiocache import cached
 from aiohttp import ClientSession, ClientTimeout
 from rapidfuzz import fuzz
 from redbot.core import commands
@@ -17,8 +17,8 @@ log = logging.getLogger("red.vrt.pixl.generator")
 dpy2 = True if discord.version_info.major >= 2 else False
 
 
-@cached(ttl=900, cache=SimpleMemoryCache)
-async def get_content_from_url(url: str, timeout: Optional[int] = 30) -> Optional[bytes]:
+@cached(ttl=600)
+async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
     try:
         async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
             async with session.get(url) as res:
@@ -28,14 +28,8 @@ async def get_content_from_url(url: str, timeout: Optional[int] = 30) -> Optiona
 
 
 async def exe(*args):
-    tries = 0
-    while tries < 3:
-        tries += 1
-        try:
-            loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(None, functools.partial(*args))
-        except Exception as e:
-            log.error(f"Failed to execute on try {tries}: {e}\nArguments: {args}")
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, functools.partial(*args))
 
 
 async def listener(ctx: commands.Context, data: dict):
@@ -109,7 +103,7 @@ class PixlGrids:
 
     async def init(self) -> None:
         # Pull and open the image from url
-        self.image = await exe(Image.open, BytesIO(self.imagebytes))
+        self.image = Image.open(BytesIO(self.imagebytes))
         # Make solid blank canvas to paste image pieces on
         self.blank = Image.new("RGBA", self.image.size, (0, 0, 0, 256))
         # Get box size to fit 192 boxes (16 by 12) or (12 by 16)

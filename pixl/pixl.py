@@ -5,6 +5,7 @@ import random
 from typing import Optional, List
 
 import discord
+import traceback
 from redbot.core import commands, Config, bank
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
@@ -28,7 +29,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.0.3"
+    __version__ = "0.0.6"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -183,11 +184,11 @@ class Pixl(commands.Cog):
                         if dpy2:
                             await msg.edit(embed=embed, attachments=[image])
                         else:
-                            await msg.delete()
+                            asyncio.create_task(msg.delete())
                             msg = await ctx.send(embed=embed, file=image)
                     await asyncio.sleep(delay)
-        except Exception as e:
-            return await ctx.send(f"Something went wrong during the game!\n{box(str(e))}")
+        except Exception:
+            return await ctx.send(f"Something went wrong during the game!\n{box(traceback.format_exc(), 'py')}")
         finally:
             game.data["in_progress"] = False
 
@@ -261,7 +262,7 @@ class Pixl(commands.Cog):
         """View the current settings"""
         conf = await self.config.guild(ctx.guild).all()
         users = len(await self.config.all_members(ctx.guild))
-        desc = f"`Users:          `{users}\n" \
+        desc = f"`Users Saved:    `{users}\n" \
                f"`Time Limit:     `{conf['time_limit']}s\n" \
                f"`Blocks:         `{conf['blocks_to_reveal']} per reveal\n" \
                f"`Participants:   `{conf['min_participants']} minimum\n" \
@@ -669,7 +670,7 @@ class Pixl(commands.Cog):
             if bytefile:
                 good.append(img["url"])
             else:
-                bad.append(f"`{img['answers'][0]}-{img['url']}`")
+                bad.append(f"`{img['answers'][0]}: {img['url']}`")
 
         tasks = [check(i) for i in images]
         await asyncio.gather(*tasks)
