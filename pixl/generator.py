@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import functools
 import logging
 import random
@@ -18,10 +17,10 @@ log = logging.getLogger("red.vrt.pixl.generator")
 dpy2 = True if discord.version_info.major >= 2 else False
 
 
-@cached(ttl=1800, cache=SimpleMemoryCache)
-async def get_content_from_url(url: str) -> Optional[bytes]:
+@cached(ttl=900, cache=SimpleMemoryCache)
+async def get_content_from_url(url: str, timeout: Optional[int] = 30) -> Optional[bytes]:
     try:
-        async with ClientSession(timeout=ClientTimeout(total=120)) as session:
+        async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
             async with session.get(url) as res:
                 return await res.content.read()
     except Exception as e:
@@ -29,14 +28,14 @@ async def get_content_from_url(url: str) -> Optional[bytes]:
 
 
 async def exe(*args):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, functools.partial(*args))
-
-
-async def delete(msg: discord.Message, delay: int = 30):
-    await asyncio.sleep(delay)
-    with contextlib.suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
-        await msg.delete()
+    tries = 0
+    while tries < 3:
+        tries += 1
+        try:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, functools.partial(*args))
+        except Exception as e:
+            log.error(f"Failed to execute on try {tries}: {e}\nArguments: {args}")
 
 
 async def listener(ctx: commands.Context, data: dict):
@@ -56,8 +55,6 @@ async def listener(ctx: commands.Context, data: dict):
             continue
         data["responses"].append((res.author, res.content.strip().lower(), datetime.now().timestamp()))
         data["participants"].add(res.author)
-        #if not res.content.startswith(ctx.prefix) or not dpy2:
-        #    asyncio.create_task(delete(res))
 
 
 class PixlGrids:
@@ -66,13 +63,13 @@ class PixlGrids:
     def __init__(
             self,
             ctx: commands.Context,
-            url: str,
+            imagebytes: bytes,
             answers: list,
             amount_to_reveal: int,
             time_limit: int
     ):
         self.ctx = ctx
-        self.url = url
+        self.imagebytes = imagebytes
         self.answers = answers
         self.amount_to_reveal = amount_to_reveal
         self.time_limit = time_limit
@@ -112,8 +109,7 @@ class PixlGrids:
 
     async def init(self) -> None:
         # Pull and open the image from url
-        imagebytes = await get_content_from_url(self.url)
-        self.image = await exe(Image.open, BytesIO(imagebytes))
+        self.image = await exe(Image.open, BytesIO(self.imagebytes))
         # Make solid blank canvas to paste image pieces on
         self.blank = Image.new("RGBA", self.image.size, (0, 0, 0, 256))
         # Get box size to fit 192 boxes (16 by 12) or (12 by 16)

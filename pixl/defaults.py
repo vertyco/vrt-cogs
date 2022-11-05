@@ -22,7 +22,7 @@ defaults = [
     {"url": "https://assets.bonappetit.com/photos/58dbf6c8a6614f6f50816994/4:3/w_2591,h_1943,c_limit/20170323%20MOB6231_FINAL_crop.jpg", "answers": ["strawberry"]},
     {"url": "https://upload.wikimedia.org/wikipedia/commons/0/0c/Cow_female_black_white.jpg", "answers": ["cow"]},
     {"url": "https://cb2.scene7.com/is/image/CB2/KMPolarTableLampSHS21/$web_pdp_main_carousel_xs$/210210135642/polar-table-lamp.jpg", "answers": ["lamp"]},
-    {"url": "https://pisces.bbystatic.com/image2/BestBuy_US/images/products/6351/6351487_sd.jpg", "answers": ["flashlight"]},
+    {"url": "https://niteize.com/media/catalog/product/T/1/T11RA-01-R8_F_0054b_SQRGB_1.jpg", "answers": ["flashlight"]},
     {"url": "https://cdn.mos.cms.futurecdn.net/iC7HBvohbJqExqvbKcV3pP.jpg", "answers": ["potato", "potatoes"]},
     {"url": "https://upload.wikimedia.org/wikipedia/commons/9/90/Candy-Cane-Classic_thumbnail.png", "answers": ["candycane", "candy cane"]},
     {"url": "https://www.familyhandyman.com/wp-content/uploads/2019/03/shutterstock_208428820-Chimney.jpg", "answers": ["chimney"]},
