@@ -60,7 +60,9 @@ class Pixl(commands.Cog):
         """View the Pixl leaderboard!
 
         **Arguments**
-        `show_global`: show the global leaderboard (example: `[p]pixlb true`)
+        `show_global`: show the global leaderboard
+
+        example: `[p]pixlb true`
         """
         if show_global:
             title = "Global Pixlboard!"

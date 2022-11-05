@@ -33,7 +33,7 @@ async def exe(*args):
     return await loop.run_in_executor(None, functools.partial(*args))
 
 
-async def delete(msg: discord.Message, delay: int = 5):
+async def delete(msg: discord.Message, delay: int = 30):
     await asyncio.sleep(delay)
     with contextlib.suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
         await msg.delete()
