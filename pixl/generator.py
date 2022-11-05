@@ -41,7 +41,7 @@ async def delete(msg: discord.Message, delay: int = 30):
 
 async def listener(ctx: commands.Context, data: dict):
     def check(message: discord.Message):
-        return ctx.channel == message.channel
+        return ctx.channel == message.channel and not message.author.bot
 
     while True:
         if not data["in_progress"]:
