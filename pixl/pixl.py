@@ -239,6 +239,8 @@ class Pixl(commands.Cog):
                 except BalanceTooHigh as e:
                     await bank.set_balance(winner, e.max_balance)
         for person in game.data["participants"]:
+            if person.bot:
+                continue
             stats = await self.config.member(person).all()
             if person.id == winner.id:
                 stats["wins"] += 1
