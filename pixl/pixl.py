@@ -29,7 +29,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.0.7"
+    __version__ = "0.0.8"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -139,17 +139,20 @@ class Pixl(commands.Cog):
     @commands.command(name="pixl", aliases=["pixle", "pixlguess", "pixelguess", "pixleguess"])
     @commands.guild_only()
     async def pixl(self, ctx: commands.Context):
-        """Guess the image as it is slowly revealed"""
+        """
+        Start a Pixl game!
+        Guess the image as it is slowly revealed
+        """
         cid = ctx.channel.id
         if cid in self.active:
             return await ctx.send("There is already a Pixl game going on in this channel")
         self.active.add(cid)
         try:
-            await self.start_pixl(ctx)
+            await self.start_game(ctx)
         finally:
             self.active.discard(cid)
 
-    async def start_pixl(self, ctx: commands.Context):
+    async def start_game(self, ctx: commands.Context):
         conf = await self.config.guild(ctx.guild).all()
         delay = await self.config.delay()
 
@@ -167,17 +170,19 @@ class Pixl(commands.Cog):
             choice = random.choice(to_use)
             url = choice["url"]
             correct = choice["answers"]
-            imagebytes = await get_content_from_url(url)
-            if not imagebytes:
+            if not await get_content_from_url(url):
                 cant_get.append(url)
                 continue
             break
         else:
             invalid = "\n".join(cant_get)
-            return await ctx.send(f"Failed to get a valid image 3 times.\n\nThese urls were invalid\n"
-                                  f"{box(invalid)}")
+            return await ctx.send(f"Game prep failed 3 times in a row\n\nThese urls were invalid\n{box(invalid)}")
 
-        game = PixlGrids(ctx, imagebytes, correct, conf["blocks_to_reveal"], conf["time_limit"])
+        if cant_get:
+            invalid = "\n".join(cant_get)
+            await ctx.send(f"Some images failed during prep\n{box(invalid)}")
+
+        game = PixlGrids(ctx, url, correct, conf["blocks_to_reveal"], conf["time_limit"])
         msg = None
         embed = discord.Embed(
             title="Pixl Guess",
