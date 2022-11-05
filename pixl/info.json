@@ -7,7 +7,7 @@
   "end_user_data_statement": "This cog only stores user IDs for its leaderboard",
   "hidden": false,
   "install_msg": "Thank you for installing!",
-  "min_bot_version": "3.5.0.dev0",
+  "min_bot_version": "3.4.17",
   "permissions": [
     "read_messages",
     "send_messages",
