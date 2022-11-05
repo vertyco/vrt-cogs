@@ -128,7 +128,7 @@ class Pixl(commands.Cog):
             stop += 10
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
-    @commands.command(name="pixl", aliases=["pixel", "pixle", "pixlguess", "pixelguess", "pixleguess"])
+    @commands.command(name="pixl", aliases=["pixle", "pixlguess", "pixelguess", "pixleguess"])
     @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.guild_only()
     async def pixl(self, ctx: commands.Context):
