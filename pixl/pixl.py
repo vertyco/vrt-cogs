@@ -225,18 +225,20 @@ class Pixl(commands.Cog):
                    f"`Points Awarded:  `{points}\n"
             if participants >= min_p and reward:
                 desc += f"`Credits Awarded: `{humanize_number(reward)}"
+            color = winner.color
         else:
             title = "Game Over!"
             if points > 0:  # Time ran out
                 desc = "Nobody guessed before time ran out!"
             else:  # Picture was completed
                 desc = "Nobody guessed before the picture was finished!"
+            color = discord.Color.red()
         if conf["show_answer"]:
             desc += f"\nCorrect answer: ||{correct[0]}||"
         embed = discord.Embed(
             title=title,
             description=desc,
-            color=discord.Color.random(),
+            color=color,
         )
         embed.set_image(url=att)
         if participants == 1:
