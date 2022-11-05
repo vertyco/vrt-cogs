@@ -242,9 +242,10 @@ class Pixl(commands.Cog):
             if person.bot:
                 continue
             stats = await self.config.member(person).all()
-            if winner and person.id == winner.id:
-                stats["wins"] += 1
-                stats["score"] += points
+            if winner:
+                if person.id == winner.id:
+                    stats["wins"] += 1
+                    stats["score"] += points
             stats["games"] += 1
             await self.config.member(person).set(stats)
 
