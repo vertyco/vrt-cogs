@@ -32,7 +32,7 @@ defaults = [
     {"url": "https://images.eatthismuch.com/img/814308_tiffanyh1_0ec52be5-fafc-4438-8706-530025a90b1d.jpg", "answers": ["toast"]},
     {"url": "https://cdn.britannica.com/64/143464-050-B0EC6714/Eggplant.jpg", "answers": ["eggplant", "eggplants"]},
     {"url": "https://cdn.britannica.com/65/12565-050-B102B3A8/crown-Denmark-helmet-form-enamel-gold-stones-1670.jpg", "answers": ["crown"]},
-    {"url": "https://i.insider.com/61f83cd8415c3f0018d3c5a0?width=721&format=jpeg", "answers": ["jet", "f15", "f-15", "f-15ex"]},
+    {"url": "https://i.insider.com/61f83cd8415c3f0018d3c5a0?width=721&format=jpeg", "answers": ["jet", "f15", "f-15", "f-15ex", "plane"]},
     {"url": "https://upload.wikimedia.org/wikipedia/en/a/a9/MarioNSMBUDeluxe.png", "answers": ["mario"]},
     {"url": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Ash_Tree_-_geograph.org.uk_-_590710.jpg", "answers": ["tree"]},
     {"url": "https://m.media-amazon.com/images/I/61Z9avu0YeL.jpg", "answers": ["lock", "masterlock", "master lock"]},
