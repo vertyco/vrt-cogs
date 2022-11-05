@@ -439,7 +439,7 @@ class Pixl(commands.Cog):
                 for i, line in enumerate(lines):
                     if not line:  # Skip empty lines
                         continue
-                    parts = [p.strip() for p in line.split(",") if p.strip()]
+                    parts = [p.strip().lower() for p in line.split(",") if p.strip()]
                     print(parts)
                     if len(parts) < 2:
                         failed.append(f"Line {i + 1}(Invalid Format): {line}")
@@ -524,7 +524,7 @@ class Pixl(commands.Cog):
                 if not file.filename.endswith(".txt"):
                     return await ctx.send("This does not look like a `.txt` file!")
                 text = (await file.read()).decode("utf-8").strip()
-                lines = [line.strip() for line in text.split("\n")]
+                lines = [line.strip().lower() for line in text.split("\n")]
                 for i, line in enumerate(lines):
                     if not line:  # Skip empty lines
                         continue
