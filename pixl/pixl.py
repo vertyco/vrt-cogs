@@ -226,11 +226,11 @@ class Pixl(commands.Cog):
         if thumb:
             embed.set_thumbnail(url=thumb)
 
-        if dpy2:
-            await msg.edit(embed=embed, attachments=[final])
-        else:
-            await msg.delete()
-            await ctx.send(embed=embed, file=final)
+        #if dpy2:
+        #    await msg.edit(embed=embed, attachments=[final])
+        #else:
+        await msg.delete()
+        await ctx.send(embed=embed, file=final)
 
         if winner:
             if reward and participants >= min_p:
