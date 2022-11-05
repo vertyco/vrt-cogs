@@ -40,7 +40,7 @@ class Pixl(commands.Cog):
             "images": [],  # Images added by the guild
             "time_limit": 300,  # Time limit before image is revealed and game is over
             "blocks_to_reveal": 2,  # Amount of blocks to reveal after each delay
-            "min_participants": 1,  # Minimum participants to reward points and credits
+            "min_participants": 1,  # Minimum participants to reward credits
             "currency_ratio": 0.0,  # Points x Ratio = Credit reward
             "show_answer": True,  # Show the answer after game over
             "use_global": True,  # Use global images added by bot owner
