@@ -55,7 +55,7 @@ async def listener(ctx: commands.Context, data: dict):
         if not res.content.strip():
             continue
         data["responses"].append((res.author, res.content.strip().lower(), datetime.now().timestamp()))
-        data["participants"].add(res.author.id)
+        data["participants"].add(res.author)
         if not res.content.startswith(ctx.prefix) or not dpy2:
             asyncio.create_task(delete(res))
 

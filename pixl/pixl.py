@@ -28,7 +28,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -37,13 +37,11 @@ class Pixl(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
         default_guild = {
-            "users": {},  # Local leaderboard
             "images": [],  # Images added by the guild
             "time_limit": 300,  # Time limit before image is revealed and game is over
             "blocks_to_reveal": 2,  # Amount of blocks to reveal after each delay
             "min_participants": 1,  # Minimum participants to reward points and credits
             "currency_ratio": 1.0,  # Points x Ratio = Credit reward
-            "reward_currency": False,  # Reward economy credits
             "show_answer": True,  # Show the answer after game over
             "use_global": True,  # Use global images added by bot owner
             "use_default": True,  # Use default images
@@ -54,6 +52,7 @@ class Pixl(commands.Cog):
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
+        self.config.register_member(wins=0, games=0, score=0)
 
     @commands.command(name="pixlboard", aliases=["pixlb", "pixelb", "pixlelb", "pixleaderboard"])
     @commands.guild_only()
@@ -66,29 +65,33 @@ class Pixl(commands.Cog):
         if show_global:
             title = "Global Pixlboard!"
             all_users = {}
-            for guild in self.bot.guilds:
-                users = await self.config.guild(guild).users()
-                for uid, score in users.items():
-                    user = guild.get_member(int(uid))
+            data = await self.config.all_members()
+            for gid, users in data.items():
+                guild = ctx.bot.get_guild(gid)
+                if not guild:
+                    continue
+                for uid, userdata in users.items():
+                    user = guild.get_member(uid)
                     if not user:
                         continue
                     if user in all_users:
-                        all_users[user] += score
+                        for k, v in userdata.items():
+                            all_users[user][k] += v
                     else:
-                        all_users[user] = score
+                        all_users[user] = userdata
         else:
             title = "Pixlboard!"
             all_users = {}
-            users = await self.config.guild(ctx.guild).users()
-            for uid, score in users.items():
-                user = ctx.guild.get_member(int(uid))
+            users = await self.config.all_members(ctx.guild)
+            for uid, userdata in users.items():
+                user = ctx.guild.get_member(uid)
                 if not user:
                     continue
-                all_users[user] = score
+                all_users[user] = userdata
 
         if not all_users:
             return await ctx.send(f"There are no users saved yet, start a game with `{ctx.prefix}pixl`")
-        sorted_users = sorted(all_users.items(), key=lambda x: x[1], reverse=True)
+        sorted_users = sorted(all_users.items(), key=lambda x: x[1]["score"], reverse=True)
         you = None
         for num, i in enumerate(sorted_users):
             if i[0] == ctx.author:
@@ -106,11 +109,11 @@ class Pixl(commands.Cog):
             for i in range(start, stop):
                 place = i + 1
                 user: discord.Member = sorted_users[i][0]
-                score = sorted_users[i][1]
-                table.append([place, user.name, score])
+                data = sorted_users[i][1]
+                table.append([place, user.name, data["score"], data["wins"], data["games"]])
             board = tabulate(
                 tabular_data=table,
-                headers=["#", "Name", "Score"],
+                headers=["#", "Name", "Score", "Wins", "Games"],
                 numalign="left",
                 stralign="left"
             )
@@ -166,26 +169,27 @@ class Pixl(commands.Cog):
             description=f"Guess the image before it's fully revealed!\nTime runs out {game.time_left}",
             color=discord.Color.random()
         )
-        async with ctx.typing():
-            async for image in game:
-                att = f"attachment://{image.filename}"
-                embed.set_image(url=att)
-                if msg is None:
-                    msg = await ctx.send(embed=embed, file=image)
-                else:
-                    if dpy2:
-                        await msg.edit(embed=embed, attachments=[image])
-                    else:
-                        await msg.delete()
+        try:
+            async with ctx.typing():
+                async for image in game:
+                    att = f"attachment://{image.filename}"
+                    embed.set_image(url=att)
+                    if msg is None:
                         msg = await ctx.send(embed=embed, file=image)
-                await asyncio.sleep(delay)
+                    else:
+                        if dpy2:
+                            await msg.edit(embed=embed, attachments=[image])
+                        else:
+                            await msg.delete()
+                            msg = await ctx.send(embed=embed, file=image)
+                    await asyncio.sleep(delay)
+        finally:
+            game.data["in_progress"] = False
 
         winner = game.winner
         participants = len(game.data["participants"])
         points = len(game.to_chop)
         shown = 192 - points
-
-        give_credits = conf["reward_currency"]
         reward = round(points * conf["currency_ratio"])
         min_p = conf["min_participants"]
 
@@ -198,7 +202,7 @@ class Pixl(commands.Cog):
             desc = f"{winner.name} guessed correctly after {shown} blocks!\n"
             if participants >= min_p:
                 desc += f"`Points Awarded:  `{points}\n"
-                if give_credits:
+                if reward:
                     desc += f"`Credits Awarded: `{humanize_number(reward)}"
         else:
             title = "Game Over!"
@@ -227,17 +231,19 @@ class Pixl(commands.Cog):
             await msg.delete()
             await ctx.send(embed=embed, file=final)
 
-        if give_credits and participants >= min_p:
-            try:
-                await bank.deposit_credits(winner, reward)
-            except BalanceTooHigh as e:
-                await bank.set_balance(winner, e.max_balance)
-        async with self.config.guild(ctx.guild).users() as users:
-            uid = str(winner.id)
-            if uid in users:
-                users[uid] += points
-            else:
-                users[uid] = points
+        if winner:
+            if reward and participants >= min_p:
+                try:
+                    await bank.deposit_credits(winner, reward)
+                except BalanceTooHigh as e:
+                    await bank.set_balance(winner, e.max_balance)
+        for person in game.data["participants"]:
+            stats = await self.config.member(person).all()
+            if person.id == winner.id:
+                stats["wins"] += 1
+                stats["score"] += points
+            stats["games"] += 1
+            await self.config.member(person).set(stats)
 
     @commands.group(name="pixlset", aliases=["pixelset", "pixleset"])
     @commands.guild_only()
@@ -250,12 +256,12 @@ class Pixl(commands.Cog):
     async def view_settings(self, ctx: commands.Context):
         """View the current settings"""
         conf = await self.config.guild(ctx.guild).all()
-        desc = f"`Users:          `{len(conf['users'])}\n" \
+        users = len(await self.config.all_members(ctx.guild))
+        desc = f"`Users:          `{users}\n" \
                f"`Time Limit:     `{conf['time_limit']}s\n" \
                f"`Blocks:         `{conf['blocks_to_reveal']} per reveal\n" \
                f"`Participants:   `{conf['min_participants']} minimum\n" \
                f"`Currency Ratio: `{conf['currency_ratio']}x\n" \
-               f"`Give Currency:  `{conf['reward_currency']}\n" \
                f"`Show Answer:    `{conf['show_answer']}\n" \
                f"Delay between blocks is {await self.config.delay()} seconds"
         embed = discord.Embed(
@@ -306,24 +312,14 @@ class Pixl(commands.Cog):
         Set the point to credit conversion ratio (points x ratio = credit reward)
         Points are calculated based on how many hidden blocks are left at the end of the game
 
-        ratio can be a decimal less than zero
+        Ratio can be a decimal
+        Set to 0 to disable credit rewards
         """
         if ratio < 0:
             return await ctx.send("Ratio needs to be greater than zero")
         async with ctx.typing():
             await self.config.guild(ctx.guild).currency_ratio.set(float(ratio))
             await ctx.send(f"The point to credit conversion ratio has been set to {ratio}")
-
-    @pixlset.command(name="reward")
-    async def toggle_reward(self, ctx: commands.Context):
-        """(Toggle) Economy credit rewards for game wins"""
-        toggle = await self.config.guild(ctx.guild).reward_currency()
-        if toggle:
-            await ctx.send("Credit rewards have been disabled (Users will still gain points)")
-            await self.config.guild(ctx.guild).reward_currency.set(False)
-        else:
-            await ctx.send("Credit rewards have been enabled")
-            await self.config.guild(ctx.guild).reward_currency.set(True)
 
     @pixlset.command(name="showanswer")
     async def toggle_show(self, ctx: commands.Context):
