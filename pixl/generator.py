@@ -56,8 +56,8 @@ async def listener(ctx: commands.Context, data: dict):
             continue
         data["responses"].append((res.author, res.content.strip().lower(), datetime.now().timestamp()))
         data["participants"].add(res.author)
-        if not res.content.startswith(ctx.prefix) or not dpy2:
-            asyncio.create_task(delete(res))
+        #if not res.content.startswith(ctx.prefix) or not dpy2:
+        #    asyncio.create_task(delete(res))
 
 
 class PixlGrids:
