@@ -474,7 +474,6 @@ class Pixl(commands.Cog):
                     if not line:  # Skip empty lines
                         continue
                     parts = [p.strip().lower() for p in line.split(",") if p.strip()]
-                    print(parts)
                     if len(parts) < 2:
                         failed.append(f"Line {i + 1}(Invalid Format): {line}")
                         continue
@@ -563,7 +562,6 @@ class Pixl(commands.Cog):
                     if not line:  # Skip empty lines
                         continue
                     parts = [p.strip() for p in line.split(",") if p.strip()]
-                    print(parts)
                     if len(parts) < 2:
                         failed.append(f"Line {i + 1}(Invalid Format): {line}")
                         continue
