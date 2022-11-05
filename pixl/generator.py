@@ -17,12 +17,12 @@ log = logging.getLogger("red.vrt.pixl.generator")
 dpy2 = True if discord.version_info.major >= 2 else False
 
 
-@cached(ttl=600)
+@cached(ttl=60)
 async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
     try:
         async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
             async with session.get(url) as res:
-                return await res.content.read()
+                return await res.read()
     except Exception as e:
         log.error(f"Failed to fetch content from url: {e}")
 
@@ -57,13 +57,13 @@ class PixlGrids:
     def __init__(
             self,
             ctx: commands.Context,
-            imagebytes: bytes,
+            url: str,
             answers: list,
             amount_to_reveal: int,
             time_limit: int
     ):
         self.ctx = ctx
-        self.imagebytes = imagebytes
+        self.url = url
         self.answers = answers
         self.amount_to_reveal = amount_to_reveal
         self.time_limit = time_limit
@@ -103,7 +103,8 @@ class PixlGrids:
 
     async def init(self) -> None:
         # Pull and open the image from url
-        self.image = Image.open(BytesIO(self.imagebytes))
+        img = await get_content_from_url(self.url)
+        self.image = Image.open(BytesIO(img))
         # Make solid blank canvas to paste image pieces on
         self.blank = Image.new("RGBA", self.image.size, (0, 0, 0, 256))
         # Get box size to fit 192 boxes (16 by 12) or (12 by 16)
