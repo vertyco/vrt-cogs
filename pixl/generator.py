@@ -1,0 +1,149 @@
+import asyncio
+import contextlib
+import functools
+import logging
+import random
+from datetime import datetime
+from io import BytesIO
+from typing import Optional
+
+import discord
+from PIL import Image
+from aiocache import cached, SimpleMemoryCache
+from aiohttp import ClientSession, ClientTimeout
+from rapidfuzz import fuzz
+from redbot.core import commands
+
+log = logging.getLogger("red.vrt.pixl.generator")
+dpy2 = True if discord.version_info.major >= 2 else False
+
+
+@cached(ttl=1800, cache=SimpleMemoryCache)
+async def get_content_from_url(url: str) -> Optional[bytes]:
+    try:
+        async with ClientSession(timeout=ClientTimeout(total=120)) as session:
+            async with session.get(url) as res:
+                return await res.content.read()
+    except Exception as e:
+        log.error(f"Failed to fetch content from url: {e}")
+
+
+async def exe(*args):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, functools.partial(*args))
+
+
+async def delete(msg: discord.Message, delay: int = 5):
+    await asyncio.sleep(delay)
+    with contextlib.suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
+        await msg.delete()
+
+
+async def listener(ctx: commands.Context, data: dict):
+    def check(message: discord.Message):
+        return ctx.channel == message.channel
+
+    while True:
+        if not data["in_progress"]:
+            return
+        tasks = [asyncio.ensure_future(ctx.bot.wait_for("message", check=check))]
+        done, pending = await asyncio.wait(tasks, timeout=60)
+        [task.cancel() for task in pending]
+        if len(done) == 0:
+            continue
+        res: discord.Message = done.pop().result()
+        if not res.content.strip():
+            continue
+        data["responses"].append((res.author, res.content.strip().lower(), datetime.now().timestamp()))
+        data["participants"].add(res.author.id)
+        if not res.content.startswith(ctx.prefix) or not dpy2:
+            asyncio.create_task(delete(res))
+
+
+class PixlGrids:
+    """Slowly reveal blocks from an image while waiting for text response"""
+
+    def __init__(
+            self,
+            ctx: commands.Context,
+            url: str,
+            answers: list,
+            amount_to_reveal: int,
+            time_limit: int
+    ):
+        self.ctx = ctx
+        self.url = url
+        self.answers = answers
+        self.amount_to_reveal = amount_to_reveal
+        self.time_limit = time_limit
+        # Game stuff
+        self.start = datetime.now()
+        self.time_left = f"<t:{round(self.start.timestamp() + self.time_limit)}:R>"
+        self.winner = None
+        self.data = {"in_progress": True, "responses": [], "participants": set()}
+        self.blank: Optional[Image.Image] = None
+        self.image: Optional[Image.Image] = None
+        self.to_chop = []
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self) -> discord.File:
+        if self.image is None or self.blank is None:
+            await self.init()
+        end_conditions = [
+            len(self.to_chop) <= 0,  # Image is fully revealed
+            self.have_winner(),  # Someone guessed it right
+            (datetime.now() - self.start).total_seconds() > self.time_limit  # Time is up
+        ]
+        if any(end_conditions):
+            self.data["in_progress"] = False
+            raise StopAsyncIteration
+        pop = self.amount_to_reveal if self.amount_to_reveal <= len(self.to_chop) else len(self.to_chop)
+        for _ in range(pop):
+            bbox = self.to_chop.pop(random.randrange(len(self.to_chop)))
+            cropped = await exe(self.image.crop, bbox)
+            await exe(self.blank.paste, cropped, (bbox[0], bbox[1]))
+        buffer = BytesIO()
+        buffer.name = f"{random.randint(999, 9999999)}.webp"
+        self.blank.save(buffer, format="WEBP", quality=100)
+        buffer.seek(0)
+        return discord.File(buffer, filename=buffer.name)
+
+    async def init(self) -> None:
+        # Pull and open the image from url
+        imagebytes = await get_content_from_url(self.url)
+        self.image = await exe(Image.open, BytesIO(imagebytes))
+        # Make solid blank canvas to paste image pieces on
+        self.blank = Image.new("RGBA", self.image.size, (0, 0, 0, 256))
+        # Get box size to fit 192 boxes (16 by 12) or (12 by 16)
+        horiz, vert = (16, 12) if self.image.width > self.image.height else (12, 16)
+        w, h = (self.image.width / horiz, self.image.height / vert)
+        # Get block locations to chop the image up and paste to the canvas iteratively
+        for x in range(horiz):
+            for y in range(vert):
+                x1 = x * w
+                y1 = y * h
+                x2 = (x * w) + w
+                y2 = (y * h) + h
+                bbox = (round(x1), round(y1), round(x2), round(y2))
+                self.to_chop.append(bbox)
+        # Start the message listener
+        asyncio.create_task(listener(self.ctx, self.data))
+
+    async def get_result(self) -> discord.File:
+        buffer = BytesIO()
+        buffer.name = f"{random.randint(999, 9999999)}.webp"
+        self.image.save(buffer, format="WEBP", quality=100)
+        buffer.seek(0)
+        return discord.File(buffer, filename=buffer.name)
+
+    def have_winner(self) -> bool:
+        responses = sorted(self.data["responses"].copy(), key=lambda x: x[2], reverse=True)
+        self.data["responses"].clear()
+        for author, answer, _ in responses:
+            if any([fuzz.ratio(answer, a) > 92 for a in self.answers]):
+                self.winner = author
+                return True
+        else:
+            return False

@@ -1,0 +1,37 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Guess pictures before anyone else as blocks of it are slowly revealed.",
+  "disabled": false,
+  "end_user_data_statement": "This cog only stores user IDs for its leaderboard",
+  "hidden": false,
+  "install_msg": "Thank you for installing!",
+  "min_bot_version": "3.5.0.dev0",
+  "permissions": [
+    "read_messages",
+    "send_messages",
+    "manage_messages",
+    "embed_links"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "Pillow",
+    "aiohttp",
+    "aiocache",
+    "tabulate",
+    "rapidfuzz"
+  ],
+  "short": "Guess pictures and earn points.",
+  "tags": [
+    "fun",
+    "picture",
+    "game",
+    "games",
+    "pictures",
+    "image",
+    "images",
+    "guessing"
+  ],
+  "type": "COG"
+}
