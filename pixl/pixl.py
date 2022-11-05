@@ -28,7 +28,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -155,16 +155,17 @@ class Pixl(commands.Cog):
             choice = random.choice(to_use)
             url = choice["url"]
             correct = choice["answers"]
-            test = await get_content_from_url(url)
-            if test:
-                break
-            cant_get.append(url)
+            imagebytes = await get_content_from_url(url)
+            if not imagebytes:
+                cant_get.append(url)
+                continue
+            break
         else:
             invalid = "\n".join(cant_get)
             return await ctx.send(f"Failed to get a valid image 3 times.\n\nThese urls were invalid\n"
                                   f"{box(invalid)}")
 
-        game = PixlGrids(ctx, url, correct, conf["blocks_to_reveal"], conf["time_limit"])
+        game = PixlGrids(ctx, imagebytes, correct, conf["blocks_to_reveal"], conf["time_limit"])
         msg = None
         embed = discord.Embed(
             title="Pixl Guess",
@@ -185,6 +186,8 @@ class Pixl(commands.Cog):
                             await msg.delete()
                             msg = await ctx.send(embed=embed, file=image)
                     await asyncio.sleep(delay)
+        except Exception as e:
+            return await ctx.send(f"Something went wrong during the game!\n{box(str(e))}")
         finally:
             game.data["in_progress"] = False
 
@@ -226,9 +229,6 @@ class Pixl(commands.Cog):
         if thumb:
             embed.set_thumbnail(url=thumb)
 
-        #if dpy2:
-        #    await msg.edit(embed=embed, attachments=[final])
-        #else:
         await msg.delete()
         await ctx.send(embed=embed, file=final)
 
@@ -242,7 +242,7 @@ class Pixl(commands.Cog):
             if person.bot:
                 continue
             stats = await self.config.member(person).all()
-            if person.id == winner.id:
+            if winner and person.id == winner.id:
                 stats["wins"] += 1
                 stats["score"] += points
             stats["games"] += 1
@@ -397,6 +397,40 @@ class Pixl(commands.Cog):
         if not images:
             return await ctx.send("There are no guild images to view")
         await self.image_menu(ctx, images, "Guild Images")
+
+    @image.command(name="testdefault", hidden=True)
+    @commands.is_owner()
+    async def test_defaults(self, ctx: commands.Context):
+        """Test the default images to ensure they are valid urls"""
+        async with ctx.typing():
+            good, bad = await self.test_images(defaults)
+            if bad:
+                txt = "\n".join(bad)
+                await ctx.send(f"The following urls are bad!\n{txt}")
+            await ctx.send(f"Testing complete.\n`Good: {len(good)} | Bad: {len(bad)}`")
+
+    @image.command(name="testglobal")
+    @commands.is_owner()
+    async def test_global(self, ctx: commands.Context):
+        """Test the global images to ensure they are valid urls"""
+        async with ctx.typing():
+            global_images = await self.config.images()
+            good, bad = await self.test_images(global_images)
+            if bad:
+                txt = "\n".join(bad)
+                await ctx.send(f"The following urls are bad!\n{txt}")
+            await ctx.send(f"Testing complete.\n`Good: {len(good)} | Bad: {len(bad)}`")
+
+    @image.command(name="testguild")
+    async def test_guild(self, ctx: commands.Context):
+        """Test the guild images to ensure they are valid urls"""
+        async with ctx.typing():
+            guild_images = await self.config.guild(ctx.guild).images()
+            good, bad = await self.test_images(guild_images)
+            if bad:
+                txt = "\n".join(bad)
+                await ctx.send(f"The following urls are bad!\n{txt}")
+            await ctx.send(f"Testing complete.\n`Good: {len(good)} | Bad: {len(bad)}`")
 
     @image.command(name="addglobal")
     @commands.is_owner()
@@ -625,3 +659,19 @@ class Pixl(commands.Cog):
             except AttributeError:
                 pass
         return content
+
+    @staticmethod
+    async def test_images(images: list):
+        good = []
+        bad = []
+
+        async def check(img):
+            bytefile = await get_content_from_url(img["url"], timeout=10)
+            if bytefile:
+                good.append(img["url"])
+            else:
+                bad.append(f"`{img['answers'][0]}-{img['url']}`")
+
+        tasks = [check(i) for i in images]
+        await asyncio.gather(*tasks)
+        return good, bad
