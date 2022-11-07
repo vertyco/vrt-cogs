@@ -29,7 +29,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.0.8"
+    __version__ = "0.0.9"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -204,7 +204,9 @@ class Pixl(commands.Cog):
                             msg = await ctx.send(embed=embed, file=image)
                     await asyncio.sleep(delay)
         except Exception:
-            return await ctx.send(f"Something went wrong during the game!\n{box(traceback.format_exc(), 'py')}")
+            return await ctx.send(f"Something went wrong during the game!\n"
+                                  f"Image: `{correct[0]} - {url}`\n"
+                                  f"{box(traceback.format_exc(), 'py')}")
         finally:
             game.data["in_progress"] = False
 
