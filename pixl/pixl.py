@@ -6,6 +6,9 @@ from typing import Optional, List
 
 import discord
 import traceback
+import functools
+from PIL import Image, UnidentifiedImageError
+from io import BytesIO
 from redbot.core import commands, Config, bank
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
@@ -13,7 +16,7 @@ from redbot.core.utils.chat_formatting import humanize_number, humanize_list, hu
 from tabulate import tabulate
 
 from pixl.defaults import defaults
-from pixl.generator import PixlGrids, get_content_from_url
+from pixl.utils import PixlGrids, get_content_from_url, exe
 
 log = logging.getLogger("red.vrt.pixl")
 dpy2 = True if discord.version_info.major >= 2 else False
@@ -29,7 +32,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.0.9"
+    __version__ = "0.1.9"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -144,13 +147,18 @@ class Pixl(commands.Cog):
         Guess the image as it is slowly revealed
         """
         cid = ctx.channel.id
+        uid = ctx.author.id
         if cid in self.active:
             return await ctx.send("There is already a Pixl game going on in this channel")
+        elif uid in self.active:
+            return await ctx.send("You already have a Pixl game going on")
         self.active.add(cid)
+        self.active.add(uid)
         try:
             await self.start_game(ctx)
         finally:
             self.active.discard(cid)
+            self.active.discard(uid)
 
     async def start_game(self, ctx: commands.Context):
         conf = await self.config.guild(ctx.guild).all()
@@ -170,7 +178,13 @@ class Pixl(commands.Cog):
             choice = random.choice(to_use)
             url = choice["url"]
             correct = choice["answers"]
-            if not await get_content_from_url(url):
+            imgbytes = await get_content_from_url(url)
+            if not imgbytes:
+                cant_get.append(url)
+                continue
+            try:
+                game_image = await exe(functools.partial(Image.open, BytesIO(imgbytes)))
+            except UnidentifiedImageError:
                 cant_get.append(url)
                 continue
             break
@@ -182,7 +196,7 @@ class Pixl(commands.Cog):
             invalid = "\n".join(cant_get)
             await ctx.send(f"Some images failed during prep\n{box(invalid)}")
 
-        game = PixlGrids(ctx, url, correct, conf["blocks_to_reveal"], conf["time_limit"])
+        game = PixlGrids(ctx, game_image, correct, conf["blocks_to_reveal"], conf["time_limit"])
         msg = None
         embed = discord.Embed(
             title="Pixl Guess",

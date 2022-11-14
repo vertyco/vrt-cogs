@@ -57,13 +57,13 @@ class PixlGrids:
     def __init__(
             self,
             ctx: commands.Context,
-            url: str,
+            image: Image.Image,
             answers: list,
             amount_to_reveal: int,
             time_limit: int
     ):
         self.ctx = ctx
-        self.url = url
+        self.image = image
         self.answers = answers
         self.amount_to_reveal = amount_to_reveal
         self.time_limit = time_limit
@@ -72,16 +72,15 @@ class PixlGrids:
         self.time_left = f"<t:{round(self.start.timestamp() + self.time_limit)}:R>"
         self.winner = None
         self.data = {"in_progress": True, "responses": [], "participants": set()}
-        self.blank: Optional[Image.Image] = None
-        self.image: Optional[Image.Image] = None
         self.to_chop = []
+        # Make solid blank canvas to paste image pieces on
+        self.blank = Image.new("RGBA", image.size, (0, 0, 0, 256))
 
     def __aiter__(self):
+        self.init()
         return self
 
     async def __anext__(self) -> discord.File:
-        if self.image is None or self.blank is None:
-            await self.init()
         end_conditions = [
             len(self.to_chop) <= 0,  # Image is fully revealed
             self.have_winner(),  # Someone guessed it right
@@ -101,12 +100,7 @@ class PixlGrids:
         buffer.seek(0)
         return discord.File(buffer, filename=buffer.name)
 
-    async def init(self) -> None:
-        # Pull and open the image from url
-        img = await get_content_from_url(self.url)
-        self.image = Image.open(BytesIO(img))
-        # Make solid blank canvas to paste image pieces on
-        self.blank = Image.new("RGBA", self.image.size, (0, 0, 0, 256))
+    def init(self) -> None:
         # Get box size to fit 192 boxes (16 by 12) or (12 by 16)
         horiz, vert = (16, 12) if self.image.width > self.image.height else (12, 16)
         w, h = (self.image.width / horiz, self.image.height / vert)
