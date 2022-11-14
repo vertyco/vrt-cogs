@@ -32,7 +32,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.1.9"
+    __version__ = "0.1.10"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -211,11 +211,8 @@ class Pixl(commands.Cog):
                     if msg is None:
                         msg = await ctx.send(embed=embed, file=image)
                     else:
-                        if dpy2:
-                            await msg.edit(embed=embed, attachments=[image])
-                        else:
-                            asyncio.create_task(msg.delete())
-                            msg = await ctx.send(embed=embed, file=image)
+                        asyncio.create_task(msg.delete())
+                        msg = await ctx.send(embed=embed, file=image)
                     await asyncio.sleep(delay)
         except Exception:
             return await ctx.send(f"Something went wrong during the game!\n"
@@ -264,8 +261,11 @@ class Pixl(commands.Cog):
         if thumb:
             embed.set_thumbnail(url=thumb)
 
-        await msg.delete()
-        await ctx.send(embed=embed, file=final)
+        asyncio.create_task(msg.delete())
+        if winner:
+            await ctx.send(winner.mention, embed=embed, file=final)
+        else:
+            await ctx.send(embed=embed, file=final)
 
         if winner:
             if reward and participants >= min_p:
