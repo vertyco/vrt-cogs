@@ -32,7 +32,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.1.10"
+    __version__ = "0.1.11"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -393,7 +393,7 @@ class Pixl(commands.Cog):
             await ctx.send("I will now show default images in this guild")
             await self.config.guild(ctx.guild).use_default.set(True)
 
-    @pixlset.command(name="gamedelay")
+    @pixlset.command(name="delay")
     @commands.is_owner()
     async def set_game_delay(self, ctx: commands.Context, seconds: int):
         """
@@ -701,10 +701,16 @@ class Pixl(commands.Cog):
 
         async def check(img):
             bytefile = await get_content_from_url(img["url"], timeout=10)
-            if bytefile:
-                good.append(img["url"])
-            else:
-                bad.append(f"`{img['answers'][0]}: {img['url']}`")
+            if not bytefile:
+                bad.append(f"(Bad URL)`{img['answers'][0]}: {img['url']}`")
+                return
+            try:
+                partial = functools.partial(Image.open, BytesIO(bytefile))
+                await exe(partial)
+            except UnidentifiedImageError:
+                bad.append(f"(Bad Image)`{img['answers'][0]}: {img['url']}`")
+                return
+            good.append(img["url"])
 
         tasks = [check(i) for i in images]
         await asyncio.gather(*tasks)
