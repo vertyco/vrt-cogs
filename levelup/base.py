@@ -984,8 +984,8 @@ class UserCommands(commands.Cog):
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
-        title = _("**Total Messages:** `") + humanize_number(total_messages)
-        title += _("\n**Total VoiceTime:** `") + voice + "\n"
+        title = _("**Total Messages:** `") + humanize_number(total_messages) + "`\n"
+        title += _("**Total VoiceTime:** `") + voice + "`\n"
         for p in range(pages):
             if stop > len(sorted_users):
                 stop = len(sorted_users)
