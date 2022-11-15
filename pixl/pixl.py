@@ -32,7 +32,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.1.12"
+    __version__ = "0.1.13"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
