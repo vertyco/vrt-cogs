@@ -17,7 +17,7 @@ log = logging.getLogger("red.vrt.pixl.generator")
 dpy2 = True if discord.version_info.major >= 2 else False
 
 
-@cached(ttl=60)
+@cached(ttl=240)
 async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
     try:
         async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
