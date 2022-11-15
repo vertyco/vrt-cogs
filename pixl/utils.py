@@ -101,6 +101,8 @@ class PixlGrids:
         return discord.File(buffer, filename=buffer.name)
 
     def init(self) -> None:
+        # Add game starter to participants
+        self.data["participants"].add(self.ctx.author)
         # Get box size to fit 192 boxes (16 by 12) or (12 by 16)
         horiz, vert = (16, 12) if self.image.width > self.image.height else (12, 16)
         w, h = (self.image.width / horiz, self.image.height / vert)
