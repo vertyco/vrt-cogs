@@ -61,7 +61,7 @@ class VrtUtils(commands.Cog):
     Random utility commands
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.6"
+    __version__ = "1.0.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -336,9 +336,13 @@ class VrtUtils(commands.Cog):
             p = psutil.Process()
             io_counters = p.io_counters()
             disk_usage_process = io_counters[2] + io_counters[3]  # read_bytes + write_bytes
+            # Disk load
             disk_io_counter = psutil.disk_io_counters()
-            disk_io_total = disk_io_counter[2] + disk_io_counter[3]  # read_bytes + write_bytes
-            disk_usage = (disk_usage_process / disk_io_total) * 100
+            if disk_io_counter:
+                disk_io_total = disk_io_counter[2] + disk_io_counter[3]  # read_bytes + write_bytes
+                disk_usage = (disk_usage_process / disk_io_total) * 100
+            else:
+                disk_usage = 0
 
             # -/-/-/NET-/-/-/
             net = psutil.net_io_counters()  # Obj
