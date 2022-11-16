@@ -1,38 +1,38 @@
 import asyncio
+import functools
 import logging
 import math
 import random
+import traceback
+from io import BytesIO
 from typing import Optional, List
 
 import discord
-import traceback
-import functools
 from PIL import Image, UnidentifiedImageError
-from io import BytesIO
 from redbot.core import commands, Config, bank
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import humanize_number, humanize_list, humanize_timedelta, box
 from tabulate import tabulate
 
-from pixl.defaults import defaults
-from pixl.utils import PixlGrids, get_content_from_url, exe
+from .defaults import defaults
+from .utils import PixlGrids, get_content_from_url, exe, delete
 
 log = logging.getLogger("red.vrt.pixl")
 dpy2 = True if discord.version_info.major >= 2 else False
 if dpy2:
     InteractionClient = None
-    from pixl.menu import menu, DEFAULT_CONTROLS, MenuView
+    from .menu import menu, DEFAULT_CONTROLS, MenuView
     from discord import Interaction
 else:
     from dislash import InteractionClient, Interaction
-    from pixl.dmenu import menu, DEFAULT_CONTROLS, MenuView
+    from .dmenu import menu, DEFAULT_CONTROLS, MenuView
 
 
 class Pixl(commands.Cog):
     """Guess pictures for points"""
     __author__ = "Vertyco"
-    __version__ = "0.1.13"
+    __version__ = "0.1.16"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -211,7 +211,7 @@ class Pixl(commands.Cog):
                     if msg is None:
                         msg = await ctx.send(embed=embed, file=image)
                     else:
-                        asyncio.create_task(msg.delete())
+                        asyncio.create_task(delete(msg))
                         msg = await ctx.send(embed=embed, file=image)
                     await asyncio.sleep(delay)
         except Exception:
@@ -261,7 +261,7 @@ class Pixl(commands.Cog):
         if thumb:
             embed.set_thumbnail(url=thumb)
 
-        asyncio.create_task(msg.delete())
+        asyncio.create_task(delete(msg))
         if winner:
             await ctx.send(winner.mention, embed=embed, file=final)
         else:
@@ -402,8 +402,8 @@ class Pixl(commands.Cog):
         **Warning**
         Setting this too low may hit rate limits, default is 5 seconds.
         """
-        if seconds < 1:
-            return await ctx.send("Delay must be at least 1 second")
+        if seconds < 2:
+            return await ctx.send("Delay must be at least 2 seconds")
         async with ctx.typing():
             await self.config.delay.set(seconds)
             await ctx.send(f"Game delay has been set to {humanize_timedelta(seconds=seconds)}")

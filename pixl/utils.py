@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import functools
 import logging
 import random
@@ -30,6 +31,11 @@ async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optiona
 async def exe(*args):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, functools.partial(*args))
+
+
+async def delete(message: discord.Message):
+    with contextlib.suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
+        await message.delete()
 
 
 async def listener(ctx: commands.Context, data: dict):
