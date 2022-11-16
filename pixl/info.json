@@ -4,7 +4,7 @@
   ],
   "description": "Guess pictures before anyone else as blocks of it are slowly revealed.",
   "disabled": false,
-  "end_user_data_statement": "This cog only stores user IDs for its leaderboard",
+  "end_user_data_statement": "This cog only stores user IDs for its leaderboard.\n\nThis cog can cause rate limiting on larger bots due to it deleting and re-sending updated images frequently.",
   "hidden": false,
   "install_msg": "Thank you for installing!",
   "min_bot_version": "3.4.17",
