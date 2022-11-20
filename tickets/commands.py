@@ -45,7 +45,9 @@ class TicketCommands(commands.Cog):
         )
         step3 = _("Set the ID of the bots ticket panel message.\n")
         step3 += f"`{ctx.prefix}tickets panelmessage " + _("<panel_name> <message_id>`\n")
-        step3 += "At this point the ticket panel will be activated, all following steps are for extra customization."
+        step3 += _("At this point the ticket panel will be activated, "
+                   "all following steps are for extra customization.\n")
+        step3 += _("If the bot is having trouble finding the message, run the command in the same channel as it.")
         em.add_field(
             name=_("Step 3"),
             value=step3,
@@ -151,8 +153,11 @@ class TicketCommands(commands.Cog):
             await ctx.tick()
 
     @tickets.command()
-    async def panelmessage(self, ctx: commands.Context, panel_name: str, message: discord.Message):
-        """Set the message ID of a ticket panel"""
+    async def panelmessage(self, ctx: commands.Context, panel_name: str, message: int):
+        """
+        Set the message ID of a ticket panel
+        Run this command in the same channel as the ticket panel message
+        """
         panel_name = panel_name.lower()
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
@@ -161,14 +166,16 @@ class TicketCommands(commands.Cog):
                 return await ctx.send(_("Category ID must be set for this panel first!"))
             if not panels[panel_name]["channel_id"]:
                 return await ctx.send(_("Channel ID must be set for this panel first!"))
-            channel = self.bot.get_channel(panels[panel_name]["channel_id"])
+            channel: discord.TextChannel = self.bot.get_channel(panels[panel_name]["channel_id"])
             if not channel:
                 return await ctx.send(_("Cannot find channel associated with this panel!"))
-            if not message:
-                return await ctx.send(_("I cannot find that message ID!"))
-            if message.author.id != self.bot.user.id:
+            try:
+                found = await channel.fetch_message(message)
+            except discord.NotFound:
+                return await ctx.send(_("I cannot find that message!"))
+            if found.author.id != self.bot.user.id:
                 return await ctx.send(_("I can only add buttons to my own messages!"))
-            panels[panel_name]["message_id"] = message.id
+            panels[panel_name]["message_id"] = found.id
             await ctx.tick()
         await self.initialize(ctx.guild)
 

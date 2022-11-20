@@ -15,13 +15,14 @@ log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
 
 
+# redgettext tickets.py base.py commands.py views.py --command-docstring
 @cog_i18n(_)
 class Tickets(BaseCommands, TicketCommands, commands.Cog):
     """
     Support ticket system with multi-panel functionality
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.8"
+    __version__ = "1.0.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
