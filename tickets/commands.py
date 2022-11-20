@@ -151,7 +151,7 @@ class TicketCommands(commands.Cog):
             await ctx.tick()
 
     @tickets.command()
-    async def panelmessage(self, ctx: commands.Context, panel_name: str, message: int):
+    async def panelmessage(self, ctx: commands.Context, panel_name: str, message: discord.Message):
         """Set the message ID of a ticket panel"""
         panel_name = panel_name.lower()
         async with self.config.guild(ctx.guild).panels() as panels:
@@ -164,7 +164,6 @@ class TicketCommands(commands.Cog):
             channel = self.bot.get_channel(panels[panel_name]["channel_id"])
             if not channel:
                 return await ctx.send(_("Cannot find channel associated with this panel!"))
-            message = await channel.fetch_message(message)
             if not message:
                 return await ctx.send(_("I cannot find that message ID!"))
             if message.author.id != self.bot.user.id:
