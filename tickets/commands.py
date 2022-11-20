@@ -37,7 +37,7 @@ class TicketCommands(commands.Cog):
             inline=False
         )
         step2 = _("Set the channel that the bots ticket panel will be located in.\n")
-        step2 += f"`{ctx.prefix}tickets setchannel " + _("<panel_name> <category_id>`")
+        step2 += f"`{ctx.prefix}tickets setchannel " + _("<panel_name> <channel_id>`")
         em.add_field(
             name=_("Step 2"),
             value=step2,
