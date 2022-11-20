@@ -71,6 +71,10 @@ or [open an issue](https://github.com/vertyco/vrt-cogs/issues) on my repo!
 
 If you would like to contribute, please talk to me on Discord first about your ideas before opening a PR.
 
+# Translate my cogs
+
+If you are interested in contributing to translations for my cogs, [Click Here](https://crowdin.com/project/vrt-cogs)!
+
 # Feature Requests
 
 I am open to ideas or suggestions for new cogs and features!
