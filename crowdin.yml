@@ -1,6 +1,6 @@
 api_key_env: CROWDIN_API_KEY
 project_identifier_env: CROWDIN_PROJECT_ID
-preserve_hierarchy: true
+preserve_hierarchy: 1
 files:
-  - source: "**/locales/messages.pot"
+  - source: '**/locales/messages.pot'
     translation: /%original_path%/%locale%.po
