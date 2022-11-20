@@ -128,10 +128,12 @@ class LevelUp(UserCommands, commands.Cog):
         self.ignored_guilds = []
         self.cache_seconds = 15
         self.render_gifs = False
+        # Keep background compilation cached
         self.bgdata = {
             "img": None,
             "names": []
         }
+        # Keep font compilation cached
         self.fdata = {
             "img": None,
             "names": []
