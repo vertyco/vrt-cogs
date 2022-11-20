@@ -75,7 +75,11 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
 
         self.auto_close.start()
 
-    def cog_unload(self):
+    async def cog_load(self) -> None:
+        await self.bot.wait_until_red_ready()
+        await self.initialize()
+
+    async def cog_unload(self) -> None:
         self.auto_close.cancel()
 
     async def initialize(self, target_guild: discord.Guild = None):
@@ -184,7 +188,6 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     @auto_close.before_loop
     async def before_auto_close(self):
         await self.bot.wait_until_red_ready()
-        await self.initialize()
         await asyncio.sleep(30)
 
     # Will automatically close/cleanup any tickets if a member leaves that has an open ticket
