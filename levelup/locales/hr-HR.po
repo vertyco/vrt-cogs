@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2022-10-28 23:06-0400\n"
-"PO-Revision-Date: 2022-11-20 18:15\n"
+"PO-Revision-Date: 2022-11-21 03:47\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,15 @@ msgstr ""
 
 #: base.py:77
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "Ajoj, izgleda da to nije važeći URL"
 
 #: base.py:87
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "Ajoj, izgleda da to nije važeća slika. Ne mogu identificirati datoteku"
 
 #: base.py:91
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "Ajoj, izgleda da to nije važeća slika"
 
 #: base.py:193
 #, docstring
@@ -35,35 +35,38 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Nagradi nekoga\n"
+"        Nagradi nekog korisnika sa zvijezdicom\n"
+"        "
 
 #: base.py:202
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "Predmemorija nije još učitana, pričekaj još nekoliko sekundi."
 
 #: base.py:204
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "Ne možeš sebi davat zvjezdice!"
 
 #: base.py:206
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "Ne možeš botu davati zvijezdice!"
 
 #: base.py:221
 msgid "You need to wait "
-msgstr ""
+msgstr "Moraš čekati "
 
 #: base.py:221
 msgid " before you can give more stars!"
-msgstr ""
+msgstr " prije nego što možeš davati više zvijezdica!"
 
 #: base.py:226
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "Još nema podataka za tog korisnika!"
 
 #: base.py:229 base.py:231
 msgid "You just gave a star to "
-msgstr ""
+msgstr "Upravo si dao zvijezdicu "
 
 #: base.py:236
 #, docstring
@@ -77,39 +80,43 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Uredi boje svog profila\n\n"
+"        Evo poveznica Googleovom biraču boja:\n"
+"        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
+"        "
 
 #: base.py:286 base.py:287 base.py:288 base.py:289
 msgid "Not Set"
-msgstr ""
+msgstr "Nije postavljeno"
 
 #: base.py:291
 msgid "`Profile Size:    `"
-msgstr ""
+msgstr "`Veličina profila:    `"
 
 #: base.py:292
 msgid "`Name Color:      `"
-msgstr ""
+msgstr "`Boja imena:      `"
 
 #: base.py:293
 msgid "`Stat Color:      `"
-msgstr ""
+msgstr "`Boja podatka:      `"
 
 #: base.py:294
 msgid "`Level Bar Color: `"
-msgstr ""
+msgstr "`Boja level trake: `"
 
 #: base.py:295
 msgid "`Font:            `"
-msgstr ""
+msgstr "`Font:            `"
 
 #: base.py:296
 msgid "`Background:      `"
-msgstr ""
+msgstr "`Pozadina:      `"
 
 #: base.py:299
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "Postavke tvog profila"
 
 #: base.py:322 base.py:382
 #, docstring
@@ -384,7 +391,7 @@ msgstr ""
 
 #: base.py:790 generator.py:671 levelup.py:1883
 msgid "Level "
-msgstr ""
+msgstr "Level "
 
 #: base.py:792 generator.py:214
 msgid "Prestige "
@@ -396,15 +403,15 @@ msgstr ""
 
 #: base.py:794
 msgid " messages sent\n"
-msgstr ""
+msgstr " poslano poruka\n"
 
 #: base.py:795
 msgid " in voice\n"
-msgstr ""
+msgstr " u voiceu\n"
 
 #: base.py:800
 msgid "Rank "
-msgstr ""
+msgstr "Rank "
 
 #: base.py:800
 msgid ", with "
@@ -483,20 +490,21 @@ msgstr ""
 
 #: base.py:987
 msgid "**Total Messages:** `"
-msgstr ""
+msgstr "**Ukupno poruka:** `"
 
 #: base.py:988
 msgid "\n"
 "**Total VoiceTime:** `"
-msgstr ""
+msgstr "\n"
+"**Ukupno vrijeme u Voiceu:** `"
 
 #: base.py:1018
 msgid "LevelUp Leaderboard"
-msgstr ""
+msgstr "LevelUp Ljestvica"
 
 #: base.py:1029 base.py:1031 base.py:1100 base.py:1102
 msgid "Pages "
-msgstr ""
+msgstr "Stranica "
 
 #: base.py:1047
 #, docstring
@@ -517,7 +525,7 @@ msgstr ""
 
 #: generator.py:207 generator.py:528
 msgid "Rank: #"
-msgstr ""
+msgstr "Rank: #"
 
 #: generator.py:208 generator.py:529
 msgid "Level: "
@@ -529,19 +537,19 @@ msgstr ""
 
 #: generator.py:210 generator.py:531
 msgid "Messages: "
-msgstr ""
+msgstr "Poruke: "
 
 #: generator.py:211
 msgid "Voice: "
-msgstr ""
+msgstr "Voice: "
 
 #: generator.py:213
 msgid "Balance: "
-msgstr ""
+msgstr "Stanje: "
 
 #: generator.py:532
 msgid "Voice Time: "
-msgstr ""
+msgstr "Vrijeme u voiceu: "
 
 #: generator.py:535
 msgid " - Prestige "
@@ -604,7 +612,7 @@ msgstr ""
 
 #: levelup.py:812
 msgid "`Include Balance:   `"
-msgstr ""
+msgstr "`Uključi stanje računa:   `"
 
 #: levelup.py:813
 msgid "`Progress Bar:      `"
@@ -612,7 +620,7 @@ msgstr ""
 
 #: levelup.py:814
 msgid "**Messages**\n"
-msgstr ""
+msgstr "**Poruke**\n"
 
 #: levelup.py:815
 msgid "`Message XP:        `"
@@ -628,11 +636,11 @@ msgstr ""
 
 #: levelup.py:818
 msgid "**Voice**\n"
-msgstr ""
+msgstr "**Voice**\n"
 
 #: levelup.py:819
 msgid "`Voice XP:          `"
-msgstr ""
+msgstr "`Voice XP:          `"
 
 #: levelup.py:820
 msgid "`Ignore Muted:      `"
@@ -704,7 +712,7 @@ msgstr ""
 
 #: levelup.py:845
 msgid "`Level "
-msgstr ""
+msgstr "`Level "
 
 #: levelup.py:847
 msgid "**Prestige**\n"
