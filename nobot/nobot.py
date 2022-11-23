@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Union
 
 import discord
 from redbot.core import commands, Config
@@ -16,7 +17,7 @@ class NoBot(commands.Cog):
     message, this cog will delete them.
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.5"
+    __version__ = "1.0.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -61,11 +62,16 @@ class NoBot(commands.Cog):
         self.initialize()
 
     @nobot_settings.command(name="delbot")
-    async def delete_bot(self, ctx, bot: discord.Member):
-        """Remove a bot from the filter list"""
+    async def delete_bot(self, ctx, bot: Union[discord.Member, int]):
+        """
+        Remove a bot from the filter list
+
+        If bot is no longer in the server, use its ID
+        """
         async with self.config.guild(ctx.guild).bots() as bots:
-            if str(bot.id) in bots:
-                bots.remove(str(bot.id))
+            bid = bot if isinstance(bot, int) else bot.id
+            if str(bid) in bots:
+                bots.remove(str(bid))
                 await ctx.tick()
             else:
                 await ctx.send("Bot not found")
@@ -89,7 +95,7 @@ class NoBot(commands.Cog):
         botlist = ""
         for bot in config["bots"]:
             botmember = ctx.guild.get_member(int(bot))
-            botlist += f"{botmember.mention}: {bot}\n"
+            botlist += f"{botmember.mention if botmember else 'Unknown'}: {bot}\n"
         filters = ""
         for filt in config["content"]:
             filters += f"{filt}\n"
