@@ -1,5 +1,5 @@
 """
-This is a red-like recursive menu for dislahs
+This is a red-like recursive menu for dislash
 """
 import asyncio
 import contextlib
