@@ -1127,10 +1127,10 @@ class UserCommands(commands.Cog):
             total = humanize_number(round(sum(v["xp"] for v in w["users"].values())))
 
         desc = _("Total ") + f"{statname}: `{total}`\n"
-        desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d> <t:{w['last_reset']}:t> UTC (<t:{w['last_reset']}:R>)\n"
+        desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d>\n"
         if w["autoreset"]:
             tl = get_time_left(w["reset_day"], w["reset_hour"])
-            desc += _("Next Reset: ") + f"<t:{tl}:d> <t:{tl}:t> UTC (<t:{tl}:R>)\n"
+            desc += _("Next Reset: ") + f"<t:{tl}:d>\n"
 
         for i in sorted_users.copy():
             if not i[1][key]:
