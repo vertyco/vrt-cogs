@@ -103,6 +103,8 @@ class TicketCommands(commands.Cog):
             value=step10,
             inline=False
         )
+        tip = _("Tip: you can create multiple support panels using the same message for a multi-button panel")
+        em.set_footer(text=tip)
         await ctx.send(embed=em)
 
     @tickets.command()
