@@ -8,7 +8,7 @@ import random
 import traceback
 from io import BytesIO
 from time import perf_counter
-from typing import Union
+from typing import Union, Optional
 
 import aiohttp
 import discord
@@ -26,6 +26,9 @@ from levelup.utils.formatter import (
     hex_to_rgb,
     get_level,
     get_xp,
+    get_time_left,
+    get_attachments,
+    get_content_from_url,
     get_user_position,
     get_bar
 )
@@ -152,40 +155,13 @@ class UserCommands(commands.Cog):
         return discord.File(buffer, filename=buffer.name)
 
     # Hacky way to get user banner
-    @cached(ttl=3600, cache=SimpleMemoryCache)
+    @cached(ttl=7200, cache=SimpleMemoryCache)
     async def get_banner(self, user: discord.Member) -> str:
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
         banner_id = req["banner"]
         if banner_id:
             banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
             return banner_url
-
-    @staticmethod
-    def get_attachments(ctx) -> list:
-        """Get all attachments from context"""
-        content = []
-        if ctx.message.attachments:
-            atchmts = [a for a in ctx.message.attachments]
-            content.extend(atchmts)
-        if hasattr(ctx.message, "reference"):
-            try:
-                atchmts = [a for a in ctx.message.reference.resolved.attachments]
-                content.extend(atchmts)
-            except AttributeError:
-                pass
-        return content
-
-    @staticmethod
-    @cached(ttl=3600, cache=SimpleMemoryCache)
-    async def get_content_from_url(url: str):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    file = await resp.content.read()
-                    return file
-        except Exception as e:
-            log.error(f"Could not get file content from url: {e}", exc_info=True)
-            return None
 
     @commands.command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
@@ -225,6 +201,12 @@ class UserCommands(commands.Cog):
         if user_id not in users:
             return await ctx.send(_("No data available for that user yet!"))
         self.data[guild_id]["users"][user_id]["stars"] += 1
+        if self.data[guild_id]["weekly"]["on"]:
+            weekly_users = self.data[guild_id]["weekly"]["users"]
+            if guild_id not in weekly_users:
+                self.init_user_weekly(guild_id, user_id)
+            self.data[guild_id]["weekly"]["users"][user_id]["stars"] += 1
+
         if mention:
             await ctx.send(_("You just gave a star to ") + f"{user.mention}!")
         else:
@@ -334,7 +316,7 @@ class UserCommands(commands.Cog):
         `preferred_filename` - If a name is given, it will be saved as this name instead of the filename
         **Note:** do not include the file extension in the preferred name, it will be added automatically
         """
-        content = self.get_attachments(ctx)
+        content = get_attachments(ctx)
         if not content:
             return await ctx.send(_("I was not able to find any attachments"))
         valid = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
@@ -348,7 +330,7 @@ class UserCommands(commands.Cog):
         for ext in valid:
             if ext in filename.lower():
                 break
-        bytes_file = await self.get_content_from_url(url)
+        bytes_file = await get_content_from_url(url)
         if not bytes_file:
             return await ctx.send(_("I was not able to get the file from Discord"))
         if preferred_filename:
@@ -394,7 +376,7 @@ class UserCommands(commands.Cog):
         `preferred_filename` - If a name is given, it will be saved as this name instead of the filename
         **Note:** do not include the file extension in the preferred name, it will be added automatically
         """
-        content = self.get_attachments(ctx)
+        content = get_attachments(ctx)
         if not content:
             return await ctx.send(_("I was not able to find any attachments"))
         valid = [".ttf", ".otf"]
@@ -406,7 +388,7 @@ class UserCommands(commands.Cog):
         for ext in valid:
             if ext in filename.lower():
                 break
-        bytes_file = await self.get_content_from_url(url)
+        bytes_file = await get_content_from_url(url)
         if not bytes_file:
             return await ctx.send(_("I was not able to get the file from Discord"))
         if preferred_filename:
@@ -1111,3 +1093,104 @@ class UserCommands(commands.Cog):
                 await menu(ctx, embeds, DEFAULT_CONTROLS)
         else:
             return await ctx.send(_("No user data yet!"))
+
+    @commands.command(name="weekly")
+    async def weekly_lb(self, ctx: commands.Context, order_by: Optional[str] = "exp"):
+        """View the weekly leaderboard"""
+        w = self.data[ctx.guild.id]["weekly"]
+        if not w["users"]:
+            return await ctx.send(_("There is no data for the weekly leaderboard yet, please chat a bit first."))
+
+        if "v" in order_by.lower():
+            sorted_users = sorted(w["users"].items(), key=lambda x: x[1]["voice"], reverse=True)
+            title = _("Weekly Voice Leaderboard")
+            key = "voice"
+            statname = _("Voicetime")
+            total = time_formatter(sum(v["voice"] for v in w["users"].values()))
+        elif "m" in order_by.lower():
+            sorted_users = sorted(w["users"].items(), key=lambda x: x[1]["messages"], reverse=True)
+            title = _("Weekly Message Leaderboard")
+            key = "messages"
+            statname = _("Messages")
+            total = humanize_number(round(sum(v["messages"] for v in w["users"].values())))
+        elif "s" in order_by.lower():
+            sorted_users = sorted(w["users"].items(), key=lambda x: x[1]["stars"], reverse=True)
+            title = _("Weekly Star Leaderboard")
+            key = "stars"
+            statname = _("Stars")
+            total = humanize_number(round(sum(v["stars"] for v in w["users"].values())))
+        else:  # Exp
+            sorted_users = sorted(w["users"].items(), key=lambda x: x[1]["xp"], reverse=True)
+            title = _("Weekly Exp Leaderboard")
+            key = "xp"
+            statname = _("Exp")
+            total = humanize_number(round(sum(v["xp"] for v in w["users"].values())))
+
+        desc = _("Total ") + f"{statname}: `{total}`\n"
+        desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d> <t:{w['last_reset']}:t> UTC (<t:{w['last_reset']}:R>)\n"
+        if w["autoreset"]:
+            tl = get_time_left(w["reset_day"], w["reset_hour"])
+            desc += _("Next Reset: ") + f"<t:{tl}:d> <t:{tl}:t> UTC (<t:{tl}:R>)\n"
+
+        for i in sorted_users.copy():
+            if not i[1][key]:
+                sorted_users.remove(i)
+        if not sorted_users:
+            txt = _("There is no data for the weekly ") + statname.lower() + _(" leaderboard yet")
+            return await ctx.send(txt)
+        you = ""
+        for i in sorted_users:
+            if i[0] == str(ctx.author.id):
+                you = _("You: ") + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
+
+        pages = math.ceil(len(sorted_users) / 10)
+        start = 0
+        stop = 10
+        embeds = []
+        for p in range(pages):
+            if stop > len(sorted_users):
+                stop = len(sorted_users)
+
+            table = []
+            for i in range(start, stop, 1):
+                uid = sorted_users[i][0]
+                user = ctx.guild.get_member(int(uid))
+                user = user.name if user else uid
+                data = sorted_users[i][1]
+
+                place = i + 1
+                stat = time_formatter(data[key]) if key == "voice" else humanize_number(int(data[key]))
+                table.append([place, user, stat])
+
+            headers = ["Pos", "Name", statname]
+            msg = tabulate.tabulate(
+                tabular_data=table,
+                headers=headers,
+                numalign="left",
+                stralign="left"
+            )
+            embed = discord.Embed(
+                title=title,
+                description=desc + f"{box(msg, lang='python')}",
+                color=discord.Color.random()
+            )
+            if DPY2:
+                if ctx.guild.icon:
+                    embed.set_thumbnail(url=ctx.guild.icon.url)
+            else:
+                embed.set_thumbnail(url=ctx.guild.icon_url)
+
+            if you:
+                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} ｜ {you}")
+            else:
+                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages}")
+
+            embeds.append(embed)
+            start += 10
+            stop += 10
+
+        if len(embeds) == 1:
+            embed = embeds[0]
+            await ctx.send(embed=embed)
+        else:
+            await menu(ctx, embeds, DEFAULT_CONTROLS)
