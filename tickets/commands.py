@@ -110,7 +110,7 @@ class TicketCommands(commands.Cog):
         """Add a support ticket panel"""
         panel_name = panel_name.lower()
         em = Embed(
-            title=panel_name + _("Panel Saved"),
+            title=panel_name + _(" Panel Saved"),
             description=_("Your panel has been added and will need to be configured."),
             color=ctx.author.color
         )
@@ -124,19 +124,22 @@ class TicketCommands(commands.Cog):
     async def setcategory(self, ctx: commands.Context, panel_name: str, category: discord.CategoryChannel):
         """Set the category ID for a ticket panel"""
         panel_name = panel_name.lower()
-        if not category.permissions_for(ctx.guild.me).manage_channels:
-            return await ctx.send(_("I need the manage channels permission to set this category"))
-        if not category.permissions_for(ctx.guild.me).manage_permissions:
-            return await ctx.send(_("I need the 'manage permissions' permission to set this category"))
-        if not category.permissions_for(ctx.guild.me).view_channel:
+        if not category.permissions_for(ctx.me).manage_channels:
+            return await ctx.send(_("I need the `manage channels` permission to set this category"))
+        if not category.permissions_for(ctx.me).manage_permissions:
+            return await ctx.send(_("I need the `manage roles` permission to set this category"))
+        if not category.permissions_for(ctx.me).attach_files:
+            return await ctx.send(_("I need the `attach files` permission to set this category"))
+        if not category.permissions_for(ctx.me).view_channel:
             return await ctx.send(_("I cannot see that category!"))
-        if not category.permissions_for(ctx.guild.me).read_message_history:
+        if not category.permissions_for(ctx.me).read_message_history:
             return await ctx.send(_("I cannot see message history in that category!"))
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))
             panels[panel_name]["category_id"] = category.id
             await ctx.tick()
+            await ctx.send(_("New tickets will now be opened under that category!"))
 
     @tickets.command()
     async def setchannel(self, ctx: commands.Context, panel_name: str, channel: discord.TextChannel):

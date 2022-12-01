@@ -108,16 +108,15 @@ class TestButton(discord.ui.View):
 class SupportButton(discord.ui.Button):
     def __init__(
             self,
-            panel_name: str,
             panel: dict
     ):
         super().__init__(
             style=get_color(panel["button_color"]),
             label=panel["button_text"],
-            custom_id=panel_name,
+            custom_id=panel["name"],
             emoji=panel["button_emoji"]
         )
-        self.panel_name = panel_name
+        self.panel_name = panel["name"]
 
     async def callback(self, interaction: discord.Interaction):
         try:
@@ -139,7 +138,7 @@ class SupportButton(discord.ui.Button):
         uid = str(user.id)
         if uid in opened and max_tickets <= len(opened[uid]):
             em = discord.Embed(description=_("You have the maximum amount of tickets opened already!"),
-                               color=user.color)
+                               color=discord.Color.red())
             return await interaction.response.send_message(embed=em, ephemeral=True)
         category = guild.get_channel(panel["category_id"]) if panel["category_id"] else None
         if not category:
@@ -170,7 +169,14 @@ class SupportButton(discord.ui.Button):
             "time": now.strftime("%I-%M-%p")
         }
         channel_name = name_fmt.format(**params) if name_fmt else user.name
-        channel = await category.create_text_channel(channel_name, overwrites=overwrite)
+        try:
+            channel = await category.create_text_channel(channel_name, overwrites=overwrite)
+        except discord.Forbidden:
+            em = discord.Embed(
+                description=_("I do not have permission to create new channels, please contact an admin!"),
+                color=discord.Color.red()
+            )
+            return await interaction.response.send_message(embed=em, ephemeral=True)
 
         default_message = _("Welcome to your ticket channel ") + f"{user.display_name}!"
         if user_can_close:
@@ -237,34 +243,21 @@ class SupportButton(discord.ui.Button):
             }
 
 
-class SupportView(discord.ui.View):
+class PanelView(discord.ui.View):
     def __init__(
             self,
             guild: discord.Guild,
             config: Config,
-            panel_name: str,
-            panel: dict,
+            panels: list,  # List of support panels that have the same message/channel ID
     ):
         super().__init__(timeout=None)
         self.guild = guild
         self.config = config
-        self.panel_name = panel_name
-        self.panel = panel
-        self.add_item(SupportButton(panel_name, panel))
-        self.channel = panel["channel_id"]
-        self.message = panel["message_id"]
+        self.panels = panels
 
     async def start(self):
-        chan = self.guild.get_channel(self.channel)
-        message = await chan.fetch_message(self.message)
+        for panel in self.panels:
+            self.add_item(SupportButton(panel))
+        chan = self.guild.get_channel(self.panels[0]["channel_id"])
+        message = await chan.fetch_message(self.panels[0]["message_id"])
         await message.edit(view=self)
-
-
-async def start_button(
-        guild: discord.Guild,
-        config: Config,
-        panel_name: str,
-        panel: dict,
-):
-    b = SupportView(guild, config, panel_name, panel)
-    await b.start()
