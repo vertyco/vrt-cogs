@@ -1159,7 +1159,7 @@ class UserCommands(commands.Cog):
                 data = sorted_users[i][1]
 
                 place = i + 1
-                stat = time_formatter(data[key]) if key == "voice" else humanize_number(int(data[key]))
+                stat = time_formatter(data[key]) if key == "voice" else int(data[key])
                 table.append([place, user, stat])
 
             headers = ["Pos", "Name", statname]
