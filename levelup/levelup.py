@@ -2270,18 +2270,15 @@ class LevelUp(UserCommands, commands.Cog):
             inline=False
         )
 
-        if weekly["autoreset"]:
-            reset_time = get_time_left(weekly["reset_day"], weekly["reset_hour"])
-            txt = _("Weekly stats will auto-reset on ") + f"<t:{reset_time}:d> (<t:{reset_time}:R>)\n"
-        else:
-            txt = _("Weekly stat auto-reset is disabled\n")
-
         dayname = self.daymap[weekly["reset_day"]]
-        txt += _("`Reset Day:  `") + f"{weekly['reset_day']} ({dayname})\n"
+        txt = _("`Reset Day:  `") + f"{weekly['reset_day']} ({dayname})\n"
         txt += _("`Reset Hour: `") + f"{weekly['reset_hour']}\n"
-        txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F>"
+        txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F> UTC (<t:{weekly['last_reset']}:R>)\n"
+        reset_time = get_time_left(weekly["reset_day"], weekly["reset_hour"])
+        txt += _("`Next Reset: `") + f"<t:{reset_time}:F> UTC (<t:{reset_time}:R>)\n"
+        status = _("(Enabled)") if weekly["autoreset"] else _("(Disabled)")
         em.add_field(
-            name=_("Auto Reset"),
+            name=_("Auto Reset ") + status,
             value=txt,
             inline=False
         )
