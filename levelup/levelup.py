@@ -890,11 +890,18 @@ class LevelUp(UserCommands, commands.Cog):
             description=desc,
             color=discord.Color.green()
         )
-        if self.dpy2:
-            if ctx.guild.icon:
-                em.set_thumbnail(url=ctx.guild.icon.url)
+        if ctx:
+            if self.dpy2:
+                if ctx.guild.icon:
+                    em.set_thumbnail(url=ctx.guild.icon.url)
+            else:
+                em.set_thumbnail(url=ctx.guild.icon_url)
         else:
-            em.set_thumbnail(url=ctx.guild.icon_url)
+            if self.dpy2:
+                if guild.icon:
+                    em.set_thumbnail(url=guild.icon.url)
+            else:
+                em.set_thumbnail(url=guild.icon_url)
 
         sorted_users = sorted(users.items(), key=lambda x: x[1]["xp"], reverse=True)
         top_uids = []
