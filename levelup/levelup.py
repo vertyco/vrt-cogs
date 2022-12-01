@@ -2377,8 +2377,8 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.tick()
         await self.save_cache(ctx.guild)
 
-    @weekly_set.command(name="removerole")
-    async def role_remove(self, ctx: commands.Context):
+    @weekly_set.command(name="autoremove")
+    async def toggle_autoremove(self, ctx: commands.Context):
         """One role holder at a time
         Toggle whether the winner role is removed from the previous holder when a new winner is selected"""
         toggle = self.data[ctx.guild.id]["weekly"]["remove"]
