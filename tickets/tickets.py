@@ -9,7 +9,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .base import BaseCommands
 from .commands import TicketCommands
-from .views import start_button
+from .views import PanelView
 
 log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
@@ -22,7 +22,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     Support ticket system with multi-panel functionality
     """
     __author__ = "Vertyco"
-    __version__ = "1.0.9"
+    __version__ = "1.1.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -76,13 +76,16 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
         self.auto_close.start()
 
     async def cog_load(self) -> None:
-        await self.bot.wait_until_red_ready()
-        await self.initialize()
+        asyncio.create_task(self.startup())
 
     async def cog_unload(self) -> None:
         self.auto_close.cancel()
 
-    async def initialize(self, target_guild: discord.Guild = None):
+    async def startup(self) -> None:
+        await self.bot.wait_until_red_ready()
+        await self.initialize()
+
+    async def initialize(self, target_guild: discord.Guild = None) -> None:
         conf = await self.config.all_guilds()
         for gid, data in conf.items():
             if not data:
@@ -93,23 +96,37 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
             if not guild:
                 continue
             panels = data["panels"]
+            to_deploy = {}  # Message ID keys for multi-button support
             for panel_name, panel in panels.items():
-                if not panel["category_id"]:
+                catid = panel["category_id"]
+                cid = panel["channel_id"]
+                mid = panel["message_id"]
+                if any([not catid, not cid, not mid]):
                     continue
-                if not panel["channel_id"]:
+
+                cat = guild.get_channel(catid)
+                chan = guild.get_channel(cid)
+                if any([not cat, not chan]):
                     continue
-                chan = guild.get_channel(panel["channel_id"])
-                if not chan:
-                    chan = self.bot.get_channel(panel["channel_id"])
-                    if not chan:
-                        continue
-                if not panel["message_id"]:
-                    continue
+
                 try:
-                    await chan.fetch_message(panel["message_id"])
+                    await chan.fetch_message(mid)
                 except discord.NotFound:
                     continue
-                await start_button(guild, self.config, panel_name, panel)
+
+                panel["name"] = panel_name
+                key = f"{cid}-{mid}"
+                if key in to_deploy:
+                    to_deploy[key].append(panel)
+                else:
+                    to_deploy[key] = [panel]
+
+            if not to_deploy:
+                continue
+
+            for panels in to_deploy.values():
+                panelview = PanelView(guild, self.config, panels)
+                await panelview.start()
 
     # Clean up any ticket data that comes from a deleted channel or unknown user
     async def cleanup(self):
