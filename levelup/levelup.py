@@ -951,7 +951,7 @@ class LevelUp(UserCommands, commands.Cog):
         self.data[guild.id]["weekly"]["last_reset"] = int(datetime.utcnow().timestamp())
         self.data[guild.id]["weekly"]["users"].clear()
 
-    @commands.group(name="levelset", aliases=["lset", "lvlset", "levelup"])
+    @commands.group(name="lvlset", aliases=["lset", "levelup"])
     @commands.admin()
     @commands.guild_only()
     async def lvl_group(self, ctx: commands.Context):
