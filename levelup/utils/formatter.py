@@ -1,12 +1,17 @@
 import math
 import random
+import logging
 from typing import Union
+from datetime import datetime, timedelta
 
 import discord
 from redbot.core.i18n import Translator
+from aiohttp import ClientSession
+from aiocache import cached, SimpleMemoryCache
 
 DPY2 = True if discord.__version__ > "1.7.3" else False
 _ = Translator("LevelUp", __file__)
+log = logging.getLogger("red.vrt.levelup.formatter")
 
 
 # Get a level that would be achieved from the amount of XP
@@ -85,6 +90,42 @@ def time_formatter(time_in_seconds) -> str:
     else:
         tstring = f"{years}y {days}d {hours}h {minutes}m"
     return tstring
+
+
+def get_time_left(weekday: int, hour: int):
+    now = datetime.utcnow()
+    days_until = weekday - int(now.strftime("%w"))
+    if days_until <= 0:
+        days_until += 7
+    with_delta = now + timedelta(days=days_until)
+    return int(with_delta.replace(hour=hour, minute=0, second=0).timestamp())
+
+
+def get_attachments(ctx) -> list:
+    """Get all attachments from context"""
+    content = []
+    if ctx.message.attachments:
+        atchmts = [a for a in ctx.message.attachments]
+        content.extend(atchmts)
+    if hasattr(ctx.message, "reference"):
+        try:
+            atchmts = [a for a in ctx.message.reference.resolved.attachments]
+            content.extend(atchmts)
+        except AttributeError:
+            pass
+    return content
+
+
+@cached(ttl=3600, cache=SimpleMemoryCache)
+async def get_content_from_url(url: str):
+    try:
+        async with ClientSession() as session:
+            async with session.get(url) as resp:
+                file = await resp.content.read()
+                return file
+    except Exception as e:
+        log.error(f"Could not get file content from url: {e}", exc_info=True)
+        return None
 
 
 async def get_user_position(conf: dict, user_id: str) -> dict:

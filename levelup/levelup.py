@@ -5,7 +5,7 @@ import logging
 import random
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from time import monotonic
 from typing import Union
@@ -27,16 +27,18 @@ from levelup.utils.formatter import (
     hex_to_rgb,
     get_level,
     get_xp,
-    time_to_level
+    time_to_level,
+    get_time_left,
+    get_attachments,
+    get_content_from_url
 )
 from .base import UserCommands
 
 matplotlib.use("agg")
 plt.switch_backend("agg")
+
 log = logging.getLogger("red.vrt.levelup")
-LOADING = "https://i.imgur.com/l3p6EMX.gif"
 _ = Translator("LevelUp", __file__)
-DPY2 = True if discord.__version__ > "1.7.3" else False
 
 
 async def confirm(ctx: commands.Context):
@@ -52,13 +54,13 @@ async def confirm(ctx: commands.Context):
 # CREDITS
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
-# Thanks Zephyrkul#1089 for the leaderboard formatting ideas!
+# Thanks Zephyrkul#1089 for introducing me to tabulate!
 
 @cog_i18n(_)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.16.43"
+    __version__ = "2.17.43"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -114,6 +116,21 @@ class LevelUp(UserCommands, commands.Cog):
             "notifylog": None,  # Notify member of level up in a set channel
             "notify": True,  # Toggle whether to notify member of levelups if notify log channel is not set,
             "showbal": True,  # Show economy balance
+
+            "weekly": {  # Weekly tracking
+                "users": {},  # Wiped weekly
+                "on": False,  # Weekly stats are being tracked for this guild or not
+                "autoreset": False,  # Whether to auto reset once a week or require manual reset
+                "reset_hour": 0,  # 0 - 23 hour (UTC time)
+                "reset_day": 0,  # 0 = sun, 1 = mon, 2 = tues, 3 = wed, 4 = thur, 5 = fri, 6 = sat
+                "last_reset": 0,  # Timestamp of when weekly was last reset
+                "count": 3,  # How many users to show in weekly winners
+                "channel": 0,  # Announce the weekly winners(top 3 by default)
+                "role": 0,  # Role awarded to top member for that week
+                "last_winner": 0,  # ID of the last member that won
+                "remove": True,  # Whether to remove the role from the previous winner when a new one is announced
+                "bonus": 0,  # Bonus exp to award the top X winners
+            },
         }
         default_global = {"ignored_guilds": [], "cache_seconds": 15, "render_gifs": False}
         self.config.register_guild(**default_guild)
@@ -121,13 +138,14 @@ class LevelUp(UserCommands, commands.Cog):
 
         self.threadpool = ThreadPoolExecutor(thread_name_prefix="levelup")
 
-        # Main cache
+        # Main cache (Guild ID keys are ints)
         self.data = {}
 
         # Global conf cache
         self.ignored_guilds = []
         self.cache_seconds = 15
         self.render_gifs = False
+
         # Keep background compilation cached
         self.bgdata = {
             "img": None,
@@ -139,7 +157,7 @@ class LevelUp(UserCommands, commands.Cog):
             "names": []
         }
 
-        # Guild id's as strings, user id's as strings
+        # Guild IDs as strings, user IDs as strings
         self.lastmsg = {}  # Last sent message for users
         self.voice = {}  # Voice channel info
         self.stars = {}  # Keep track of star cooldowns
@@ -149,7 +167,8 @@ class LevelUp(UserCommands, commands.Cog):
         self.looptimes = {
             "checkvoice": 0,
             "cachedump": 0,
-            "lvlassignavg": 0
+            "lvlassignavg": 0,
+            "weekly": 0
         }
 
         # For importing user levels from Fixator's Leveler cog
@@ -157,13 +176,28 @@ class LevelUp(UserCommands, commands.Cog):
         self.client = None
         self.db = None
 
-        # Cachey wakey dumpy wumpy
+        # Constants
+        self.loading = "https://i.imgur.com/l3p6EMX.gif"
+        self.dpy2 = True if discord.__version__ > "1.7.3" else False
+        self.daymap = {
+            0: _("Sunday"),
+            1: _("Monday"),
+            2: _("Tuesday"),
+            3: _("Wednesday"),
+            4: _("Thursday"),
+            5: _("Friday"),
+            6: _("Saturday")
+        }
+
+        # Loopies
         self.cache_dumper.start()
         self.voice_checker.start()
+        self.weekly_checker.start()
 
     def cog_unload(self):
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
+        self.weekly_checker.cancel()
         asyncio.create_task(self.save_cache())
 
     @staticmethod
@@ -246,7 +280,13 @@ class LevelUp(UserCommands, commands.Cog):
         if not can_give:
             return
 
-        self.data[gid]["users"][str(receiver.id)]["stars"] += 1
+        uid = str(receiver.id)
+        self.data[gid]["users"][uid]["stars"] += 1
+        if self.data[gid]["weekly"]["on"]:
+            weekly_users = self.data[gid]["weekly"]["users"]
+            if uid not in weekly_users:
+                self.init_user_weekly(gid, uid)
+            self.data[gid]["weekly"]["users"][uid]["stars"] += 1
 
         if not self.data[gid]["starmention"]:
             return
@@ -286,13 +326,11 @@ class LevelUp(UserCommands, commands.Cog):
         if not await self.bot.allowed_by_whitelist_blacklist(message.author):
             return
         gid = message.guild.id
-        uid = message.author.id
-        cid = message.channel.id
         if gid not in self.data:
             await self.initialize()
-        if uid in self.data[gid]["ignoredusers"]:
+        if message.author.id in self.data[gid]["ignoredusers"]:
             return
-        if cid in self.data[gid]["ignoredchannels"]:
+        if message.channel.id in self.data[gid]["ignoredchannels"]:
             return
         await self.message_handler(message)
 
@@ -303,6 +341,8 @@ class LevelUp(UserCommands, commands.Cog):
         allclean = []
         for guild in self.bot.guilds:
             gid = guild.id
+            if gid in self.data:  # Already in cache
+                continue
             data = await self.config.guild(guild).all()
             cleaned, newdata = self.cleanup(data.copy())
             if cleaned:
@@ -311,11 +351,10 @@ class LevelUp(UserCommands, commands.Cog):
                     if i not in allclean:
                         allclean.append(i)
                 log.info(f"Cleaned up {guild.name} config")
-            if gid not in self.data:
-                self.data[gid] = data
-                self.stars[gid] = {}
-                self.voice[gid] = {}
-                self.lastmsg[gid] = {}
+            self.data[gid] = data
+            self.stars[gid] = {}
+            self.voice[gid] = {}
+            self.lastmsg[gid] = {}
         if allclean and self.first_run:
             log.info(allclean)
             await self.save_cache()
@@ -423,6 +462,14 @@ class LevelUp(UserCommands, commands.Cog):
             "font": None
         }
 
+    def init_user_weekly(self, guild_id: int, user_id: str):
+        self.data[guild_id]["weekly"]["users"][user_id] = {
+            "xp": 0,
+            "voice": 0,  # Seconds,
+            "messages": 0,
+            "stars": 0
+        }
+
     async def check_levelups(self, guild_id: int, user_id: str, message: discord.Message = None):
         base = self.data[guild_id]["base"]
         exp = self.data[guild_id]["exp"]
@@ -470,13 +517,13 @@ class LevelUp(UserCommands, commands.Cog):
         name = member.name
         pfp = None
         try:
-            if DPY2:
+            if self.dpy2:
                 if member.avatar:
                     pfp = member.avatar.url
             else:
                 pfp = member.avatar_url
         except AttributeError:
-            log.warning(f"Failed to get avatar url for {member.name} in {guild.name}. DPY2 = {DPY2}")
+            log.warning(f"Failed to get avatar url for {member.name} in {guild.name}. DPY2 = {self.dpy2}")
 
         # Send levelup messages
         if not usepics:
@@ -593,6 +640,11 @@ class LevelUp(UserCommands, commands.Cog):
         if uid not in users:
             self.init_user(gid, uid)
 
+        weekly_users = conf["weekly"]["users"]
+        weekly_on = conf["weekly"]["on"]
+        if weekly_on and uid not in weekly_users:
+            self.init_user_weekly(gid, uid)
+
         # Whether to award xp
         addxp = False
         if uid not in self.lastmsg[gid]:
@@ -635,8 +687,12 @@ class LevelUp(UserCommands, commands.Cog):
                 xp_to_give += bxp
             self.lastmsg[gid][uid] = now
             self.data[gid]["users"][uid]["xp"] += xp_to_give
+            if weekly_on:
+                self.data[gid]["weekly"]["users"][uid]["xp"] += xp_to_give
 
         self.data[gid]["users"][uid]["messages"] += 1
+        if weekly_on:
+            self.data[gid]["weekly"]["users"][uid]["messages"] += 1
         await self.check_levelups(gid, uid, message)
 
     async def check_voice(self, guild: discord.guild):
@@ -651,8 +707,10 @@ class LevelUp(UserCommands, commands.Cog):
         xp_per_minute = conf["voicexp"]
         bonuses = conf["rolebonuses"]["voice"]
         channel_bonuses = conf["channelbonuses"]["voice"]
+        weekly_users = conf["weekly"]["users"]
+        weekly_on = conf["weekly"]["on"]
         bonusrole = None
-        async for member in AsyncIter(guild.members):
+        async for member in AsyncIter(guild.members, steps=100, delay=0.001):
             if member.bot:
                 continue
             now = datetime.now()
@@ -667,6 +725,9 @@ class LevelUp(UserCommands, commands.Cog):
                 self.voice[gid][uid] = now
             if uid not in self.data[gid]["users"]:
                 self.init_user(gid, uid)
+
+            if weekly_on and uid not in weekly_users:
+                self.init_user_weekly(gid, uid)
 
             ts = self.voice[gid][uid]
             td = (now - ts).total_seconds()
@@ -717,7 +778,11 @@ class LevelUp(UserCommands, commands.Cog):
                     bxp = random.choice(range(bmin, bmax))
                     xp_to_give += bxp
                 self.data[gid]["users"][uid]["xp"] += xp_to_give
+                if weekly_on:
+                    self.data[gid]["weekly"]["users"][uid]["xp"] += xp_to_give
             self.data[gid]["users"][uid]["voice"] += td
+            if weekly_on:
+                self.data[gid]["weekly"]["users"][uid]["voice"] += td
             self.voice[gid][uid] = now
             jobs.append(self.check_levelups(gid, uid))
         await asyncio.gather(*jobs)
@@ -759,11 +824,136 @@ class LevelUp(UserCommands, commands.Cog):
         await asyncio.sleep(300)
         log.info("Cache dumber ready")
 
+    @tasks.loop(minutes=15)
+    async def weekly_checker(self):
+        t = monotonic()
+        await self.check_weekly()
+        t = int((monotonic() - t) * 1000)
+        loop = self.looptimes["weekly"]
+        if not loop:
+            self.looptimes["weekly"] = t
+        else:
+            self.looptimes["weekly"] = int((loop + t) / 2)
+
+    @weekly_checker.before_loop
+    async def before_weekly_checker(self):
+        await self.bot.wait_until_red_ready()
+        await asyncio.sleep(60)
+
+    async def check_weekly(self):
+        for gid, data in self.data.items():
+            w = data["weekly"]
+            if not w["autoreset"] or not w["on"]:
+                continue
+            now = datetime.utcnow()
+            reset = True
+            if w["reset_hour"] != now.hour:
+                reset = False
+            if w["reset_day"] != int(now.strftime("%w")):
+                reset = False
+            # Check if the bot just missed the last reset
+            if not reset:
+                if (now - datetime.fromtimestamp(w["last_reset"])).days > 7:
+                    reset = True
+            if reset:
+                guild = self.bot.get_guild(gid)
+                if not guild:
+                    continue
+                await self.reset_weekly_stats(guild)
+
+    async def reset_weekly_stats(self, guild: discord.Guild, ctx: commands.Context = None):
+        """Announce and reset the weekly leaderboard"""
+        w = self.data[guild.id]["weekly"].copy()
+        users = {
+            guild.get_member(int(k)): v for k, v in w["users"].items() if (v["xp"] > 0 and guild.get_member(int(k)))
+        }
+        channel = guild.get_channel(w["channel"]) if w["channel"] else None
+        if not users:
+            if ctx:
+                await ctx.send(_("There are no users with exp"))
+            return
+
+        total_xp = humanize_number(round(sum(v["xp"] for v in users.values())))
+        total_messages = humanize_number(sum(v["messages"] for v in users.values()))
+        total_voicetime = time_formatter(sum(v["voice"] for v in users.values()))
+        total_stars = humanize_number(sum(v["stars"] for v in users.values()))
+
+        title = _("Top Weekly Exp Earners")
+        desc = _("`Total Exp:      `") + total_xp + "\n"
+        desc += _("`Total Messages: `") + total_messages + "\n"
+        desc += _("`Total Stars:    `") + total_stars + "\n"
+        desc += _("`Total Voice:    `") + total_voicetime
+        em = discord.Embed(
+            title=title,
+            description=desc,
+            color=discord.Color.green()
+        )
+        if self.dpy2:
+            if ctx.guild.icon:
+                em.set_thumbnail(url=ctx.guild.icon.url)
+        else:
+            em.set_thumbnail(url=ctx.guild.icon_url)
+
+        sorted_users = sorted(users.items(), key=lambda x: x[1]["xp"], reverse=True)
+        top_uids = []
+        for index, i in enumerate(sorted_users):
+            place = index + 1
+            if place > w["count"]:
+                break
+            user: discord.Member = i[0]
+            d: dict = i[1]
+
+            xp = humanize_number(round(d["xp"]))
+            msg = humanize_number(d["messages"])
+            stars = humanize_number(d["stars"])
+            voice = time_formatter(d["voice"])
+
+            value = _("`Exp:      `") + xp + "\n"
+            value += _("`Messages: `") + msg + "\n"
+            value += _("`Stars:    `") + stars + "\n"
+            value += _("`Voice:    `") + voice
+            em.add_field(
+                name=f"#{place}. {user.name}",
+                value=value,
+                inline=False
+            )
+            top_uids.append(str(user.id))
+
+        ignore = [discord.HTTPException, discord.Forbidden, discord.NotFound]
+        if ctx:
+            await ctx.send(embed=em)
+        elif channel:
+            with contextlib.suppress(*ignore):
+                await channel.send(embed=em)
+
+        winner: discord.Member = sorted_users[0][0]
+        role = guild.get_role(w["role"]) if w["role"] else None
+        # Remove role from last winner and apply to new winner(If a role is set)
+        if role:
+            if w["remove"]:
+                # Remove role from previous winner if toggled
+                last_winner = guild.get_member(w["last_winner"]) if w["last_winner"] else None
+                if last_winner:
+                    with contextlib.suppress(*ignore):
+                        await last_winner.remove_roles(role)
+            # Give new winner the role
+            with contextlib.suppress(*ignore):
+                await winner.add_roles(role)
+        # Set new last winner
+        self.data[guild.id]["weekly"]["last_winner"] = winner.id
+        # Apply bonus xp to top members
+        if w["bonus"]:
+            for uid in top_uids:
+                self.data[guild.id]["users"][uid]["xp"] += w["bonus"]
+
+        self.data[guild.id]["weekly"]["last_reset"] = int(datetime.utcnow().timestamp())
+        self.data[guild.id]["weekly"]["users"].clear()
+
     @commands.group(name="levelset", aliases=["lset", "lvlset", "levelup"])
     @commands.admin()
     @commands.guild_only()
     async def lvl_group(self, ctx: commands.Context):
-        """Access LevelUP setting commands"""
+        """Access LevelUp setting commands"""
         pass
 
     @lvl_group.command(name="view")
@@ -1097,16 +1287,11 @@ class LevelUp(UserCommands, commands.Cog):
 
         Attach the .json file to the command message to import
         """
-        if not ctx.message.attachments:
+        content = get_attachments(ctx)
+        if not content:
             return await ctx.send(_("Attach your backup file to the message when using this command."))
-
-        attachment_url = ctx.message.attachments[0].url
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(attachment_url) as resp:
-                    config = await resp.json()
-        except Exception as e:
-            return await ctx.send(f"Error:{box(str(e), lang='python')}")
+        raw = await get_content_from_url(content[0].url)
+        config = json.loads(raw)
 
         if not all([key.isdigit() for key in config.keys()]):
             return await ctx.send(_("This is an invalid global config!"))
@@ -1129,16 +1314,11 @@ class LevelUp(UserCommands, commands.Cog):
 
         Attach the .json file to the command message to import
         """
-        if not ctx.message.attachments:
+        content = get_attachments(ctx)
+        if not content:
             return await ctx.send(_("Attach your backup file to the message when using this command."))
-
-        attachment_url = ctx.message.attachments[0].url
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(attachment_url) as resp:
-                    config = await resp.json()
-        except Exception as e:
-            return await ctx.send(f"Error:{box(str(e), lang='python')}")
+        raw = await get_content_from_url(content[0].url)
+        config = json.loads(raw)
 
         default = self.config.defaults["GUILD"]
         if not all([key in default for key in config.keys()]):
@@ -1204,7 +1384,7 @@ class LevelUp(UserCommands, commands.Cog):
             description=_("Importing users from Leveler..."),
             color=discord.Color.orange()
         )
-        embed.set_thumbnail(url=LOADING)
+        embed.set_thumbnail(url=self.loading)
         msg = await ctx.send(embed=embed)
         users_imported = 0
         # Now to start the importing
@@ -1262,7 +1442,7 @@ class LevelUp(UserCommands, commands.Cog):
                 description=_("Importing Complete!\n") + f"{users_imported}" + _(" users imported"),
                 color=discord.Color.green()
             )
-            embed.set_thumbnail(url=LOADING)
+            embed.set_thumbnail(url=self.loading)
             await msg.edit(embed=embed)
             self._disconnect_mongo()
 
@@ -1289,7 +1469,7 @@ class LevelUp(UserCommands, commands.Cog):
         for uid in cleanup:
             del self.data[ctx.guild.id]["users"][uid]
             cleaned += 1
-        cleaned_data, newdat = self.cleanup(self.data[ctx.guild.id].copy())
+        # cleaned_data, newdat = self.cleanup(self.data[ctx.guild.id].copy())
         if not cleanup and not cleaned:
             return await ctx.send(_("Nothing to clean"))
 
@@ -1297,7 +1477,7 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.send(txt)
         await self.save_cache(ctx.guild)
 
-    @lvl_group.group(name="messages")
+    @lvl_group.group(name="messages", aliases=["message", "msg"])
     async def message_group(self, ctx: commands.Context):
         """Message settings"""
 
@@ -1802,7 +1982,7 @@ class LevelUp(UserCommands, commands.Cog):
             description="Adding roles, this may take a while...",
             color=discord.Color.magenta()
         )
-        embed.set_thumbnail(url=LOADING)
+        embed.set_thumbnail(url=self.loading)
         msg = await ctx.send(embed=embed)
         async with ctx.typing():
             conf = self.data[ctx.guild.id].copy()
@@ -2055,7 +2235,167 @@ class LevelUp(UserCommands, commands.Cog):
             await ctx.send(_("Member added to ignore list"))
         await self.save_cache(ctx.guild)
 
-    # For testing purposes
+    @commands.group(name="weeklyset", aliases=["wset"])
+    @commands.admin()
+    @commands.guild_only()
+    async def weekly_set(self, ctx: commands.Context):
+        """Access the weekly settings for levelUp"""
+        pass
+
+    @weekly_set.command(name="view")
+    async def weekly_settings(self, ctx: commands.Context):
+        """View the current weekly settings"""
+        weekly = self.data[ctx.guild.id]["weekly"]
+        status = _("**Enabled**") if weekly["on"] else _("**Disabled**")
+        desc = _("Weekly stat tracking is currently ") + status
+        em = discord.Embed(
+            title=_("Weekly LevelUp settings"),
+            description=desc,
+            color=ctx.author.color
+        )
+        channel = ctx.guild.get_channel(weekly["channel"]) if weekly["channel"] else None
+        role = ctx.guild.get_role(weekly["role"]) if weekly["role"] else None
+        last_winner = ctx.guild.get_member(weekly["last_winner"]) if weekly["last_winner"] else None
+        txt = _("`Winner Count: `") + str(weekly["count"]) + "\n"
+        txt += _("`Channel:      `") + (channel.mention if channel else _("None")) + "\n"
+        txt += _("`Role:         `") + (role.mention if role else _("None")) + "\n"
+        txt += _("`Last Winner:  `") + (last_winner.mention if last_winner else _("None")) + "\n"
+        txt += _("`Auto Remove:  `") + str(weekly["remove"]) + "\n"
+        txt += _("`Bonus Exp:    `") + humanize_number(weekly["bonus"])
+        em.add_field(
+            name=_("Settings"),
+            value=txt,
+            inline=False
+        )
+
+        if weekly["autoreset"]:
+            reset_time = get_time_left(weekly["reset_day"], weekly["reset_hour"])
+            txt = _("Weekly stats will auto-reset on ") + f"<t:{reset_time}:d> (<t:{reset_time}:R>)\n"
+        else:
+            txt = _("Weekly stat auto-reset is disabled\n")
+
+        dayname = self.daymap[weekly["reset_day"]]
+        txt += _("`Reset Day:  `") + f"{weekly['reset_day']} ({dayname})\n"
+        txt += _("`Reset Hour: `") + f"{weekly['reset_hour']}\n"
+        txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F>"
+        em.add_field(
+            name=_("Auto Reset"),
+            value=txt,
+            inline=False
+        )
+        await ctx.send(embed=em)
+
+    @weekly_set.command(name="reset")
+    async def reset_weekly(self, ctx: commands.Context, yes_or_no: bool):
+        """Reset the weekly leaderboard manually and announce winners"""
+        if not yes_or_no:
+            return await ctx.send(_("Not resetting weekly leaderboard"))
+        # func to reset and announce winners
+        await self.reset_weekly_stats(ctx.guild, ctx)
+
+    @weekly_set.command(name="toggle")
+    async def toggle_weekly(self, ctx: commands.Context):
+        """Toggle weekly stat tracking"""
+        toggle = self.data[ctx.guild.id]["weekly"]["on"]
+        if toggle:
+            self.data[ctx.guild.id]["weekly"]["on"] = False
+            await ctx.send(_("Weekly stat tracking has been **Disabled**"))
+        else:
+            self.data[ctx.guild.id]["weekly"]["on"] = True
+            await ctx.send(_("Weekly stat tracking has been **Enabled**"))
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="autoreset")
+    async def toggle_autoreset(self, ctx: commands.Context):
+        """Toggle weekly auto-reset"""
+        toggle = self.data[ctx.guild.id]["weekly"]["autoreset"]
+        if toggle:
+            self.data[ctx.guild.id]["weekly"]["autoreset"] = False
+            await ctx.send(_("Weekly auto-reset has been **Disabled**"))
+        else:
+            self.data[ctx.guild.id]["weekly"]["autoreset"] = True
+            await ctx.send(_("Weekly auto-reset has been **Enabled**"))
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="hour")
+    async def reset_hour(self, ctx: commands.Context, hour: int):
+        """What hour the weekly stats reset
+        Set the hour (0 - 23 in UTC) for the weekly reset to take place"""
+        if hour < 0 or hour > 23:
+            return await ctx.send(_("Hour must be 0 to 23"))
+        self.data[ctx.guild.id]["weekly"]["reset_hour"] = hour
+        txt = _("Weekly stats auto reset hour is now ") + f"{hour} (UTC)"
+        await ctx.send(txt)
+        await ctx.tick()
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="day")
+    async def reset_day(self, ctx: commands.Context, day_of_the_week: int):
+        """What day of the week the weekly stats reset
+        Set the day of the week (0 - 6 = sunday - saturday) for weekly reset to take place"""
+        if day_of_the_week < 0 or day_of_the_week > 6:
+            return await ctx.send(_("Day must be 0 to 6 (Sunday to Saturday)"))
+        self.data[ctx.guild.id]["weekly"]["reset_day"] = day_of_the_week
+        txt = _("Weekly stats auto reset day is now ") + f"**{self.daymap[day_of_the_week]}**"
+        await ctx.send(txt)
+        await ctx.tick()
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="top")
+    async def top_members(self, ctx: commands.Context, top_count: int):
+        """Top weekly member count
+        Set amount of members to include in the weekly top leaderboard"""
+        if top_count < 1:
+            return await ctx.send(_("There must be at least one winner!"))
+        elif top_count > 25:
+            return await ctx.send(_("There can only be up to 25 winners!"))
+        self.data[ctx.guild.id]["weekly"]["count"] = top_count
+        await ctx.tick()
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="channel")
+    async def weekly_channel(self, ctx: commands.Context, *, channel: discord.TextChannel):
+        """Weekly winner announcement channel
+        set the channel for weekly winners to be announced in when auto-reset is enabled"""
+        if not ctx.me.guild_permissions.send_messages:
+            return await ctx.send(_("I do not have permission to send messages to that channel!"))
+        if not ctx.me.guild_permissions.embed_links:
+            return await ctx.send(_("I do not have permission to send embeds to that channel!"))
+        self.data[ctx.guild.id]["weekly"]["channel"] = channel.id
+        await ctx.tick()
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="role")
+    async def winner_role(self, ctx: commands.Context, *, role: discord.Role):
+        """Weekly winner role reward
+        Set the role awarded to the top member of the weekly leaderboard"""
+        if not ctx.me.guild_permissions.manage_roles:
+            return await ctx.send(_("I do not have permission to manage roles!"))
+        self.data[ctx.guild.id]["weekly"]["role"] = role.id
+        await ctx.tick()
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="removerole")
+    async def role_remove(self, ctx: commands.Context):
+        """One role holder at a time
+        Toggle whether the winner role is removed from the previous holder when a new winner is selected"""
+        toggle = self.data[ctx.guild.id]["weekly"]["remove"]
+        if toggle:
+            self.data[ctx.guild.id]["weekly"]["remove"] = False
+            await ctx.send(_("Auto role removal from previous winner has been **Disabled**"))
+        else:
+            self.data[ctx.guild.id]["weekly"]["remove"] = True
+            await ctx.send(_("Auto role removal from previous winner has been **Enabled**"))
+        await self.save_cache(ctx.guild)
+
+    @weekly_set.command(name="bonus")
+    async def exp_bonus(self, ctx: commands.Context, exp_bonus: int):
+        """Weekly winners bonus experience points
+        Set to 0 to disable exp bonus"""
+        self.data[ctx.guild.id]["weekly"]["bonus"] = exp_bonus
+        await ctx.tick()
+        await self.save_cache(ctx.guild)
+
     @commands.command(name="mocklvlup", hidden=True)
     @commands.is_owner()
     @commands.guild_only()
@@ -2081,7 +2421,6 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.send(txt)
         await self.save_cache(ctx.guild)
 
-    # For testing purposes
     @commands.command(name="mocklvldown", hidden=True)
     @commands.is_owner()
     @commands.guild_only()
