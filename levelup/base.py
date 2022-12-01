@@ -1095,25 +1095,34 @@ class UserCommands(commands.Cog):
             return await ctx.send(_("No user data yet!"))
 
     @commands.command(name="weekly")
-    async def weekly_lb(self, ctx: commands.Context, order_by: Optional[str] = "exp"):
-        """View the weekly leaderboard"""
+    async def weekly_lb(self, ctx: commands.Context, stat: Optional[str]):
+        """
+        View the weekly leaderboard
+
+        **Arguments**
+        `stat`: What kind of stat to display the weekly leaderboard for
+        Valid options are `exp`, `messages`, `stars`, and `voice`
+        Abbreviations of those arguments may also be used
+        """
+        if not stat:
+            stat = "exp"
         w = self.data[ctx.guild.id]["weekly"]
         if not w["users"]:
             return await ctx.send(_("There is no data for the weekly leaderboard yet, please chat a bit first."))
 
-        if "v" in order_by.lower():
+        if "v" in stat.lower():
             sorted_users = sorted(w["users"].items(), key=lambda x: x[1]["voice"], reverse=True)
             title = _("Weekly Voice Leaderboard")
             key = "voice"
             statname = _("Voicetime")
             total = time_formatter(sum(v["voice"] for v in w["users"].values()))
-        elif "m" in order_by.lower():
+        elif "m" in stat.lower():
             sorted_users = sorted(w["users"].items(), key=lambda x: x[1]["messages"], reverse=True)
             title = _("Weekly Message Leaderboard")
             key = "messages"
             statname = _("Messages")
             total = humanize_number(round(sum(v["messages"] for v in w["users"].values())))
-        elif "s" in order_by.lower():
+        elif "s" in stat.lower():
             sorted_users = sorted(w["users"].items(), key=lambda x: x[1]["stars"], reverse=True)
             title = _("Weekly Star Leaderboard")
             key = "stars"

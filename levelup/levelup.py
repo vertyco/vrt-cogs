@@ -2268,9 +2268,9 @@ class LevelUp(UserCommands, commands.Cog):
         role = ctx.guild.get_role(weekly["role"]) if weekly["role"] else None
         last_winner = ctx.guild.get_member(weekly["last_winner"]) if weekly["last_winner"] else None
         txt = _("`Winner Count: `") + str(weekly["count"]) + "\n"
+        txt += _("`Last Winner:  `") + (last_winner.mention if last_winner else _("None")) + "\n"
         txt += _("`Channel:      `") + (channel.mention if channel else _("None")) + "\n"
         txt += _("`Role:         `") + (role.mention if role else _("None")) + "\n"
-        txt += _("`Last Winner:  `") + (last_winner.mention if last_winner else _("None")) + "\n"
         txt += _("`Auto Remove:  `") + str(weekly["remove"]) + "\n"
         txt += _("`Bonus Exp:    `") + humanize_number(weekly["bonus"])
         em.add_field(
