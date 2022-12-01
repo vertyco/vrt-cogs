@@ -445,7 +445,9 @@ class LevelUp(UserCommands, commands.Cog):
             guild = self.bot.get_guild(gid)
             if not guild:
                 continue
-            await self.config.guild(guild).set(data)
+            async with self.config.guild(guild).all() as conf:
+                for k, v in data.copy().items():
+                    conf[k] = v
 
     def init_user(self, guild_id: int, user_id: str):
         self.data[guild_id]["users"][user_id] = {
