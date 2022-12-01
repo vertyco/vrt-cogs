@@ -2280,9 +2280,9 @@ class LevelUp(UserCommands, commands.Cog):
         dayname = self.daymap[weekly["reset_day"]]
         txt = _("`Reset Day:  `") + f"{weekly['reset_day']} ({dayname})\n"
         txt += _("`Reset Hour: `") + f"{weekly['reset_hour']}\n"
-        txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F> UTC (<t:{weekly['last_reset']}:R>)\n"
+        txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F> UTC\n"
         reset_time = get_time_left(weekly["reset_day"], weekly["reset_hour"])
-        txt += _("`Next Reset: `") + f"<t:{reset_time}:F> UTC (<t:{reset_time}:R>)\n"
+        txt += _("`Next Reset: `") + f"<t:{reset_time}:F> UTC\n"
         status = _("(Enabled)") if weekly["autoreset"] else _("(Disabled)")
         em.add_field(
             name=_("Auto Reset ") + status,
