@@ -848,15 +848,17 @@ class LevelUp(UserCommands, commands.Cog):
             if not w["autoreset"] or not w["on"]:
                 continue
             now = datetime.utcnow()
-            reset = True
-            if w["reset_hour"] != now.hour:
-                reset = False
-            if w["reset_day"] != int(now.strftime("%w")):
-                reset = False
+            reset = False
+            conditions = [
+                w["reset_hour"] == now.hour,
+                w["reset_day"] == int(now.strftime("%w"))
+            ]
+            if all(conditions):
+                reset = True
             # Check if the bot just missed the last reset
-            if not reset:
-                if (now - datetime.fromtimestamp(w["last_reset"])).days > 7:
-                    reset = True
+            if not reset and (now - datetime.fromtimestamp(w["last_reset"])).days > 7:
+                log.info("More than 7 days since last reset have passed. Resetting.")
+                reset = True
             if reset:
                 guild = self.bot.get_guild(gid)
                 if not guild:
