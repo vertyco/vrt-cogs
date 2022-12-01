@@ -6,7 +6,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not persistently store data about users.",
   "hidden": false,
-  "install_msg": "Thank you for installing Tickets! type `[p]help Tickets` to see all commands.",
+  "install_msg": "Thank you for installing Tickets! type `[p]tickets setuphelp` to get started!",
   "min_bot_version": "3.5.0.dev0",
   "permissions": [
     "read_messages",
