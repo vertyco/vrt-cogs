@@ -56,11 +56,13 @@ async def confirm(ctx: commands.Context):
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
 # Thanks Zephyrkul#1089 for introducing me to tabulate!
 
+# redgettext levelup.py generator.py base.py utils/formatter.py --command-docstring
+
 @cog_i18n(_)
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.17.44"
+    __version__ = "2.17.45"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
