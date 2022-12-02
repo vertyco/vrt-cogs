@@ -30,14 +30,14 @@ class TicketCommands(commands.Cog):
             color=ctx.author.color
         )
         step1 = _("Set the category ID that new tickets will be created under.\n")
-        step1 += f"`{ctx.prefix}tickets setcategory " + _("<panel_name> <category_id>`")
+        step1 += f"`{ctx.prefix}tickets category " + _("<panel_name> <category_id>`")
         em.add_field(
             name=_("Step 1"),
             value=step1,
             inline=False
         )
         step2 = _("Set the channel that the bots ticket panel will be located in.\n")
-        step2 += f"`{ctx.prefix}tickets setchannel " + _("<panel_name> <channel_id>`")
+        step2 += f"`{ctx.prefix}tickets channel " + _("<panel_name> <channel_id>`")
         em.add_field(
             name=_("Step 2"),
             value=step2,
@@ -123,7 +123,7 @@ class TicketCommands(commands.Cog):
         await ctx.send(embed=em)
 
     @tickets.command()
-    async def setcategory(self, ctx: commands.Context, panel_name: str, category: discord.CategoryChannel):
+    async def category(self, ctx: commands.Context, panel_name: str, category: discord.CategoryChannel):
         """Set the category ID for a ticket panel"""
         panel_name = panel_name.lower()
         if not category.permissions_for(ctx.me).manage_channels:
@@ -144,7 +144,7 @@ class TicketCommands(commands.Cog):
             await ctx.send(_("New tickets will now be opened under that category!"))
 
     @tickets.command()
-    async def setchannel(self, ctx: commands.Context, panel_name: str, channel: discord.TextChannel):
+    async def channel(self, ctx: commands.Context, panel_name: str, channel: discord.TextChannel):
         """Set the channel ID where a ticket panel is located"""
         panel_name = panel_name.lower()
         if not channel.permissions_for(ctx.guild.me).view_channel:

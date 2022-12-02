@@ -109,7 +109,7 @@ class BaseCommands(commands.Cog):
         closed = int(datetime.datetime.now().timestamp())
         closer_name = escape_markdown(closedby)
         desc = _("Ticket created by ") + f"**{member.name}-{member.id}**" + _(" has been closed.\n")
-        desc += _("`PanelType: `") + f"{panel_name.capitalize()}\n"
+        desc += _("`PanelType: `") + f"{panel_name}\n"
         desc += _("`Opened on: `") + f"<t:{opened}:F>\n"
         desc += _("`Closed on: `") + f"<t:{closed}:F>\n"
         desc += _("`Closed by: `") + f"{closer_name}\n"
