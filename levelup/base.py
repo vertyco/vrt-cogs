@@ -26,7 +26,7 @@ from levelup.utils.formatter import (
     hex_to_rgb,
     get_level,
     get_xp,
-    get_time_left,
+    get_next_reset,
     get_attachments,
     get_content_from_url,
     get_user_position,
@@ -1107,6 +1107,8 @@ class UserCommands(commands.Cog):
         if not stat:
             stat = "exp"
         w = self.data[ctx.guild.id]["weekly"]
+        if not w["on"]:
+            return await ctx.send(_("Weekly stats are disabled for this guild"))
         if not w["users"]:
             return await ctx.send(_("There is no data for the weekly leaderboard yet, please chat a bit first."))
 
@@ -1138,7 +1140,7 @@ class UserCommands(commands.Cog):
         desc = _("Total ") + f"{statname}: `{total}`\n"
         desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d>\n"
         if w["autoreset"]:
-            tl = get_time_left(w["reset_day"], w["reset_hour"])
+            tl = get_next_reset(w["reset_day"], w["reset_hour"])
             desc += _("Next Reset: ") + f"<t:{tl}:d>\n"
 
         for i in sorted_users.copy():

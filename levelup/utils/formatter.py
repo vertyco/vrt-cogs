@@ -92,13 +92,10 @@ def time_formatter(time_in_seconds) -> str:
     return tstring
 
 
-def get_time_left(weekday: int, hour: int):
+def get_next_reset(weekday: int, hour: int):
     now = datetime.utcnow()
-    days_until = weekday - int(now.strftime("%w"))
-    if days_until <= 0:
-        days_until += 7
-    with_delta = now + timedelta(days=days_until)
-    return int(with_delta.replace(hour=hour, minute=0, second=0).timestamp())
+    reset = now + timedelta((weekday - now.weekday()) % 7)
+    return int(reset.replace(hour=hour, minute=0, second=0).timestamp())
 
 
 def get_attachments(ctx) -> list:
