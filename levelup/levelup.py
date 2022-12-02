@@ -28,7 +28,7 @@ from levelup.utils.formatter import (
     get_level,
     get_xp,
     time_to_level,
-    get_time_left,
+    get_next_reset,
     get_attachments,
     get_content_from_url
 )
@@ -60,7 +60,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.17.43"
+    __version__ = "2.17.44"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -180,13 +180,13 @@ class LevelUp(UserCommands, commands.Cog):
         self.loading = "https://i.imgur.com/l3p6EMX.gif"
         self.dpy2 = True if discord.__version__ > "1.7.3" else False
         self.daymap = {
-            0: _("Sunday"),
-            1: _("Monday"),
-            2: _("Tuesday"),
-            3: _("Wednesday"),
-            4: _("Thursday"),
-            5: _("Friday"),
-            6: _("Saturday")
+            0: _("Monday"),
+            1: _("Tuesday"),
+            2: _("Wednesday"),
+            3: _("Thursday"),
+            4: _("Friday"),
+            5: _("Saturday"),
+            6: _("Sunday"),
         }
 
         # Loopies
@@ -848,17 +848,25 @@ class LevelUp(UserCommands, commands.Cog):
             if not w["autoreset"] or not w["on"]:
                 continue
             now = datetime.utcnow()
+            last_reset = datetime.fromtimestamp(w["last_reset"])
+            if last_reset.day == now.day:
+                continue
+
+            td = now - last_reset
+
             reset = False
             conditions = [
                 w["reset_hour"] == now.hour,
-                w["reset_day"] == int(now.strftime("%w"))
+                w["reset_day"] == now.weekday()
             ]
             if all(conditions):
                 reset = True
+
             # Check if the bot just missed the last reset
-            if not reset and (now - datetime.fromtimestamp(w["last_reset"])).days > 7:
+            if not reset and td.days > 7:
                 log.info("More than 7 days since last reset have passed. Resetting.")
                 reset = True
+
             if reset:
                 guild = self.bot.get_guild(gid)
                 if not guild:
@@ -2283,7 +2291,7 @@ class LevelUp(UserCommands, commands.Cog):
         txt = _("`Reset Day:  `") + f"{weekly['reset_day']} ({dayname})\n"
         txt += _("`Reset Hour: `") + f"{weekly['reset_hour']}\n"
         txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F> UTC\n"
-        reset_time = get_time_left(weekly["reset_day"], weekly["reset_hour"])
+        reset_time = get_next_reset(weekly["reset_day"], weekly["reset_hour"])
         txt += _("`Next Reset: `") + f"<t:{reset_time}:F> UTC\n"
         status = _("(Enabled)") if weekly["autoreset"] else _("(Disabled)")
         em.add_field(
@@ -2340,9 +2348,9 @@ class LevelUp(UserCommands, commands.Cog):
     @weekly_set.command(name="day")
     async def reset_day(self, ctx: commands.Context, day_of_the_week: int):
         """What day of the week the weekly stats reset
-        Set the day of the week (0 - 6 = sunday - saturday) for weekly reset to take place"""
+        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place"""
         if day_of_the_week < 0 or day_of_the_week > 6:
-            return await ctx.send(_("Day must be 0 to 6 (Sunday to Saturday)"))
+            return await ctx.send(_("Day must be 0 to 6 (Monday to Sunday)"))
         self.data[ctx.guild.id]["weekly"]["reset_day"] = day_of_the_week
         txt = _("Weekly stats auto reset day is now ") + f"**{self.daymap[day_of_the_week]}**"
         await ctx.send(txt)
