@@ -10,7 +10,6 @@ from io import BytesIO
 from time import perf_counter
 from typing import Union, Optional
 
-import aiohttp
 import discord
 import tabulate
 import validators

@@ -5,12 +5,11 @@ import logging
 import random
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import BytesIO
 from time import monotonic
 from typing import Union
 
-import aiohttp
 import discord
 import matplotlib
 import matplotlib.pyplot as plt
@@ -62,7 +61,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.17.45"
+    __version__ = "2.17.46"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -657,9 +656,12 @@ class LevelUp(UserCommands, commands.Cog):
             td = (now - self.lastmsg[gid][uid]).total_seconds()
             if td > conf["cooldown"]:
                 addxp = True
-
+        try:
+            roles = list(message.author.roles)
+        except AttributeError:  # User sent message and then left?
+            return
         # Ignored stuff
-        for role in message.author.roles:
+        for role in roles:
             rid = str(role.id)
             if role.id in conf["ignoredroles"]:
                 addxp = False
