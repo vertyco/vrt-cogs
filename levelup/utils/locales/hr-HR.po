@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2022-12-02 15:17-0500\n"
-"PO-Revision-Date: 2022-12-02 20:22\n"
+"PO-Revision-Date: 2022-12-05 11:06\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -19,21 +19,21 @@ msgstr ""
 
 #: utils\formatter.py:75
 msgid "None"
-msgstr ""
+msgstr "Ništa"
 
 #: utils\formatter.py:78
 msgid " second"
-msgstr ""
+msgstr " sekunda"
 
 #: utils\formatter.py:80
 msgid " seconds"
-msgstr ""
+msgstr " sekundi"
 
 #: utils\formatter.py:83
 msgid " minute"
-msgstr ""
+msgstr " minuta"
 
 #: utils\formatter.py:85
 msgid " minutes"
-msgstr ""
+msgstr " minuta"
 
