@@ -43,7 +43,8 @@ class Fluent(commands.Cog):
             if language == value:
                 return key
 
-    @cached(ttl=86400, cache=SimpleMemoryCache)
+    # Cached for two days to minimize api use as much as possible
+    @cached(ttl=172800, cache=SimpleMemoryCache)
     async def translate(self, msg: str, dest: str):
         translated_msg = await self.bot.loop.run_in_executor(
             self.threadpool,
@@ -125,14 +126,18 @@ class Fluent(commands.Cog):
             return
         if not message.guild:
             return
+        if message.content is None:
+            return
         if not message.content.strip():
             return
+
         channels = await self.config.guild(message.guild).channels()
         channel_id = str(message.channel.id)
         if channel_id not in channels:
             return
         lang1 = channels[channel_id]["lang1"]
         lang2 = channels[channel_id]["lang2"]
+
         channel = message.channel
 
         # Attempts to translate message into language1.
