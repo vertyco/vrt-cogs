@@ -120,7 +120,7 @@ class Fluent(commands.Cog):
         for p in pagify(final, page_length=1000):
             await ctx.send(p)
 
-    @commands.Cog.listener("on_message")
+    @commands.Cog.listener("on_message_without_command")
     async def message_handler(self, message: discord.Message):
         if message.author.bot:
             return
