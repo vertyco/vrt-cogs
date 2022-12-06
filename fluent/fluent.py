@@ -18,7 +18,7 @@ class Fluent(commands.Cog):
     Seamless translation between two languages in one channel.
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.6"
+    __version__ = "1.1.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -137,7 +137,6 @@ class Fluent(commands.Cog):
             return
         lang1 = channels[channel_id]["lang1"]
         lang2 = channels[channel_id]["lang2"]
-
         channel = message.channel
 
         # Attempts to translate message into language1.
@@ -148,7 +147,6 @@ class Fluent(commands.Cog):
         fail_embed = discord.Embed(description="❌ API seems to be down at the moment.")
         if trans is None:
             return await channel.send(embed=fail_embed)
-
         # If the source language is also language1, translate into language2
         # If source language was language2, this saves api calls because translating gets the source and translation
         if trans.src == lang1:
@@ -159,6 +157,9 @@ class Fluent(commands.Cog):
             if trans is None:
                 return await channel.send(embed=fail_embed)
         # If src is lang2 then a 2nd api call isn't needed
+
+        if trans.text.lower() == message.content.lower():
+            return
 
         embed = discord.Embed(
             description=trans.text,
