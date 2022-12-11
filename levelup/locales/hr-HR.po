@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2022-12-02 15:17-0500\n"
-"PO-Revision-Date: 2022-12-02 20:22\n"
+"PO-Revision-Date: 2022-12-05 11:06\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -375,7 +375,7 @@ msgstr ""
 #: base.py:713
 #, docstring
 msgid "View your profile"
-msgstr ""
+msgstr "Pogledaj svoj profil"
 
 #: base.py:731
 msgid "No information available yet!"
@@ -441,7 +441,7 @@ msgstr ""
 
 #: base.py:871
 msgid "Prestige is disabled on this server!"
-msgstr ""
+msgstr "Prestige je onemogućen u ovom serveru!"
 
 #: base.py:874
 msgid "Prestige levels have not been set yet!"
@@ -482,7 +482,7 @@ msgstr ""
 #: base.py:932
 #, docstring
 msgid "View the Leaderboard"
-msgstr ""
+msgstr "Pogledaj ljestvicu"
 
 #: base.py:954 base.py:1024 base.py:1095
 msgid "No user data yet!"
@@ -508,7 +508,7 @@ msgstr "Stranica "
 #: base.py:1029
 #, docstring
 msgid "View the star leaderboard"
-msgstr ""
+msgstr "Pogledaj ljestvicu zvijezda"
 
 #: base.py:1041
 msgid "Nobody has stars yet 😕"
@@ -516,11 +516,11 @@ msgstr ""
 
 #: base.py:1055
 msgid "**Star Leaderboard**\n"
-msgstr ""
+msgstr "**Ljestvica za zvijezde**\n"
 
 #: base.py:1055
 msgid "**Total ⭐'s: "
-msgstr ""
+msgstr "**Ukupno ⭐: "
 
 #: base.py:1099
 #, docstring
@@ -531,63 +531,69 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, `stars`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Pogledaj tjednu ljestvicu\n\n"
+"        **Argumenti**\n"
+"        `stat`: Koji stat prikazat u tjednoj ljestvici\n"
+"        Valjane opcije su `exp`, `messages`, `stars`, i `voice`\n"
+"        Mogu se koristiti i kratice tih argumenata\n"
+"        "
 
 #: base.py:1111
 msgid "Weekly stats are disabled for this guild"
-msgstr ""
+msgstr "Tjedne statistike su onemogućene u ovom guildu"
 
 #: base.py:1113
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
-msgstr ""
+msgstr "Još nema podataka za tjednu ljestvicu, prvo napišite nešto."
 
 #: base.py:1117
 msgid "Weekly Voice Leaderboard"
-msgstr ""
+msgstr "Tjedna Voice ljestvica"
 
 #: base.py:1119
 msgid "Voicetime"
-msgstr ""
+msgstr "Vrijeme u voice-u"
 
 #: base.py:1123
 msgid "Weekly Message Leaderboard"
-msgstr ""
+msgstr "Tjedna ljestvica za poruke"
 
 #: base.py:1125
 msgid "Messages"
-msgstr ""
+msgstr "Poruka"
 
 #: base.py:1129
 msgid "Weekly Star Leaderboard"
-msgstr ""
+msgstr "Tjedna ljestvica za zvijezdice"
 
 #: base.py:1131
 msgid "Stars"
-msgstr ""
+msgstr "Zvijezda"
 
 #: base.py:1135
 msgid "Weekly Exp Leaderboard"
-msgstr ""
+msgstr "Tjedna Exp ljestvica"
 
 #: base.py:1137
 msgid "Exp"
-msgstr ""
+msgstr "Exp"
 
 #: base.py:1140
 msgid "Total "
-msgstr ""
+msgstr "Ukupno "
 
 #: base.py:1141
 msgid "Last Reset: "
-msgstr ""
+msgstr "Zadnji reset: "
 
 #: base.py:1144
 msgid "Next Reset: "
-msgstr ""
+msgstr "Sljedeći reset: "
 
 #: base.py:1150
 msgid "There is no data for the weekly "
-msgstr ""
+msgstr "Nema podataka za weekly "
 
 #: base.py:1150
 msgid " leaderboard yet"
@@ -595,7 +601,7 @@ msgstr ""
 
 #: base.py:1155
 msgid "You: "
-msgstr ""
+msgstr "Ti: "
 
 #: generator.py:207 generator.py:528
 msgid "Rank: #"
@@ -607,7 +613,7 @@ msgstr ""
 
 #: generator.py:209
 msgid "Exp: "
-msgstr ""
+msgstr "Exp: "
 
 #: generator.py:210 generator.py:531
 msgid "Messages: "
@@ -636,31 +642,31 @@ msgstr ""
 
 #: levelup.py:185
 msgid "Monday"
-msgstr ""
+msgstr "Ponedjeljak"
 
 #: levelup.py:186
 msgid "Tuesday"
-msgstr ""
+msgstr "Utorak"
 
 #: levelup.py:187
 msgid "Wednesday"
-msgstr ""
+msgstr "Srijeda"
 
 #: levelup.py:188
 msgid "Thursday"
-msgstr ""
+msgstr "Četvrtak"
 
 #: levelup.py:189
 msgid "Friday"
-msgstr ""
+msgstr "Petak"
 
 #: levelup.py:190
 msgid "Saturday"
-msgstr ""
+msgstr "Subota"
 
 #: levelup.py:191
 msgid "Sunday"
-msgstr ""
+msgstr "Nedjelja"
 
 #: levelup.py:306 levelup.py:308
 msgid "just gave a star to"
@@ -688,53 +694,53 @@ msgstr ""
 
 #: levelup.py:887
 msgid "There are no users with exp"
-msgstr ""
+msgstr "Nema korisnika s xp-om"
 
 #: levelup.py:895
 msgid "Top Weekly Exp Earners"
-msgstr ""
+msgstr "Najveći zarađivaći xp-a"
 
 #: levelup.py:896
 msgid "`Total Exp:      `"
-msgstr ""
+msgstr "`Ukupni exp:     `"
 
 #: levelup.py:897
 msgid "`Total Messages: `"
-msgstr ""
+msgstr "`Ukupno poruka:  `"
 
 #: levelup.py:898
 msgid "`Total Stars:    `"
-msgstr ""
+msgstr "`Ukupno zvijezda:`"
 
 #: levelup.py:899
 msgid "`Total Voice:    `"
-msgstr ""
+msgstr "`Ukupan Voice:   `"
 
 #: levelup.py:932
 msgid "`Exp:      `"
-msgstr ""
+msgstr "`Exp:      `"
 
 #: levelup.py:933
 msgid "`Messages: `"
-msgstr ""
+msgstr "`Poruke:   `"
 
 #: levelup.py:934
 msgid "`Stars:    `"
-msgstr ""
+msgstr "`Zvijezde: `"
 
 #: levelup.py:935
 msgid "`Voice:    `"
-msgstr ""
+msgstr "`Voice:    `"
 
 #: levelup.py:977
 #, docstring
 msgid "Access LevelUp setting commands"
-msgstr ""
+msgstr "Pristup naredbama za postavljanje LevelUp-a"
 
 #: levelup.py:982
 #, docstring
 msgid "View all LevelUP settings"
-msgstr ""
+msgstr "Pogledaj sve LevelUP postavke"
 
 #: levelup.py:1021
 msgid "Image"
@@ -891,15 +897,15 @@ msgstr ""
 
 #: levelup.py:1129
 msgid "Ignored Roles"
-msgstr ""
+msgstr "Ignorirane uloge"
 
 #: levelup.py:1138
 msgid "Ignored Channels"
-msgstr ""
+msgstr "Ignorirani kanali"
 
 #: levelup.py:1147
 msgid "Ignored Users"
-msgstr ""
+msgstr "Ignorirani korisnici"
 
 #: levelup.py:1157
 #, docstring
@@ -1039,7 +1045,7 @@ msgstr ""
 
 #: levelup.py:1273 levelup.py:2298
 msgid "(Disabled)"
-msgstr ""
+msgstr "(Onemogućeno)"
 
 #: levelup.py:1274
 msgid "Profiles will be static regardless of if the user has an animated profile"
@@ -1047,7 +1053,7 @@ msgstr ""
 
 #: levelup.py:1276 levelup.py:2298
 msgid "(Enabled)"
-msgstr ""
+msgstr "(Omogućeno)"
 
 #: levelup.py:1277
 msgid "Users with animated profiles will render as a gif"
@@ -1249,7 +1255,7 @@ msgstr ""
 #: levelup.py:1594
 #, docstring
 msgid "Voice settings"
-msgstr ""
+msgstr "Voice postavke"
 
 #: levelup.py:1599
 #, docstring
@@ -1257,7 +1263,10 @@ msgid "\n"
 "        Set voice XP gain\n"
 "        Sets the amount of XP gained per minute in a voice channel (default is 2)\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Postavite dobitak XP-a u voice-u\n"
+"        Postavlja količinu dobivenog XP-a po minuti u glasovnom kanalu (zadano je 2)\n"
+"        "
 
 #: levelup.py:1609
 #, docstring
@@ -1266,7 +1275,11 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Dodajte raspon bonus XP-a za određene uloge\n\n"
+"        Ovaj bonus se odnosi i na voice xp\n\n"
+"        Postavite min i maks na 0 kako bi uklonili bonus\n"
+"        "
 
 #: levelup.py:1635
 #, docstring
@@ -1275,7 +1288,11 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Dodajte raspon bonus XP-a za određene kanale\n\n"
+"        Ovaj bonus se odnosi i na voice xp\n\n"
+"        Postavite min i maks na 0 kako bi uklonili bonus\n"
+"        "
 
 #: levelup.py:1661
 #, docstring
@@ -1381,7 +1398,7 @@ msgstr ""
 
 #: levelup.py:1761
 msgid "User "
-msgstr ""
+msgstr "Korisnik "
 
 #: levelup.py:1761
 msgid " is now level "
@@ -1529,7 +1546,7 @@ msgstr ""
 
 #: levelup.py:1924
 msgid " seconds"
-msgstr ""
+msgstr " sekundi"
 
 #: levelup.py:1926
 msgid "Star reaction mentions will not be deleted"
@@ -1783,12 +1800,12 @@ msgstr ""
 #: levelup.py:2263
 #, docstring
 msgid "Access the weekly settings for levelUp"
-msgstr ""
+msgstr "Pristupi LevelUp postavkama tjedne ljestvice"
 
 #: levelup.py:2268
 #, docstring
 msgid "View the current weekly settings"
-msgstr ""
+msgstr "Pregledaj trenutne postavke tjedne ljestvice"
 
 #: levelup.py:2270
 msgid "**Enabled**"
@@ -1800,11 +1817,11 @@ msgstr ""
 
 #: levelup.py:2271
 msgid "Weekly stat tracking is currently "
-msgstr ""
+msgstr "Praćenje tjednih statistike je trenutno "
 
 #: levelup.py:2273
 msgid "Weekly LevelUp settings"
-msgstr ""
+msgstr "LevelUp postavke tjedne ljestvice"
 
 #: levelup.py:2280
 msgid "`Winner Count: `"
@@ -1848,11 +1865,11 @@ msgstr ""
 
 #: levelup.py:2295
 msgid "`Last Reset: `"
-msgstr ""
+msgstr "`Zadnji reset: `"
 
 #: levelup.py:2297
 msgid "`Next Reset: `"
-msgstr ""
+msgstr "`Sljedeći reset: `"
 
 #: levelup.py:2300
 msgid "Auto Reset "
@@ -1861,11 +1878,11 @@ msgstr ""
 #: levelup.py:2308
 #, docstring
 msgid "Reset the weekly leaderboard manually and announce winners"
-msgstr ""
+msgstr "Ručno resetiraj tjednu ljestvicu i objavi pobjednike"
 
 #: levelup.py:2310
 msgid "Not resetting weekly leaderboard"
-msgstr ""
+msgstr "Ne resetiram tjednu ljestvicu"
 
 #: levelup.py:2316
 #, docstring
@@ -1874,11 +1891,11 @@ msgstr ""
 
 #: levelup.py:2320
 msgid "Weekly stat tracking has been **Disabled**"
-msgstr ""
+msgstr "Praćenje tjednih statistika je **Onemogućeno**"
 
 #: levelup.py:2323
 msgid "Weekly stat tracking has been **Enabled**"
-msgstr ""
+msgstr "Praćenje tjednih statistika je **Omogućeno**"
 
 #: levelup.py:2328
 #, docstring
@@ -1887,11 +1904,11 @@ msgstr ""
 
 #: levelup.py:2332
 msgid "Weekly auto-reset has been **Disabled**"
-msgstr ""
+msgstr "Automatsko resetiranje tjedne ljestvice je **Onemogućeno**"
 
 #: levelup.py:2335
 msgid "Weekly auto-reset has been **Enabled**"
-msgstr ""
+msgstr "Automatsko resetiranje tjedne ljestvice je **Omogućeno**"
 
 #: levelup.py:2340
 #, docstring
