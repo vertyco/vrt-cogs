@@ -306,7 +306,7 @@ class LevelUp(UserCommands, commands.Cog):
             else:
                 await chan.send(star_giver + _("just gave a star to") + star_reciever)
 
-    @commands.Cog.listener("on_message")
+    @commands.Cog.listener("on_message_without_command")
     async def messages(self, message: discord.Message):
         # If message object is None for some reason
         if not message:
@@ -319,6 +319,9 @@ class LevelUp(UserCommands, commands.Cog):
             return
         # Check if guild is in the master ignore list
         if str(message.guild.id) in self.ignored_guilds:
+            return
+        # Ignore webhooks
+        if not isinstance(message.author, discord.Member):
             return
         # Check if cog is disabled
         if await self.bot.cog_disabled_in_guild(self, message.guild):
