@@ -473,14 +473,14 @@ class TicketCommands(commands.Cog):
                 if role:
                     suproles += f"{role.mention}\n"
         blacklist = conf["blacklist"]
-        busers = ""
+        blacklisted = ""
         if blacklist:
-            for user_id in blacklist:
-                user = ctx.guild.get_member(user_id)
-                if user:
-                    busers += f"{user.name}-{user.id}\n"
+            for uid_or_rid in blacklist:
+                user_or_role = ctx.guild.get_member(uid_or_rid) or ctx.guild.get_role(uid_or_rid)
+                if user_or_role:
+                    blacklisted += f"{user_or_role.mention}-{user_or_role.id}\n"
                 else:
-                    busers += _("LeftGuild") + f"-{user_id}\n"
+                    blacklisted += _("Invalid") + f"-{uid_or_rid}\n"
         embed = discord.Embed(
             title=_("Tickets Core Settings"),
             description=msg,
@@ -492,10 +492,10 @@ class TicketCommands(commands.Cog):
                 value=suproles,
                 inline=False
             )
-        if busers:
+        if blacklisted:
             embed.add_field(
-                name=_("Blacklisted Users"),
-                value=busers,
+                name=_("Blacklist"),
+                value=blacklisted,
                 inline=False
             )
         await ctx.send(embed=embed)
@@ -524,19 +524,19 @@ class TicketCommands(commands.Cog):
                 await ctx.send(role.name + _(" has been added to support roles"))
 
     @tickets.command(name="blacklist")
-    async def set_user_blacklist(self, ctx: commands.Context, *, user: discord.Member):
+    async def set_blacklist(self, ctx: commands.Context, *, user_or_role: Union[discord.Member, discord.Role]):
         """
-        Add/Remove users from the blacklist
+        Add/Remove users or roles from the blacklist
 
-        Users in the blacklist will not be able to create a ticket
+        Users and roles in the blacklist will not be able to create a ticket
         """
         async with self.config.guild(ctx.guild).blacklist() as bl:
-            if user.id in bl:
-                bl.remove(user.id)
-                await ctx.send(user.name + _("has been removed from the blacklist"))
+            if user_or_role.id in bl:
+                bl.remove(user_or_role.id)
+                await ctx.send(user_or_role.name + _(" has been removed from the blacklist"))
             else:
-                bl.append(user.id)
-                await ctx.send(user.name + _("has been added to the blacklist"))
+                bl.append(user_or_role.id)
+                await ctx.send(user_or_role.name + _(" has been added to the blacklist"))
 
     @tickets.command(name="noresponse")
     async def no_response_close(self, ctx: commands.Context, hours: int):

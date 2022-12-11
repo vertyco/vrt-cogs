@@ -129,7 +129,19 @@ class SupportButton(discord.ui.Button):
     async def create_ticket(self, interaction: discord.Interaction):
         guild = interaction.guild
         user = interaction.user
+        roles = [r.id for r in user.roles]
         conf = await self.view.config.guild(guild).all()
+        blacklist = conf["blacklist"]
+        for rid_uid in blacklist:
+            if rid_uid == user.id:
+                em = discord.Embed(description=_("You been blacklisted from creating tickets!"),
+                                   color=discord.Color.red())
+                return await interaction.response.send_message(embed=em, ephemeral=True)
+            elif rid_uid in roles:
+                em = discord.Embed(description=_("You have a role that has been blacklisted from creating tickets!"),
+                                   color=discord.Color.red())
+                return await interaction.response.send_message(embed=em, ephemeral=True)
+
         panel = conf["panels"][self.panel_name]
         max_tickets = conf["max_tickets"]
         opened = conf["opened"]
