@@ -22,7 +22,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     Support ticket system with multi-panel functionality
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.10"
+    __version__ = "1.2.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -183,8 +183,16 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                             self.valid.append(channel_id)
                         continue
                     td = (now - opened_on).total_seconds() / 3600
-                    if td < inactive:
+                    next_td = td + 0.33
+                    if td < inactive <= next_td:
+                        # Ticket hasn't expired yet but will in the next loop
+                        warning = _("If you do not respond to this ticket "
+                                    "within the next 20 minutes it will be closed automatically.")
+                        await channel.send(f"{member.mention}\n{warning}")
                         continue
+                    elif td < inactive:
+                        continue
+
                     time = "hours" if inactive != 1 else "hour"
                     try:
                         await self.close_ticket(
