@@ -1,14 +1,18 @@
-import functools
-from concurrent.futures import ThreadPoolExecutor
+import logging
+import traceback
 from typing import Optional
 
 import discord
 import googletrans
 from aiocache import cached, SimpleMemoryCache
 from redbot.core import commands, Config
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import pagify
 
+from .api import TranslateManager
+
 translator = googletrans.Translator()
+log = logging.getLogger("red.vrt.fluent")
 
 
 # Inspired by Obi-Wan3#0003's translation cog.
@@ -18,7 +22,7 @@ class Fluent(commands.Cog):
     Seamless translation between two languages in one channel.
     """
     __author__ = "Vertyco"
-    __version__ = "1.1.7"
+    __version__ = "1.2.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -27,12 +31,12 @@ class Fluent(commands.Cog):
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         """No data to delete"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red):
         self.bot = bot
+        self.translator = TranslateManager(bot)
         self.config = Config.get_conf(self, identifier=11701170)
         default_guild = {"channels": {}}
         self.config.register_guild(**default_guild)
-        self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="fluent")
 
     # Gets language identifier from string
     @staticmethod
@@ -46,11 +50,7 @@ class Fluent(commands.Cog):
     # Cached for two days to minimize api use as much as possible
     @cached(ttl=172800, cache=SimpleMemoryCache)
     async def translate(self, msg: str, dest: str):
-        translated_msg = await self.bot.loop.run_in_executor(
-            self.threadpool,
-            functools.partial(translator.translate, msg, dest)
-        )
-        return translated_msg
+        return await self.translator.translate(msg, dest)
 
     @commands.group()
     @commands.mod()
@@ -142,7 +142,8 @@ class Fluent(commands.Cog):
         # Attempts to translate message into language1.
         try:
             trans = await self.translate(message.content, lang1)
-        except AttributeError:
+        except Exception:
+            log.error(f"Initial translation failed: {traceback.format_exc()}")
             return
         fail_embed = discord.Embed(description="❌ API seems to be down at the moment.")
         if trans is None:
@@ -152,7 +153,8 @@ class Fluent(commands.Cog):
         if trans.src == lang1:
             try:
                 trans = await self.translate(message.content, lang2)
-            except AttributeError:
+            except Exception:
+                log.error(f"Secondary translation failed: {traceback.format_exc()}")
                 return
             if trans is None:
                 return await channel.send(embed=fail_embed)
