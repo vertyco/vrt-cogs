@@ -61,7 +61,7 @@ async def confirm(ctx: commands.Context):
 class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
     __author__ = "Vertyco#0117"
-    __version__ = "2.17.46"
+    __version__ = "2.17.47"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -306,7 +306,7 @@ class LevelUp(UserCommands, commands.Cog):
             else:
                 await chan.send(star_giver + _("just gave a star to") + star_reciever)
 
-    @commands.Cog.listener("on_message_without_command")
+    @commands.Cog.listener("on_message")
     async def messages(self, message: discord.Message):
         # If message object is None for some reason
         if not message:
