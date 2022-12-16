@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import logging
 from datetime import datetime
-from typing import Union, Optional
+from typing import Optional, Union
 
 import discord
 from redbot.core import commands
@@ -28,6 +28,8 @@ class Listen:
         if gid not in self.settings:
             return
         if not self.settings[gid]["enabled"]:
+            return
+        if self.settings[gid]["ignore_bots"] and member.bot:
             return
 
         now = datetime.utcnow()

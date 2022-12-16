@@ -1,5 +1,5 @@
 import discord
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, humanize_list
 
@@ -23,7 +23,7 @@ class NoNuke(Listen, commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.1"
+    __version__ = "0.2.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -44,6 +44,7 @@ class NoNuke(Listen, commands.Cog):
             "overload": 3,  # Actions within cooldown time
             "dm": False,  # Whether to DM the user the bot kicks
             "action": "notify",  # Valid types are 'kick', 'ban', 'strip', and 'notify'
+            "ignore_bots": False,  # Whether to ignore other bots
             "whitelist": [],  # Whitelist of trusted users(or bots)
         }
         self.config.register_guild(**default_guild)
@@ -91,6 +92,24 @@ class NoNuke(Listen, commands.Cog):
         else:
             await self.config.guild(ctx.guild).enabled.set(True)
             await ctx.send("NoNuke system **Enabled**")
+        await self.initialize(ctx.guild)
+
+    @nonuke.command()
+    async def ignorebots(self, ctx):
+        """
+        Toggle whether other bots are ignored
+
+        **NOTE:** Bot specific roles (the role created when the bot joins) cannot be removed.
+        If NoNuke is set to strip roles, and a bot triggers it while having an integrated role, NoNuke will fail
+        to remove the role from it.
+        """
+        toggle = await self.config.guild(ctx.guild).ignore_bots()
+        if toggle:
+            await self.config.guild(ctx.guild).ignore_bots.set(False)
+            await ctx.send("Other bots will **not** be ignored")
+        else:
+            await self.config.guild(ctx.guild).ignore_bots.set(True)
+            await ctx.send("Other bots will be ignored")
         await self.initialize(ctx.guild)
 
     @nonuke.command()
