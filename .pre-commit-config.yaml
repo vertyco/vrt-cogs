@@ -12,3 +12,8 @@ repos:
     hooks:
     -   id: black
         exclude: pixl/defaults.py
+-   repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
+    hooks:
+        - id: isort
+          exclude: pixl/defaults.py
