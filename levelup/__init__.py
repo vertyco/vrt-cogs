@@ -1,3 +1,4 @@
+# redgettext base.py generator.py levelup.py utils/formatter.py --command-docstring
 import asyncio
 import json
 import logging
