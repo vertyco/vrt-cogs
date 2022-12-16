@@ -13,7 +13,7 @@ from redbot.core import commands
 color_map = {
     "\N{CROSS MARK}": ButtonStyle.grey,
     "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}": ButtonStyle.red,
-    "\N{WASTEBASKET}\N{VARIATION SELECTOR-16}": ButtonStyle.grey
+    "\N{WASTEBASKET}\N{VARIATION SELECTOR-16}": ButtonStyle.grey,
 }
 
 
@@ -22,7 +22,7 @@ async def inter_check(ctx: commands.Context, interaction: Interaction):
         asyncio.create_task(
             interaction.response.send_message(
                 content="You are not allowed to interact with this button.",
-                ephemeral=True
+                ephemeral=True,
             )
         )
     return interaction.user.id == ctx.author.id
@@ -34,7 +34,7 @@ class Confirm(View):
         self.value = None
         super().__init__(timeout=60)
 
-    @discord.ui.button(label='Yes', style=ButtonStyle.grey)
+    @discord.ui.button(label="Yes", style=ButtonStyle.grey)
     async def confirm(self, interaction: Interaction, button: Button):
         if not await inter_check(self.ctx, interaction):
             return
@@ -42,7 +42,7 @@ class Confirm(View):
         await interaction.response.defer()
         self.stop()
 
-    @discord.ui.button(label='No', style=ButtonStyle.grey)
+    @discord.ui.button(label="No", style=ButtonStyle.grey)
     async def cancel(self, interaction: Interaction, button: Button):
         if not await inter_check(self.ctx, interaction):
             return
@@ -77,7 +77,13 @@ async def confirm(ctx: commands.Context, msg: discord.Message) -> Optional[bool]
 
 
 class MenuButton(Button):
-    def __init__(self, emoji: str, style: ButtonStyle, row: Optional[int] = 1, label: Optional[str] = None):
+    def __init__(
+        self,
+        emoji: str,
+        style: ButtonStyle,
+        row: Optional[int] = 1,
+        label: Optional[str] = None,
+    ):
         super().__init__(style=style, emoji=emoji, row=row, label=label)
         self.emoji = emoji
 
@@ -87,13 +93,13 @@ class MenuButton(Button):
 
 class MenuView(View):
     def __init__(
-            self,
-            ctx: commands.Context,
-            pages: List[discord.Embed],
-            controls: dict,
-            message: Optional[discord.Message] = None,
-            page: Optional[int] = 0,
-            timeout: Optional[float] = 60.0
+        self,
+        ctx: commands.Context,
+        pages: List[discord.Embed],
+        controls: dict,
+        message: Optional[discord.Message] = None,
+        page: Optional[int] = 0,
+        timeout: Optional[float] = 60.0,
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx
@@ -113,17 +119,11 @@ class MenuView(View):
 
     @staticmethod
     async def respond(interaction: Interaction, text: str):
-        await interaction.response.send_message(
-            content=text,
-            ephemeral=True
-        )
+        await interaction.response.send_message(content=text, ephemeral=True)
 
     @staticmethod
     async def respond_embed(interaction: Interaction, embed: discord.Embed):
-        await interaction.response.send_message(
-            embed=embed,
-            ephemeral=True
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def interaction_check(self, interaction: Interaction):
         return await inter_check(self.ctx, interaction)
@@ -153,12 +153,12 @@ class MenuView(View):
 
 
 async def menu(
-        ctx: commands.Context,
-        pages: List[discord.Embed],
-        controls: dict,
-        message: Optional[discord.Message] = None,
-        page: Optional[int] = 0,
-        timeout: Optional[float] = 60.0
+    ctx: commands.Context,
+    pages: List[discord.Embed],
+    controls: dict,
+    message: Optional[discord.Message] = None,
+    page: Optional[int] = 0,
+    timeout: Optional[float] = 60.0,
 ):
     """
     An emoji-based dpy2 menu

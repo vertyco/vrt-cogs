@@ -13,7 +13,7 @@ from redbot.core import commands
 color_map = {
     "\N{CROSS MARK}": ButtonStyle.grey,
     "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}": ButtonStyle.red,
-    "\N{LEFT-POINTING MAGNIFYING GLASS}": ButtonStyle.green
+    "\N{LEFT-POINTING MAGNIFYING GLASS}": ButtonStyle.green,
 }
 
 
@@ -22,7 +22,7 @@ async def inter_check(ctx: commands.Context, interaction: Interaction):
         asyncio.create_task(
             interaction.response.send_message(
                 content="You are not allowed to interact with this button.",
-                ephemeral=True
+                ephemeral=True,
             )
         )
     return interaction.user.id == ctx.author.id
@@ -34,7 +34,7 @@ class Confirm(View):
         self.value = None
         super().__init__(timeout=60)
 
-    @discord.ui.button(label='Yes', style=ButtonStyle.grey)
+    @discord.ui.button(label="Yes", style=ButtonStyle.grey)
     async def confirm(self, interaction: Interaction, button: Button):
         if not await inter_check(self.ctx, interaction):
             return
@@ -42,7 +42,7 @@ class Confirm(View):
         await interaction.response.defer()
         self.stop()
 
-    @discord.ui.button(label='No', style=ButtonStyle.grey)
+    @discord.ui.button(label="No", style=ButtonStyle.grey)
     async def cancel(self, interaction: Interaction, button: Button):
         if not await inter_check(self.ctx, interaction):
             return
@@ -87,13 +87,13 @@ class MenuButton(Button):
 
 class MenuView(View):
     def __init__(
-            self,
-            ctx: commands.Context,
-            pages: Union[List[str], List[discord.Embed]],
-            controls: dict,
-            message: discord.Message = None,
-            page: int = 0,
-            timeout: float = 60.0
+        self,
+        ctx: commands.Context,
+        pages: Union[List[str], List[discord.Embed]],
+        controls: dict,
+        message: discord.Message = None,
+        page: int = 0,
+        timeout: float = 60.0,
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx
@@ -113,17 +113,11 @@ class MenuView(View):
 
     @staticmethod
     async def respond(interaction: Interaction, text: str):
-        await interaction.response.send_message(
-            content=text,
-            ephemeral=True
-        )
+        await interaction.response.send_message(content=text, ephemeral=True)
 
     @staticmethod
     async def respond_embed(interaction: Interaction, embed: discord.Embed):
-        await interaction.response.send_message(
-            embed=embed,
-            ephemeral=True
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def interaction_check(self, interaction: Interaction):
         return await inter_check(self.ctx, interaction)
@@ -159,12 +153,12 @@ class MenuView(View):
 
 
 async def menu(
-        ctx: commands.Context,
-        pages: Union[List[str], List[discord.Embed]],
-        controls: dict,
-        message: discord.Message = None,
-        page: int = 0,
-        timeout: float = 60.0
+    ctx: commands.Context,
+    pages: Union[List[str], List[discord.Embed]],
+    controls: dict,
+    message: discord.Message = None,
+    page: int = 0,
+    timeout: float = 60.0,
 ):
     """
     An emoji-based dpy2 menu
@@ -205,7 +199,7 @@ async def menu(
     if not isinstance(pages[0], (discord.Embed, str)):
         raise RuntimeError("Pages must be of type discord.Embed or str")
     if not all(isinstance(x, discord.Embed) for x in pages) and not all(
-            isinstance(x, str) for x in pages
+        isinstance(x, str) for x in pages
     ):
         raise RuntimeError("All pages must be of the same type")
     for key, value in controls.items():

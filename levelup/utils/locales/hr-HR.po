@@ -36,4 +36,3 @@ msgstr " minuta"
 #: utils\formatter.py:85
 msgid " minutes"
 msgstr " minuta"
-

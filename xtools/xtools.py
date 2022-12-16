@@ -10,16 +10,18 @@ from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
-from .formatter import (profile,
-                        profile_embed,
-                        screenshot_embeds,
-                        game_embeds,
-                        friend_embeds,
-                        gameclip_embeds,
-                        ms_status,
-                        gwg_embeds,
-                        mostplayed,
-                        stats_api_format)
+from .formatter import (
+    profile,
+    profile_embed,
+    screenshot_embeds,
+    game_embeds,
+    friend_embeds,
+    gameclip_embeds,
+    ms_status,
+    gwg_embeds,
+    mostplayed,
+    stats_api_format,
+)
 
 if discord.__version__ > "1.7.3":
     from .dpymenu import menu, DEFAULT_CONTROLS
@@ -58,6 +60,7 @@ class XTools(commands.Cog):
         self.bot = bot
         if not DPY2:
             from dislash import InteractionClient
+
             InteractionClient(bot, sync_commands=False)
         self.session = aiohttp.ClientSession()
         self.config = Config.get_conf(self, 117117117117, force_registration=True)
@@ -65,7 +68,7 @@ class XTools(commands.Cog):
             "tokens": {},
             "clientid": None,
             "clientsecret": None,
-            "users": {}
+            "users": {},
         }
         self.config.register_global(**default_global)
 
@@ -79,7 +82,9 @@ class XTools(commands.Cog):
     @staticmethod
     async def microsoft_services_status():
         async with aiohttp.ClientSession() as session:
-            async with session.get("https://xnotify.xboxlive.com/servicestatusv6/US/en-US") as resp:
+            async with session.get(
+                "https://xnotify.xboxlive.com/servicestatusv6/US/en-US"
+            ) as resp:
                 data = xmltojson.parse(await resp.text())  # Parse HTML response to JSON
                 data = json.loads(data)
                 return data
@@ -90,8 +95,10 @@ class XTools(commands.Cog):
         client_id = await self.config.clientid()
         client_secret = await self.config.clientsecret()
         if not client_id:
-            await ctx.send(f"Client ID and Secret have not been set yet!\n"
-                           f"Bot owner needs to run `{ctx.prefix}apiset tokens`")
+            await ctx.send(
+                f"Client ID and Secret have not been set yet!\n"
+                f"Bot owner needs to run `{ctx.prefix}apiset tokens`"
+            )
             return None
         auth_mgr = AuthenticationManager(
             session, client_id, client_secret, REDIRECT_URI
@@ -120,9 +127,11 @@ class XTools(commands.Cog):
             await auth_mgr.refresh_tokens()
         except Exception as e:
             if "Bad Request" in str(e):
-                await ctx.send("Tokens have failed to refresh.\n"
-                               "Microsoft API may be having issues.\n"
-                               f"Bot owner will need to re-authorize their tokens with `{ctx.prefix}apiset auth`")
+                await ctx.send(
+                    "Tokens have failed to refresh.\n"
+                    "Microsoft API may be having issues.\n"
+                    f"Bot owner will need to re-authorize their tokens with `{ctx.prefix}apiset auth`"
+                )
                 return None
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
         xbl_client = XboxLiveClient(auth_mgr)
@@ -130,18 +139,19 @@ class XTools(commands.Cog):
 
     # Send user DM asking for authentication
     async def ask_auth(self, ctx, author: discord.User, auth_url):
-        plz_auth = f"Please follow this link to authorize your tokens with Microsoft.\n" \
-                   f"Copy the ENTIRE contents of the address bar after you authorize, " \
-                   f"and reply to this message with what you copied.\n" \
-                   f"**[Click Here To Authorize Your Account]({auth_url})**"
-        embed = discord.Embed(
-            description=plz_auth,
-            color=ctx.author.color
+        plz_auth = (
+            f"Please follow this link to authorize your tokens with Microsoft.\n"
+            f"Copy the ENTIRE contents of the address bar after you authorize, "
+            f"and reply to this message with what you copied.\n"
+            f"**[Click Here To Authorize Your Account]({auth_url})**"
         )
+        embed = discord.Embed(description=plz_auth, color=ctx.author.color)
         try:
             await author.send(embed=embed)
         except discord.Forbidden:
-            return await ctx.send("I am unable to DM you, please open your DMs and try again.")
+            return await ctx.send(
+                "I am unable to DM you, please open your DMs and try again."
+            )
 
         def check(message):
             return message.author == ctx.author
@@ -168,12 +178,14 @@ class XTools(commands.Cog):
                 await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
             except Exception as e:
                 if "Bad Request" in str(e):
-                    return await author.send("Bad Request, Make sure to use a **Different** email than the one "
-                                             "you used to make your Azure app to sign into.\n"
-                                             "Check the following as well:\n"
-                                             "• Paste the **entire** contents of the address bar.\n"
-                                             "• Make sure that the callback URI in your azure app is: "
-                                             "http://localhost/auth/callback")
+                    return await author.send(
+                        "Bad Request, Make sure to use a **Different** email than the one "
+                        "you used to make your Azure app to sign into.\n"
+                        "Check the following as well:\n"
+                        "• Paste the **entire** contents of the address bar.\n"
+                        "• Make sure that the callback URI in your azure app is: "
+                        "http://localhost/auth/callback"
+                    )
                 return await author.send(f"Authorization failed: {e}")
             await author.send("Tokens have been Authorized✅")
 
@@ -195,8 +207,10 @@ class XTools(commands.Cog):
     async def pull_user(self, ctx):
         users = await self.config.users()
         if str(ctx.author.id) not in users:
-            await ctx.send(f"You haven't set your Gamertag yet! To set a Gamertag type `{ctx.prefix}setgt`\n"
-                           f"Alternatively, you can type the command and include a Gamertag.")
+            await ctx.send(
+                f"You haven't set your Gamertag yet! To set a Gamertag type `{ctx.prefix}setgt`\n"
+                f"Alternatively, you can type the command and include a Gamertag."
+            )
             return None
         return users[str(ctx.author.id)]["gamertag"]
 
@@ -209,8 +223,10 @@ class XTools(commands.Cog):
     async def auth_user(self, ctx):
         client_id = await self.config.clientid()
         if not client_id:
-            await ctx.send(f"Client ID and Secret have not been set yet!\n"
-                           f"Bot owner needs to run `{ctx.prefix}apiset tokens`")
+            await ctx.send(
+                f"Client ID and Secret have not been set yet!\n"
+                f"Bot owner needs to run `{ctx.prefix}apiset tokens`"
+            )
             return None
         url = "https://login.live.com/oauth20_authorize.srf?"
         cid = f"client_id={client_id}"
@@ -226,44 +242,44 @@ class XTools(commands.Cog):
         """Tutorial for getting your ClientID and Secret"""
         embed = discord.Embed(
             description="**How to get your Client ID and Secret**",
-            color=discord.Color.magenta()
+            color=discord.Color.magenta(),
         )
         embed.add_field(
             name="Step 1",
             value="• Register a new application in "
-                  "[Azure AD](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)",
-            inline=False
+            "[Azure AD](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)",
+            inline=False,
         )
         embed.add_field(
             name="Step 2",
             value="• Name your app\n"
-                  "• Select `Personal Microsoft accounts only` under supported account types\n"
-                  "• Add http://localhost/auth/callback as a Redirect URI of type `Web`",
-            inline=False
+            "• Select `Personal Microsoft accounts only` under supported account types\n"
+            "• Add http://localhost/auth/callback as a Redirect URI of type `Web`",
+            inline=False,
         )
         embed.add_field(
             name="Step 3",
             value="• Copy your Application (client) ID and save it for setting your tokens",
-            inline=False
+            inline=False,
         )
         embed.add_field(
             name="Step 4",
             value="• On the App Page, navigate to `Certificates & secrets`\n"
-                  "• Generate a new client secret and save it for setting your tokens\n"
-                  "• **Importatnt:** The 'Value' for the secret is what you use, NOT the 'Secret ID'",
-            inline=False
+            "• Generate a new client secret and save it for setting your tokens\n"
+            "• **Importatnt:** The 'Value' for the secret is what you use, NOT the 'Secret ID'",
+            inline=False,
         )
         embed.add_field(
             name="Step 5",
             value=f"• Type `{ctx.prefix}apiset tokens` and include your Client ID and Secret\n",
-            inline=False
+            inline=False,
         )
         embed.add_field(
             name="Step 6",
             value=f"• Type `{ctx.prefix}apiset auth` and the bot will dm you a link to authorize your tokens\n"
-                  f"• Alternatively, try any command and the bot will DM you the link\n"
-                  f"• Make sure to use a **Different** email to sign in than the one you created the Azure app with",
-            inline=False
+            f"• Alternatively, try any command and the bot will DM you the link\n"
+            f"• Make sure to use a **Different** email to sign in than the one you created the Azure app with",
+            inline=False,
         )
         await ctx.send(embed=embed)
 
@@ -272,8 +288,10 @@ class XTools(commands.Cog):
         """Set Client ID and Secret"""
         await self.config.clientid.set(client_id)
         await self.config.clientsecret.set(client_secret)
-        await ctx.send(f"Tokens have been set! "
-                       f"Try any command and the bot will DM you the link with instructions to authorize your tokens")
+        await ctx.send(
+            f"Tokens have been set! "
+            f"Try any command and the bot will DM you the link with instructions to authorize your tokens"
+        )
         try:
             await ctx.message.delete()
         except discord.Forbidden:
@@ -298,7 +316,11 @@ class XTools(commands.Cog):
                 if not xbl_client:
                     return
                 try:
-                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                    profile_data = json.loads(
+                        (
+                            await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                        ).json()
+                    )
                 except aiohttp.ClientResponseError:
                     return await ctx.send("Invalid Gamertag. Try again.")
                 # Format json data
@@ -320,7 +342,9 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                )
             except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid Gamertag. Try again.")
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -334,7 +358,9 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_xuid(xuid)).json())
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_xuid(xuid)).json()
+                )
             except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid XUID. Try again.")
             gt, _, _, _, _, _, _, _, _ = profile(profile_data)
@@ -353,27 +379,33 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             embed = discord.Embed(
-                description="Gathering data...",
-                color=discord.Color.random()
+                description="Gathering data...", color=discord.Color.random()
             )
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                )
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            friends_data = json.loads((await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json())
+            friends_data = json.loads(
+                (
+                    await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
+                ).json()
+            )
 
             # Manually get presence and activity info since xbox webapi method is outdated
             token = await self.get_token(session)
-            header = {"x-xbl-contract-version": "3",
-                      "Authorization": token,
-                      "Accept": "application/json",
-                      "Accept-Language": "en-US",
-                      "Host": "presencebeta.xboxlive.com"
-                      }
+            header = {
+                "x-xbl-contract-version": "3",
+                "Authorization": token,
+                "Accept": "application/json",
+                "Accept-Language": "en-US",
+                "Host": "presencebeta.xboxlive.com",
+            }
             url = f"https://userpresence.xboxlive.com/users/xuid({xuid})"
             async with self.session.get(url=url, headers=header) as res:
                 presence_data = await res.json(content_type=None)
@@ -404,31 +436,37 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             embed = discord.Embed(
-                description="Gathering data...",
-                color=discord.Color.random()
+                description="Gathering data...", color=discord.Color.random()
             )
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                )
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
                 data = json.loads(
-                    (await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)).json())
+                    (
+                        await xbl_client.screenshots.get_saved_screenshots_by_xuid(
+                            xuid=xuid, max_items=10000
+                        )
+                    ).json()
+                )
             except aiohttp.ClientResponseError as e:
                 if e.message == "Forbidden":
                     embed = discord.Embed(
                         description="Forbidden: Cannot get screenshots for user, "
-                                    "they may have their settings on private",
-                        color=discord.Color.red()
+                        "they may have their settings on private",
+                        color=discord.Color.red(),
                     )
                 else:
                     embed = discord.Embed(
                         description=f"Error: {box(e.message)}",
-                        color=discord.Color.red()
+                        color=discord.Color.red(),
                     )
                 await msg.edit(embed=embed)
                 return
@@ -452,23 +490,25 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             embed = discord.Embed(
-                description="Gathering data...",
-                color=discord.Color.random()
+                description="Gathering data...", color=discord.Color.random()
             )
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                )
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
 
             token = await self.get_token(session)
-            header = {"x-xbl-contract-version": "2",
-                      "Authorization": token,
-                      "Accept-Language": "en-US",
-                      }
+            header = {
+                "x-xbl-contract-version": "2",
+                "Authorization": token,
+                "Accept-Language": "en-US",
+            }
             url = f"https://achievements.xboxlive.com/users/xuid({xuid})/history/titles"
 
             # Keep pulling continuation token till all data is obtained
@@ -476,7 +516,9 @@ class XTools(commands.Cog):
             params = None
             game_data = {"titles": []}
             while running:
-                async with self.session.get(url=url, headers=header, params=params) as res:
+                async with self.session.get(
+                    url=url, headers=header, params=params
+                ) as res:
                     data = await res.json(content_type=None)
                     c_token = data["pagingInfo"]["continuationToken"]
                     titles = data["titles"]
@@ -489,13 +531,13 @@ class XTools(commands.Cog):
                 embed = discord.Embed(
                     color=discord.Color.red(),
                     description="Your privacy settings are blocking your gameplay history.\n"
-                                "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings."
+                    "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings.",
                 )
                 return await msg.edit(embed=embed)
 
             embed = discord.Embed(
                 description="What game would you like to search for?",
-                color=discord.Color.random()
+                color=discord.Color.random(),
             )
             embed.set_footer(text='Reply "cancel" to end the search')
             await msg.edit(embed=embed)
@@ -507,9 +549,13 @@ class XTools(commands.Cog):
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
             except asyncio.TimeoutError:
-                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                return await msg.edit(
+                    embed=discord.Embed(description="You took too long :yawning_face:")
+                )
             if reply.content.lower() == "cancel":
-                return await msg.edit(embed=discord.Embed(description="Game search canceled."))
+                return await msg.edit(
+                    embed=discord.Embed(description="Game search canceled.")
+                )
             titles = game_data["titles"]
             gamelist = []
             for title in titles:
@@ -519,7 +565,10 @@ class XTools(commands.Cog):
                     gamelist.append((name, title["titleId"], gs))
             if len(gamelist) == 0:
                 return await msg.edit(
-                    embed=discord.Embed(description=f"Couldn't find {reply.content} in your game history."))
+                    embed=discord.Embed(
+                        description=f"Couldn't find {reply.content} in your game history."
+                    )
+                )
             elif len(gamelist) > 1:
                 games = ""
                 count = 1
@@ -529,20 +578,30 @@ class XTools(commands.Cog):
                 embed = discord.Embed(
                     title="Type the number of the game you want to select",
                     description=games,
-                    color=discord.Color.random()
+                    color=discord.Color.random(),
                 )
                 embed.set_footer(text='Reply "cancel" to close the menu')
                 await msg.edit(embed=embed)
                 try:
                     reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
                 except asyncio.TimeoutError:
-                    return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                    return await msg.edit(
+                        embed=discord.Embed(
+                            description="You took too long :yawning_face:"
+                        )
+                    )
                 if reply.content.lower() == "cancel":
-                    return await msg.edit(embed=discord.Embed(description="Game select canceled."))
+                    return await msg.edit(
+                        embed=discord.Embed(description="Game select canceled.")
+                    )
                 elif not reply.content.isdigit():
-                    return await msg.edit(embed=discord.Embed(description="That's not a number"))
+                    return await msg.edit(
+                        embed=discord.Embed(description="That's not a number")
+                    )
                 elif int(reply.content) > len(gamelist):
-                    return await msg.edit(embed=discord.Embed(description="That's not a valid number"))
+                    return await msg.edit(
+                        embed=discord.Embed(description="That's not a valid number")
+                    )
                 i = int(reply.content) - 1
                 gamename = gamelist[i][0]
                 title_id = gamelist[i][1]
@@ -556,13 +615,20 @@ class XTools(commands.Cog):
             async with self.session.post(url=url, headers=header, data=payload) as res:
                 game_stats = await res.json(content_type=None)
 
-            title_info = json.loads((await xbl_client.titlehub.get_title_info(title_id)).json())
+            title_info = json.loads(
+                (await xbl_client.titlehub.get_title_info(title_id)).json()
+            )
             achievement_data = json.loads(
-                (await xbl_client.achievements.get_achievements_xboxone_gameprogress(xuid, title_id)).json())
+                (
+                    await xbl_client.achievements.get_achievements_xboxone_gameprogress(
+                        xuid, title_id
+                    )
+                ).json()
+            )
             data = {
                 "stats": game_stats,
                 "info": title_info,
-                "achievements": achievement_data
+                "achievements": achievement_data,
             }
             pages = game_embeds(gt, gamename, gs, data)
             await msg.delete()
@@ -581,22 +647,29 @@ class XTools(commands.Cog):
                 if not xbl_client:
                     return
                 embed = discord.Embed(
-                    description="Gathering data...",
-                    color=discord.Color.random()
+                    description="Gathering data...", color=discord.Color.random()
                 )
                 embed.set_thumbnail(url=LOADING)
                 msg = await ctx.send(embed=embed)
                 try:
-                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                    profile_data = json.loads(
+                        (
+                            await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                        ).json()
+                    )
                 except aiohttp.ClientResponseError:
                     embed = discord.Embed(description="Invalid Gamertag. Try again.")
                     return await msg.edit(embed=embed)
                 except Exception as e:
                     if "Forbidden" in str(e):
-                        embed = discord.Embed(description="Failed to gather data, Gamertag may be set to private.")
+                        embed = discord.Embed(
+                            description="Failed to gather data, Gamertag may be set to private."
+                        )
                         return await msg.edit(embed=embed)
                 gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-                friend_data = json.loads((await xbl_client.people.get_friends_by_xuid(xuid)).json())
+                friend_data = json.loads(
+                    (await xbl_client.people.get_friends_by_xuid(xuid)).json()
+                )
                 self.cache[str(ctx.author.id)] = friend_data
                 pages = friend_embeds(friend_data, gt)
                 if len(pages) == 0:
@@ -614,8 +687,7 @@ class XTools(commands.Cog):
         ctx = instance.ctx
         data = self.cache[str(ctx.author.id)]
         embed = discord.Embed(
-            description="Type in a Gamertag to search",
-            color=discord.Color.random()
+            description="Type in a Gamertag to search", color=discord.Color.random()
         )
         embed.set_footer(text='Reply "cancel" to close the menu')
         await instance.respond_embed(interaction, embed)
@@ -632,7 +704,9 @@ class XTools(commands.Cog):
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
         except asyncio.TimeoutError:
-            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+            return await msg.edit(
+                embed=discord.Embed(description="You took too long :yawning_face:")
+            )
         if reply.content.lower() == "cancel":
             return await msg.edit(embed=discord.Embed(description="Search canceled."))
         players = []
@@ -640,7 +714,11 @@ class XTools(commands.Cog):
             if reply.content.lower() in player["gamertag"].lower():
                 players.append(player["gamertag"])
         if len(players) == 0:
-            return await msg.edit(embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list."))
+            return await msg.edit(
+                embed=discord.Embed(
+                    description=f"Couldn't find {reply.content} in friends list."
+                )
+            )
 
         elif len(players) > 1:
             flist = ""
@@ -651,20 +729,28 @@ class XTools(commands.Cog):
             embed = discord.Embed(
                 title="Multiple Gamertag's match that name, Type the number to select the one you want",
                 description=flist,
-                color=discord.Color.random()
+                color=discord.Color.random(),
             )
             embed.set_footer(text='Reply "cancel" to close the menu')
             await msg.edit(embed=embed)
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
             except asyncio.TimeoutError:
-                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                return await msg.edit(
+                    embed=discord.Embed(description="You took too long :yawning_face:")
+                )
             if reply.content.lower() == "cancel":
-                return await msg.edit(embed=discord.Embed(description="Selection canceled."))
+                return await msg.edit(
+                    embed=discord.Embed(description="Selection canceled.")
+                )
             elif not reply.content.isdigit():
-                return await msg.edit(embed=discord.Embed(description="That's not a number"))
+                return await msg.edit(
+                    embed=discord.Embed(description="That's not a number")
+                )
             elif int(reply.content) > len(players):
-                return await msg.edit(embed=discord.Embed(description="That's not a valid number"))
+                return await msg.edit(
+                    embed=discord.Embed(description="That's not a valid number")
+                )
             i = int(reply.content) - 1
             gt = players[i]
         else:
@@ -685,32 +771,35 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             embed = discord.Embed(
-                description="Gathering data...",
-                color=discord.Color.random()
+                description="Gathering data...", color=discord.Color.random()
             )
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                )
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
-                data = json.loads((await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json())
+                data = json.loads(
+                    (await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json()
+                )
             except Exception as e:
                 if "Forbidden" in str(e):
                     embed = discord.Embed(
                         color=discord.Color.red(),
                         description="Your privacy settings might be blocking your game clips.\n"
-                                    "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings."
+                        "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings.",
                     )
                     return await msg.edit(embed=embed)
                 else:
                     log.warning(f"Error getting xclip info")
                     embed = discord.Embed(
                         color=discord.Color.red(),
-                        description=f"Unknown error while fetching xclip data: {e}"
+                        description=f"Unknown error while fetching xclip data: {e}",
                     )
                     return await msg.edit(embed=embed)
             pages = gameclip_embeds(data, gamertag)
@@ -732,8 +821,10 @@ class XTools(commands.Cog):
     @commands.command(name="gameswithgold")
     async def get_gameswithgold(self, ctx):
         """View this month's free games with Gold"""
-        url = f"https://reco-public.rec.mp.microsoft.com/channels/Reco/V8.0/Lists/" \
-              f"Collection/GamesWithGold?ItemTypes=Game&Market=US&deviceFamily=Windows.Xbox"
+        url = (
+            f"https://reco-public.rec.mp.microsoft.com/channels/Reco/V8.0/Lists/"
+            f"Collection/GamesWithGold?ItemTypes=Game&Market=US&deviceFamily=Windows.Xbox"
+        )
         async with self.session.post(url=url) as res:
             async with ctx.typing():
                 games_raw = await res.json(content_type=None)
@@ -746,7 +837,9 @@ class XTools(commands.Cog):
                     xbl_client = await self.auth_manager(ctx, session)
                     if not xbl_client:
                         return
-                    game_data = json.loads((await xbl_client.catalog.get_products(game_ids)).json())
+                    game_data = json.loads(
+                        (await xbl_client.catalog.get_products(game_ids)).json()
+                    )
                     products = game_data["products"]
                     pages = gwg_embeds(products)
                     return await menu(ctx, pages, DEFAULT_CONTROLS)
@@ -763,23 +856,25 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             embed = discord.Embed(
-                description="Gathering data...",
-                color=discord.Color.random()
+                description="Gathering data...", color=discord.Color.random()
             )
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                )
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
 
             token = await self.get_token(session)
-            header = {"x-xbl-contract-version": "2",
-                      "Authorization": token,
-                      "Accept-Language": "en-US",
-                      }
+            header = {
+                "x-xbl-contract-version": "2",
+                "Authorization": token,
+                "Accept-Language": "en-US",
+            }
             url = f"https://achievements.xboxlive.com/users/xuid({xuid})/history/titles"
 
             # Keep pulling continuation token till all data is obtained
@@ -787,7 +882,9 @@ class XTools(commands.Cog):
             params = None
             game_data = {"titles": []}
             while running:
-                async with self.session.get(url=url, headers=header, params=params) as res:
+                async with self.session.get(
+                    url=url, headers=header, params=params
+                ) as res:
                     data = await res.json(content_type=None)
                     c_token = data["pagingInfo"]["continuationToken"]
                     titles = data["titles"]
@@ -800,14 +897,14 @@ class XTools(commands.Cog):
                 embed = discord.Embed(
                     color=discord.Color.red(),
                     description="Your privacy settings are blocking your gameplay history.\n"
-                                "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings."
+                    "**[Click Here](https://account.xbox.com/en-gb/Settings)** to change your settings.",
                 )
                 return await msg.edit(embed=embed)
 
             titles = game_data["titles"]
             embed = discord.Embed(
                 description=f"Found `{len(titles)}` titles..",
-                color=discord.Color.random()
+                color=discord.Color.random(),
             )
             embed.set_thumbnail(url=LOADING)
             await msg.edit(embed=embed)
@@ -820,12 +917,16 @@ class XTools(commands.Cog):
                     apptype = title["titleType"]
                     if apptype != "LiveApp":
                         url, header, payload = stats_api_format(token, title_id, xuid)
-                        async with self.session.post(url=url, headers=header, data=payload) as res:
+                        async with self.session.post(
+                            url=url, headers=header, data=payload
+                        ) as res:
                             data = await res.json(content_type=None)
                         most_played[title["name"]] = 0
                         if len(data["statlistscollection"][0]["stats"]) > 0:
                             if "value" in data["statlistscollection"][0]["stats"][0]:
-                                most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
+                                most_played[title["name"]] = int(
+                                    data["statlistscollection"][0]["stats"][0]["value"]
+                                )
                             else:
                                 not_found = True
                                 cant_find += f"{title['name']}\n"
@@ -833,7 +934,7 @@ class XTools(commands.Cog):
             if not_found:
                 embed = discord.Embed(
                     description=f"Couldn't find playtime data for:\n"
-                                f"{box(cant_find)}"
+                    f"{box(cant_find)}"
                 )
                 await msg.edit(embed=embed)
             else:

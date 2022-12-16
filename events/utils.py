@@ -26,12 +26,14 @@ class GetReply:
     def check(self, message: discord.Message):
         conditions = [
             message.author == self.ctx.author and message.channel == self.ctx.channel,
-            message.author == self.ctx.author and not message.guild
+            message.author == self.ctx.author and not message.guild,
         ]
         return any(conditions)
 
     async def __aenter__(self) -> Optional[discord.Message]:
-        tasks = [asyncio.ensure_future(self.ctx.bot.wait_for("message", check=self.check))]
+        tasks = [
+            asyncio.ensure_future(self.ctx.bot.wait_for("message", check=self.check))
+        ]
         done, pending = await asyncio.wait(tasks, timeout=self.timeout)
         [task.cancel() for task in pending]
         self.reply = done.pop().result() if len(done) > 0 else None
@@ -79,7 +81,9 @@ def profile_icon(user: discord.Member) -> Optional[str]:
     return icon
 
 
-async def select_event(ctx: commands.Context, events: dict, skip_completed: bool = True) -> Union[dict, None]:
+async def select_event(
+    ctx: commands.Context, events: dict, skip_completed: bool = True
+) -> Union[dict, None]:
     selectable = {}
     if len(events.keys()) > 1:
         grammar = "are"
@@ -90,35 +94,41 @@ async def select_event(ctx: commands.Context, events: dict, skip_completed: bool
     embed = discord.Embed(
         title="Select an Event",
         description=f"There {grammar} currently {len(events.keys())} {grammar2} to choose from.",
-        color=ctx.author.color
+        color=ctx.author.color,
     )
     for index, info in enumerate(events.values()):
         if skip_completed and info["completed"]:
             continue
         status = "**COMPLETED**" if info["completed"] else "In Progress"
         etype = "File submissions" if info["file_submission"] else "Text submissions"
-        field = f"`Status:     `{status}\n" \
-                f"`Started on: `<t:{info['start_date']}:f>\n" \
-                f"`Ends on:    `<t:{info['end_date']}:f>\n" \
-                f"`Event Type: `{etype}\n" \
-                f"`Winners:    `{info['winners']}\n" \
-                f"`Entries:    `{info['submissions_per_user']} per user\n"
+        field = (
+            f"`Status:     `{status}\n"
+            f"`Started on: `<t:{info['start_date']}:f>\n"
+            f"`Ends on:    `<t:{info['end_date']}:f>\n"
+            f"`Event Type: `{etype}\n"
+            f"`Winners:    `{info['winners']}\n"
+            f"`Entries:    `{info['submissions_per_user']} per user\n"
+        )
 
         days_in_server = info["days_in_server"]
         if days_in_server:
             grammar = "days" if days_in_server > 1 else "day"
-            field += f"• Must be in the server for at least {days_in_server} {grammar}\n"
+            field += (
+                f"• Must be in the server for at least {days_in_server} {grammar}\n"
+            )
 
-        roles = [ctx.guild.get_role(rid).mention for rid in info["roles_required"] if ctx.guild.get_role(rid)]
+        roles = [
+            ctx.guild.get_role(rid).mention
+            for rid in info["roles_required"]
+            if ctx.guild.get_role(rid)
+        ]
         if info["need_all_roles"] and roles:
             field += f"• Need All roles: {humanize_list(roles)}\n"
         elif not info["need_all_roles"] and roles:
             field += f"• Need at least one role: {humanize_list(roles)}"
 
         embed.add_field(
-            name=f"#{index + 1}. {info['event_name']}",
-            value=field,
-            inline=False
+            name=f"#{index + 1}. {info['event_name']}", value=field, inline=False
         )
         selectable[str(index + 1)] = info
 
@@ -139,7 +149,9 @@ async def select_event(ctx: commands.Context, events: dict, skip_completed: bool
             await msg.edit(content="That's not a number!", embed=None)
             return None
         if reply.content not in selectable:
-            await msg.edit(content="That number doesn't correspond to an event!", embed=None)
+            await msg.edit(
+                content="That number doesn't correspond to an event!", embed=None
+            )
             return None
         key = reply.content
     return {"event": selectable[key], "msg": msg}

@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 import math
-from typing import Dict, Optional, SupportsInt, TYPE_CHECKING, Tuple, Type, TypeVar, Union
+from typing import (
+    Dict,
+    Optional,
+    SupportsInt,
+    TYPE_CHECKING,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import PIL
 from PIL import Image, ImageDraw, ImageFont
@@ -15,11 +24,9 @@ if TYPE_CHECKING:
     FontT = Union[ImageFont.ImageFont, ImageFont.FreeTypeFont, ImageFont.TransposedFont]
     ColorT = Union[int, Tuple[int, int, int], Tuple[int, int, int, int], str]
 
-P = TypeVar('P', bound='Pilmoji')
+P = TypeVar("P", bound="Pilmoji")
 
-__all__ = (
-    'Pilmoji',
-)
+__all__ = ("Pilmoji",)
 
 
 class Pilmoji:
@@ -51,27 +58,29 @@ class Pilmoji:
     """
 
     def __init__(
-            self,
-            image: Image.Image,
-            *,
-            source: Union[BaseSource, Type[BaseSource]] = Twemoji,
-            cache: bool = True,
-            draw: Optional[ImageDraw.ImageDraw] = None,
-            render_discord_emoji: bool = True,
-            emoji_scale_factor: float = 1.0,
-            emoji_position_offset: Tuple[int, int] = (0, 0)
+        self,
+        image: Image.Image,
+        *,
+        source: Union[BaseSource, Type[BaseSource]] = Twemoji,
+        cache: bool = True,
+        draw: Optional[ImageDraw.ImageDraw] = None,
+        render_discord_emoji: bool = True,
+        emoji_scale_factor: float = 1.0,
+        emoji_position_offset: Tuple[int, int] = (0, 0),
     ) -> None:
         self.image: Image.Image = image
         self.draw: ImageDraw.ImageDraw = draw
 
         if isinstance(source, type):
             if not issubclass(source, BaseSource):
-                raise TypeError(f'source must inherit from BaseSource, not {source}.')
+                raise TypeError(f"source must inherit from BaseSource, not {source}.")
 
             source = source()
 
         elif not isinstance(source, BaseSource):
-            raise TypeError(f'source must inherit from BaseSource, not {source.__class__}.')
+            raise TypeError(
+                f"source must inherit from BaseSource, not {source.__class__}."
+            )
 
         self.source: BaseSource = source
 
@@ -98,10 +107,11 @@ class Pilmoji:
             The renderer is already open.
         """
         if not self._closed:
-            raise ValueError('Renderer is already open.')
+            raise ValueError("Renderer is already open.")
 
         if _has_requests and isinstance(self.source, HTTPBasedSource):
             from requests import Session
+
             self.source._requests_session = Session()
 
         self._create_draw()
@@ -119,7 +129,7 @@ class Pilmoji:
             The renderer has already been closed.
         """
         if self._closed:
-            raise ValueError('Renderer has already been closed.')
+            raise ValueError("Renderer has already been closed.")
 
         if self._new_draw:
             del self.draw
@@ -174,12 +184,12 @@ class Pilmoji:
             return stream
 
     def getsize(
-            self,
-            text: str,
-            font: FontT = None,
-            *,
-            spacing: int = 4,
-            emoji_scale_factor: float = None
+        self,
+        text: str,
+        font: FontT = None,
+        *,
+        spacing: int = 4,
+        emoji_scale_factor: float = None,
     ) -> Tuple[int, int]:
         """Return the width and height of the text when rendered.
         This method supports multiline text.
@@ -200,27 +210,29 @@ class Pilmoji:
         if emoji_scale_factor is None:
             emoji_scale_factor = self._default_emoji_scale_factor
 
-        return getsize(text, font, spacing=spacing, emoji_scale_factor=emoji_scale_factor)
+        return getsize(
+            text, font, spacing=spacing, emoji_scale_factor=emoji_scale_factor
+        )
 
     def text(
-            self,
-            xy: Tuple[int, int],
-            text: str,
-            fill: ColorT = None,
-            font: FontT = None,
-            anchor: str = None,
-            spacing: int = 4,
-            align: str = "left",
-            direction: str = None,
-            features: str = None,
-            language: str = None,
-            stroke_width: int = 0,
-            stroke_fill: ColorT = None,
-            embedded_color: bool = False,
-            *args,
-            emoji_scale_factor: float = None,
-            emoji_position_offset: Tuple[int, int] = None,
-            **kwargs
+        self,
+        xy: Tuple[int, int],
+        text: str,
+        fill: ColorT = None,
+        font: FontT = None,
+        anchor: str = None,
+        spacing: int = 4,
+        align: str = "left",
+        direction: str = None,
+        features: str = None,
+        language: str = None,
+        stroke_width: int = 0,
+        stroke_fill: ColorT = None,
+        embedded_color: bool = False,
+        *args,
+        emoji_scale_factor: float = None,
+        emoji_position_offset: Tuple[int, int] = None,
+        **kwargs,
     ) -> None:
         """Draws the string at the given position, with emoji rendering support.
         This method supports multiline text.
@@ -275,7 +287,7 @@ class Pilmoji:
             stroke_width,
             stroke_fill,
             embedded_color,
-            *args
+            *args,
         )
 
         x, y = xy
@@ -310,7 +322,7 @@ class Pilmoji:
                     x += width
                     continue
 
-                with Image.open(stream).convert('RGBA') as asset:
+                with Image.open(stream).convert("RGBA") as asset:
                     width = int(emoji_scale_factor * font.size)
                     size = width, math.ceil(asset.height / asset.width * width)
                     asset = asset.resize(size, Image.Resampling.LANCZOS)
@@ -328,4 +340,4 @@ class Pilmoji:
         self.close()
 
     def __repr__(self) -> str:
-        return f'<Pilmoji source={self.source} cache={self._cache}>'
+        return f"<Pilmoji source={self.source} cache={self._cache}>"

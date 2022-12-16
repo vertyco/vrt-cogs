@@ -20,16 +20,21 @@ log = logging.getLogger("red.vrt.economytrack")
 # Vex-Cogs - https://github.com/Vexed01/Vex-Cogs - (StatTrack)
 
 
-class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=CompositeMetaClass):
+class EconomyTrack(
+    commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=CompositeMetaClass
+):
     """Track your economy's total balance over time"""
+
     __author__ = "Vertyco"
     __version__ = "0.1.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
-        info = f"{helpcmd}\n" \
-               f"Cog Version: {self.__version__}\n" \
-               f"Author: {self.__author__}\n"
+        info = (
+            f"{helpcmd}\n"
+            f"Cog Version: {self.__version__}\n"
+            f"Author: {self.__author__}\n"
+        )
         return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
@@ -61,7 +66,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
             async with self.config.data() as data:
                 data.append((now, total))
                 if len(data) > max_points:
-                    del data[0:len(data) - max_points]
+                    del data[0 : len(data) - max_points]
         else:
             async for guild in AsyncIter(self.bot.guilds):
                 if not await self.config.guild(guild).enabled():
@@ -70,7 +75,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
                 async with self.config.guild(guild).data() as data:
                     data.append((now, total))
                     if len(data) > max_points:
-                        del data[0:len(data) - max_points]
+                        del data[0 : len(data) - max_points]
         iter_time = round((monotonic() - start) * 1000)
         avg_iter = self.looptime
         if avg_iter is None:

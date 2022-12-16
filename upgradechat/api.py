@@ -10,7 +10,11 @@ class API:
     async def get_auth(client_id: str, client_secret: str):
         header = {"accept": "application/json"}
         url = "https://api.upgrade.chat/oauth/token"
-        data = {"client_id": client_id, "client_secret": client_secret, "grant_type": "client_credentials"}
+        data = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "grant_type": "client_credentials",
+        }
         async with aiohttp.ClientSession() as session:
             async with session.post(url=url, headers=header, data=data) as res:
                 status = res.status

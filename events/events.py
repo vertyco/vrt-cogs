@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import (
     humanize_list,
     humanize_timedelta,
     humanize_number,
-    box
+    box,
 )
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
@@ -25,7 +25,7 @@ from .utils import (
     guild_icon,
     profile_icon,
     select_event,
-    get_attachments
+    get_attachments,
 )
 
 log = logging.getLogger("red.vrt.events")
@@ -40,6 +40,7 @@ class Events(commands.Cog):
     Create an event, set a channel for submissions and entry requirements/options.
     Users can enter the event and make submissions according to the parameters set.
     """
+
     __author__ = "Vertyco"
     __version__ = "0.0.2"
 
@@ -63,7 +64,7 @@ class Events(commands.Cog):
             "user_blacklist": [],
             "default_emoji": None,
             "auto_delete": False,
-            "result_delete": False
+            "result_delete": False,
         }
         self.config.register_guild(**default_guild)
 
@@ -88,9 +89,7 @@ class Events(commands.Cog):
         }
         # Goes in event_schema["submissions"]
         # User ID strings with a list of message IDs corresponding to their submissions
-        self.submission_schema = {
-            str(int): list
-        }
+        self.submission_schema = {str(int): list}
 
         self._lock = set()
         # Event check loop
@@ -142,7 +141,9 @@ class Events(commands.Cog):
     async def enter_event(self, ctx: commands.Context):
         """Enter an event if one exists"""
         if ctx.author.id in self._lock:
-            return await ctx.send("You are already in the middle of entering an event!", delete_after=10)
+            return await ctx.send(
+                "You are already in the middle of entering an event!", delete_after=10
+            )
         try:
             self._lock.add(ctx.author.id)
             await self._enter_event(ctx)
@@ -150,7 +151,6 @@ class Events(commands.Cog):
             self._lock.discard(ctx.author.id)
 
     async def _enter_event(self, ctx: commands.Context):
-
         async def cancel(message):
             await message.edit(content="Event entry cancelled", embed=None)
 
@@ -171,9 +171,13 @@ class Events(commands.Cog):
         ublacklist = conf["user_blacklist"]
         author: discord.Member = ctx.author
         if author.id in ublacklist:
-            return await ctx.send("You cannot enter events because you have been blacklisted!")
+            return await ctx.send(
+                "You cannot enter events because you have been blacklisted!"
+            )
         if any([r.id in rblacklist for r in author.roles]):
-            return await ctx.send("You cannot enter events because one of your roles has been blacklisted!")
+            return await ctx.send(
+                "You cannot enter events because one of your roles has been blacklisted!"
+            )
         res = await select_event(ctx, existing)
         if not res:
             return
@@ -186,23 +190,34 @@ class Events(commands.Cog):
         already_submitted = 0
         if uid in event["submissions"]:
             if len(event["submissions"][uid]) >= per_user:
-                return await edit(msg, "You have already submitted the max amount of entries for this event!")
+                return await edit(
+                    msg,
+                    "You have already submitted the max amount of entries for this event!",
+                )
             else:
                 already_submitted = len(event["submissions"][uid])
 
         required_roles = event["roles_required"]
         if required_roles:
             need_all = event["need_all_roles"]
-            mentions = [ctx.guild.get_role(rid).mention for rid in required_roles if ctx.guild.get_role(rid)]
+            mentions = [
+                ctx.guild.get_role(rid).mention
+                for rid in required_roles
+                if ctx.guild.get_role(rid)
+            ]
             user_roles = [role.id for role in author.roles]
             role_matches = [rid in user_roles for rid in required_roles]
             if not need_all and not any(role_matches):
-                txt = f"You do not have any of the required roles to enter.\n" \
-                      f"You must have at least one of these roles to enter: {humanize_list(mentions)}"
+                txt = (
+                    f"You do not have any of the required roles to enter.\n"
+                    f"You must have at least one of these roles to enter: {humanize_list(mentions)}"
+                )
                 return await edit(msg, txt)
             elif need_all and not all(role_matches):
-                txt = f"You do not have the required roles to enter.\n" \
-                      f"You must have **ALL** of these roles to enter: {humanize_list(mentions)}"
+                txt = (
+                    f"You do not have the required roles to enter.\n"
+                    f"You must have **ALL** of these roles to enter: {humanize_list(mentions)}"
+                )
                 return await edit(msg, txt)
 
         days_required = event["days_in_server"]
@@ -217,15 +232,19 @@ class Events(commands.Cog):
 
         grammar = "s one at a time" if per_user != 1 else ""
         if filesub:
-            txt = f"**Enter your file submission{grammar} below.**\n" \
-                  f"Include some text with your upload for the entry description\n" \
-                  f"If you don't have permission to send attachments, you can DM me instead."
+            txt = (
+                f"**Enter your file submission{grammar} below.**\n"
+                f"Include some text with your upload for the entry description\n"
+                f"If you don't have permission to send attachments, you can DM me instead."
+            )
         else:
             txt = f"**Enter your submission{grammar} below.**"
 
         if per_user > 1:
-            txt += f"\n\nWhen you are finished, type `done`.\n" \
-                   f"This event allows up to `{per_user}` submissions per user."
+            txt += (
+                f"\n\nWhen you are finished, type `done`.\n"
+                f"This event allows up to `{per_user}` submissions per user."
+            )
         txt += f"\n\nType `cancel` at any time to cancel."
         await edit(msg, txt, title=event_name)
 
@@ -255,18 +274,16 @@ class Events(commands.Cog):
                 size_limit = ctx.guild.filesize_limit
                 if size_limit < att.size:
                     guildsize = get_size(size_limit)
-                    await ctx.send(f"**FILE SIZE TOO LARGE!** Upload a file `{guildsize}` or smaller.", delete_after=10)
+                    await ctx.send(
+                        f"**FILE SIZE TOO LARGE!** Upload a file `{guildsize}` or smaller.",
+                        delete_after=10,
+                    )
                     continue
                 async with ctx.typing():
                     file = await att.read()
                 filename = str(att.filename)
                 url = att.url
-            sub = {
-                "text": text,
-                "file": file,
-                "filename": filename,
-                "url": url
-            }
+            sub = {"text": text, "file": file, "filename": filename, "url": url}
             submissions.append(sub)
             await ctx.send("Entry added!", delete_after=5)
 
@@ -301,15 +318,11 @@ class Events(commands.Cog):
                 pfp = author.avatar_url
             ts = int(datetime.now().timestamp())
             dtype = "Description" if filesub else "Entry"
-            desc = f"`Author:    `{author}\n" \
-                   f"`Submitted: `<t:{ts}:f>\n\n"
+            desc = f"`Author:    `{author}\n" f"`Submitted: `<t:{ts}:f>\n\n"
             if text.strip():
                 desc += f"**{dtype}**\n{text}"
 
-            em = discord.Embed(
-                description=desc,
-                color=author.color
-            )
+            em = discord.Embed(description=desc, color=author.color)
             em.set_footer(text=f"Click the emoji below to vote")
 
             if bytesfile:
@@ -353,29 +366,55 @@ class Events(commands.Cog):
         else:
             emoji = DEFAULT_EMOJI
         pages = []
-        staff_roles = [ctx.guild.get_role(rid).mention for rid in conf["staff_roles"] if ctx.guild.get_role(rid)]
+        staff_roles = [
+            ctx.guild.get_role(rid).mention
+            for rid in conf["staff_roles"]
+            if ctx.guild.get_role(rid)
+        ]
         ping_staff = conf["ping_staff"]
-        notify_roles = [ctx.guild.get_role(rid).mention for rid in conf["notify_roles"] if ctx.guild.get_role(rid)]
-        role_blacklist = [ctx.guild.get_role(rid).mention for rid in conf["role_blacklist"] if ctx.guild.get_role(rid)]
-        user_blacklist = [str(ctx.guild.get_member(uid)) for uid in conf["user_blacklist"] if ctx.guild.get_member(uid)]
+        notify_roles = [
+            ctx.guild.get_role(rid).mention
+            for rid in conf["notify_roles"]
+            if ctx.guild.get_role(rid)
+        ]
+        role_blacklist = [
+            ctx.guild.get_role(rid).mention
+            for rid in conf["role_blacklist"]
+            if ctx.guild.get_role(rid)
+        ]
+        user_blacklist = [
+            str(ctx.guild.get_member(uid))
+            for uid in conf["user_blacklist"]
+            if ctx.guild.get_member(uid)
+        ]
         auto_delete = "Enabled" if conf["auto_delete"] else "Disabled"
         results_delete = "Enabled" if conf["result_delete"] else "Disabled"
         em = discord.Embed(
             title="Main Settings",
             description=f"`Ping Staff:    `{ping_staff}\n"
-                        f"`Auto Delete:   `{auto_delete}\n"
-                        f"`Result Delete: `{results_delete}\n"
-                        f"`Default Emoji: `{emoji}",
-            color=ctx.author.color
+            f"`Auto Delete:   `{auto_delete}\n"
+            f"`Result Delete: `{results_delete}\n"
+            f"`Default Emoji: `{emoji}",
+            color=ctx.author.color,
         )
         em.add_field(
-            name="Staff Roles", value=humanize_list(staff_roles) if staff_roles else "None")
+            name="Staff Roles",
+            value=humanize_list(staff_roles) if staff_roles else "None",
+        )
         em.add_field(
-            name="Notify Roles", value=humanize_list(notify_roles) if notify_roles else "None")
+            name="Notify Roles",
+            value=humanize_list(notify_roles) if notify_roles else "None",
+        )
         em.add_field(
-            name="Role Blacklist", value=humanize_list(role_blacklist) if role_blacklist else "None", inline=False)
+            name="Role Blacklist",
+            value=humanize_list(role_blacklist) if role_blacklist else "None",
+            inline=False,
+        )
         em.add_field(
-            name="User Blacklist", value=humanize_list(user_blacklist) if user_blacklist else "None", inline=False)
+            name="User Blacklist",
+            value=humanize_list(user_blacklist) if user_blacklist else "None",
+            inline=False,
+        )
         await ctx.send(embed=em)
         if not conf["events"]:
             return await ctx.send("There are no events to display")
@@ -389,49 +428,51 @@ class Events(commands.Cog):
             per_user = i["submissions_per_user"]
             winners = i["winners"]
             participants = len(i["submissions"].keys())
-            submissions = sum(len(subs) for subs in i["submissions"].values()) if i["submissions"] else 0
+            submissions = (
+                sum(len(subs) for subs in i["submissions"].values())
+                if i["submissions"]
+                else 0
+            )
             start = i["start_date"]
             end = i["end_date"]
             roles = i["roles_required"]
-            required = [ctx.guild.get_role(rid).mention for rid in roles] if roles else []
+            required = (
+                [ctx.guild.get_role(rid).mention for rid in roles] if roles else []
+            )
             need_all_roles = i["need_all_roles"]
             days_in_server = i["days_in_server"]
             rewards = i["rewards"]
             status = "**COMPLETED**" if i["completed"] else "In Progress"
-            desc = f"`Event Name:     `{name}\n" \
-                   f"`Status:         `{status}\n" \
-                   f"`Channel:        `{channel.mention if channel else '#DeletedChannel'}\n" \
-                   f"`File Uploads:   `{filesub}\n" \
-                   f"`Per User:       `{per_user}\n" \
-                   f"`Winners:        `{winners}\n" \
-                   f"`Participants:   `{participants}\n" \
-                   f"`Submissions:    `{submissions}\n" \
-                   f"`Start Date:     `<t:{start}:f> (<t:{start}:R>)\n" \
-                   f"`End Date:       `<t:{end}:f> (<t:{end}:R>)\n" \
-                   f"`Days in Server: `{days_in_server}"
-            em = discord.Embed(
-                title="Events",
-                description=desc,
-                color=ctx.author.color
+            desc = (
+                f"`Event Name:     `{name}\n"
+                f"`Status:         `{status}\n"
+                f"`Channel:        `{channel.mention if channel else '#DeletedChannel'}\n"
+                f"`File Uploads:   `{filesub}\n"
+                f"`Per User:       `{per_user}\n"
+                f"`Winners:        `{winners}\n"
+                f"`Participants:   `{participants}\n"
+                f"`Submissions:    `{submissions}\n"
+                f"`Start Date:     `<t:{start}:f> (<t:{start}:R>)\n"
+                f"`End Date:       `<t:{end}:f> (<t:{end}:R>)\n"
+                f"`Days in Server: `{days_in_server}"
             )
+            em = discord.Embed(title="Events", description=desc, color=ctx.author.color)
             if required:
                 em.add_field(
                     name="Required Roles",
                     value=f"{humanize_list(required)}\n`All Roles Required: `{need_all_roles}",
-                    inline=False
+                    inline=False,
                 )
             if rewards:
                 val = ""
                 for place, reward in rewards.items():
                     if isinstance(reward, int):
-                        val += f"`{place} place: `{humanize_number(reward)} {currency}\n"
+                        val += (
+                            f"`{place} place: `{humanize_number(reward)} {currency}\n"
+                        )
                     else:
                         val += f"`{place} place: `{reward}\n"
-                em.add_field(
-                    name="Rewards",
-                    value=val,
-                    inline=False
-                )
+                em.add_field(name="Rewards", value=val, inline=False)
             em.set_footer(text=f"Page {page}/{pagecount}")
             pages.append(em)
         await menu(ctx, pages, DEFAULT_CONTROLS)
@@ -457,7 +498,9 @@ class Events(commands.Cog):
         toggle = await self.config.guild(ctx.guild).auto_delete()
         if toggle:
             await self.config.guild(ctx.guild).auto_delete.set(False)
-            await ctx.send("I will no longer delete events from the config when they complete")
+            await ctx.send(
+                "I will no longer delete events from the config when they complete"
+            )
         else:
             await self.config.guild(ctx.guild).auto_delete.set(True)
             await ctx.send("I will delete events from the config when they complete")
@@ -473,10 +516,14 @@ class Events(commands.Cog):
         toggle = await self.config.guild(ctx.guild).result_delete()
         if toggle:
             await self.config.guild(ctx.guild).result_delete.set(False)
-            await ctx.send("I will no longer delete the results announcement when cleaning up")
+            await ctx.send(
+                "I will no longer delete the results announcement when cleaning up"
+            )
         else:
             await self.config.guild(ctx.guild).result_delete.set(True)
-            await ctx.send("I will also delete the results announcement when cleaning up")
+            await ctx.send(
+                "I will also delete the results announcement when cleaning up"
+            )
 
     @events_group.command(name="staffrole")
     async def add_rem_staff_roles(self, ctx: commands.Context, *, role: discord.Role):
@@ -513,7 +560,9 @@ class Events(commands.Cog):
             await ctx.send(f"I have added {role.mention} to the notify roles")
 
     @events_group.command(name="blacklistrole")
-    async def add_rem_blacklist_role(self, ctx: commands.Context, *, role: discord.Role):
+    async def add_rem_blacklist_role(
+        self, ctx: commands.Context, *, role: discord.Role
+    ):
         """
         Add/Remove blacklisted roles
 
@@ -530,7 +579,9 @@ class Events(commands.Cog):
             await ctx.send(f"I have added {role.mention} to the role blacklist")
 
     @events_group.command(name="blacklistuser")
-    async def add_rem_blacklist_user(self, ctx: commands.Context, *, user: discord.Member):
+    async def add_rem_blacklist_user(
+        self, ctx: commands.Context, *, user: discord.Member
+    ):
         """
         Add/Remove blacklisted users
 
@@ -584,10 +635,13 @@ class Events(commands.Cog):
         if event["completed"]:
             return await msg.edit(
                 content=f"This event has already completed!\n"
-                        f"To delete this event, use the `{ctx.prefix}events delete` command",
-                embed=None
+                f"To delete this event, use the `{ctx.prefix}events delete` command",
+                embed=None,
             )
-        await msg.edit(content="Are you sure you want to end this event and tally the votes? (y/n)", embed=None)
+        await msg.edit(
+            content="Are you sure you want to end this event and tally the votes? (y/n)",
+            embed=None,
+        )
         async with GetReply(ctx) as reply:
             if reply is None:
                 return await msg.delete()
@@ -597,17 +651,19 @@ class Events(commands.Cog):
         if not subs:
             return await msg.edit(
                 content=f"There are no submissions for **{event['event_name']}.**\n"
-                        f"If you want to delete it, use the `{ctx.prefix}events delete` command instead."
+                f"If you want to delete it, use the `{ctx.prefix}events delete` command instead."
             )
         if not ctx.guild.get_channel(event["channel_id"]):
             return await msg.edit(
                 content=f"I am unable to find the channel for **{event['event_name']}!**\n"
-                        f"To delete this event, use the `{ctx.prefix}events delete` command."
+                f"To delete this event, use the `{ctx.prefix}events delete` command."
             )
         await msg.edit(content="Ending event and tallying votes. Stand by...")
         async with ctx.typing():
             await self._end_event(ctx.guild, event)
-        await msg.edit(content=f"**{event['event_name']}** has ended! Check the event channel for the results")
+        await msg.edit(
+            content=f"**{event['event_name']}** has ended! Check the event channel for the results"
+        )
 
     @events_group.command(name="extend")
     async def extend_event(self, ctx: commands.Context, *, time_string: str):
@@ -634,12 +690,11 @@ class Events(commands.Cog):
         async with ctx.typing():
             async with self.config.guild(ctx.guild).events() as events:
                 events[event["event_name"]]["end_date"] += inc
-        txt = f"The **{event['event_name']}** event has been extended by {humanize_timedelta(timedelta=delta)}\n" \
-              f"New end date is <t:{newtime}:f> (<t:{newtime}:R>)"
-        await msg.edit(
-            content=txt,
-            embed=None
+        txt = (
+            f"The **{event['event_name']}** event has been extended by {humanize_timedelta(timedelta=delta)}\n"
+            f"New end date is <t:{newtime}:f> (<t:{newtime}:R>)"
         )
+        await msg.edit(content=txt, embed=None)
         chan = ctx.guild.get_channel(event["channel_id"])
         if chan and chan.id != ctx.channel.id:
             message = await chan.send(txt)
@@ -671,12 +726,11 @@ class Events(commands.Cog):
         async with ctx.typing():
             async with self.config.guild(ctx.guild).events() as events:
                 events[event["event_name"]]["end_date"] -= inc
-        txt = f"The **{event['event_name']}** event has been shortened by {humanize_timedelta(timedelta=delta)}\n" \
-              f"New end date is <t:{newtime}:f> (<t:{newtime}:R>)"
-        await msg.edit(
-            content=txt,
-            embed=None
+        txt = (
+            f"The **{event['event_name']}** event has been shortened by {humanize_timedelta(timedelta=delta)}\n"
+            f"New end date is <t:{newtime}:f> (<t:{newtime}:R>)"
         )
+        await msg.edit(content=txt, embed=None)
         chan = ctx.guild.get_channel(event["channel_id"])
         if chan and chan.id != ctx.channel.id:
             message = await chan.send(txt)
@@ -697,13 +751,17 @@ class Events(commands.Cog):
         channel: discord.TextChannel = ctx.guild.get_channel(event["channel_id"])
         messages = [event["submissions"], event["messages"]]
         if any(messages) and channel:
-            await msg.edit(content="Would you like to cleanup the related messages for this event as well? (y/n)",
-                           embed=None)
+            await msg.edit(
+                content="Would you like to cleanup the related messages for this event as well? (y/n)",
+                embed=None,
+            )
             async with GetReply(ctx) as reply:
                 if reply is None:
                     return await msg.edit(content="Deletion cancelled, did not respond")
                 if "y" in reply.content.lower():
-                    with contextlib.suppress(discord.NotFound, discord.Forbidden, AttributeError):
+                    with contextlib.suppress(
+                        discord.NotFound, discord.Forbidden, AttributeError
+                    ):
                         for message_ids in event["submissions"].values():
                             for message_id in message_ids:
                                 message = await channel.fetch_message(message_id)
@@ -714,7 +772,9 @@ class Events(commands.Cog):
 
         async with self.config.guild(ctx.guild).events() as events:
             del events[event["event_name"]]
-        await msg.edit(content=f"The **{event['event_name']}** event has been deleted!", embed=None)
+        await msg.edit(
+            content=f"The **{event['event_name']}** event has been deleted!", embed=None
+        )
 
     @events_group.command(name="create")
     async def create_event(self, ctx: commands.Context):
@@ -728,7 +788,9 @@ class Events(commands.Cog):
         if len(existing.keys()) >= 25:
             return await ctx.send("You can only have up to 25 active events at a time")
 
-        await ctx.send("Event creation started, you can type `cancel` at any time to stop")
+        await ctx.send(
+            "Event creation started, you can type `cancel` at any time to stop"
+        )
         msg = await ctx.send("What would you like to call this event?")
         async with GetReply(ctx) as reply:
             if reply is None:
@@ -740,7 +802,9 @@ class Events(commands.Cog):
                 await ctx.send(f"The event `{name}` already exists!", delete_after=10)
                 return await cancel(msg)
 
-        await msg.edit(content="Enter a short description of this event (1024 characters or less)")
+        await msg.edit(
+            content="Enter a short description of this event (1024 characters or less)"
+        )
         while True:
             async with GetReply(ctx, timeout=600) as reply:
                 if reply is None:
@@ -748,13 +812,18 @@ class Events(commands.Cog):
                 if reply.content.lower() == "cancel":
                     return await cancel(msg)
                 if len(reply.content) > 1024:
-                    await ctx.send("Keep the event description limited to 1024 characters or less", delete_after=10)
+                    await ctx.send(
+                        "Keep the event description limited to 1024 characters or less",
+                        delete_after=10,
+                    )
                     continue
                 description = reply.content
                 break
 
-        await msg.edit(content="What channel would you like submissions to be sent to?\n"
-                               "`Mention a channel`, or say `here` for this one.")
+        await msg.edit(
+            content="What channel would you like submissions to be sent to?\n"
+            "`Mention a channel`, or say `here` for this one."
+        )
         channel = ctx.channel
         while True:
             async with GetReply(ctx) as reply:
@@ -767,14 +836,16 @@ class Events(commands.Cog):
                 if not reply.channel_mentions:
                     await ctx.send(
                         "You must mention the channel you want submissions to be sent to!",
-                        delete_after=10
+                        delete_after=10,
                     )
                     continue
                 channel: discord.TextChannel = reply.channel_mentions[0]
                 break
 
-        await msg.edit(content="Will submissions be file uploads, or text based?\n"
-                               "Reply with (`file` or `text`)")
+        await msg.edit(
+            content="Will submissions be file uploads, or text based?\n"
+            "Reply with (`file` or `text`)"
+        )
         async with GetReply(ctx) as reply:
             if reply is None:
                 return await cancel(msg)
@@ -796,8 +867,10 @@ class Events(commands.Cog):
             perms[channel.permissions_for(ctx.me).attach_files] = "Attach Files"
         if not all(perms.keys()):
             missing = [v for k, v in perms.items() if not k]
-            return await msg.edit(content="I am missing the following permissions for that channel:\n"
-                                          f"{box(humanize_list(missing))}")
+            return await msg.edit(
+                content="I am missing the following permissions for that channel:\n"
+                f"{box(humanize_list(missing))}"
+            )
 
         await msg.edit(content="How many submissions per user are allowed?")
         submissions = 1
@@ -825,12 +898,16 @@ class Events(commands.Cog):
                     await ctx.send("Your reply must be a number!", delete_after=10)
                     continue
                 if int(reply.content) > 25:
-                    await ctx.send("You can only have up to 25 winners!", delete_after=10)
+                    await ctx.send(
+                        "You can only have up to 25 winners!", delete_after=10
+                    )
                     continue
                 winners = int(reply.content)
                 break
 
-        await msg.edit(content="Would you like to include reward descriptions for the winners? (y/n)")
+        await msg.edit(
+            content="Would you like to include reward descriptions for the winners? (y/n)"
+        )
         rewards = {}
         do_rewards = False
         async with GetReply(ctx) as reply:
@@ -846,11 +923,11 @@ class Events(commands.Cog):
                 place = get_place(i + 1)
                 await msg.edit(
                     content=f"Enter the reward for **{place} place**\n"
-                            f"If the reward is a `number`, "
-                            f"the user will be rewarded that amount of economy credits automatically.\n"
-                            f"If the reward is `text`, the reward description will be included in the announcement.\n\n"
-                            f"You can type `done` to skip any remaining winner reward places.\n"
-                            f"*Alternatively, you can type `skip` to skip the reward for a specific place.*"
+                    f"If the reward is a `number`, "
+                    f"the user will be rewarded that amount of economy credits automatically.\n"
+                    f"If the reward is `text`, the reward description will be included in the announcement.\n\n"
+                    f"You can type `done` to skip any remaining winner reward places.\n"
+                    f"*Alternatively, you can type `skip` to skip the reward for a specific place.*"
                 )
                 while True:
                     async with GetReply(ctx) as reply:
@@ -871,8 +948,10 @@ class Events(commands.Cog):
                 if done:
                     break
 
-        await msg.edit(content="How long will this event be running for?\n"
-                               "**Example Replies**\n10d\n7d4h\n2w3d10h")
+        await msg.edit(
+            content="How long will this event be running for?\n"
+            "**Example Replies**\n10d\n7d4h\n2w3d10h"
+        )
         delta = timedelta(days=1)
         while True:
             async with GetReply(ctx) as reply:
@@ -882,12 +961,17 @@ class Events(commands.Cog):
                     return await cancel(msg)
                 rdelta = parse_timedelta(reply.content, minimum=timedelta(minutes=10))
                 if rdelta is None:
-                    await ctx.send("Please send a valid timedelta in the format above!", delete_after=10)
+                    await ctx.send(
+                        "Please send a valid timedelta in the format above!",
+                        delete_after=10,
+                    )
                     continue
                 delta = rdelta
                 break
 
-        await msg.edit(content="Does entering this event require a specific role or roles? (y/n)")
+        await msg.edit(
+            content="Does entering this event require a specific role or roles? (y/n)"
+        )
         async with GetReply(ctx) as reply:
             if reply is None:
                 return await cancel(msg)
@@ -897,7 +981,9 @@ class Events(commands.Cog):
         mentions = []
         need_all_roles = False
         if "y" in reply.content.lower():
-            await msg.edit(content="Please mention the role or roles required to enter this event")
+            await msg.edit(
+                content="Please mention the role or roles required to enter this event"
+            )
             roles = []
             while True:
                 async with GetReply(ctx) as repl:
@@ -906,13 +992,18 @@ class Events(commands.Cog):
                     if repl.content.lower() == "cancel":
                         return await cancel(msg)
                     if not repl.role_mentions:
-                        await ctx.send("Please mention the roles this event requires to enter", delete_after=10)
+                        await ctx.send(
+                            "Please mention the roles this event requires to enter",
+                            delete_after=10,
+                        )
                         continue
                     roles = [role.id for role in repl.role_mentions]
                     mentions = [role.mention for role in repl.role_mentions]
                     break
             if len(roles) > 1:
-                await msg.edit(content="Do users need to have **all** of these roles in order to enter? (y/n)")
+                await msg.edit(
+                    content="Do users need to have **all** of these roles in order to enter? (y/n)"
+                )
                 async with GetReply(ctx) as repl:
                     if repl is None:
                         return await cancel(msg)
@@ -921,7 +1012,9 @@ class Events(commands.Cog):
                     if "y" in repl.content.lower():
                         need_all_roles = True
 
-        await msg.edit(content="Do users need to be in the server for a certain amount of days to enter? (y/n)")
+        await msg.edit(
+            content="Do users need to be in the server for a certain amount of days to enter? (y/n)"
+        )
         async with GetReply(ctx) as reply:
             if reply is None:
                 return await cancel(msg)
@@ -929,7 +1022,9 @@ class Events(commands.Cog):
                 return await cancel(msg)
             days_in_server = 0
             if "y" in reply.content.lower():
-                await msg.edit(content="How many days do users need to be in the server to enter?")
+                await msg.edit(
+                    content="How many days do users need to be in the server to enter?"
+                )
                 while True:
                     async with GetReply(ctx) as repl:
                         if repl is None:
@@ -937,7 +1032,9 @@ class Events(commands.Cog):
                         if repl.content.lower() == "cancel":
                             return await cancel(msg)
                         if not repl.content.isdigit():
-                            await ctx.send("Your reply must be a number!", delete_after=10)
+                            await ctx.send(
+                                "Your reply must be a number!", delete_after=10
+                            )
                             continue
                         days_in_server = int(repl.content)
                         break
@@ -962,7 +1059,7 @@ class Events(commands.Cog):
             "days_in_server": days_in_server,  # Days user must be in server to enter
             "emoji": conf["default_emoji"],  # Default emoji at time of creation
             "messages": [],  # Any messages related to the event
-            "completed": False
+            "completed": False,
         }
 
         await msg.edit(content="Event creation complete!")
@@ -970,29 +1067,34 @@ class Events(commands.Cog):
         embed = discord.Embed(
             title="Event Details",
             description=f"`Event Name:      `{name}\n"
-                        f"`Channel:         `{channel.mention}\n"
-                        f"`Event Type:      `{etype}\n"
-                        f"`Winner Count:    `{winners}\n"
-                        f"`Days In Server:  `{days_in_server}\n"
-                        f"`Start Date:      `<t:{start_date}:D> (<t:{start_date}:R>)\n"
-                        f"`End Date:        `<t:{end_date}:D> (<t:{end_date}:R>)",
-            color=ctx.author.color
+            f"`Channel:         `{channel.mention}\n"
+            f"`Event Type:      `{etype}\n"
+            f"`Winner Count:    `{winners}\n"
+            f"`Days In Server:  `{days_in_server}\n"
+            f"`Start Date:      `<t:{start_date}:D> (<t:{start_date}:R>)\n"
+            f"`End Date:        `<t:{end_date}:D> (<t:{end_date}:R>)",
+            color=ctx.author.color,
         )
         if roles:
             embed.add_field(
                 name="Required Roles",
                 value=f"{humanize_list(mentions)}\n`All Roles Required: `{need_all_roles}",
-                inline=False
+                inline=False,
             )
         if ctx.channel.id != channel.id:
             await ctx.send(embed=embed)
 
         notify_roles = conf["notify_roles"]
-        notify_roles = [ctx.guild.get_role(r).mention for r in notify_roles if ctx.guild.get_role(r)]
+        notify_roles = [
+            ctx.guild.get_role(r).mention for r in notify_roles if ctx.guild.get_role(r)
+        ]
         notify_users = conf["notify_users"]
-        notify_users = [ctx.guild.get_member(m).mention for m in notify_users if ctx.guild.get_member(m)]
-        txt = f"{humanize_list(notify_users)}\n" \
-              f"{humanize_list(notify_roles)}"
+        notify_users = [
+            ctx.guild.get_member(m).mention
+            for m in notify_users
+            if ctx.guild.get_member(m)
+        ]
+        txt = f"{humanize_list(notify_users)}\n" f"{humanize_list(notify_roles)}"
 
         emoji_id = conf["default_emoji"]
         if emoji_id:
@@ -1003,14 +1105,14 @@ class Events(commands.Cog):
         embed = discord.Embed(
             title="A new event has started!",
             description=f"`Event Name:     `**{name}**\n"
-                        f"`Event Type:     `{etype}\n"
-                        f"`Winner Count:   `{winners}\n"
-                        f"`Days In Server: `{days_in_server}\n"
-                        f"`Start Date:     `<t:{start_date}:D> (<t:{start_date}:R>)\n"
-                        f"`End Date:       `<t:{end_date}:D> (<t:{end_date}:R>)\n\n"
-                        f"Use the `{ctx.prefix}enter` command to enter.\n"
-                        f"React with {emoji} to vote on submissions.",
-            color=ctx.author.color
+            f"`Event Type:     `{etype}\n"
+            f"`Winner Count:   `{winners}\n"
+            f"`Days In Server: `{days_in_server}\n"
+            f"`Start Date:     `<t:{start_date}:D> (<t:{start_date}:R>)\n"
+            f"`End Date:       `<t:{end_date}:D> (<t:{end_date}:R>)\n\n"
+            f"Use the `{ctx.prefix}enter` command to enter.\n"
+            f"React with {emoji} to vote on submissions.",
+            color=ctx.author.color,
         )
         icon = guild_icon(ctx.guild)
         if icon:
@@ -1020,13 +1122,13 @@ class Events(commands.Cog):
                 embed.add_field(
                     name="Required Roles",
                     value=f"Must have **ALL** roles\n{humanize_list(mentions)}",
-                    inline=False
+                    inline=False,
                 )
             else:
                 embed.add_field(
                     name="Required Roles",
                     value=f"Must have at least one role\n{humanize_list(mentions)}",
-                    inline=False
+                    inline=False,
                 )
         if description:
             embed.add_field(name="Event Details", value=description, inline=False)
@@ -1085,7 +1187,11 @@ class Events(commands.Cog):
                     voters = await reaction.users().flatten()
                     for voter in voters:
                         # Ignore votes from bots, the submitter, and users not in the guild
-                        dont_want = [voter.bot, voter.id == submitter.id, voter.guild is None]
+                        dont_want = [
+                            voter.bot,
+                            voter.id == submitter.id,
+                            voter.guild is None,
+                        ]
                         if any(dont_want):
                             continue
                         votes += 1
@@ -1102,7 +1208,7 @@ class Events(commands.Cog):
                     "entry": message.jump_url,
                     "attachment_url": attachment_url,
                     "filename": filename,
-                    "timestamp": posted_on
+                    "timestamp": posted_on,
                 }
 
                 if submitter in results:
@@ -1132,7 +1238,7 @@ class Events(commands.Cog):
             winner_color = final[0][0].color
             embed = discord.Embed(
                 description=f"There {grammar[0]} {entries} {grammar[1]}!",
-                color=winner_color
+                color=winner_color,
             )
             places = {"1st": "🥇 ", "2nd": "🥈 ", "3rd": "🥉 "}
             for index, entry in enumerate(final[:winners]):
@@ -1164,9 +1270,7 @@ class Events(commands.Cog):
                         value += f"\n`Reward: `{reward}"
 
                 embed.add_field(
-                    name=f"{medal}{place} Place!",
-                    value=value,
-                    inline=False
+                    name=f"{medal}{place} Place!", value=value, inline=False
                 )
             if image_url:
                 embed.set_image(url=image_url)
@@ -1174,7 +1278,7 @@ class Events(commands.Cog):
             embed = discord.Embed(
                 title=f"The {event['event_name']} event has ended!",
                 description="Sadly there were no participants 😢",
-                color=discord.Color.red()
+                color=discord.Color.red(),
             )
 
         if thumbnail:
@@ -1186,15 +1290,23 @@ class Events(commands.Cog):
             embed.set_author(name=title)
 
         notify_roles = conf["notify_roles"]
-        notify_roles = [guild.get_role(r).mention for r in notify_roles if guild.get_role(r)]
+        notify_roles = [
+            guild.get_role(r).mention for r in notify_roles if guild.get_role(r)
+        ]
         notify_users = conf["notify_users"]
-        notify_users = [guild.get_member(m).mention for m in notify_users if guild.get_member(m)]
+        notify_users = [
+            guild.get_member(m).mention for m in notify_users if guild.get_member(m)
+        ]
         notify_staff = conf["ping_staff"]
         staff_roles = conf["staff_roles"]
-        staff_roles = [guild.get_role(r).mention for r in staff_roles if guild.get_role(r)]
-        txt = f"{humanize_list(to_mention)}\n" \
-              f"{humanize_list(notify_users)}\n" \
-              f"{humanize_list(notify_roles)}"
+        staff_roles = [
+            guild.get_role(r).mention for r in staff_roles if guild.get_role(r)
+        ]
+        txt = (
+            f"{humanize_list(to_mention)}\n"
+            f"{humanize_list(notify_users)}\n"
+            f"{humanize_list(notify_roles)}"
+        )
         if notify_staff and staff_roles:
             txt += f"\n{humanize_list(staff_roles)}"
         mentions = discord.AllowedMentions(roles=True, users=True)

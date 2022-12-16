@@ -22,9 +22,7 @@ class MCTools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=61564189)
-        default_guild = {
-            "servers": {}
-        }
+        default_guild = {"servers": {}}
         self.config.register_guild(**default_guild)
 
     async def getserver(self, host: str, port: int):
@@ -54,10 +52,7 @@ class MCTools(commands.Cog):
                 port = server["port"]
                 data = await self.getserver(host, port)
                 if data == "timeout" or not data:
-                    embed.add_field(
-                        name=name,
-                        value="Timed Out (Offline)"
-                    )
+                    embed.add_field(name=name, value="Timed Out (Offline)")
                 else:
                     ver = data.game_version
                     nump = data.num_players
@@ -67,11 +62,11 @@ class MCTools(commands.Cog):
                     embed.add_field(
                         name=name,
                         value=f"`Address: `{host}\n"
-                              f"`Port:    `{port}\n"
-                              f"`Version: `{ver}\n"
-                              f"`Mode:    `{mode}\n"
-                              f"`MotD:    `{motd}\n"
-                              f"`Players: `{nump}/{maxp}"
+                        f"`Port:    `{port}\n"
+                        f"`Version: `{ver}\n"
+                        f"`Mode:    `{mode}\n"
+                        f"`MotD:    `{motd}\n"
+                        f"`Players: `{nump}/{maxp}",
                     )
         await ctx.send(embed=embed)
         # output shows the info in an embed code block box

@@ -28,30 +28,32 @@ class SupportCommands(commands.Cog):
         conf = await self.config.guild(ctx.guild).all()
         category = self.bot.get_channel(conf["category"])
         if not category:
-            category = conf['category']
-        button_channel = self.bot.get_channel(conf['channel_id'])
+            category = conf["category"]
+        button_channel = self.bot.get_channel(conf["channel_id"])
         if button_channel:
             button_channel = button_channel.mention
         else:
-            button_channel = conf['channel_id']
+            button_channel = conf["channel_id"]
         inactive = conf["inactive"]
         no_resp = f"{inactive} {'hours' if inactive != 1 else 'hour'}"
         if not inactive:
             no_resp = "Disabled"
-        msg = f"`Ticket Category:  `{category}\n" \
-              f"`Button MessageID: `{conf['message_id']}\n" \
-              f"`Button Channel:   `{button_channel}\n" \
-              f"`Max Tickets:      `{conf['max_tickets']}\n" \
-              f"`Button Content:   `{conf['button_content']}\n" \
-              f"`Button Emoji:     `{conf['emoji']}\n" \
-              f"`DM Alerts:        `{conf['dm']}\n" \
-              f"`Users can Rename: `{conf['user_can_rename']}\n" \
-              f"`Users can Close:  `{conf['user_can_close']}\n" \
-              f"`Users can Manage: `{conf['user_can_manage']}\n" \
-              f"`Save Transcripts: `{conf['transcript']}\n" \
-              f"`Auto Close:       `{conf['auto_close']}\n" \
-              f"`Ticket Name:      `{conf['ticket_name']}\n" \
-              f"`NoResponseDelete: `{no_resp}\n"
+        msg = (
+            f"`Ticket Category:  `{category}\n"
+            f"`Button MessageID: `{conf['message_id']}\n"
+            f"`Button Channel:   `{button_channel}\n"
+            f"`Max Tickets:      `{conf['max_tickets']}\n"
+            f"`Button Content:   `{conf['button_content']}\n"
+            f"`Button Emoji:     `{conf['emoji']}\n"
+            f"`DM Alerts:        `{conf['dm']}\n"
+            f"`Users can Rename: `{conf['user_can_rename']}\n"
+            f"`Users can Close:  `{conf['user_can_close']}\n"
+            f"`Users can Manage: `{conf['user_can_manage']}\n"
+            f"`Save Transcripts: `{conf['transcript']}\n"
+            f"`Auto Close:       `{conf['auto_close']}\n"
+            f"`Ticket Name:      `{conf['ticket_name']}\n"
+            f"`NoResponseDelete: `{no_resp}\n"
+        )
         log = conf["log"]
         if log:
             lchannel = ctx.guild.get_channel(log)
@@ -76,27 +78,15 @@ class SupportCommands(commands.Cog):
                 else:
                     busers += f"LeftGuild-{user_id}\n"
         embed = discord.Embed(
-            title="Support Settings",
-            description=msg,
-            color=discord.Color.random()
+            title="Support Settings", description=msg, color=discord.Color.random()
         )
         if suproles:
-            embed.add_field(
-                name="Support Roles",
-                value=suproles,
-                inline=False
-            )
+            embed.add_field(name="Support Roles", value=suproles, inline=False)
         if busers:
-            embed.add_field(
-                name="Blacklisted Users",
-                value=busers,
-                inline=False
-            )
+            embed.add_field(name="Blacklisted Users", value=busers, inline=False)
         if conf["message"] != "{default}":
             embed.add_field(
-                name="Ticket Message",
-                value=box(conf["message"]),
-                inline=False
+                name="Ticket Message", value=box(conf["message"]), inline=False
             )
         await ctx.send(embed=embed)
 
@@ -111,7 +101,9 @@ class SupportCommands(commands.Cog):
         await ctx.send(f"Tickets will now be created in the {category.name} category")
 
     @support.command(name="supportmessage")
-    async def set_support_button_message(self, ctx: commands.Context, message_id: discord.Message):
+    async def set_support_button_message(
+        self, ctx: commands.Context, message_id: discord.Message
+    ):
         """
         Set the support ticket message
 
@@ -143,7 +135,9 @@ class SupportCommands(commands.Cog):
         You can set this to {default} to restore original settings
         """
         if len(message) > 1024:
-            return await ctx.send("Message length is too long! Must be less than 1024 chars")
+            return await ctx.send(
+                "Message length is too long! Must be less than 1024 chars"
+            )
         await self.config.guild(ctx.guild).message.set(message)
         if message.lower() == "default":
             await ctx.send("Message has been reset to default")
@@ -187,7 +181,9 @@ class SupportCommands(commands.Cog):
         await ctx.tick()
 
     @support.command(name="logchannel")
-    async def set_log_channel(self, ctx: commands.Context, *, log_channel: discord.TextChannel):
+    async def set_log_channel(
+        self, ctx: commands.Context, *, log_channel: discord.TextChannel
+    ):
         """Set the log channel"""
         await self.config.guild(ctx.guild).log.set(log_channel.id)
         await ctx.tick()
@@ -200,7 +196,9 @@ class SupportCommands(commands.Cog):
             await ctx.tick()
             await self.refresh_tasks(str(ctx.guild.id))
         else:
-            await ctx.send("Button content is too long! Must be less than 80 characters")
+            await ctx.send(
+                "Button content is too long! Must be less than 80 characters"
+            )
 
     @support.command(name="buttoncolor")
     async def set_button_color(self, ctx: commands.Context, button_color: str):
@@ -208,13 +206,19 @@ class SupportCommands(commands.Cog):
         c = button_color.lower()
         valid = ["red", "blue", "green", "grey", "gray"]
         if c not in valid:
-            return await ctx.send("That is not a valid color, must be red, blue, green, or grey")
+            return await ctx.send(
+                "That is not a valid color, must be red, blue, green, or grey"
+            )
         await self.config.guild(ctx.guild).bcolor.set(c)
         await ctx.tick()
         await self.refresh_tasks(str(ctx.guild.id))
 
     @support.command(name="buttonemoji")
-    async def set_button_emoji(self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
+    async def set_button_emoji(
+        self,
+        ctx: commands.Context,
+        emoji: Union[discord.Emoji, discord.PartialEmoji, str],
+    ):
         """
         Set a button emoji
 
@@ -236,16 +240,20 @@ class SupportCommands(commands.Cog):
                 style=style,
                 label=button_content,
                 custom_id=f"{ctx.guild.id}",
-                emoji=str(emoji)
+                emoji=str(emoji),
             )
         )
         try:
-            await ctx.send("This is what your button now looks like!", components=[button])
+            await ctx.send(
+                "This is what your button now looks like!", components=[button]
+            )
         except Exception as e:
             if "Invalid emoji" in str(e):
                 return await ctx.send("Unable to use that emoji, try again")
             else:
-                return await ctx.send(f"Cant use that emoji for some reason\nError: {e}")
+                return await ctx.send(
+                    f"Cant use that emoji for some reason\nError: {e}"
+                )
         await self.config.guild(ctx.guild).emoji.set(str(emoji))
         await ctx.tick()
         await self.refresh_tasks(str(ctx.guild.id))
@@ -348,7 +356,9 @@ class SupportCommands(commands.Cog):
         toggle = await self.config.guild(ctx.guild).auto_close()
         if toggle:
             await self.config.guild(ctx.guild).auto_close.set(False)
-            await ctx.send("Tickets will no longer be closed if a user leaves the guild")
+            await ctx.send(
+                "Tickets will no longer be closed if a user leaves the guild"
+            )
         else:
             await self.config.guild(ctx.guild).auto_close.set(True)
             await ctx.send("Tickets will now be closed if a user leaves the guild")

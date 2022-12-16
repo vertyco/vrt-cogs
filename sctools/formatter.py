@@ -71,10 +71,10 @@ async def ships(data):
         embed = discord.Embed(
             title=name,
             description=f"```\n{description}\n```\n"
-                        f"`Focus:             `{focus}\n"
-                        f"`Production Status: `{prod_status}\n"
-                        f"`Price:             `{price}",
-            color=discord.Color.random()
+            f"`Focus:             `{focus}\n"
+            f"`Production Status: `{prod_status}\n"
+            f"`Price:             `{price}",
+            color=discord.Color.random(),
         )
         if image.startswith("/"):
             image = f"https://robertsspaceindustries.com{image}"
@@ -82,32 +82,32 @@ async def ships(data):
         embed.add_field(
             name="Ship Specs",
             value=f"`Mass:       `{mass}\n"
-                  f"`Cargo Cap:  `{cargo_capacity}\n"
-                  f"`Chassis ID: `{chassis_id}\n"
-                  f"`Min Crew:   `{min_crew}\n"
-                  f"`Max Crew:   `{max_crew}\n"
-                  f"`Size:       `{size}\n"
-                  f"`Height:     `{height}\n"
-                  f"`Length:     `{length}\n"
-                  f"`Beam:       `{beam}\n"
-                  f"`Max Pitch:  `{pitch_max}\n"
-                  f"`Max Roll:   `{roll_max}\n"
-                  f"`Max Yaw:    `{yaw_max}"
+            f"`Cargo Cap:  `{cargo_capacity}\n"
+            f"`Chassis ID: `{chassis_id}\n"
+            f"`Min Crew:   `{min_crew}\n"
+            f"`Max Crew:   `{max_crew}\n"
+            f"`Size:       `{size}\n"
+            f"`Height:     `{height}\n"
+            f"`Length:     `{length}\n"
+            f"`Beam:       `{beam}\n"
+            f"`Max Pitch:  `{pitch_max}\n"
+            f"`Max Roll:   `{roll_max}\n"
+            f"`Max Yaw:    `{yaw_max}",
         )
         embed.add_field(
             name="Thrust Capabilities",
             value=f"`Afterburner Speed: `{afterburner_speed}\n"
-                  f"`SCM Speed:         `{scm_speed}\n"
-                  f"`X-Acceleration:    `{x_accel}\n"
-                  f"`Y-Acceleration:    `{y_accel}\n"
-                  f"`Z-Acceleration:    `{z_accel}"
+            f"`SCM Speed:         `{scm_speed}\n"
+            f"`X-Acceleration:    `{x_accel}\n"
+            f"`Y-Acceleration:    `{y_accel}\n"
+            f"`Z-Acceleration:    `{z_accel}",
         )
         embed.add_field(
             name="Manufacturer",
             value=f"`Name:  `{manufacturer}\n"
-                  f"`Code:  `{mcode}\n"
-                  f"```\n{mdesc}\n```",
-            inline=False
+            f"`Code:  `{mcode}\n"
+            f"```\n{mdesc}\n```",
+            inline=False,
         )
         # Detailed component breakdown
         comp_data = ship["compiled"]
@@ -138,16 +138,14 @@ async def ships(data):
                         manufacturer = i["manufacturer"]
                         name = i["name"]
                         quantity = i["quantity"]
-                        info += f"`Size:  `{size}\n" \
-                                f"`Mfr:   `{manufacturer}\n" \
-                                f"`Name:  `{name}\n" \
-                                f"`Qty:   `{quantity}\n"
+                        info += (
+                            f"`Size:  `{size}\n"
+                            f"`Mfr:   `{manufacturer}\n"
+                            f"`Name:  `{name}\n"
+                            f"`Qty:   `{quantity}\n"
+                        )
             if info != "":
-                embed.add_field(
-                    name=cname,
-                    value=info,
-                    inline=True
-                )
+                embed.add_field(name=cname, value=info, inline=True)
         embed.set_footer(text=f"Page {page}/{pages}")
         page += 1
         embeds.append(embed)

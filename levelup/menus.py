@@ -15,12 +15,12 @@ _ReactableEmoji = Union[str, discord.Emoji]
 
 
 async def menu(
-        ctx: commands.Context,
-        pages: Union[List[str], List[discord.Embed]],
-        controls: dict,
-        message: discord.Message = None,
-        page: int = 0,
-        timeout: float = 30.0,
+    ctx: commands.Context,
+    pages: Union[List[str], List[discord.Embed]],
+    controls: dict,
+    message: discord.Message = None,
+    page: int = 0,
+    timeout: float = 30.0,
 ):
     """
     An emoji-based menu
@@ -59,7 +59,7 @@ async def menu(
     if not isinstance(pages[0], (discord.Embed, str)):
         raise RuntimeError("Pages must be of type discord.Embed or str")
     if not all(isinstance(x, discord.Embed) for x in pages) and not all(
-            isinstance(x, str) for x in pages
+        isinstance(x, str) for x in pages
     ):
         raise RuntimeError("All pages must be of the same type")
     for key, value in controls.items():
@@ -88,10 +88,14 @@ async def menu(
             return
 
     try:
-        predicates = ReactionPredicate.with_emojis(tuple(controls.keys()), message, ctx.author)
+        predicates = ReactionPredicate.with_emojis(
+            tuple(controls.keys()), message, ctx.author
+        )
         tasks = [
             asyncio.ensure_future(ctx.bot.wait_for("reaction_add", check=predicates)),
-            asyncio.ensure_future(ctx.bot.wait_for("reaction_remove", check=predicates)),
+            asyncio.ensure_future(
+                ctx.bot.wait_for("reaction_remove", check=predicates)
+            ),
         ]
         done, pending = await asyncio.wait(
             tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED
@@ -127,13 +131,13 @@ async def menu(
 
 
 async def next_page(
-        ctx: commands.Context,
-        pages: list,
-        controls: dict,
-        message: discord.Message,
-        page: int,
-        timeout: float,
-        emoji: str,
+    ctx: commands.Context,
+    pages: list,
+    controls: dict,
+    message: discord.Message,
+    page: int,
+    timeout: float,
+    emoji: str,
 ):
     if page == len(pages) - 1:
         page = 0  # Loop around to the first item
@@ -143,13 +147,13 @@ async def next_page(
 
 
 async def skip_ten(
-        ctx: commands.Context,
-        pages: list,
-        controls: dict,
-        message: discord.Message,
-        page: int,
-        timeout: float,
-        emoji: str,
+    ctx: commands.Context,
+    pages: list,
+    controls: dict,
+    message: discord.Message,
+    page: int,
+    timeout: float,
+    emoji: str,
 ):
     if len(pages) < 10:
         page = page  # Do nothing if there arent enough pages
@@ -161,13 +165,13 @@ async def skip_ten(
 
 
 async def prev_page(
-        ctx: commands.Context,
-        pages: list,
-        controls: dict,
-        message: discord.Message,
-        page: int,
-        timeout: float,
-        emoji: str,
+    ctx: commands.Context,
+    pages: list,
+    controls: dict,
+    message: discord.Message,
+    page: int,
+    timeout: float,
+    emoji: str,
 ):
     if page == 0:
         page = len(pages) - 1  # Loop around to the last item
@@ -177,13 +181,13 @@ async def prev_page(
 
 
 async def back_ten(
-        ctx: commands.Context,
-        pages: list,
-        controls: dict,
-        message: discord.Message,
-        page: int,
-        timeout: float,
-        emoji: str,
+    ctx: commands.Context,
+    pages: list,
+    controls: dict,
+    message: discord.Message,
+    page: int,
+    timeout: float,
+    emoji: str,
 ):
     if len(pages) < 10:
         page = page  # Do nothing if there aren't enough pages
@@ -195,20 +199,20 @@ async def back_ten(
 
 
 async def close_menu(
-        ctx: commands.Context,
-        pages: list,
-        controls: dict,
-        message: discord.Message,
-        page: int,
-        timeout: float,
-        emoji: str,
+    ctx: commands.Context,
+    pages: list,
+    controls: dict,
+    message: discord.Message,
+    page: int,
+    timeout: float,
+    emoji: str,
 ):
     with contextlib.suppress(discord.NotFound):
         await message.delete()
 
 
 def start_adding_reactions(
-        message: discord.Message, emojis: Iterable[_ReactableEmoji]
+    message: discord.Message, emojis: Iterable[_ReactableEmoji]
 ) -> asyncio.Task:
     """Start adding reactions to a message.
 

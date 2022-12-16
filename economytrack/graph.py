@@ -17,13 +17,12 @@ class PlotGraph(MixinMeta):
     def __init__(self):
         self.executor = ThreadPoolExecutor(
             max_workers=os.cpu_count() if os.cpu_count() else 4,
-            thread_name_prefix="economytrack_plot"
+            thread_name_prefix="economytrack_plot",
         )
 
     async def get_plot(self, df: pd.DataFrame) -> discord.File:
         return await self.bot.loop.run_in_executor(
-            self.executor,
-            lambda: self.make_plot(df)
+            self.executor, lambda: self.make_plot(df)
         )
 
     @staticmethod
@@ -31,14 +30,11 @@ class PlotGraph(MixinMeta):
         fig = px.line(
             df,
             template="plotly_dark",
-            labels={"ts": _("Date"), "value": _("Total Economy Credits")}
+            labels={"ts": _("Date"), "value": _("Total Economy Credits")},
         )
-        fig.update_xaxes(
-            tickformat="%I:%M %p\n%b %d %Y"
-        )
+        fig.update_xaxes(tickformat="%I:%M %p\n%b %d %Y")
         fig.update_layout(
             showlegend=False,
-
         )
         bytefile = fig.to_image(format="png", width=800, height=500, scale=1)
         buffer = BytesIO(bytefile)

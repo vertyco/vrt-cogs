@@ -15,6 +15,7 @@ class EmojiTracker(commands.Cog):
     It will ignore reactions added to a bot's message
     It will also only count one reaction per emoji for each user on a message so user's can't spam react/unreact
     """
+
     __author__ = "Vertyco"
     __version__ = "0.0.1"
 
@@ -121,8 +122,7 @@ class EmojiTracker(commands.Cog):
         if not blacklist:
             return await ctx.send("No guild ID's have been added to the blacklist")
         embed = discord.Embed(
-            title="Emoji Tracker Blacklist",
-            description=f"```py\b{blacklist}\n```"
+            title="Emoji Tracker Blacklist", description=f"```py\b{blacklist}\n```"
         )
         await ctx.send(embed=embed)
 
@@ -165,7 +165,7 @@ class EmojiTracker(commands.Cog):
             embed = discord.Embed(
                 title="Emoji Leaderboard",
                 description=f"Total Reactions: {'{:,}'.format(total_emojis)}\n{top}",
-                color=color
+                color=color,
             )
             embed.set_footer(text=f"Pages {p + 1}/{pages}")
             embeds.append(embed)
@@ -210,7 +210,7 @@ class EmojiTracker(commands.Cog):
             embed = discord.Embed(
                 title="Reaction Leaderboard",
                 description=f"Total Reactions: {'{:,}'.format(total_reactions)}\n```py\n{top}\n```",
-                color=color
+                color=color,
             )
             embed.set_footer(text=f"Pages {p + 1}/{pages}")
             embeds.append(embed)

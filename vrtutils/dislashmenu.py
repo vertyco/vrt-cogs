@@ -15,7 +15,7 @@ color_map = {
     "\N{CROSS MARK}": ButtonStyle.grey,
     "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}": ButtonStyle.red,
     "\N{WASTEBASKET}\N{VARIATION SELECTOR-16}": ButtonStyle.red,
-    "\N{CHAINS}\N{VARIATION SELECTOR-16}": ButtonStyle.success
+    "\N{CHAINS}\N{VARIATION SELECTOR-16}": ButtonStyle.success,
 }
 
 
@@ -36,14 +36,8 @@ async def confirm(ctx: commands.Context, msg: discord.Message) -> Union[bool, No
     """
     action_row = [
         ActionRow(
-            Button(
-                style=ButtonStyle.grey,
-                label="Yes"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                label="No"
-            )
+            Button(style=ButtonStyle.grey, label="Yes"),
+            Button(style=ButtonStyle.grey, label="No"),
         )
     ]
     try:
@@ -53,7 +47,11 @@ async def confirm(ctx: commands.Context, msg: discord.Message) -> Union[bool, No
 
     def check(interaction: ButtonInteraction):
         if interaction.author != ctx.author:
-            asyncio.create_task(interaction.reply("You are not the author of this command", ephemeral=True))
+            asyncio.create_task(
+                interaction.reply(
+                    "You are not the author of this command", ephemeral=True
+                )
+            )
         return interaction.author == ctx.author
 
     try:
@@ -78,13 +76,13 @@ async def confirm(ctx: commands.Context, msg: discord.Message) -> Union[bool, No
 
 class MenuView:
     def __init__(
-            self,
-            ctx: commands.Context,
-            pages: Union[List[str], List[discord.Embed]],
-            controls: dict,
-            message: discord.Message = None,
-            page: int = 0,
-            timeout: float = 60.0
+        self,
+        ctx: commands.Context,
+        pages: Union[List[str], List[discord.Embed]],
+        controls: dict,
+        message: discord.Message = None,
+        page: int = 0,
+        timeout: float = 60.0,
     ):
         self.ctx = ctx
         self.pages = pages
@@ -98,10 +96,7 @@ class MenuView:
         rowbreak = 5
         for i, emoji in enumerate(self.controls.keys()):
             style = color_map[emoji] if emoji in color_map else ButtonStyle.primary
-            button = Button(
-                style=style,
-                emoji=emoji
-            )
+            button = Button(style=style, emoji=emoji)
             row.append(button)
             if (i + 1) % rowbreak == 0:
                 self.action_rows.append(ActionRow(*row))
@@ -136,15 +131,23 @@ class MenuView:
         current_page = self.pages[self.page]
         if not self.message:
             if isinstance(current_page, discord.Embed):
-                self.message = await self.ctx.send(embed=current_page, components=self.action_rows)
+                self.message = await self.ctx.send(
+                    embed=current_page, components=self.action_rows
+                )
             else:
-                self.message = await self.ctx.send(current_page, components=self.action_rows)
+                self.message = await self.ctx.send(
+                    current_page, components=self.action_rows
+                )
         else:
             try:
                 if isinstance(current_page, discord.Embed):
-                    await self.message.edit(embed=current_page, components=self.action_rows)
+                    await self.message.edit(
+                        embed=current_page, components=self.action_rows
+                    )
                 else:
-                    await self.message.edit(content=current_page, components=self.action_rows)
+                    await self.message.edit(
+                        content=current_page, components=self.action_rows
+                    )
             except discord.NotFound:
                 pass
         await self.resume()
@@ -152,29 +155,42 @@ class MenuView:
     async def resume(self):
         def check(interaction: ButtonInteraction):
             if interaction.author != self.ctx.author:
-                asyncio.create_task(interaction.reply("You are not the author of this command", ephemeral=True))
+                asyncio.create_task(
+                    interaction.reply(
+                        "You are not the author of this command", ephemeral=True
+                    )
+                )
             return interaction.author == self.ctx.author
 
         try:
-            inter: ButtonInteraction = await self.message.wait_for_button_click(check, timeout=self.timeout)
+            inter: ButtonInteraction = await self.message.wait_for_button_click(
+                check, timeout=self.timeout
+            )
         except asyncio.TimeoutError:
             with contextlib.suppress(discord.NotFound):
                 await self.message.delete()
             return
         except discord.NotFound:
-            return await menu(self.ctx, self.pages, self.controls, self.message, self.page, self.timeout)
+            return await menu(
+                self.ctx,
+                self.pages,
+                self.controls,
+                self.message,
+                self.page,
+                self.timeout,
+            )
 
         emoji = inter.clicked_button.emoji
         return await self.controls[emoji.name](self, inter)
 
 
 async def menu(
-        ctx: commands.Context,
-        pages: Union[List[str], List[discord.Embed], List[tuple]],
-        controls: dict,
-        message: discord.Message = None,
-        page: int = 0,
-        timeout: float = 60.0,
+    ctx: commands.Context,
+    pages: Union[List[str], List[discord.Embed], List[tuple]],
+    controls: dict,
+    message: discord.Message = None,
+    page: int = 0,
+    timeout: float = 60.0,
 ):
     """
     An emoji-based dislash menu
@@ -215,7 +231,7 @@ async def menu(
     if not isinstance(pages[0], (discord.Embed, str)):
         raise RuntimeError("Pages must be of type discord.Embed or str")
     if not all(isinstance(x, discord.Embed) for x in pages) and not all(
-            isinstance(x, str) for x in pages
+        isinstance(x, str) for x in pages
     ):
         raise RuntimeError("All pages must be of the same type")
     for key, value in controls.items():

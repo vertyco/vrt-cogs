@@ -57,10 +57,7 @@ def get_disk_speed(path, blocks_count, block_size):
     path = os.path.join(path, "IOTest")
     write = get_write_speed(path, blocks_count, block_size)
     read = get_read_speed(path, blocks_count, block_size)
-    data = {
-        "write": write,
-        "read": read
-    }
+    data = {"write": write, "read": read}
     os.remove(path)
     return data
 

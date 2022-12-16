@@ -21,14 +21,14 @@ You must have Python 3.8 or higher in order to install Pilmoji.
 
 Installation can be done with `pip`:
 
-```shell 
+```shell
 $ pip install -U pilmoji
 ```
 
 Optionally, you can add the `[requests]` option to install requests
 alongside Pilmoji:
 
-```shell 
+```shell
 $ pip install -U pilmoji[requests]
 ```
 
@@ -39,7 +39,7 @@ You may also install from Github.
 
 ## Usage
 
-```py 
+```py
 from pilmoji import Pilmoji
 from PIL import Image, ImageFont
 
@@ -70,7 +70,7 @@ If you prefer emojis from a different source, for example Microsoft, simply
 set the `source` kwarg in the constructor to a source found in the
 `pilmoji.source` module:
 
-```py 
+```py
 from pilmoji.source import MicrosoftEmojiSource
 
 with Pilmoji(image, source=MicrosoftEmojiSource) as pilmoji:
@@ -86,7 +86,7 @@ It is also possible to create your own emoji sources via subclass.
 If an emoji looks too small or too big, or out of place, you can make fine adjustments
 with the `emoji_scale_factor` and `emoji_position_offset` kwargs:
 
-```py 
+```py
 pilmoji.text((10, 10), my_string.strip(), (0, 0, 0), font,
              emoji_scale_factor=1.15, emoji_position_offset=(0, -2))
 ```

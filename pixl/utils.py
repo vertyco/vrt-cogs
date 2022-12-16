@@ -19,7 +19,9 @@ dpy2 = True if discord.version_info.major >= 2 else False
 
 
 @cached(ttl=240)
-async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
+async def get_content_from_url(
+    url: str, timeout: Optional[int] = 60
+) -> Optional[bytes]:
     try:
         async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
             async with session.get(url) as res:
@@ -34,7 +36,9 @@ async def exe(*args):
 
 
 async def delete(message: discord.Message):
-    with contextlib.suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
+    with contextlib.suppress(
+        discord.Forbidden, discord.NotFound, discord.HTTPException
+    ):
         await message.delete()
 
 
@@ -53,7 +57,9 @@ async def listener(ctx: commands.Context, data: dict):
         res: discord.Message = done.pop().result()
         if not res.content.strip():
             continue
-        data["responses"].append((res.author, res.content.strip().lower(), datetime.now().timestamp()))
+        data["responses"].append(
+            (res.author, res.content.strip().lower(), datetime.now().timestamp())
+        )
         data["participants"].add(res.author)
 
 
@@ -61,12 +67,12 @@ class PixlGrids:
     """Slowly reveal blocks from an image while waiting for text response"""
 
     def __init__(
-            self,
-            ctx: commands.Context,
-            image: Image.Image,
-            answers: list,
-            amount_to_reveal: int,
-            time_limit: int
+        self,
+        ctx: commands.Context,
+        image: Image.Image,
+        answers: list,
+        amount_to_reveal: int,
+        time_limit: int,
     ):
         self.ctx = ctx
         self.image = image
@@ -90,12 +96,17 @@ class PixlGrids:
         end_conditions = [
             len(self.to_chop) <= 0,  # Image is fully revealed
             self.have_winner(),  # Someone guessed it right
-            (datetime.now() - self.start).total_seconds() > self.time_limit  # Time is up
+            (datetime.now() - self.start).total_seconds()
+            > self.time_limit,  # Time is up
         ]
         if any(end_conditions):
             self.data["in_progress"] = False
             raise StopAsyncIteration
-        pop = self.amount_to_reveal if self.amount_to_reveal <= len(self.to_chop) else len(self.to_chop)
+        pop = (
+            self.amount_to_reveal
+            if self.amount_to_reveal <= len(self.to_chop)
+            else len(self.to_chop)
+        )
         for _ in range(pop):
             bbox = self.to_chop.pop(random.randrange(len(self.to_chop)))
             cropped = await exe(self.image.crop, bbox)
@@ -132,7 +143,9 @@ class PixlGrids:
         return discord.File(buffer, filename=buffer.name)
 
     def have_winner(self) -> bool:
-        responses = sorted(self.data["responses"].copy(), key=lambda x: x[2], reverse=False)
+        responses = sorted(
+            self.data["responses"].copy(), key=lambda x: x[2], reverse=False
+        )
         self.data["responses"].clear()
         for author, answer, _ in responses:
             if any([fuzz.ratio(answer, a) > 92 for a in self.answers]):
