@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2022-12-02 15:17-0500\n"
-"PO-Revision-Date: 2022-12-16 03:43\n"
+"POT-Creation-Date: 2022-12-15 22:39-0500\n"
+"PO-Revision-Date: 2022-12-16 18:45\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -17,23 +17,23 @@ msgstr ""
 "X-Crowdin-File-ID: 19\n"
 "Language: fr_FR\n"
 
-#: utils\formatter.py:75
+#: utils\formatter.py:79
 msgid "None"
 msgstr ""
 
-#: utils\formatter.py:78
+#: utils\formatter.py:82
 msgid " second"
 msgstr ""
 
-#: utils\formatter.py:80
+#: utils\formatter.py:84
 msgid " seconds"
 msgstr ""
 
-#: utils\formatter.py:83
+#: utils\formatter.py:87
 msgid " minute"
 msgstr ""
 
-#: utils\formatter.py:85
+#: utils\formatter.py:89
 msgid " minutes"
 msgstr ""
 
