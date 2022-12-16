@@ -4,10 +4,10 @@ from typing import Optional
 
 import googletrans
 from aiohttp import (
+    ClientConnectorError,
+    ClientResponseError,
     ClientSession,
     ClientTimeout,
-    ClientResponseError,
-    ClientConnectorError,
 )
 from redbot.core.bot import Red
 

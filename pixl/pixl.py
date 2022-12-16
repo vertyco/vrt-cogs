@@ -5,33 +5,35 @@ import math
 import random
 import traceback
 from io import BytesIO
-from typing import Optional, List
+from typing import List, Optional
 
 import discord
 from PIL import Image, UnidentifiedImageError
-from redbot.core import commands, Config, bank
+from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import (
-    humanize_number,
-    humanize_list,
-    humanize_timedelta,
     box,
+    humanize_list,
+    humanize_number,
+    humanize_timedelta,
 )
 from tabulate import tabulate
 
 from .defaults import defaults
-from .utils import PixlGrids, get_content_from_url, exe, delete
+from .utils import PixlGrids, delete, exe, get_content_from_url
 
 log = logging.getLogger("red.vrt.pixl")
 dpy2 = True if discord.version_info.major >= 2 else False
 if dpy2:
     InteractionClient = None
-    from .menu import menu, DEFAULT_CONTROLS, MenuView
     from discord import Interaction
+
+    from .menu import DEFAULT_CONTROLS, MenuView, menu
 else:
-    from dislash import InteractionClient, Interaction
-    from .dmenu import menu, DEFAULT_CONTROLS, MenuView
+    from dislash import Interaction, InteractionClient
+
+    from .dmenu import DEFAULT_CONTROLS, MenuView, menu
 
 
 class Pixl(commands.Cog):
@@ -466,7 +468,7 @@ class Pixl(commands.Cog):
     async def view_global_images(self, ctx: commands.Context):
         """View the global images"""
         images = await self.config.images()
-        if not images:
+        if not images or len(images) < 1:
             return await ctx.send("There are no global images to view")
         await self.image_menu(ctx, images, "Global Images")
 
@@ -474,7 +476,7 @@ class Pixl(commands.Cog):
     async def view_images(self, ctx: commands.Context):
         """View the guild images"""
         images = await self.config.guild(ctx.guild).images()
-        if not images:
+        if not images or len(images) < 1:
             return await ctx.send("There are no guild images to view")
         await self.image_menu(ctx, images, "Guild Images")
 
@@ -749,6 +751,16 @@ class Pixl(commands.Cog):
             interaction, f"Image with url `{embed.image.url}` has been deleted"
         )
         images = await conf.images()
+        if not images:
+            await instance.respond(
+                interaction,
+                f"Image with url `{embed.image.url}` has been deleted. There are no more images.",
+            )
+            return await instance.message.delete()
+        else:
+            await instance.respond(
+                interaction, f"Image with url `{embed.image.url}` has been deleted"
+            )
         page = instance.page - 1
         page %= len(instance.pages)
         await self.image_menu(
