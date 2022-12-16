@@ -19,13 +19,13 @@ class MenuView(discord.ui.View):
     """View that creates a menu using the List[str] or List[embed] provided."""
 
     def __init__(
-            self,
-            ctx: commands.Context,
-            pages: Union[List[str], List[discord.Embed]],
-            controls: dict,
-            message: discord.Message = None,
-            page: int = 0,
-            timeout: int = 60
+        self,
+        ctx: commands.Context,
+        pages: Union[List[str], List[discord.Embed]],
+        controls: dict,
+        message: discord.Message = None,
+        page: int = 0,
+        timeout: int = 60,
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx
@@ -41,7 +41,7 @@ class MenuView(discord.ui.View):
         if interaction.user.id != self.ctx.author.id:
             await interaction.response.send_message(
                 content="You are not allowed to interact with this button.",
-                ephemeral=True
+                ephemeral=True,
             )
             return False
         return True
@@ -77,19 +77,19 @@ class MenuView(discord.ui.View):
 
 
 async def menu(
-        ctx: commands.Context,
-        pages: Union[List[str], List[discord.Embed], List[tuple]],
-        controls: dict,
-        message: discord.Message = None,
-        page: int = 0,
-        timeout: int = 60,
+    ctx: commands.Context,
+    pages: Union[List[str], List[discord.Embed], List[tuple]],
+    controls: dict,
+    message: discord.Message = None,
+    page: int = 0,
+    timeout: int = 60,
 ):
     if len(pages) < 1:
         raise RuntimeError("Must provide at least 1 page.")
     if not isinstance(pages[0], (discord.Embed, str)):
         raise RuntimeError("Pages must be of type discord.Embed or str")
     if not all(isinstance(x, discord.Embed) for x in pages) and not all(
-            isinstance(x, str) for x in pages
+        isinstance(x, str) for x in pages
     ):
         raise RuntimeError("All pages must be of the same type")
     for key, value in controls.items():
@@ -147,5 +147,5 @@ FULL_CONTROLS = {
 SMALL_CONTROLS = {
     "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": left,
     "\N{CROSS MARK}": close_menu,
-    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": right
+    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": right,
 }

@@ -4,11 +4,7 @@ import logging
 
 import discord
 from discord.ext import tasks
-from dislash import (ActionRow,
-                     Button,
-                     ButtonStyle,
-                     ResponseType,
-                     InteractionClient)
+from dislash import ActionRow, Button, ButtonStyle, ResponseType, InteractionClient
 from dislash.interactions.message_interaction import MessageInteraction
 from redbot.core import commands, Config
 
@@ -25,6 +21,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
     """
     Support ticket system with buttons/logging
     """
+
     __author__ = "Vertyco"
     __version__ = "1.2.6"
 
@@ -137,15 +134,13 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                             style=style,
                             label=button_content,
                             custom_id=f"{guild.id}",
-                            emoji=emoji
+                            emoji=emoji,
                         )
                     )
                 else:
                     button = ActionRow(
                         Button(
-                            style=style,
-                            label=button_content,
-                            custom_id=f"{guild.id}"
+                            style=style, label=button_content, custom_id=f"{guild.id}"
                         )
                     )
                 try:
@@ -157,7 +152,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                             Button(
                                 style=style,
                                 label=button_content,
-                                custom_id=f"{guild.id}"
+                                custom_id=f"{guild.id}",
                             )
                         )
                         await message.edit(components=[button])
@@ -166,12 +161,14 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                             Button(
                                 style=style,
                                 label="Click to open a ticket",
-                                custom_id=f"{guild.id}"
+                                custom_id=f"{guild.id}",
                             )
                         )
                         await message.edit(components=[button])
                         log.warning(f"Error applying button: {e}")
-                if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
+                if str(guild.id) not in [
+                    task.get_name() for task in asyncio.all_tasks()
+                ]:
                     asyncio.create_task(self.listen(message), name=str(guild.id))
 
     # Clean up any ticket data that comes from a deleted channel or unknown user
@@ -199,7 +196,9 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
 
     # Listen for a button click on a message
     async def listen(self, message: discord.Message):
-        if isinstance(message, str):  # If for some reason message is not a discord.Message object
+        if isinstance(
+            message, str
+        ):  # If for some reason message is not a discord.Message object
             #  Edit: Pretty sure i found the issue
             log.warning(f"Message isn't an object for some reason: {message}")
             return await self.add_components()
@@ -224,26 +223,37 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         if str(inter.author.id) in conf["opened"]:
             tickets = len(conf["opened"][str(inter.author.id)].keys())
             if tickets >= conf["max_tickets"]:
-                if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
+                if str(guild.id) not in [
+                    task.get_name() for task in asyncio.all_tasks()
+                ]:
                     asyncio.create_task(self.listen(message), name=str(guild.id))
                 return
         category = self.bot.get_channel(conf["category"])
         if not category:
-            asyncio.create_task(inter.reply("The ticket category hasn't been set yet!", ephemeral=True))
+            asyncio.create_task(
+                inter.reply("The ticket category hasn't been set yet!", ephemeral=True)
+            )
             if str(guild.id) not in [task.get_name() for task in asyncio.all_tasks()]:
                 asyncio.create_task(self.listen(message), name=str(guild.id))
             return
-        can_read = discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True)
+        can_read = discord.PermissionOverwrite(
+            read_messages=True, send_messages=True, attach_files=True
+        )
         read_and_manage = discord.PermissionOverwrite(
-            read_messages=True, send_messages=True, manage_channels=True, manage_permissions=True
+            read_messages=True,
+            send_messages=True,
+            manage_channels=True,
+            manage_permissions=True,
         )
         support = [
-            guild.get_role(role_id) for role_id in conf["support"] if guild.get_role(role_id)
+            guild.get_role(role_id)
+            for role_id in conf["support"]
+            if guild.get_role(role_id)
         ]
         overwrite = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             guild.me: read_and_manage,
-            user: can_read
+            user: can_read,
         }
         for role in support:
             overwrite[role] = can_read
@@ -260,7 +270,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 "id": str(user.id),
                 "shortdate": now.strftime("%m-%d"),
                 "longdate": now.strftime("%m-%d-%Y"),
-                "time": now.strftime("%I-%M-%p")
+                "time": now.strftime("%I-%M-%p"),
             }
             channel_name = name_fmt.format(**params)
         channel = await category.create_text_channel(channel_name, overwrites=overwrite)
@@ -269,16 +279,22 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         color = user.color
         if conf["message"] == "{default}":
             if conf["user_can_close"]:
-                text = f"Welcome to your ticket channel\nTo close this, " \
-                       f"You or an Administrator may run `[p]sclose`."
+                text = (
+                    f"Welcome to your ticket channel\nTo close this, "
+                    f"You or an Administrator may run `[p]sclose`."
+                )
                 if embeds:
-                    msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                    msg = await channel.send(
+                        user.mention, embed=discord.Embed(description=text, color=color)
+                    )
                 else:
                     msg = await channel.send(f"{user.mention}, {text}")
             else:
                 text = f"Welcome to your ticket channel"
                 if embeds:
-                    msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                    msg = await channel.send(
+                        user.mention, embed=discord.Embed(description=text, color=color)
+                    )
                 else:
                     msg = await channel.send(f"{user.mention}, {text}")
         else:
@@ -287,14 +303,14 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 params = {
                     "username": user.name,
                     "mention": user.mention,
-                    "id": str(user.id)
+                    "id": str(user.id),
                 }
                 tmessage = conf["message"].format(**params)
                 if embeds:
                     if "mention" in conf["message"]:
                         msg = await channel.send(
                             user.mention,
-                            embed=discord.Embed(description=tmessage, color=color)
+                            embed=discord.Embed(description=tmessage, color=color),
                         )
                     else:
                         msg = await channel.send(
@@ -306,18 +322,30 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 log.warning(f"An error occurred while sending a ticket message: {e}")
                 # Revert to default message
                 if conf["user_can_close"]:
-                    text = f"Welcome to your ticket channel\nTo close this, " \
-                           f"You or an Administrator may run `[p]sclose`."
+                    text = (
+                        f"Welcome to your ticket channel\nTo close this, "
+                        f"You or an Administrator may run `[p]sclose`."
+                    )
                     if embeds:
-                        msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                        msg = await channel.send(
+                            user.mention,
+                            embed=discord.Embed(description=text, color=color),
+                        )
                     else:
-                        msg = await channel.send(f"{user.mention}, {text}", allowed_mentions=mentions)
+                        msg = await channel.send(
+                            f"{user.mention}, {text}", allowed_mentions=mentions
+                        )
                 else:
                     text = f"Welcome to your ticket channel"
                     if embeds:
-                        msg = await channel.send(user.mention, embed=discord.Embed(description=text, color=color))
+                        msg = await channel.send(
+                            user.mention,
+                            embed=discord.Embed(description=text, color=color),
+                        )
                     else:
-                        msg = await channel.send(f"{user.mention}, {text}", allowed_mentions=mentions)
+                        msg = await channel.send(
+                            f"{user.mention}, {text}", allowed_mentions=mentions
+                        )
 
         async with self.config.guild(guild).all() as settings:
             settings["num"] += 1
@@ -327,7 +355,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             opened[str(user.id)][str(channel.id)] = {
                 "opened": now.isoformat(),
                 "pfp": str(pfp),
-                "logmsg": None
+                "logmsg": None,
             }
             if conf["log"]:
                 log_channel = self.bot.get_channel(conf["log"])
@@ -335,8 +363,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     embed = discord.Embed(
                         title="Ticket Opened",
                         description=f"Ticket created by **{user.name}-{user.id}** has been opened\n"
-                                    f"To view this ticket, **[Click Here]({msg.jump_url})**",
-                        color=discord.Color.red()
+                        f"To view this ticket, **[Click Here]({msg.jump_url})**",
+                        color=discord.Color.red(),
                     )
                     embed.set_thumbnail(url=pfp)
                     log_msg = await log_channel.send(embed=embed)
@@ -379,13 +407,18 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                     time = "hours" if inactive != 1 else "hour"
                     actasks.append(
                         self.close_ticket(
-                            member, channel, conf,
-                            f"(Auto-Close) Opened ticket with no response for {inactive} {time}", self.bot.user.name
+                            member,
+                            channel,
+                            conf,
+                            f"(Auto-Close) Opened ticket with no response for {inactive} {time}",
+                            self.bot.user.name,
                         )
                     )
-                    log.info(f"Ticket opened by {member.name} has been auto-closed.\n"
-                             f"Has typed: {hastyped}\n"
-                             f"Hours elapsed: {td}")
+                    log.info(
+                        f"Ticket opened by {member.name} has been auto-closed.\n"
+                        f"Has typed: {hastyped}\n"
+                        f"Hours elapsed: {td}"
+                    )
         if tasks:
             await asyncio.gather(*actasks)
 
@@ -413,6 +446,14 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
             chan = self.bot.get_channel(int(cid))
             if not chan:
                 continue
-            actasks.append(self.close_ticket(member, chan, conf, "User left guild(Auto-Close)", self.bot.user.name))
+            actasks.append(
+                self.close_ticket(
+                    member,
+                    chan,
+                    conf,
+                    "User left guild(Auto-Close)",
+                    self.bot.user.name,
+                )
+            )
         if actasks:
             await asyncio.gather(*actasks)

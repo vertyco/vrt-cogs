@@ -21,14 +21,17 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
     """
     Support ticket system with multi-panel functionality
     """
+
     __author__ = "Vertyco"
     __version__ = "1.2.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
-        info = f"{helpcmd}\n" \
-               f"Cog Version: {self.__version__}\n" \
-               f"Author: {self.__author__}\n"
+        info = (
+            f"{helpcmd}\n"
+            f"Cog Version: {self.__version__}\n"
+            f"Author: {self.__author__}\n"
+        )
         return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
@@ -52,7 +55,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
             "user_can_rename": False,
             "user_can_close": True,
             "user_can_manage": False,
-            "transcript": False
+            "transcript": False,
         }
         self.config.register_guild(**default_guild)
 
@@ -68,7 +71,7 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
             "ticket_num": 1,
             "ticket_messages": [],  # A list of messages to be sent
             "ticket_name": None,  # Name format for the ticket channel
-            "log_channel": 0
+            "log_channel": 0,
         }
 
         self.valid = []  # Valid ticket channels
@@ -186,8 +189,10 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                     next_td = td + 0.33
                     if td < inactive <= next_td:
                         # Ticket hasn't expired yet but will in the next loop
-                        warning = _("If you do not respond to this ticket "
-                                    "within the next 20 minutes it will be closed automatically.")
+                        warning = _(
+                            "If you do not respond to this ticket "
+                            "within the next 20 minutes it will be closed automatically."
+                        )
                         await channel.send(f"{member.mention}\n{warning}")
                         continue
                     elif td < inactive:
@@ -196,15 +201,22 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                     time = "hours" if inactive != 1 else "hour"
                     try:
                         await self.close_ticket(
-                            member, channel, conf,
-                            _("(Auto-Close) Opened ticket with no response for ") + f"{inactive} {time}",
-                            self.bot.user.name
+                            member,
+                            channel,
+                            conf,
+                            _("(Auto-Close) Opened ticket with no response for ")
+                            + f"{inactive} {time}",
+                            self.bot.user.name,
                         )
-                        log.info(f"Ticket opened by {member.name} has been auto-closed.\n"
-                                 f"Has typed: {hastyped}\n"
-                                 f"Hours elapsed: {td}")
+                        log.info(
+                            f"Ticket opened by {member.name} has been auto-closed.\n"
+                            f"Has typed: {hastyped}\n"
+                            f"Hours elapsed: {td}"
+                        )
                     except Exception as e:
-                        log.error(f"Failed to auto-close ticket for {member} in {guild.name}\nException: {e}")
+                        log.error(
+                            f"Failed to auto-close ticket for {member} in {guild.name}\nException: {e}"
+                        )
 
         if tasks:
             await asyncio.gather(*actasks)
@@ -234,6 +246,13 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                 continue
             try:
                 await self.close_ticket(
-                    member, chan, conf, _("User left guild(Auto-Close)"), self.bot.user.display_name)
+                    member,
+                    chan,
+                    conf,
+                    _("User left guild(Auto-Close)"),
+                    self.bot.user.display_name,
+                )
             except Exception as e:
-                log.error(f"Failed to auto-close ticket for {member} leaving {member.guild}\nException: {e}")
+                log.error(
+                    f"Failed to auto-close ticket for {member} leaving {member.guild}\nException: {e}"
+                )

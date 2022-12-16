@@ -21,11 +21,13 @@ def get_level(xp: int, base: int, exp: int) -> int:
 
 # Get how much XP is needed to reach a level
 def get_xp(level: int, base: int, exp: int) -> int:
-    return math.ceil(base * (level ** exp))
+    return math.ceil(base * (level**exp))
 
 
 # Estimate how much time it would take to reach a certain level based on curent algorithm
-def time_to_level(level: int, base: int, exp: Union[int, float], cooldown: int, xp_range: list) -> int:
+def time_to_level(
+    level: int, base: int, exp: Union[int, float], cooldown: int, xp_range: list
+) -> int:
     xp_needed = get_xp(level, base, exp)
     xp_obtained = 0
     time_to_reach_level = 0  # Seconds
@@ -43,7 +45,7 @@ def hex_to_rgb(color: str) -> tuple:
         rgb = int_to_rgb(int(color))
     else:
         color = color.strip("#")
-        rgb = tuple(int(color[i: i + 2], 16) for i in (0, 2, 4))
+        rgb = tuple(int(color[i : i + 2], 16) for i in (0, 2, 4))
     return rgb
 
 
@@ -66,7 +68,9 @@ def get_bar(progress, total, perc=None, width: int = 20) -> str:
 
 # Format time from total seconds and format into readable string
 def time_formatter(time_in_seconds) -> str:
-    time_in_seconds = int(time_in_seconds)  # Some time differences get sent as a float so just handle it the dumb way
+    time_in_seconds = int(
+        time_in_seconds
+    )  # Some time differences get sent as a float so just handle it the dumb way
     minutes, seconds = divmod(time_in_seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)

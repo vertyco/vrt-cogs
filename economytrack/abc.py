@@ -14,6 +14,7 @@ class CompositeMetaClass(CogMeta, ABCMeta):
 
 class MixinMeta(ABC):
     """Type hinting"""
+
     bot: Red
     config: Config
     executor: ThreadPoolExecutor
@@ -21,4 +22,3 @@ class MixinMeta(ABC):
     @abstractmethod
     async def get_plot(self, df: pd.DataFrame) -> discord.File:
         raise NotImplementedError
-

@@ -17,10 +17,12 @@ log = logging.getLogger("red.vrt.fluent")
 
 # Inspired by Obi-Wan3#0003's translation cog.
 
+
 class Fluent(commands.Cog):
     """
     Seamless translation between two languages in one channel.
     """
+
     __author__ = "Vertyco"
     __version__ = "1.2.7"
 
@@ -59,7 +61,13 @@ class Fluent(commands.Cog):
         pass
 
     @fluent.command()
-    async def add(self, ctx, language1: str, language2: str, channel: Optional[discord.TextChannel]):
+    async def add(
+        self,
+        ctx,
+        language1: str,
+        language2: str,
+        channel: Optional[discord.TextChannel],
+    ):
         """
         Add a channel and languages to translate between
 
@@ -71,19 +79,25 @@ class Fluent(commands.Cog):
         language1 = await self.converter(language1.lower())
         language2 = await self.converter(language2.lower())
         if not language1 or not language2:
-            return await ctx.send(f"One of the languages were not found: lang1-{language1} lang2-{language2}")
+            return await ctx.send(
+                f"One of the languages were not found: lang1-{language1} lang2-{language2}"
+            )
         async with self.config.guild(ctx.guild).channels() as channels:
             cid = str(channel.id)
             if cid in channels.keys():
                 return await ctx.send(
-                    embed=discord.Embed(description=f"❌ {channel.mention} is already a fluent channel."))
+                    embed=discord.Embed(
+                        description=f"❌ {channel.mention} is already a fluent channel."
+                    )
+                )
             else:
-                channels[cid] = {
-                    "lang1": language1,
-                    "lang2": language2
-                }
+                channels[cid] = {"lang1": language1, "lang2": language2}
                 color = discord.Color.green()
-                return await ctx.send(embed=discord.Embed(description=f"✅ Fluent channel has been set!", color=color))
+                return await ctx.send(
+                    embed=discord.Embed(
+                        description=f"✅ Fluent channel has been set!", color=color
+                    )
+                )
 
     @fluent.command(aliases=["delete", "del", "rem"])
     async def remove(self, ctx, channel: Optional[discord.TextChannel]):
@@ -95,10 +109,14 @@ class Fluent(commands.Cog):
             if cid in channels:
                 del channels[cid]
                 color = discord.Color.green()
-                embed = discord.Embed(description=f"✅ Fluent channel has been deleted!", color=color)
+                embed = discord.Embed(
+                    description=f"✅ Fluent channel has been deleted!", color=color
+                )
                 await ctx.send(embed=embed)
             else:
-                embed = discord.Embed(description=f"❌ {channel.mention} isn't a fluent channel.")
+                embed = discord.Embed(
+                    description=f"❌ {channel.mention} isn't a fluent channel."
+                )
                 await ctx.send(embed=embed)
 
     @fluent.command()
@@ -163,10 +181,7 @@ class Fluent(commands.Cog):
         if trans.text.lower() == message.content.lower():
             return
 
-        embed = discord.Embed(
-            description=trans.text,
-            color=message.author.color
-        )
+        embed = discord.Embed(description=trans.text, color=message.author.color)
         try:
             await message.reply(embed=embed, mention_author=False)
         except (discord.NotFound, AttributeError):

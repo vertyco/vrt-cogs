@@ -9,6 +9,7 @@ class Meow(commands.Cog):
 
     My girlfriend had a dream about this cog so I had to make it ¯\_(ツ)_/¯
     """
+
     __author__ = "Vertyco"
     __version__ = "0.0.2"
 
@@ -31,9 +32,7 @@ class Meow(commands.Cog):
                 except AttributeError:
                     pass
             if not text:
-                text = (await ctx.channel.history(limit=2).flatten())[
-                    1
-                ].content
+                text = (await ctx.channel.history(limit=2).flatten())[1].content
         await self.meowstring(text, ctx)
 
     async def meowstring(self, text, ctx):
@@ -41,15 +40,16 @@ class Meow(commands.Cog):
             newstring = text.replace("now", "meow")
             await ctx.send(newstring)
         else:
-            cats = ["^._.^",
-                    "ฅ(＾・ω・＾ฅ)",
-                    "（＾・ω・＾✿）",
-                    "（＾・ω・＾❁）",
-                    "(=^･ω･^=)",
-                    "(^・x・^)",
-                    "(=^･ｪ･^=))ﾉ彡☆",
-                    "/ᐠ｡▿｡ᐟ\*ᵖᵘʳʳ*",
-                    "✧/ᐠ-ꞈ-ᐟ\\",
-                    "/ᐠ –ꞈ –ᐟ\\",
-                    ]
+            cats = [
+                "^._.^",
+                "ฅ(＾・ω・＾ฅ)",
+                "（＾・ω・＾✿）",
+                "（＾・ω・＾❁）",
+                "(=^･ω･^=)",
+                "(^・x・^)",
+                "(=^･ｪ･^=))ﾉ彡☆",
+                "/ᐠ｡▿｡ᐟ\*ᵖᵘʳʳ*",
+                "✧/ᐠ-ꞈ-ᐟ\\",
+                "/ᐠ –ꞈ –ᐟ\\",
+            ]
             return await ctx.send(random.choice(cats))

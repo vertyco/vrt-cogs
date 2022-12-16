@@ -12,19 +12,17 @@ if TYPE_CHECKING:
     from .core import FontT
 
 # This is actually way faster than it seems
-language_pack: Dict[str, str] = unicode_codes.get_emoji_unicode_dict('en')
-_UNICODE_EMOJI_REGEX = '|'.join(map(re.escape, sorted(language_pack.values(), key=len, reverse=True)))
-_DISCORD_EMOJI_REGEX = '<a?:[a-zA-Z0-9_]{2,32}:[0-9]{17,22}>'
-
-EMOJI_REGEX: Final[re.Pattern[str]] = re.compile(f'({_UNICODE_EMOJI_REGEX}|{_DISCORD_EMOJI_REGEX})')
-
-__all__ = (
-    'EMOJI_REGEX',
-    'Node',
-    'NodeType',
-    'to_nodes',
-    'getsize'
+language_pack: Dict[str, str] = unicode_codes.get_emoji_unicode_dict("en")
+_UNICODE_EMOJI_REGEX = "|".join(
+    map(re.escape, sorted(language_pack.values(), key=len, reverse=True))
 )
+_DISCORD_EMOJI_REGEX = "<a?:[a-zA-Z0-9_]{2,32}:[0-9]{17,22}>"
+
+EMOJI_REGEX: Final[re.Pattern[str]] = re.compile(
+    f"({_UNICODE_EMOJI_REGEX}|{_DISCORD_EMOJI_REGEX})"
+)
+
+__all__ = ("EMOJI_REGEX", "Node", "NodeType", "to_nodes", "getsize")
 
 
 class NodeType(Enum):
@@ -62,7 +60,7 @@ class Node(NamedTuple):
     content: str
 
     def __repr__(self) -> str:
-        return f'<Node type={self.type.name!r} content={self.content!r}>'
+        return f"<Node type={self.type.name!r} content={self.content!r}>"
 
 
 def _parse_line(line: str, /) -> List[Node]:
@@ -77,7 +75,7 @@ def _parse_line(line: str, /) -> List[Node]:
             continue
 
         if len(chunk) > 18:  # This is guaranteed to be a Discord emoji
-            node = Node(NodeType.discord_emoji, chunk.split(':')[-1][:-1])
+            node = Node(NodeType.discord_emoji, chunk.split(":")[-1][:-1])
         else:
             node = Node(NodeType.emoji, chunk)
 
@@ -108,11 +106,7 @@ def to_nodes(text: str, /) -> List[List[Node]]:
 
 
 def getsize(
-        text: str,
-        font: FontT = None,
-        *,
-        spacing: int = 4,
-        emoji_scale_factor: float = 1
+    text: str, font: FontT = None, *, spacing: int = 4, emoji_scale_factor: float = 1
 ) -> Tuple[int, int]:
     """Return the width and height of the text when rendered.
     This method supports multiline text.

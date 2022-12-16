@@ -21,6 +21,7 @@ class NoNuke(Listen, commands.Cog):
 
     If a user or bot exceeds X mod events within X seconds, the set action will be performed
     """
+
     __author__ = "Vertyco"
     __version__ = "0.1.1"
 
@@ -128,7 +129,9 @@ class NoNuke(Listen, commands.Cog):
         Role Creation/Edit/Deletion
         """
         if not ctx.guild.me.guild_permissions.view_audit_log:
-            return await ctx.send("I do not have permission to view the audit log for this server!")
+            return await ctx.send(
+                "I do not have permission to view the audit log for this server!"
+            )
         action = await self.config.guild(ctx.guild).action()
         if action == "kick":
             if not ctx.guild.me.guild_permissions.kick_members:
@@ -155,7 +158,9 @@ class NoNuke(Listen, commands.Cog):
         `notify` - just sends a report to the log channel
         """
         if not ctx.guild.me.guild_permissions.view_audit_log:
-            return await ctx.send("I do not have permission to view the audit log for this server!")
+            return await ctx.send(
+                "I do not have permission to view the audit log for this server!"
+            )
         action = action.lower()
         if action not in ["kick", "ban", "notify", "strip"]:
             return await ctx.send("That is not a valid action type!")
@@ -188,23 +193,25 @@ class NoNuke(Listen, commands.Cog):
     async def view(self, ctx):
         """View the NoNuke settings"""
         conf = await self.config.guild(ctx.guild).all()
-        lchan = self.bot.get_channel(conf['log']) if conf['log'] else "Not Set"
+        lchan = self.bot.get_channel(conf["log"]) if conf["log"] else "Not Set"
         em = discord.Embed(
             title="NoNuke Settings",
             description=f"`Enabled:    `{conf['enabled']}\n"
-                        f"`Cooldown:   `{conf['cooldown']}\n"
-                        f"`Overload:   `{conf['overload']}\n"
-                        f"`DM:         `{conf['dm']}\n"
-                        f"`Action:     `{conf['action']}\n"
-                        f"`LogChannel: `{lchan}"
+            f"`Cooldown:   `{conf['cooldown']}\n"
+            f"`Overload:   `{conf['overload']}\n"
+            f"`DM:         `{conf['dm']}\n"
+            f"`Action:     `{conf['action']}\n"
+            f"`LogChannel: `{lchan}",
         )
         await ctx.send(embed=em)
         perms = {
             ctx.guild.me.guild_permissions.manage_roles: "manage_roles",
             ctx.guild.me.guild_permissions.ban_members: "ban_members",
             ctx.guild.me.guild_permissions.kick_members: "kick_members",
-            ctx.guild.me.guild_permissions.view_audit_log: "view_audit_log"
+            ctx.guild.me.guild_permissions.view_audit_log: "view_audit_log",
         }
         missing = [v for k, v in perms.items() if k]
         if missing:
-            await ctx.send(f"Just a heads up, I do not have the following permissions\n{box(humanize_list(missing))}")
+            await ctx.send(
+                f"Just a heads up, I do not have the following permissions\n{box(humanize_list(missing))}"
+            )

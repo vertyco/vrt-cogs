@@ -60,6 +60,7 @@ class VrtUtils(commands.Cog):
     """
     Random utility commands
     """
+
     __author__ = "Vertyco"
     __version__ = "1.0.7"
 
@@ -75,9 +76,12 @@ class VrtUtils(commands.Cog):
         self.bot = bot
         if not DPY2:
             from dislash import InteractionClient
+
             InteractionClient(bot, sync_commands=False)
         self.path = cog_data_path(self)
-        self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vrt_utils")
+        self.threadpool = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="vrt_utils"
+        )
 
     # -/-/-/-/-/-/-/-/FORMATTING-/-/-/-/-/-/-/-/
     @staticmethod
@@ -109,30 +113,31 @@ class VrtUtils(commands.Cog):
         cmd = f"{executable} -m {command}"
 
         def exe():
-            results = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8")
+            results = subprocess.run(
+                cmd, stdout=subprocess.PIPE, shell=True
+            ).stdout.decode("utf-8")
             return results
 
         res = await self.bot.loop.run_in_executor(self.threadpool, exe)
         return res
 
-    async def run_disk_speed(self, block_count: int = 128, block_size: int = 1048576, passes: int = 1) -> dict:
+    async def run_disk_speed(
+        self, block_count: int = 128, block_size: int = 1048576, passes: int = 1
+    ) -> dict:
         reads = []
         writes = []
         with ThreadPoolExecutor(max_workers=1) as pool:
             futures = [
                 self.bot.loop.run_in_executor(
-                    pool,
-                    lambda: get_disk_speed(self.path, block_count, block_size)
-                ) for _ in range(passes)
+                    pool, lambda: get_disk_speed(self.path, block_count, block_size)
+                )
+                for _ in range(passes)
             ]
             results = await asyncio.gather(*futures)
             for i in results:
                 reads.append(i["read"])
                 writes.append(i["write"])
-        results = {
-            "read": sum(reads) / len(reads),
-            "write": sum(writes) / len(writes)
-        }
+        results = {"read": sum(reads) / len(reads), "write": sum(writes) / len(writes)}
         return results
 
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
@@ -154,40 +159,35 @@ class VrtUtils(commands.Cog):
             else:
                 embed = discord.Embed(title="Disk I/O", color=ctx.author.color)
                 embed.description = "Running Disk Speed Check"
-            first = f"Write: {data['write1']}\n" \
-                    f"Read:  {data['read1']}"
+            first = f"Write: {data['write1']}\n" f"Read:  {data['read1']}"
             embed.add_field(
                 name="128 blocks of 1048576 bytes (128MB)",
                 value=box(first, lang="python"),
-                inline=False
+                inline=False,
             )
-            second = f"Write: {data['write2']}\n" \
-                     f"Read:  {data['read2']}"
+            second = f"Write: {data['write2']}\n" f"Read:  {data['read2']}"
             embed.add_field(
                 name="128 blocks of 2097152 bytes (256MB)",
                 value=box(second, lang="python"),
-                inline=False
+                inline=False,
             )
-            third = f"Write: {data['write3']}\n" \
-                    f"Read:  {data['read3']}"
+            third = f"Write: {data['write3']}\n" f"Read:  {data['read3']}"
             embed.add_field(
                 name="256 blocks of 1048576 bytes (256MB)",
                 value=box(third, lang="python"),
-                inline=False
+                inline=False,
             )
-            fourth = f"Write: {data['write4']}\n" \
-                     f"Read:  {data['read4']}"
+            fourth = f"Write: {data['write4']}\n" f"Read:  {data['read4']}"
             embed.add_field(
                 name="256 blocks of 2097152 bytes (512MB)",
                 value=box(fourth, lang="python"),
-                inline=False
+                inline=False,
             )
-            fifth = f"Write: {data['write5']}\n" \
-                    f"Read:  {data['read5']}"
+            fifth = f"Write: {data['write5']}\n" f"Read:  {data['read5']}"
             embed.add_field(
                 name="256 blocks of 4194304 bytes (1GB)",
                 value=box(fifth, lang="python"),
-                inline=False
+                inline=False,
             )
             return embed
 
@@ -202,7 +202,6 @@ class VrtUtils(commands.Cog):
             "read4": "Waiting...",
             "write5": "Waiting...",
             "read5": "Waiting...",
-
         }
         msg = None
         for i in range(6):
@@ -226,7 +225,9 @@ class VrtUtils(commands.Cog):
             elif stage == 6:
                 count = 256
                 size = 4194304
-            res = await self.run_disk_speed(block_count=count, block_size=size, passes=3)
+            res = await self.run_disk_speed(
+                block_count=count, block_size=size, passes=3
+            )
             write = f"{humanize_number(round(res['write'], 2))}MB/s"
             read = f"{humanize_number(round(res['read'], 2))}MB/s"
             results[f"write{stage}"] = write
@@ -254,10 +255,7 @@ class VrtUtils(commands.Cog):
             embeds = []
             page = 1
             for p in pagify(res):
-                embed = discord.Embed(
-                    title="Pip Command Results",
-                    description=box(p)
-                )
+                embed = discord.Embed(title="Pip Command Results", description=box(p))
                 embed.set_footer(text=f"Page {page}")
                 page += 1
                 embeds.append(embed)
@@ -279,10 +277,7 @@ class VrtUtils(commands.Cog):
             embeds = []
             page = 1
             for p in pagify(res):
-                embed = discord.Embed(
-                    title="Shell Command Results",
-                    description=box(p)
-                )
+                embed = discord.Embed(title="Shell Command Results", description=box(p))
                 embed.set_footer(text=f"Page {page}")
                 page += 1
                 embeds.append(embed)
@@ -335,11 +330,15 @@ class VrtUtils(commands.Cog):
 
             p = psutil.Process()
             io_counters = p.io_counters()
-            disk_usage_process = io_counters[2] + io_counters[3]  # read_bytes + write_bytes
+            disk_usage_process = (
+                io_counters[2] + io_counters[3]
+            )  # read_bytes + write_bytes
             # Disk load
             disk_io_counter = psutil.disk_io_counters()
             if disk_io_counter:
-                disk_io_total = disk_io_counter[2] + disk_io_counter[3]  # read_bytes + write_bytes
+                disk_io_total = (
+                    disk_io_counter[2] + disk_io_counter[3]
+                )  # read_bytes + write_bytes
                 disk_usage = (disk_usage_process / disk_io_total) * 100
             else:
                 disk_usage = 0
@@ -358,18 +357,23 @@ class VrtUtils(commands.Cog):
                 ostype = f"Mac OS {osdat[0]} {osdat[1]}"
             elif sys.platform == "linux":
                 import distro
+
                 ostype = f"{distro.name()} {distro.version()}"
             else:
                 ostype = "Unknown"
 
-            td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(psutil.boot_time())
+            td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(
+                psutil.boot_time()
+            )
             sys_uptime = humanize_timedelta(timedelta=td)
 
             # -/-/-/BOT-/-/-/
             servers = "{:,}".format(len(self.bot.guilds))
             shards = self.bot.shard_count
             users = "{:,}".format(len(self.bot.users))
-            channels = "{:,}".format(sum(len(guild.channels) for guild in self.bot.guilds))
+            channels = "{:,}".format(
+                sum(len(guild.channels) for guild in self.bot.guilds)
+            )
             emojis = "{:,}".format(len(self.bot.emojis))
             cogs = "{:,}".format(len(self.bot.cogs))
             commandcount = 0
@@ -388,27 +392,28 @@ class VrtUtils(commands.Cog):
             embed = discord.Embed(
                 title=f"Stats for {self.bot.user.name}",
                 description=f"Below are various stats about the bot and the system it runs on.",
-                color=await ctx.embed_color()
+                color=await ctx.embed_color(),
             )
 
-            botstats = f"Servers:  {servers} ({shards} {'shard' if shards == 1 else 'shards'})\n" \
-                       f"Users:    {users}\n" \
-                       f"Channels: {channels}\n" \
-                       f"Emojis:   {emojis}\n" \
-                       f"Cogs:     {cogs}\n" \
-                       f"Commands: {commandcount}\n" \
-                       f"Uptime:   {uptime}\n" \
-                       f"Red:      {red_version}\n" \
-                       f"DPy:      {dpy}\n" \
-                       f"Python:   {py_version}"
+            botstats = (
+                f"Servers:  {servers} ({shards} {'shard' if shards == 1 else 'shards'})\n"
+                f"Users:    {users}\n"
+                f"Channels: {channels}\n"
+                f"Emojis:   {emojis}\n"
+                f"Cogs:     {cogs}\n"
+                f"Commands: {commandcount}\n"
+                f"Uptime:   {uptime}\n"
+                f"Red:      {red_version}\n"
+                f"DPy:      {dpy}\n"
+                f"Python:   {py_version}"
+            )
             embed.add_field(
                 name="\N{ROBOT FACE} BOT",
                 value=box(botstats, lang="python"),
-                inline=False
+                inline=False,
             )
 
-            cpustats = f"CPU:    {cpu_type}\n" \
-                       f"Cores:  {cpu_count}\n"
+            cpustats = f"CPU:    {cpu_type}\n" f"Cores:  {cpu_count}\n"
             if len(cpu_freq) == 1:
                 cpustats += f"{cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
             else:
@@ -425,36 +430,36 @@ class VrtUtils(commands.Cog):
             embed.add_field(
                 name="\N{DESKTOP COMPUTER} CPU",
                 value=box(cpustats, lang="python"),
-                inline=False
+                inline=False,
             )
 
             rambar = self.get_bar(0, 0, ram.percent, width=30)
             diskbar = self.get_bar(0, 0, disk.percent, width=30)
-            memtext = f"RAM ({ram_used}/{ram_total})\n" \
-                      f"{rambar}\n" \
-                      f"DISK ({disk_used}/{disk_total})\n" \
-                      f"{diskbar}\n"
+            memtext = (
+                f"RAM ({ram_used}/{ram_total})\n"
+                f"{rambar}\n"
+                f"DISK ({disk_used}/{disk_total})\n"
+                f"{diskbar}\n"
+            )
             embed.add_field(
                 name=f"\N{FLOPPY DISK} MEM",
                 value=box(memtext, lang="python"),
-                inline=False
+                inline=False,
             )
 
             disk_usage_bar = self.get_bar(0, 0, disk_usage, width=30)
-            i_o = f"DISK LOAD\n" \
-                  f"{disk_usage_bar}"
+            i_o = f"DISK LOAD\n" f"{disk_usage_bar}"
             embed.add_field(
                 name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
                 value=box(i_o, lang="python"),
-                inline=False
+                inline=False,
             )
 
-            netstat = f"Sent:     {sent}\n" \
-                      f"Received: {recv}"
+            netstat = f"Sent:     {sent}\n" f"Received: {recv}"
             embed.add_field(
                 name="\N{SATELLITE ANTENNA} Network",
                 value=box(netstat, lang="python"),
-                inline=False
+                inline=False,
             )
 
             if DPY2:
@@ -472,19 +477,23 @@ class VrtUtils(commands.Cog):
             try:
                 member = await self.bot.get_or_fetch_user(int(user_id))
             except discord.NotFound:
-                return await ctx.send(f"I could not find any users with the ID `{user_id}`")
+                return await ctx.send(
+                    f"I could not find any users with the ID `{user_id}`"
+                )
         else:
             try:
                 member = await self.bot.get_or_fetch_user(user_id.id)
             except discord.NotFound:
-                return await ctx.send(f"I could not find any users with the ID `{user_id.id}`")
+                return await ctx.send(
+                    f"I could not find any users with the ID `{user_id.id}`"
+                )
         since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
         user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
         created_on = f"Joined Discord on {user_created}\n({since_created})"
         embed = discord.Embed(
             title=f"{member.name} - {member.id}",
             description=created_on,
-            color=await ctx.embed_color()
+            color=await ctx.embed_color(),
         )
         if DPY2:
             if member.avatar:
@@ -501,13 +510,15 @@ class VrtUtils(commands.Cog):
             test = speedtest.Speedtest(secure=True)
             embed = discord.Embed(
                 title=f"{self.bot.user.name}'s public IP",
-                description=test.results.dict()["client"]["ip"]
+                description=test.results.dict()["client"]["ip"],
             )
             try:
                 await ctx.author.send(embed=embed)
                 await ctx.tick()
             except discord.Forbidden:
-                await ctx.send("Your DMs appear to be disabled, please enable them and try again.")
+                await ctx.send(
+                    "Your DMs appear to be disabled, please enable them and try again."
+                )
 
     @commands.command()
     @commands.is_owner()
@@ -519,7 +530,9 @@ class VrtUtils(commands.Cog):
         iofile = StringIO(json.dumps(members))
         filename = f"users.json"
         file = discord.File(iofile, filename=filename)
-        await ctx.send("Here are all usernames and their ID's for this guild", file=file)
+        await ctx.send(
+            "Here are all usernames and their ID's for this guild", file=file
+        )
 
     @commands.command()
     @commands.is_owner()
@@ -527,10 +540,22 @@ class VrtUtils(commands.Cog):
         """View guilds your bot is in"""
         # Just wanted a stripped down version of getguild from Trusty's serverstats cog
         # https://github.com/TrustyJAID/Trusty-cogs
-        elevated_perms = ["administrator", "ban_members", "kick_members", "manage_channels",
-                          "manage_guild", "manage_emojis", "manage_messages", "manage_roles",
-                          "manage_webhooks", "manage_nicknames", "mute_members", "moderate_members",
-                          "move_members", "deafen_members"]
+        elevated_perms = [
+            "administrator",
+            "ban_members",
+            "kick_members",
+            "manage_channels",
+            "manage_guild",
+            "manage_emojis",
+            "manage_messages",
+            "manage_roles",
+            "manage_webhooks",
+            "manage_nicknames",
+            "mute_members",
+            "moderate_members",
+            "move_members",
+            "deafen_members",
+        ]
         embeds = []
         guilds = len(self.bot.guilds)
         page = 0
@@ -557,61 +582,89 @@ class VrtUtils(commands.Cog):
             bots = sum(1 for x in guild.members if x.bot)
             idle = sum(1 for x in guild.members if x.status is discord.Status.idle)
             online = sum(1 for x in guild.members if x.status is discord.Status.online)
-            dnd = sum(1 for x in guild.members if x.status is discord.Status.do_not_disturb)
-            offline = sum(1 for x in guild.members if x.status is discord.Status.offline)
-            streaming = sum(1 for x in guild.members
-                            if x.activity is not None and x.activity.type is discord.ActivityType.streaming)
+            dnd = sum(
+                1 for x in guild.members if x.status is discord.Status.do_not_disturb
+            )
+            offline = sum(
+                1 for x in guild.members if x.status is discord.Status.offline
+            )
+            streaming = sum(
+                1
+                for x in guild.members
+                if x.activity is not None
+                and x.activity.type is discord.ActivityType.streaming
+            )
 
-            desc = f"{guild.description}\n\n" \
-                   f"`GuildCreated: `{created} ({time_elapsed})\n" \
-                   f"`BotJoined:    `{bot_joined} ({since_joined})\n" \
-                   f"`Humans:    `{humans}\n" \
-                   f"`Bots:      `{bots}\n" \
-                   f"`Online:    `{online}\n" \
-                   f"`Idle:      `{idle}\n" \
-                   f"`DND:       `{dnd}\n" \
-                   f"`Offline:   `{offline}\n" \
-                   f"`Streaming: `{streaming}\n"
+            desc = (
+                f"{guild.description}\n\n"
+                f"`GuildCreated: `{created} ({time_elapsed})\n"
+                f"`BotJoined:    `{bot_joined} ({since_joined})\n"
+                f"`Humans:    `{humans}\n"
+                f"`Bots:      `{bots}\n"
+                f"`Online:    `{online}\n"
+                f"`Idle:      `{idle}\n"
+                f"`DND:       `{dnd}\n"
+                f"`Offline:   `{offline}\n"
+                f"`Streaming: `{streaming}\n"
+            )
 
             em = discord.Embed(
                 title=f"{guild.name} -- {guild.id}",
                 description=desc,
-                color=ctx.author.color
+                color=ctx.author.color,
             )
 
             if guild_icon:
                 em.set_thumbnail(url=guild_icon)
 
-            owner = guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
+            owner = (
+                guild.owner
+                if guild.owner
+                else await self.bot.get_or_fetch_user(guild.owner_id)
+            )
             verlevel = guild.verification_level
             nitro = guild.premium_tier
             boosters = guild.premium_subscription_count
             filelimit = self.get_size(guild.filesize_limit)
             elimit = guild.emoji_limit
             bits = self.get_bitsize(guild.bitrate_limit)
-            field = f"`Owner:        `{owner}\n" \
-                    f"`OwnerID:      `{owner.id}\n" \
-                    f"`Verification: `{verlevel}\n" \
-                    f"`Nitro Tier:   `{nitro}\n" \
-                    f"`Boosters:     `{boosters}\n" \
-                    f"`File Limit:   `{filelimit}\n" \
-                    f"`Emoji Limit:  `{elimit}\n" \
-                    f"`Bitrate:      `{bits}"
+            field = (
+                f"`Owner:        `{owner}\n"
+                f"`OwnerID:      `{owner.id}\n"
+                f"`Verification: `{verlevel}\n"
+                f"`Nitro Tier:   `{nitro}\n"
+                f"`Boosters:     `{boosters}\n"
+                f"`File Limit:   `{filelimit}\n"
+                f"`Emoji Limit:  `{elimit}\n"
+                f"`Bitrate:      `{bits}"
+            )
             em.add_field(name="Details", value=field)
 
             text_channels = len(guild.text_channels)
             nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
             voice_channels = len(guild.voice_channels)
-            field = f"`Text:  `{text_channels}\n" \
-                    f"`Voice: `{voice_channels}\n" \
-                    f"`NSFW:  `{nsfw_channels}"
+            field = (
+                f"`Text:  `{text_channels}\n"
+                f"`Voice: `{voice_channels}\n"
+                f"`NSFW:  `{nsfw_channels}"
+            )
             em.add_field(name="Channels", value=field)
 
-            elevated_roles = [r for r in guild.roles if any([p[0] in elevated_perms for p in r.permissions if p[1]])]
-            normal_roles = [r for r in guild.roles if not any([p[0] in elevated_perms for p in r.permissions if p[1]])]
-            field = f"`Elevated: `{len(elevated_roles)}\n" \
-                    f"`Normal:   `{len(normal_roles)}\n" \
-                    f"`Total:    `{len(elevated_roles) + len(normal_roles)}"
+            elevated_roles = [
+                r
+                for r in guild.roles
+                if any([p[0] in elevated_perms for p in r.permissions if p[1]])
+            ]
+            normal_roles = [
+                r
+                for r in guild.roles
+                if not any([p[0] in elevated_perms for p in r.permissions if p[1]])
+            ]
+            field = (
+                f"`Elevated: `{len(elevated_roles)}\n"
+                f"`Normal:   `{len(normal_roles)}\n"
+                f"`Total:    `{len(elevated_roles) + len(normal_roles)}"
+            )
             em.add_field(name="Roles", value=field)
 
             if guild_splash:
@@ -641,7 +694,14 @@ class VrtUtils(commands.Cog):
             await instance.respond(interaction, f"I have left **{guildname}**")
         else:
             await instance.respond(interaction, f"Not leaving **{guildname}**")
-        await menu(ctx, instance.pages, instance.controls, instance.message, instance.page, instance.timeout)
+        await menu(
+            ctx,
+            instance.pages,
+            instance.controls,
+            instance.message,
+            instance.page,
+            instance.timeout,
+        )
 
     async def get_invite(self, instance, interaction):
         ctx = instance.ctx
@@ -668,10 +728,15 @@ class VrtUtils(commands.Cog):
             channel = None
             if not DPY2:
                 channels_and_perms = zip(
-                    guild.text_channels, map(guild.me.permissions_in, guild.text_channels)
+                    guild.text_channels,
+                    map(guild.me.permissions_in, guild.text_channels),
                 )
                 channel = next(
-                    (channel for channel, perms in channels_and_perms if perms.create_instant_invite),
+                    (
+                        channel
+                        for channel, perms in channels_and_perms
+                        if perms.create_instant_invite
+                    ),
                     None,
                 )
             else:
@@ -687,15 +752,26 @@ class VrtUtils(commands.Cog):
         if invite:
             await instance.respond(interaction, str(invite))
         else:
-            await instance.respond(interaction, "I could not get an invite for that server!")
-        await menu(ctx, instance.pages, instance.controls, instance.message, instance.page, instance.timeout)
+            await instance.respond(
+                interaction, "I could not get an invite for that server!"
+            )
+        await menu(
+            ctx,
+            instance.pages,
+            instance.controls,
+            instance.message,
+            instance.page,
+            instance.timeout,
+        )
 
     @commands.command()
     @commands.guildowner()
     @commands.guild_only()
     async def oldestchannels(self, ctx, amount: int = 10):
         """See which channel is the oldest"""
-        channels = [c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)]
+        channels = [
+            c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)
+        ]
         c_sort = sorted(channels, key=lambda x: x.created_at)
         txt = "\n".join(
             [
@@ -717,7 +793,9 @@ class VrtUtils(commands.Cog):
         This command was made to recover from Nuked servers that were VC spammed.
         Hopefully it will never need to be used again.
         """
-        msg = await ctx.send("Are you sure you want to clear **ALL** Voice Channels from this guild?")
+        msg = await ctx.send(
+            "Are you sure you want to clear **ALL** Voice Channels from this guild?"
+        )
         yes = await confirm(ctx, msg)
         if yes is None:
             return

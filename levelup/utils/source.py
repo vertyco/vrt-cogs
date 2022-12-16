@@ -14,26 +14,26 @@ except ImportError:
     _has_requests = False
 
 __all__ = (
-    'BaseSource',
-    'HTTPBasedSource',
-    'DiscordEmojiSourceMixin',
-    'EmojiCDNSource',
-    'TwitterEmojiSource',
-    'AppleEmojiSource',
-    'GoogleEmojiSource',
-    'MicrosoftEmojiSource',
-    'FacebookEmojiSource',
-    'MessengerEmojiSource',
-    'EmojidexEmojiSource',
-    'JoyPixelsEmojiSource',
-    'SamsungEmojiSource',
-    'WhatsAppEmojiSource',
-    'MozillaEmojiSource',
-    'OpenmojiEmojiSource',
-    'TwemojiEmojiSource',
-    'FacebookMessengerEmojiSource',
-    'Twemoji',
-    'Openmoji',
+    "BaseSource",
+    "HTTPBasedSource",
+    "DiscordEmojiSourceMixin",
+    "EmojiCDNSource",
+    "TwitterEmojiSource",
+    "AppleEmojiSource",
+    "GoogleEmojiSource",
+    "MicrosoftEmojiSource",
+    "FacebookEmojiSource",
+    "MessengerEmojiSource",
+    "EmojidexEmojiSource",
+    "JoyPixelsEmojiSource",
+    "SamsungEmojiSource",
+    "WhatsAppEmojiSource",
+    "MozillaEmojiSource",
+    "OpenmojiEmojiSource",
+    "TwemojiEmojiSource",
+    "FacebookMessengerEmojiSource",
+    "Twemoji",
+    "Openmoji",
 )
 
 
@@ -77,14 +77,14 @@ class BaseSource(ABC):
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}>'
+        return f"<{self.__class__.__name__}>"
 
 
 class HTTPBasedSource(BaseSource):
     """Represents an HTTP-based source."""
 
     REQUEST_KWARGS: ClassVar[Dict[str, Any]] = {
-        'headers': {'User-Agent': 'Mozilla/5.0'}
+        "headers": {"User-Agent": "Mozilla/5.0"}
     }
 
     def __init__(self) -> None:
@@ -132,14 +132,14 @@ class HTTPBasedSource(BaseSource):
 class DiscordEmojiSourceMixin(HTTPBasedSource):
     """A mixin that adds Discord emoji functionality to another source."""
 
-    BASE_DISCORD_EMOJI_URL: ClassVar[str] = 'https://cdn.discordapp.com/emojis/'
+    BASE_DISCORD_EMOJI_URL: ClassVar[str] = "https://cdn.discordapp.com/emojis/"
 
     @abstractmethod
     def get_emoji(self, emoji: str, /) -> Optional[BytesIO]:
         raise NotImplementedError
 
     def get_discord_emoji(self, id: int, /) -> Optional[BytesIO]:
-        url = self.BASE_DISCORD_EMOJI_URL + str(id) + '.png'
+        url = self.BASE_DISCORD_EMOJI_URL + str(id) + ".png"
         _to_catch = HTTPError if not _has_requests else requests.HTTPError
 
         try:
@@ -151,14 +151,19 @@ class DiscordEmojiSourceMixin(HTTPBasedSource):
 class EmojiCDNSource(DiscordEmojiSourceMixin):
     """A base source that fetches emojis from https://emojicdn.elk.sh/."""
 
-    BASE_EMOJI_CDN_URL: ClassVar[str] = 'https://emojicdn.elk.sh/'
+    BASE_EMOJI_CDN_URL: ClassVar[str] = "https://emojicdn.elk.sh/"
     STYLE: ClassVar[str] = None
 
     def get_emoji(self, emoji: str, /) -> Optional[BytesIO]:
         if self.STYLE is None:
-            raise TypeError('STYLE class variable unfilled.')
+            raise TypeError("STYLE class variable unfilled.")
 
-        url = self.BASE_EMOJI_CDN_URL + quote_plus(emoji) + '?style=' + quote_plus(self.STYLE)
+        url = (
+            self.BASE_EMOJI_CDN_URL
+            + quote_plus(emoji)
+            + "?style="
+            + quote_plus(self.STYLE)
+        )
         _to_catch = HTTPError if not _has_requests else requests.HTTPError
 
         try:
@@ -169,62 +174,74 @@ class EmojiCDNSource(DiscordEmojiSourceMixin):
 
 class TwitterEmojiSource(EmojiCDNSource):
     """A source that uses Twitter-style emojis. These are also the ones used in Discord."""
-    STYLE = 'twitter'
+
+    STYLE = "twitter"
 
 
 class AppleEmojiSource(EmojiCDNSource):
     """A source that uses Apple emojis."""
-    STYLE = 'apple'
+
+    STYLE = "apple"
 
 
 class GoogleEmojiSource(EmojiCDNSource):
     """A source that uses Google emojis."""
-    STYLE = 'google'
+
+    STYLE = "google"
 
 
 class MicrosoftEmojiSource(EmojiCDNSource):
     """A source that uses Microsoft emojis."""
-    STYLE = 'microsoft'
+
+    STYLE = "microsoft"
 
 
 class SamsungEmojiSource(EmojiCDNSource):
     """A source that uses Samsung emojis."""
-    STYLE = 'samsung'
+
+    STYLE = "samsung"
 
 
 class WhatsAppEmojiSource(EmojiCDNSource):
     """A source that uses WhatsApp emojis."""
-    STYLE = 'whatsapp'
+
+    STYLE = "whatsapp"
 
 
 class FacebookEmojiSource(EmojiCDNSource):
     """A source that uses Facebook emojis."""
-    STYLE = 'facebook'
+
+    STYLE = "facebook"
 
 
 class MessengerEmojiSource(EmojiCDNSource):
     """A source that uses Facebook Messenger's emojis."""
-    STYLE = 'messenger'
+
+    STYLE = "messenger"
 
 
 class JoyPixelsEmojiSource(EmojiCDNSource):
     """A source that uses JoyPixels' emojis."""
-    STYLE = 'joypixels'
+
+    STYLE = "joypixels"
 
 
 class OpenmojiEmojiSource(EmojiCDNSource):
     """A source that uses Openmoji emojis."""
-    STYLE = 'openmoji'
+
+    STYLE = "openmoji"
 
 
 class EmojidexEmojiSource(EmojiCDNSource):
     """A source that uses Emojidex emojis."""
-    STYLE = 'emojidex'
+
+    STYLE = "emojidex"
 
 
 class MozillaEmojiSource(EmojiCDNSource):
     """A source that uses Mozilla's emojis."""
-    STYLE = 'mozilla'
+
+    STYLE = "mozilla"
 
 
 # Aliases

@@ -76,9 +76,7 @@ class EconomyTrackCommands(MixinMeta):
                 title = "Invalid Arg, Here are Valid Timezones"
             for p in pagify(timezones, page_length=500):
                 em = discord.Embed(
-                    title=title,
-                    description=f"{text}\n{box(p)}",
-                    color=ctx.author.color
+                    title=title, description=f"{text}\n{box(p)}", color=ctx.author.color
                 )
                 embeds.append(em)
 
@@ -107,15 +105,15 @@ class EconomyTrackCommands(MixinMeta):
         avg_iter = self.looptime if self.looptime else "(N/A)"
         ptime = humanize_timedelta(seconds=int(points * 60))
         mptime = humanize_timedelta(seconds=int(max_points * 60))
-        desc = f"`Enabled:    `{enabled}\n" \
-               f"`Timezone:   `{timezone}\n" \
-               f"`Max Points: `{humanize_number(max_points)} ({mptime})\n" \
-               f"`Collected:  `{humanize_number(points)} ({ptime if ptime else 'None'})\n" \
-               f"`LoopTime:   `{avg_iter}ms"
+        desc = (
+            f"`Enabled:    `{enabled}\n"
+            f"`Timezone:   `{timezone}\n"
+            f"`Max Points: `{humanize_number(max_points)} ({mptime})\n"
+            f"`Collected:  `{humanize_number(points)} ({ptime if ptime else 'None'})\n"
+            f"`LoopTime:   `{avg_iter}ms"
+        )
         embed = discord.Embed(
-            title="EconomyTrack Settings",
-            description=desc,
-            color=ctx.author.color
+            title="EconomyTrack Settings", description=desc, color=ctx.author.color
         )
         await ctx.send(embed=embed)
 
@@ -132,7 +130,7 @@ class EconomyTrackCommands(MixinMeta):
         if len(data) < 10:
             embed = discord.Embed(
                 description="There is not enough data collected. Try again later.",
-                color=discord.Color.red()
+                color=discord.Color.red(),
             )
             return await ctx.send(embed=embed)
 
@@ -177,7 +175,7 @@ class EconomyTrackCommands(MixinMeta):
         if len(data) < 10:
             embed = discord.Embed(
                 description="There is not enough data collected to generate a graph right now. Try again later.",
-                color=discord.Color.red()
+                color=discord.Color.red(),
             )
             return await ctx.send(embed=embed)
         timezone = await self.config.guild(ctx.guild).timezone()
@@ -186,7 +184,9 @@ class EconomyTrackCommands(MixinMeta):
         columns = ["ts", "total"]
         rows = [i for i in data]
         for i in rows:
-            i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
+            i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(
+                tz=pytz.timezone(timezone)
+            )
         df = pd.DataFrame(rows, columns=columns)
         df = df.set_index(["ts"])
         df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
@@ -197,7 +197,7 @@ class EconomyTrackCommands(MixinMeta):
         if df.empty or len(df.values) < 10:  # In case there is data but it is old
             embed = discord.Embed(
                 description="There is not enough data collected to generate a graph right now. Try again later.",
-                color=discord.Color.red()
+                color=discord.Color.red(),
             )
             return await ctx.send(embed=embed)
 
@@ -213,27 +213,30 @@ class EconomyTrackCommands(MixinMeta):
         avg = df.mean().total
         current = df.values[-1][0]
 
-        desc = f"`DataPoints: `{humanize_number(len(df.values))}\n" \
-               f"`BankName:   `{bank_name}\n" \
-               f"`Currency:   `{currency_name}"
+        desc = (
+            f"`DataPoints: `{humanize_number(len(df.values))}\n"
+            f"`BankName:   `{bank_name}\n"
+            f"`Currency:   `{currency_name}"
+        )
 
-        field = f"`Current: `{humanize_number(current)}\n" \
-                f"`Average: `{humanize_number(round(avg))}\n" \
-                f"`Highest: `{humanize_number(highest)}\n" \
-                f"`Lowest:  `{humanize_number(lowest)}\n" \
-                f"`Diff:    `{humanize_number(highest - lowest)}"
+        field = (
+            f"`Current: `{humanize_number(current)}\n"
+            f"`Average: `{humanize_number(round(avg))}\n"
+            f"`Highest: `{humanize_number(highest)}\n"
+            f"`Lowest:  `{humanize_number(lowest)}\n"
+            f"`Diff:    `{humanize_number(highest - lowest)}"
+        )
 
         first = df.values[0][0]
-        diff = '+' if current > first else '-'
+        diff = "+" if current > first else "-"
         field2 = f"{diff} {humanize_number(abs(current - first))}"
 
-        embed = discord.Embed(
-            title=title,
-            description=desc,
-            color=ctx.author.color
-        )
+        embed = discord.Embed(title=title, description=desc, color=ctx.author.color)
         embed.add_field(name="Statistics", value=field)
-        embed.add_field(name="Change", value=f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field2, 'diff')}")
+        embed.add_field(
+            name="Change",
+            value=f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field2, 'diff')}",
+        )
 
         embed.set_image(url="attachment://plot.png")
         embed.set_footer(text=f"Timezone: {timezone}")

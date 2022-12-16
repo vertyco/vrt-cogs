@@ -14,6 +14,7 @@ class SCTools(commands.Cog):
     """
     Star Citizen info tools
     """
+
     __author__ = "Vertyco"
     __version__ = "0.0.2"
 
@@ -62,8 +63,7 @@ class SCTools(commands.Cog):
         if not key:
             return await ctx.send("API key has not been set yet!")
         embed = discord.Embed(
-            description="Gathering data...",
-            color=discord.Color.random()
+            description="Gathering data...", color=discord.Color.random()
         )
         embed.set_thumbnail(url=LOADING)
         msg = await ctx.send(embed=embed)
@@ -84,7 +84,7 @@ class SCTools(commands.Cog):
                 if len(shiplist) == 0:
                     embed = discord.Embed(
                         description="No ships found with that name.",
-                        color=discord.Color.random()
+                        color=discord.Color.random(),
                     )
                     return await msg.edit(embed=embed)
                 if len(shiplist) > 1:
@@ -96,24 +96,39 @@ class SCTools(commands.Cog):
                     embed = discord.Embed(
                         title="Type the number corresponding to the ship you want to select",
                         description=shipstring,
-                        color=discord.Color.random()
+                        color=discord.Color.random(),
                     )
                     embed.set_footer(text='Reply "cancel" to close the menu')
                     await msg.edit(embed=embed)
 
                     def mcheck(message: discord.Message):
-                        return message.author == ctx.author and message.channel == ctx.channel
+                        return (
+                            message.author == ctx.author
+                            and message.channel == ctx.channel
+                        )
 
                     try:
-                        reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
+                        reply = await self.bot.wait_for(
+                            "message", timeout=60, check=mcheck
+                        )
                     except asyncio.TimeoutError:
-                        return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                        return await msg.edit(
+                            embed=discord.Embed(
+                                description="You took too long :yawning_face:"
+                            )
+                        )
                     if reply.content.lower() == "cancel":
-                        return await msg.edit(embed=discord.Embed(description="Game search canceled."))
+                        return await msg.edit(
+                            embed=discord.Embed(description="Game search canceled.")
+                        )
                     elif not reply.content.isdigit():
-                        return await msg.edit(embed=discord.Embed(description="That's not a number"))
+                        return await msg.edit(
+                            embed=discord.Embed(description="That's not a number")
+                        )
                     elif int(reply.content) > len(shiplist):
-                        return await msg.edit(embed=discord.Embed(description="That's not a valid number"))
+                        return await msg.edit(
+                            embed=discord.Embed(description="That's not a valid number")
+                        )
                     i = int(reply.content) - 1
                     name = shiplist[i]
                 else:

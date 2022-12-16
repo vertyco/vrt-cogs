@@ -23,9 +23,9 @@ class Inspire(commands.Cog):
         self.session = aiohttp.ClientSession()
 
     async def get_quote(self):
-        async with self.session.get('https://zenquotes.io/api/random') as resp:
+        async with self.session.get("https://zenquotes.io/api/random") as resp:
             data = await resp.json(content_type=None)
-            quote = data[0]['q'] + " - " + data[0]['a']
+            quote = data[0]["q"] + " - " + data[0]["a"]
             return quote
 
     @commands.command()
@@ -56,13 +56,7 @@ class Inspire(commands.Cog):
 
         msg = message.content.lower().split()
 
-        sad_words = [
-            "sad",
-            "depressed",
-            "unhappy",
-            "miserable",
-            "depressing"
-        ]
+        sad_words = ["sad", "depressed", "unhappy", "miserable", "depressing"]
 
         starter_encouragements = [
             "Cheer up!",
@@ -76,7 +70,7 @@ class Inspire(commands.Cog):
             "Hope you’re doing awesome!",
             "Keep on keeping on!",
             "Sending you good thoughts—and hoping you believe in yourself just as much as I believe in you.",
-            "I know you can do this!"
+            "I know you can do this!",
         ]
 
         if any(w in msg for w in sad_words):

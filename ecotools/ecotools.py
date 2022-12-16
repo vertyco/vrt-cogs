@@ -22,11 +22,10 @@ class EcoTools(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=117117117, force_registration=True)
-        default_guild = {
-            "servers": {},
-            "allow": []
-        }
+        self.config = Config.get_conf(
+            self, identifier=117117117, force_registration=True
+        )
+        default_guild = {"servers": {}, "allow": []}
         self.config.register_guild(**default_guild)
 
     @commands.group(name="ecoset", aliases=["eset"])
@@ -37,7 +36,9 @@ class EcoTools(commands.Cog):
         pass
 
     @eco_set.command(name="add")
-    async def addserver(self, ctx, server_name: str, ip_address: str, port: int, password: str):
+    async def addserver(
+        self, ctx, server_name: str, ip_address: str, port: int, password: str
+    ):
         """Add an ECO server(Don't use spaces in the server name!)"""
         sname = server_name.lower()
         async with self.config.guild(ctx.guild).servers() as servers:
@@ -45,11 +46,7 @@ class EcoTools(commands.Cog):
                 overwrite = True
             else:
                 overwrite = False
-            servers[sname] = {
-                "ip": ip_address,
-                "port": port,
-                "pass": password
-            }
+            servers[sname] = {"ip": ip_address, "port": port, "pass": password}
             if overwrite:
                 await ctx.send("Server has been **Overwritten**")
             else:
@@ -85,20 +82,22 @@ class EcoTools(commands.Cog):
         info = ""
         if servers:
             for sname, data in servers.items():
-                info += f"➣{sname.capitalize()}\n" \
-                        f"`Host: `{data['ip']}\n" \
-                        f"`Port: `{data['port']}\n" \
-                        f"`Pass: `{data['pass']}\n\n"
+                info += (
+                    f"➣{sname.capitalize()}\n"
+                    f"`Host: `{data['ip']}\n"
+                    f"`Port: `{data['port']}\n"
+                    f"`Pass: `{data['pass']}\n\n"
+                )
         if not info:
             info = "No Servers Configured\n"
 
         embed = discord.Embed(
             title="ECOTools Settings",
             description=f"**RCON Access Roles**\n"
-                        f"{allowed}"
-                        f"**ECO Servers**\n"
-                        f"{info}",
-            color=discord.Color.random()
+            f"{allowed}"
+            f"**ECO Servers**\n"
+            f"{info}",
+            color=discord.Color.random(),
         )
         await ctx.send(embed=embed)
 
@@ -148,7 +147,7 @@ class EcoTools(commands.Cog):
                 command=command,
                 host=server["ip"],
                 port=server["port"],
-                passwd=server["pass"]
+                passwd=server["pass"],
             )
             res = res.strip()
             if not res:
@@ -159,7 +158,9 @@ class EcoTools(commands.Cog):
             if "121" in str(e):
                 resp = box(f"- Server has timed out and may be down", lang="diff")
             elif "502 Bad Gateway" in str(e) and "Cloudflare" in str(e):
-                resp = box(f"- Cloudflare Issue, Discord is borked not my fault.", lang="diff")
+                resp = box(
+                    f"- Cloudflare Issue, Discord is borked not my fault.", lang="diff"
+                )
             else:
                 resp = box(f"- Encountered an unknown error: {e}", lang="diff")
         return resp

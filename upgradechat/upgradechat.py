@@ -15,6 +15,7 @@ class UpgradeChat(commands.Cog):
 
     https://upgrade.chat/
     """
+
     __author__ = "Vertyco"
     __version__ = "0.0.5"
 
@@ -37,7 +38,7 @@ class UpgradeChat(commands.Cog):
             "claim_msg": "default",  # Reply when a user claims a purchase
             "products": {},  # Upgrade.Chat products added by UUID
             "log": 0,  # Log channel
-            "users": {}  # Claimed purchases stored here with str(user.id) as keys
+            "users": {},  # Claimed purchases stored here with str(user.id) as keys
         }
         self.config.register_guild(**default_guild)
 
@@ -114,15 +115,21 @@ class UpgradeChat(commands.Cog):
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
             if not conf["id"] or not conf["secret"]:
-                return await ctx.send("UpgradeChat API credentials have not been set yet!")
+                return await ctx.send(
+                    "UpgradeChat API credentials have not been set yet!"
+                )
             status, results, newtoken = await API().get_product(conf, uuid)
             if status != 200:
-                return await ctx.send(f"I could not find any products with that UUID!\n"
-                                      f"`status {status}`")
+                return await ctx.send(
+                    f"I could not find any products with that UUID!\n"
+                    f"`status {status}`"
+                )
             product = results["data"]
             async with self.config.guild(ctx.guild).products() as products:
                 products[uuid] = product
-            await ctx.send(f"Your product with the title `{product['name']}` has been added!")
+            await ctx.send(
+                f"Your product with the title `{product['name']}` has been added!"
+            )
             await ctx.tick()
             if newtoken:
                 await self.config.guild(ctx.guild).bearer_token.set(newtoken)
@@ -140,7 +147,9 @@ class UpgradeChat(commands.Cog):
                         "UUID not found in existing products. Here are the current products you have set.\n"
                         f"{text}"
                     )
-                await ctx.send(f"Product with title `{products[uuid]['name']}` has been deleted!")
+                await ctx.send(
+                    f"Product with title `{products[uuid]['name']}` has been deleted!"
+                )
                 del products[uuid]
 
     @upgradechat.command()
@@ -158,18 +167,22 @@ class UpgradeChat(commands.Cog):
         token = conf["bearer_token"] if conf["bearer_token"] else "Not Authorized Yet"
         cid = conf["id"]
         secret = conf["secret"]
-        txt = f"UpgradeChat secrets\n" \
-              f"`client_id:     `{cid}\n" \
-              f"`client_secret: `{secret}\n" \
-              f"`bearer_token:  `{token}"
+        txt = (
+            f"UpgradeChat secrets\n"
+            f"`client_id:     `{cid}\n"
+            f"`client_secret: `{secret}\n"
+            f"`bearer_token:  `{token}"
+        )
         try:
             await ctx.author.send(txt)
         except discord.Forbidden:
             await ctx.send("I was unable to DM your api credentials")
         ratio = conf["conversion_ratio"]
         producs = conf["products"]
-        desc = f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n" \
-               f"`Claim Message:    `{conf['claim_msg']}\n"
+        desc = (
+            f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n"
+            f"`Claim Message:    `{conf['claim_msg']}\n"
+        )
         if producs:
             text = ""
             for uuid, data in producs.items():
@@ -179,7 +192,7 @@ class UpgradeChat(commands.Cog):
 
         em = discord.Embed(
             title="UpgradeChat Settings",
-            description=f"{desc}\n**Products**\n{box(text)}"
+            description=f"{desc}\n**Products**\n{box(text)}",
         )
         await ctx.send(embed=em)
 
@@ -190,14 +203,22 @@ class UpgradeChat(commands.Cog):
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
             if not conf["id"] or not conf["secret"]:
-                return await ctx.send("The owner of this guild has not set up their API tokens for Upgrade.Chat yet!")
-            status, purchases, newtoken = await API().get_user_purchases(conf, ctx.author.id)
+                return await ctx.send(
+                    "The owner of this guild has not set up their API tokens for Upgrade.Chat yet!"
+                )
+            status, purchases, newtoken = await API().get_user_purchases(
+                conf, ctx.author.id
+            )
             if newtoken:
                 await self.config.guild(ctx.guild).bearer_token.set(newtoken)
             if status != 200:
-                return await ctx.send("I could not find any users associated with your ID!")
+                return await ctx.send(
+                    "I could not find any users associated with your ID!"
+                )
             if not purchases:
-                return await ctx.send("I could not find any valid purchases for your account!")
+                return await ctx.send(
+                    "I could not find any valid purchases for your account!"
+                )
 
             products = conf["products"]
             users = conf["users"]
@@ -219,7 +240,9 @@ class UpgradeChat(commands.Cog):
                     valid_purchases += 1
 
             if not valid_purchases:
-                return await ctx.send("I could not find any valid purchases for your account!")
+                return await ctx.send(
+                    "I could not find any valid purchases for your account!"
+                )
 
             async with self.config.guild(ctx.guild).users() as users:
                 if uid not in users:
@@ -235,7 +258,11 @@ class UpgradeChat(commands.Cog):
             except BalanceTooHigh as e:
                 await bank.set_balance(ctx.author, e.max_balance)
 
-            title = "🎉Purchase claimed successfully!🎉" if valid_purchases == 1 else "🎉Purchases claimed successfully!🎉"
+            title = (
+                "🎉Purchase claimed successfully!🎉"
+                if valid_purchases == 1
+                else "🎉Purchases claimed successfully!🎉"
+            )
             desc = f"{ctx.author.display_name}, you have claimed {'{:,}'.format(amount_to_give)} {currency_name}!"
             claim_msg = conf["claim_msg"]
             if "default" not in claim_msg:
@@ -246,20 +273,18 @@ class UpgradeChat(commands.Cog):
                     "uid": ctx.author.id,
                     "guild": ctx.guild.name,
                     "creditsname": currency_name,
-                    "amount": "{:,}".format(amount_to_give)
+                    "amount": "{:,}".format(amount_to_give),
                 }
                 desc = claim_msg.format(**params)
 
             em = discord.Embed(
-                title=title,
-                description=desc,
-                color=discord.Color.green()
+                title=title, description=desc, color=discord.Color.green()
             )
             bal = await bank.get_balance(ctx.author)
             em.set_footer(text=f"Your new balance is {'{:,}'.format(bal)}!")
             await ctx.send(embed=em)
 
-            logchan = self.bot.get_channel(conf['log']) if conf['log'] else None
+            logchan = self.bot.get_channel(conf["log"]) if conf["log"] else None
             if not logchan:
                 return
 
@@ -271,8 +296,10 @@ class UpgradeChat(commands.Cog):
                 if uid in ashopusers:
                     cluster = ashopusers[uid]["cluster"]
 
-            desc = f"`Spent:   `${amount_spent}\n" \
-                   f"`Awarded: `{'{:,}'.format(amount_to_give)} {currency_name}"
+            desc = (
+                f"`Spent:   `${amount_spent}\n"
+                f"`Awarded: `{'{:,}'.format(amount_to_give)} {currency_name}"
+            )
 
             if cluster:
                 desc += f"\n`Cluster: `{cluster}"
@@ -280,7 +307,7 @@ class UpgradeChat(commands.Cog):
             em = discord.Embed(
                 title=f"{ctx.author.name} - {ctx.author.id} has claimed a purchase!",
                 description=desc,
-                color=ctx.author.color
+                color=ctx.author.color,
             )
             if DPY2:
                 pfp = ctx.author.avatar.url if ctx.author.avatar else None

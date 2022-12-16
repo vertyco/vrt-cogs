@@ -78,6 +78,7 @@ class YouTubeDownloader(commands.Cog):
     Heavy usage of this cog may result in your bots ip getting suspended by YouTube,
     use at your own risk.
     """
+
     __author__ = "Vertyco"
     __version__ = "0.0.1"
 
@@ -92,14 +93,10 @@ class YouTubeDownloader(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, 117, force_registration=True)
-        default_global = {
-            "download_path": None,
-            "downloaded": 0
-        }
+        default_global = {"download_path": None, "downloaded": 0}
         self.config.register_global(**default_global)
         self.executor = ThreadPoolExecutor(
-            max_workers=1,
-            thread_name_prefix="youtube_downloader"
+            max_workers=1, thread_name_prefix="youtube_downloader"
         )
 
     @commands.group(aliases=["youtubedownloader", "ytdl"])
@@ -131,9 +128,10 @@ class YouTubeDownloader(commands.Cog):
         downloaded = await self.config.downloaded()
         em = discord.Embed(
             title=_("YouTube Downloader Settings"),
-            description=_(f"`Path:       `{path}\n"
-                          f"`Downloaded: `{humanize_number(downloaded)}"),
-            color=ctx.author.color
+            description=_(
+                f"`Path:       `{path}\n" f"`Downloaded: `{humanize_number(downloaded)}"
+            ),
+            color=ctx.author.color,
         )
         await ctx.send(embed=em)
 
@@ -142,14 +140,15 @@ class YouTubeDownloader(commands.Cog):
         """Get an audio file from a YouTube link"""
         if "playlist" in link:
             return await ctx.send(
-                _("The link you provided is for a playlist.\n"
-                  "Please provide a valid link.")
+                _(
+                    "The link you provided is for a playlist.\n"
+                    "Please provide a valid link."
+                )
             )
         async with ctx.typing():
             try:
                 file = await self.bot.loop.run_in_executor(
-                    self.executor,
-                    lambda: download_stream(link)
+                    self.executor, lambda: download_stream(link)
                 )
             except (VideoUnavailable, KeyError):
                 return await ctx.send(_("Failed to download YouTube video"))
@@ -160,10 +159,7 @@ class YouTubeDownloader(commands.Cog):
             return await ctx.send(_(f"Failed to download, file size too big to send."))
 
         text = _("Here is your mp3 file: ")
-        await ctx.send(
-            f"{text} `{file.filename}`",
-            file=file
-        )
+        await ctx.send(f"{text} `{file.filename}`", file=file)
         dl = await self.config.downloaded()
         await self.config.downloaded.set(dl + 1)
 
@@ -189,8 +185,7 @@ class YouTubeDownloader(commands.Cog):
                     for purl in p.video_urls:
                         try:
                             file = await self.bot.loop.run_in_executor(
-                                self.executor,
-                                lambda: download_stream(purl)
+                                self.executor, lambda: download_stream(purl)
                             )
                         except (VideoUnavailable, KeyError):
                             failed += 1
@@ -201,20 +196,18 @@ class YouTubeDownloader(commands.Cog):
                         filesize = sys.getsizeof(file)
                         allowedsize = ctx.guild.filesize_limit
                         if filesize > allowedsize:
-                            await ctx.send(_(f"Skipping `{url}`\nFile size too big to send."))
+                            await ctx.send(
+                                _(f"Skipping `{url}`\nFile size too big to send.")
+                            )
                             failed += 1
                             continue
                         else:
-                            await ctx.send(
-                                file.filename,
-                                file=file
-                            )
+                            await ctx.send(file.filename, file=file)
                             downloaded += 1
                 else:
                     try:
                         file = await self.bot.loop.run_in_executor(
-                            self.executor,
-                            lambda: download_stream(url)
+                            self.executor, lambda: download_stream(url)
                         )
                     except (VideoUnavailable, KeyError):
                         await ctx.send(_(f"Skipping `{url}`"))
@@ -228,23 +221,15 @@ class YouTubeDownloader(commands.Cog):
                     failed += 1
                     continue
                 else:
-                    await ctx.send(
-                        file.filename,
-                        file=file
-                    )
+                    await ctx.send(file.filename, file=file)
                     downloaded += 1
 
         desc = ""
         if downloaded or failed:
-            desc = box(_(
-                f"Downloaded: {downloaded}\n"
-                f"Failed:     {failed}"
-            ))
+            desc = box(_(f"Downloaded: {downloaded}\n" f"Failed:     {failed}"))
         text = _(f"Downloading Complete")
         embed = discord.Embed(
-            description=f"**{text}**\n"
-                        f"{desc}",
-            color=discord.Color.green()
+            description=f"**{text}**\n" f"{desc}", color=discord.Color.green()
         )
         await ctx.send(embed=embed)
         if downloaded:
@@ -262,12 +247,20 @@ class YouTubeDownloader(commands.Cog):
         msg = None
         if main_path is None or not os.path.exists(main_path):
             main_path = None
-            text = _("The download path is not set, would you like to use this cog's data folder instead? ") + "(y/n)"
+            text = (
+                _(
+                    "The download path is not set, would you like to use this cog's data folder instead? "
+                )
+                + "(y/n)"
+            )
             em = discord.Embed(description=text, color=color)
             msg = await ctx.send(embed=em)
             yes = await confirm(ctx)
             if yes is not True:
-                text = _("Download cancelled, please set a download path with ") + f"`{ctx.prefix}yt downloadpath`"
+                text = (
+                    _("Download cancelled, please set a download path with ")
+                    + f"`{ctx.prefix}yt downloadpath`"
+                )
                 em = discord.Embed(description=text, color=color)
                 return await msg.edit(embed=em)
         if not main_path:
@@ -295,11 +288,12 @@ class YouTubeDownloader(commands.Cog):
 
         count = p.length
         playlist_name = p.title
-        text = _(
-            f"Found `{humanize_number(count)}` videos in the "
-        ) + f"**{playlist_name}** " + _(
-            "playlist, are you sure you want to download them all? "
-        ) + "(y/n)"
+        text = (
+            _(f"Found `{humanize_number(count)}` videos in the ")
+            + f"**{playlist_name}** "
+            + _("playlist, are you sure you want to download them all? ")
+            + "(y/n)"
+        )
         em = discord.Embed(description=text, color=color)
         if msg:
             await msg.edit(embed=em)
@@ -311,7 +305,10 @@ class YouTubeDownloader(commands.Cog):
             em = discord.Embed(description=text, color=color)
             return await msg.edit(embed=em)
 
-        title = _(f"Downloading {humanize_number(count)} videos from ") + f"{playlist_name}..."
+        title = (
+            _(f"Downloading {humanize_number(count)} videos from ")
+            + f"{playlist_name}..."
+        )
         downloaded = 0
         failed = 0
         index = 1
@@ -329,20 +326,20 @@ class YouTubeDownloader(commands.Cog):
                     eta = humanize_timedelta(seconds=eta_raw)
 
                 if eta:
-                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}\n"
-                             f"`Elapsed:  `{time_elapsed}\n"
-                             f"`ETA:      `{eta}")
+                    prog = _(
+                        f"`Progress: `{humanize_number(index)}/{humanize_number(count)}\n"
+                        f"`Elapsed:  `{time_elapsed}\n"
+                        f"`ETA:      `{eta}"
+                    )
                 else:
-                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}")
+                    prog = _(
+                        f"`Progress: `{humanize_number(index)}/{humanize_number(count)}"
+                    )
 
                 if index % 5 == 0 or index == count or index == 1:
                     bar = get_bar(index, count)
                     desc = f"{prog}\n{box(bar, lang='python')}"
-                    em = discord.Embed(
-                        title=title,
-                        description=desc,
-                        color=color
-                    )
+                    em = discord.Embed(title=title, description=desc, color=color)
                     em.set_thumbnail(url=DOWNLOADING)
                     if msg:
                         await msg.edit(embed=em)
@@ -351,8 +348,7 @@ class YouTubeDownloader(commands.Cog):
 
                 try:
                     await self.bot.loop.run_in_executor(
-                        self.executor,
-                        lambda: download_local(url, dirname)
+                        self.executor, lambda: download_local(url, dirname)
                     )
                     downloaded += 1
                 except (VideoUnavailable, KeyError):
@@ -376,12 +372,9 @@ class YouTubeDownloader(commands.Cog):
                 f"`Failed:      `{failed}\n"
                 f"`Unavailable: `{unavailable}"
             ),
-            color=discord.Color.green()
+            color=discord.Color.green(),
         )
-        em.add_field(
-            name=_("Download Location"),
-            value=box(dirname)
-        )
+        em.add_field(name=_("Download Location"), value=box(dirname))
         await msg.edit(embed=em)
         if downloaded:
             dl = await self.config.downloaded()
@@ -398,12 +391,20 @@ class YouTubeDownloader(commands.Cog):
         msg = None
         if main_path is None or not os.path.exists(main_path):
             main_path = None
-            text = _("The download path is not set, would you like to use this cog's data folder instead? ") + "(y/n)"
+            text = (
+                _(
+                    "The download path is not set, would you like to use this cog's data folder instead? "
+                )
+                + "(y/n)"
+            )
             em = discord.Embed(description=text, color=color)
             msg = await ctx.send(embed=em)
             yes = await confirm(ctx)
             if yes is not True:
-                text = _("Download cancelled, please set a download path with ") + f"`{ctx.prefix}yt downloadpath`"
+                text = (
+                    _("Download cancelled, please set a download path with ")
+                    + f"`{ctx.prefix}yt downloadpath`"
+                )
                 em = discord.Embed(description=text, color=color)
                 return await msg.edit(embed=em)
         if not main_path:
@@ -430,7 +431,9 @@ class YouTubeDownloader(commands.Cog):
                 return await ctx.send(embed=em)
 
         channel_name = c.channel_name
-        text = _(f"Getting video count for ") + f"`{channel_name}`, " + _("please wait...")
+        text = (
+            _(f"Getting video count for ") + f"`{channel_name}`, " + _("please wait...")
+        )
         em = discord.Embed(description=text, color=color)
         em.set_thumbnail(url=DOWNLOADING)
         if msg:
@@ -438,15 +441,13 @@ class YouTubeDownloader(commands.Cog):
         else:
             msg = await ctx.send(embed=em)
 
-        count = await self.bot.loop.run_in_executor(
-            self.executor,
-            lambda: len(c)
+        count = await self.bot.loop.run_in_executor(self.executor, lambda: len(c))
+        text = (
+            _(f"Found `{humanize_number(count)}` videos in the ")
+            + f"**{channel_name}** "
+            + _("channel, are you sure you want to download them all? ")
+            + "(y/n)"
         )
-        text = _(
-            f"Found `{humanize_number(count)}` videos in the "
-        ) + f"**{channel_name}** " + _(
-            "channel, are you sure you want to download them all? "
-        ) + "(y/n)"
         em = discord.Embed(description=text, color=color)
         await msg.edit(embed=em)
         yes = await confirm(ctx)
@@ -455,7 +456,10 @@ class YouTubeDownloader(commands.Cog):
             em = discord.Embed(description=text, color=color)
             return await msg.edit(embed=em)
 
-        title = _(f"Downloading {humanize_number(count)} videos from ") + f"{channel_name}..."
+        title = (
+            _(f"Downloading {humanize_number(count)} videos from ")
+            + f"{channel_name}..."
+        )
         downloaded = 0
         failed = 0
         index = 1
@@ -473,27 +477,26 @@ class YouTubeDownloader(commands.Cog):
                     eta = humanize_timedelta(seconds=eta_raw)
 
                 if eta:
-                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}\n"
-                             f"`Elapsed:  `{time_elapsed}\n"
-                             f"`ETA:      `{eta}")
+                    prog = _(
+                        f"`Progress: `{humanize_number(index)}/{humanize_number(count)}\n"
+                        f"`Elapsed:  `{time_elapsed}\n"
+                        f"`ETA:      `{eta}"
+                    )
                 else:
-                    prog = _(f"`Progress: `{humanize_number(index)}/{humanize_number(count)}")
+                    prog = _(
+                        f"`Progress: `{humanize_number(index)}/{humanize_number(count)}"
+                    )
 
                 if index % 5 == 0 or index == count or index == 1:
                     bar = get_bar(index, count)
                     desc = f"{prog}\n{box(bar, lang='python')}"
-                    em = discord.Embed(
-                        title=title,
-                        description=desc,
-                        color=color
-                    )
+                    em = discord.Embed(title=title, description=desc, color=color)
                     em.set_thumbnail(url=DOWNLOADING)
                     await msg.edit(embed=em)
 
                 try:
                     await self.bot.loop.run_in_executor(
-                        self.executor,
-                        lambda: download_local(url, dirname)
+                        self.executor, lambda: download_local(url, dirname)
                     )
                     downloaded += 1
                 except (VideoUnavailable, KeyError):
@@ -518,12 +521,9 @@ class YouTubeDownloader(commands.Cog):
                 f"`Unavailable:  `{unavailable}\n"
                 f"`Time Elapsed: `{time_elapsed}"
             ),
-            color=discord.Color.green()
+            color=discord.Color.green(),
         )
-        em.add_field(
-            name=_("Download Location"),
-            value=box(dirname)
-        )
+        em.add_field(name=_("Download Location"), value=box(dirname))
         await msg.edit(embed=em)
         if downloaded:
             dl = await self.config.downloaded()

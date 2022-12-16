@@ -12,7 +12,12 @@ from PIL import Image, UnidentifiedImageError
 from redbot.core import commands, Config, bank
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
-from redbot.core.utils.chat_formatting import humanize_number, humanize_list, humanize_timedelta, box
+from redbot.core.utils.chat_formatting import (
+    humanize_number,
+    humanize_list,
+    humanize_timedelta,
+    box,
+)
 from tabulate import tabulate
 
 from .defaults import defaults
@@ -31,6 +36,7 @@ else:
 
 class Pixl(commands.Cog):
     """Guess pictures for points"""
+
     __author__ = "Vertyco"
     __version__ = "0.1.17"
 
@@ -60,9 +66,13 @@ class Pixl(commands.Cog):
 
         self.active = set()
 
-    @commands.command(name="pixlboard", aliases=["pixlb", "pixelb", "pixlelb", "pixleaderboard"])
+    @commands.command(
+        name="pixlboard", aliases=["pixlb", "pixelb", "pixlelb", "pixleaderboard"]
+    )
     @commands.guild_only()
-    async def pixl_leaderboard(self, ctx: commands.Context, show_global: Optional[bool]):
+    async def pixl_leaderboard(
+        self, ctx: commands.Context, show_global: Optional[bool]
+    ):
         """View the Pixl leaderboard!
 
         **Arguments**
@@ -98,8 +108,12 @@ class Pixl(commands.Cog):
                 all_users[user] = userdata
 
         if not all_users:
-            return await ctx.send(f"There are no users saved yet, start a game with `{ctx.prefix}pixl`")
-        sorted_users = sorted(all_users.items(), key=lambda x: x[1]["score"], reverse=True)
+            return await ctx.send(
+                f"There are no users saved yet, start a game with `{ctx.prefix}pixl`"
+            )
+        sorted_users = sorted(
+            all_users.items(), key=lambda x: x[1]["score"], reverse=True
+        )
         you = None
         for num, i in enumerate(sorted_users):
             if i[0] == ctx.author:
@@ -118,17 +132,17 @@ class Pixl(commands.Cog):
                 place = i + 1
                 user: discord.Member = sorted_users[i][0]
                 data = sorted_users[i][1]
-                table.append([place, user.name, data["score"], data["wins"], data["games"]])
+                table.append(
+                    [place, user.name, data["score"], data["wins"], data["games"]]
+                )
             board = tabulate(
                 tabular_data=table,
                 headers=["#", "Name", "Score", "Wins", "Games"],
                 numalign="left",
-                stralign="left"
+                stralign="left",
             )
             embed = discord.Embed(
-                title=title,
-                description=box(board, "py"),
-                color=ctx.author.color
+                title=title, description=box(board, "py"), color=ctx.author.color
             )
             foot = f"Page {p + 1}/{pages}"
             if you:
@@ -139,7 +153,9 @@ class Pixl(commands.Cog):
             stop += 10
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
-    @commands.command(name="pixl", aliases=["pixle", "pixlguess", "pixelguess", "pixleguess"])
+    @commands.command(
+        name="pixl", aliases=["pixle", "pixlguess", "pixelguess", "pixleguess"]
+    )
     @commands.guild_only()
     async def pixl(self, ctx: commands.Context):
         """
@@ -149,7 +165,9 @@ class Pixl(commands.Cog):
         cid = ctx.channel.id
         uid = ctx.author.id
         if cid in self.active:
-            return await ctx.send("There is already a Pixl game going on in this channel")
+            return await ctx.send(
+                "There is already a Pixl game going on in this channel"
+            )
         elif uid in self.active:
             return await ctx.send("You already have a Pixl game going on")
         self.active.add(cid)
@@ -190,18 +208,22 @@ class Pixl(commands.Cog):
             break
         else:
             invalid = "\n".join(cant_get)
-            return await ctx.send(f"Game prep failed 3 times in a row\n\nThese urls were invalid\n{box(invalid)}")
+            return await ctx.send(
+                f"Game prep failed 3 times in a row\n\nThese urls were invalid\n{box(invalid)}"
+            )
 
         if cant_get:
             invalid = "\n".join(cant_get)
             await ctx.send(f"Some images failed during prep\n{box(invalid)}")
 
-        game = PixlGrids(ctx, game_image, correct, conf["blocks_to_reveal"], conf["time_limit"])
+        game = PixlGrids(
+            ctx, game_image, correct, conf["blocks_to_reveal"], conf["time_limit"]
+        )
         msg = None
         embed = discord.Embed(
             title="Pixl Guess",
             description=f"Guess the image before it's fully revealed!\nTime runs out {game.time_left}",
-            color=discord.Color.random()
+            color=discord.Color.random(),
         )
         try:
             async with ctx.typing():
@@ -215,9 +237,11 @@ class Pixl(commands.Cog):
                         msg = await ctx.send(embed=embed, file=image)
                     await asyncio.sleep(delay)
         except Exception:
-            return await ctx.send(f"Something went wrong during the game!\n"
-                                  f"Image: `{correct[0]} - {url}`\n"
-                                  f"{box(traceback.format_exc(), 'py')}")
+            return await ctx.send(
+                f"Something went wrong during the game!\n"
+                f"Image: `{correct[0]} - {url}`\n"
+                f"{box(traceback.format_exc(), 'py')}"
+            )
         finally:
             game.data["in_progress"] = False
 
@@ -232,10 +256,16 @@ class Pixl(commands.Cog):
         att = f"attachment://{final.filename}"
         thumb = None
         if winner:  # Chicken dinner
-            thumb = (winner.avatar.url if winner.avatar else None) if dpy2 else winner.avatar_url
+            thumb = (
+                (winner.avatar.url if winner.avatar else None)
+                if dpy2
+                else winner.avatar_url
+            )
             title = "Winner!"
-            desc = f"{winner.name} guessed correctly after {shown} blocks!\n" \
-                   f"`Points Awarded:  `{points}\n"
+            desc = (
+                f"{winner.name} guessed correctly after {shown} blocks!\n"
+                f"`Points Awarded:  `{points}\n"
+            )
             if participants >= min_p and reward:
                 desc += f"`Credits Awarded: `{humanize_number(reward)}"
             color = winner.color
@@ -296,25 +326,25 @@ class Pixl(commands.Cog):
         """View the current settings"""
         conf = await self.config.guild(ctx.guild).all()
         users = len(await self.config.all_members(ctx.guild))
-        desc = f"`Users Saved:    `{users}\n" \
-               f"`Time Limit:     `{conf['time_limit']}s\n" \
-               f"`Blocks:         `{conf['blocks_to_reveal']} per reveal\n" \
-               f"`Participants:   `{conf['min_participants']} minimum\n" \
-               f"`Currency Ratio: `{conf['currency_ratio']}x\n" \
-               f"`Show Answer:    `{conf['show_answer']}\n" \
-               f"Delay between blocks is {await self.config.delay()} seconds"
+        desc = (
+            f"`Users Saved:    `{users}\n"
+            f"`Time Limit:     `{conf['time_limit']}s\n"
+            f"`Blocks:         `{conf['blocks_to_reveal']} per reveal\n"
+            f"`Participants:   `{conf['min_participants']} minimum\n"
+            f"`Currency Ratio: `{conf['currency_ratio']}x\n"
+            f"`Show Answer:    `{conf['show_answer']}\n"
+            f"Delay between blocks is {await self.config.delay()} seconds"
+        )
         embed = discord.Embed(
-            title="Pixl Settings",
-            description=desc,
-            color=ctx.author.color
+            title="Pixl Settings", description=desc, color=ctx.author.color
         )
         global_images = await self.config.images()
         guild_images = conf["images"]
         embed.add_field(
             name="Images",
             value=f"`Saved in this guild: `{len(guild_images)}\n"
-                  f"`Saved globally:      `{len(global_images)} ({'enabled' if conf['use_global'] else 'disabled'})\n"
-                  f"`Default Images:      `{len(defaults)} ({'enabled' if conf['use_default'] else 'disabled'})"
+            f"`Saved globally:      `{len(global_images)} ({'enabled' if conf['use_global'] else 'disabled'})\n"
+            f"`Default Images:      `{len(defaults)} ({'enabled' if conf['use_default'] else 'disabled'})",
         )
         await ctx.send(embed=embed)
 
@@ -322,19 +352,27 @@ class Pixl(commands.Cog):
     async def set_timelimit(self, ctx: commands.Context, seconds: int):
         """Set the time limit for Pixl games"""
         if seconds < 10:
-            return await ctx.send("Uhh that's a little quick, try more than 10 seconds...")
+            return await ctx.send(
+                "Uhh that's a little quick, try more than 10 seconds..."
+            )
         async with ctx.typing():
             await self.config.guild(ctx.guild).time_limit.set(seconds)
-            await ctx.send(f"Time limit has been set to {humanize_timedelta(seconds=seconds)}")
+            await ctx.send(
+                f"Time limit has been set to {humanize_timedelta(seconds=seconds)}"
+            )
 
     @pixlset.command(name="blocks")
     async def set_blocks(self, ctx: commands.Context, amount: int):
         """Set the amount of blocks to reveal after each delay"""
         if amount >= 192 or amount < 1:
-            return await ctx.send("The amount of blocks revealed at one time must be at least 1 but less than 192")
+            return await ctx.send(
+                "The amount of blocks revealed at one time must be at least 1 but less than 192"
+            )
         async with ctx.typing():
             await self.config.guild(ctx.guild).blocks_to_reveal.set(amount)
-            await ctx.send(f"The amount of blocks revealed after each delay has been set to {amount}")
+            await ctx.send(
+                f"The amount of blocks revealed after each delay has been set to {amount}"
+            )
 
     @pixlset.command(name="participants")
     async def set_participants(self, ctx: commands.Context, amount: int):
@@ -343,7 +381,9 @@ class Pixl(commands.Cog):
             return await ctx.send("Minimum participants must be greater than 0...")
         async with ctx.typing():
             await self.config.guild(ctx.guild).min_participants.set(amount)
-            await ctx.send(f"The minimum participants needed for rewards has been set to {amount}")
+            await ctx.send(
+                f"The minimum participants needed for rewards has been set to {amount}"
+            )
 
     @pixlset.command(name="ratio")
     async def set_ratio(self, ctx: commands.Context, ratio: float):
@@ -358,7 +398,9 @@ class Pixl(commands.Cog):
             return await ctx.send("Ratio needs to be greater than zero")
         async with ctx.typing():
             await self.config.guild(ctx.guild).currency_ratio.set(float(ratio))
-            await ctx.send(f"The point to credit conversion ratio has been set to {ratio}")
+            await ctx.send(
+                f"The point to credit conversion ratio has been set to {ratio}"
+            )
 
     @pixlset.command(name="showanswer")
     async def toggle_show(self, ctx: commands.Context):
@@ -406,7 +448,9 @@ class Pixl(commands.Cog):
             return await ctx.send("Delay must be at least 2 seconds")
         async with ctx.typing():
             await self.config.delay.set(seconds)
-            await ctx.send(f"Game delay has been set to {humanize_timedelta(seconds=seconds)}")
+            await ctx.send(
+                f"Game delay has been set to {humanize_timedelta(seconds=seconds)}"
+            )
 
     @pixlset.group(name="image")
     async def image(self, ctx: commands.Context):
@@ -470,7 +514,9 @@ class Pixl(commands.Cog):
 
     @image.command(name="addglobal")
     @commands.is_owner()
-    async def add_global_image(self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]):
+    async def add_global_image(
+        self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]
+    ):
         """
         Add a global image for all guilds to use
 
@@ -527,7 +573,7 @@ class Pixl(commands.Cog):
                     embed = discord.Embed(
                         description=f"{added} Images Added!",
                         color=ctx.author.color,
-                        url="https://vertyco.net"
+                        url="https://vertyco.net",
                     ).set_image(url=i["url"])
                     if added > 4 and dpy2:
                         embed.set_footer(text="Showing first 4 images in the list")
@@ -538,27 +584,35 @@ class Pixl(commands.Cog):
                     txt = "\n".join(failed)
                     await ctx.send(f"The following lines failed\n{box(txt)}")
                 if not to_add:
-                    return await ctx.send("There were no valid images that could be added!")
-                await ctx.send(embeds=embeds) if dpy2 else await ctx.send(embed=embeds[0])
+                    return await ctx.send(
+                        "There were no valid images that could be added!"
+                    )
+                await ctx.send(embeds=embeds) if dpy2 else await ctx.send(
+                    embed=embeds[0]
+                )
             else:
                 if any([g["url"] == url for g in global_images]):
                     return await ctx.send("That global image url already exists!")
                 image = await get_content_from_url(url)
                 if not image:
-                    return await ctx.send("I am unable to pull this image to use, please try another one")
+                    return await ctx.send(
+                        "I am unable to pull this image to use, please try another one"
+                    )
                 answers = [a.strip().lower() for a in answers.split(",")]
                 async with self.config.images() as images:
                     images.append({"url": url, "answers": answers})
                 embed = discord.Embed(
                     title="Global Image Added",
                     description=f"Answers: `{humanize_list(answers)}`",
-                    color=ctx.author.color
+                    color=ctx.author.color,
                 )
                 embed.set_image(url=url)
                 await ctx.send(embed=embed)
 
     @image.command(name="add")
-    async def add_image(self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]):
+    async def add_image(
+        self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]
+    ):
         """
         Add an image for your guild to use
 
@@ -615,7 +669,7 @@ class Pixl(commands.Cog):
                     embed = discord.Embed(
                         description=f"{added} Images Added!",
                         color=ctx.author.color,
-                        url="https://vertyco.net"
+                        url="https://vertyco.net",
                     ).set_image(url=i["url"])
                     if added > 4 and dpy2:
                         embed.set_footer(text="Showing first 4 images in the list")
@@ -626,35 +680,47 @@ class Pixl(commands.Cog):
                     txt = "\n".join(failed)
                     await ctx.send(f"The following lines failed\n{box(txt)}")
                 if not to_add:
-                    return await ctx.send("There were no valid images that could be added!")
-                await ctx.send(embeds=embeds) if dpy2 else await ctx.send(embed=embeds[0])
+                    return await ctx.send(
+                        "There were no valid images that could be added!"
+                    )
+                await ctx.send(embeds=embeds) if dpy2 else await ctx.send(
+                    embed=embeds[0]
+                )
             else:
                 if any([g["url"] == url for g in guild_images]):
                     return await ctx.send("That guild image url already exists!")
                 image = await get_content_from_url(url)
                 if not image:
-                    return await ctx.send("I am unable to pull this image to use, please try another one")
+                    return await ctx.send(
+                        "I am unable to pull this image to use, please try another one"
+                    )
                 answers = [a.strip().lower() for a in answers.split(",")]
                 async with self.config.guild(ctx.guild).images() as images:
                     images.append({"url": url, "answers": answers})
                 embed = discord.Embed(
                     title="Image Added",
                     description=f"Answers: `{humanize_list(answers)}`",
-                    color=ctx.author.color
+                    color=ctx.author.color,
                 )
                 embed.set_image(url=url)
                 await ctx.send(embed=embed)
 
     # -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/ METHODS -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/
-    async def image_menu(self, ctx: commands.Context, images: list, title: str,
-                         message: discord.Message = None, page: int = 0):
+    async def image_menu(
+        self,
+        ctx: commands.Context,
+        images: list,
+        title: str,
+        message: discord.Message = None,
+        page: int = 0,
+    ):
         embeds = []
         pages = len(images)
         for num, i in enumerate(images):
             embed = discord.Embed(
                 title=title,
                 description=f"Valid Answers\n{box(humanize_list(i['answers']))}",
-                color=ctx.author.color
+                color=ctx.author.color,
             )
             embed.set_image(url=i["url"])
             embed.set_footer(text=f"Page {num + 1}/{pages}")
@@ -662,22 +728,32 @@ class Pixl(commands.Cog):
 
         con = DEFAULT_CONTROLS.copy()
         # If global, only show delete button to bot owner
-        if ("global" in title.lower() and ctx.author.id in self.bot.owner_ids) or "guild" in title.lower():
+        if (
+            "global" in title.lower() and ctx.author.id in self.bot.owner_ids
+        ) or "guild" in title.lower():
             con["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.delete_image
         await menu(ctx, embeds, con, message=message, page=page)
 
     async def delete_image(self, instance: MenuView, interaction: Interaction):
         embed: discord.Embed = instance.pages[instance.page]
         title = embed.title
-        conf = self.config if "global" in title.lower() else self.config.guild(instance.ctx.guild)
+        conf = (
+            self.config
+            if "global" in title.lower()
+            else self.config.guild(instance.ctx.guild)
+        )
         async with conf.images() as images:
             del images[instance.page]
 
-        await instance.respond(interaction, f"Image with url `{embed.image.url}` has been deleted")
+        await instance.respond(
+            interaction, f"Image with url `{embed.image.url}` has been deleted"
+        )
         images = await conf.images()
         page = instance.page - 1
         page %= len(instance.pages)
-        await self.image_menu(instance.ctx, images, title, message=instance.message, page=page)
+        await self.image_menu(
+            instance.ctx, images, title, message=instance.message, page=page
+        )
 
     @staticmethod
     def get_attachments(ctx: commands.Context) -> List[discord.Attachment]:

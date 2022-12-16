@@ -22,7 +22,9 @@ class BaseCommands(commands.Cog):
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(chan.id))
         if not owner_id:
-            return await ctx.send("This is not a ticket channel, or it has been removed from config")
+            return await ctx.send(
+                "This is not a ticket channel, or it has been removed from config"
+            )
         # If a mod tries
         can_add = False
         for role in ctx.author.roles:
@@ -35,7 +37,9 @@ class BaseCommands(commands.Cog):
         if owner_id == str(ctx.author.id) and conf["user_can_manage"]:
             can_add = True
         if not can_add:
-            return await ctx.send("You do not have permissions to add users to this ticket")
+            return await ctx.send(
+                "You do not have permissions to add users to this ticket"
+            )
         await ctx.channel.set_permissions(user, read_messages=True, send_messages=True)
         await ctx.send(f"**{user.name}** has been added to this ticket!")
 
@@ -48,7 +52,9 @@ class BaseCommands(commands.Cog):
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(chan.id))
         if not owner_id:
-            return await ctx.send("This is not a ticket channel, or it has been removed from config")
+            return await ctx.send(
+                "This is not a ticket channel, or it has been removed from config"
+            )
         can_rename = False
         for role in ctx.author.roles:
             if role.id in conf["support"]:
@@ -74,7 +80,9 @@ class BaseCommands(commands.Cog):
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(chan.id))
         if not owner_id:
-            return await ctx.send("This is not a ticket channel, or it has been removed from config")
+            return await ctx.send(
+                "This is not a ticket channel, or it has been removed from config"
+            )
         can_close = False
         for role in user.roles:
             if role.id in conf["support"]:
@@ -93,8 +101,14 @@ class BaseCommands(commands.Cog):
                 owner = await self.bot.fetch_user(int(owner_id))
         await self.close_ticket(owner, chan, conf, reason, ctx.author.name)
 
-    async def close_ticket(self, member: discord.Member, channel: discord.TextChannel,
-                           conf: dict, reason: str, closedby: str):
+    async def close_ticket(
+        self,
+        member: discord.Member,
+        channel: discord.TextChannel,
+        conf: dict,
+        reason: str,
+        closedby: str,
+    ):
         opened = conf["opened"]
         if not opened:
             return
@@ -108,16 +122,16 @@ class BaseCommands(commands.Cog):
         pfp = ticket["pfp"]
         opened = ticket["opened"]
         opened = datetime.datetime.fromisoformat(opened)
-        opened = opened.strftime('%m/%d/%y at %I:%M %p')
-        closed = datetime.datetime.now().strftime('%m/%d/%y at %I:%M %p')
+        opened = opened.strftime("%m/%d/%y at %I:%M %p")
+        closed = datetime.datetime.now().strftime("%m/%d/%y at %I:%M %p")
         embed = discord.Embed(
             title="Ticket Closed",
             description=f"Ticket created by **{member.name}-{member.id}** has been closed.\n"
-                        f"`Opened on: `{opened}\n"
-                        f"`Closed on: `{closed}\n"
-                        f"`Closed by: `{closedby}\n"
-                        f"`Reason:    `{reason}",
-            color=discord.Color.green()
+            f"`Opened on: `{opened}\n"
+            f"`Closed on: `{closed}\n"
+            f"`Closed by: `{closedby}\n"
+            f"`Reason:    `{reason}",
+            color=discord.Color.green(),
         )
         embed.set_thumbnail(url=pfp)
         log_chan = conf["log"]
@@ -126,8 +140,7 @@ class BaseCommands(commands.Cog):
 
         if conf["transcript"]:
             em = discord.Embed(
-                description="Archiving channel...",
-                color=discord.Color.magenta()
+                description="Archiving channel...", color=discord.Color.magenta()
             )
             em.set_footer(text="This channel will be deleted once complete")
             em.set_thumbnail(url=LOADING)

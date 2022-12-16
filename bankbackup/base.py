@@ -12,6 +12,7 @@ class BankBackup(commands.Cog):
     """
     Backup bank balances for all members of a guild
     """
+
     __author__ = "Vertyco"
     __version__ = "0.0.1"
 
@@ -35,7 +36,9 @@ class BankBackup(commands.Cog):
         for member in ctx.guild.members:
             bank_data[str(member.id)] = await bank.get_balance(member)
         raw = json.dumps(bank_data)
-        file = discord.File(StringIO(raw), filename=f"{ctx.guild.name} bank backup.json")
+        file = discord.File(
+            StringIO(raw), filename=f"{ctx.guild.name} bank backup.json"
+        )
         await ctx.send("Here's your bank backup file!", file=file)
 
     @commands.command(name="bankrestore")
@@ -47,14 +50,20 @@ class BankBackup(commands.Cog):
         or 'set' their balance to what is saved
         """
         if await bank.is_global():
-            return await ctx.send("Cannot restore backup because bank is set to global.")
+            return await ctx.send(
+                "Cannot restore backup because bank is set to global."
+            )
         if not ctx.message.attachments:
-            return await ctx.send("Attach your backup file to the message when using this command.")
-        if 'a' not in set_or_add.lower() and 's' not in set_or_add.lower():
-            return await ctx.send("Specify whether you want to `add` or `set` balances from the backup.\n"
-                                  "Add: adds the backed up balance to the user's current balance\n"
-                                  "Set: sets the backup balance as the user's new balance.\n"
-                                  "You just type in 'set' or 'add' for this argument.")
+            return await ctx.send(
+                "Attach your backup file to the message when using this command."
+            )
+        if "a" not in set_or_add.lower() and "s" not in set_or_add.lower():
+            return await ctx.send(
+                "Specify whether you want to `add` or `set` balances from the backup.\n"
+                "Add: adds the backed up balance to the user's current balance\n"
+                "Set: sets the backup balance as the user's new balance.\n"
+                "You just type in 'set' or 'add' for this argument."
+            )
         attachment_url = ctx.message.attachments[0].url
         try:
             async with aiohttp.ClientSession() as session:
@@ -67,14 +76,14 @@ class BankBackup(commands.Cog):
             if uid not in user_ids:
                 continue
             member = ctx.guild.get_member(int(uid))
-            if 'a' in set_or_add.lower():
+            if "a" in set_or_add.lower():
                 try:
                     await bank.deposit_credits(member, balance)
                 except BalanceTooHigh as e:
                     await bank.set_balance(member, e.max_balance)
             else:
                 await bank.set_balance(member, balance)
-        if 'a' in set_or_add.lower():
+        if "a" in set_or_add.lower():
             await ctx.send("Saved balances have been added to user's current balance!")
         else:
             await ctx.send("Balances have been restored from the backup!")

@@ -16,6 +16,7 @@ class NoBot(commands.Cog):
     Add a bot to the watchlist and add phrases to look for and if that phrase is found in the other bot's
     message, this cog will delete them.
     """
+
     __author__ = "Vertyco"
     __version__ = "1.0.6"
 
@@ -29,10 +30,7 @@ class NoBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 711711, force_registration=True)
-        default_guild = {
-            "bots": [],
-            "content": []
-        }
+        default_guild = {"bots": [], "content": []}
         self.config.register_guild(**default_guild)
 
         self.cache = {}
@@ -100,8 +98,7 @@ class NoBot(commands.Cog):
         for filt in config["content"]:
             filters += f"{filt}\n"
         embed = discord.Embed(
-            description=f"**NoBot Setting Overview**",
-            color=discord.Color.random()
+            description=f"**NoBot Setting Overview**", color=discord.Color.random()
         )
         if botlist:
             embed.add_field(name="Bots", value=botlist, inline=False)
@@ -120,8 +117,9 @@ class NoBot(commands.Cog):
                 count += 1
             if not strlist:
                 return await ctx.send("There are no filters set")
-            msg = await ctx.send(f"Type the number of the filter you want to delete\n"
-                                 f"{strlist}")
+            msg = await ctx.send(
+                f"Type the number of the filter you want to delete\n" f"{strlist}"
+            )
 
             def check(message: discord.Message):
                 return message.author == ctx.author and message.channel == ctx.channel
@@ -129,14 +127,22 @@ class NoBot(commands.Cog):
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=check)
             except asyncio.TimeoutError:
-                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
+                return await msg.edit(
+                    embed=discord.Embed(description="You took too long :yawning_face:")
+                )
 
             if reply.content.lower() == "cancel":
-                return await msg.edit(embed=discord.Embed(description="Selection canceled."))
+                return await msg.edit(
+                    embed=discord.Embed(description="Selection canceled.")
+                )
             elif not reply.content.isdigit():
-                return await msg.edit(embed=discord.Embed(description="That's not a number"))
+                return await msg.edit(
+                    embed=discord.Embed(description="That's not a number")
+                )
             elif int(reply.content) > len(content):
-                return await msg.edit(embed=discord.Embed(description="That's not a valid number"))
+                return await msg.edit(
+                    embed=discord.Embed(description="That's not a valid number")
+                )
             else:
                 i = int(reply.content) - 1
                 content.pop(i)
@@ -172,7 +178,9 @@ class NoBot(commands.Cog):
         # Get perms
         allowed = message.channel.permissions_for(message.guild.me).manage_messages
         if not allowed:
-            log.warning(f"Insufficient permissions to delete message: {message.content}")
+            log.warning(
+                f"Insufficient permissions to delete message: {message.content}"
+            )
             return
         asyncio.create_task(self.handle_message(config, message))
 
