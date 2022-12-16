@@ -3,7 +3,12 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import googletrans
-from aiohttp import ClientSession, ClientTimeout, ClientResponseError, ClientConnectorError
+from aiohttp import (
+    ClientSession,
+    ClientTimeout,
+    ClientResponseError,
+    ClientConnectorError,
+)
 from redbot.core.bot import Red
 
 
@@ -33,13 +38,9 @@ class TranslateManager:
         try:
             res = await self.bot.loop.run_in_executor(
                 self.threadpool,
-                functools.partial(translator.translate, text, target_lang)
+                functools.partial(translator.translate, text, target_lang),
             )
-            result = Result(
-                text=res.text,
-                src=res.src,
-                dest=res.dest
-            )
+            result = Result(text=res.text, src=res.src, dest=res.dest)
             return result
         except AttributeError:
             return None
@@ -47,10 +48,7 @@ class TranslateManager:
     @staticmethod
     async def flowery(text: str, target_lang: str) -> Optional[Result]:
         endpoint = "https://api.flowery.pw/v1/translation/translate"
-        params = {
-            "text": text,
-            "result_language_code": target_lang
-        }
+        params = {"text": text, "result_language_code": target_lang}
         timeout = ClientTimeout(total=6)
         try:
             async with ClientSession(timeout=timeout) as session:
@@ -60,7 +58,7 @@ class TranslateManager:
                         result = Result(
                             text=data["text"],
                             src=data["language"]["original"],
-                            dest=data["language"]["result"]
+                            dest=data["language"]["result"],
                         )
                         return result
         except (ClientResponseError, ClientConnectorError):
