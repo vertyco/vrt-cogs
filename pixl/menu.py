@@ -14,6 +14,7 @@ color_map = {
     "\N{CROSS MARK}": ButtonStyle.grey,
     "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}": ButtonStyle.red,
     "\N{WASTEBASKET}\N{VARIATION SELECTOR-16}": ButtonStyle.grey,
+    "\N{MEMO}": ButtonStyle.grey,
 }
 
 
