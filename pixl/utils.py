@@ -8,9 +8,9 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from PIL import Image
 from aiocache import cached
 from aiohttp import ClientSession, ClientTimeout
+from PIL import Image
 from rapidfuzz import fuzz
 from redbot.core import commands
 

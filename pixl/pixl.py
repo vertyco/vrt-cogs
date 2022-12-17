@@ -734,6 +734,7 @@ class Pixl(commands.Cog):
             "global" in title.lower() and ctx.author.id in self.bot.owner_ids
         ) or "guild" in title.lower():
             con["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.delete_image
+            con["\N{MEMO}"] = self.edit_image
         await menu(ctx, embeds, con, message=message, page=page)
 
     async def delete_image(self, instance: MenuView, interaction: Interaction):
@@ -765,6 +766,70 @@ class Pixl(commands.Cog):
         page %= len(instance.pages)
         await self.image_menu(
             instance.ctx, images, title, message=instance.message, page=page
+        )
+
+    async def edit_image(self, instance: MenuView, interaction: Interaction):
+        embed: discord.Embed = instance.pages[instance.page]
+        title = embed.title
+        conf = (
+            self.config
+            if "global" in title.lower()
+            else self.config.guild(instance.ctx.guild)
+        )
+        await instance.respond(
+            interaction,
+            "Type the new answers for this image below, separated by commas",
+        )
+
+        def check(message: discord.Message):
+            return (
+                message.author == instance.ctx.author
+                and message.channel == instance.ctx.channel
+            )
+
+        fs = [asyncio.ensure_future(instance.ctx.bot.wait_for("message", check=check))]
+        done, pending = await asyncio.wait(fs, timeout=120)
+        [task.cancel() for task in pending]
+        reply = done.pop().result() if len(done) > 0 else None
+        if not reply:
+            await instance.ctx.send("Image answer editing cancelled")
+            return await menu(
+                instance.ctx,
+                instance.pages,
+                instance.controls,
+                message=instance.message,
+                page=instance.page,
+            )
+        elif reply.content == "cancel":
+            await instance.ctx.send("Image answer editing cancelled")
+            return await menu(
+                instance.ctx,
+                instance.pages,
+                instance.controls,
+                message=instance.message,
+                page=instance.page,
+            )
+        answers = [
+            i.strip().lower() for i in reply.content.split(",") if i.strip().lower()
+        ]
+        if not answers:
+            await instance.ctx.send("No answers found, image answer editing cancelled")
+            return await menu(
+                instance.ctx,
+                instance.pages,
+                instance.controls,
+                message=instance.message,
+                page=instance.page,
+            )
+        async with conf.images() as images:
+            images[instance.page]["answers"] = answers
+
+        await instance.ctx.send(
+            "Answers have been modified for this image!", delete_after=6
+        )
+        images = await conf.images()
+        await self.image_menu(
+            instance.ctx, images, title, message=instance.message, page=instance.page
         )
 
     @staticmethod
