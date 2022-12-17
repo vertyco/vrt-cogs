@@ -96,7 +96,8 @@ async def select_event(
         description=f"There {grammar} currently {len(events.keys())} {grammar2} to choose from.",
         color=ctx.author.color,
     )
-    for index, info in enumerate(events.values()):
+    e = [i for i in events.values() if not (skip_completed and i["completed"])]
+    for index, info in enumerate(e):
         if skip_completed and info["completed"]:
             continue
         status = "**COMPLETED**" if info["completed"] else "In Progress"
