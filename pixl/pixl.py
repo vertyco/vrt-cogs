@@ -40,7 +40,7 @@ class Pixl(commands.Cog):
     """Guess pictures for points"""
 
     __author__ = "Vertyco"
-    __version__ = "0.2.17"
+    __version__ = "0.2.18"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -748,9 +748,6 @@ class Pixl(commands.Cog):
         async with conf.images() as images:
             del images[instance.page]
 
-        await instance.respond(
-            interaction, f"Image with url `{embed.image.url}` has been deleted"
-        )
         images = await conf.images()
         if not images:
             await instance.respond(
