@@ -4,8 +4,8 @@ from typing import Optional
 
 import discord
 import googletrans
-from aiocache import cached, SimpleMemoryCache
-from redbot.core import commands, Config
+from aiocache import SimpleMemoryCache, cached
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import pagify
 

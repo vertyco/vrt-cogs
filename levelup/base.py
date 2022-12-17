@@ -8,38 +8,39 @@ import random
 import traceback
 from io import BytesIO
 from time import perf_counter
-from typing import Union, Optional
+from typing import Optional, Union
 
 import discord
 import tabulate
 import validators
-from aiocache import cached, SimpleMemoryCache
+from aiocache import SimpleMemoryCache, cached
 from discord.utils import escape_markdown
-from redbot.core import commands, bank
+from redbot.core import bank, commands
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number, humanize_list
+from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
 
 from levelup.utils.formatter import (
-    time_formatter,
-    hex_to_rgb,
-    get_level,
-    get_xp,
-    get_next_reset,
     get_attachments,
-    get_content_from_url,
-    get_user_position,
     get_bar,
+    get_content_from_url,
+    get_level,
+    get_next_reset,
+    get_user_position,
+    get_xp,
+    hex_to_rgb,
+    time_formatter,
 )
+
 from .generator import Generator
 
 if discord.__version__ > "1.7.3":
-    from .dpymenu import menu, DEFAULT_CONTROLS
+    from .dpymenu import DEFAULT_CONTROLS, menu
 
     DPY2 = True
 else:
     # from .dislashmenu import menu, DEFAULT_CONTROLS
-    from .menus import menu, DEFAULT_CONTROLS
+    from .menus import DEFAULT_CONTROLS, menu
 
     DPY2 = False
 

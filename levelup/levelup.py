@@ -15,22 +15,23 @@ import matplotlib
 import matplotlib.pyplot as plt
 import tabulate
 from discord.ext import tasks
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, humanize_number, humanize_list
+from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
 from redbot.core.utils.predicates import MessagePredicate
 
 from levelup.utils.formatter import (
-    time_formatter,
-    hex_to_rgb,
-    get_level,
-    get_xp,
-    time_to_level,
-    get_next_reset,
     get_attachments,
     get_content_from_url,
+    get_level,
+    get_next_reset,
+    get_xp,
+    hex_to_rgb,
+    time_formatter,
+    time_to_level,
 )
+
 from .base import UserCommands
 
 matplotlib.use("agg")
@@ -1436,6 +1437,7 @@ class LevelUp(UserCommands, commands.Cog):
         # If leveler is installed then libs should import fine
         try:
             import subprocess
+
             from motor.motor_asyncio import AsyncIOMotorClient
             from pymongo import errors as mongoerrors
         except Exception as e:

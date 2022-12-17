@@ -7,9 +7,9 @@ from io import BytesIO
 from time import monotonic
 
 import discord
-from pytube import Playlist, YouTube, Channel
+from pytube import Channel, Playlist, YouTube
 from pytube.exceptions import VideoUnavailable
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n

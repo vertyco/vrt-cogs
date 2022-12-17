@@ -6,8 +6,8 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
-from .menu import menu, SMALL_CONTROLS
-from .views import wait_reply, confirm, TestButton
+from .menu import SMALL_CONTROLS, menu
+from .views import TestButton, confirm, wait_reply
 
 _ = Translator("TicketsCommands", __file__)
 

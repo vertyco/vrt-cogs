@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Union
 
 import discord
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.i18n import Translator
 
 _ = Translator("SupportViews", __file__)

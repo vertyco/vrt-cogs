@@ -4,7 +4,7 @@ import random
 from datetime import datetime
 
 import discord
-from redbot.core import commands, checks, Config, bank
+from redbot.core import Config, bank, checks, commands
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 

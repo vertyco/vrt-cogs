@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Union
 
 import discord
-from aiocache import cached, SimpleMemoryCache
+from aiocache import SimpleMemoryCache, cached
 from aiohttp import ClientSession
 from redbot.core.i18n import Translator
 
