@@ -64,7 +64,7 @@ class LevelUp(UserCommands, commands.Cog):
     """Local Discord Leveling System"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.17.47"
+    __version__ = "2.17.48"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1566,7 +1566,7 @@ class LevelUp(UserCommands, commands.Cog):
         txt = (
             _("Deleted ")
             + str(cleaned)
-            + _("user IDs from the config that are no longer in the server.")
+            + _(" user IDs from the config that are no longer in the server.")
         )
         await ctx.send(txt)
         await self.save_cache(ctx.guild)
