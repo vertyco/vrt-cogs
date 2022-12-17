@@ -42,7 +42,7 @@ class Events(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.2"
+    __version__ = "0.1.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -348,7 +348,7 @@ class Events(commands.Cog):
             if uid in events[event_name]["submissions"]:
                 events[event_name]["submissions"][uid].extend(to_save)
             else:
-                events[event_name]["submissions"][uid] = to_save
+                events[event_name]["submissions"][uid] = [to_save]
 
     @commands.group(name="events")
     @commands.guild_only()
@@ -736,6 +736,44 @@ class Events(commands.Cog):
             message = await chan.send(txt)
             async with self.config.guild(ctx.guild).events() as events:
                 events[event["event_name"]]["messages"].append(message.id)
+
+    @events_group.command(name="remove")
+    async def remove_user(self, ctx: commands.Context, *, user: discord.Member):
+        """Remove a user from an active event"""
+        existing = await self.config.guild(ctx.guild).events()
+        if not existing:
+            return await ctx.send("There are no events to remove users from")
+        res = await select_event(ctx, existing, skip_completed=True)
+        if not res:
+            return
+        event: dict = res["event"]
+        msg: discord.Message = res["msg"]
+        channel: discord.TextChannel = ctx.guild.get_channel(event["channel_id"])
+        subs = event["submissions"]
+        event_name = event["event_name"]
+
+        uid = str(user.id)
+        if uid not in subs:
+            return await msg.edit(
+                content="This user doesn't have any submissions for that event",
+                embed=None,
+            )
+
+        deleted = 0
+        async with ctx.typing():
+            async with self.config.guild(ctx.guild).events() as events:
+                for mid in events[event_name]["submissions"][uid].copy():
+                    try:
+                        message = await channel.fetch_message(mid)
+                    except discord.NotFound:
+                        continue
+                    await message.delete()
+                    deleted += 1
+                del events[event_name]["submissions"][uid]
+
+        await msg.edit(
+            content=f"Removed {deleted} entries by {user.name} from the {event_name} event"
+        )
 
     @events_group.command(name="delete")
     async def delete_event(self, ctx: commands.Context):
@@ -1161,6 +1199,7 @@ class Events(commands.Cog):
         # If emoji was changed after event was created
         if event["emoji"] and event["emoji"] != emoji_id:
             emoji = self.bot.get_emoji(event["emoji"])
+
         channel: discord.TextChannel = guild.get_channel(event["channel_id"])
         subs = event["submissions"]
         rewards = event["rewards"]
@@ -1184,8 +1223,7 @@ class Events(commands.Cog):
                 for reaction in message.reactions:
                     if reaction.emoji != emoji:
                         continue
-                    voters = await reaction.users().flatten()
-                    for voter in voters:
+                    async for voter in reaction.users():
                         # Ignore votes from bots, the submitter, and users not in the guild
                         dont_want = [
                             voter.bot,
