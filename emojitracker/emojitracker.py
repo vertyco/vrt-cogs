@@ -3,8 +3,8 @@ import sys
 
 import discord
 import tabulate
-from redbot.core import commands, Config
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core import Config, commands
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 
 class EmojiTracker(commands.Cog):

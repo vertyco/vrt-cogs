@@ -4,31 +4,31 @@ import json
 import aiohttp
 import discord
 import xmltojson
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
 
 from .formatter import (
+    friend_embeds,
+    game_embeds,
+    gameclip_embeds,
+    gwg_embeds,
+    mostplayed,
+    ms_status,
     profile,
     profile_embed,
     screenshot_embeds,
-    game_embeds,
-    friend_embeds,
-    gameclip_embeds,
-    ms_status,
-    gwg_embeds,
-    mostplayed,
     stats_api_format,
 )
 
 if discord.__version__ > "1.7.3":
-    from .dpymenu import menu, DEFAULT_CONTROLS
+    from .dpymenu import DEFAULT_CONTROLS, menu
 
     DPY2 = True
 else:
-    from .dislashmenu import menu, DEFAULT_CONTROLS
+    from .dislashmenu import DEFAULT_CONTROLS, menu
 
     DPY2 = False
 

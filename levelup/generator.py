@@ -2,7 +2,7 @@ import logging
 import os
 import random
 from io import BytesIO
-from math import sqrt, ceil
+from math import ceil, sqrt
 from typing import Union
 
 import colorgram

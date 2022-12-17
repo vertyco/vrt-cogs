@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Dict, Final, List, NamedTuple, TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Dict, Final, List, NamedTuple, Tuple
 
 import PIL
-from PIL import ImageFont
 from emoji import unicode_codes
+from PIL import ImageFont
 
 if TYPE_CHECKING:
     from .core import FontT

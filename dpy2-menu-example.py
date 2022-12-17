@@ -3,7 +3,7 @@ This is a red-like recursive menu for dpy2
 """
 import asyncio
 import functools
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 import discord
 from discord import ButtonStyle, Interaction

@@ -7,25 +7,25 @@ from typing import Optional
 
 import discord
 from discord.ext import tasks
-from redbot.core import commands, Config, bank
+from redbot.core import Config, bank, commands
 from redbot.core.commands import parse_timedelta
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import (
-    humanize_list,
-    humanize_timedelta,
-    humanize_number,
     box,
+    humanize_list,
+    humanize_number,
+    humanize_timedelta,
 )
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from .utils import (
     GetReply,
-    get_size,
+    get_attachments,
     get_place,
+    get_size,
     guild_icon,
     profile_icon,
     select_event,
-    get_attachments,
 )
 
 log = logging.getLogger("red.vrt.events")

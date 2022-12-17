@@ -2,7 +2,7 @@ import asyncio
 from typing import Union
 
 import discord
-from dislash import ButtonStyle, Button, ActionRow
+from dislash import ActionRow, Button, ButtonStyle
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box
 

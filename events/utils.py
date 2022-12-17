@@ -1,10 +1,10 @@
 import asyncio
 import contextlib
 import logging
-from typing import Union, Optional
+from typing import Optional, Union
 
 import discord
-from aiocache import cached, SimpleMemoryCache
+from aiocache import SimpleMemoryCache, cached
 from aiohttp import ClientSession
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import humanize_list

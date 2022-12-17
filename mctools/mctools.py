@@ -1,7 +1,6 @@
 import discord
-
 from mcstats import mcstats
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 
 
 class MCTools(commands.Cog):

@@ -3,7 +3,7 @@ from io import StringIO
 
 import aiohttp
 import discord
-from redbot.core import commands, bank
+from redbot.core import bank, commands
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box
 

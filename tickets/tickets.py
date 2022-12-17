@@ -4,7 +4,7 @@ import logging
 
 import discord
 from discord.ext import tasks
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
 from .base import BaseCommands

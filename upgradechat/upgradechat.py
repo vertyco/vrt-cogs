@@ -1,5 +1,5 @@
 import discord
-from redbot.core import commands, Config, bank
+from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box

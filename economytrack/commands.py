@@ -5,7 +5,7 @@ import discord
 import pandas as pd
 import pytz
 from discord.ext.commands.cooldowns import BucketType
-from redbot.core import commands, bank
+from redbot.core import bank, commands
 from redbot.core.commands import parse_timedelta
 from redbot.core.utils.chat_formatting import (
     box,
@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import (
     humanize_timedelta,
     pagify,
 )
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from economytrack.abc import MixinMeta
 

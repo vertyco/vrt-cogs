@@ -5,7 +5,7 @@ from time import monotonic
 
 import discord
 from discord.ext import tasks
-from redbot.core import commands, Config, bank
+from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
 

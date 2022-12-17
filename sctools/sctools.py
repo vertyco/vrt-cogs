@@ -2,10 +2,10 @@ import asyncio
 
 import aiohttp
 import discord
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 
 from .formatter import ships
-from .menus import menu, DEFAULT_CONTROLS
+from .menus import DEFAULT_CONTROLS, menu
 
 LOADING = "https://i.gifer.com/4eta.gif"
 

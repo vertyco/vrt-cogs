@@ -1,7 +1,7 @@
 import logging
 
 import discord
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box
 
 log = logging.getLogger("red.vrt.guildlog")

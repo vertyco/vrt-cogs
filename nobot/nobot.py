@@ -3,7 +3,7 @@ import logging
 from typing import Union
 
 import discord
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 
 log = logging.getLogger("red.vrt.nobot")
 

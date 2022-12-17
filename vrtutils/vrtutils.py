@@ -20,22 +20,22 @@ from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import (
     box,
-    humanize_timedelta,
     humanize_number,
+    humanize_timedelta,
     pagify,
 )
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from .diskspeed import get_disk_speed
 
 log = logging.getLogger("red.vrt.vrtutils")
 dpy = discord.__version__
 if dpy > "1.7.4":
-    from .dpymenu import menu, DEFAULT_CONTROLS, confirm
+    from .dpymenu import DEFAULT_CONTROLS, confirm, menu
 
     DPY2 = True
 else:
-    from .dislashmenu import menu, DEFAULT_CONTROLS, confirm
+    from .dislashmenu import DEFAULT_CONTROLS, confirm, menu
 
     DPY2 = False
 
