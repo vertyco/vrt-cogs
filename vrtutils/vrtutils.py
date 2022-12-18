@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.0.7"
+    __version__ = "1.1.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -765,23 +765,62 @@ class VrtUtils(commands.Cog):
         )
 
     @commands.command()
-    @commands.guildowner()
     @commands.guild_only()
     async def oldestchannels(self, ctx, amount: int = 10):
         """See which channel is the oldest"""
-        channels = [
-            c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)
-        ]
-        c_sort = sorted(channels, key=lambda x: x.created_at)
-        txt = "\n".join(
-            [
-                f"{i + 1}. {c.mention} "
-                f"created <t:{int(c.created_at.timestamp())}:f> (<t:{int(c.created_at.timestamp())}:R>)"
-                for i, c in enumerate(c_sort[:amount])
+        async with ctx.typing():
+            channels = [
+                c
+                for c in ctx.guild.channels
+                if not isinstance(c, discord.CategoryChannel)
             ]
-        )
-        for p in pagify(txt, page_length=2000):
-            await ctx.send(p)
+            c_sort = sorted(channels, key=lambda x: x.created_at)
+            txt = "\n".join(
+                [
+                    f"{i + 1}. {c.mention} "
+                    f"created <t:{int(c.created_at.timestamp())}:f> (<t:{int(c.created_at.timestamp())}:R>)"
+                    for i, c in enumerate(c_sort[:amount])
+                ]
+            )
+            for p in pagify(txt, page_length=4000):
+                em = discord.Embed(description=p, color=ctx.author.color)
+                await ctx.send(embed=em)
+
+    @commands.command(aliases=["oldestusers"])
+    @commands.guild_only()
+    async def oldestmembers(self, ctx, amount: int = 10):
+        """See which users have been in the server the longest"""
+        async with ctx.typing():
+            members = [m for m in ctx.guild.members]
+            m_sort = sorted(members, key=lambda x: x.joined_at)
+            txt = "\n".join(
+                [
+                    f"{i + 1}. {m.mention} "
+                    f"joined <t:{int(m.joined_at.timestamp())}:f> (<t:{int(m.joined_at.timestamp())}:R>)"
+                    for i, m in enumerate(m_sort[:amount])
+                ]
+            )
+            for p in pagify(txt, page_length=4000):
+                em = discord.Embed(description=p, color=ctx.author.color)
+                await ctx.send(embed=em)
+
+    @commands.command()
+    @commands.guild_only()
+    async def oldestaccounts(self, ctx, amount: int = 10):
+        """See which users have the oldest Discord accounts"""
+        async with ctx.typing():
+            members = [m for m in ctx.guild.members]
+            m_sort = sorted(members, key=lambda x: x.created_at)
+            txt = "\n".join(
+                [
+                    f"{i + 1}. {m.mention} "
+                    f"created <t:{int(m.created_at.timestamp())}:f> (<t:{int(m.created_at.timestamp())}:R>)"
+                    for i, m in enumerate(m_sort[:amount])
+                ]
+            )
+            for p in pagify(txt, page_length=4000):
+                em = discord.Embed(description=p, color=ctx.author.color)
+                await ctx.send(embed=em)
 
     @commands.command()
     @commands.guildowner()
