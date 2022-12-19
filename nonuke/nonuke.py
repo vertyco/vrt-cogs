@@ -23,7 +23,7 @@ class NoNuke(Listen, commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.1"
+    __version__ = "0.2.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -220,16 +220,17 @@ class NoNuke(Listen, commands.Cog):
             f"`Overload:   `{conf['overload']}\n"
             f"`DM:         `{conf['dm']}\n"
             f"`Action:     `{conf['action']}\n"
+            f"`IgnoreBots: `{conf['ignore_bots']}\n"
             f"`LogChannel: `{lchan}",
         )
         await ctx.send(embed=em)
         perms = {
-            ctx.guild.me.guild_permissions.manage_roles: "manage_roles",
-            ctx.guild.me.guild_permissions.ban_members: "ban_members",
-            ctx.guild.me.guild_permissions.kick_members: "kick_members",
-            ctx.guild.me.guild_permissions.view_audit_log: "view_audit_log",
+            "manage_roles": ctx.guild.me.guild_permissions.manage_roles,
+            "ban_members": ctx.guild.me.guild_permissions.ban_members,
+            "kick_members": ctx.guild.me.guild_permissions.kick_members,
+            "view_audit_log": ctx.guild.me.guild_permissions.view_audit_log,
         }
-        missing = [v for k, v in perms.items() if k]
+        missing = [k for k, v in perms.items() if not v]
         if missing:
             await ctx.send(
                 f"Just a heads up, I do not have the following permissions\n{box(humanize_list(missing))}"
