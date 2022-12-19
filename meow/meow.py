@@ -7,7 +7,7 @@ class Meow(commands.Cog):
     """
     Meow!
 
-    My girlfriend had a dream about this cog so I had to make it ¯\_(ツ)_/¯
+    My girlfriend had a dream about this cog, so I had to make it ¯\_(ツ)_/¯
     """
 
     __author__ = "Vertyco"

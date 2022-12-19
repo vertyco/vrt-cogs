@@ -1436,8 +1436,6 @@ class LevelUp(UserCommands, commands.Cog):
 
         # If leveler is installed then libs should import fine
         try:
-            import subprocess
-
             from motor.motor_asyncio import AsyncIOMotorClient
             from pymongo import errors as mongoerrors
         except Exception as e:
@@ -1985,8 +1983,8 @@ class LevelUp(UserCommands, commands.Cog):
         data = tabulate.tabulate(table, headers, tablefmt="presto")
         with plt.style.context("dark_background"):
             plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
-            plt.xlabel(f"Level", fontsize=10)
-            plt.ylabel(f"Experience Required", fontsize=10)
+            plt.xlabel("Level", fontsize=10)
+            plt.ylabel("Experience Required", fontsize=10)
             plt.title("XP Curve")
             plt.grid(axis="y")
             plt.grid(axis="x")
@@ -2587,7 +2585,7 @@ class LevelUp(UserCommands, commands.Cog):
         await self.save_cache(ctx.guild)
 
     @weekly_set.command(name="autoremove")
-    async def toggle_autoremove(self, ctx: commands.Context):
+    async def weekly_autoremove(self, ctx: commands.Context):
         """One role holder at a time
         Toggle whether the winner role is removed from the previous holder when a new winner is selected"""
         toggle = self.data[ctx.guild.id]["weekly"]["remove"]

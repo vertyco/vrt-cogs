@@ -24,7 +24,6 @@ from redbot.core.utils.chat_formatting import (
     humanize_timedelta,
     pagify,
 )
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from .diskspeed import get_disk_speed
 
@@ -391,7 +390,7 @@ class VrtUtils(commands.Cog):
 
             embed = discord.Embed(
                 title=f"Stats for {self.bot.user.name}",
-                description=f"Below are various stats about the bot and the system it runs on.",
+                description="Below are various stats about the bot and the system it runs on.",
                 color=await ctx.embed_color(),
             )
 
@@ -442,7 +441,7 @@ class VrtUtils(commands.Cog):
                 f"{diskbar}\n"
             )
             embed.add_field(
-                name=f"\N{FLOPPY DISK} MEM",
+                name="\N{FLOPPY DISK} MEM",
                 value=box(memtext, lang="python"),
                 inline=False,
             )
@@ -528,7 +527,7 @@ class VrtUtils(commands.Cog):
         for member in ctx.guild.members:
             members[str(member.id)] = member.name
         iofile = StringIO(json.dumps(members))
-        filename = f"users.json"
+        filename = "users.json"
         file = discord.File(iofile, filename=filename)
         await ctx.send(
             "Here are all usernames and their ID's for this guild", file=file

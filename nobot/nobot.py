@@ -98,7 +98,7 @@ class NoBot(commands.Cog):
         for filt in config["content"]:
             filters += f"{filt}\n"
         embed = discord.Embed(
-            description=f"**NoBot Setting Overview**", color=discord.Color.random()
+            description="**NoBot Setting Overview**", color=discord.Color.random()
         )
         if botlist:
             embed.add_field(name="Bots", value=botlist, inline=False)

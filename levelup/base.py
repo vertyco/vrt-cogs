@@ -936,7 +936,7 @@ class UserCommands(commands.Cog):
                 rtime = round((perf_counter() - start) * 1000)
                 if not file:
                     return await ctx.send(
-                        f"Failed to generate profile image :( try again in a bit"
+                        "Failed to generate profile image :( try again in a bit"
                     )
                 start2 = perf_counter()
                 try:

@@ -1,0 +1,5 @@
+[flake8]
+max-line-length = 88
+# F405 and F403?
+ignore = E501, W503, F403, E203, W605
+exclude = .git, __pycache__, .history, .idea

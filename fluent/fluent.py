@@ -95,7 +95,7 @@ class Fluent(commands.Cog):
                 color = discord.Color.green()
                 return await ctx.send(
                     embed=discord.Embed(
-                        description=f"✅ Fluent channel has been set!", color=color
+                        description="✅ Fluent channel has been set!", color=color
                     )
                 )
 
@@ -110,7 +110,7 @@ class Fluent(commands.Cog):
                 del channels[cid]
                 color = discord.Color.green()
                 embed = discord.Embed(
-                    description=f"✅ Fluent channel has been deleted!", color=color
+                    description="✅ Fluent channel has been deleted!", color=color
                 )
                 await ctx.send(embed=embed)
             else:

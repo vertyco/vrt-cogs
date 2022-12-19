@@ -42,7 +42,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.7.14"
+    __version__ = "3.8.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -69,6 +69,7 @@ class XTools(commands.Cog):
             "clientid": None,
             "clientsecret": None,
             "users": {},
+            "statuschannel": 0,
         }
         self.config.register_global(**default_global)
 
@@ -115,13 +116,13 @@ class XTools(commands.Cog):
                 await self.ask_auth(ctx, ctx.author, auth_url)
                 return None
             else:
-                await ctx.send(f"Tokens have not been authorized by bot owner yet!")
+                await ctx.send("Tokens have not been authorized by bot owner yet!")
                 return None
         try:
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
             if "validation error" in str(e):
-                await ctx.send(f"Tokens have not been authorized by bot owner yet!")
+                await ctx.send("Tokens have not been authorized by bot owner yet!")
                 return None
         try:
             await auth_mgr.refresh_tokens()
@@ -289,8 +290,8 @@ class XTools(commands.Cog):
         await self.config.clientid.set(client_id)
         await self.config.clientsecret.set(client_secret)
         await ctx.send(
-            f"Tokens have been set! "
-            f"Try any command and the bot will DM you the link with instructions to authorize your tokens"
+            "Tokens have been set! "
+            "Try any command and the bot will DM you the link with instructions to authorize your tokens"
         )
         try:
             await ctx.message.delete()
@@ -307,8 +308,18 @@ class XTools(commands.Cog):
         await self.config.clientsecret.set(None)
         await ctx.send("Tokens have been wiped!")
 
+    # @commands.command(name="setchannel")
+    # @commands.admin()
+    # async def set_channel(self, ctx, channel: discord.TextChannel):
+    #     """
+    #     Set the channel for Microsoft status alerts
+    #
+    #     Any time microsoft services go down an alert will go out in the channel and be updated
+    #     """
+    #     pass
+
     @commands.command(name="setgt")
-    async def set_gamertag(self, ctx: commands, *, gamertag):
+    async def set_gamertag(self, ctx, *, gamertag):
         """Set your Gamertag to use commands without entering it"""
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
@@ -796,7 +807,6 @@ class XTools(commands.Cog):
                     )
                     return await msg.edit(embed=embed)
                 else:
-                    log.warning(f"Error getting xclip info")
                     embed = discord.Embed(
                         color=discord.Color.red(),
                         description=f"Unknown error while fetching xclip data: {e}",
@@ -822,8 +832,8 @@ class XTools(commands.Cog):
     async def get_gameswithgold(self, ctx):
         """View this month's free games with Gold"""
         url = (
-            f"https://reco-public.rec.mp.microsoft.com/channels/Reco/V8.0/Lists/"
-            f"Collection/GamesWithGold?ItemTypes=Game&Market=US&deviceFamily=Windows.Xbox"
+            "https://reco-public.rec.mp.microsoft.com/channels/Reco/V8.0/Lists/"
+            "Collection/GamesWithGold?ItemTypes=Game&Market=US&deviceFamily=Windows.Xbox"
         )
         async with self.session.post(url=url) as res:
             async with ctx.typing():
