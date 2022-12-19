@@ -1,9 +1,15 @@
 import asyncio
+import contextlib
 import json
+import logging
+import os
+import traceback
+from typing import Optional
 
 import aiohttp
 import discord
 import xmltojson
+from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box
 from xbox.webapi.api.client import XboxLiveClient
@@ -34,6 +40,7 @@ else:
 
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
+log = logging.getLogger("red.vrt.xtools")
 
 
 class XTools(commands.Cog):
@@ -69,14 +76,18 @@ class XTools(commands.Cog):
             "clientid": None,
             "clientsecret": None,
             "users": {},
-            "statuschannel": 0,
         }
+        default_guild = {"statuschannel": 0}
         self.config.register_global(**default_global)
+        self.config.register_guild(**default_guild)
 
         # Caching friend list for searching
         self.cache = {}
+        self.alert = None
+        self.status.start()
 
     def cog_unload(self):
+        self.status.cancel()
         self.bot.loop.create_task(self.session.close())
 
     # Get Microsoft services status
@@ -308,15 +319,23 @@ class XTools(commands.Cog):
         await self.config.clientsecret.set(None)
         await ctx.send("Tokens have been wiped!")
 
-    # @commands.command(name="setchannel")
-    # @commands.admin()
-    # async def set_channel(self, ctx, channel: discord.TextChannel):
-    #     """
-    #     Set the channel for Microsoft status alerts
-    #
-    #     Any time microsoft services go down an alert will go out in the channel and be updated
-    #     """
-    #     pass
+    @commands.command(name="xstatuschannel")
+    @commands.admin()
+    async def set_channel(self, ctx, channel: Optional[discord.TextChannel]):
+        """
+        Set the channel for Microsoft status alerts
+
+        Any time microsoft services go down an alert will go out in the channel and be updated
+        """
+        async with self.config.guild(ctx.guild).all() as conf:
+            if not channel and not conf["statuschannel"]:
+                await ctx.send_help()
+            elif conf["statuschannel"] and not channel:
+                conf["statuschannel"] = 0
+                await ctx.send("Status channel reset")
+            else:
+                conf["statuschannel"] = channel.id
+                await ctx.send(f"Status channel set to {channel.mention}")
 
     @commands.command(name="setgt")
     async def set_gamertag(self, ctx, *, gamertag):
@@ -824,6 +843,9 @@ class XTools(commands.Cog):
     async def get_microsoft_status(self, ctx):
         """Check Microsoft Services Status"""
         data = await self.microsoft_services_status()
+        with open("status.json", "w") as f:
+            f.write(json.dumps(data))
+        print(f"Dumped to {os.getcwd()}")
         embeds = ms_status(data)
         for embed in embeds:
             await ctx.send(embed=embed)
@@ -951,3 +973,39 @@ class XTools(commands.Cog):
                 await msg.delete()
 
             return await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    @tasks.loop(seconds=60)
+    async def status(self):
+        try:
+            res = await self.microsoft_services_status()
+        except Exception:
+            log.error(f"Status error: {traceback.format_exc()}")
+            return
+
+        embeds = ms_status(res)
+        data = res["ServiceStatus"]["Status"]["Overall"]
+        key = "".join([e.description for e in embeds]) + data["LastUpdated"]
+
+        if self.alert is None:
+            self.alert = key
+            return
+        elif self.alert == key:
+            return
+
+        # Key doesn't match cached key, send updated status and cache new key
+        for guild in self.bot.guilds:
+            cid = await self.config.guild(guild).statuschannel()
+            if not cid:
+                continue
+            channel = guild.get_channel(cid)
+            if not channel:
+                continue
+            with contextlib.suppress(discord.Forbidden, discord.HTTPException):
+                for e in embeds:
+                    await channel.send(embed=e)
+
+        self.alert = key
+
+    @status.before_loop
+    async def before_status_loop(self):
+        await self.bot.wait_until_red_ready()

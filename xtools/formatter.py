@@ -1,11 +1,13 @@
-import datetime
 import json
 import math
+import re
+from datetime import datetime
+from typing import List
 
 import discord
 import pytz
 import tabulate
-from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 
 
 # Check if an object is None
@@ -53,21 +55,11 @@ def time_formatter(time_in_seconds) -> str:
 
 
 # Microsoft's timestamp end digits are fucked up and random, so we iteratively try fixing them by stripping digits
-def fix_timestamp(time, timezone: str = "UTC"):
-    try:
-        time = datetime.datetime.fromisoformat(time)
-    except ValueError:
-        stripping_that_shit = True
-        strip = -1
-        while stripping_that_shit:
-            try:
-                time = datetime.datetime.fromisoformat(time[:strip])
-                stripping_that_shit = False
-            except ValueError:
-                strip -= 1
-                if strip < -10:
-                    stripping_that_shit = False  # idfk then
-    return time.astimezone(pytz.timezone(timezone))
+def fix_timestamp(time: str, timezone: str = "UTC"):
+    res = re.search(r"(.+)\.\d+(.+)", time)
+    time = f"{res.group(1)}{res.group(2)}"
+    time = datetime.fromisoformat(time).astimezone(pytz.timezone(timezone))
+    return time
 
 
 # Format profile data
@@ -151,21 +143,16 @@ def profile_embed(data):
             device = "Xbox Series X"
         return device
 
-    # Format field depending if user is offline or not
-    current_time = datetime.datetime.now().astimezone(pytz.timezone("UTC"))
+    # Format field depending on if user is offline or not
+    current_time = datetime.now().astimezone(pytz.timezone("UTC"))
     if "lastSeen" in presence:
         game = presence["lastSeen"]["titleName"]
         device = presence["lastSeen"]["deviceType"]
         device = device_check(device)
         time = fix_timestamp(presence["lastSeen"]["timestamp"])
         tdiff = current_time - time
-        h, m = time_format(tdiff.seconds)
-        if tdiff.days >= 1:
-            lseen = f"{tdiff.days}d ago on {device}:\n{game}"
-        elif h < 1:
-            lseen = f"{m}m ago on {device}:\n{game}"
-        else:
-            lseen = f"{h}h {m}m ago on {device}:\n{game}"
+        tstring = humanize_timedelta(seconds=tdiff.total_seconds())
+        lseen = f"{tstring} ago on {device}:\n{game}"
         embed.add_field(name="Last Seen", value=lseen)
     if "devices" in presence:
         device = presence["devices"][0]["type"]
@@ -182,19 +169,8 @@ def profile_embed(data):
         desc = desc[:1].upper() + desc[1:]
         time = fix_timestamp(activity["date"])
         diff = current_time - time
-        h, m = time_format(diff.seconds)
-        if diff.days >= 30:
-            months, _ = divmod(diff.days, 30)
-            if months == 1:
-                event = f"{months} month ago"
-            else:
-                event = f"{months} months ago"
-        elif 30 > diff.days > 1:
-            event = f"{diff.days} days ago"
-        elif h < 1:
-            event = f"{m} minutes ago"
-        else:
-            event = f"{h}h {m}m ago"
+        tstring = humanize_timedelta(seconds=diff.total_seconds())
+        event = f"{tstring} ago"
         activitylist += f"{desc} - {event}\n"
     if activitylist == "":
         activitylist = "`¯\\_(ツ)_/¯`"
@@ -221,7 +197,7 @@ def screenshot_embeds(data, gamertag):
         views = pic["views"]
         ss = pic["screenshot_uris"][0]["uri"]
         ss = ss.split("?")[0]
-        timestamp = (datetime.datetime.fromisoformat(pic["date_taken"])).strftime(
+        timestamp = (datetime.fromisoformat(pic["date_taken"])).strftime(
             "%m/%d/%Y, %H:%M:%S"
         )
         embed = discord.Embed(
@@ -416,7 +392,7 @@ def gameclip_embeds(clip_data, gamertag):
 
 
 # Format microsoft service data
-def ms_status(data: dict) -> list:
+def ms_status(data: dict) -> List[discord.Embed]:
     timezone = "UTC"
     up = "✅"
     limited = "⚠"
@@ -429,7 +405,6 @@ def ms_status(data: dict) -> list:
     last_updated = fix_timestamp(status_data["LastUpdated"], timezone).strftime(
         "%m/%d/%y at %I:%M %p %Z"
     )
-
     # If nothing is impacted then just return embed
     if overall == "None":
         color = discord.Color.green()
