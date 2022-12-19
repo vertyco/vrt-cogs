@@ -280,8 +280,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
         if conf["message"] == "{default}":
             if conf["user_can_close"]:
                 text = (
-                    f"Welcome to your ticket channel\nTo close this, "
-                    f"You or an Administrator may run `[p]sclose`."
+                    "Welcome to your ticket channel\nTo close this, "
+                    "You or an Administrator may run `[p]sclose`."
                 )
                 if embeds:
                     msg = await channel.send(
@@ -290,7 +290,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 else:
                     msg = await channel.send(f"{user.mention}, {text}")
             else:
-                text = f"Welcome to your ticket channel"
+                text = "Welcome to your ticket channel"
                 if embeds:
                     msg = await channel.send(
                         user.mention, embed=discord.Embed(description=text, color=color)
@@ -323,8 +323,8 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                 # Revert to default message
                 if conf["user_can_close"]:
                     text = (
-                        f"Welcome to your ticket channel\nTo close this, "
-                        f"You or an Administrator may run `[p]sclose`."
+                        "Welcome to your ticket channel\nTo close this, "
+                        "You or an Administrator may run `[p]sclose`."
                     )
                     if embeds:
                         msg = await channel.send(
@@ -336,7 +336,7 @@ class Support(BaseCommands, SupportCommands, commands.Cog):
                             f"{user.mention}, {text}", allowed_mentions=mentions
                         )
                 else:
-                    text = f"Welcome to your ticket channel"
+                    text = "Welcome to your ticket channel"
                     if embeds:
                         msg = await channel.send(
                             user.mention,

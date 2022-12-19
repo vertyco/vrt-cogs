@@ -326,7 +326,7 @@ def friend_embeds(friend_data, main_gamertag):
     friends = friend_data["people"]
     for friend in friends:
         xuid = friend["xuid"]
-        followed_by = friend["is_following_caller"]  # Only useful for authorized user
+        # followed_by = friend["is_following_caller"]  # Only useful for authorized user
         name = friend["gamertag"]
         pfp = friend["display_pic_raw"]
         gs = friend["gamer_score"]
@@ -517,8 +517,8 @@ def ms_status(data: dict) -> list:
             info += f"➣ {name.upper()}\n" f"{service_info}\n"
         service_statuses += f"{box(info.strip())}\n"
 
-    grammer = f"{out} {'service is' if out == 1 else 'services are'}"
-    title = f"{grammer} affected at this time"
+    grammar = f"{out} {'service is' if out == 1 else 'services are'}"
+    title = f"{grammar} affected at this time"
     text = f"{limited} Limited\n" f"{down} Major outage"
 
     desc = f"{text}\n\n" f"{service_statuses.strip()}"
@@ -640,7 +640,7 @@ def stats_api_format(token, title_id, xuid):
         "Accept-Language": "en-US",
         "Content-Type": "application/json",
     }
-    url = f"https://userstats.xboxlive.com/batch"
+    url = "https://userstats.xboxlive.com/batch"
     payload = json.dumps(
         {
             "arrangebyfield": "xuid",

@@ -155,10 +155,10 @@ class EcoTools(commands.Cog):
                 resp = box(res)
         except Exception as e:
             if "121" in str(e):
-                resp = box(f"- Server has timed out and may be down", lang="diff")
+                resp = box("- Server has timed out and may be down", lang="diff")
             elif "502 Bad Gateway" in str(e) and "Cloudflare" in str(e):
                 resp = box(
-                    f"- Cloudflare Issue, Discord is borked not my fault.", lang="diff"
+                    "- Cloudflare Issue, Discord is borked not my fault.", lang="diff"
                 )
             else:
                 resp = box(f"- Encountered an unknown error: {e}", lang="diff")

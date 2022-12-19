@@ -1059,22 +1059,22 @@ class Generator:
     def force_aspect_ratio(image: Image, aspect_ratio: tuple = ASPECT_RATIO) -> Image:
         x, y = aspect_ratio
         w, h = image.size
-        new_res = []
-        for i in range(1, 10000):
-            nw = i * x
-            nh = i * y
-            if not new_res:
-                new_res = [nw, nh]
-            elif nw <= w and nh <= h:
-                new_res = [nw, nh]
-            else:
+
+        counter = 1
+        while True:
+            nw, nh = counter * x, counter * y
+            if (counter + 1) * x > w or (counter + 1) * y > h:
                 break
-        x_split = int((w - new_res[0]) / 2)
+            counter += 1
+
+        x_split = int((w - nw) / 2)
         x1 = x_split
         x2 = w - x_split
-        y_split = int((h - new_res[1]) / 2)
+
+        y_split = int((h - nh) / 2)
         y1 = y_split
         y2 = h - y_split
+
         box = (x1, y1, x2, y2)
         cropped = image.crop(box)
         return cropped

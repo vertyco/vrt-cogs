@@ -66,7 +66,7 @@ class UpgradeChat(commands.Cog):
             await ctx.message.delete()
             token = await API().get_auth(client_id, client_secret)
             if not token:
-                return await ctx.send(f"Failed to authorize your tokens!")
+                return await ctx.send("Failed to authorize your tokens!")
             async with self.config.guild(ctx.guild).all() as conf:
                 conf["id"] = client_id
                 conf["secret"] = client_secret

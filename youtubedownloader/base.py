@@ -156,7 +156,7 @@ class YouTubeDownloader(commands.Cog):
         filesize = sys.getsizeof(file)
         allowedsize = ctx.guild.filesize_limit
         if filesize > allowedsize:
-            return await ctx.send(_(f"Failed to download, file size too big to send."))
+            return await ctx.send(_("Failed to download, file size too big to send."))
 
         text = _("Here is your mp3 file: ")
         await ctx.send(f"{text} `{file.filename}`", file=file)
@@ -227,7 +227,7 @@ class YouTubeDownloader(commands.Cog):
         desc = ""
         if downloaded or failed:
             desc = box(_(f"Downloaded: {downloaded}\n" f"Failed:     {failed}"))
-        text = _(f"Downloading Complete")
+        text = _("Downloading Complete")
         embed = discord.Embed(
             description=f"**{text}**\n" f"{desc}", color=discord.Color.green()
         )
@@ -279,7 +279,7 @@ class YouTubeDownloader(commands.Cog):
         try:
             p = Playlist(playlist_link)
         except Exception as e:
-            text = _(f"Failed to parse ") + f"`{playlist_link}`"
+            text = _("Failed to parse ") + f"`{playlist_link}`"
             em = discord.Embed(description=f"{text}\n{box(str(e))}", color=color)
             if msg:
                 return await msg.edit(embed=em)
@@ -423,7 +423,7 @@ class YouTubeDownloader(commands.Cog):
         try:
             c = Channel(channel_link)
         except Exception as e:
-            text = _(f"Failed to parse ") + f"`{channel_link}`"
+            text = _("Failed to parse ") + f"`{channel_link}`"
             em = discord.Embed(description=f"{text}\n{box(str(e))}", color=color)
             if msg:
                 return await msg.edit(embed=em)
@@ -432,7 +432,7 @@ class YouTubeDownloader(commands.Cog):
 
         channel_name = c.channel_name
         text = (
-            _(f"Getting video count for ") + f"`{channel_name}`, " + _("please wait...")
+            _("Getting video count for ") + f"`{channel_name}`, " + _("please wait...")
         )
         em = discord.Embed(description=text, color=color)
         em.set_thumbnail(url=DOWNLOADING)

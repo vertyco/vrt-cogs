@@ -242,10 +242,10 @@ class Events(commands.Cog):
 
         if per_user > 1:
             txt += (
-                f"\n\nWhen you are finished, type `done`.\n"
+                "\n\nWhen you are finished, type `done`.\n"
                 f"This event allows up to `{per_user}` submissions per user."
             )
-        txt += f"\n\nType `cancel` at any time to cancel."
+        txt += "\n\nType `cancel` at any time to cancel."
         await edit(msg, txt, title=event_name)
 
         submissions = []
@@ -323,7 +323,7 @@ class Events(commands.Cog):
                 desc += f"**{dtype}**\n{text}"
 
             em = discord.Embed(description=desc, color=author.color)
-            em.set_footer(text=f"Click the emoji below to vote")
+            em.set_footer(text="Click the emoji below to vote")
 
             if bytesfile:
                 em.set_author(name=f"New {event_name} submission!", url=i["url"])
