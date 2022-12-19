@@ -983,9 +983,8 @@ class XTools(commands.Cog):
             return
 
         embeds = ms_status(res)
-        data = res["ServiceStatus"]["Status"]["Overall"]
-        key = "".join([e.description for e in embeds]) + data["LastUpdated"]
-
+        # data = res["ServiceStatus"]["Status"]["Overall"]
+        key = "".join([e.description for e in embeds])
         if self.alert is None:
             self.alert = key
             return
