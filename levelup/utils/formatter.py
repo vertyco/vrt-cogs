@@ -215,7 +215,18 @@ def get_leaderboard(
             data = sorted_users[i][1]
 
             place = i + 1
-            stat = time_formatter(data[key]) if key == "voice" else int(data[key])
+            if key == "voice":
+                stat = time_formatter(data[key])
+            else:
+                v = data[key]
+                if v > 999999999:
+                    stat = f"{round(v / 1000000000, 2)}B"
+                elif v > 999999:
+                    stat = f"{round(v / 1000000, 2)}M"
+                elif v > 9999:
+                    stat = f"{round(v / 1000, 2)}K"
+                else:
+                    stat = str(v)
 
             if lbtype != "weekly" and key == "xp":
                 table.append([place, str(data["level"]), stat, user])
