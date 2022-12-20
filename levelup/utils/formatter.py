@@ -220,11 +220,11 @@ def get_leaderboard(
             else:
                 v = data[key]
                 if v > 999999999:
-                    stat = f"{round(v / 1000000000, 2)}B"
+                    stat = f"{round(v / 1000000000, 1)}B"
                 elif v > 999999:
-                    stat = f"{round(v / 1000000, 2)}M"
+                    stat = f"{round(v / 1000000, 1)}M"
                 elif v > 9999:
-                    stat = f"{round(v / 1000, 2)}K"
+                    stat = f"{round(v / 1000, 1)}K"
                 else:
                     stat = str(v)
 
