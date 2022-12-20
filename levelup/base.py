@@ -14,7 +14,6 @@ import discord
 import tabulate
 import validators
 from aiocache import SimpleMemoryCache, cached
-from discord.utils import escape_markdown
 from redbot.core import bank, commands
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
@@ -24,8 +23,8 @@ from levelup.utils.formatter import (
     get_attachments,
     get_bar,
     get_content_from_url,
+    get_leaderboard,
     get_level,
-    get_next_reset,
     get_user_position,
     get_xp,
     hex_to_rgb,
@@ -1041,101 +1040,33 @@ class UserCommands(commands.Cog):
 
     @commands.command(name="lvltop", aliases=["topstats", "membertop", "topranks"])
     @commands.guild_only()
-    async def leaderboard(self, ctx: commands.Context):
-        """View the Leaderboard"""
+    async def leaderboard(self, ctx: commands.Context, stat: Optional[str]):
+        """
+        View the Leaderboard
+
+        **Arguments**
+        `stat`: What kind of stat to display the weekly leaderboard for
+        Valid options are `exp`, `messages`, and `voice`
+        Abbreviations of those arguments may also be used
+        """
+        if not stat:
+            stat = "exp"
+        if "star" in stat.lower():
+            txt = _("Use the `") + str(ctx.prefix) + _("startop` command for that")
+            return await ctx.send(txt)
         conf = self.data[ctx.guild.id]
-        base = conf["base"]
-        exp = conf["exp"]
-        embeds = []
-        prestige_req = conf["prestige"]
-        leaderboard = {}
-        total_messages = 0
-        total_voice = 0  # Seconds
-        for user, data in conf["users"].items():
-            prestige = data["prestige"]
-            xp = int(data["xp"])
-            if prestige:
-                add_xp = get_xp(prestige_req, base, exp)
-                xp = int(xp + (prestige * add_xp))
-            if xp > 0:
-                leaderboard[user] = xp
-            messages = data["messages"]
-            voice = data["voice"]
-            total_voice += voice
-            total_messages += messages
-        if not leaderboard:
+        func = functools.partial(get_leaderboard, ctx, conf, stat, "normal")
+        embeds = await self.bot.loop.run_in_executor(None, func)
+        if isinstance(embeds, str):
+            return await ctx.send(embeds)
+        if not embeds:
             return await ctx.send(_("No user data yet!"))
-        voice = time_formatter(total_voice)
-        sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
 
-        # Get your place in the LB
-        you = ""
-        for i in sorted_users:
-            uid = i[0]
-            if str(uid) == str(ctx.author.id):
-                i = sorted_users.index(i)
-                you = f"You: {i + 1}/{len(sorted_users)}\n"
-
-        pages = math.ceil(len(sorted_users) / 10)
-        start = 0
-        stop = 10
-        title = _("**Total Messages:** `") + humanize_number(total_messages) + "`\n"
-        title += _("**Total VoiceTime:** `") + voice + "`\n"
-        for p in range(pages):
-            if stop > len(sorted_users):
-                stop = len(sorted_users)
-            table = []
-            for i in range(start, stop):
-                # Place, level, xp, user
-                place = i + 1
-                uid = sorted_users[i][0]
-                user = (
-                    ctx.guild.get_member(int(uid)).name
-                    if ctx.guild.get_member(int(uid))
-                    else uid
-                )
-                xp = sorted_users[i][1]
-                xptext = str(xp)
-                if xp > 1000:
-                    xptext = f"{round(xp / 1000)}K"
-                if xp > 1000000:
-                    xptext = f"{round(xp / 1000000)}M"
-                level = get_level(int(xp), base, exp)
-                name = escape_markdown(user)
-                if len(name) > 15:
-                    name = f"{name[:14]}..."
-                table.append([place, name, level, xptext])
-
-            headers = ["Pos", "Name", "lvl", "exp"]
-            msg = tabulate.tabulate(
-                tabular_data=table, headers=headers, numalign="left", stralign="left"
-            )
-            embed = discord.Embed(
-                title=_("LevelUp Leaderboard"),
-                description=f"{title}{box(msg, lang='python')}",
-                color=discord.Color.random(),
-            )
-            if DPY2:
-                if ctx.guild.icon:
-                    embed.set_thumbnail(url=ctx.guild.icon.url)
-            else:
-                embed.set_thumbnail(url=ctx.guild.icon_url)
-
-            if you:
-                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} ｜ {you}")
-            else:
-                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages}")
-            embeds.append(embed)
-            start += 10
-            stop += 10
-        if embeds:
-            if len(embeds) == 1:
-                embed = embeds[0]
-                await ctx.send(embed=embed)
-            else:
-                await menu(ctx, embeds, DEFAULT_CONTROLS)
+        if len(embeds) == 1:
+            embed = embeds[0]
+            await ctx.send(embed=embed)
         else:
-            return await ctx.send(_("No user data yet!"))
+            await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command(name="startop", aliases=["starlb"])
     @commands.guild_only()
@@ -1225,114 +1156,19 @@ class UserCommands(commands.Cog):
         """
         if not stat:
             stat = "exp"
-        w = self.data[ctx.guild.id]["weekly"]
-        if not w["on"]:
+        conf = self.data[ctx.guild.id]
+        if not conf["weekly"]["on"]:
             return await ctx.send(_("Weekly stats are disabled for this guild"))
-        if not w["users"]:
+        if not conf["weekly"]["users"]:
             return await ctx.send(
                 _(
                     "There is no data for the weekly leaderboard yet, please chat a bit first."
                 )
             )
-
-        if "v" in stat.lower():
-            sorted_users = sorted(
-                w["users"].items(), key=lambda x: x[1]["voice"], reverse=True
-            )
-            title = _("Weekly Voice Leaderboard")
-            key = "voice"
-            statname = _("Voicetime")
-            total = time_formatter(sum(v["voice"] for v in w["users"].values()))
-        elif "m" in stat.lower():
-            sorted_users = sorted(
-                w["users"].items(), key=lambda x: x[1]["messages"], reverse=True
-            )
-            title = _("Weekly Message Leaderboard")
-            key = "messages"
-            statname = _("Messages")
-            total = humanize_number(
-                round(sum(v["messages"] for v in w["users"].values()))
-            )
-        elif "s" in stat.lower():
-            sorted_users = sorted(
-                w["users"].items(), key=lambda x: x[1]["stars"], reverse=True
-            )
-            title = _("Weekly Star Leaderboard")
-            key = "stars"
-            statname = _("Stars")
-            total = humanize_number(round(sum(v["stars"] for v in w["users"].values())))
-        else:  # Exp
-            sorted_users = sorted(
-                w["users"].items(), key=lambda x: x[1]["xp"], reverse=True
-            )
-            title = _("Weekly Exp Leaderboard")
-            key = "xp"
-            statname = _("Exp")
-            total = humanize_number(round(sum(v["xp"] for v in w["users"].values())))
-
-        desc = _("Total ") + f"{statname}: `{total}`\n"
-        desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d>\n"
-        if w["autoreset"]:
-            tl = get_next_reset(w["reset_day"], w["reset_hour"])
-            desc += _("Next Reset: ") + f"<t:{tl}:d>\n"
-
-        for i in sorted_users.copy():
-            if not i[1][key]:
-                sorted_users.remove(i)
-        if not sorted_users:
-            txt = (
-                _("There is no data for the weekly ")
-                + statname.lower()
-                + _(" leaderboard yet")
-            )
-            return await ctx.send(txt)
-        you = ""
-        for i in sorted_users:
-            if i[0] == str(ctx.author.id):
-                you = _("You: ") + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
-
-        pages = math.ceil(len(sorted_users) / 10)
-        start = 0
-        stop = 10
-        embeds = []
-        for p in range(pages):
-            if stop > len(sorted_users):
-                stop = len(sorted_users)
-
-            table = []
-            for i in range(start, stop, 1):
-                uid = sorted_users[i][0]
-                user = ctx.guild.get_member(int(uid))
-                user = user.name if user else uid
-                data = sorted_users[i][1]
-
-                place = i + 1
-                stat = time_formatter(data[key]) if key == "voice" else int(data[key])
-                table.append([place, user, stat])
-
-            headers = ["Pos", "Name", statname]
-            msg = tabulate.tabulate(
-                tabular_data=table, headers=headers, numalign="left", stralign="left"
-            )
-            embed = discord.Embed(
-                title=title,
-                description=desc + f"{box(msg, lang='python')}",
-                color=discord.Color.random(),
-            )
-            if DPY2:
-                if ctx.guild.icon:
-                    embed.set_thumbnail(url=ctx.guild.icon.url)
-            else:
-                embed.set_thumbnail(url=ctx.guild.icon_url)
-
-            if you:
-                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} ｜ {you}")
-            else:
-                embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages}")
-
-            embeds.append(embed)
-            start += 10
-            stop += 10
+        func = functools.partial(get_leaderboard, ctx, conf, stat, "weekly")
+        embeds = await self.bot.loop.run_in_executor(None, func)
+        if isinstance(embeds, str):
+            return await ctx.send(embeds)
 
         if len(embeds) == 1:
             embed = embeds[0]
