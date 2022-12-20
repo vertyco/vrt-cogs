@@ -61,10 +61,10 @@ async def confirm(ctx: commands.Context):
 
 @cog_i18n(_)
 class LevelUp(UserCommands, commands.Cog):
-    """Local Discord Leveling System"""
+    """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.18.49"
+    __version__ = "2.18.50"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -479,6 +479,8 @@ class LevelUp(UserCommands, commands.Cog):
                     conf[k] = v
 
     def init_user(self, guild_id: int, user_id: str):
+        if user_id in self.data[guild_id]["users"]:
+            return
         self.data[guild_id]["users"][user_id] = {
             "xp": 0,
             "voice": 0,  # Seconds
@@ -494,6 +496,8 @@ class LevelUp(UserCommands, commands.Cog):
         }
 
     def init_user_weekly(self, guild_id: int, user_id: str):
+        if user_id in self.data[guild_id]["weekly"]["users"]:
+            return
         self.data[guild_id]["weekly"]["users"][user_id] = {
             "xp": 0,
             "voice": 0,  # Seconds,
@@ -765,7 +769,6 @@ class LevelUp(UserCommands, commands.Cog):
         xp_per_minute = conf["voicexp"]
         bonuses = conf["rolebonuses"]["voice"]
         channel_bonuses = conf["channelbonuses"]["voice"]
-        weekly_users = conf["weekly"]["users"]
         weekly_on = conf["weekly"]["on"]
         bonusrole = None
         async for member in AsyncIter(guild.members, steps=100, delay=0.001):
@@ -784,7 +787,7 @@ class LevelUp(UserCommands, commands.Cog):
             if uid not in self.data[gid]["users"]:
                 self.init_user(gid, uid)
 
-            if weekly_on and uid not in weekly_users:
+            if weekly_on and uid not in self.data[gid]["weekly"]["users"]:
                 self.init_user_weekly(gid, uid)
 
             ts = self.voice[gid][uid]

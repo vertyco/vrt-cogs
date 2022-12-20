@@ -215,8 +215,7 @@ class UserCommands(commands.Cog):
             return await ctx.send(_("No data available for that user yet!"))
         self.data[guild_id]["users"][user_id]["stars"] += 1
         if self.data[guild_id]["weekly"]["on"]:
-            weekly_users = self.data[guild_id]["weekly"]["users"]
-            if guild_id not in weekly_users:
+            if guild_id not in self.data[guild_id]["weekly"]["users"]:
                 self.init_user_weekly(guild_id, user_id)
             self.data[guild_id]["weekly"]["users"][user_id]["stars"] += 1
 
