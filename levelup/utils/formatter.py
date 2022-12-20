@@ -2,12 +2,15 @@ import logging
 import math
 import random
 from datetime import datetime, timedelta
-from typing import Union
+from typing import List, Union
 
 import discord
 from aiocache import SimpleMemoryCache, cached
 from aiohttp import ClientSession
+from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import box, humanize_number
+from tabulate import tabulate
 
 DPY2 = True if discord.__version__ > "1.7.3" else False
 _ = Translator("LevelUp", __file__)
@@ -24,7 +27,7 @@ def get_xp(level: int, base: int, exp: int) -> int:
     return math.ceil(base * (level**exp))
 
 
-# Estimate how much time it would take to reach a certain level based on curent algorithm
+# Estimate how much time it would take to reach a certain level based on current algorithm
 def time_to_level(
     level: int, base: int, exp: Union[int, float], cooldown: int, xp_range: list
 ) -> int:
@@ -115,6 +118,137 @@ def get_attachments(ctx) -> list:
         except AttributeError:
             pass
     return content
+
+
+def get_leaderboard(
+    ctx: commands.Context, conf: dict, stat: str, lbtype: str
+) -> Union[List[discord.Embed], str]:
+    if lbtype == "weekly":
+        lb = conf["weekly"]["users"]
+        title = _("Weekly ")
+    else:
+        lb = conf["users"]
+        title = _("LevelUp ")
+
+        prestige_req = conf["prestige"]
+        for uid, data in lb.items():
+            prestige = data["prestige"]
+            if prestige:
+                data["xp"] += prestige * get_xp(prestige_req, conf["base"], conf["exp"])
+
+    if "v" in stat.lower():
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["voice"], reverse=True)
+        title += _("Voice Leaderboard")
+        key = "voice"
+        statname = _("Voicetime")
+        col = "🎙️"
+        total = time_formatter(sum(v["voice"] for v in lb.values()))
+    elif "m" in stat.lower():
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["messages"], reverse=True)
+        title += _("Message Leaderboard")
+        key = "messages"
+        statname = _("Messages")
+        col = "💬"
+        total = humanize_number(round(sum(v["messages"] for v in lb.values())))
+    elif "s" in stat.lower():
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["stars"], reverse=True)
+        title += _("Star Leaderboard")
+        key = "stars"
+        statname = _("Stars")
+        col = "⭐"
+        total = humanize_number(round(sum(v["stars"] for v in lb.values())))
+    else:  # Exp
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["xp"], reverse=True)
+        title += _("Exp Leaderboard")
+        key = "xp"
+        statname = _("Exp")
+        col = "💡"
+        total = humanize_number(round(sum(v["xp"] for v in lb.values())))
+
+    if lbtype == "weekly":
+        w = conf["weekly"]
+        desc = _("Total ") + f"{statname}: `{total}`\n"
+        desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d>\n"
+        if w["autoreset"]:
+            tl = get_next_reset(w["reset_day"], w["reset_hour"])
+            desc += _("Next Reset: ") + f"<t:{tl}:d>\n"
+    else:
+        desc = _("Total") + f" {statname}: `{total}`\n"
+
+    for i in sorted_users.copy():
+        if not i[1][key]:
+            sorted_users.remove(i)
+
+    if not sorted_users:
+        if lbtype == "weekly":
+            txt = (
+                _("There is no data for the weekly ")
+                + statname.lower()
+                + _(" leaderboard yet")
+            )
+        else:
+            txt = (
+                _("There is no data for the ")
+                + statname.lower()
+                + _(" leaderboard yet")
+            )
+        return txt
+
+    you = ""
+    for i in sorted_users:
+        if i[0] == str(ctx.author.id):
+            you = _("You: ") + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
+
+    pages = math.ceil(len(sorted_users) / 10)
+    start = 0
+    stop = 10
+    embeds = []
+    for p in range(pages):
+        if stop > len(sorted_users):
+            stop = len(sorted_users)
+
+        table = []
+        for i in range(start, stop, 1):
+            uid = sorted_users[i][0]
+            user = ctx.guild.get_member(int(uid))
+            user = user.name if user else uid
+            data = sorted_users[i][1]
+
+            place = i + 1
+            stat = time_formatter(data[key]) if key == "voice" else int(data[key])
+
+            if lbtype != "weekly" and key == "xp":
+                table.append([place, str(data["level"]), stat, user])
+            else:
+                table.append([place, stat, user])
+
+        headers = ["#", col, "Name"]
+        if lbtype != "weekly" and key == "xp":
+            headers = ["#", "🎖", col, "Name"]
+
+        msg = tabulate(
+            tabular_data=table, headers=headers, numalign="left", stralign="left"
+        )
+        embed = discord.Embed(
+            title=title,
+            description=desc + f"{box(msg, lang='python')}",
+            color=discord.Color.random(),
+        )
+        if DPY2:
+            if ctx.guild.icon:
+                embed.set_thumbnail(url=ctx.guild.icon.url)
+        else:
+            embed.set_thumbnail(url=ctx.guild.icon_url)
+
+        if you:
+            embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} ｜ {you}")
+        else:
+            embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages}")
+
+        embeds.append(embed)
+        start += 10
+        stop += 10
+    return embeds
 
 
 @cached(ttl=3600, cache=SimpleMemoryCache)

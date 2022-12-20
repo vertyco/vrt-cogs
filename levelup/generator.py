@@ -9,7 +9,7 @@ import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 from redbot.core.data_manager import bundled_data_path
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number
 
 from levelup.utils.core import Pilmoji
@@ -19,6 +19,7 @@ _ = Translator("LevelUp", __file__)
 ASPECT_RATIO = (21, 9)
 
 
+@cog_i18n(_)
 class Generator:
     def __init__(self):
         self.star = os.path.join(bundled_data_path(self), "star.png")
