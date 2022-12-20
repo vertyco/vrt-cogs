@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2022-12-15 22:39-0500\n"
-"PO-Revision-Date: 2022-12-16 18:45\n"
+"POT-Creation-Date: 2022-12-19 20:41-0500\n"
+"PO-Revision-Date: 2022-12-20 01:43\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -481,48 +481,49 @@ msgstr ""
 
 #: base.py:1044
 #, docstring
-msgid "View the Leaderboard"
-msgstr "Pogledaj ljestvicu"
+msgid "\n"
+"        View the Leaderboard\n\n"
+"        **Arguments**\n"
+"        `stat`: What kind of stat to display the weekly leaderboard for\n"
+"        Valid options are `exp`, `messages`, and `voice`\n"
+"        Abbreviations of those arguments may also be used\n"
+"        "
+msgstr ""
 
-#: base.py:1066 base.py:1137 base.py:1213
+#: base.py:1055
+msgid "Use the `"
+msgstr ""
+
+#: base.py:1055
+msgid "startop` command for that"
+msgstr ""
+
+#: base.py:1063 base.py:1145
 msgid "No user data yet!"
 msgstr ""
 
-#: base.py:1081
-msgid "**Total Messages:** `"
-msgstr "**Ukupno poruka:** `"
-
-#: base.py:1082
-msgid "**Total VoiceTime:** `"
-msgstr ""
-
-#: base.py:1113
-msgid "LevelUp Leaderboard"
-msgstr "LevelUp Ljestvica"
-
-#: base.py:1124 base.py:1126 base.py:1200 base.py:1202 base.py:1328
-#: base.py:1330
-msgid "Pages "
-msgstr "Stranica "
-
-#: base.py:1142
+#: base.py:1074
 #, docstring
 msgid "View the star leaderboard"
 msgstr "Pogledaj ljestvicu zvijezda"
 
-#: base.py:1154
+#: base.py:1086
 msgid "Nobody has stars yet 😕"
 msgstr ""
 
-#: base.py:1169
+#: base.py:1101
 msgid "**Star Leaderboard**\n"
 msgstr "**Ljestvica za zvijezde**\n"
 
-#: base.py:1170
+#: base.py:1102
 msgid "**Total ⭐'s: "
 msgstr "**Ukupno ⭐: "
 
-#: base.py:1217
+#: base.py:1132 base.py:1134
+msgid "Pages "
+msgstr "Stranica "
+
+#: base.py:1149
 #, docstring
 msgid "\n"
 "        View the weekly leaderboard\n\n"
@@ -539,69 +540,13 @@ msgstr "\n"
 "        Mogu se koristiti i kratice tih argumenata\n"
 "        "
 
-#: base.py:1229
+#: base.py:1161
 msgid "Weekly stats are disabled for this guild"
 msgstr "Tjedne statistike su onemogućene u ovom guildu"
 
-#: base.py:1232
+#: base.py:1164
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr "Još nema podataka za tjednu ljestvicu, prvo napišite nešto."
-
-#: base.py:1241
-msgid "Weekly Voice Leaderboard"
-msgstr "Tjedna Voice ljestvica"
-
-#: base.py:1243
-msgid "Voicetime"
-msgstr "Vrijeme u voice-u"
-
-#: base.py:1249
-msgid "Weekly Message Leaderboard"
-msgstr "Tjedna ljestvica za poruke"
-
-#: base.py:1251
-msgid "Messages"
-msgstr "Poruka"
-
-#: base.py:1259
-msgid "Weekly Star Leaderboard"
-msgstr "Tjedna ljestvica za zvijezdice"
-
-#: base.py:1261
-msgid "Stars"
-msgstr "Zvijezda"
-
-#: base.py:1267
-msgid "Weekly Exp Leaderboard"
-msgstr "Tjedna Exp ljestvica"
-
-#: base.py:1269
-msgid "Exp"
-msgstr "Exp"
-
-#: base.py:1272
-msgid "Total "
-msgstr "Ukupno "
-
-#: base.py:1273
-msgid "Last Reset: "
-msgstr "Zadnji reset: "
-
-#: base.py:1276
-msgid "Next Reset: "
-msgstr "Sljedeći reset: "
-
-#: base.py:1283
-msgid "There is no data for the weekly "
-msgstr "Nema podataka za weekly "
-
-#: base.py:1285
-msgid " leaderboard yet"
-msgstr ""
-
-#: base.py:1291
-msgid "You: "
-msgstr "Ti: "
 
 #: generator.py:217 generator.py:626
 msgid "Rank: #"
@@ -635,279 +580,289 @@ msgstr "Vrijeme u voiceu: "
 msgid " - Prestige "
 msgstr ""
 
-#: levelup.py:63
+#: generator.py:1105
+#, docstring
+msgid "Get average duration sequence of gif frames"
+msgstr ""
+
+#: levelup.py:64
 #, docstring
 msgid "Local Discord Leveling System"
 msgstr ""
 
-#: levelup.py:191
+#: levelup.py:192
 msgid "Monday"
 msgstr "Ponedjeljak"
 
-#: levelup.py:192
+#: levelup.py:193
 msgid "Tuesday"
 msgstr "Utorak"
 
-#: levelup.py:193
+#: levelup.py:194
 msgid "Wednesday"
 msgstr "Srijeda"
 
-#: levelup.py:194
+#: levelup.py:195
 msgid "Thursday"
 msgstr "Četvrtak"
 
-#: levelup.py:195
+#: levelup.py:196
 msgid "Friday"
 msgstr "Petak"
 
-#: levelup.py:196
+#: levelup.py:197
 msgid "Saturday"
 msgstr "Subota"
 
-#: levelup.py:197
+#: levelup.py:198
 msgid "Sunday"
 msgstr "Nedjelja"
 
-#: levelup.py:313 levelup.py:317
+#: levelup.py:314 levelup.py:318
 msgid "just gave a star to"
 msgstr ""
 
-#: levelup.py:571
+#: levelup.py:572
 msgid "You have just reached level "
 msgstr ""
 
-#: levelup.py:573
+#: levelup.py:574
 msgid " in "
 msgstr ""
 
-#: levelup.py:584
+#: levelup.py:585
 msgid "Just reached level "
 msgstr ""
 
-#: levelup.py:619
+#: levelup.py:620
 msgid "You just leveled up in "
 msgstr ""
 
-#: levelup.py:627 levelup.py:631
+#: levelup.py:628 levelup.py:632
 msgid " just leveled up!**"
 msgstr ""
 
-#: levelup.py:939
+#: levelup.py:930
+#, docstring
+msgid "Announce and reset the weekly leaderboard"
+msgstr ""
+
+#: levelup.py:940
 msgid "There are no users with exp"
 msgstr "Nema korisnika s xp-om"
 
-#: levelup.py:947
+#: levelup.py:948
 msgid "Top Weekly Exp Earners"
 msgstr "Najveći zarađivaći xp-a"
 
-#: levelup.py:948
+#: levelup.py:949
 msgid "`Total Exp:      `"
 msgstr "`Ukupni exp:     `"
 
-#: levelup.py:949
+#: levelup.py:950
 msgid "`Total Messages: `"
 msgstr "`Ukupno poruka:  `"
 
-#: levelup.py:950
+#: levelup.py:951
 msgid "`Total Stars:    `"
 msgstr "`Ukupno zvijezda:`"
 
-#: levelup.py:951
+#: levelup.py:952
 msgid "`Total Voice:    `"
 msgstr "`Ukupan Voice:   `"
 
-#: levelup.py:980
+#: levelup.py:981
 msgid "`Exp:      `"
 msgstr "`Exp:      `"
 
-#: levelup.py:981
+#: levelup.py:982
 msgid "`Messages: `"
 msgstr "`Poruke:   `"
 
-#: levelup.py:982
+#: levelup.py:983
 msgid "`Stars:    `"
 msgstr "`Zvijezde: `"
 
-#: levelup.py:983
+#: levelup.py:984
 msgid "`Voice:    `"
 msgstr "`Voice:    `"
 
-#: levelup.py:1023
+#: levelup.py:1024
 #, docstring
 msgid "Access LevelUp setting commands"
 msgstr "Pristup naredbama za postavljanje LevelUp-a"
 
-#: levelup.py:1028
+#: levelup.py:1029
 #, docstring
 msgid "View all LevelUP settings"
 msgstr "Pogledaj sve LevelUP postavke"
 
-#: levelup.py:1071
+#: levelup.py:1072
 msgid "Image"
 msgstr ""
 
-#: levelup.py:1071
+#: levelup.py:1072
 msgid "Embed"
 msgstr ""
 
-#: levelup.py:1073
+#: levelup.py:1074
 msgid "**Cog**\n"
 msgstr ""
 
-#: levelup.py:1074
+#: levelup.py:1075
 msgid "`Profile Type:      `"
 msgstr ""
 
-#: levelup.py:1075
+#: levelup.py:1076
 msgid "`Include Balance:   `"
 msgstr "`Uključi stanje računa:   `"
 
-#: levelup.py:1076
+#: levelup.py:1077
 msgid "`Progress Bar:      `"
 msgstr ""
 
-#: levelup.py:1077
+#: levelup.py:1078
 msgid "**Messages**\n"
 msgstr "**Poruke**\n"
 
-#: levelup.py:1078
+#: levelup.py:1079
 msgid "`Message XP:        `"
 msgstr ""
 
-#: levelup.py:1079
+#: levelup.py:1080
 msgid "`Min Msg Length:    `"
 msgstr ""
 
-#: levelup.py:1080 levelup.py:1097
+#: levelup.py:1081 levelup.py:1098
 msgid "`Cooldown:          `"
 msgstr ""
 
-#: levelup.py:1081
+#: levelup.py:1082
 msgid "**Voice**\n"
 msgstr "**Voice**\n"
 
-#: levelup.py:1082
+#: levelup.py:1083
 msgid "`Voice XP:          `"
 msgstr "`Voice XP:          `"
 
-#: levelup.py:1083
+#: levelup.py:1084
 msgid "`Ignore Muted:      `"
 msgstr ""
 
-#: levelup.py:1084
+#: levelup.py:1085
 msgid "`Ignore Solo:       `"
 msgstr ""
 
-#: levelup.py:1085
+#: levelup.py:1086
 msgid "`Ignore Deafened:   `"
 msgstr ""
 
-#: levelup.py:1086
+#: levelup.py:1087
 msgid "`Ignore Invisible:  `"
 msgstr ""
 
-#: levelup.py:1087
+#: levelup.py:1088
 msgid "**Level Algorithm**\n"
 msgstr ""
 
-#: levelup.py:1088
+#: levelup.py:1089
 msgid "`Base Multiplier:   `"
 msgstr ""
 
-#: levelup.py:1089
+#: levelup.py:1090
 msgid "`Exp Multiplier:    `"
 msgstr ""
 
-#: levelup.py:1090
+#: levelup.py:1091
 msgid "**LevelUps**\n"
 msgstr ""
 
-#: levelup.py:1091
+#: levelup.py:1092
 msgid "`LevelUp Notify:    `"
 msgstr ""
 
-#: levelup.py:1092
+#: levelup.py:1093
 msgid "`Notify in DMs:     `"
 msgstr ""
 
-#: levelup.py:1093
+#: levelup.py:1094
 msgid "`Mention User:      `"
 msgstr ""
 
-#: levelup.py:1094
+#: levelup.py:1095
 msgid "`AutoRemove Roles:  `"
 msgstr ""
 
-#: levelup.py:1095
+#: levelup.py:1096
 msgid "`LevelUp Channel:   `"
 msgstr ""
 
-#: levelup.py:1096
+#: levelup.py:1097
 msgid "**Stars**\n"
 msgstr ""
 
-#: levelup.py:1098
+#: levelup.py:1099
 msgid "`React Mention:     `"
 msgstr ""
 
-#: levelup.py:1099
+#: levelup.py:1100
 msgid "`MentionAutoDelete: `"
 msgstr ""
 
-#: levelup.py:1101
+#: levelup.py:1102
 msgid "**Levels**\n"
 msgstr ""
 
-#: levelup.py:1108
+#: levelup.py:1109
 msgid "`Level "
 msgstr "`Level "
 
-#: levelup.py:1110
+#: levelup.py:1111
 msgid "**Prestige**\n"
 "`Stack Roles: `"
 msgstr ""
 
-#: levelup.py:1111
+#: levelup.py:1112
 msgid "`Level Req:  `"
 msgstr ""
 
-#: levelup.py:1120
+#: levelup.py:1121
 msgid "`Prestige "
 msgstr ""
 
-#: levelup.py:1122
+#: levelup.py:1123
 msgid "LevelUp Settings"
 msgstr ""
 
-#: levelup.py:1132
+#: levelup.py:1133
 msgid "Voice XP Bonus Roles"
 msgstr ""
 
-#: levelup.py:1141
+#: levelup.py:1142
 msgid "Voice XP Bonus Channels"
 msgstr ""
 
-#: levelup.py:1150
+#: levelup.py:1151
 msgid "Message XP Bonus Roles"
 msgstr ""
 
-#: levelup.py:1159
+#: levelup.py:1160
 msgid "Message XP Bonus Channels"
 msgstr ""
 
-#: levelup.py:1168
+#: levelup.py:1169
 msgid "Ignored Roles"
 msgstr "Ignorirane uloge"
 
-#: levelup.py:1177
+#: levelup.py:1178
 msgid "Ignored Channels"
 msgstr "Ignorirani kanali"
 
-#: levelup.py:1186
+#: levelup.py:1187
 msgid "Ignored Users"
 msgstr "Ignorirani korisnici"
 
-#: levelup.py:1193
+#: levelup.py:1194
 #, docstring
 msgid "\n"
 "        Cog admin commands\n\n"
@@ -915,7 +870,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1203
+#: levelup.py:1204
 #, docstring
 msgid "\n"
 "        Set how long to keep profile images in cache\n"
@@ -925,150 +880,150 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1217
+#: levelup.py:1218
 #, docstring
 msgid "Toggle whether to render profiles as gifs if the user's discord profile is animated"
 msgstr ""
 
-#: levelup.py:1221
+#: levelup.py:1222
 msgid "I will no longer render profiles with GIFs"
 msgstr ""
 
-#: levelup.py:1224
+#: levelup.py:1225
 msgid "I will now render GIFs with user profiles"
 msgstr ""
 
-#: levelup.py:1231
+#: levelup.py:1232
 #, docstring
 msgid "Reset cog data for all guilds"
 msgstr ""
 
-#: levelup.py:1233
+#: levelup.py:1234
 msgid "Are you sure you want to reset all stats and settings for the entire cog?"
 msgstr ""
 
-#: levelup.py:1241
+#: levelup.py:1242
 msgid "Not resetting all guilds"
 msgstr ""
 
-#: levelup.py:1245
+#: levelup.py:1246
 msgid "Settings and stats for all guilds have been reset"
 msgstr ""
 
-#: levelup.py:1251
+#: levelup.py:1252
 #, docstring
 msgid "Reset cog data for this guild"
 msgstr ""
 
-#: levelup.py:1253
+#: levelup.py:1254
 msgid "Are you sure you want to reset all stats and settings for this guild?"
 msgstr ""
 
-#: levelup.py:1259
+#: levelup.py:1260
 msgid "Not resetting config"
 msgstr ""
 
-#: levelup.py:1262
+#: levelup.py:1263
 msgid "All settings and stats reset"
 msgstr ""
 
-#: levelup.py:1268
+#: levelup.py:1269
 #, docstring
 msgid "Reset everyone's exp and level"
 msgstr ""
 
-#: levelup.py:1272
+#: levelup.py:1273
 msgid "Are you sure you want to reset "
 msgstr ""
 
-#: levelup.py:1274
+#: levelup.py:1275
 msgid " users' stats?"
 msgstr ""
 
-#: levelup.py:1277
+#: levelup.py:1278
 msgid "\n"
 "This will reset their exp, voice time, messages, level, prestige and stars"
 msgstr ""
 
-#: levelup.py:1283
+#: levelup.py:1284
 msgid "Not resetting user stats"
 msgstr ""
 
-#: levelup.py:1295
+#: levelup.py:1296
 msgid "Reset stats for "
 msgstr ""
 
-#: levelup.py:1295
+#: levelup.py:1296
 msgid " users"
 msgstr ""
 
-#: levelup.py:1302
+#: levelup.py:1303
 #, docstring
 msgid "View current loop times and cached data"
 msgstr ""
 
-#: levelup.py:1313
+#: levelup.py:1314
 msgid "Cog Stats"
 msgstr ""
 
-#: levelup.py:1315
+#: levelup.py:1316
 msgid "`Voice Checker: `"
 msgstr ""
 
-#: levelup.py:1316
+#: levelup.py:1317
 msgid "`Cache Dumping: `"
 msgstr ""
 
-#: levelup.py:1318
+#: levelup.py:1319
 msgid "`Lvl Assign:    `"
 msgstr ""
 
-#: levelup.py:1320
+#: levelup.py:1321
 msgid "Loop Times"
 msgstr ""
 
-#: levelup.py:1322
+#: levelup.py:1323
 msgid "`Profile Cache Time: `"
 msgstr ""
 
-#: levelup.py:1323
+#: levelup.py:1324
 msgid "Disabled\n"
 msgstr ""
 
-#: levelup.py:1325
+#: levelup.py:1326
 msgid "`Cache Size:         `"
 msgstr ""
 
-#: levelup.py:1326
+#: levelup.py:1327
 msgid "Cache"
 msgstr ""
 
-#: levelup.py:1328 levelup.py:2484
+#: levelup.py:1329 levelup.py:2484
 msgid "(Disabled)"
 msgstr "(Onemogućeno)"
 
-#: levelup.py:1329
+#: levelup.py:1330
 msgid "Profiles will be static regardless of if the user has an animated profile"
 msgstr ""
 
-#: levelup.py:1333 levelup.py:2484
+#: levelup.py:1334 levelup.py:2484
 msgid "(Enabled)"
 msgstr "(Omogućeno)"
 
-#: levelup.py:1334
+#: levelup.py:1335
 msgid "Users with animated profiles will render as a gif"
 msgstr ""
 
-#: levelup.py:1336
+#: levelup.py:1337
 msgid "GIF Rendering "
 msgstr ""
 
-#: levelup.py:1343 levelup.py:1353
+#: levelup.py:1344 levelup.py:1354
 #, docstring
 msgid "Create a backup of the LevelUp config"
 msgstr ""
 
-#: levelup.py:1363
+#: levelup.py:1364
 #, docstring
 msgid "\n"
 "        Restore a global backup\n\n"
@@ -1076,19 +1031,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1371 levelup.py:1400
+#: levelup.py:1372 levelup.py:1401
 msgid "Attach your backup file to the message when using this command."
 msgstr ""
 
-#: levelup.py:1377
+#: levelup.py:1378
 msgid "This is an invalid global config!"
 msgstr ""
 
-#: levelup.py:1387 levelup.py:1413
+#: levelup.py:1388 levelup.py:1414
 msgid "Config restored from backup file!"
 msgstr ""
 
-#: levelup.py:1392
+#: levelup.py:1393
 #, docstring
 msgid "\n"
 "        Restore a guild backup\n\n"
@@ -1096,11 +1051,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1407
+#: levelup.py:1408
 msgid "This is an invalid guild config!"
 msgstr ""
 
-#: levelup.py:1418
+#: levelup.py:1419
 #, docstring
 msgid "\n"
 "        Import data from Fixator's Leveler cog\n\n"
@@ -1110,15 +1065,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1426
+#: levelup.py:1427
 msgid "Not importing users"
 msgstr ""
 
-#: levelup.py:1430
+#: levelup.py:1431
 msgid "Leveler is not loaded, please load it and try again!"
 msgstr ""
 
-#: levelup.py:1434
+#: levelup.py:1435
 msgid "Couldnt find mongo config"
 msgstr ""
 
@@ -1159,7 +1114,7 @@ msgid "Deleted "
 msgstr ""
 
 #: levelup.py:1567
-msgid "user IDs from the config that are no longer in the server."
+msgid " user IDs from the config that are no longer in the server."
 msgstr ""
 
 #: levelup.py:1574
@@ -2027,3 +1982,4 @@ msgstr ""
 #, docstring
 msgid "Force save the cache"
 msgstr ""
+
