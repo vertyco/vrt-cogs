@@ -395,7 +395,7 @@ def gameclip_embeds(clip_data, gamertag):
 def ms_status(data: dict) -> List[discord.Embed]:
     timezone = "UTC"
     up = "✅"
-    limited = "⚠"
+    limited = "⚠️"
     down = "⛔"
 
     ss = data["ServiceStatus"]
