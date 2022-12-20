@@ -226,7 +226,7 @@ def get_leaderboard(
                 elif v > 9999:
                     stat = f"{round(v / 1000, 1)}K"
                 else:
-                    stat = str(v)
+                    stat = str(round(v))
 
             if lbtype != "weekly" and key == "xp":
                 table.append([place, str(data["level"]), stat, user])
