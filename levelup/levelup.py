@@ -138,7 +138,9 @@ class LevelUp(UserCommands, commands.Cog):
                 "count": 3,  # How many users to show in weekly winners
                 "channel": 0,  # Announce the weekly winners(top 3 by default)
                 "role": 0,  # Role awarded to top member for that week
+                "role_all": False,  # If True, all winners get the role
                 "last_winner": 0,  # ID of the last member that won
+                "last_winners": [],  # IDs of last members that won if multi-role is enabled
                 "remove": True,  # Whether to remove the role from the previous winner when a new one is announced
                 "bonus": 0,  # Bonus exp to award the top X winners
             },
