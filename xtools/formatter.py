@@ -56,9 +56,9 @@ def time_formatter(time_in_seconds) -> str:
 
 # Microsoft's timestamp end digits are fucked up and random, so we iteratively try fixing them by stripping digits
 def fix_timestamp(time: str, timezone: str = "UTC"):
-    res = re.search(r"(.+)\.\d+(.+)", time)
-    time = f"{res.group(1)}{res.group(2)}"
-    time = datetime.fromisoformat(time).astimezone(pytz.timezone(timezone))
+    res = re.search(r"(.+)[.Z](?:\d+(.+)|)", time)
+    string = "".join(g for g in res.groups() if g)
+    time = datetime.fromisoformat(string).astimezone(pytz.timezone(timezone))
     return time
 
 
