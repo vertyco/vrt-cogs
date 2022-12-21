@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2022-12-15 22:39-0500\n"
-"PO-Revision-Date: 2022-12-20 01:43\n"
+"POT-Creation-Date: 2022-12-19 20:41-0500\n"
+"PO-Revision-Date: 2022-12-20 18:26\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,23 +17,104 @@ msgstr ""
 "X-Crowdin-File-ID: 19\n"
 "Language: es_ES\n"
 
-#: utils\formatter.py:79
+#: utils\formatter.py:82
 msgid "None"
 msgstr ""
 
-#: utils\formatter.py:82
+#: utils\formatter.py:85
 msgid " second"
 msgstr ""
 
-#: utils\formatter.py:84
+#: utils\formatter.py:87
 msgid " seconds"
 msgstr ""
 
-#: utils\formatter.py:87
+#: utils\formatter.py:90
 msgid " minute"
 msgstr ""
 
-#: utils\formatter.py:89
+#: utils\formatter.py:92
 msgid " minutes"
+msgstr ""
+
+#: utils\formatter.py:109
+#, docstring
+msgid "Get all attachments from context"
+msgstr ""
+
+#: utils\formatter.py:128
+msgid "Weekly "
+msgstr ""
+
+#: utils\formatter.py:131
+msgid "LevelUp "
+msgstr ""
+
+#: utils\formatter.py:141
+msgid "Voice Leaderboard"
+msgstr ""
+
+#: utils\formatter.py:143
+msgid "Voicetime"
+msgstr ""
+
+#: utils\formatter.py:148
+msgid "Message Leaderboard"
+msgstr ""
+
+#: utils\formatter.py:150
+msgid "Messages"
+msgstr ""
+
+#: utils\formatter.py:155
+msgid "Star Leaderboard"
+msgstr ""
+
+#: utils\formatter.py:157
+msgid "Stars"
+msgstr ""
+
+#: utils\formatter.py:162
+msgid "Exp Leaderboard"
+msgstr ""
+
+#: utils\formatter.py:164
+msgid "Exp"
+msgstr ""
+
+#: utils\formatter.py:170
+msgid "Total "
+msgstr ""
+
+#: utils\formatter.py:171
+msgid "Last Reset: "
+msgstr ""
+
+#: utils\formatter.py:174
+msgid "Next Reset: "
+msgstr ""
+
+#: utils\formatter.py:176
+msgid "Total"
+msgstr ""
+
+#: utils\formatter.py:185
+msgid "There is no data for the weekly "
+msgstr ""
+
+#: utils\formatter.py:187 utils\formatter.py:193
+msgid " leaderboard yet"
+msgstr ""
+
+#: utils\formatter.py:191
+msgid "There is no data for the "
+msgstr ""
+
+#: utils\formatter.py:200
+msgid "You: "
+msgstr ""
+
+#: utils\formatter.py:244 utils\formatter.py:246
+msgid "Pages "
 msgstr ""
 
