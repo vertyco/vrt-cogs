@@ -2,18 +2,20 @@ import asyncio
 import contextlib
 import json
 import logging
+import math
 import random
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 from time import monotonic
-from typing import Union
+from typing import List, Union
 
 import discord
 import matplotlib
 import matplotlib.pyplot as plt
 import tabulate
+from aiohttp import ClientSession
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
@@ -64,7 +66,7 @@ class LevelUp(UserCommands, commands.Cog):
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.18.50"
+    __version__ = "2.20.50"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -137,10 +139,9 @@ class LevelUp(UserCommands, commands.Cog):
                 "last_reset": 0,  # Timestamp of when weekly was last reset
                 "count": 3,  # How many users to show in weekly winners
                 "channel": 0,  # Announce the weekly winners(top 3 by default)
-                "role": 0,  # Role awarded to top member for that week
+                "role": 0,  # Role awarded to top member(s) for that week
                 "role_all": False,  # If True, all winners get the role
-                "last_winner": 0,  # ID of the last member that won
-                "last_winners": [],  # IDs of last members that won if multi-role is enabled
+                "last_winners": [],  # IDs of last members that won if role_all is enabled
                 "remove": True,  # Whether to remove the role from the previous winner when a new one is announced
                 "bonus": 0,  # Bonus exp to award the top X winners
             },
@@ -956,18 +957,14 @@ class LevelUp(UserCommands, commands.Cog):
         desc += _("`Total Stars:    `") + total_stars + "\n"
         desc += _("`Total Voice:    `") + total_voicetime
         em = discord.Embed(title=title, description=desc, color=discord.Color.green())
+
         if ctx:
-            if self.dpy2:
-                if ctx.guild.icon:
-                    em.set_thumbnail(url=ctx.guild.icon.url)
-            else:
-                em.set_thumbnail(url=ctx.guild.icon_url)
+            guild = ctx.guild
+        if self.dpy2:
+            if guild.icon:
+                em.set_thumbnail(url=guild.icon.url)
         else:
-            if self.dpy2:
-                if guild.icon:
-                    em.set_thumbnail(url=guild.icon.url)
-            else:
-                em.set_thumbnail(url=guild.icon_url)
+            em.set_thumbnail(url=guild.icon_url)
 
         sorted_users = sorted(users.items(), key=lambda x: x[1]["xp"], reverse=True)
         top_uids = []
@@ -997,23 +994,31 @@ class LevelUp(UserCommands, commands.Cog):
             with contextlib.suppress(*ignore):
                 await channel.send(embed=em)
 
-        winner: discord.Member = sorted_users[0][0]
+        top = sorted_users[: w["count"]]
+        if w["role_all"]:
+            winners: List[discord.Member] = [i[0] for i in top]
+        else:
+            winners: List[discord.Member] = [top[0][0]]
+
         role = guild.get_role(w["role"]) if w["role"] else None
         # Remove role from last winner and apply to new winner(If a role is set)
         if role:
             if w["remove"]:
                 # Remove role from previous winner if toggled
-                last_winner = (
-                    guild.get_member(w["last_winner"]) if w["last_winner"] else None
-                )
-                if last_winner:
+                last_winners = [
+                    guild.get_member(i)
+                    for i in w["last_winners"]
+                    if guild.get_member(i)
+                ]
+                for last_winner in last_winners:
                     with contextlib.suppress(*ignore):
                         await last_winner.remove_roles(role)
-            # Give new winner the role
+            # Give new winner or winners the role
             with contextlib.suppress(*ignore):
-                await winner.add_roles(role)
+                for w in winners:
+                    await w.add_roles(role)
         # Set new last winner
-        self.data[guild.id]["weekly"]["last_winner"] = winner.id
+        self.data[guild.id]["weekly"]["last_winners"] = [w.id for w in winners]
         # Apply bonus xp to top members
         if w["bonus"]:
             for uid in top_uids:
@@ -1418,6 +1423,113 @@ class LevelUp(UserCommands, commands.Cog):
         await self.save_cache()
         await ctx.send(_("Config restored from backup file!"))
 
+    @admin_group.command(name="importmee6")
+    @commands.guildowner()
+    async def import_from_mee6(
+        self, ctx: commands.Context, import_by: str, replace: bool, i_agree: bool
+    ):
+        """
+        Import levels and exp from MEE6
+
+        **Make sure your guild's leaderboard is public!**
+
+        **Arguments**
+        `export_by` - which stat to prioritize (`level` or `exp`)
+        If exp is entered, it will import their experience and base their new level off of that.
+        If level is entered, it will import their level and calculate their exp based off of that.
+        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it
+        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
+        """
+        if not i_agree:
+            return await ctx.send(_("Not importing MEE6 levels"))
+        pages = math.ceil(len(ctx.guild.members) / 999)
+        imported = 0
+        failed = 0
+        async with ctx.typing():
+            conf = self.data[ctx.guild.id]
+            base = conf["base"]
+            exp = conf["exp"]
+            async for i in AsyncIter(range(pages)):
+                url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{ctx.guild.id}?page={i}&limit=999"
+                async with ClientSession() as session:
+                    async with session.get(url) as res:
+                        status = res.status
+                        data = await res.json()
+                        error = data.get("error", {})
+                        error_msg = error.get("message", None)
+                        if status != 200:
+                            if status == 401:
+                                return await ctx.send(
+                                    _("Your leaderboard needs to be set to public!")
+                                )
+                            elif error_msg:
+                                return await ctx.send(error_msg)
+                            else:
+                                return await ctx.send(_("No data found!"))
+                        players = data["players"]
+                        if not players:
+                            break
+                        async for user in AsyncIter(players):
+                            uid = str(user["id"])
+                            member = ctx.guild.get_member(int(uid))
+                            if not member:
+                                failed += 1
+                                continue
+
+                            lvl = user["level"]
+                            xp = user["xp"]
+                            if uid not in self.data[ctx.guild.id]["users"]:
+                                self.init_user(ctx.guild.id, uid)
+
+                            if replace:  # Replace stats
+                                if "l" in import_by.lower():
+                                    self.data[ctx.guild.id]["users"][uid]["level"] = lvl
+                                    newxp = get_xp(lvl, base, exp)
+                                    self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
+                                else:
+                                    self.data[ctx.guild.id]["users"][uid]["xp"] = xp
+                                    newlvl = get_level(xp, base, exp)
+                                    self.data[ctx.guild.id]["users"][uid][
+                                        "level"
+                                    ] = newlvl
+                                self.data[ctx.guild.id]["users"][uid][
+                                    "messages"
+                                ] = user["message_count"]
+                            else:  # Add stats
+                                if "l" in import_by.lower():
+                                    self.data[ctx.guild.id]["users"][uid][
+                                        "level"
+                                    ] += lvl
+                                    newxp = get_xp(
+                                        self.data[ctx.guild.id]["users"][uid]["level"],
+                                        base,
+                                        exp,
+                                    )
+                                    self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
+                                else:
+                                    self.data[ctx.guild.id]["users"][uid]["xp"] += xp
+                                    newlvl = get_level(
+                                        self.data[ctx.guild.id]["users"][uid]["xp"],
+                                        base,
+                                        exp,
+                                    )
+                                    self.data[ctx.guild.id]["users"][uid][
+                                        "level"
+                                    ] = newlvl
+                                self.data[ctx.guild.id]["users"][uid][
+                                    "messages"
+                                ] += user["message_count"]
+
+                            imported += 1
+
+            if not imported and not failed:
+                await ctx.send(_("No MEE6 stats were found"))
+            else:
+                txt = _("Imported ") + str(imported) + _(" User(s)")
+                if failed:
+                    txt += f" ({failed} " + _("failed") + ")"
+                await ctx.send(txt)
+
     @admin_group.command(name="importleveler")
     @commands.is_owner()
     async def import_from_leveler(self, ctx: commands.Context, yes_or_no: str):
@@ -1428,7 +1540,7 @@ class LevelUp(UserCommands, commands.Cog):
         It will also import XP range level roles, and ignored channels
         *Obviously you will need Leveler loaded while you run this command*
         """
-        if "y" not in yes_or_no:
+        if "y" not in yes_or_no.lower():
             return await ctx.send(_("Not importing users"))
         leveler = self.bot.get_cog("Leveler")
         if not leveler:
@@ -2343,7 +2455,7 @@ class LevelUp(UserCommands, commands.Cog):
 
     @commands.command(name="etest", hidden=True)
     async def e_test(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
-        """Test emoji urls"""
+        """Test emojis to see if the bot is able to get a valid url for them"""
         if isinstance(emoji, str):
             em = self.get_twemoji(emoji)
             await ctx.send(em)
@@ -2461,23 +2573,25 @@ class LevelUp(UserCommands, commands.Cog):
             ctx.guild.get_channel(weekly["channel"]) if weekly["channel"] else None
         )
         role = ctx.guild.get_role(weekly["role"]) if weekly["role"] else None
-        last_winner = (
-            ctx.guild.get_member(weekly["last_winner"])
-            if weekly["last_winner"]
-            else None
-        )
-        txt = _("`Winner Count: `") + str(weekly["count"]) + "\n"
+        last_winners = [
+            ctx.guild.get_member(i).mention
+            for i in weekly["last_winners"]
+            if ctx.guild.get_member(i)
+        ]
+
+        txt = _("`Winner Count:   `") + str(weekly["count"]) + "\n"
         txt += (
-            _("`Last Winner:  `")
-            + (last_winner.mention if last_winner else _("None"))
+            _("`Last Winner(s): `")
+            + (humanize_list(last_winners) if last_winners else _("None"))
             + "\n"
         )
         txt += (
-            _("`Channel:      `") + (channel.mention if channel else _("None")) + "\n"
+            _("`Channel:        `") + (channel.mention if channel else _("None")) + "\n"
         )
-        txt += _("`Role:         `") + (role.mention if role else _("None")) + "\n"
-        txt += _("`Auto Remove:  `") + str(weekly["remove"]) + "\n"
-        txt += _("`Bonus Exp:    `") + humanize_number(weekly["bonus"])
+        txt += _("`Role:           `") + (role.mention if role else _("None")) + "\n"
+        txt += _("`RoleAllWinners: `") + str(weekly["role_all"]) + "\n"
+        txt += _("`Auto Remove:    `") + str(weekly["remove"]) + "\n"
+        txt += _("`Bonus Exp:      `") + humanize_number(weekly["bonus"])
         em.add_field(name=_("Settings"), value=txt, inline=False)
 
         dayname = self.daymap[weekly["reset_day"]]
@@ -2524,8 +2638,10 @@ class LevelUp(UserCommands, commands.Cog):
 
     @weekly_set.command(name="hour")
     async def reset_hour(self, ctx: commands.Context, hour: int):
-        """What hour the weekly stats reset
-        Set the hour (0 - 23 in UTC) for the weekly reset to take place"""
+        """
+        What hour the weekly stats reset
+        Set the hour (0 - 23 in UTC) for the weekly reset to take place
+        """
         if hour < 0 or hour > 23:
             return await ctx.send(_("Hour must be 0 to 23"))
         self.data[ctx.guild.id]["weekly"]["reset_hour"] = hour
@@ -2536,8 +2652,10 @@ class LevelUp(UserCommands, commands.Cog):
 
     @weekly_set.command(name="day")
     async def reset_day(self, ctx: commands.Context, day_of_the_week: int):
-        """What day of the week the weekly stats reset
-        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place"""
+        """
+        What day of the week the weekly stats reset
+        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place
+        """
         if day_of_the_week < 0 or day_of_the_week > 6:
             return await ctx.send(_("Day must be 0 to 6 (Monday to Sunday)"))
         self.data[ctx.guild.id]["weekly"]["reset_day"] = day_of_the_week
@@ -2551,8 +2669,10 @@ class LevelUp(UserCommands, commands.Cog):
 
     @weekly_set.command(name="top")
     async def top_members(self, ctx: commands.Context, top_count: int):
-        """Top weekly member count
-        Set amount of members to include in the weekly top leaderboard"""
+        """
+        Top weekly member count
+        Set amount of members to include in the weekly top leaderboard
+        """
         if top_count < 1:
             return await ctx.send(_("There must be at least one winner!"))
         elif top_count > 25:
@@ -2589,6 +2709,26 @@ class LevelUp(UserCommands, commands.Cog):
         await ctx.tick()
         await self.save_cache(ctx.guild)
 
+    @weekly_set.command(name="roleall")
+    async def role_all(self, ctx: commands.Context):
+        """Toggle whether to give the weekly winner role to all winners or only 1st place"""
+        toggle = self.data[ctx.guild.id]["weekly"]["role_all"]
+        if toggle:
+            self.data[ctx.guild.id]["weekly"]["role_all"] = False
+            await ctx.send(
+                _(
+                    "Only the 1st place winner of the weekly stats reset will receive the weekly role"
+                )
+            )
+        else:
+            self.data[ctx.guild.id]["weekly"]["role_all"] = True
+            await ctx.send(
+                _(
+                    "All top members listed in the weekly stat reset will receive the weekly role"
+                )
+            )
+        await self.save_cache(ctx.guild)
+
     @weekly_set.command(name="autoremove")
     async def weekly_autoremove(self, ctx: commands.Context):
         """One role holder at a time
@@ -2608,8 +2748,10 @@ class LevelUp(UserCommands, commands.Cog):
 
     @weekly_set.command(name="bonus")
     async def exp_bonus(self, ctx: commands.Context, exp_bonus: int):
-        """Weekly winners bonus experience points
-        Set to 0 to disable exp bonus"""
+        """
+        Weekly winners bonus experience points
+        Set to 0 to disable exp bonus
+        """
         self.data[ctx.guild.id]["weekly"]["bonus"] = exp_bonus
         await ctx.tick()
         await self.save_cache(ctx.guild)
