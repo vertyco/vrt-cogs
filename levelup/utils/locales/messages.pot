@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2022-12-19 20:41-0500\n"
+"POT-Creation-Date: 2022-12-20 20:47-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -108,6 +108,6 @@ msgstr ""
 msgid "You: "
 msgstr ""
 
-#: utils\formatter.py:244 utils\formatter.py:246
+#: utils\formatter.py:255 utils\formatter.py:257
 msgid "Pages "
 msgstr ""
