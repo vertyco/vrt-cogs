@@ -80,7 +80,7 @@ class YouTubeDownloader(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -100,7 +100,6 @@ class YouTubeDownloader(commands.Cog):
         )
 
     @commands.group(aliases=["youtubedownloader", "ytdl"])
-    @commands.is_owner()
     async def yt(self, ctx):
         """
         Download YouTube videos to mp4 audio files!
@@ -114,6 +113,7 @@ class YouTubeDownloader(commands.Cog):
         """
 
     @yt.command()
+    @commands.is_owner()
     async def downloadpath(self, ctx, *, path: str):
         """Set your path for local downloads"""
         if not os.path.isdir(path) or not os.path.exists(path):
@@ -122,6 +122,7 @@ class YouTubeDownloader(commands.Cog):
         await ctx.tick()
 
     @yt.command()
+    @commands.is_owner()
     async def view(self, ctx):
         """View the current download path and total files downloaded"""
         path = await self.config.download_path()
@@ -237,6 +238,7 @@ class YouTubeDownloader(commands.Cog):
             await self.config.downloaded.set(dl + downloaded)
 
     @yt.command()
+    @commands.is_owner()
     async def playlist(self, ctx, folder_name: str, playlist_link: str):
         """Download all videos from a playlist to audio files"""
         if "playlist" not in playlist_link and "index" not in playlist_link:
@@ -381,6 +383,7 @@ class YouTubeDownloader(commands.Cog):
             await self.config.downloaded.set(dl + downloaded)
 
     @yt.command()
+    @commands.is_owner()
     async def channel(self, ctx, folder_name: str, channel_link: str):
         """Download all videos from a YouTube channel to audio files"""
         if "playlist" in channel_link or "index" in channel_link:
