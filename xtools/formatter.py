@@ -1,6 +1,7 @@
 import json
 import math
 import re
+import traceback
 from datetime import datetime
 from typing import List
 
@@ -56,10 +57,12 @@ def time_formatter(time_in_seconds) -> str:
 
 # Microsoft's timestamp end digits are fucked up and random, so we iteratively try fixing them by stripping digits
 def fix_timestamp(time: str, timezone: str = "UTC"):
-    res = re.search(r"(.+)[.Z](?:\d+(.+)|)", time)
-    string = "".join(g for g in res.groups() if g)
-    time = datetime.fromisoformat(string).astimezone(pytz.timezone(timezone))
-    return time
+    try:
+        res = re.search(r"(.+:\d\d)[.Z]\d*([+-].+)*", time)
+        string = "".join(g for g in res.groups() if g)
+        return datetime.fromisoformat(string).astimezone(pytz.timezone(timezone))
+    except ValueError:
+        raise ValueError(f"{traceback.format_exc()}\nOriginal String: {time}")
 
 
 # Format profile data
