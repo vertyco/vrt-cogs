@@ -42,7 +42,7 @@ class Events(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1217,7 +1217,7 @@ class Events(commands.Cog):
             for message_id in message_ids:
                 try:
                     message = await channel.fetch_message(message_id)
-                except discord.NotFound:
+                except (discord.NotFound, discord.HTTPException):
                     continue
                 votes = 0
                 for reaction in message.reactions:
