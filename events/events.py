@@ -1218,6 +1218,9 @@ class Events(commands.Cog):
                 try:
                     message = await channel.fetch_message(message_id)
                 except (discord.NotFound, discord.HTTPException):
+                    log.warning(
+                        f"Failed to fetch message ID {message_id} for {submitter}"
+                    )
                     continue
                 votes = 0
                 for reaction in message.reactions:
