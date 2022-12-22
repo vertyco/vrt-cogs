@@ -66,7 +66,7 @@ class LevelUp(UserCommands, commands.Cog):
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.20.50"
+    __version__ = "2.20.51"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2578,6 +2578,7 @@ class LevelUp(UserCommands, commands.Cog):
             for i in weekly["last_winners"]
             if ctx.guild.get_member(i)
         ]
+        last_winners = [f"({index + 1}){i}" for index, i in enumerate(last_winners)]
 
         txt = _("`Winner Count:   `") + str(weekly["count"]) + "\n"
         txt += (
