@@ -1018,13 +1018,13 @@ class LevelUp(UserCommands, commands.Cog):
                 for w in winners:
                     await w.add_roles(role)
         # Set new last winner
-        self.data[guild.id]["weekly"]["last_winners"] = [w.id for w in winners]
+        new_winners = [w.id for w in winners]
+        self.data[guild.id]["weekly"]["last_winners"] = new_winners
+        bonus = w["bonus"]
         # Apply bonus xp to top members
-        if self.data[guild.id]["weekly"]["bonus"]:
+        if bonus:
             for uid in top_uids:
-                self.data[guild.id]["users"][uid]["xp"] += self.data[guild.id][
-                    "weekly"
-                ]["bonus"]
+                self.data[guild.id]["users"][uid]["xp"] += bonus
 
         self.data[guild.id]["weekly"]["last_reset"] = int(datetime.utcnow().timestamp())
         self.data[guild.id]["weekly"]["users"].clear()
