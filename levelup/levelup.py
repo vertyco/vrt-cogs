@@ -1015,10 +1015,10 @@ class LevelUp(UserCommands, commands.Cog):
                         await last_winner.remove_roles(role)
             # Give new winner or winners the role
             with contextlib.suppress(*ignore):
-                for w in winners:
-                    await w.add_roles(role)
+                for win in winners:
+                    await win.add_roles(role)
         # Set new last winner
-        new_winners = [w.id for w in winners]
+        new_winners = [win.id for win in winners]
         self.data[guild.id]["weekly"]["last_winners"] = new_winners
         bonus = w["bonus"]
         # Apply bonus xp to top members
