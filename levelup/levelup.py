@@ -66,7 +66,7 @@ class LevelUp(UserCommands, commands.Cog):
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.20.51"
+    __version__ = "2.20.52"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -994,7 +994,7 @@ class LevelUp(UserCommands, commands.Cog):
             with contextlib.suppress(*ignore):
                 await channel.send(embed=em)
 
-        top = sorted_users[: w["count"]]
+        top = sorted_users[: int(w["count"])]
         if w["role_all"]:
             winners: List[discord.Member] = [i[0] for i in top]
         else:
@@ -1020,9 +1020,11 @@ class LevelUp(UserCommands, commands.Cog):
         # Set new last winner
         self.data[guild.id]["weekly"]["last_winners"] = [w.id for w in winners]
         # Apply bonus xp to top members
-        if w["bonus"]:
+        if self.data[guild.id]["weekly"]["bonus"]:
             for uid in top_uids:
-                self.data[guild.id]["users"][uid]["xp"] += w["bonus"]
+                self.data[guild.id]["users"][uid]["xp"] += self.data[guild.id][
+                    "weekly"
+                ]["bonus"]
 
         self.data[guild.id]["weekly"]["last_reset"] = int(datetime.utcnow().timestamp())
         self.data[guild.id]["weekly"]["users"].clear()
