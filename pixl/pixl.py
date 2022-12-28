@@ -17,6 +17,7 @@ from redbot.core.utils.chat_formatting import (
     humanize_list,
     humanize_number,
     humanize_timedelta,
+    pagify,
 )
 from tabulate import tabulate
 
@@ -40,7 +41,7 @@ class Pixl(commands.Cog):
     """Guess pictures for points"""
 
     __author__ = "Vertyco"
-    __version__ = "0.2.18"
+    __version__ = "0.2.19"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -538,7 +539,7 @@ class Pixl(commands.Cog):
         """
         global_images = await self.config.images()
         async with ctx.typing():
-            if any([not url, not answers]):
+            if any([not url, not answers]):  # Check for attachments
                 to_add = []
                 failed = []
                 embeds = []
@@ -584,7 +585,9 @@ class Pixl(commands.Cog):
                     images.extend(to_add)
                 if failed:
                     txt = "\n".join(failed)
-                    await ctx.send(f"The following lines failed\n{box(txt)}")
+                    await ctx.send("The following lines failed!")
+                    for p in pagify(txt, page_length=2000):
+                        await ctx.send(box(p))
                 if not to_add:
                     return await ctx.send(
                         "There were no valid images that could be added!"
@@ -680,7 +683,9 @@ class Pixl(commands.Cog):
                     images.extend(to_add)
                 if failed:
                     txt = "\n".join(failed)
-                    await ctx.send(f"The following lines failed\n{box(txt)}")
+                    await ctx.send("The following lines failed!")
+                    for p in pagify(txt, page_length=2000):
+                        await ctx.send(box(p))
                 if not to_add:
                     return await ctx.send(
                         "There were no valid images that could be added!"
@@ -747,6 +752,7 @@ class Pixl(commands.Cog):
         )
         async with conf.images() as images:
             del images[instance.page]
+        del instance.pages[instance.page]
 
         images = await conf.images()
         if not images:
