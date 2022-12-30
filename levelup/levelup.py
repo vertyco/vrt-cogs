@@ -66,7 +66,7 @@ class LevelUp(UserCommands, commands.Cog):
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.20.52"
+    __version__ = "2.20.53"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -115,8 +115,8 @@ class LevelUp(UserCommands, commands.Cog):
             "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve
             "length": 0,  # Minimum length of message to be considered eligible for XP gain
             "starcooldown": 3600,  # Cooldown in seconds for users to give each other stars
-            "starmention": True,  # Mention when users add a star
-            "starmentionautodelete": 30,  # Auto delete star mention reactions (0 to disable)
+            "starmention": False,  # Mention when users add a star
+            "starmentionautodelete": 0,  # Auto delete star mention reactions (0 to disable)
             "usepics": False,  # Use Pics instead of embeds for leveling, Embeds are default
             "barlength": 15,  # Progress bar length for embed profiles
             "autoremove": False,  # Remove previous role on level up
