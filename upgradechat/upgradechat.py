@@ -1,4 +1,5 @@
 import discord
+from discord.ext.commands.cooldowns import BucketType
 from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
@@ -17,7 +18,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.5"
+    __version__ = "0.0.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -198,6 +199,7 @@ class UpgradeChat(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
+    @commands.cooldown(1, 60, BucketType.user)
     async def claim(self, ctx: commands.Context):
         """Claim your Upgrade.Chat purchases!"""
         async with ctx.typing():
