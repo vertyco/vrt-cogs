@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.2.8"
+    __version__ = "1.2.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -875,7 +875,7 @@ class VrtUtils(commands.Cog):
             m_sort = sorted(members, key=lambda x: x.joined_at)
             txt = "\n".join(
                 [
-                    f"{i + 1}. {m.mention} "
+                    f"{i + 1}. {m} "
                     f"joined <t:{int(m.joined_at.timestamp())}:f> (<t:{int(m.joined_at.timestamp())}:R>)"
                     for i, m in enumerate(m_sort[:amount])
                 ]
@@ -893,7 +893,7 @@ class VrtUtils(commands.Cog):
             m_sort = sorted(members, key=lambda x: x.created_at)
             txt = "\n".join(
                 [
-                    f"{i + 1}. {m.mention} "
+                    f"{i + 1}. {m} "
                     f"created <t:{int(m.created_at.timestamp())}:f> (<t:{int(m.created_at.timestamp())}:R>)"
                     for i, m in enumerate(m_sort[:amount])
                 ]
