@@ -200,20 +200,3 @@ class AutoDocs(commands.Cog):
         file = discord.File(buffer)
         txt = _("Here are your docs for {}").format(cog.qualified_name)
         await ctx.send(txt, file=file)
-
-    @commands.command(name="syncslash")
-    @commands.is_owner()
-    async def sync_slash(self, ctx: commands.Context, global_sync: bool):
-        """
-        Sync slash commands
-
-        **Arguments**
-        `global_sync:` If True, syncs global slash commands, syncs current guild by default
-        """
-        if global_sync:
-            await self.bot.tree.sync()
-            await ctx.send(_("Synced global slash commands!"))
-        else:
-            await self.bot.tree.sync(guild=ctx.guild)
-            await ctx.send(_("Synced slash commands for this guild!"))
-        await ctx.tick()
