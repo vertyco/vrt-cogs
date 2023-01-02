@@ -9,7 +9,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO, StringIO
 from sys import executable
-from typing import Union
+from typing import Optional, Union
 
 import cpuinfo
 import discord
@@ -20,6 +20,7 @@ from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import (
     box,
+    humanize_list,
     humanize_number,
     humanize_timedelta,
     pagify,
@@ -61,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.2.7"
+    __version__ = "1.2.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -139,36 +140,51 @@ class VrtUtils(commands.Cog):
         results = {"read": sum(reads) / len(reads), "write": sum(writes) / len(writes)}
         return results
 
-    def make_readme(self, cog: commands.Cog, p: str) -> str:
-        docs = ""
+    def make_readme(
+        self,
+        cog: commands.Cog,
+        prefix: Optional[str] = None,
+        include_hidden: Optional[bool] = False,
+    ) -> str:
+        docs = f"# {cog.qualified_name} Help\n\n{cog.help}\n\n"
+
         for cmd in cog.walk_commands():
             level = len(str(cmd).split(" "))
             hashes = (level + 1) * "#"
             cmd_obj = self.bot.get_command(str(cmd))
+            if cmd_obj.hidden and not include_hidden:
+                continue
 
+            aliases = cmd_obj.aliases
+
+            # Get params
             params = cmd_obj.clean_params
-
             param_string = ""
             for k, v in params.items():
                 arg = v.name
                 default = v.default
-
                 if default == v.empty:
                     param_string += f"<{arg}> "
+                elif v.kind == v.KEYWORD_ONLY:
+                    param_string += f"[{arg}] "
                 else:
-                    if v.kind == v.KEYWORD_ONLY:
-                        param_string += f"[{arg}] "
-                    else:
-                        param_string += f"[{arg}={default}] "
+                    param_string += f"[{arg}={default}] "
             param_string = param_string.strip()
 
-            hlp = cmd_obj.help.replace("[p]", p)
+            hlp = cmd_obj.help
 
-            usage = f"{p}{cmd}"
+            if prefix:
+                hlp = hlp.replace("[p]", prefix)
+                usage = f"{prefix}{cmd}"
+            else:
+                usage = f"[p]{cmd}"
+
             if param_string:
                 usage += f" {param_string}"
 
             docs += f"{hashes} {cmd}\n" f"- usage: `{usage}`\n\n"
+            if aliases:
+                docs += f" - Aliases: `{humanize_list(aliases)}`\n\n"
             if hlp:
                 docs += f"{hlp}\n\n"
 
@@ -177,16 +193,29 @@ class VrtUtils(commands.Cog):
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
     @commands.command(name="makedocs")
     @commands.is_owner()
-    async def get_cmds(self, ctx, cog_name: str):
-        """Create a Markdown docs page for a cog and send to discord"""
+    async def get_cmds(
+        self,
+        ctx,
+        cog_name: str,
+        replace_prefix: Optional[bool] = False,
+        include_hidden: Optional[bool] = False,
+    ):
+        """
+        Create a Markdown docs page for a cog and send to discord
+
+        **Arguments**
+        `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)
+        `replace_prefix:`(bool) If True, replaces [p] with the bots prefix for the server it is run in
+        `include_hidden:`(bool) If True, includes hidden commands
+        """
         cog = self.bot.get_cog(cog_name)
         if not cog:
             return await ctx.send("I could not find that cog, maybe it is not loaded?")
 
-        res = self.make_readme(cog, ctx.prefix)
+        p = ctx.prefix if replace_prefix else None
+        res = self.make_readme(cog, p, include_hidden)
 
-        docs = f"# {cog_name} Help\n\n{res}"
-        buffer = BytesIO(docs.encode())
+        buffer = BytesIO(res.encode())
         buffer.name = f"{cog_name}.md"
         buffer.seek(0)
         file = discord.File(buffer)
