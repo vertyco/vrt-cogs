@@ -7,7 +7,7 @@ import platform
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from io import StringIO
+from io import BytesIO, StringIO
 from sys import executable
 from typing import Union
 
@@ -61,7 +61,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.1.7"
+    __version__ = "1.2.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -139,7 +139,59 @@ class VrtUtils(commands.Cog):
         results = {"read": sum(reads) / len(reads), "write": sum(writes) / len(writes)}
         return results
 
+    def make_readme(self, cog: commands.Cog, p: str) -> str:
+        docs = ""
+        for cmd in cog.walk_commands():
+            level = len(str(cmd).split(" "))
+            hashes = (level + 1) * "#"
+            cmd_obj = self.bot.get_command(str(cmd))
+
+            params = cmd_obj.clean_params
+
+            param_string = ""
+            for k, v in params.items():
+                arg = v.name
+                default = v.default
+
+                if default == v.empty:
+                    param_string += f"<{arg}> "
+                else:
+                    if v.kind == v.KEYWORD_ONLY:
+                        param_string += f"[{arg}] "
+                    else:
+                        param_string += f"[{arg}={default}] "
+            param_string = param_string.strip()
+
+            hlp = cmd_obj.help.replace("[p]", p)
+
+            usage = f"{p}{cmd}"
+            if param_string:
+                usage += f" {param_string}"
+
+            docs += f"{hashes} {cmd}\n" f"- usage: `{usage}`\n\n"
+            if hlp:
+                docs += f"{hlp}\n\n"
+
+        return docs
+
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
+    @commands.command(name="makedocs")
+    @commands.is_owner()
+    async def get_cmds(self, ctx, cog_name: str):
+        """Create a Markdown docs page for a cog and send to discord"""
+        cog = self.bot.get_cog(cog_name)
+        if not cog:
+            return await ctx.send("I could not find that cog, maybe it is not loaded?")
+
+        res = self.make_readme(cog, ctx.prefix)
+
+        docs = f"# {cog_name} Help\n\n{res}"
+        buffer = BytesIO(docs.encode())
+        buffer.name = f"{cog_name}.md"
+        buffer.seek(0)
+        file = discord.File(buffer)
+        await ctx.send(f"Here are your docs for {cog_name}", file=file)
+
     @commands.command(aliases=["diskbench"])
     @commands.is_owner()
     async def diskspeed(self, ctx):
