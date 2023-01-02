@@ -205,7 +205,7 @@ class VrtUtils(commands.Cog):
 
         **Arguments**
         `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)
-        `replace_prefix:`(bool) If True, replaces [p] with the bots prefix for the server it is run in
+        `replace_prefix:`(bool) If True, replaces the prefix placeholder [] with the prefix for the server its run in
         `include_hidden:`(bool) If True, includes hidden commands
         """
         cog = self.bot.get_cog(cog_name)
