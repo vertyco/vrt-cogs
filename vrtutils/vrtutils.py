@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.2.10"
+    __version__ = "1.2.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -182,7 +182,7 @@ class VrtUtils(commands.Cog):
             if param_string:
                 usage += f" {param_string}"
 
-            docs += f"{hashes} {cmd}\n" f"- usage: `{usage}`\n\n"
+            docs += f"{hashes} {cmd}\n" f" - usage: `{usage}`\n\n"
             if aliases:
                 docs += f" - Aliases: `{humanize_list(aliases)}`\n\n"
             if hlp:
@@ -191,9 +191,9 @@ class VrtUtils(commands.Cog):
         return docs
 
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
-    @commands.command(name="makedocs")
+    @commands.command(name="makemedocs")
     @commands.is_owner()
-    async def get_cmds(
+    async def get_cog_docs(
         self,
         ctx,
         cog_name: str,
@@ -202,6 +202,8 @@ class VrtUtils(commands.Cog):
     ):
         """
         Create a Markdown docs page for a cog and send to discord
+
+        The full version of this is now a separate cog called AutoDocs
 
         **Arguments**
         `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)
@@ -936,3 +938,22 @@ class VrtUtils(commands.Cog):
             await msg.edit(content=f"Deleted {deleted} VCs!")
         else:
             await msg.edit(content="No VCs to delete!")
+
+    @commands.command(name="syncslash")
+    @commands.is_owner()
+    async def sync_slash(self, ctx: commands.Context, global_sync: bool):
+        """
+        Sync slash commands
+
+        **Arguments**
+        `global_sync:` If True, syncs global slash commands, syncs current guild by default
+        """
+        if not DPY2:
+            return await ctx.send("This command can only be used with DPy2")
+        if global_sync:
+            await self.bot.tree.sync()
+            await ctx.send("Synced global slash commands!")
+        else:
+            await self.bot.tree.sync(guild=ctx.guild)
+            await ctx.send("Synced slash commands for this guild!")
+        await ctx.tick()
