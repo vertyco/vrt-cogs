@@ -1,0 +1,99 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2023-01-02 19:10-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+
+#: autodocs.py:19
+#, docstring
+msgid ""
+"\n"
+"    Document your cogs with ease!\n"
+"\n"
+"    Easily create documentation for any cog in Markdown format.\n"
+"    "
+msgstr ""
+
+#: autodocs.py:30
+msgid ""
+"{}\n"
+"Cog Version: {}\n"
+"Author: {}"
+msgstr ""
+
+#: autodocs.py:36
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: autodocs.py:41
+msgid "Help"
+msgstr ""
+
+#: autodocs.py:42
+msgid "Usage"
+msgstr ""
+
+#: autodocs.py:43
+msgid "Aliases"
+msgstr ""
+
+#: autodocs.py:44
+msgid "Required"
+msgstr ""
+
+#: autodocs.py:45
+msgid "Optional"
+msgstr ""
+
+#: autodocs.py:46
+msgid "Slash"
+msgstr ""
+
+#: autodocs.py:47
+msgid "Hybrid"
+msgstr ""
+
+#: autodocs.py:168
+msgid "Create docs for a cog"
+msgstr ""
+
+#: autodocs.py:170
+msgid "The name of the cog you want to make docs for (Case Sensitive)"
+msgstr ""
+
+#: autodocs.py:171
+msgid "Replace prefix placeholder with the bots prefix"
+msgstr ""
+
+#: autodocs.py:172
+msgid "Include hidden commands"
+msgstr ""
+
+#: autodocs.py:182
+#, docstring
+msgid ""
+"\n"
+"        Create a Markdown docs page for a cog and send to discord\n"
+"\n"
+"        **Arguments**\n"
+"        `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)\n"
+"        `replace_prefix:`(bool) If True, replaces the prefix placeholder [] with the bots prefix\n"
+"        `include_hidden:`(bool) If True, includes hidden commands\n"
+"        "
+msgstr ""
+
+#: autodocs.py:193
+msgid "I could not find that cog, maybe it is not loaded?"
+msgstr ""
+
+#: autodocs.py:203
+msgid "Here are your docs for {}"
+msgstr ""

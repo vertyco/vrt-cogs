@@ -18,6 +18,8 @@ _ = Translator("AutoDocs", __file__)
 class AutoDocs(commands.Cog):
     """
     Document your cogs with ease!
+
+    Easily create documentation for any cog in Markdown format.
     """
 
     __author__ = "Vertyco"
