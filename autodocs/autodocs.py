@@ -14,6 +14,7 @@ log = logging.getLogger("red.vrt.autodocs")
 _ = Translator("AutoDocs", __file__)
 
 
+# redgettext -D autodocs.py
 @cog_i18n(_)
 class AutoDocs(commands.Cog):
     """
@@ -45,6 +46,7 @@ class AutoDocs(commands.Cog):
         self.o = _("Optional")
         self.s = _("Slash")
         self.hb = _("Hybrid")
+        self.c = _("Command")
 
     def generate_readme(
         self,
@@ -91,7 +93,7 @@ class AutoDocs(commands.Cog):
                     "pinfo": param_info,
                 }
             else:
-                docs += f"{hashes} {name} ({self.s})\n - {self.u}: `{usage}`"
+                docs += f"{hashes} {name} ({self.s} {self.c})\n - {self.u}: `{usage}`"
                 if param_info:
                     docs += f"\n{param_info}\n\n"
                 else:
@@ -141,7 +143,7 @@ class AutoDocs(commands.Cog):
                 if pstring:
                     otherusage += f" {pstring}"
                 docs += (
-                    f"{hashes} {name} ({self.hb})\n"
+                    f"{hashes} {name} ({self.hb} {self.c})\n"
                     f" - {self.u}: `{usage}`\n"
                     f" - {self.s} {self.u}: `{otherusage}`\n"
                 )
