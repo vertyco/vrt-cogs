@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-01-02 20:41-0500\n"
+"POT-Creation-Date: 2023-01-03 18:37-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: autodocs.py:20
+#: autodocs.py:21
 #, docstring
 msgid ""
 "\n"
@@ -21,71 +21,67 @@ msgid ""
 "    "
 msgstr ""
 
-#: autodocs.py:31
+#: autodocs.py:32
 msgid ""
 "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: autodocs.py:37
+#: autodocs.py:38
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: autodocs.py:42
+#: autodocs.py:43
 msgid "Help"
 msgstr ""
 
-#: autodocs.py:43
+#: autodocs.py:44
 msgid "Usage"
 msgstr ""
 
-#: autodocs.py:44
+#: autodocs.py:45
 msgid "Aliases"
 msgstr ""
 
-#: autodocs.py:45
+#: autodocs.py:46
 msgid "Required"
 msgstr ""
 
-#: autodocs.py:46
+#: autodocs.py:47
 msgid "Optional"
 msgstr ""
 
-#: autodocs.py:47
+#: autodocs.py:48
 msgid "Slash"
 msgstr ""
 
-#: autodocs.py:48
+#: autodocs.py:49
 msgid "Hybrid"
 msgstr ""
 
-#: autodocs.py:49
+#: autodocs.py:50
 msgid "Command"
 msgstr ""
 
-#: autodocs.py:176
-msgid "Here are your docs for {}"
-msgstr ""
-
-#: autodocs.py:179
+#: autodocs.py:171
 msgid "Create docs for a cog"
 msgstr ""
 
-#: autodocs.py:181
+#: autodocs.py:173
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr ""
 
-#: autodocs.py:182
+#: autodocs.py:174
 msgid "Replace prefix placeholder with the bots prefix"
 msgstr ""
 
-#: autodocs.py:183
+#: autodocs.py:175
 msgid "Include hidden commands"
 msgstr ""
 
-#: autodocs.py:193
+#: autodocs.py:185
 #, docstring
 msgid ""
 "\n"
@@ -101,6 +97,18 @@ msgid ""
 "        "
 msgstr ""
 
+#: autodocs.py:211
+msgid "AllCogDocs.zip"
+msgstr ""
+
 #: autodocs.py:214
+msgid "Here are the docs for all of your currently loaded cogs!"
+msgstr ""
+
+#: autodocs.py:219
 msgid "I could not find that cog, maybe it is not loaded?"
+msgstr ""
+
+#: autodocs.py:227
+msgid "Here are your docs for {}!"
 msgstr ""
