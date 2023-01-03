@@ -15,7 +15,7 @@ class Pupper(commands.Cog):
     """Pet the doggo!"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -258,7 +258,9 @@ class Pupper(commands.Cog):
             first_msg = f"{humanize_list(channels_appended)} added to the valid petting channels.\n"
         if len(channels_in_list) > 0:
             second_msg = f"{humanize_list(channels_in_list)}: already in the list of petting channels."
-        await ctx.send(f"{first_msg}{second_msg}")
+        txt = f"{first_msg}\n{second_msg}"
+        for p in pagify(txt, page_length=2000):
+            await ctx.send(p)
         await self.initialize(ctx.guild)
 
     @channel.command()
