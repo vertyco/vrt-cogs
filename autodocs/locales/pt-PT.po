@@ -104,4 +104,3 @@ msgstr ""
 #: autodocs.py:214
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr ""
-
