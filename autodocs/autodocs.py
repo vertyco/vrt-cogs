@@ -23,7 +23,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -165,6 +165,15 @@ class AutoDocs(commands.Cog):
 
         return docs
 
+    @staticmethod
+    async def send_file(ctx: commands.Context, res: str, cog: commands.Cog):
+        buffer = BytesIO(res.encode())
+        buffer.name = f"{cog.qualified_name}.md"
+        buffer.seek(0)
+        file = discord.File(buffer)
+        txt = _("Here are your docs for {}").format(cog.qualified_name)
+        await ctx.send(txt, file=file)
+
     @commands.hybrid_command(name="makedocs", description=_("Create docs for a cog"))
     @app_commands.describe(
         cog_name=_("The name of the cog you want to make docs for (Case Sensitive)"),
@@ -186,19 +195,21 @@ class AutoDocs(commands.Cog):
         `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)
         `replace_prefix:`(bool) If True, replaces the prefix placeholder [] with the bots prefix
         `include_hidden:`(bool) If True, includes hidden commands
+
+        **Warning**
+        If `all` is specified for cog_name, and you have a lot of cogs loaded, prepare for a spammed channel
         """
-        cog = self.bot.get_cog(cog_name)
-        if not cog:
-            return await ctx.send(
-                _("I could not find that cog, maybe it is not loaded?")
-            )
-
         p = ctx.prefix if replace_prefix else None
-        res = self.generate_readme(cog, p, include_hidden)
-
-        buffer = BytesIO(res.encode())
-        buffer.name = f"{cog.qualified_name}.md"
-        buffer.seek(0)
-        file = discord.File(buffer)
-        txt = _("Here are your docs for {}").format(cog.qualified_name)
-        await ctx.send(txt, file=file)
+        if cog_name == "all":
+            for cog in self.bot.cogs:
+                cog = self.bot.get_cog(cog)
+                res = self.generate_readme(cog, p, include_hidden)
+                await self.send_file(ctx, res, cog)
+        else:
+            cog = self.bot.get_cog(cog_name)
+            if not cog:
+                return await ctx.send(
+                    _("I could not find that cog, maybe it is not loaded?")
+                )
+            res = self.generate_readme(cog, p, include_hidden)
+            await self.send_file(ctx, res, cog)
