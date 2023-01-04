@@ -197,18 +197,20 @@ class AutoDocs(commands.Cog):
             p = ctx.prefix if replace_prefix else None
             if cog_name == "all":
                 buffer = BytesIO()
+                folder_name = _("AllCogDocs")
                 with ZipFile(
                     buffer, "w", compression=ZIP_DEFLATED, compresslevel=9
                 ) as arc:
+                    arc.mkdir(folder_name, mode=755)
                     for cog in self.bot.cogs:
                         cog = self.bot.get_cog(cog)
                         res = self.generate_readme(cog, p, include_hidden)
-                        filename = f"{cog.qualified_name}.md"
+                        filename = f"{folder_name}/{cog.qualified_name}.md"
                         arc.writestr(
                             filename, res, compress_type=ZIP_DEFLATED, compresslevel=9
                         )
 
-                buffer.name = _("AllCogDocs.zip")
+                buffer.name = f"{folder_name}.zip"
                 buffer.seek(0)
                 file = discord.File(buffer)
                 txt = _("Here are the docs for all of your currently loaded cogs!")
