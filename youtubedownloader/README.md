@@ -23,6 +23,11 @@ or downloaded locally to a folder of your choosing.
 Heavy usage of this cog may result in your bots ip getting suspended by YouTube,
 use at your own risk.
 
+## yt downloadpath
+ - Usage: `[p]yt downloadpath <path>`
+
+Set your path for local downloads
+
 ## yt multi
  - Usage: `[p]yt multi <link>`
 
@@ -30,6 +35,11 @@ Get multiple audio files from a list of links
 
 To include multiple links, separate them with a linebreak
 You may also include playlists
+
+## yt view
+ - Usage: `[p]yt view`
+
+View the current download path and total files downloaded
 
 ## yt channel
  - Usage: `[p]yt channel <folder_name> <channel_link>`
@@ -46,12 +56,3 @@ Download all videos from a playlist to audio files
 
 Get an audio file from a YouTube link
 
-## yt downloadpath
- - Usage: `[p]yt downloadpath <path>`
-
-Set your path for local downloads
-
-## yt view
- - Usage: `[p]yt view`
-
-View the current download path and total files downloaded
