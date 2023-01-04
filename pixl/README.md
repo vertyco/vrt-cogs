@@ -34,10 +34,29 @@ Configure the Pixl game
 
 Set the minimum amount of participants for the game to reward users credits
 
-## pixlset blocks
- - Usage: `[p]pixlset blocks <amount>`
+## pixlset timelimit
+ - Usage: `[p]pixlset timelimit <seconds>`
 
-Set the amount of blocks to reveal after each delay
+Set the time limit for Pixl games
+
+## pixlset showdefault
+ - Usage: `[p]pixlset showdefault`
+
+(Toggle) Whether to use the default hardcoded images in this guild
+
+## pixlset ratio
+ - Usage: `[p]pixlset ratio <ratio>`
+
+Set the point to credit conversion ratio (points x ratio = credit reward)
+Points are calculated based on how many hidden blocks are left at the end of the game
+
+Ratio can be a decimal
+Set to 0 to disable credit rewards
+
+## pixlset showanswer
+ - Usage: `[p]pixlset showanswer`
+
+(Toggle) Showing the answer after a game over
 
 ## pixlset delay
  - Usage: `[p]pixlset delay <seconds>`
@@ -47,40 +66,15 @@ Set the amount of blocks to reveal after each delay
 **Warning**
 Setting this too low may hit rate limits, default is 5 seconds.
 
-## pixlset showdefault
- - Usage: `[p]pixlset showdefault`
-
-(Toggle) Whether to use the default hardcoded images in this guild
-
-## pixlset view
- - Usage: `[p]pixlset view`
-
-View the current settings
-
-## pixlset timelimit
- - Usage: `[p]pixlset timelimit <seconds>`
-
-Set the time limit for Pixl games
-
-## pixlset showanswer
- - Usage: `[p]pixlset showanswer`
-
-(Toggle) Showing the answer after a game over
-
-## pixlset useglobal
- - Usage: `[p]pixlset useglobal`
-
-(Toggle) Whether to use global images in this guild
-
 ## pixlset image
  - Usage: `[p]pixlset image`
 
 Add/Remove images
 
-### pixlset image viewglobal
- - Usage: `[p]pixlset image viewglobal`
+### pixlset image view
+ - Usage: `[p]pixlset image view`
 
-View the global images
+View the guild images
 
 ### pixlset image add
  - Usage: `[p]pixlset image add <url> <answers>`
@@ -106,11 +100,6 @@ https://yet_another_url.com/another_example.jpg, answer one, answer 2, another a
 
 View the default images
 
-### pixlset image testguild
- - Usage: `[p]pixlset image testguild`
-
-Test the guild images to ensure they are valid urls
-
 ### pixlset image addglobal
  - Usage: `[p]pixlset image addglobal <url> <answers>`
 
@@ -130,21 +119,33 @@ https://some_url.com/example.png, answer1, answer two, another answer
 https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer
 ```
 
-### pixlset image view
- - Usage: `[p]pixlset image view`
+### pixlset image testguild
+ - Usage: `[p]pixlset image testguild`
 
-View the guild images
+Test the guild images to ensure they are valid urls
+
+### pixlset image viewglobal
+ - Usage: `[p]pixlset image viewglobal`
+
+View the global images
 
 ### pixlset image testglobal
  - Usage: `[p]pixlset image testglobal`
 
 Test the global images to ensure they are valid urls
 
-## pixlset ratio
- - Usage: `[p]pixlset ratio <ratio>`
+## pixlset blocks
+ - Usage: `[p]pixlset blocks <amount>`
 
-Set the point to credit conversion ratio (points x ratio = credit reward)
-Points are calculated based on how many hidden blocks are left at the end of the game
+Set the amount of blocks to reveal after each delay
 
-Ratio can be a decimal
-Set to 0 to disable credit rewards
+## pixlset view
+ - Usage: `[p]pixlset view`
+
+View the current settings
+
+## pixlset useglobal
+ - Usage: `[p]pixlset useglobal`
+
+(Toggle) Whether to use global images in this guild
+

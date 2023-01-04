@@ -59,3 +59,4 @@ Must be at least 1 hour.
     - `[p]bankgraph 3w2d`
     - `[p]bankgraph 5d`
     - `[p]bankgraph all`
+

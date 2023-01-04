@@ -22,33 +22,17 @@ Enter an event if one exists
 
 Create, manage and view events
 
-## events blacklistuser
- - Usage: `[p]events blacklistuser <user>`
+## events pingstaff
+ - Usage: `[p]events pingstaff`
 
-Add/Remove blacklisted users
+(Toggle) Ping staff on event completion
 
-These users are not allowed to enter events, but can still vote on them
+## events autodelete
+ - Usage: `[p]events autodelete`
 
-## events blacklistrole
- - Usage: `[p]events blacklistrole <role>`
+(Toggle) Auto delete events from config when they complete
 
-Add/Remove blacklisted roles
-
-These roles are not allowed to enter events, but can still vote on them
-
-## events notifyrole
- - Usage: `[p]events notifyrole <role>`
-
-Add/Remove notify roles
-
-These roles will be pinged on event start and completion
-
-## events staffrole
- - Usage: `[p]events staffrole <role>`
-
-Add/Remove staff roles
-
-If ping staff is enabled, these roles will be pinged on event completion
+If auto delete is enabled, the messages in the event channel will need to be cleaned up manually
 
 ## events emoji
  - Usage: `[p]events emoji <emoji>`
@@ -58,14 +42,17 @@ Set the default emoji for votes
 Changing the vote emoji only affects events created after this is changed.
 Existing events will still use the previous emoji for votes
 
-## events extend
- - Usage: `[p]events extend <time_string>`
+## events create
+ - Usage: `[p]events create`
 
-Extend the runtime of an event
+Create a new event
 
-**Examples**
-`10d` - 10 days
-`7d4h` - 7 days 4 hours
+## events staffrole
+ - Usage: `[p]events staffrole <role>`
+
+Add/Remove staff roles
+
+If ping staff is enabled, these roles will be pinged on event completion
 
 ## events resultdelete
  - Usage: `[p]events resultdelete`
@@ -74,40 +61,6 @@ Extend the runtime of an event
 
 If this is on when an event is deleted and the user chooses to clean up the messages,
 the results announcement will also be deleted
-
-## events create
- - Usage: `[p]events create`
-
-Create a new event
-
-## events autodelete
- - Usage: `[p]events autodelete`
-
-(Toggle) Auto delete events from config when they complete
-
-If auto delete is enabled, the messages in the event channel will need to be cleaned up manually
-
-## events remove
- - Usage: `[p]events remove <user>`
-
-Remove a user from an active event
-
-## events delete
- - Usage: `[p]events delete`
-
-Delete an event outright
-
-## events view
- - Usage: `[p]events view`
-
-View the current events and settings
-
-## events end
- - Usage: `[p]events end`
-
-End an event early, counting votes/announcing the winner
-
-This will also delete the event afterwards
 
 ## events shorten
  - Usage: `[p]events shorten <time_string>`
@@ -118,7 +71,55 @@ Shorten the runtime of an event
 `10d` - 10 days
 `7d4h` - 7 days 4 hours
 
-## events pingstaff
- - Usage: `[p]events pingstaff`
+## events delete
+ - Usage: `[p]events delete`
 
-(Toggle) Ping staff on event completion
+Delete an event outright
+
+## events notifyrole
+ - Usage: `[p]events notifyrole <role>`
+
+Add/Remove notify roles
+
+These roles will be pinged on event start and completion
+
+## events extend
+ - Usage: `[p]events extend <time_string>`
+
+Extend the runtime of an event
+
+**Examples**
+`10d` - 10 days
+`7d4h` - 7 days 4 hours
+
+## events view
+ - Usage: `[p]events view`
+
+View the current events and settings
+
+## events blacklistuser
+ - Usage: `[p]events blacklistuser <user>`
+
+Add/Remove blacklisted users
+
+These users are not allowed to enter events, but can still vote on them
+
+## events remove
+ - Usage: `[p]events remove <user>`
+
+Remove a user from an active event
+
+## events end
+ - Usage: `[p]events end`
+
+End an event early, counting votes/announcing the winner
+
+This will also delete the event afterwards
+
+## events blacklistrole
+ - Usage: `[p]events blacklistrole <role>`
+
+Add/Remove blacklisted roles
+
+These roles are not allowed to enter events, but can still vote on them
+

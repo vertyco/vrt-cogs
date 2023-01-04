@@ -7,22 +7,22 @@ Cool Tools for Xbox
 
 Set up the XTools cog
 
-## apiset auth
- - Usage: `[p]apiset auth`
 ## apiset reset
  - Usage: `[p]apiset reset`
 
 Reset the all token data
 
-## apiset tokens
- - Usage: `[p]apiset tokens <client_id> <client_secret>`
-
-Set Client ID and Secret
-
 ## apiset help
  - Usage: `[p]apiset help`
 
 Tutorial for getting your ClientID and Secret
+
+## apiset auth
+ - Usage: `[p]apiset auth`
+## apiset tokens
+ - Usage: `[p]apiset tokens <client_id> <client_secret>`
+
+Set Client ID and Secret
 
 # xstatuschannel
  - Usage: `[p]xstatuschannel <channel>`
@@ -85,3 +85,4 @@ View this month's free games with Gold
  - Usage: `[p]xmostplayed [gamertag]`
 
 View your most played games
+
