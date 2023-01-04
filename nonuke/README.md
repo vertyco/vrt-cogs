@@ -88,4 +88,3 @@ to remove the role from it.
  - Usage: `[p]nonuke dm`
 
 Toggle whether the bot sends the user a DM when a kick or ban action is performed
-

@@ -37,4 +37,3 @@ Delete a filter
  - Usage: `[p]nobot addbot <bot>`
 
 Add a bot to the filter list
-

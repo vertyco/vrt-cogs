@@ -76,4 +76,3 @@ By using this feature it is assumed that you are already familiar with Upgrade.C
  - Usage: `[p]claim`
 
 Claim your Upgrade.Chat purchases!
-

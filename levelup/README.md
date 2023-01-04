@@ -656,4 +656,3 @@ Toggle whether to give the weekly winner role to all winners or only 1st place
  - Usage: `[p]weeklyset reset <yes_or_no>`
 
 Reset the weekly leaderboard manually and announce winners
-

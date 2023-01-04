@@ -13,4 +13,3 @@ https://starcitizen-api.com/startup.php#getting-started
  - Usage: `[p]scships [shipname]`
 
 View all ships available in Star Citizen
-

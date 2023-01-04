@@ -97,4 +97,3 @@ Sync slash commands
 
 **Arguments**
 `global_sync:` If True, syncs global slash commands, syncs current guild by default
-

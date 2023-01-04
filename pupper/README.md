@@ -68,4 +68,3 @@ Set the pet thanks message.
  - Usage: `[p]pets credits <min_amt> <max_amt>`
 
 Set the pet credits range on successful petting.
-

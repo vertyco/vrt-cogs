@@ -122,4 +122,3 @@ This will also delete the event afterwards
 Add/Remove blacklisted roles
 
 These roles are not allowed to enter events, but can still vote on them
-
