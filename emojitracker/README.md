@@ -39,4 +39,3 @@ View user leaderboard for most emojis added
 
 
 Get the size of EmojiTracker cache
-

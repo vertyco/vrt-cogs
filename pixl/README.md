@@ -148,4 +148,3 @@ View the current settings
  - Usage: `[p]pixlset useglobal`
 
 (Toggle) Whether to use global images in this guild
-

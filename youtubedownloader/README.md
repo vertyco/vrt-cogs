@@ -55,4 +55,3 @@ Download all videos from a playlist to audio files
  - Usage: `[p]yt get <link>`
 
 Get an audio file from a YouTube link
-
