@@ -142,7 +142,7 @@ class VrtUtils(commands.Cog):
         return results
 
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
-    @commands.command(name="upgrade")
+    @commands.command(name="pull")
     async def update_cog(self, ctx, *cogs: InstalledCog):
         """Auto update & reload cogs"""
         ctx.assume_yes = True
