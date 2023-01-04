@@ -14,6 +14,45 @@ from redbot.core.utils.chat_formatting import humanize_list
 log = logging.getLogger("red.vrt.autodocs")
 _ = Translator("AutoDocs", __file__)
 
+# Static words
+HELP = _("Help")
+USAGE = _("Usage")
+ALIASES = _("Aliases")
+REQUIRED = _("Required")
+OPTIONAL = _("Optional")
+SLASH = _("Slash")
+HYBRID = _("Hybrid")
+COMMAND = _("Command")
+PER = _("per")
+SECONDS = _("seconds")
+SECOND = _("second")
+COOLDOWN = _("Cooldown")
+CHECKS = _("Checks")
+
+
+class CustomCmdFmt:
+    def __init__(self, cmd):
+        self.cmd = cmd
+        self.is_slash: bool = not isinstance(cmd, commands.Command)
+        self.is_hybrid: bool = isinstance(cmd, HybridAppCommand)
+        self.checks: str = humanize_list(
+            [i.__qualname__.split(".")[0] for i in cmd.checks]
+        ).strip()
+        self.name: str = cmd.qualified_name
+        self.hashes: str = len(self.name.split(" ")) * "#"
+        if self.is_slash:
+            self.desc: str = cmd.description.replace("\n", "<br/>")
+            self.options = cmd.to_dict()["options"]
+        else:
+            self.desc: str = cmd.help.replace("\n", "<br/>")
+            cd = cmd.cooldown
+            self.cooldown: str = (
+                f"{cd.rate} {PER} {cd.per} {SECOND if int(cd.per) == 1 else SECONDS}"
+                if cd
+                else None
+            )
+            self.aliases: str = humanize_list(cmd.aliases) if cmd.aliases else ""
+
 
 # redgettext -D autodocs.py
 @cog_i18n(_)
@@ -25,7 +64,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.4"
+    __version__ = "0.1.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -40,14 +79,6 @@ class AutoDocs(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        self.h = _("Help")
-        self.u = _("Usage")
-        self.a = _("Aliases")
-        self.r = _("Required")
-        self.o = _("Optional")
-        self.s = _("Slash")
-        self.hb = _("Hybrid")
-        self.c = _("Command")
 
     def generate_readme(
         self,
@@ -55,60 +86,64 @@ class AutoDocs(commands.Cog):
         prefix: Optional[str] = None,
         include_hidden: Optional[bool] = False,
     ) -> str:
-        docs = f"# {cog.qualified_name} {self.h}\n\n{cog.help}\n\n"
+        cog_help = cog.help.replace("\n", "<br/>")
+        docs = f"# {cog.qualified_name} {HELP}\n\n{cog_help}\n\n"
 
         # Put hybrids in with normal commands
         hybrids = {}
         for cmd in self.bot.tree.walk_commands():
-            # If command is hybrid it will show up for regular commands too
-            is_hybrid = isinstance(cmd, HybridAppCommand)
-            name = cmd.qualified_name
-            desc = cmd.description
-            options = cmd.to_dict()["options"]
-            level = len(name.split(" "))
-            hashes = level * "#"
+            c = CustomCmdFmt(cmd)
+            name = c.name
 
             # Get params
-            param_string = ""
+            params = ""
             param_info = ""
-            for i in options:
+            for i in c.options:
                 param_name = i["name"]
                 param_desc = i["description"]
                 required = i.get("required", False)
                 if required:
-                    param_string += f"<{param_name}> "
-                    param_info += f" - `{param_name}:` ({self.r}) {param_desc}\n"
+                    params += f"<{param_name}> "
+                    param_info += f" - `{param_name}:` ({REQUIRED}) {param_desc}\n"
                 else:
-                    param_string += f"[{param_name}] "
-                    param_info += f" - `{param_name}:` ({self.o}) {param_desc}\n"
-            param_string = param_string.strip()
+                    params += f"[{param_name}] "
+                    param_info += f" - `{param_name}:` ({OPTIONAL}) {param_desc}\n"
+            params = params.strip()
 
             usage = f"/{name}"
-            if param_string:
-                usage += f" {param_string}"
+            if params:
+                usage += f" {params}"
 
-            if is_hybrid:
+            if c.is_hybrid:
                 hybrids[name] = {
-                    "desc": desc,
-                    "pstring": param_string,
-                    "pinfo": param_info,
+                    "desc": c.desc,
+                    "params": params,
+                    "param_info": param_info,
                 }
             else:
-                docs += f"{hashes} {name} ({self.s} {self.c})\n - {self.u}: `{usage}`"
+                docs += (
+                    f"{c.hashes} {name} ({SLASH} {COMMAND})\n" f" - {USAGE}: `{usage}`\n"
+                )
                 if param_info:
-                    docs += f"\n{param_info}\n\n"
-                else:
-                    docs += "\n\n"
-                docs += f"{desc}\n\n"
+                    docs += f"{param_info}"
 
+                if c.checks:
+                    docs += f" - {CHECKS}: {c.checks}\n"
+                if not docs.endswith("\n\n"):
+                    docs += "\n"
+                docs += f"{c.desc}\n\n"
+
+        # Normal + Hybrid commands
         for cmd in cog.walk_commands():
-            name = cmd.qualified_name
-            level = len(name.split(" "))
-            hashes = level * "#"
             if cmd.hidden and not include_hidden:
                 continue
 
-            aliases = cmd.aliases
+            c = CustomCmdFmt(cmd)
+            name = c.name
+            desc = c.desc
+            checks = c.checks
+            cooldown = c.cooldown
+            aliases = c.aliases
 
             # Get params
             params = cmd.clean_params
@@ -124,10 +159,8 @@ class AutoDocs(commands.Cog):
                     param_string += f"[{arg}={default}] "
             param_string = param_string.strip()
 
-            hlp = cmd.help
-
             if prefix:
-                hlp = hlp.replace("[p]", prefix)
+                desc = desc.replace("[p]", prefix)
                 usage = f"{prefix}{name}"
             else:
                 usage = f"[p]{name}"
@@ -138,33 +171,44 @@ class AutoDocs(commands.Cog):
             hybrid = hybrids.get(name, None)
             if hybrid:
                 d2 = hybrid.get("desc", None)
-                pstring = hybrid.get("pstring", None)
-                pinfo = hybrid.get("pinfo", None)
+                params = hybrid.get("params", None)
+                param_info = hybrid.get("param_info", None)
                 otherusage = f"/{name}"
-                if pstring:
-                    otherusage += f" {pstring}"
+                if params:
+                    otherusage += f" {params}"
+
                 docs += (
-                    f"{hashes} {name} ({self.hb} {self.c})\n"
-                    f" - {self.u}: `{usage}`\n"
-                    f" - {self.s} {self.u}: `{otherusage}`\n"
+                    f"{c.hashes} {name} ({HYBRID} {COMMAND})\n"
+                    f" - {USAGE}: `{usage}`\n"
+                    f" - {SLASH} {USAGE}: `{otherusage}`\n"
                 )
-
                 if aliases:
-                    docs += f" - {self.a}: `{humanize_list(aliases)}`\n"
-                if pinfo:
-                    docs += f"{pinfo}\n"
+                    docs += f" - {ALIASES}: `{aliases}`\n"
+                if param_info:
+                    docs += f"{param_info}\n"
+                if cooldown:
+                    docs += f" - {COOLDOWN}: {cooldown}\n"
+                if checks:
+                    docs += f" - {CHECKS}: {checks.strip()}\n"
 
-                if hlp:
-                    docs += f"\n{hlp}\n\n"
-                elif d2:
-                    docs += f"\n{d2}\n\n"
+                if not docs.endswith("\n\n"):
+                    docs += "\n"
+                docs += f"{desc}\n\n"
+                if d2:
+                    docs += f"{d2}\n\n"
 
             else:
-                docs += f"{hashes} {name}\n - {self.u}: `{usage}`\n"
+                docs += f"{c.hashes} {name}\n" f" - {USAGE}: `{usage}`\n"
                 if aliases:
-                    docs += f" - {self.a}: `{humanize_list(aliases)}`\n\n"
-                if hlp:
-                    docs += f"\n{hlp}\n\n"
+                    docs += f" - {ALIASES}: `{aliases}`\n"
+                if cooldown:
+                    docs += f" - {COOLDOWN}: {cooldown}\n"
+                if checks:
+                    docs += f" - {CHECKS}: {checks.strip()}\n"
+
+                if not docs.endswith("\n\n"):
+                    docs += "\n"
+                docs += f"{desc}\n\n"
 
         return docs
 

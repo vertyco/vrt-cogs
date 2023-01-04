@@ -5,20 +5,22 @@ repos:
     rev: v3.2.0
     hooks:
       - id: trailing-whitespace
+        exclude: (^tests/|pixl/defaults.py|README.md)
       - id: end-of-file-fixer
+        exclude: (^tests/|pixl/defaults.py|README.md)
       - id: check-yaml
   - repo: https://github.com/psf/black
     rev: 22.12.0
     hooks:
       - id: black
-        exclude: (^tests/|pixl/defaults.py)
+        exclude: (^tests/|pixl/defaults.py|README.md)
   - repo: https://github.com/PyCQA/isort
     rev: 5.10.1
     hooks:
       - id: isort
-        exclude: (^tests/|pixl/defaults.py)
+        exclude: (^tests/|pixl/defaults.py|README.md)
   - repo: https://github.com/PyCQA/flake8
     rev: 5.0.4
     hooks:
       - id: flake8
-        exclude: (^tests/|pixl/defaults.py)
+        exclude: (^tests/|pixl/defaults.py|README.md)
