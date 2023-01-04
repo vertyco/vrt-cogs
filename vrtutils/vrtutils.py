@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.2.11"
+    __version__ = "1.2.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -140,89 +140,7 @@ class VrtUtils(commands.Cog):
         results = {"read": sum(reads) / len(reads), "write": sum(writes) / len(writes)}
         return results
 
-    def make_readme(
-        self,
-        cog: commands.Cog,
-        prefix: Optional[str] = None,
-        include_hidden: Optional[bool] = False,
-    ) -> str:
-        docs = f"# {cog.qualified_name} Help\n\n{cog.help}\n\n"
-
-        for cmd in cog.walk_commands():
-            level = len(str(cmd).split(" "))
-            hashes = level * "#"
-            cmd_obj = self.bot.get_command(str(cmd))
-            if cmd_obj.hidden and not include_hidden:
-                continue
-
-            aliases = cmd_obj.aliases
-
-            # Get params
-            params = cmd_obj.clean_params
-            param_string = ""
-            for k, v in params.items():
-                arg = v.name
-                default = v.default
-                if default == v.empty:
-                    param_string += f"<{arg}> "
-                elif v.kind == v.KEYWORD_ONLY:
-                    param_string += f"[{arg}] "
-                else:
-                    param_string += f"[{arg}={default}] "
-            param_string = param_string.strip()
-
-            hlp = cmd_obj.help
-
-            if prefix:
-                hlp = hlp.replace("[p]", prefix)
-                usage = f"{prefix}{cmd}"
-            else:
-                usage = f"[p]{cmd}"
-
-            if param_string:
-                usage += f" {param_string}"
-
-            docs += f"{hashes} {cmd}\n" f" - usage: `{usage}`\n\n"
-            if aliases:
-                docs += f" - Aliases: `{humanize_list(aliases)}`\n\n"
-            if hlp:
-                docs += f"{hlp}\n\n"
-
-        return docs
-
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
-    @commands.command(name="makemedocs")
-    @commands.is_owner()
-    async def get_cog_docs(
-        self,
-        ctx,
-        cog_name: str,
-        replace_prefix: Optional[bool] = False,
-        include_hidden: Optional[bool] = False,
-    ):
-        """
-        Create a Markdown docs page for a cog and send to discord
-
-        The full version of this is now a separate cog called AutoDocs
-
-        **Arguments**
-        `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)
-        `replace_prefix:`(bool) If True, replaces the prefix placeholder [] with the prefix for the server its run in
-        `include_hidden:`(bool) If True, includes hidden commands
-        """
-        cog = self.bot.get_cog(cog_name)
-        if not cog:
-            return await ctx.send("I could not find that cog, maybe it is not loaded?")
-
-        p = ctx.prefix if replace_prefix else None
-        res = self.make_readme(cog, p, include_hidden)
-
-        buffer = BytesIO(res.encode())
-        buffer.name = f"{cog_name}.md"
-        buffer.seek(0)
-        file = discord.File(buffer)
-        await ctx.send(f"Here are your docs for {cog_name}", file=file)
-
     @commands.command(aliases=["diskbench"])
     @commands.is_owner()
     async def diskspeed(self, ctx):
@@ -870,10 +788,19 @@ class VrtUtils(commands.Cog):
 
     @commands.command(aliases=["oldestusers"])
     @commands.guild_only()
-    async def oldestmembers(self, ctx, amount: int = 10):
-        """See which users have been in the server the longest"""
+    async def oldestmembers(self, ctx, amount: Optional[int] = 10, include_bots: Optional[bool] = False):
+        """
+        See which users have been in the server the longest
+
+        **Arguments**
+        `amount:` how many members to display
+        `include_bots:` (True/False) whether to include bots
+        """
         async with ctx.typing():
-            members = [m for m in ctx.guild.members]
+            if include_bots:
+                members = [m for m in ctx.guild.members]
+            else:
+                members = [m for m in ctx.guild.members if not m.bot]
             m_sort = sorted(members, key=lambda x: x.joined_at)
             txt = "\n".join(
                 [
@@ -888,10 +815,19 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def oldestaccounts(self, ctx, amount: int = 10):
-        """See which users have the oldest Discord accounts"""
+    async def oldestaccounts(self, ctx, amount: Optional[int] = 10, include_bots: Optional[bool] = False):
+        """
+        See which users have the oldest Discord accounts
+
+        **Arguments**
+        `amount:` how many members to display
+        `include_bots:` (True/False) whether to include bots
+        """
         async with ctx.typing():
-            members = [m for m in ctx.guild.members]
+            if include_bots:
+                members = [m for m in ctx.guild.members]
+            else:
+                members = [m for m in ctx.guild.members if not m.bot]
             m_sort = sorted(members, key=lambda x: x.created_at)
             txt = "\n".join(
                 [
