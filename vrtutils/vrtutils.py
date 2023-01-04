@@ -15,6 +15,7 @@ import cpuinfo
 import discord
 import psutil
 import speedtest
+from redbot.cogs.downloader.converters import InstalledCog
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
@@ -141,6 +142,18 @@ class VrtUtils(commands.Cog):
         return results
 
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
+    @commands.command(name="upgrade")
+    async def update_cog(self, ctx, *cogs: InstalledCog):
+        """Auto update & reload cogs"""
+        ctx.assume_yes = True
+        cog_update_command = ctx.bot.get_command("cog update")
+        if cog_update_command is None:
+            return await ctx.send(
+                f"Make sure you first `{ctx.prefix}load downloader` before you can use this command."
+            )
+
+        await ctx.invoke(cog_update_command, *cogs)
+
     @commands.command(aliases=["diskbench"])
     @commands.is_owner()
     async def diskspeed(self, ctx):
