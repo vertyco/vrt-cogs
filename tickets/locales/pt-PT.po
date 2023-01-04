@@ -819,4 +819,3 @@ msgstr ""
 #: views.py:217
 msgid "Ticket opened"
 msgstr ""
-
