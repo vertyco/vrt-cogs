@@ -151,8 +151,7 @@ class VrtUtils(commands.Cog):
             return await ctx.send(
                 f"Make sure you first `{ctx.prefix}load downloader` before you can use this command."
             )
-
-        await ctx.invoke(cog_update_command, *cogs)
+        await ctx.invoke(cog_update_command, *cogs, reload=True)
 
     @commands.command(aliases=["diskbench"])
     @commands.is_owner()
