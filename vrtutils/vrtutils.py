@@ -7,7 +7,7 @@ import platform
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from io import BytesIO, StringIO
+from io import StringIO
 from sys import executable
 from typing import Optional, Union
 
@@ -21,7 +21,6 @@ from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import (
     box,
-    humanize_list,
     humanize_number,
     humanize_timedelta,
     pagify,
@@ -800,7 +799,9 @@ class VrtUtils(commands.Cog):
 
     @commands.command(aliases=["oldestusers"])
     @commands.guild_only()
-    async def oldestmembers(self, ctx, amount: Optional[int] = 10, include_bots: Optional[bool] = False):
+    async def oldestmembers(
+        self, ctx, amount: Optional[int] = 10, include_bots: Optional[bool] = False
+    ):
         """
         See which users have been in the server the longest
 
@@ -827,7 +828,9 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def oldestaccounts(self, ctx, amount: Optional[int] = 10, include_bots: Optional[bool] = False):
+    async def oldestaccounts(
+        self, ctx, amount: Optional[int] = 10, include_bots: Optional[bool] = False
+    ):
         """
         See which users have the oldest Discord accounts
 

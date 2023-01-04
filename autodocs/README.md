@@ -21,4 +21,3 @@ Create a Markdown docs page for a cog and send to discord
 
 **Warning**
 If `all` is specified for cog_name, and you have a lot of cogs loaded, prepare for a spammed channel
-
