@@ -13,7 +13,7 @@ class GuildLog(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -58,10 +58,19 @@ class GuildLog(commands.Cog):
             if msg == "default":
                 msg = f"✅ Joined guild **{new_guild.name}!** That makes {len(self.bot.guilds)} servers now!"
             else:
+                bots = 0
+                users = 0
+                for m in new_guild.members:
+                    if m.bot:
+                        bots += 1
+                    else:
+                        users += 1
                 params = {
                     "guild": new_guild.name,
                     "servers": len(self.bot.guilds),
                     "botname": self.bot.user.name,
+                    "bots": bots,
+                    "members": users,
                 }
                 msg = msg.format(**params)
             if embeds:
@@ -178,6 +187,8 @@ class GuildLog(commands.Cog):
         `{guild}` - the name of the guild the bot just joined
         `{servers}` - the amount of servers the bot is now in
         `{botname}` - the name of the bot
+        `{bots}` - the amount of bots in the guild
+        `{members}` - the member count of the guild
 
         To set back to default just to `default` as the message value
         """
