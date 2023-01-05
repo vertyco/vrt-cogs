@@ -4,7 +4,7 @@ Document your cogs with ease!
 
 Easily create documentation for any cog in Markdown format.
 
-# makedocs (Hybrid)
+# makedocs (Hybrid Command)
  - Usage: `[p]makedocs <cog_name> [replace_prefix=False] [include_hidden=False]`
  - Slash Usage: `/makedocs <cog_name> [replace_prefix] [include_hidden]`
  - `cog_name:` (Required) The name of the cog you want to make docs for (Case Sensitive)

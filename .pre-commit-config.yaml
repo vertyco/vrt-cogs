@@ -1,23 +1,26 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
--   repo: https://github.com/psf/black
+      - id: trailing-whitespace
+        exclude: (^tests/|pixl/defaults.py|README.md)
+      - id: end-of-file-fixer
+        exclude: (^tests/|pixl/defaults.py|README.md)
+      - id: check-yaml
+  - repo: https://github.com/psf/black
     rev: 22.12.0
     hooks:
-    -   id: black
-        exclude: pixl/defaults.py
--   repo: https://github.com/PyCQA/isort
+      - id: black
+        exclude: (^tests/|pixl/defaults.py|README.md)
+  - repo: https://github.com/PyCQA/isort
     rev: 5.10.1
     hooks:
-        - id: isort
-          exclude: pixl/defaults.py
--   repo: https://github.com/PyCQA/flake8
+      - id: isort
+        exclude: (^tests/|pixl/defaults.py|README.md)
+  - repo: https://github.com/PyCQA/flake8
     rev: 5.0.4
     hooks:
-        - id: flake8
+      - id: flake8
+        exclude: (^tests/|pixl/defaults.py|README.md)
