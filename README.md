@@ -1,4 +1,4 @@
-# vrt-cogs
+![Arkwork](https://github.com/vertyco/Vertyco/blob/main/.github/resources/vrt-cogs-01.png)
 
 Various utility/random cogs for Red V3.
 
