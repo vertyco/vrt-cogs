@@ -3,13 +3,15 @@ import datetime
 import logging
 
 import discord
+from discord import TextStyle
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
 from .base import BaseCommands
-from .commands import TicketCommands
+from .admin import AdminCommands
 from .views import PanelView
+from .abc import CompositeMetaClass
 
 log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
@@ -17,13 +19,13 @@ _ = Translator("Tickets", __file__)
 
 # redgettext tickets.py base.py commands.py views.py --command-docstring
 @cog_i18n(_)
-class Tickets(BaseCommands, TicketCommands, commands.Cog):
+class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
     Support ticket system with multi-panel functionality
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.2.10"
+    __version__ = "1.3.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -61,17 +63,31 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
 
         self.ticket_panel_schema = {  # "panel_name" will be the key for the schema
             # Panel settings
-            "category_id": 0,
-            "channel_id": 0,
-            "message_id": 0,
-            "button_text": "Open a Ticket",
-            "button_color": "blue",
-            "button_emoji": None,  # either None or an emoji for the button
+            "category_id": 0,  # <Required>
+            "channel_id": 0,  # <Required>
+            "message_id": 0,  # <Required>
+            # Button settings
+            "button_text": "Open a Ticket",  # (Optional)
+            "button_color": "blue",  # (Optional)
+            "button_emoji": None,  # (Optional) Either None or an emoji for the button
             # Ticket settings
+            "ticket_messages": [],  # (Optional) A list of messages to be sent
+            "ticket_name": None,  # (Optional) Name format for the ticket channel
+            "log_channel": 0,  # (Optional) Log open/closed tickets
+            "modal": [],  # (Optional) Modal fields to fill out before ticket is opened
+            # Ticker
             "ticket_num": 1,
-            "ticket_messages": [],  # A list of messages to be sent
-            "ticket_name": None,  # Name format for the ticket channel
-            "log_channel": 0,
+        }
+        # v1.3.10 schema update (Modals)
+        self.modal_schema = {
+            "label": "",  # <Required>
+            "style": "short",  # <Required>
+            "placeholder": None,  # (Optional
+            "default": None,  # (Optional
+            "required": True,  # (Optional
+            "min_length": None,  # (Optional
+            "max_length": None,  # (Optional
+            "answer": None  # (Optional
         }
 
         self.valid = []  # Valid ticket channels
@@ -93,9 +109,9 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
         for gid, data in conf.items():
             if not data:
                 continue
-            if target_guild and target_guild.id != int(gid):
+            if target_guild and target_guild.id != gid:
                 continue
-            guild = self.bot.get_guild(int(gid))
+            guild = self.bot.get_guild(gid)
             if not guild:
                 continue
             panels = data["panels"]
@@ -116,6 +132,10 @@ class Tickets(BaseCommands, TicketCommands, commands.Cog):
                     await chan.fetch_message(mid)
                 except discord.NotFound:
                     continue
+
+                # v1.3.10 schema update (Modals)
+                if "modals" not in panel:
+                    panel["modals"] = {}
 
                 panel["name"] = panel_name
                 key = f"{cid}-{mid}"

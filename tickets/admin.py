@@ -1,18 +1,20 @@
+from abc import ABC
 from typing import Union
 
 import discord
-from discord import Embed
+from discord import Embed, app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
 from .menu import SMALL_CONTROLS, menu
 from .views import TestButton, confirm, wait_reply
+from .abc import MixinMeta
 
 _ = Translator("TicketsCommands", __file__)
 
 
-class TicketCommands(commands.Cog):
+class AdminCommands(MixinMeta, ABC):
     @commands.group(aliases=["tset"])
     @commands.guild_only()
     @commands.admin()
@@ -295,6 +297,252 @@ class TicketCommands(commands.Cog):
         await self.initialize(ctx.guild)
 
     @tickets.command()
+    async def addmodal(self, ctx: commands.Context, panel_name: str, field_name: str):
+        """
+        Add a modal field a ticket panel
+
+        Ticket panels can have up to 5 fields per modal for the user to fill out before opening a ticket.
+        If modal fields are added and have required fields, the user will have to fill them out before they can open a ticket.
+
+        **Note:** `field_name` is just the name of the field stored in config, it won't be shown in the modal
+
+        Specify an existing field name to delete a modal field (non-case-sensitive)
+        """
+        panel_name = panel_name.lower()
+        field_name = field_name.lower()
+
+        panels = await self.config.guild(ctx.guild).panels()
+        if panel_name not in panels:
+            return await ctx.send(_("Panel does not exist!"))
+
+        existing = panels[panel_name].get("modals", {})
+        if field_name in existing:
+            async with self.config.guild(ctx.guild).panels() as panels:
+                del panels[panel_name]["modals"][field_name]
+                return await ctx.send(_("Field for {} panel has been removed!").format(panel_name))
+
+        async def make_preview(m, mm: discord.Message):
+            txt = ""
+            for k, v in m.items():
+                if k == "answer":
+                    continue
+                txt += f"{k}: {v}\n"
+            title = "Modal Preview"
+            await mm.edit(embed=discord.Embed(title=title, description=box(txt), color=color))
+
+        async def cancel(m):
+            await m.edit(embed=discord.Embed(description="Modal field addition cancelled", color=color))
+
+        foot = _("type 'cancel' to cancel at any time")
+        color = ctx.author.color
+
+        modal = self.modal_schema
+
+        # Label
+        em = Embed(
+            description=_(
+                "What would you like the field label to be? (45 chars or less)"
+            ),
+            color=color,
+        )
+        em.set_footer(text=foot)
+        msg = await ctx.send(embed=em)
+        label = await wait_reply(ctx, 300)
+        if not label:
+            return await cancel(msg)
+        if len(label) > 45:
+            em = Embed(
+                description=_("Modal field labels must be 45 characters or less!"),
+                color=color,
+            )
+            return await msg.edit(embed=em)
+        modal["label"] = label
+
+        preview = msg
+        await make_preview(modal, preview)
+
+        # Style
+        em = Embed(
+            description=_("What style would you like the text box to be? (long/short)"),
+            color=color,
+        )
+        em.set_footer(text=foot)
+        msg = await ctx.send(embed=em)
+        style = await wait_reply(ctx, 300)
+        if not style:
+            return await cancel(msg)
+        if style not in ["long", "short"]:
+            em = Embed(
+                description=_("Style must be long or short!"),
+                color=color,
+            )
+            return await msg.edit(embed=em)
+        modal["style"] = style
+        await make_preview(modal, preview)
+
+        # Placeholder
+        em = Embed(
+            description=_("Would you like to set a placeholder for the text field?\n"
+                          "This is text that shows up in the box before the user types."),
+            color=color,
+        )
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+        if yes:
+            em = Embed(description=_("Type your desired placeholder below (100 chars max)"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            placeholder = await wait_reply(ctx, 300)
+            if not placeholder:
+                return await cancel(msg)
+            if len(placeholder) > 100:
+                em = Embed(description=_("Placeholders must be 100 characters or less!"), color=discord.Color.red())
+                return await msg.edit(embed=em)
+            modal["placeholder"] = placeholder
+            await make_preview(modal, preview)
+
+        # Default
+        em = Embed(
+            description=_("Would you like to set a default value for the text field?"),
+            color=color,
+        )
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+        if yes:
+            em = Embed(description=_("Type your desired default value below"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            default = await wait_reply(ctx, 300)
+            if not default:
+                return await cancel(msg)
+            modal["default"] = default
+            await make_preview(modal, preview)
+
+        # Required?
+        em = Embed(
+            description=_("Would you like to make this field required?"),
+            color=color,
+        )
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+        if not yes:
+            modal["required"] = False
+            await make_preview(modal, preview)
+
+        # Min length
+        em = Embed(
+            description=_("Would you like to set a minimum length for this field?"),
+            color=color,
+        )
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+        if yes:
+            em = Embed(description=_("Type the minimum length for this field below (less than 4000)"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            minlength = await wait_reply(ctx, 300)
+            if not minlength:
+                return await cancel(msg)
+            if not minlength.isdigit():
+                em = Embed(description=_("That is not a number!"), color=discord.Color.red())
+                return await msg.edit(embed=em)
+            modal["min_length"] = min(4000, int(minlength))  # Make sure answer is between 0 and 4000
+            await make_preview(modal, preview)
+
+        # Max length
+        em = Embed(
+            description=_("Would you like to set a maximum length for this field?"),
+            color=color,
+        )
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+        if yes:
+            em = Embed(description=_("Type the maximum length for this field below (up to 4000)"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            maxlength = await wait_reply(ctx, 300)
+            if not maxlength:
+                return await cancel(msg)
+            if not maxlength.isdigit():
+                em = discord.Embed(description=_("That is not a number!"), color=discord.Color.red())
+                return await msg.edit(embed=em)
+            modal["max_length"] = max(min(4000, int(maxlength)), 1)  # Make sure answer is between 1 and 4000
+            await make_preview(modal, preview)
+
+        async with self.config.guild(ctx.guild).panels() as panels:
+            # v1.3.10 schema update (Modals)
+            if "modal" not in panels[panel_name]:
+                panels[panel_name]["modal"] = {}
+            panels[panel_name]["modal"][field_name] = modal
+
+        await ctx.tick()
+        em = Embed(description=_("Your modal field has been added!"), color=discord.Color.green())
+        await msg.edit(embed=em)
+        await self.initialize(ctx.guild)
+
+    @tickets.command()
+    async def viewmodal(self, ctx: commands.Context, panel_name: str):
+        """View/Delete a ticket message for a support ticket panel"""
+        panel_name = panel_name.lower()
+        panels = await self.config.guild(ctx.guild).panels()
+        if panel_name not in panels:
+            return await ctx.send(_("Panel does not exist!"))
+        modal = panels[panel_name].get("modal", {})
+        if not modal:
+            return await ctx.send(_("This panel does not have any modal fields set!"))
+        embeds = []
+        for i, fieldname in enumerate(list(modal.keys())):
+            info = modal[fieldname]
+            txt = _("`Label: `{}\n").format(info["label"])
+            txt += _("`Style: `{}\n").format(info["style"])
+            txt += _("`Placeholder: `{}\n").format(info["placeholder"])
+            txt += _("`Default:     `{}\n").format(info["default"])
+            txt += _("`Required:    `{}\n").format(info["required"])
+            txt += _("`Min Length:  `{}\n").format(info["min_length"])
+            txt += _("`Max Length:  `{}\n").format(info["max_length"])
+            em = Embed(
+                title=_("Modal Fields for: ") + panel_name,
+                description=f"**{fieldname}**\n{txt}",
+                color=ctx.author.color
+            )
+            em.set_footer(text=_("Page") + f" {i + 1}/{len(list(modal.keys()))}")
+            embeds.append(em)
+
+        controls = SMALL_CONTROLS.copy()
+        controls["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.delete_modal_field
+        await menu(ctx, embeds, controls)
+
+    async def delete_modal_field(self, instance, interaction: discord.Interaction):
+        index = instance.view.page
+        panel_name = instance.view.pages[index].title.replace(
+            _("Modal Fields for: "), ""
+        )
+        async with self.config.guild(interaction.guild).panels() as panels:
+            modal_name = list(panels[panel_name]["modal"].keys())[index]
+            del panels[panel_name]["modal"][modal_name]
+            em = Embed(
+                description=_("Modal field has been deleted from ")
+                + f"{panel_name}!"
+            )
+            await interaction.response.send_message(embed=em, ephemeral=True)
+            del instance.view.pages[index]
+            instance.view.page += 1
+            instance.view.page %= len(instance.view.pages)
+            for i, embed in enumerate(instance.view.pages):
+                embed.set_footer(text=f"{i + 1}/{len(instance.view.pages)}")
+            await instance.view.handle_page(interaction.response.edit_message)
+
+    @tickets.command()
     async def addmessage(self, ctx: commands.Context, panel_name: str):
         """
         Add a message embed to be sent when a ticket is opened
@@ -322,7 +570,7 @@ class TicketCommands(commands.Cog):
         if yes is None:
             return
         if yes:
-            em = Embed(description=_("Type your desired title below"))
+            em = Embed(description=_("Type your desired title below"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             title = await wait_reply(ctx, 300)
@@ -332,7 +580,7 @@ class TicketCommands(commands.Cog):
         else:
             title = None
         # BODY
-        em = Embed(description=_("Type your desired ticket message below"))
+        em = Embed(description=_("Type your desired ticket message below"), color=color)
         em.set_footer(text=foot)
         await msg.edit(embed=em)
         desc = await wait_reply(ctx, 600)
@@ -343,14 +591,14 @@ class TicketCommands(commands.Cog):
             em = Embed(description=_("Ticket message addition cancelled"))
             return await msg.edit(embed=em)
         # FOOTER
-        em = Embed(description=_("Would you like this ticket embed to have a footer?"))
+        em = Embed(description=_("Would you like this ticket embed to have a footer?"), color=color)
         em.set_footer(text=foot)
         await msg.edit(embed=em)
         yes = await confirm(ctx, msg)
         if yes is None:
             return
         if yes:
-            em = Embed(description=_("Type your footer"))
+            em = Embed(description=_("Type your footer"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             footer = await wait_reply(ctx, 300)
@@ -454,6 +702,7 @@ class TicketCommands(commands.Cog):
             desc += _("`TicketNum:      `") + f"{info['ticket_num']}\n"
             desc += _("`TicketMessages: `") + f"{len(info['ticket_messages'])}\n"
             desc += _("`TicketName:     `") + f"{info['ticket_name']}\n"
+            desc += _("`Modal Fields:   `") + f"{len(info.get('modal', {}))}\n"
             desc += _("`LogChannel:     `") + f"{logchannel}"
 
             em = Embed(
@@ -523,7 +772,7 @@ class TicketCommands(commands.Cog):
                     blacklisted += f"{user_or_role.mention}-{user_or_role.id}\n"
                 else:
                     blacklisted += _("Invalid") + f"-{uid_or_rid}\n"
-        embed = discord.Embed(
+        embed = Embed(
             title=_("Tickets Core Settings"),
             description=msg,
             color=discord.Color.random(),
