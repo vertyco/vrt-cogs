@@ -31,7 +31,7 @@ async def wait_reply(
                 await reply.delete(delay=10)
         if res.lower().strip() == "cancel":
             return None
-        return res.lower().strip()
+        return res.strip()
     except asyncio.TimeoutError:
         return None
 
