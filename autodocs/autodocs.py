@@ -1,6 +1,7 @@
 import logging
 from io import BytesIO
 from typing import Optional
+import inspect
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
@@ -67,7 +68,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.7"
+    __version__ = "0.1.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -83,8 +84,8 @@ class AutoDocs(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
+    @staticmethod
     def generate_readme(
-        self,
         cog: commands.Cog,
         prefix: Optional[str] = None,
         include_hidden: Optional[bool] = False,
@@ -97,7 +98,7 @@ class AutoDocs(commands.Cog):
 
         # Put hybrids in with normal commands
         hybrids = {}
-        for cmd in self.bot.tree.walk_commands():
+        for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(cmd)
             name = c.name
 
