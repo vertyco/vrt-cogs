@@ -2,9 +2,11 @@ import asyncio
 import logging
 import traceback
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional
 
 import discord
+from discord import TextStyle, ButtonStyle, Interaction
+from discord.ui import Button, TextInput, View, Modal
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator
 
@@ -12,7 +14,7 @@ _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
 
 
-async def wait_reply(ctx: commands.Context, timeout: int = 60):
+async def wait_reply(ctx: commands.Context, timeout: int = 60) -> Optional[str]:
     def check(message: discord.Message):
         return message.author == ctx.author and message.channel == ctx.channel
 
@@ -20,55 +22,66 @@ async def wait_reply(ctx: commands.Context, timeout: int = 60):
         reply = await ctx.bot.wait_for("message", timeout=timeout, check=check)
         res = reply.content
         try:
-            await reply.delete()
-        except (discord.Forbidden, discord.NotFound, discord.DiscordServerError):
+            await reply.delete(delay=10)
+        except (discord.Forbidden, discord.NotFound, discord.HTTPException):
             pass
-        return res
+        if res.lower().strip() == "cancel":
+            return None
+        return res.lower().strip()
     except asyncio.TimeoutError:
         return None
 
 
-def get_color(color: str):
+def get_color(color: str) -> ButtonStyle:
     if color == "red":
-        style = discord.ButtonStyle.red
+        style = ButtonStyle.red
     elif color == "blue":
-        style = discord.ButtonStyle.blurple
+        style = ButtonStyle.blurple
     elif color == "green":
-        style = discord.ButtonStyle.green
+        style = ButtonStyle.green
     else:
-        style = discord.ButtonStyle.grey
+        style = ButtonStyle.grey
     return style
 
 
-async def interaction_check(ctx, interaction):
-    if interaction.user.id != ctx.author.id:
-        await interaction.response.send_message(
-            content=_("You are not allowed to interact with this button."),
-            ephemeral=True,
-        )
-        return False
-    return True
+def get_modal_style(style: str) -> TextStyle:
+    if style == "short":
+        style = TextStyle.short
+    elif style == "long":
+        style = TextStyle.long
+    else:
+        style = TextStyle.paragraph
+    return style
 
 
-class Confirm(discord.ui.View):
+class Confirm(View):
     def __init__(self, ctx):
         self.ctx = ctx
         self.value = None
         super().__init__(timeout=60)
 
-    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
+    async def interaction_check(self, interaction: Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(
+                content=_("You are not allowed to interact with this button."),
+                ephemeral=True,
+            )
+            return False
+        return True
+
+    @discord.ui.button(label="Yes", style=ButtonStyle.green)
     async def confirm(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: Interaction, button: Button
     ):
-        if not await interaction_check(self.ctx, interaction):
+        if not await self.interaction_check(interaction):
             return
         self.value = True
         await interaction.response.defer()
         self.stop()
 
-    @discord.ui.button(label="No", style=discord.ButtonStyle.red)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not await interaction_check(self.ctx, interaction):
+    @discord.ui.button(label="No", style=ButtonStyle.red)
+    async def cancel(self, interaction: Interaction, button: Button):
+        if not await self.interaction_check(interaction):
             return
         self.value = False
         await interaction.response.defer()
@@ -90,7 +103,7 @@ async def confirm(ctx, msg: discord.Message):
         return None
 
 
-class TestButton(discord.ui.View):
+class TestButton(View):
     def __init__(
         self,
         style: str = "grey",
@@ -103,7 +116,30 @@ class TestButton(discord.ui.View):
         self.add_item(butt)
 
 
-class SupportButton(discord.ui.Button):
+class TicketModal(Modal):
+    def __init__(self, title: str, fields: dict):
+        self.fields = fields
+        super().__init__(title=title)
+        for info in fields.values():
+            field = TextInput(
+                label=info["label"],
+                style=get_modal_style(info["style"]),
+                placeholder=info["placeholder"],
+                default=info["default"],
+                required=info["required"],
+                min_length=info["min_length"],
+                max_length=info["max_length"]
+            )
+            self.add_item(field)
+            info["field"] = field
+
+    async def on_submit(self, interaction: discord.Interaction):
+        for v in self.fields.values():
+            v["answer"] = v["field"].value
+        await interaction.response.defer()
+
+
+class SupportButton(Button):
     def __init__(self, panel: dict):
         super().__init__(
             style=get_color(panel["button_color"]),
@@ -113,7 +149,7 @@ class SupportButton(discord.ui.Button):
         )
         self.panel_name = panel["name"]
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: Interaction):
         try:
             await self.create_ticket(interaction)
         except Exception as e:
@@ -123,7 +159,7 @@ class SupportButton(discord.ui.Button):
                 f"{traceback.format_exc()}"
             )
 
-    async def create_ticket(self, interaction: discord.Interaction):
+    async def create_ticket(self, interaction: Interaction):
         guild = interaction.guild
         user = interaction.user
         roles = [r.id for r in user.roles]
@@ -171,6 +207,27 @@ class SupportButton(discord.ui.Button):
                 color=discord.Color.red(),
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
+
+        # Throw modal before creating ticket if the panel has one
+        form_embed = discord.Embed()
+        modal = panel.get("modal")
+        if modal:
+            title = _("Submission Info")
+            form_embed = discord.Embed(color=user.color)
+            if user.avatar:
+                form_embed.set_author(name=title, icon_url=user.avatar.url)
+            else:
+                form_embed.set_author(name=title)
+            m = TicketModal(self.panel_name, modal)
+            await interaction.response.send_modal(m)
+            await m.wait()
+            for v in m.fields.values():
+                q = v["label"]
+                a = v["answer"]
+                if not a:
+                    a = _("Unanswered")
+                form_embed.add_field(name=q, value=a, inline=False)
+
         can_read_send = discord.PermissionOverwrite(
             read_messages=True, send_messages=True, attach_files=True
         )
@@ -212,7 +269,10 @@ class SupportButton(discord.ui.Button):
                 ),
                 color=discord.Color.red(),
             )
-            return await interaction.response.send_message(embed=em, ephemeral=True)
+            if modal:
+                return await interaction.followup.send(embed=em, ephemeral=True)
+            else:
+                return await interaction.response.send_message(embed=em, ephemeral=True)
 
         default_message = _("Welcome to your ticket channel ") + f"{user.display_name}!"
         if user_can_close:
@@ -245,12 +305,15 @@ class SupportButton(discord.ui.Button):
                 em.set_thumbnail(url=user.avatar.url)
             msg = await channel.send(user.mention, embed=em)
 
-        desc = (
-            _("Your ticket channel has been created, **[CLICK HERE]")
-            + f"({msg.jump_url})**"
-        )
+        if len(form_embed.fields) > 0:
+            await channel.send(embed=form_embed)
+
+        desc = _("Your ticket channel has been created, **[CLICK HERE]({})**").format(msg.jump_url)
         em = discord.Embed(description=desc, color=user.color)
-        await interaction.response.send_message(embed=em, ephemeral=True)
+        if modal:
+            await interaction.followup.send(embed=em, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=em, ephemeral=True)
 
         if logchannel:
             ts = int(now.timestamp())
@@ -260,7 +323,7 @@ class SupportButton(discord.ui.Button):
                 + _(" was opened ")
                 + f"<t:{ts}:R>\n"
             )
-            desc += _("To view this ticket, **[Click Here]") + f"({msg.jump_url})**"
+            desc += _("To view this ticket, **[Click Here]({})**").format(msg.jump_url)
             em = discord.Embed(
                 title=_("Ticket opened"), description=desc, color=discord.Color.red()
             )
@@ -283,7 +346,7 @@ class SupportButton(discord.ui.Button):
             }
 
 
-class PanelView(discord.ui.View):
+class PanelView(View):
     def __init__(
         self,
         guild: discord.Guild,

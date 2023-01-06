@@ -1,6 +1,6 @@
 import datetime
 import logging
-from io import StringIO
+from abc import ABC
 from typing import Union
 
 import discord
@@ -8,13 +8,14 @@ from discord.utils import escape_markdown
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
+from .abc import MixinMeta
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
 _ = Translator("Tickets", __file__)
 
 
-class BaseCommands(commands.Cog):
+class BaseCommands(MixinMeta, ABC):
     @commands.command(name="add")
     async def add_user_to_ticket(self, ctx: commands.Context, *, user: discord.Member):
         """Add a user to your ticket"""
@@ -164,9 +165,7 @@ class BaseCommands(commands.Cog):
         # Send off new messages
         if log_chan:
             if text:
-                iofile = StringIO(text)
-                iofile.seek(0)
-                file = discord.File(iofile, filename=filename)
+                file = discord.File(text.encode(), filename=filename)
                 await log_chan.send(embed=embed, file=file)
             else:
                 await log_chan.send(embed=embed)
@@ -187,9 +186,7 @@ class BaseCommands(commands.Cog):
         if conf["dm"]:
             try:
                 if text:
-                    iofile = StringIO(text)
-                    iofile.seek(0)
-                    file = discord.File(iofile, filename=filename)
+                    file = discord.File(text.encode(), filename=filename)
                     await member.send(embed=embed, file=file)
                 else:
                     await member.send(embed=embed)
