@@ -347,7 +347,7 @@ class AdminCommands(MixinMeta, ABC):
         )
         em.set_footer(text=foot)
         msg = await ctx.send(embed=em)
-        label = await wait_reply(ctx, 300)
+        label = await wait_reply(ctx, 300, False)
         if not label:
             return await cancel(msg)
         if len(label) > 45:
@@ -368,7 +368,7 @@ class AdminCommands(MixinMeta, ABC):
         )
         em.set_footer(text=foot)
         msg = await ctx.send(embed=em)
-        style = await wait_reply(ctx, 300)
+        style = await wait_reply(ctx, 300, False)
         if not style:
             return await cancel(msg)
         if style not in ["long", "short"]:
@@ -394,7 +394,7 @@ class AdminCommands(MixinMeta, ABC):
             em = Embed(description=_("Type your desired placeholder below (100 chars max)"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
-            placeholder = await wait_reply(ctx, 300)
+            placeholder = await wait_reply(ctx, 300, False)
             if not placeholder:
                 return await cancel(msg)
             if len(placeholder) > 100:
@@ -416,7 +416,7 @@ class AdminCommands(MixinMeta, ABC):
             em = Embed(description=_("Type your desired default value below"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
-            default = await wait_reply(ctx, 300)
+            default = await wait_reply(ctx, 300, False)
             if not default:
                 return await cancel(msg)
             modal["default"] = default
@@ -448,7 +448,7 @@ class AdminCommands(MixinMeta, ABC):
             em = Embed(description=_("Type the minimum length for this field below (less than 4000)"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
-            minlength = await wait_reply(ctx, 300)
+            minlength = await wait_reply(ctx, 300, False)
             if not minlength:
                 return await cancel(msg)
             if not minlength.isdigit():
@@ -470,7 +470,7 @@ class AdminCommands(MixinMeta, ABC):
             em = Embed(description=_("Type the maximum length for this field below (up to 4000)"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
-            maxlength = await wait_reply(ctx, 300)
+            maxlength = await wait_reply(ctx, 300, False)
             if not maxlength:
                 return await cancel(msg)
             if not maxlength.isdigit():

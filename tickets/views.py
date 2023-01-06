@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import traceback
 from datetime import datetime
@@ -14,17 +15,18 @@ _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
 
 
-async def wait_reply(ctx: commands.Context, timeout: int = 60) -> Optional[str]:
+async def wait_reply(
+        ctx: commands.Context, timeout: Optional[int] = 60, delete: Optional[bool] = True
+) -> Optional[str]:
     def check(message: discord.Message):
         return message.author == ctx.author and message.channel == ctx.channel
 
     try:
         reply = await ctx.bot.wait_for("message", timeout=timeout, check=check)
         res = reply.content
-        try:
-            await reply.delete(delay=10)
-        except (discord.Forbidden, discord.NotFound, discord.HTTPException):
-            pass
+        if delete:
+            with contextlib.suppress(discord.HTTPException, discord.NotFound, discord.Forbidden):
+                await reply.delete(delay=10)
         if res.lower().strip() == "cancel":
             return None
         return res.lower().strip()
