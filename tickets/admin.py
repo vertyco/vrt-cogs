@@ -536,6 +536,11 @@ class AdminCommands(MixinMeta, ABC):
             )
             await interaction.response.send_message(embed=em, ephemeral=True)
             del instance.view.pages[index]
+            if not len(instance.view.pages):
+                em = Embed(
+                    description="There are no more modal fields for this panel"
+                )
+                return await interaction.followup.send(embed=em, ephemeral=True)
             instance.view.page += 1
             instance.view.page %= len(instance.view.pages)
             for i, embed in enumerate(instance.view.pages):
@@ -657,6 +662,11 @@ class AdminCommands(MixinMeta, ABC):
             )
             await interaction.response.send_message(embed=em, ephemeral=True)
             del instance.view.pages[index]
+            if not len(instance.view.pages):
+                em = Embed(
+                    description="There are no more messages for this panel"
+                )
+                return await interaction.followup.send(embed=em, ephemeral=True)
             instance.view.page += 1
             instance.view.page %= len(instance.view.pages)
             for i, embed in enumerate(instance.view.pages):
