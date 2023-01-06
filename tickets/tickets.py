@@ -3,21 +3,20 @@ import datetime
 import logging
 
 import discord
-from discord import TextStyle
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
-from .base import BaseCommands
-from .admin import AdminCommands
-from .views import PanelView
 from .abc import CompositeMetaClass
+from .admin import AdminCommands
+from .base import BaseCommands
+from .views import PanelView
 
 log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
 
 
-# redgettext tickets.py base.py commands.py views.py --command-docstring
+# redgettext -D tickets.py base.py admin.py views.py
 @cog_i18n(_)
 class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
@@ -25,7 +24,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.3.11"
+    __version__ = "1.3.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -87,7 +86,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
             "required": True,  # (Optional
             "min_length": None,  # (Optional
             "max_length": None,  # (Optional
-            "answer": None  # (Optional
+            "answer": None,  # (Optional
         }
 
         self.valid = []  # Valid ticket channels

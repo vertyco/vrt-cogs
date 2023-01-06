@@ -42,7 +42,9 @@ class GetReply:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.reply:
             if self.reply.guild:
-                with contextlib.suppress(discord.HTTPException, discord.NotFound, discord.Forbidden):
+                with contextlib.suppress(
+                    discord.HTTPException, discord.NotFound, discord.Forbidden
+                ):
                     await self.reply.delete(delay=30)
             else:
                 await self.reply.add_reaction("✅")

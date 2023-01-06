@@ -1,6 +1,7 @@
 import datetime
 import logging
 from abc import ABC
+from io import BytesIO
 from typing import Union
 
 import discord
@@ -8,6 +9,7 @@ from discord.utils import escape_markdown
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
+
 from .abc import MixinMeta
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -165,7 +167,7 @@ class BaseCommands(MixinMeta, ABC):
         # Send off new messages
         if log_chan:
             if text:
-                file = discord.File(text.encode(), filename=filename)
+                file = discord.File(BytesIO(text.encode()), filename=filename)
                 await log_chan.send(embed=embed, file=file)
             else:
                 await log_chan.send(embed=embed)
@@ -186,7 +188,7 @@ class BaseCommands(MixinMeta, ABC):
         if conf["dm"]:
             try:
                 if text:
-                    file = discord.File(text.encode(), filename=filename)
+                    file = discord.File(BytesIO(text.encode()), filename=filename)
                     await member.send(embed=embed, file=file)
                 else:
                     await member.send(embed=embed)

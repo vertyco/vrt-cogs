@@ -125,7 +125,8 @@ class AutoDocs(commands.Cog):
                 }
             else:
                 docs += (
-                    f"{c.hashes} {name} ({SLASH} {COMMAND})\n" f" - {USAGE}: `{usage}`\n"
+                    f"{c.hashes} {name} ({SLASH} {COMMAND})\n"
+                    f" - {USAGE}: `{usage}`\n"
                 )
                 if param_info:
                     docs += f"{param_info}"

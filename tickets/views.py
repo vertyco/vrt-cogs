@@ -3,11 +3,11 @@ import contextlib
 import logging
 import traceback
 from datetime import datetime
-from typing import Union, Optional
+from typing import Optional, Union
 
 import discord
-from discord import TextStyle, ButtonStyle, Interaction
-from discord.ui import Button, TextInput, View, Modal
+from discord import ButtonStyle, Interaction, TextStyle
+from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator
 
@@ -16,7 +16,7 @@ log = logging.getLogger("red.vrt.supportview")
 
 
 async def wait_reply(
-        ctx: commands.Context, timeout: Optional[int] = 60, delete: Optional[bool] = True
+    ctx: commands.Context, timeout: Optional[int] = 60, delete: Optional[bool] = True
 ) -> Optional[str]:
     def check(message: discord.Message):
         return message.author == ctx.author and message.channel == ctx.channel
@@ -25,7 +25,9 @@ async def wait_reply(
         reply = await ctx.bot.wait_for("message", timeout=timeout, check=check)
         res = reply.content
         if delete:
-            with contextlib.suppress(discord.HTTPException, discord.NotFound, discord.Forbidden):
+            with contextlib.suppress(
+                discord.HTTPException, discord.NotFound, discord.Forbidden
+            ):
                 await reply.delete(delay=10)
         if res.lower().strip() == "cancel":
             return None
@@ -72,9 +74,7 @@ class Confirm(View):
         return True
 
     @discord.ui.button(label="Yes", style=ButtonStyle.green)
-    async def confirm(
-        self, interaction: Interaction, button: Button
-    ):
+    async def confirm(self, interaction: Interaction, button: Button):
         if not await self.interaction_check(interaction):
             return
         self.value = True
@@ -130,7 +130,7 @@ class TicketModal(Modal):
                 default=info["default"],
                 required=info["required"],
                 min_length=info["min_length"],
-                max_length=info["max_length"]
+                max_length=info["max_length"],
             )
             self.add_item(field)
             info["field"] = field
@@ -310,7 +310,9 @@ class SupportButton(Button):
         if len(form_embed.fields) > 0:
             await channel.send(embed=form_embed)
 
-        desc = _("Your ticket channel has been created, **[CLICK HERE]({})**").format(msg.jump_url)
+        desc = _("Your ticket channel has been created, **[CLICK HERE]({})**").format(
+            msg.jump_url
+        )
         em = discord.Embed(description=desc, color=user.color)
         if modal:
             await interaction.followup.send(embed=em, ephemeral=True)
