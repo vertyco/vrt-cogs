@@ -35,9 +35,12 @@ class CustomCmdFmt:
         self.cmd = cmd
         self.is_slash: bool = not isinstance(cmd, commands.Command)
         self.is_hybrid: bool = isinstance(cmd, HybridAppCommand)
-        self.checks: str = humanize_list(
-            [i.__qualname__.split(".")[0] for i in cmd.checks]
-        ).strip()
+        try:
+            self.checks: str = humanize_list(
+                [i.__qualname__.split(".")[0] for i in cmd.checks]
+            ).strip()
+        except AttributeError:
+            self.checks = ""
         self.name: str = cmd.qualified_name
         self.hashes: str = len(self.name.split(" ")) * "#"
         if self.is_slash:
@@ -64,7 +67,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.6"
+    __version__ = "0.1.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
