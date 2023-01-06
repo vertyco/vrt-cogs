@@ -21,4 +21,3 @@ class MixinMeta(ABC):
     @abstractmethod
     async def initialize(self, target_guild: discord.Guild = None) -> None:
         raise NotImplementedError
-

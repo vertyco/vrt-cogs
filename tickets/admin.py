@@ -2,14 +2,14 @@ from abc import ABC
 from typing import Union
 
 import discord
-from discord import Embed, app_commands
+from discord import Embed
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
+from .abc import MixinMeta
 from .menu import SMALL_CONTROLS, menu
 from .views import TestButton, confirm, wait_reply
-from .abc import MixinMeta
 
 _ = Translator("TicketsCommands", __file__)
 
@@ -319,7 +319,9 @@ class AdminCommands(MixinMeta, ABC):
         if field_name in existing:
             async with self.config.guild(ctx.guild).panels() as panels:
                 del panels[panel_name]["modals"][field_name]
-                return await ctx.send(_("Field for {} panel has been removed!").format(panel_name))
+                return await ctx.send(
+                    _("Field for {} panel has been removed!").format(panel_name)
+                )
 
         async def make_preview(m, mm: discord.Message):
             txt = ""
@@ -328,10 +330,16 @@ class AdminCommands(MixinMeta, ABC):
                     continue
                 txt += f"{k}: {v}\n"
             title = "Modal Preview"
-            await mm.edit(embed=discord.Embed(title=title, description=box(txt), color=color))
+            await mm.edit(
+                embed=discord.Embed(title=title, description=box(txt), color=color)
+            )
 
         async def cancel(m):
-            await m.edit(embed=discord.Embed(description="Modal field addition cancelled", color=color))
+            await m.edit(
+                embed=discord.Embed(
+                    description="Modal field addition cancelled", color=color
+                )
+            )
 
         foot = _("type 'cancel' to cancel at any time")
         color = ctx.author.color
@@ -382,8 +390,10 @@ class AdminCommands(MixinMeta, ABC):
 
         # Placeholder
         em = Embed(
-            description=_("Would you like to set a placeholder for the text field?\n"
-                          "This is text that shows up in the box before the user types."),
+            description=_(
+                "Would you like to set a placeholder for the text field?\n"
+                "This is text that shows up in the box before the user types."
+            ),
             color=color,
         )
         await msg.edit(embed=em)
@@ -391,14 +401,20 @@ class AdminCommands(MixinMeta, ABC):
         if yes is None:
             return
         if yes:
-            em = Embed(description=_("Type your desired placeholder below (100 chars max)"), color=color)
+            em = Embed(
+                description=_("Type your desired placeholder below (100 chars max)"),
+                color=color,
+            )
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             placeholder = await wait_reply(ctx, 300, False)
             if not placeholder:
                 return await cancel(msg)
             if len(placeholder) > 100:
-                em = Embed(description=_("Placeholders must be 100 characters or less!"), color=discord.Color.red())
+                em = Embed(
+                    description=_("Placeholders must be 100 characters or less!"),
+                    color=discord.Color.red(),
+                )
                 return await msg.edit(embed=em)
             modal["placeholder"] = placeholder
             await make_preview(modal, preview)
@@ -413,7 +429,9 @@ class AdminCommands(MixinMeta, ABC):
         if yes is None:
             return
         if yes:
-            em = Embed(description=_("Type your desired default value below"), color=color)
+            em = Embed(
+                description=_("Type your desired default value below"), color=color
+            )
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             default = await wait_reply(ctx, 300, False)
@@ -445,16 +463,25 @@ class AdminCommands(MixinMeta, ABC):
         if yes is None:
             return
         if yes:
-            em = Embed(description=_("Type the minimum length for this field below (less than 4000)"), color=color)
+            em = Embed(
+                description=_(
+                    "Type the minimum length for this field below (less than 4000)"
+                ),
+                color=color,
+            )
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             minlength = await wait_reply(ctx, 300, False)
             if not minlength:
                 return await cancel(msg)
             if not minlength.isdigit():
-                em = Embed(description=_("That is not a number!"), color=discord.Color.red())
+                em = Embed(
+                    description=_("That is not a number!"), color=discord.Color.red()
+                )
                 return await msg.edit(embed=em)
-            modal["min_length"] = min(4000, int(minlength))  # Make sure answer is between 0 and 4000
+            modal["min_length"] = min(
+                4000, int(minlength)
+            )  # Make sure answer is between 0 and 4000
             await make_preview(modal, preview)
 
         # Max length
@@ -467,16 +494,25 @@ class AdminCommands(MixinMeta, ABC):
         if yes is None:
             return
         if yes:
-            em = Embed(description=_("Type the maximum length for this field below (up to 4000)"), color=color)
+            em = Embed(
+                description=_(
+                    "Type the maximum length for this field below (up to 4000)"
+                ),
+                color=color,
+            )
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             maxlength = await wait_reply(ctx, 300, False)
             if not maxlength:
                 return await cancel(msg)
             if not maxlength.isdigit():
-                em = discord.Embed(description=_("That is not a number!"), color=discord.Color.red())
+                em = discord.Embed(
+                    description=_("That is not a number!"), color=discord.Color.red()
+                )
                 return await msg.edit(embed=em)
-            modal["max_length"] = max(min(4000, int(maxlength)), 1)  # Make sure answer is between 1 and 4000
+            modal["max_length"] = max(
+                min(4000, int(maxlength)), 1
+            )  # Make sure answer is between 1 and 4000
             await make_preview(modal, preview)
 
         async with self.config.guild(ctx.guild).panels() as panels:
@@ -486,7 +522,10 @@ class AdminCommands(MixinMeta, ABC):
             panels[panel_name]["modal"][field_name] = modal
 
         await ctx.tick()
-        em = Embed(description=_("Your modal field has been added!"), color=discord.Color.green())
+        em = Embed(
+            description=_("Your modal field has been added!"),
+            color=discord.Color.green(),
+        )
         await msg.edit(embed=em)
         await self.initialize(ctx.guild)
 
@@ -513,7 +552,7 @@ class AdminCommands(MixinMeta, ABC):
             em = Embed(
                 title=_("Modal Fields for: ") + panel_name,
                 description=f"**{fieldname}**\n{txt}",
-                color=ctx.author.color
+                color=ctx.author.color,
             )
             em.set_footer(text=_("Page") + f" {i + 1}/{len(list(modal.keys()))}")
             embeds.append(em)
@@ -531,15 +570,12 @@ class AdminCommands(MixinMeta, ABC):
             modal_name = list(panels[panel_name]["modal"].keys())[index]
             del panels[panel_name]["modal"][modal_name]
             em = Embed(
-                description=_("Modal field has been deleted from ")
-                + f"{panel_name}!"
+                description=_("Modal field has been deleted from ") + f"{panel_name}!"
             )
             await interaction.response.send_message(embed=em, ephemeral=True)
             del instance.view.pages[index]
             if not len(instance.view.pages):
-                em = Embed(
-                    description="There are no more modal fields for this panel"
-                )
+                em = Embed(description="There are no more modal fields for this panel")
                 return await interaction.followup.send(embed=em, ephemeral=True)
             instance.view.page += 1
             instance.view.page %= len(instance.view.pages)
@@ -596,7 +632,10 @@ class AdminCommands(MixinMeta, ABC):
             em = Embed(description=_("Ticket message addition cancelled"))
             return await msg.edit(embed=em)
         # FOOTER
-        em = Embed(description=_("Would you like this ticket embed to have a footer?"), color=color)
+        em = Embed(
+            description=_("Would you like this ticket embed to have a footer?"),
+            color=color,
+        )
         em.set_footer(text=foot)
         await msg.edit(embed=em)
         yes = await confirm(ctx, msg)
@@ -663,9 +702,7 @@ class AdminCommands(MixinMeta, ABC):
             await interaction.response.send_message(embed=em, ephemeral=True)
             del instance.view.pages[index]
             if not len(instance.view.pages):
-                em = Embed(
-                    description="There are no more messages for this panel"
-                )
+                em = Embed(description="There are no more messages for this panel")
                 return await interaction.followup.send(embed=em, ephemeral=True)
             instance.view.page += 1
             instance.view.page %= len(instance.view.pages)
