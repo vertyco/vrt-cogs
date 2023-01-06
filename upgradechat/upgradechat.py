@@ -4,6 +4,7 @@ from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
 from .api import API
 
@@ -18,7 +19,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.6"
+    __version__ = "0.0.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -161,9 +162,35 @@ class UpgradeChat(commands.Cog):
             await ctx.send(f"Claim log channel has been set to `{channel.name}`")
 
     @upgradechat.command()
+    async def purchases(self, ctx: commands.Context):
+        """View user purchase history"""
+        users = await self.config.guild(ctx.guild).users()
+
+        embeds = []
+        for uid, purchases in users.items():
+            user = str(ctx.guild.get_member(int(uid))) if ctx.guild.get_member(int(uid)) else uid
+
+            desc = ""
+            for transaction_id, purchase in purchases.items():
+                price = purchase["price"]
+                date = purchase["date"]
+                desc += f"**{transaction_id}**\n`{date}: `{price}\n"
+            em = discord.Embed(
+                title=f"Purchases from {user}",
+                description=desc
+            )
+            embeds.append(em)
+        for ind, i in enumerate(embeds):
+            i.set_footer(text=f"Page {ind + 1}/{len(list(users.keys()))}")
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
+
+    @upgradechat.command()
     async def view(self, ctx: commands.Context):
         """View your current products"""
         conf = await self.config.guild(ctx.guild).all()
+        users = conf["users"]
+        total = sum([sum([p["price"] for p in purchases.values()]) for purchases in users.values()])
+        purchases = sum([len(purchases) for purchases in users.values()])
         currency_name = await bank.get_currency_name(ctx.guild)
         token = conf["bearer_token"] if conf["bearer_token"] else "Not Authorized Yet"
         cid = conf["id"]
@@ -193,7 +220,11 @@ class UpgradeChat(commands.Cog):
 
         em = discord.Embed(
             title="UpgradeChat Settings",
-            description=f"{desc}\n**Products**\n{box(text)}",
+            description=f"{desc}\n"
+                        f"`Users:     `{len(users)}\n"
+                        f"`Purchases:  `{purchases}\n"
+                        f"`TotalSpent: `{total}\n"
+                        f"**Products**\n{box(text)}",
         )
         await ctx.send(embed=em)
 
