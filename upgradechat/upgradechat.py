@@ -1,4 +1,5 @@
 import discord
+from datetime import datetime
 from discord.ext.commands.cooldowns import BucketType
 from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
@@ -19,7 +20,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.7"
+    __version__ = "0.0.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -168,17 +169,19 @@ class UpgradeChat(commands.Cog):
 
         embeds = []
         for uid, purchases in users.items():
-            user = str(ctx.guild.get_member(int(uid))) if ctx.guild.get_member(int(uid)) else uid
+            user = ctx.guild.get_member(int(uid)) if ctx.guild.get_member(int(uid)) else None
 
-            desc = ""
+            desc = f"**Purchases from {user if user else uid}**\n"
             for transaction_id, purchase in purchases.items():
                 price = purchase["price"]
-                date = purchase["date"]
-                desc += f"**{transaction_id}**\n`{date}: `{price}\n"
+                date = int(datetime.fromisoformat(purchase["date"]).timestamp())
+                desc += f"`${price}: `<t:{date}:D> (<t:{date}:R>)\n"
+
             em = discord.Embed(
-                title=f"Purchases from {user}",
                 description=desc
             )
+            if user and user.avatar:
+                em.set_thumbnail(url=user.avatar.url)
             embeds.append(em)
         for ind, i in enumerate(embeds):
             i.set_footer(text=f"Page {ind + 1}/{len(list(users.keys()))}")
