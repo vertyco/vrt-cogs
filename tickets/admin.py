@@ -336,7 +336,7 @@ class AdminCommands(MixinMeta, ABC):
         foot = _("type 'cancel' to cancel at any time")
         color = ctx.author.color
 
-        modal = self.modal_schema
+        modal = self.modal_schema.copy()
 
         # Label
         em = Embed(
