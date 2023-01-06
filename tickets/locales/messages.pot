@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-01-06 10:23-0500\n"
+"POT-Creation-Date: 2023-01-06 10:26-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -959,6 +959,10 @@ msgstr ""
 
 #: views.py:70
 msgid "You are not allowed to interact with this button."
+msgstr ""
+
+#: views.py:124
+msgid "{} Panel"
 msgstr ""
 
 #: views.py:173

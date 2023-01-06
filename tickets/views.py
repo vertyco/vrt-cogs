@@ -121,7 +121,7 @@ class TestButton(View):
 class TicketModal(Modal):
     def __init__(self, title: str, fields: dict):
         self.fields = fields
-        super().__init__(title=title)
+        super().__init__(title=_("{} Panel").format(title.upper()))
         for info in fields.values():
             field = TextInput(
                 label=info["label"],
