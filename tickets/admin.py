@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Union
+from typing import Optional, Union
 
 import discord
 from discord import Embed
@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
 from .abc import MixinMeta
-from .menu import SMALL_CONTROLS, menu
+from .menu import SMALL_CONTROLS, MenuButton, menu
 from .views import TestButton, confirm, wait_reply
 
 _ = Translator("TicketsCommands", __file__)
@@ -307,24 +307,35 @@ class AdminCommands(MixinMeta, ABC):
         There is no toggle for modals, if a panel has them it will use them, if they don't then it just opens the ticket
         When the ticket is opened, it sends the modal field responses in an embed below the ticket message
 
-        **Note:** `field_name` is just the name of the field stored in config, it won't be shown in the modal
+        **Note:**
+        `field_name` is just the name of the field stored in config, it won't be shown in the modal and should not have spaces in it
 
         Specify an existing field name to delete a modal field (non-case-sensitive)
         """
         panel_name = panel_name.lower()
         field_name = field_name.lower()
+        await self.create_or_edit_modal(ctx, panel_name, field_name)
 
-        panels = await self.config.guild(ctx.guild).panels()
-        if panel_name not in panels:
-            return await ctx.send(_("Panel does not exist!"))
+    async def create_or_edit_modal(
+        self,
+        ctx: commands.Context,
+        panel_name: str,
+        field_name: str,
+        existing_modal: Optional[dict] = None,
+        preview: Optional[discord.Message] = None,
+    ):
+        if not existing_modal:
+            panels = await self.config.guild(ctx.guild).panels()
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
 
-        existing = panels[panel_name].get("modals", {})
-        if field_name in existing:
-            async with self.config.guild(ctx.guild).panels() as panels:
-                del panels[panel_name]["modals"][field_name]
-                return await ctx.send(
-                    _("Field for {} panel has been removed!").format(panel_name)
-                )
+            existing = panels[panel_name].get("modals", {})
+            if field_name in existing:
+                async with self.config.guild(ctx.guild).panels() as panels:
+                    del panels[panel_name]["modals"][field_name]
+                    return await ctx.send(
+                        _("Field for {} panel has been removed!").format(panel_name)
+                    )
 
         async def make_preview(m, mm: discord.Message):
             txt = ""
@@ -334,7 +345,8 @@ class AdminCommands(MixinMeta, ABC):
                 txt += f"{k}: {v}\n"
             title = "Modal Preview"
             await mm.edit(
-                embed=discord.Embed(title=title, description=box(txt), color=color)
+                embed=discord.Embed(title=title, description=box(txt), color=color),
+                view=None,
             )
 
         async def cancel(m):
@@ -347,7 +359,9 @@ class AdminCommands(MixinMeta, ABC):
         foot = _("type 'cancel' to cancel at any time")
         color = ctx.author.color
 
-        modal = self.modal_schema.copy()
+        modal = self.modal_schema.copy() if not existing_modal else existing_modal
+        if preview:
+            await make_preview(modal, preview)
 
         # Label
         em = Embed(
@@ -369,7 +383,9 @@ class AdminCommands(MixinMeta, ABC):
             return await msg.edit(embed=em)
         modal["label"] = label
 
-        preview = msg
+        if not preview:
+            preview = msg
+
         await make_preview(modal, preview)
 
         # Style
@@ -525,8 +541,11 @@ class AdminCommands(MixinMeta, ABC):
             panels[panel_name]["modal"][field_name] = modal
 
         await ctx.tick()
+        desc = _("Your modal field has been added!")
+        if existing_modal:
+            desc = _("Your modal field has been edited!")
         em = Embed(
-            description=_("Your modal field has been added!"),
+            description=desc,
             color=discord.Color.green(),
         )
         await msg.edit(embed=em)
@@ -552,39 +571,68 @@ class AdminCommands(MixinMeta, ABC):
             txt += _("`Required:    `{}\n").format(info["required"])
             txt += _("`Min Length:  `{}\n").format(info["min_length"])
             txt += _("`Max Length:  `{}\n").format(info["max_length"])
+
+            desc = f"**{fieldname}**\n{txt}\n"
+            desc += _("Page") + f" `{i + 1}/{len(list(modal.keys()))}`"
+
             em = Embed(
-                title=_("Modal Fields for: ") + panel_name,
-                description=f"**{fieldname}**\n{txt}",
+                title=_("Modal Fields for {}").format(panel_name),
+                description=desc,
                 color=ctx.author.color,
             )
-            em.set_footer(text=_("Page") + f" {i + 1}/{len(list(modal.keys()))}")
+            em.set_footer(text=f"{panel_name}|{fieldname}")
             embeds.append(em)
 
         controls = SMALL_CONTROLS.copy()
         controls["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.delete_modal_field
+        controls["\N{MEMO}"] = self.edit_modal_field
         await menu(ctx, embeds, controls)
 
-    async def delete_modal_field(self, instance, interaction: discord.Interaction):
+    async def edit_modal_field(self, instance, interaction: discord.Interaction):
         index = instance.view.page
-        panel_name = instance.view.pages[index].title.replace(
-            _("Modal Fields for: "), ""
-        )
-        async with self.config.guild(interaction.guild).panels() as panels:
-            modal_name = list(panels[panel_name]["modal"].keys())[index]
-            del panels[panel_name]["modal"][modal_name]
-            em = Embed(
-                description=_("Modal field has been deleted from ") + f"{panel_name}!"
+        em: Embed = instance.view.pages[index]
+        panel_name, fieldname = em.footer.text.split("|")
+        panels = await self.config.guild(interaction.guild).panels()
+        modal = panels[panel_name]["modal"][fieldname]
+        em = Embed(
+            description=_("Editing {} modal field for {}!").format(
+                fieldname, panel_name
             )
-            await interaction.response.send_message(embed=em, ephemeral=True)
-            del instance.view.pages[index]
-            if not len(instance.view.pages):
-                em = Embed(description="There are no more modal fields for this panel")
-                return await interaction.followup.send(embed=em, ephemeral=True)
-            instance.view.page += 1
-            instance.view.page %= len(instance.view.pages)
-            for i, embed in enumerate(instance.view.pages):
-                embed.set_footer(text=f"{i + 1}/{len(instance.view.pages)}")
-            await instance.view.handle_page(interaction.response.edit_message)
+        )
+        await interaction.response.send_message(embed=em, ephemeral=True)
+        instance.view.stop()
+        await self.create_or_edit_modal(instance.view.ctx, panel_name, fieldname, modal)
+
+    async def delete_modal_field(
+        self, instance: MenuButton, interaction: discord.Interaction
+    ):
+        index = instance.view.page
+        em: Embed = instance.view.pages[index]
+        panel_name, fieldname = em.footer.text.split("|")
+        async with self.config.guild(interaction.guild).panels() as panels:
+            del panels[panel_name]["modal"][fieldname]
+
+        em = Embed(
+            description=_("Modal field has been deleted from ") + f"{panel_name}!"
+        )
+        await interaction.response.send_message(embed=em, ephemeral=True)
+        del instance.view.pages[index]
+        if not len(instance.view.pages):
+            em = Embed(description="There are no more modal fields for this panel")
+            await interaction.followup.send(embed=em, ephemeral=True)
+            instance.view.stop()
+            return await instance.view.message.delete()
+        instance.view.page += 1
+        instance.view.page %= len(instance.view.pages)
+        for i, embed in enumerate(instance.view.pages):
+            embed.set_footer(text=f"{i + 1}/{len(instance.view.pages)}")
+        return await menu(
+            instance.view.ctx,
+            instance.view.pages,
+            instance.view.controls,
+            instance.view.message,
+            instance.view.page,
+        )
 
     @tickets.command()
     async def addmessage(self, ctx: commands.Context, panel_name: str):

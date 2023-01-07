@@ -16,7 +16,7 @@ log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
 
 
-# redgettext -D tickets.py base.py admin.py views.py
+# redgettext -D tickets.py base.py admin.py views.py menu.py
 @cog_i18n(_)
 class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
@@ -24,7 +24,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.3.13"
+    __version__ = "1.4.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
