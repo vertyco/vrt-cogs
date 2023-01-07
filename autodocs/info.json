@@ -15,12 +15,14 @@
   ],
   "permissions": [],
   "required_cogs": {},
-  "requirements": [],
+  "requirements": ["tabulate"],
   "short": "EZ Cog Docs",
   "tags": [
     "utility",
     "docs",
-    "documentation"
+    "documentation",
+    "automatic",
+    "autodocs"
   ],
   "type": "COG"
 }
