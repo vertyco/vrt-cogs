@@ -1,6 +1,6 @@
 ![Arkwork](https://github.com/vertyco/Vertyco/blob/main/.github/resources/vrt-cogs-01.png)
 
-Various utility/random cogs for Red V3.
+Various useful and fun cogs for Red V3.
 
 ![Python 3.8](https://img.shields.io/badge/python-v3.11-orange?style=for-the-badge)
 ![Discord.py](https://img.shields.io/badge/discord-py-blue?style=for-the-badge)
@@ -12,7 +12,7 @@ Various utility/random cogs for Red V3.
 ![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
 
 
-I enjoy working with API's and making cogs for game servers or other helpful use cases. Check out some of my projects
+I enjoy working with APIs and making cogs for game servers or other helpful use cases. Check out some of my projects
 below!
 
 | Cog                                              |         Status         | Description                                                                                                                                                                                                                                                                                                                                                                                                         |
