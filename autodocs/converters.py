@@ -53,7 +53,19 @@ from discord.ext.commands import (
     UserConverter,
     VoiceChannelConverter,
 )
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
+
+_ = Translator("AutoDocs", __file__)
+
+maintypes = {
+    "str": _(
+        'A single word, if multiple words are necessary use a quote e.g "Hello world"'
+    ),
+    "int": _("A number without decimal places."),
+    "float": _("A number with or without decimal places."),
+    "bool": _("Can be 1, 0, true, false, t, f"),
+}
 
 CONVERTERS = {
     Member: MemberConverter.__doc__,
@@ -84,13 +96,13 @@ CONVERTERS = {
     ApplicationFlags: FlagConverter.__doc__,
     MessageFlags: FlagConverter.__doc__,
     MemberCacheFlags: FlagConverter.__doc__,
-    int: box(int.__doc__),
-    float: box(float.__doc__),
-    bool: box(bool.__doc__),
-    str: box(str.__doc__),
-    AppCommandOptionType.string: box(str.__doc__),
-    AppCommandOptionType.integer: box(int.__doc__),
-    AppCommandOptionType.boolean: box(bool.__doc__),
+    int: box(maintypes["int"]),
+    float: box(maintypes["float"]),
+    bool: box(maintypes["bool"]),
+    str: box(maintypes["str"]),
+    AppCommandOptionType.string: box(maintypes["str"]),
+    AppCommandOptionType.integer: box(maintypes["int"]),
+    AppCommandOptionType.boolean: box(maintypes["bool"]),
     AppCommandOptionType.user: MemberConverter.__doc__,
     AppCommandOptionType.channel: TextChannelConverter.__doc__,
     AppCommandOptionType.role: RoleConverter.__doc__,
