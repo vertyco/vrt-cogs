@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-01-06 23:40-0500\n"
+"POT-Creation-Date: 2023-01-07 15:08-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -63,11 +63,11 @@ msgstr ""
 msgid "Checks"
 msgstr ""
 
-#: autodocs.py:82 autodocs.py:125
+#: autodocs.py:82 autodocs.py:131
 msgid "Parameter Breakdown\n"
 msgstr ""
 
-#: autodocs.py:131
+#: autodocs.py:137
 #, docstring
 msgid ""
 "\n"
@@ -77,70 +77,94 @@ msgid ""
 "    "
 msgstr ""
 
-#: autodocs.py:142
+#: autodocs.py:148
 msgid ""
 "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: autodocs.py:148
+#: autodocs.py:154
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: autodocs.py:303
+#: autodocs.py:335
 msgid "Create docs for a cog"
 msgstr ""
 
-#: autodocs.py:305
+#: autodocs.py:337
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr ""
 
-#: autodocs.py:306
-msgid "Replace prefix placeholder with the bots prefix"
+#: autodocs.py:338
+msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr ""
 
-#: autodocs.py:307
+#: autodocs.py:339
 msgid "Include hidden commands"
 msgstr ""
 
-#: autodocs.py:308
+#: autodocs.py:340
 msgid "Generate advanced docs including converter types"
 msgstr ""
 
-#: autodocs.py:309
+#: autodocs.py:341
 msgid "Include converter docstrings"
 msgstr ""
 
-#: autodocs.py:321
+#: autodocs.py:342
+msgid "Replace all occurrences of [botname] with the bots name"
+msgstr ""
+
+#: autodocs.py:355
 #, docstring
 msgid ""
 "\n"
 "        Create a Markdown docs page for a cog and send to discord\n"
 "\n"
 "        **Arguments**\n"
-"        `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)\n"
-"        `replace_prefix:`(bool) If True, replaces the prefix placeholder [] with the bots prefix\n"
-"        `include_hidden:`(bool) If True, includes hidden commands\n"
+"        `cog_name:           `(str) The name of the cog you want to make docs for (Case Sensitive)\n"
+"        `replace_prefix:     `(bool) If True, replaces the prefix placeholder [] with the bots prefix\n"
+"        `include_hidden:     `(bool) If True, includes hidden commands\n"
+"        `advanced_docs:      `(bool) If True, include converters from command arguments,\n"
+"        `include_docstrings: `(bool) if True, include docstrings from command argument converters\n"
 "\n"
 "        **Warning**\n"
-"        If `all` is specified for cog_name, and you have a lot of cogs loaded, prepare for a spammed channel\n"
+"        If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file\n"
 "        "
 msgstr ""
 
-#: autodocs.py:336
+#: autodocs.py:374
 msgid "AllCogDocs"
 msgstr ""
 
-#: autodocs.py:354
+#: autodocs.py:399
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr ""
 
-#: autodocs.py:359
+#: autodocs.py:404
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr ""
 
-#: autodocs.py:369
+#: autodocs.py:419
 msgid "Here are your docs for {}!"
+msgstr ""
+
+#: converters.py:62
+msgid ""
+"A single word, if multiple words are necessary use a quote e.g \"Hello "
+"world\""
+msgstr ""
+
+#: converters.py:65
+msgid "A number without decimal places."
+msgstr ""
+
+#: converters.py:66
+msgid "A number with or without decimal places."
+msgstr ""
+
+#: converters.py:67
+msgid "Can be 1, 0, true, false, t, f"
 msgstr ""

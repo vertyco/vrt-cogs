@@ -131,7 +131,7 @@ class CustomCmdFmt:
             return _("Parameter Breakdown\n") + docs
 
 
-# redgettext -D autodocs.py
+# redgettext -D autodocs.py converters.py
 @cog_i18n(_)
 class AutoDocs(commands.Cog):
     """
@@ -141,7 +141,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.12"
+    __version__ = "0.2.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -177,20 +177,20 @@ class AutoDocs(commands.Cog):
             "Warnings",
         ]
 
-    @staticmethod
     def generate_readme(
+        self,
         cog: commands.Cog,
         prefix: Optional[str] = None,
         include_hidden: Optional[bool] = False,
         advanced_docs: Optional[bool] = False,
         include_docstrings: Optional[bool] = False,
+        replace_botname: Optional[bool] = False,
     ) -> str:
         docs = f"# {cog.qualified_name} {HELP}\n\n"
 
         cog_help = cog.help.replace("\n", "<br/>") if cog.help else None
         if cog_help:
             docs += f"{cog_help}\n\n"
-
         # Put hybrids in with normal commands
         hybrids = {}
 
@@ -328,15 +328,18 @@ class AutoDocs(commands.Cog):
             if extended:
                 docs += extended
 
+        if replace_botname:
+            docs = docs.replace("[botname]", self.bot.user.display_name)
         return docs
 
     @commands.hybrid_command(name="makedocs", description=_("Create docs for a cog"))
     @app_commands.describe(
         cog_name=_("The name of the cog you want to make docs for (Case Sensitive)"),
-        replace_prefix=_("Replace prefix placeholder with the bots prefix"),
+        replace_prefix=_("Replace all occurrences of [p] with the bots prefix"),
         include_hidden=_("Include hidden commands"),
         advanced_docs=_("Generate advanced docs including converter types"),
         include_docstrings=_("Include converter docstrings"),
+        replace_botname=_("Replace all occurrences of [botname] with the bots name"),
     )
     @commands.is_owner()
     async def makedocs(
@@ -347,14 +350,17 @@ class AutoDocs(commands.Cog):
         include_hidden: Optional[bool] = False,
         advanced_docs: Optional[bool] = False,
         include_docstrings: Optional[bool] = False,
+        replace_botname: Optional[bool] = False,
     ):
         """
         Create a Markdown docs page for a cog and send to discord
 
         **Arguments**
-        `cog_name:`(str) The name of the cog you want to make docs for (Case Sensitive)
-        `replace_prefix:`(bool) If True, replaces the prefix placeholder [] with the bots prefix
-        `include_hidden:`(bool) If True, includes hidden commands
+        `cog_name:           `(str) The name of the cog you want to make docs for (Case Sensitive)
+        `replace_prefix:     `(bool) If True, replaces the prefix placeholder [] with the bots prefix
+        `include_hidden:     `(bool) If True, includes hidden commands
+        `advanced_docs:      `(bool) If True, include converters from command arguments,
+        `include_docstrings: `(bool) if True, include docstrings from command argument converters
 
         **Warning**
         If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
@@ -375,7 +381,12 @@ class AutoDocs(commands.Cog):
                         if cog.qualified_name in self.ignore:
                             continue
                         res = self.generate_readme(
-                            cog, p, include_hidden, advanced_docs, include_docstrings
+                            cog,
+                            p,
+                            include_hidden,
+                            advanced_docs,
+                            include_docstrings,
+                            replace_botname,
                         )
                         filename = f"{folder_name}/{cog.qualified_name}.md"
                         arc.writestr(
@@ -394,7 +405,12 @@ class AutoDocs(commands.Cog):
                     )
 
                 res = self.generate_readme(
-                    cog, p, include_hidden, advanced_docs, include_docstrings
+                    cog,
+                    p,
+                    include_hidden,
+                    advanced_docs,
+                    include_docstrings,
+                    replace_botname,
                 )
                 buffer = BytesIO(res.encode())
                 buffer.name = f"{cog.qualified_name}.md"
