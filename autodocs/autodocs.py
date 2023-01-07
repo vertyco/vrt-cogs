@@ -141,7 +141,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.11"
+    __version__ = "0.2.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -359,8 +359,10 @@ class AutoDocs(commands.Cog):
         **Warning**
         If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
         """
+        p = ctx.prefix if replace_prefix else None
+        if p == "/":
+            p = (await self.bot.get_valid_prefixes(ctx.guild))[0]
         async with ctx.typing():
-            p = ctx.prefix if replace_prefix else None
             if cog_name == "all":
                 buffer = BytesIO()
                 folder_name = _("AllCogDocs")
