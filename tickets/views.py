@@ -29,7 +29,7 @@ async def wait_reply(
                 discord.HTTPException, discord.NotFound, discord.Forbidden
             ):
                 await reply.delete(delay=10)
-        if res.lower().strip() == "cancel":
+        if res.lower().strip() == _("cancel"):
             return None
         return res.strip()
     except asyncio.TimeoutError:

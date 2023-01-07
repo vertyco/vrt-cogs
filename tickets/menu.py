@@ -1,23 +1,44 @@
 import asyncio
 import functools
-from typing import List, Union
+from typing import List, Optional, Union
 
 import discord
+from discord import ButtonStyle, Interaction
+from discord.ui import Button, View
 from redbot.core import commands
+from redbot.core.i18n import Translator
+
+_ = Translator("SupportViews", __file__)
+
+mapping = {
+    "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": (
+        ButtonStyle.primary,
+        1,
+        None,
+    ),
+    "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}": (ButtonStyle.red, 1, None),
+    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": (
+        ButtonStyle.primary,
+        1,
+        None,
+    ),
+    "\N{WASTEBASKET}\N{VARIATION SELECTOR-16}": (ButtonStyle.grey, 2, "Delete"),
+    "\N{MEMO}": (ButtonStyle.green, 2, "Edit"),
+}
 
 
-class MenuButton(discord.ui.Button):
-    def __init__(self, emoji: str):
-        super().__init__(style=discord.ButtonStyle.primary, emoji=emoji)
+class MenuButton(Button):
+    def __init__(
+        self, emoji: str, style: ButtonStyle, row: int, label: Optional[str] = None
+    ):
+        super().__init__(emoji=emoji, style=style, row=row, label=label)
         self.emoji = emoji
 
-    async def callback(self, inter: discord.Interaction):
+    async def callback(self, inter: Interaction):
         await self.view.controls[self.emoji.name](self, inter)
 
 
-class MenuView(discord.ui.View):
-    """View that creates a menu using the List[str] or List[embed] provided."""
-
+class MenuView(View):
     def __init__(
         self,
         ctx: commands.Context,
@@ -27,20 +48,21 @@ class MenuView(discord.ui.View):
         page: int = 0,
         timeout: int = 60,
     ):
-        super().__init__(timeout=timeout)
         self.ctx = ctx
         self.pages = pages
         self.controls = controls
         self.message = message
         self.page = page
+        super().__init__(timeout=timeout)
 
         for emoji in self.controls:
-            self.add_item(MenuButton(emoji))
+            style, row, label = mapping[emoji]
+            self.add_item(MenuButton(str(emoji), style, row, label))
 
-    async def interaction_check(self, interaction):
+    async def interaction_check(self, interaction: Interaction):
         if interaction.user.id != self.ctx.author.id:
             await interaction.response.send_message(
-                content="You are not allowed to interact with this button.",
+                content=_("You are not allowed to interact with this button."),
                 ephemeral=True,
             )
             return False
@@ -136,16 +158,8 @@ async def right10(instance, interaction: discord.Interaction):
     await instance.view.handle_page(interaction.response.edit_message)
 
 
-FULL_CONTROLS = {
-    "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}": left10,
-    "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": left,
-    "\N{CROSS MARK}": close_menu,
-    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": right,
-    "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}": right10,
-}
-
 SMALL_CONTROLS = {
     "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": left,
-    "\N{CROSS MARK}": close_menu,
+    "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}": close_menu,
     "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": right,
 }
