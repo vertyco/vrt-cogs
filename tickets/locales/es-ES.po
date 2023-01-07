@@ -992,4 +992,3 @@ msgstr ""
 #: views.py:332
 msgid "Ticket opened"
 msgstr ""
-
