@@ -1,16 +1,19 @@
 import logging
 from io import BytesIO
-from typing import Optional
-import inspect
+from typing import Optional, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
 from discord import app_commands
+from discord.app_commands.commands import Command as SlashCommand
 from discord.ext.commands.hybrid import HybridAppCommand
 from redbot.core import commands
 from redbot.core.bot import Red
+from redbot.core.commands.commands import HybridCommand, HybridGroup
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
+
+from .converters import CLASSCONVERTER, CONVERTERS
 
 log = logging.getLogger("red.vrt.autodocs")
 _ = Translator("AutoDocs", __file__)
@@ -32,10 +35,23 @@ CHECKS = _("Checks")
 
 
 class CustomCmdFmt:
-    def __init__(self, cmd):
+    def __init__(
+        self,
+        cmd: Union[
+            HybridGroup, HybridCommand, HybridAppCommand, SlashCommand, commands.Command
+        ],
+    ):
         self.cmd = cmd
-        self.is_slash: bool = not isinstance(cmd, commands.Command)
-        self.is_hybrid: bool = isinstance(cmd, HybridAppCommand)
+
+        self.is_slash: bool = isinstance(cmd, SlashCommand)
+        self.is_hybrid: bool = any(
+            [
+                isinstance(cmd, HybridCommand),
+                isinstance(cmd, HybridAppCommand),
+                isinstance(cmd, HybridGroup),
+            ]
+        )
+
         try:
             self.checks: str = humanize_list(
                 [i.__qualname__.split(".")[0] for i in cmd.checks]
@@ -43,6 +59,7 @@ class CustomCmdFmt:
         except AttributeError:
             self.checks = ""
         self.name: str = cmd.qualified_name
+
         self.hashes: str = len(self.name.split(" ")) * "#"
         if self.is_slash:
             self.desc: str = cmd.description.replace("\n", "<br/>")
@@ -57,6 +74,56 @@ class CustomCmdFmt:
             )
             self.aliases: str = humanize_list(cmd.aliases) if cmd.aliases else ""
 
+    def fmt(
+        self, adv: Optional[bool] = True, include_docs: Optional[bool] = True
+    ) -> str:
+        docs = ""
+        if adv or include_docs:
+            docs += _("Parameter Breakdown\n")
+
+        if self.is_slash:
+            for p in self.cmd.parameters:
+                doc = CONVERTERS.get(p.type)
+
+                if adv:
+                    cls = CLASSCONVERTER.get(p.type)
+                    if cls:
+                        cls = str(cls).replace("<class '", "").replace("'>", "")
+                        docs += f"> ### {p.name}: {cls}\n"
+                    else:
+                        log.warning(
+                            f"Cannot find class {p}\nPlease report to Cog Developer"
+                        )
+
+                if doc and include_docs:
+                    if ".." in doc:
+                        doc = doc.split("..")[0]
+                    for line in doc.split("\n"):
+                        if line.strip().startswith(">"):
+                            line = line.replace(">", "")
+                        docs += f"> {line}\n"
+        else:
+            for arg, ptype in self.cmd.clean_params.items():
+                string = str(ptype)
+
+                converter = ptype.converter
+                doc = CONVERTERS.get(converter)
+                if not doc and hasattr(converter, "__args__"):
+                    doc = CONVERTERS.get(converter.__args__[0])
+
+                if adv:
+                    docs += f"> ### {string}\n"
+                if doc and include_docs:
+                    if ".." in doc:
+                        doc = doc.split("..")[0]
+                    for line in doc.split("\n"):
+                        if line.strip().startswith(">"):
+                            line = line.replace(">", "")
+                        docs += f"> {line}\n"
+
+        if docs:
+            return _("Parameter Breakdown\n") + docs
+
 
 # redgettext -D autodocs.py
 @cog_i18n(_)
@@ -68,7 +135,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.8"
+    __version__ = "0.2.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -89,6 +156,8 @@ class AutoDocs(commands.Cog):
         cog: commands.Cog,
         prefix: Optional[str] = None,
         include_hidden: Optional[bool] = False,
+        advanced_docs: Optional[bool] = False,
+        include_docstrings: Optional[bool] = False,
     ) -> str:
         docs = f"# {cog.qualified_name} {HELP}\n\n"
 
@@ -98,48 +167,57 @@ class AutoDocs(commands.Cog):
 
         # Put hybrids in with normal commands
         hybrids = {}
+
         for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(cmd)
             name = c.name
 
             # Get params
-            params = ""
-            param_info = ""
+            arg_string = ""
+            arg_descriptions = ""
+
             for i in c.options:
                 param_name = i["name"]
                 param_desc = i["description"]
                 required = i.get("required", False)
                 if required:
-                    params += f"<{param_name}> "
-                    param_info += f" - `{param_name}:` ({REQUIRED}) {param_desc}\n"
+                    arg_string += f"<{param_name}> "
+                    arg_descriptions += (
+                        f" - `{param_name}:` ({REQUIRED}) {param_desc}\n"
+                    )
                 else:
-                    params += f"[{param_name}] "
-                    param_info += f" - `{param_name}:` ({OPTIONAL}) {param_desc}\n"
-            params = params.strip()
+                    arg_string += f"[{param_name}] "
+                    arg_descriptions += (
+                        f" - `{param_name}:` ({OPTIONAL}) {param_desc}\n"
+                    )
+
+            arg_string = arg_string.strip()
 
             usage = f"/{name}"
-            if params:
-                usage += f" {params}"
+            if arg_string:
+                usage += f" {arg_string}"
 
             if c.is_hybrid:
                 hybrids[name] = {
                     "desc": c.desc,
-                    "params": params,
-                    "param_info": param_info,
+                    "arg_string": arg_string,
+                    "arg_descriptions": arg_descriptions,
                 }
             else:
                 docs += (
                     f"{c.hashes} {name} ({SLASH} {COMMAND})\n"
                     f" - {USAGE}: `{usage}`\n"
                 )
-                if param_info:
-                    docs += f"{param_info}"
+                if arg_descriptions:
+                    docs += f"{arg_descriptions}"
 
                 if c.checks:
                     docs += f" - {CHECKS}: {c.checks}\n"
                 if not docs.endswith("\n\n"):
                     docs += "\n"
                 docs += f"{c.desc}\n\n"
+
+                docs += c.fmt(advanced_docs, include_docstrings)
 
         # Normal + Hybrid commands
         for cmd in cog.walk_commands():
@@ -179,11 +257,11 @@ class AutoDocs(commands.Cog):
             hybrid = hybrids.get(name, None)
             if hybrid:
                 d2 = hybrid.get("desc", None)
-                params = hybrid.get("params", None)
-                param_info = hybrid.get("param_info", None)
+                arg_info = hybrid.get("arg_info", None)
+                arg_descriptions = hybrid.get("arg_descriptions", None)
                 otherusage = f"/{name}"
-                if params:
-                    otherusage += f" {params}"
+                if arg_info:
+                    otherusage += f" {arg_info}"
 
                 docs += (
                     f"{c.hashes} {name} ({HYBRID} {COMMAND})\n"
@@ -192,8 +270,8 @@ class AutoDocs(commands.Cog):
                 )
                 if aliases:
                     docs += f" - {ALIASES}: `{aliases}`\n"
-                if param_info:
-                    docs += f"{param_info}\n"
+                if arg_descriptions:
+                    docs += f"{arg_descriptions}\n"
                 if cooldown:
                     docs += f" - {COOLDOWN}: {cooldown}\n"
                 if checks:
@@ -218,6 +296,8 @@ class AutoDocs(commands.Cog):
                     docs += "\n"
                 docs += f"{desc}\n\n"
 
+            docs += c.fmt(advanced_docs, include_docstrings)
+
         return docs
 
     @commands.hybrid_command(name="makedocs", description=_("Create docs for a cog"))
@@ -225,6 +305,8 @@ class AutoDocs(commands.Cog):
         cog_name=_("The name of the cog you want to make docs for (Case Sensitive)"),
         replace_prefix=_("Replace prefix placeholder with the bots prefix"),
         include_hidden=_("Include hidden commands"),
+        advanced_docs=_("Generate advanced docs including converter types"),
+        include_docstrings=_("Include converter docstrings"),
     )
     @commands.is_owner()
     async def makedocs(
@@ -233,6 +315,8 @@ class AutoDocs(commands.Cog):
         cog_name: str,
         replace_prefix: Optional[bool] = False,
         include_hidden: Optional[bool] = False,
+        advanced_docs: Optional[bool] = False,
+        include_docstrings: Optional[bool] = False,
     ):
         """
         Create a Markdown docs page for a cog and send to discord
@@ -256,7 +340,9 @@ class AutoDocs(commands.Cog):
                     arc.mkdir(folder_name, mode=755)
                     for cog in self.bot.cogs:
                         cog = self.bot.get_cog(cog)
-                        res = self.generate_readme(cog, p, include_hidden)
+                        res = self.generate_readme(
+                            cog, p, include_hidden, advanced_docs, include_docstrings
+                        )
                         filename = f"{folder_name}/{cog.qualified_name}.md"
                         arc.writestr(
                             filename, res, compress_type=ZIP_DEFLATED, compresslevel=9
@@ -273,7 +359,9 @@ class AutoDocs(commands.Cog):
                         _("I could not find that cog, maybe it is not loaded?")
                     )
 
-                res = self.generate_readme(cog, p, include_hidden)
+                res = self.generate_readme(
+                    cog, p, include_hidden, advanced_docs, include_docstrings
+                )
                 buffer = BytesIO(res.encode())
                 buffer.name = f"{cog.qualified_name}.md"
                 buffer.seek(0)
