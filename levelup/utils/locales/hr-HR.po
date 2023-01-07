@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2022-12-20 20:47-0500\n"
-"PO-Revision-Date: 2022-12-22 18:47\n"
+"PO-Revision-Date: 2023-01-07 20:09\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -117,3 +117,4 @@ msgstr ""
 #: utils\formatter.py:255 utils\formatter.py:257
 msgid "Pages "
 msgstr ""
+
