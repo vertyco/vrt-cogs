@@ -17,6 +17,8 @@ msgstr ""
 "X-Crowdin-File-ID: 25\n"
 "Language: es_ES\n"
 
+
+
 #: autodocs.py:22
 msgid "Help"
 msgstr ""
@@ -166,4 +168,7 @@ msgstr ""
 #: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
 msgstr ""
+
+
+
 
