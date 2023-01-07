@@ -1,11 +1,12 @@
-import discord
 from datetime import datetime
+
+import discord
 from discord.ext.commands.cooldowns import BucketType
 from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from .api import API
 
@@ -169,7 +170,11 @@ class UpgradeChat(commands.Cog):
 
         embeds = []
         for uid, purchases in users.items():
-            user = ctx.guild.get_member(int(uid)) if ctx.guild.get_member(int(uid)) else None
+            user = (
+                ctx.guild.get_member(int(uid))
+                if ctx.guild.get_member(int(uid))
+                else None
+            )
 
             desc = f"**Purchases from {user if user else uid}**\n"
             for transaction_id, purchase in purchases.items():
@@ -177,9 +182,7 @@ class UpgradeChat(commands.Cog):
                 date = int(datetime.fromisoformat(purchase["date"]).timestamp())
                 desc += f"`${price}: `<t:{date}:D> (<t:{date}:R>)\n"
 
-            em = discord.Embed(
-                description=desc
-            )
+            em = discord.Embed(description=desc)
             if user and user.avatar:
                 em.set_thumbnail(url=user.avatar.url)
             embeds.append(em)
@@ -192,7 +195,12 @@ class UpgradeChat(commands.Cog):
         """View your current products"""
         conf = await self.config.guild(ctx.guild).all()
         users = conf["users"]
-        total = sum([sum([p["price"] for p in purchases.values()]) for purchases in users.values()])
+        total = sum(
+            [
+                sum([p["price"] for p in purchases.values()])
+                for purchases in users.values()
+            ]
+        )
         purchases = sum([len(purchases) for purchases in users.values()])
         currency_name = await bank.get_currency_name(ctx.guild)
         token = conf["bearer_token"] if conf["bearer_token"] else "Not Authorized Yet"
@@ -224,10 +232,10 @@ class UpgradeChat(commands.Cog):
         em = discord.Embed(
             title="UpgradeChat Settings",
             description=f"{desc}\n"
-                        f"`Users:     `{len(users)}\n"
-                        f"`Purchases:  `{purchases}\n"
-                        f"`TotalSpent: `{total}\n"
-                        f"**Products**\n{box(text)}",
+            f"`Users:     `{len(users)}\n"
+            f"`Purchases:  `{purchases}\n"
+            f"`TotalSpent: `{total}\n"
+            f"**Products**\n{box(text)}",
         )
         await ctx.send(embed=em)
 
