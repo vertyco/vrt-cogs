@@ -135,7 +135,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.9"
+    __version__ = "0.2.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -217,7 +217,9 @@ class AutoDocs(commands.Cog):
                     docs += "\n"
                 docs += f"{c.desc}\n\n"
 
-                docs += c.fmt(advanced_docs, include_docstrings)
+                extended = c.fmt(advanced_docs, include_docstrings)
+                if extended:
+                    docs += extended
 
         # Normal + Hybrid commands
         for cmd in cog.walk_commands():
@@ -296,7 +298,9 @@ class AutoDocs(commands.Cog):
                     docs += "\n"
                 docs += f"{desc}\n\n"
 
-            docs += c.fmt(advanced_docs, include_docstrings)
+            extended = c.fmt(advanced_docs, include_docstrings)
+            if extended:
+                docs += extended
 
         return docs
 
