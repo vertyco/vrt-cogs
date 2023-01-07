@@ -15,7 +15,9 @@
   ],
   "permissions": [],
   "required_cogs": {},
-  "requirements": ["tabulate"],
+  "requirements": [
+    "tabulate"
+  ],
   "short": "EZ Cog Docs",
   "tags": [
     "utility",

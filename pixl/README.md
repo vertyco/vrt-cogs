@@ -3,108 +3,138 @@
 Guess pictures for points
 
 # pixlboard
- - Usage: `[p]pixlboard <show_global>`
- - Aliases: `pixlb, pixelb, pixlelb, and pixleaderboard`
- - Checks: guild_only
 
-View the Pixl leaderboard!<br/><br/>**Arguments**<br/>`show_global`: show the global leaderboard<br/><br/>example: `[p]pixlb true`
+- Usage: `[p]pixlboard <show_global>`
+- Aliases: `pixlb, pixelb, pixlelb, and pixleaderboard`
+- Checks: guild_only
+
+View the Pixl leaderboard!<br/><br/>**Arguments**<br/>`show_global`: show the global leaderboard<br/><br/>
+example: `[p]pixlb true`
 
 # pixl
- - Usage: `[p]pixl`
- - Aliases: `pixle, pixlguess, pixelguess, and pixleguess`
- - Checks: guild_only
+
+- Usage: `[p]pixl`
+- Aliases: `pixle, pixlguess, pixelguess, and pixleguess`
+- Checks: guild_only
 
 Start a Pixl game!<br/>Guess the image as it is slowly revealed
 
 # pixlset
- - Usage: `[p]pixlset`
- - Aliases: `pixelset and pixleset`
- - Checks: guild_only
+
+- Usage: `[p]pixlset`
+- Aliases: `pixelset and pixleset`
+- Checks: guild_only
 
 Configure the Pixl game
 
 ## pixlset showanswer
- - Usage: `[p]pixlset showanswer`
+
+- Usage: `[p]pixlset showanswer`
 
 (Toggle) Showing the answer after a game over
 
 ## pixlset showdefault
- - Usage: `[p]pixlset showdefault`
+
+- Usage: `[p]pixlset showdefault`
 
 (Toggle) Whether to use the default hardcoded images in this guild
 
 ## pixlset delay
- - Usage: `[p]pixlset delay <seconds>`
 
-(Owner Only)Set the delay between block reveals<br/><br/>**Warning**<br/>Setting this too low may hit rate limits, default is 5 seconds.
+- Usage: `[p]pixlset delay <seconds>`
+
+(Owner Only)Set the delay between block reveals<br/><br/>**Warning**<br/>Setting this too low may hit rate limits,
+default is 5 seconds.
 
 ## pixlset timelimit
- - Usage: `[p]pixlset timelimit <seconds>`
+
+- Usage: `[p]pixlset timelimit <seconds>`
 
 Set the time limit for Pixl games
 
 ## pixlset useglobal
- - Usage: `[p]pixlset useglobal`
+
+- Usage: `[p]pixlset useglobal`
 
 (Toggle) Whether to use global images in this guild
 
 ## pixlset view
- - Usage: `[p]pixlset view`
+
+- Usage: `[p]pixlset view`
 
 View the current settings
 
 ## pixlset participants
- - Usage: `[p]pixlset participants <amount>`
+
+- Usage: `[p]pixlset participants <amount>`
 
 Set the minimum amount of participants for the game to reward users credits
 
 ## pixlset blocks
- - Usage: `[p]pixlset blocks <amount>`
+
+- Usage: `[p]pixlset blocks <amount>`
 
 Set the amount of blocks to reveal after each delay
 
 ## pixlset image
- - Usage: `[p]pixlset image`
+
+- Usage: `[p]pixlset image`
 
 Add/Remove images
 
 ### pixlset image viewdefault
- - Usage: `[p]pixlset image viewdefault`
+
+- Usage: `[p]pixlset image viewdefault`
 
 View the default images
 
 ### pixlset image viewglobal
- - Usage: `[p]pixlset image viewglobal`
+
+- Usage: `[p]pixlset image viewglobal`
 
 View the global images
 
 ### pixlset image add
- - Usage: `[p]pixlset image add <url> <answers>`
 
-Add an image for your guild to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
+- Usage: `[p]pixlset image add <url> <answers>`
+
+Add an image for your guild to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of
+possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded
+with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct
+answers separated by a comma<br/><br/>
+Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
 
 ### pixlset image testguild
- - Usage: `[p]pixlset image testguild`
+
+- Usage: `[p]pixlset image testguild`
 
 Test the guild images to ensure they are valid urls
 
 ### pixlset image addglobal
- - Usage: `[p]pixlset image addglobal <url> <answers>`
 
-Add a global image for all guilds to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
+- Usage: `[p]pixlset image addglobal <url> <answers>`
+
+Add a global image for all guilds to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a
+list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be
+uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible
+correct answers separated by a comma<br/><br/>
+Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
 
 ### pixlset image testglobal
- - Usage: `[p]pixlset image testglobal`
+
+- Usage: `[p]pixlset image testglobal`
 
 Test the global images to ensure they are valid urls
 
 ### pixlset image view
- - Usage: `[p]pixlset image view`
+
+- Usage: `[p]pixlset image view`
 
 View the guild images
 
 ## pixlset ratio
- - Usage: `[p]pixlset ratio <ratio>`
 
-Set the point to credit conversion ratio (points x ratio = credit reward)<br/>Points are calculated based on how many hidden blocks are left at the end of the game<br/><br/>Ratio can be a decimal<br/>Set to 0 to disable credit rewards
+- Usage: `[p]pixlset ratio <ratio>`
 
+Set the point to credit conversion ratio (points x ratio = credit reward)<br/>Points are calculated based on how many
+hidden blocks are left at the end of the game<br/><br/>Ratio can be a decimal<br/>Set to 0 to disable credit rewards
