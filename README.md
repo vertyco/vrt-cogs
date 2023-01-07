@@ -52,7 +52,7 @@ If you haven't loaded the Downloader cog already, go ahead and do that first wit
 
 ```ini
 [p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs
-                                               [p]cog install vrt-cogs <list of cogs>
+[p]cog install vrt-cogs <list of cogs>
 [p]load <list of cogs>
 ```
 
