@@ -1,18 +1,59 @@
-from redbot.core.utils.chat_formatting import box
-from discord.ext.commands import (
-    MemberConverter, EmojiConverter, GuildConverter, CategoryChannelConverter,
-    InviteConverter, PartialEmojiConverter, PartialMessageConverter, MessageConverter, UserConverter,
-    RoleConverter, TextChannelConverter, ColourConverter, ColorConverter, GuildStickerConverter,
-    VoiceChannelConverter, ObjectConverter, FlagConverter, ScheduledEventConverter,
-    ForumChannelConverter, StageChannelConverter, ThreadConverter
-)
-from discord import AppCommandOptionType
 from discord import (
-    Member, Emoji, Guild, CategoryChannel, Invite, PartialEmoji, PartialMessage, Message, User, Role,
-    TextChannel, Color, Colour, Sticker, GuildSticker, Object, ScheduledEvent, ForumChannel, VoiceChannel,
-    UserFlags, ChannelFlags, MessageFlags, PublicUserFlags, SystemChannelFlags, ApplicationFlags,
-    MemberCacheFlags, StageChannel, Thread, Attachment
+    AppCommandOptionType,
+    ApplicationFlags,
+    Attachment,
+    CategoryChannel,
+    ChannelFlags,
+    Color,
+    Colour,
+    Emoji,
+    ForumChannel,
+    Guild,
+    GuildSticker,
+    Invite,
+    Member,
+    MemberCacheFlags,
+    Message,
+    MessageFlags,
+    Object,
+    PartialEmoji,
+    PartialMessage,
+    PublicUserFlags,
+    Role,
+    ScheduledEvent,
+    StageChannel,
+    Sticker,
+    SystemChannelFlags,
+    TextChannel,
+    Thread,
+    User,
+    UserFlags,
+    VoiceChannel,
 )
+from discord.ext.commands import (
+    CategoryChannelConverter,
+    ColorConverter,
+    ColourConverter,
+    EmojiConverter,
+    FlagConverter,
+    ForumChannelConverter,
+    GuildConverter,
+    GuildStickerConverter,
+    InviteConverter,
+    MemberConverter,
+    MessageConverter,
+    ObjectConverter,
+    PartialEmojiConverter,
+    PartialMessageConverter,
+    RoleConverter,
+    ScheduledEventConverter,
+    StageChannelConverter,
+    TextChannelConverter,
+    ThreadConverter,
+    UserConverter,
+    VoiceChannelConverter,
+)
+from redbot.core.utils.chat_formatting import box
 
 CONVERTERS = {
     Member: MemberConverter.__doc__,
