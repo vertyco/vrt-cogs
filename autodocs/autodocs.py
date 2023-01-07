@@ -110,7 +110,9 @@ class CustomCmdFmt:
                 try:
                     doc = CONVERTERS.get(converter)
                 except TypeError:
-                    log.warning(f"Cant find {ptype} for the {arg} argument of the {self.name} command")
+                    log.warning(
+                        f"Cant find {ptype} for the {arg} argument of the {self.name} command"
+                    )
                     doc = None
                 if not doc and hasattr(converter, "__args__"):
                     doc = CONVERTERS.get(converter.__args__[0])
@@ -139,7 +141,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.10"
+    __version__ = "0.2.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -156,9 +158,24 @@ class AutoDocs(commands.Cog):
         self.bot = bot
 
         # Ignored core cogs when using the 'all' argument
-        self.ignore = ["Admin", "Alias", "Audio", "Cleanup", "Economy", "Filter",
-                        "General", "Image", "Mod", "Modlog", "Mutes", "Permissions",
-                        "Reports", "Streams", "Trivia", "Warnings"]
+        self.ignore = [
+            "Admin",
+            "Alias",
+            "Audio",
+            "Cleanup",
+            "Economy",
+            "Filter",
+            "General",
+            "Image",
+            "Mod",
+            "Modlog",
+            "Mutes",
+            "Permissions",
+            "Reports",
+            "Streams",
+            "Trivia",
+            "Warnings",
+        ]
 
     @staticmethod
     def generate_readme(
@@ -340,7 +357,7 @@ class AutoDocs(commands.Cog):
         `include_hidden:`(bool) If True, includes hidden commands
 
         **Warning**
-        If `all` is specified for cog_name, and you have a lot of cogs loaded, prepare for a spammed channel
+        If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
         """
         async with ctx.typing():
             p = ctx.prefix if replace_prefix else None
