@@ -107,7 +107,11 @@ class CustomCmdFmt:
                 string = str(ptype)
 
                 converter = ptype.converter
-                doc = CONVERTERS.get(converter)
+                try:
+                    doc = CONVERTERS.get(converter)
+                except TypeError:
+                    log.warning(f"Cant find {ptype} for the {arg} argument of the {self.name} command")
+                    doc = None
                 if not doc and hasattr(converter, "__args__"):
                     doc = CONVERTERS.get(converter.__args__[0])
 
