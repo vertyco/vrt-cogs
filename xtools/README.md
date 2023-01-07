@@ -7,29 +7,30 @@ Cool Tools for Xbox
 
 Set up the XTools cog
 
-## apiset reset
- - Usage: `[p]apiset reset`
-
-Reset the all token data
-
 ## apiset help
  - Usage: `[p]apiset help`
 
 Tutorial for getting your ClientID and Secret
 
-## apiset auth
- - Usage: `[p]apiset auth`
 ## apiset tokens
  - Usage: `[p]apiset tokens <client_id> <client_secret>`
 
 Set Client ID and Secret
 
+## apiset auth
+ - Usage: `[p]apiset auth`
+
+
+
+## apiset reset
+ - Usage: `[p]apiset reset`
+
+Reset the all token data
+
 # xstatuschannel
  - Usage: `[p]xstatuschannel <channel>`
 
-Set the channel for Microsoft status alerts
-
-Any time microsoft services go down an alert will go out in the channel and be updated
+Set the channel for Microsoft status alerts<br/><br/>Any time microsoft services go down an alert will go out in the channel and be updated
 
 # setgt
  - Usage: `[p]setgt <gamertag>`
@@ -85,3 +86,4 @@ View this month's free games with Gold
  - Usage: `[p]xmostplayed [gamertag]`
 
 View your most played games
+
