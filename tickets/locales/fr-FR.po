@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-01-07 00:41-0500\n"
-"PO-Revision-Date: 2023-01-07 05:45\n"
+"PO-Revision-Date: 2023-01-07 20:09\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -1003,3 +1003,4 @@ msgstr ""
 #: views.py:332
 msgid "Ticket opened"
 msgstr ""
+
