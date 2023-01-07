@@ -155,6 +155,11 @@ class AutoDocs(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
 
+        # Ignored core cogs when using the 'all' argument
+        self.ignore = ["Admin", "Alias", "Audio", "Cleanup", "Economy", "Filter",
+                        "General", "Image", "Mod", "Modlog", "Mutes", "Permissions",
+                        "Reports", "Streams", "Trivia", "Warnings"]
+
     @staticmethod
     def generate_readme(
         cog: commands.Cog,
@@ -348,6 +353,8 @@ class AutoDocs(commands.Cog):
                     arc.mkdir(folder_name, mode=755)
                     for cog in self.bot.cogs:
                         cog = self.bot.get_cog(cog)
+                        if cog.qualified_name in self.ignore:
+                            continue
                         res = self.generate_readme(
                             cog, p, include_hidden, advanced_docs, include_docstrings
                         )
