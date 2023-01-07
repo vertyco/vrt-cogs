@@ -180,11 +180,11 @@ class AutoDocs(commands.Cog):
     def generate_readme(
         self,
         cog: commands.Cog,
-        prefix: Optional[str] = None,
-        include_hidden: Optional[bool] = False,
-        advanced_docs: Optional[bool] = False,
-        include_docstrings: Optional[bool] = False,
-        replace_botname: Optional[bool] = False,
+        prefix: str,
+        include_hidden: bool,
+        advanced_docs: bool,
+        include_docstrings: bool,
+        replace_botname: bool,
     ) -> str:
         docs = f"# {cog.qualified_name} {HELP}\n\n"
 
@@ -330,6 +330,7 @@ class AutoDocs(commands.Cog):
 
         if replace_botname:
             docs = docs.replace("[botname]", self.bot.user.display_name)
+        docs = docs.replace("guild", _("server"))
         return docs
 
     @commands.hybrid_command(name="makedocs", description=_("Create docs for a cog"))
@@ -365,7 +366,7 @@ class AutoDocs(commands.Cog):
         **Warning**
         If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
         """
-        p = ctx.prefix if replace_prefix else None
+        p = ctx.prefix if replace_prefix else ""
         if p == "/":
             p = (await self.bot.get_valid_prefixes(ctx.guild))[0]
         async with ctx.typing():

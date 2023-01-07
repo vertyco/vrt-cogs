@@ -11,7 +11,6 @@ Various useful and fun cogs for Red V3.
 ![Lines of code](https://img.shields.io/tokei/lines/github/Vertyco/Vrt-Cogs?color=yellow&label=Lines&style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
 
-
 I enjoy working with APIs and making cogs for game servers or other helpful use cases. Check out some of my projects
 below!
 
@@ -53,7 +52,7 @@ If you haven't loaded the Downloader cog already, go ahead and do that first wit
 
 ```ini
 [p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs
-[p]cog install vrt-cogs <list of cogs>
+                                               [p]cog install vrt-cogs <list of cogs>
 [p]load <list of cogs>
 ```
 

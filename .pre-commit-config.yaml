@@ -7,7 +7,13 @@ repos:
       - id: trailing-whitespace
         exclude: (^tests/|pixl/defaults.py|README.md|^locales/)
       - id: end-of-file-fixer
-        exclude: (^tests/|pixl/defaults.py|README.md|^locales/)
+        exclude: |
+          (?x)(
+              tests/|
+              pixl/defaults.py|
+              README.md|
+              locales/
+          )$
       - id: check-yaml
   - repo: https://github.com/psf/black
     rev: 22.12.0

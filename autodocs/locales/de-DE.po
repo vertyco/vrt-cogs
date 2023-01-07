@@ -166,4 +166,3 @@ msgstr ""
 #: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
 msgstr ""
-
