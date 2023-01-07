@@ -152,3 +152,4 @@ out/
 *.sublime-workspace
 tests/
 /levelup/data/backgrounds/Thumbs.db
+testcog/
