@@ -16,7 +16,8 @@
   "permissions": [],
   "required_cogs": {},
   "requirements": [
-    "tabulate"
+    "ujson",
+    "msgpack"
   ],
   "short": "EZ Cog Docs",
   "tags": [
