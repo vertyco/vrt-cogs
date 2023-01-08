@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+from abc import ABC
 from io import BytesIO
 from math import ceil, sqrt
 from typing import Union
@@ -8,11 +9,11 @@ from typing import Union
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
-from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number
 
-from levelup.utils.core import Pilmoji
+from .abc import MixinMeta
+from .utils.core import Pilmoji
 
 log = logging.getLogger("red.vrt.levelup.generator")
 _ = Translator("LevelUp", __file__)
@@ -20,21 +21,7 @@ ASPECT_RATIO = (21, 9)
 
 
 @cog_i18n(_)
-class Generator:
-    def __init__(self):
-        self.star = os.path.join(bundled_data_path(self), "star.png")
-        self.default_pfp = os.path.join(bundled_data_path(self), "defaultpfp.png")
-        self.status = {
-            "online": os.path.join(bundled_data_path(self), "online.png"),
-            "offline": os.path.join(bundled_data_path(self), "offline.png"),
-            "idle": os.path.join(bundled_data_path(self), "idle.png"),
-            "dnd": os.path.join(bundled_data_path(self), "dnd.png"),
-            "streaming": os.path.join(bundled_data_path(self), "streaming.png"),
-        }
-        self.font = os.path.join(bundled_data_path(self), "font.ttf")
-
-        self.fonts = os.path.join(bundled_data_path(self), "fonts")
-
+class Generator(MixinMeta, ABC):
     def generate_profile(
         self,
         bg_image: str = None,
@@ -67,7 +54,7 @@ class Generator:
 
         # Get background
         if bg_image and bg_image != "random":
-            bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+            bgpath = os.path.join(self.path, "backgrounds")
             defaults = [i for i in os.listdir(bgpath)]
             if bg_image in defaults:
                 card = Image.open(os.path.join(bgpath, bg_image))
@@ -171,7 +158,7 @@ class Generator:
             lvlbarcolor = self.rand_rgb()
             iters += 1
             if iters > 20:
-                iters = 0
+                # iters = 0
                 break
 
         # Place semi-transparent box over right side
@@ -562,7 +549,7 @@ class Generator:
         # Set canvas
         aspect_ratio = (27, 7)
         if bg_image and bg_image != "random":
-            bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+            bgpath = os.path.join(self.path, "backgrounds")
             defaults = [i for i in os.listdir(bgpath)]
             if bg_image in defaults:
                 card = Image.open(os.path.join(bgpath, bg_image))
@@ -806,7 +793,7 @@ class Generator:
         font_name: str = None,
     ):
         if bg_image and bg_image != "random":
-            bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+            bgpath = os.path.join(self.path, "backgrounds")
             defaults = [i for i in os.listdir(bgpath)]
             if bg_image in defaults:
                 card = Image.open(os.path.join(bgpath, bg_image))
@@ -919,7 +906,7 @@ class Generator:
         return img
 
     def get_all_backgrounds(self):
-        backgrounds = os.path.join(bundled_data_path(self), "backgrounds")
+        backgrounds = os.path.join(self.path, "backgrounds")
         choices = os.listdir(backgrounds)
         if not choices:
             return None
@@ -1081,13 +1068,13 @@ class Generator:
         return cropped
 
     def get_random_background(self) -> Image:
-        bg_dir = os.path.join(bundled_data_path(self), "backgrounds")
+        bg_dir = os.path.join(self.path, "backgrounds")
         choice = random.choice(os.listdir(bg_dir))
         bg_file = os.path.join(bg_dir, choice)
         return Image.open(bg_file)
 
     def get_random_font(self) -> str:
-        fdir = os.path.join(bundled_data_path(self), "fonts")
+        fdir = os.path.join(self.path, "fonts")
         choice = random.choice(os.listdir(fdir))
         f_file = os.path.join(fdir, choice)
         return f_file

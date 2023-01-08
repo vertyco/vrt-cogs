@@ -171,7 +171,7 @@ def get_leaderboard(
         desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d>\n"
         if w["autoreset"]:
             tl = get_next_reset(w["reset_day"], w["reset_hour"])
-            desc += _("Next Reset: ") + f"<t:{tl}:d>\n"
+            desc += _("Next Reset: ") + f"<t:{tl}:d> (<t:{tl}:R>)\n"
     else:
         desc = _("Total") + f" {statname}: `{total}`\n"
 
