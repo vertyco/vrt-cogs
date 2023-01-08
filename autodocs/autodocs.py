@@ -431,7 +431,7 @@ class AutoDocs(commands.Cog):
 
     @makedocs.autocomplete("cog_name")
     async def get_cog_names(self, inter: discord.Interaction, current: str):
-        cogs = set()
+        cogs = set("all")
         for cmd in self.bot.walk_commands():
             cogs.add(str(cmd.cog_name).strip())
         return [
