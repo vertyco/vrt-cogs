@@ -78,8 +78,6 @@ class CustomCmdFmt:
         self, adv: Optional[bool] = True, include_docs: Optional[bool] = True
     ) -> str:
         docs = ""
-        if adv or include_docs:
-            docs += _("Parameter Breakdown\n")
 
         if self.is_slash:
             for p in self.cmd.parameters:
@@ -141,7 +139,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.13"
+    __version__ = "0.2.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
