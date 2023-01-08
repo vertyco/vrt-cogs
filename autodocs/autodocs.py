@@ -1,10 +1,11 @@
 import functools
 import logging
 from io import BytesIO
-from typing import Optional, Union
+from typing import List, Optional, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
+from aiocache import SimpleMemoryCache, cached
 from discord import app_commands
 from discord.app_commands.commands import Command as SlashCommand
 from discord.ext.commands.hybrid import HybridAppCommand
@@ -271,7 +272,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.16"
+    __version__ = "0.3.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -375,7 +376,9 @@ class AutoDocs(commands.Cog):
         If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
         """
         prefix = (
-            (await self.bot.get_valid_prefixes(ctx.guild))[0].strip() if replace_prefix else ""
+            (await self.bot.get_valid_prefixes(ctx.guild))[0].strip()
+            if replace_prefix
+            else ""
         )
         async with ctx.typing():
             if cog_name == "all":
@@ -430,11 +433,17 @@ class AutoDocs(commands.Cog):
 
             await ctx.send(txt, file=file)
 
-    @makedocs.autocomplete("cog_name")
-    async def get_cog_names(self, inter: discord.Interaction, current: str):
+    @cached(ttl=8, cache=SimpleMemoryCache)
+    async def get_coglist(self, string: str) -> List[app_commands.Choice]:
         cogs = set("all")
         for cmd in self.bot.walk_commands():
             cogs.add(str(cmd.cog_name).strip())
         return [
-            app_commands.Choice(name=i, value=i) for i in cogs if current.lower() in i.lower()
+            app_commands.Choice(name=i, value=i)
+            for i in cogs
+            if string.lower() in i.lower()
         ][:25]
+
+    @makedocs.autocomplete("cog_name")
+    async def get_cog_names(self, inter: discord.Interaction, current: str):
+        return await self.get_coglist(current)
