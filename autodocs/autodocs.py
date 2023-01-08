@@ -154,7 +154,7 @@ class CustomCmdFmt:
             if self.cooldown:
                 doc += f" - {COOLDOWN}: `{self.cooldown}`\n"
             if self.checks:
-                doc += f" - {CHECKS}: `{self.checks}\n"
+                doc += f" - {CHECKS}: `{self.checks}`\n"
 
         # Get command docstring
         if not doc.endswith("\n\n"):
