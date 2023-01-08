@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-01-07 15:08-0500\n"
-"PO-Revision-Date: 2023-01-07 20:09\n"
+"POT-Creation-Date: 2023-01-08 13:06-0500\n"
+"PO-Revision-Date: 2023-01-08 18:18\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -17,63 +17,80 @@ msgstr ""
 "X-Crowdin-File-ID: 25\n"
 "Language: fr_FR\n"
 
-#: autodocs.py:22
+#: autodocs.py:24
 msgid "Help"
 msgstr ""
 
-#: autodocs.py:23
+#: autodocs.py:25
 msgid "Usage"
 msgstr ""
 
-#: autodocs.py:24
+#: autodocs.py:26
 msgid "Aliases"
 msgstr ""
 
-#: autodocs.py:25
+#: autodocs.py:27
 msgid "Required"
 msgstr ""
 
-#: autodocs.py:26
-msgid "Optional"
-msgstr ""
-
-#: autodocs.py:27
-msgid "Slash"
-msgstr ""
-
 #: autodocs.py:28
-msgid "Hybrid"
+msgid "Autocomplete"
 msgstr ""
 
 #: autodocs.py:29
-msgid "Command"
+msgid "Choices"
 msgstr ""
 
 #: autodocs.py:30
-msgid "per"
+msgid "Optional"
 msgstr ""
 
 #: autodocs.py:31
-msgid "seconds"
+msgid "Default"
 msgstr ""
 
 #: autodocs.py:32
-msgid "second"
+msgid "Slash"
 msgstr ""
 
 #: autodocs.py:33
-msgid "Cooldown"
+msgid "Hybrid"
 msgstr ""
 
 #: autodocs.py:34
+msgid "Command"
+msgstr ""
+
+#: autodocs.py:35
+msgid "per"
+msgstr ""
+
+#: autodocs.py:36
+msgid "seconds"
+msgstr ""
+
+#: autodocs.py:37
+msgid "second"
+msgstr ""
+
+#: autodocs.py:38
+msgid "Cooldown"
+msgstr ""
+
+#: autodocs.py:39
 msgid "Checks"
 msgstr ""
 
-#: autodocs.py:82 autodocs.py:131
-msgid "Parameter Breakdown\n"
+#: autodocs.py:43
+#, docstring
+msgid "Formats documentation for a single command"
 msgstr ""
 
-#: autodocs.py:137
+#: autodocs.py:238
+msgid "Extended Arg Info\n"
+msgstr ""
+
+#: autodocs.py:251
 #, docstring
 msgid "\n"
 "    Document your cogs with ease!\n\n"
@@ -81,78 +98,74 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: autodocs.py:148
+#: autodocs.py:262
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: autodocs.py:154
+#: autodocs.py:268
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: autodocs.py:335
+#: autodocs.py:330
 msgid "Create docs for a cog"
 msgstr ""
 
-#: autodocs.py:337
+#: autodocs.py:332
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr ""
 
-#: autodocs.py:338
+#: autodocs.py:333
 msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr ""
 
-#: autodocs.py:339
-msgid "Include hidden commands"
-msgstr ""
-
-#: autodocs.py:340
-msgid "Generate advanced docs including converter types"
-msgstr ""
-
-#: autodocs.py:341
-msgid "Include converter docstrings"
-msgstr ""
-
-#: autodocs.py:342
+#: autodocs.py:334
 msgid "Replace all occurrences of [botname] with the bots name"
 msgstr ""
 
-#: autodocs.py:355
+#: autodocs.py:335
+msgid "Include extra info like converters and their docstrings"
+msgstr ""
+
+#: autodocs.py:336
+msgid "Include hidden commands"
+msgstr ""
+
+#: autodocs.py:348
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
 "        **Arguments**\n"
 "        `cog_name:           `(str) The name of the cog you want to make docs for (Case Sensitive)\n"
-"        `replace_prefix:     `(bool) If True, replaces the prefix placeholder [] with the bots prefix\n"
-"        `include_hidden:     `(bool) If True, includes hidden commands\n"
-"        `advanced_docs:      `(bool) If True, include converters from command arguments,\n"
-"        `include_docstrings: `(bool) if True, include docstrings from command argument converters\n\n"
-"        **Warning**\n"
+"        `replace_prefix:     `(bool) If True, replaces the `prefix` placeholder with the bots prefix\n"
+"        `replace_botname:    `(bool) If True, replaces the `botname` placeholder with the bots name\n"
+"        `extended_info:      `(bool) If True, include extra info like converters and their docstrings\n"
+"        `include_hidden:     `(bool) If True, includes hidden commands\n\n"
+"        **Note**\n"
 "        If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file\n"
 "        "
 msgstr ""
 
-#: autodocs.py:374
+#: autodocs.py:367
 msgid "AllCogDocs"
 msgstr ""
 
-#: autodocs.py:399
+#: autodocs.py:393
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr ""
 
-#: autodocs.py:404
+#: autodocs.py:398
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr ""
 
-#: autodocs.py:419
+#: autodocs.py:413
 msgid "Here are your docs for {}!"
 msgstr ""
 
 #: converters.py:62
-msgid "A single word, if multiple words are necessary use a quote e.g \"Hello world\""
+msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
 msgstr ""
 
 #: converters.py:65
