@@ -60,7 +60,7 @@ _ = Translator("AutoDocs", __file__)
 
 maintypes = {
     "str": _(
-        'A single word, if multiple words are necessary use a quote e.g "Hello world"'
+        'A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".'
     ),
     "int": _("A number without decimal places."),
     "float": _("A number with or without decimal places."),
