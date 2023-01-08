@@ -3,27 +3,23 @@
 Seamless translation between two languages in one channel.
 
 # fluent
-
-- Usage: `[p]fluent`
+ - Usage: `[p]fluent`
 
 Base command
 
-## fluent view
+## fluent remove
+ - Usage: `[p]fluent remove <channel>`
+ - Aliases: `delete, del, and rem`
 
-- Usage: `[p]fluent view`
+Remove a channel from Fluent
+
+## fluent add
+ - Usage: `[p]fluent add <language1> <language2> <channel>`
+
+Add a channel and languages to translate between<br/><br/>Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be<br/>in english, then make english language 2 to use less api calls.
+
+## fluent view
+ - Usage: `[p]fluent view`
 
 View all fluent channels
 
-## fluent add
-
-- Usage: `[p]fluent add <language1> <language2> <channel>`
-
-Add a channel and languages to translate between<br/><br/>Tip: Language 1 is the first to be converted. For example, if
-you expect most of the conversation to be<br/>in english, then make english language 2 to use less api calls.
-
-## fluent remove
-
-- Usage: `[p]fluent remove <channel>`
-- Aliases: `delete, del, and rem`
-
-Remove a channel from Fluent
