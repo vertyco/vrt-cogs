@@ -6,6 +6,7 @@ import math
 import os.path
 import random
 import traceback
+from abc import ABC
 from io import BytesIO
 from time import perf_counter
 from typing import Optional, Union
@@ -15,7 +16,6 @@ import tabulate
 import validators
 from aiocache import SimpleMemoryCache, cached
 from redbot.core import bank, commands
-from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
 
@@ -31,7 +31,9 @@ from levelup.utils.formatter import (
     time_formatter,
 )
 
-from .generator import Generator
+from .abc import MixinMeta
+
+# from .generator import Generator
 
 if discord.__version__ > "1.7.3":
     from .dpymenu import DEFAULT_CONTROLS, menu
@@ -48,10 +50,10 @@ _ = Translator("LevelUp", __file__)
 
 
 @cog_i18n(_)
-class UserCommands(commands.Cog):
+class UserCommands(MixinMeta, ABC):
     # Generate level up image
     async def gen_levelup_img(self, args: dict):
-        func = functools.partial(Generator().generate_levelup, **args)
+        func = functools.partial(self.generate_levelup, **args)
         task = self.bot.loop.run_in_executor(self.threadpool, func)
         try:
             img = await asyncio.wait_for(task, timeout=60)
@@ -62,9 +64,9 @@ class UserCommands(commands.Cog):
     # Generate profile image
     async def gen_profile_img(self, args: dict, full: bool = True):
         if full:
-            func = functools.partial(Generator().generate_profile, **args)
+            func = functools.partial(self.generate_profile, **args)
         else:
-            func = functools.partial(Generator().generate_slim_profile, **args)
+            func = functools.partial(self.generate_slim_profile, **args)
         task = self.bot.loop.run_in_executor(self.threadpool, func)
         try:
             img = await asyncio.wait_for(task, timeout=60)
@@ -82,8 +84,8 @@ class UserCommands(commands.Cog):
             # Try running it through profile generator blind to see if it errors
 
             args = {"bg_image": image_url}
-            func = functools.partial(Generator().generate_profile, **args)
-            await self.bot.loop.run_in_executor(None, func)
+            func = functools.partial(self.generate_profile, **args)
+            await self.bot.loop.run_in_executor(self.threadpool, func)
         except Exception as e:
             if "cannot identify image file" in str(e):
                 await ctx.send(
@@ -99,12 +101,12 @@ class UserCommands(commands.Cog):
         return True
 
     async def get_or_fetch_fonts(self):
-        fonts = os.listdir(os.path.join(bundled_data_path(self), "fonts"))
+        fonts = os.listdir(os.path.join(self.path, "fonts"))
         same = all([name in self.fdata["names"] for name in fonts])
         if same and self.fdata["img"]:
             img = self.fdata["img"]
         else:
-            func = functools.partial(Generator().get_all_fonts)
+            func = functools.partial(self.get_all_fonts)
             task = self.bot.loop.run_in_executor(None, func)
             try:
                 img = await asyncio.wait_for(task, timeout=60)
@@ -115,12 +117,12 @@ class UserCommands(commands.Cog):
         return img
 
     async def get_or_fetch_backgrounds(self):
-        backgrounds = os.listdir(os.path.join(bundled_data_path(self), "backgrounds"))
+        backgrounds = os.listdir(os.path.join(self.path, "backgrounds"))
         same = all([name in self.fdata["names"] for name in backgrounds])
         if same and self.fdata["img"]:
             img = self.fdata["img"]
         else:
-            func = functools.partial(Generator().get_all_backgrounds)
+            func = functools.partial(self.get_all_backgrounds)
             task = self.bot.loop.run_in_executor(None, func)
             try:
                 img = await asyncio.wait_for(task, timeout=60)
@@ -299,7 +301,7 @@ class UserCommands(commands.Cog):
                 if "http" in bg.lower():
                     em.set_image(url=bg)
                 elif bg != "random":
-                    bgpaths = os.path.join(bundled_data_path(self), "backgrounds")
+                    bgpaths = os.path.join(self.path, "backgrounds")
                     defaults = [i for i in os.listdir(bgpaths)]
                     if bg in defaults:
                         bgpath = os.path.join(bgpaths, bg)
@@ -314,7 +316,7 @@ class UserCommands(commands.Cog):
     @commands.is_owner()
     async def get_bg_path(self, ctx: commands.Context):
         """Get folder path for this cog's default backgrounds"""
-        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+        bgpath = os.path.join(self.path, "backgrounds")
         txt = _("Your default background folder path is \n")
         await ctx.send(f"{txt}`{bgpath}`")
 
@@ -352,7 +354,7 @@ class UserCommands(commands.Cog):
             return await ctx.send(_("I was not able to get the file from Discord"))
         if preferred_filename:
             filename = f"{preferred_filename}{ext}"
-        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+        bgpath = os.path.join(self.path, "backgrounds")
         filepath = os.path.join(bgpath, filename)
         with open(filepath, "wb") as f:
             f.write(bytes_file)
@@ -362,7 +364,7 @@ class UserCommands(commands.Cog):
     @commands.is_owner()
     async def remove_background(self, ctx: commands.Context, *, filename: str):
         """Remove a default background from the cog's backgrounds folder"""
-        bgpath = os.path.join(bundled_data_path(self), "backgrounds")
+        bgpath = os.path.join(self.path, "backgrounds")
         for f in os.listdir(bgpath):
             if filename.lower() in f.lower():
                 break
@@ -381,7 +383,7 @@ class UserCommands(commands.Cog):
     @commands.is_owner()
     async def get_font_path(self, ctx: commands.Context):
         """Get folder path for this cog's default backgrounds"""
-        fpath = os.path.join(bundled_data_path(self), "fonts")
+        fpath = os.path.join(self.path, "fonts")
         txt = _("Your custom font folder path is \n")
         await ctx.send(f"{txt}`{fpath}`")
 
@@ -414,7 +416,7 @@ class UserCommands(commands.Cog):
             return await ctx.send(_("I was not able to get the file from Discord"))
         if preferred_filename:
             filename = f"{preferred_filename}{ext}"
-        fpath = os.path.join(bundled_data_path(self), "fonts")
+        fpath = os.path.join(self.path, "fonts")
         filepath = os.path.join(fpath, filename)
         with open(filepath, "wb") as f:
             f.write(bytes_file)
@@ -424,7 +426,7 @@ class UserCommands(commands.Cog):
     @commands.is_owner()
     async def remove_font(self, ctx: commands.Context, *, filename: str):
         """Remove a font from the cog's font folder"""
-        fpath = os.path.join(bundled_data_path(self), "fonts")
+        fpath = os.path.join(self.path, "fonts")
         for f in os.listdir(fpath):
             if filename.lower() in f.lower():
                 break
@@ -715,7 +717,7 @@ class UserCommands(commands.Cog):
         if user_id not in users:
             self.init_user(ctx.guild.id, user_id)
 
-        backgrounds = os.path.join(bundled_data_path(self), "backgrounds")
+        backgrounds = os.path.join(self.path, "backgrounds")
 
         # If image url is given, run some checks
         filepath = None
@@ -779,7 +781,7 @@ class UserCommands(commands.Cog):
             self.data[ctx.guild.id]["users"][user_id]["font"] = None
             return await ctx.send(_("Your profile font has been reverted to default"))
 
-        fonts = os.path.join(bundled_data_path(self), "fonts")
+        fonts = os.path.join(self.path, "fonts")
         for filename in os.listdir(fonts):
             if font_name.lower() in filename.lower():
                 break

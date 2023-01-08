@@ -3,6 +3,7 @@ import contextlib
 import json
 import logging
 import math
+import os
 import random
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -18,6 +19,7 @@ import tabulate
 from aiohttp import ClientSession
 from discord.ext import tasks
 from redbot.core import Config, commands
+from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
@@ -34,7 +36,9 @@ from levelup.utils.formatter import (
     time_to_level,
 )
 
+from .abc import CompositeMetaClass
 from .base import UserCommands
+from .generator import Generator
 
 matplotlib.use("agg")
 plt.switch_backend("agg")
@@ -62,11 +66,11 @@ async def confirm(ctx: commands.Context):
 
 
 @cog_i18n(_)
-class LevelUp(UserCommands, commands.Cog):
+class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClass):
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.20.53"
+    __version__ = "2.20.54"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -158,6 +162,23 @@ class LevelUp(UserCommands, commands.Cog):
 
         # Main cache (Guild ID keys are ints)
         self.data = {}
+
+        # Cog path
+        self.path = bundled_data_path(self)
+
+        # Assets
+        self.star = os.path.join(self.path, "star.png")
+        self.default_pfp = os.path.join(self.path, "defaultpfp.png")
+        self.status = {
+            "online": os.path.join(self.path, "online.png"),
+            "offline": os.path.join(self.path, "offline.png"),
+            "idle": os.path.join(self.path, "idle.png"),
+            "dnd": os.path.join(self.path, "dnd.png"),
+            "streaming": os.path.join(self.path, "streaming.png"),
+        }
+        self.font = os.path.join(self.path, "font.ttf")
+
+        self.fonts = os.path.join(self.path, "fonts")
 
         # Global conf cache
         self.ignored_guilds = []
