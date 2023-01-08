@@ -1,6 +1,5 @@
 import functools
 import logging
-from inspect import getmembers
 from io import BytesIO
 from typing import Optional, Union
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -32,6 +31,8 @@ DEFAULT = _("Default")
 SLASH = _("Slash")
 HYBRID = _("Hybrid")
 COMMAND = _("Command")
+RESTRICTED = _("Restricted to")
+GUILDONLY = _("Server Only")
 PER = _("per")
 SECONDS = _("seconds")
 SECOND = _("second")
@@ -61,9 +62,9 @@ class CustomCmdFmt:
         self.is_slash: bool = isinstance(cmd, SlashCommand)
         self.is_hybrid: bool = any(
             [
+                isinstance(cmd, HybridGroup),
                 isinstance(cmd, HybridCommand),
                 isinstance(cmd, HybridAppCommand),
-                isinstance(cmd, HybridGroup),
             ]
         )
 
@@ -78,10 +79,11 @@ class CustomCmdFmt:
         self.hashes: str = len(self.name.split(" ")) * "#"
 
         if self.is_slash:
-            self.desc: str = cmd.description.replace("\n", "<br/>")
             self.options = cmd.to_dict()["options"]
+            self.desc: str = cmd.description.replace("\n", "<br/>")
         else:
             self.desc: str = cmd.help.replace("\n", "<br/>")
+            self.perms = self.cmd.requires
             cd = cmd.cooldown
             self.cooldown: str = (
                 f"{cd.rate} {PER} {cd.per} {SECOND if int(cd.per) == 1 else SECONDS}"
@@ -93,7 +95,9 @@ class CustomCmdFmt:
     def get_doc(self) -> str:
         # Get header of command
         if self.is_slash:
-            doc = f"{self.hashes} {self.name} ({HYBRID if self.is_hybrid else SLASH} {COMMAND})\n"
+            doc = f"{self.hashes} {self.name} ({SLASH} {COMMAND})\n"
+        elif self.is_hybrid:
+            doc = f"{self.hashes} {self.name} ({HYBRID} {COMMAND})\n"
         else:
             doc = f"{self.hashes} {self.name}\n"
 
@@ -116,6 +120,14 @@ class CustomCmdFmt:
             doc += f" - {USAGE}: `{usage}`\n"
             if arginfo:
                 doc += f"{arginfo}\n"
+
+            checks = []
+            if self.cmd.nsfw:
+                checks.append("NSFW")
+            if self.cmd.guild_only:
+                checks.append(GUILDONLY)
+            if self.checks:
+                doc += f" - {CHECKS}: `{humanize_list(checks)}\n"
         else:
             usage = f"[p]{self.name} "
             for k, v in self.cmd.clean_params.items():
@@ -129,6 +141,14 @@ class CustomCmdFmt:
                     usage += f"[{arg}={v.default}] "
 
             doc += f" - {USAGE}: `{usage}`\n"
+            if self.is_hybrid:
+                usage = usage.replace("[p]", "/")
+                doc += f" - {SLASH} {USAGE}: `{usage}`\n"
+
+            priv = self.perms.privilege_level
+            if priv > 1:
+                doc += f" - {RESTRICTED}: `{priv.name}`\n"
+
             if self.aliases:
                 doc += f" - {ALIASES}: `{self.aliases}`\n"
             if self.cooldown:
@@ -196,12 +216,6 @@ class CustomCmdFmt:
                         ext += f"> {line}\n"
             else:
                 for arg, p in self.cmd.clean_params.items():
-                    if self.name == "optest":
-                        for i in getmembers(p):
-                            print(str(i))
-                        print("\n\n")
-                        print(self.name, arg, p.displayed_default)
-
                     converter = p.converter
                     try:
                         docstring = CONVERTERS.get(converter)
@@ -210,6 +224,7 @@ class CustomCmdFmt:
                             f"Cant find {p} for the {arg} argument of the {self.name} command"
                         )
                         docstring = None
+
                     if not docstring and hasattr(converter, "__args__"):
                         docstring = CONVERTERS.get(converter.__args__[0])
 
@@ -255,7 +270,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.14"
+    __version__ = "0.3.154"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -413,3 +428,12 @@ class AutoDocs(commands.Cog):
                 txt = _("Here are your docs for {}!").format(cog.qualified_name)
 
             await ctx.send(txt, file=file)
+
+    @makedocs.autocomplete("cog_name")
+    async def get_cog_names(self, inter: discord.Interaction, current: str):
+        cogs = set()
+        for cmd in self.bot.walk_commands():
+            cogs.add(str(cmd.cog_name))
+        return [
+            app_commands.Choice(name=i, value=i) for i in cogs if current.lower() in i
+        ][:25]
