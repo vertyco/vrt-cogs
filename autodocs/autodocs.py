@@ -146,8 +146,9 @@ class CustomCmdFmt:
                 doc += f" - {SLASH} {USAGE}: `{usage}`\n"
 
             priv = self.perms.privilege_level
-            if priv > 1:
-                doc += f" - {RESTRICTED}: `{priv.name}`\n"
+            if priv:
+                if priv.value > 1:
+                    doc += f" - {RESTRICTED}: `{priv.name}`\n"
 
             if self.aliases:
                 doc += f" - {ALIASES}: `{self.aliases}`\n"
@@ -270,7 +271,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.154"
+    __version__ = "0.3.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
