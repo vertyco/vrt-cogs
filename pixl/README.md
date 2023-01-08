@@ -3,108 +3,160 @@
 Guess pictures for points
 
 # pixlboard
- - Usage: `[p]pixlboard <show_global>`
+ - Usage: `[p]pixlboard <show_global> `
  - Aliases: `pixlb, pixelb, pixlelb, and pixleaderboard`
- - Checks: server_only
+ - Checks: `server_only`
 
 View the Pixl leaderboard!<br/><br/>**Arguments**<br/>`show_global`: show the global leaderboard<br/><br/>example: `[p]pixlb true`
 
+Extended Arg Info
+> ### show_global: Optional[bool]
+> ```
+> Can be 1, 0, true, false, t, f
+> ```
 # pixl
- - Usage: `[p]pixl`
+ - Usage: `[p]pixl `
  - Aliases: `pixle, pixlguess, pixelguess, and pixleguess`
- - Checks: server_only
+ - Checks: `server_only`
 
 Start a Pixl game!<br/>Guess the image as it is slowly revealed
 
 # pixlset
- - Usage: `[p]pixlset`
+ - Usage: `[p]pixlset `
+ - Restricted to: `ADMIN`
  - Aliases: `pixelset and pixleset`
- - Checks: server_only
+ - Checks: `server_only`
 
 Configure the Pixl game
 
 ## pixlset timelimit
- - Usage: `[p]pixlset timelimit <seconds>`
+ - Usage: `[p]pixlset timelimit <seconds> `
 
 Set the time limit for Pixl games
 
-## pixlset showanswer
- - Usage: `[p]pixlset showanswer`
+Extended Arg Info
+> ### seconds: int
+> ```
+> A number without decimal places.
+> ```
+## pixlset ratio
+ - Usage: `[p]pixlset ratio <ratio> `
 
-(Toggle) Showing the answer after a game over
+Set the point to credit conversion ratio (points x ratio = credit reward)<br/>Points are calculated based on how many hidden blocks are left at the end of the game<br/><br/>Ratio can be a decimal<br/>Set to 0 to disable credit rewards
 
-## pixlset blocks
- - Usage: `[p]pixlset blocks <amount>`
-
-Set the amount of blocks to reveal after each delay
-
-## pixlset delay
- - Usage: `[p]pixlset delay <seconds>`
-
-(Owner Only)Set the delay between block reveals<br/><br/>**Warning**<br/>Setting this too low may hit rate limits, default is 5 seconds.
-
+Extended Arg Info
+> ### ratio: float
+> ```
+> A number with or without decimal places.
+> ```
 ## pixlset participants
- - Usage: `[p]pixlset participants <amount>`
+ - Usage: `[p]pixlset participants <amount> `
 
 Set the minimum amount of participants for the game to reward users credits
 
+Extended Arg Info
+> ### amount: int
+> ```
+> A number without decimal places.
+> ```
+## pixlset blocks
+ - Usage: `[p]pixlset blocks <amount> `
+
+Set the amount of blocks to reveal after each delay
+
+Extended Arg Info
+> ### amount: int
+> ```
+> A number without decimal places.
+> ```
 ## pixlset image
- - Usage: `[p]pixlset image`
+ - Usage: `[p]pixlset image `
 
 Add/Remove images
 
-### pixlset image addglobal
- - Usage: `[p]pixlset image addglobal <url> <answers>`
-
-Add a global image for all servers to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
-
-### pixlset image add
- - Usage: `[p]pixlset image add <url> <answers>`
-
-Add an image for your server to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
-
-### pixlset image viewglobal
- - Usage: `[p]pixlset image viewglobal`
-
-View the global images
-
 ### pixlset image view
- - Usage: `[p]pixlset image view`
+ - Usage: `[p]pixlset image view `
 
 View the server images
 
+### pixlset image viewglobal
+ - Usage: `[p]pixlset image viewglobal `
+
+View the global images
+
+### pixlset image addglobal
+ - Usage: `[p]pixlset image addglobal <url> <answers> `
+ - Restricted to: `BOT_OWNER`
+
+Add a global image for all servers to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
+
+Extended Arg Info
+> ### url: Optional[str]
+> ```
+> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
+> ```
+> ### answers: Optional[str]
+> ```
+> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
+> ```
+### pixlset image add
+ - Usage: `[p]pixlset image add <url> <answers> `
+
+Add an image for your server to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
+
+Extended Arg Info
+> ### url: Optional[str]
+> ```
+> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
+> ```
+> ### answers: Optional[str]
+> ```
+> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
+> ```
 ### pixlset image viewdefault
- - Usage: `[p]pixlset image viewdefault`
+ - Usage: `[p]pixlset image viewdefault `
 
 View the default images
 
 ### pixlset image testglobal
- - Usage: `[p]pixlset image testglobal`
+ - Usage: `[p]pixlset image testglobal `
+ - Restricted to: `BOT_OWNER`
 
 Test the global images to ensure they are valid urls
 
 ### pixlset image testserver
- - Usage: `[p]pixlset image testserver`
+ - Usage: `[p]pixlset image testserver `
 
 Test the server images to ensure they are valid urls
 
-## pixlset ratio
- - Usage: `[p]pixlset ratio <ratio>`
-
-Set the point to credit conversion ratio (points x ratio = credit reward)<br/>Points are calculated based on how many hidden blocks are left at the end of the game<br/><br/>Ratio can be a decimal<br/>Set to 0 to disable credit rewards
-
 ## pixlset view
- - Usage: `[p]pixlset view`
+ - Usage: `[p]pixlset view `
 
 View the current settings
 
+## pixlset showdefault
+ - Usage: `[p]pixlset showdefault `
+
+(Toggle) Whether to use the default hardcoded images in this server
+
+## pixlset delay
+ - Usage: `[p]pixlset delay <seconds> `
+ - Restricted to: `BOT_OWNER`
+
+(Owner Only)Set the delay between block reveals<br/><br/>**Warning**<br/>Setting this too low may hit rate limits, default is 5 seconds.
+
+Extended Arg Info
+> ### seconds: int
+> ```
+> A number without decimal places.
+> ```
 ## pixlset useglobal
- - Usage: `[p]pixlset useglobal`
+ - Usage: `[p]pixlset useglobal `
 
 (Toggle) Whether to use global images in this server
 
-## pixlset showdefault
- - Usage: `[p]pixlset showdefault`
+## pixlset showanswer
+ - Usage: `[p]pixlset showanswer `
 
-(Toggle) Whether to use the default hardcoded images in this server
+(Toggle) Showing the answer after a game over
 

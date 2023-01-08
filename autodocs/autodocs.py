@@ -374,7 +374,7 @@ class AutoDocs(commands.Cog):
         If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
         """
         prefix = (
-            (await self.bot.get_valid_prefixes(ctx.guild))[0] if replace_prefix else ""
+            (await self.bot.get_valid_prefixes(ctx.guild))[0].strip() if replace_prefix else ""
         )
         async with ctx.typing():
             if cog_name == "all":
