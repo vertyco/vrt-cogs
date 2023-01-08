@@ -433,7 +433,7 @@ class AutoDocs(commands.Cog):
     async def get_cog_names(self, inter: discord.Interaction, current: str):
         cogs = set()
         for cmd in self.bot.walk_commands():
-            cogs.add(str(cmd.cog_name))
+            cogs.add(str(cmd.cog_name).strip())
         return [
-            app_commands.Choice(name=i, value=i) for i in cogs if current.lower() in i
+            app_commands.Choice(name=i, value=i) for i in cogs if current.lower() in i.lower()
         ][:25]
