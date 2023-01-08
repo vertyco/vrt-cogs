@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-01-08 13:06-0500\n"
-"PO-Revision-Date: 2023-01-08 18:18\n"
+"POT-Creation-Date: 2023-01-08 14:57-0500\n"
+"PO-Revision-Date: 2023-01-08 20:36\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -17,80 +17,88 @@ msgstr ""
 "X-Crowdin-File-ID: 25\n"
 "Language: hr_HR\n"
 
-#: autodocs.py:24
+#: autodocs.py:23
 msgid "Help"
 msgstr ""
 
-#: autodocs.py:25
+#: autodocs.py:24
 msgid "Usage"
 msgstr ""
 
-#: autodocs.py:26
+#: autodocs.py:25
 msgid "Aliases"
 msgstr ""
 
-#: autodocs.py:27
+#: autodocs.py:26
 msgid "Required"
 msgstr ""
 
-#: autodocs.py:28
+#: autodocs.py:27
 msgid "Autocomplete"
 msgstr ""
 
-#: autodocs.py:29
+#: autodocs.py:28
 msgid "Choices"
 msgstr ""
 
-#: autodocs.py:30
+#: autodocs.py:29
 msgid "Optional"
 msgstr ""
 
-#: autodocs.py:31
+#: autodocs.py:30
 msgid "Default"
 msgstr ""
 
-#: autodocs.py:32
+#: autodocs.py:31
 msgid "Slash"
 msgstr ""
 
-#: autodocs.py:33
+#: autodocs.py:32
 msgid "Hybrid"
 msgstr ""
 
-#: autodocs.py:34
+#: autodocs.py:33
 msgid "Command"
 msgstr ""
 
+#: autodocs.py:34
+msgid "Restricted to"
+msgstr ""
+
 #: autodocs.py:35
-msgid "per"
+msgid "Server Only"
 msgstr ""
 
 #: autodocs.py:36
-msgid "seconds"
+msgid "per"
 msgstr ""
 
 #: autodocs.py:37
-msgid "second"
+msgid "seconds"
 msgstr ""
 
 #: autodocs.py:38
-msgid "Cooldown"
+msgid "second"
 msgstr ""
 
 #: autodocs.py:39
+msgid "Cooldown"
+msgstr ""
+
+#: autodocs.py:40
 msgid "Checks"
 msgstr ""
 
-#: autodocs.py:43
+#: autodocs.py:44
 #, docstring
 msgid "Formats documentation for a single command"
 msgstr ""
 
-#: autodocs.py:238
+#: autodocs.py:253
 msgid "Extended Arg Info\n"
 msgstr ""
 
-#: autodocs.py:251
+#: autodocs.py:266
 #, docstring
 msgid "\n"
 "    Document your cogs with ease!\n\n"
@@ -98,42 +106,42 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: autodocs.py:262
+#: autodocs.py:277
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: autodocs.py:268
+#: autodocs.py:283
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: autodocs.py:330
+#: autodocs.py:345
 msgid "Create docs for a cog"
 msgstr ""
 
-#: autodocs.py:332
+#: autodocs.py:347
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr ""
 
-#: autodocs.py:333
+#: autodocs.py:348
 msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr ""
 
-#: autodocs.py:334
+#: autodocs.py:349
 msgid "Replace all occurrences of [botname] with the bots name"
 msgstr ""
 
-#: autodocs.py:335
+#: autodocs.py:350
 msgid "Include extra info like converters and their docstrings"
 msgstr ""
 
-#: autodocs.py:336
+#: autodocs.py:351
 msgid "Include hidden commands"
 msgstr ""
 
-#: autodocs.py:348
+#: autodocs.py:363
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
@@ -148,19 +156,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: autodocs.py:367
+#: autodocs.py:382
 msgid "AllCogDocs"
 msgstr ""
 
-#: autodocs.py:393
+#: autodocs.py:408
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr ""
 
-#: autodocs.py:398
+#: autodocs.py:413
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr ""
 
-#: autodocs.py:413
+#: autodocs.py:428
 msgid "Here are your docs for {}!"
 msgstr ""
 
