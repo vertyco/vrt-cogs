@@ -13,7 +13,7 @@ class GuildLog(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -74,7 +74,7 @@ class GuildLog(commands.Cog):
                 }
                 msg = msg.format(**params)
             if embeds:
-                color = data["join"]["color"]
+                color = data["join"].get("color", 56865)
                 embed = discord.Embed(description=msg, color=color)
                 await channel.send(embed=embed)
             else:
@@ -147,6 +147,7 @@ class GuildLog(commands.Cog):
                 channel = cid
         else:
             channel = "Not Set"
+
         msg = f"`Log Channel: `{channel}\n" f"`Use Embeds:  `{conf['embeds']}"
         embed = discord.Embed(title="Guild Log Settings", description=msg)
         jcolor = conf["join"]["color"]
