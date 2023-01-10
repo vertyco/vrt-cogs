@@ -9,6 +9,7 @@ from discord.utils import escape_markdown
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
+from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
 
@@ -154,15 +155,23 @@ class BaseCommands(MixinMeta, ABC):
             em.set_footer(text=_("This channel will be deleted once complete"))
             em.set_thumbnail(url=LOADING)
             await channel.send(embed=em)
+            answers = ticket.get("answers")
+            if answers:
+                r = _("Response")
+                for q, a in answers.items():
+                    text += f"{self.bot.user.display_name}: {q}\n" \
+                            f"{r}: {a}\n"
             history = await self.fetch_channel_history(channel)
             for msg in history:
                 if msg.author.id == self.bot.user.id:
                     continue
                 if not msg:
                     continue
-                if not msg.content:
-                    continue
-                text += f"{msg.author.name}: {msg.content}\n"
+                att = [a.filename for a in msg.attachments]
+                if msg.content:
+                    text += f"{msg.author.name}: {msg.content}\n"
+                if att:
+                    text += _("Files uploaded: ") + humanize_list(att) + "\n"
 
         # Send off new messages
         if log_chan:
