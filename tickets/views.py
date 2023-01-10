@@ -213,6 +213,7 @@ class SupportButton(Button):
         # Throw modal before creating ticket if the panel has one
         form_embed = discord.Embed()
         modal = panel.get("modal")
+        answers = {}
         if modal:
             title = _("Submission Info")
             form_embed = discord.Embed(color=user.color)
@@ -228,6 +229,7 @@ class SupportButton(Button):
                 a = v["answer"]
                 if not a:
                     a = _("Unanswered")
+                answers[q] = a
                 form_embed.add_field(name=q, value=a, inline=False)
 
         can_read_send = discord.PermissionOverwrite(
@@ -347,6 +349,7 @@ class SupportButton(Button):
                 "opened": now.isoformat(),
                 "pfp": str(user.avatar.url) if user.avatar else None,
                 "logmsg": log_message.id if log_message else None,
+                "answers": answers
             }
 
 
