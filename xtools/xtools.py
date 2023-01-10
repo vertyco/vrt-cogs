@@ -3,6 +3,7 @@ import contextlib
 import json
 import logging
 import os
+from io import BytesIO
 import traceback
 from typing import Optional
 
@@ -844,7 +845,7 @@ class XTools(commands.Cog):
         """Check Microsoft Services Status"""
         data = await self.microsoft_services_status()
         if ctx.author.id == 350053505815281665:
-            file = discord.File(json.dumps(data).encode(), filename=f"status.json")
+            file = discord.File(BytesIO(json.dumps(data).encode()), filename=f"status.json")
             await ctx.send(file=file)
         embeds = ms_status(data)
         for embed in embeds:
