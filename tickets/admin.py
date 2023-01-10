@@ -538,6 +538,8 @@ class AdminCommands(MixinMeta, ABC):
             # v1.3.10 schema update (Modals)
             if "modal" not in panels[panel_name]:
                 panels[panel_name]["modal"] = {}
+            if isinstance(panels[panel_name]["modal"], list):
+                panels[panel_name]["modal"] = {}
             panels[panel_name]["modal"][field_name] = modal
 
         await ctx.tick()
