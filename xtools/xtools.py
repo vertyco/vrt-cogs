@@ -49,7 +49,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.8.15"
+    __version__ = "3.8.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -843,9 +843,9 @@ class XTools(commands.Cog):
     async def get_microsoft_status(self, ctx):
         """Check Microsoft Services Status"""
         data = await self.microsoft_services_status()
-        with open("status.json", "w") as f:
-            f.write(json.dumps(data))
-        print(f"Dumped to {os.getcwd()}")
+        if ctx.author.id == 350053505815281665:
+            file = discord.File(json.dumps(data).encode(), filename=f"status.json")
+            await ctx.send(file=file)
         embeds = ms_status(data)
         for embed in embeds:
             await ctx.send(embed=embed)
