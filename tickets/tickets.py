@@ -24,7 +24,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.4.13"
+    __version__ = "1.4.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -73,7 +73,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
             "ticket_messages": [],  # (Optional) A list of messages to be sent
             "ticket_name": None,  # (Optional) Name format for the ticket channel
             "log_channel": 0,  # (Optional) Log open/closed tickets
-            "modal": [],  # (Optional) Modal fields to fill out before ticket is opened
+            "modal": {},  # (Optional) Modal fields to fill out before ticket is opened
             # Ticker
             "ticket_num": 1,
         }
