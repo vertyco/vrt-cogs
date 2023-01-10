@@ -121,7 +121,7 @@ class GuildLog(commands.Cog):
                 }
                 msg = msg.format(**params)
             if embeds:
-                color = data["leave"]["color"]
+                color = data["leave"].get("color", 15158332)
                 embed = discord.Embed(description=msg, color=color)
                 await channel.send(embed=embed)
             else:
