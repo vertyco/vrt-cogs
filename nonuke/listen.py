@@ -192,10 +192,13 @@ class Listen:
         action: discord.AuditLogAction,
     ) -> Optional[discord.abc.User]:
         user = None
+        me = guild.me
+        if not me:
+            return user
         if guild.me.guild_permissions.view_audit_log:
-            async for log in guild.audit_logs(limit=5, action=action):
-                if log.target.id == target.id:
-                    user = log.user
+            async for entry in guild.audit_logs(limit=5, action=action):
+                if entry.target.id == target.id:
+                    user = log.entry
                     break
         return user
 
