@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.20.56"
+    __version__ = "2.21.56"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2032,6 +2032,30 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         conf["users"][uid]["xp"] = xp
         txt = _("User ") + user.name + _(" is now level ") + str(level)
         await ctx.send(txt)
+
+    @lvl_group.command(name="setprestige")
+    async def set_user_prestige(
+        self, ctx: commands.Context, user: discord.Member, prestige: int
+    ):
+        """
+        Set a user to a specific prestige level
+
+        Prestige roles will need to be manually added/removed when using this command
+        """
+        conf = self.data[ctx.guild.id]
+        uid = str(user.id)
+        if uid not in conf["users"]:
+            return await ctx.send(_("There is no data for that user!"))
+        prestige_data = conf["prestigedata"]
+        if not prestige_data:
+            return await ctx.send(_("Prestige levels have not been set yet!"))
+        p = str(prestige)
+        if p not in prestige_data:
+            return await ctx.send(_("That prestige level isn't set!"))
+        emoji = prestige_data[p]["emoji"]
+        self.data["users"][uid]["prestige"] = int(prestige)
+        self.data["users"][uid]["emoji"] = emoji
+        await ctx.tick()
 
     @lvl_group.group(name="algorithm")
     async def algo_edit(self, ctx: commands.Context):
