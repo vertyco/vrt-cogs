@@ -21,7 +21,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.8"
+    __version__ = "0.0.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -188,6 +188,9 @@ class UpgradeChat(commands.Cog):
             embeds.append(em)
         for ind, i in enumerate(embeds):
             i.set_footer(text=f"Page {ind + 1}/{len(list(users.keys()))}")
+
+        if not embeds:
+            return await ctx.send("There are no purchases saved!")
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @upgradechat.command()
