@@ -1037,7 +1037,7 @@ class UserCommands(MixinMeta, ABC):
                 role_id = prestige_data[str(prestige)]["role"]
                 role = ctx.guild.get_role(role_id)
                 if role and perms:
-                    await ctx.author.remove_roled(role)
+                    await ctx.author.remove_roles(role)
 
     @commands.command(name="lvltop", aliases=["topstats", "membertop", "topranks"])
     @commands.guild_only()
