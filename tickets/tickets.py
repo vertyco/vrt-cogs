@@ -24,7 +24,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.5.14"
+    __version__ = "1.5.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -191,18 +191,21 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
                 member = guild.get_member(int(uid))
                 if not member:
                     continue
-                for channel_id, data in tickets.items():
+                for channel_id, ticket in tickets.items():
+                    has_response = ticket.get("has_response")
+                    if has_response and channel_id not in self.valid:
+                        self.valid.append(channel_id)
+                        continue
                     if channel_id in self.valid:
                         continue
                     channel = guild.get_channel(int(channel_id))
                     if not channel:
                         continue
                     now = datetime.datetime.now()
-                    opened_on = datetime.datetime.fromisoformat(data["opened"])
+                    opened_on = datetime.datetime.fromisoformat(ticket["opened"])
                     hastyped = await self.ticket_owner_hastyped(channel, member)
-                    if hastyped:
-                        if channel_id not in self.valid:
-                            self.valid.append(channel_id)
+                    if hastyped and channel_id not in self.valid:
+                        self.valid.append(channel_id)
                         continue
                     td = (now - opened_on).total_seconds() / 3600
                     next_td = td + 0.33
