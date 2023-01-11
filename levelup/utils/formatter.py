@@ -127,7 +127,7 @@ def get_leaderboard(
         lb = conf["weekly"]["users"]
         title = _("Weekly ")
     else:
-        lb = conf["users"]
+        lb = conf["users"].copy()
         title = _("LevelUp ")
 
         prestige_req = conf["prestige"]
