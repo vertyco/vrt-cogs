@@ -307,8 +307,9 @@ class AdminCommands(MixinMeta, ABC):
         There is no toggle for modals, if a panel has them it will use them, if they don't then it just opens the ticket
         When the ticket is opened, it sends the modal field responses in an embed below the ticket message
 
-        **Note:**
+        **Note**
         `field_name` is just the name of the field stored in config, it won't be shown in the modal and should not have spaces in it
+
 
         Specify an existing field name to delete a modal field (non-case-sensitive)
         """

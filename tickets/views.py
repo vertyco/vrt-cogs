@@ -214,6 +214,7 @@ class SupportButton(Button):
         form_embed = discord.Embed()
         modal = panel.get("modal")
         answers = {}
+        has_response = False
         if modal:
             title = _("Submission Info")
             form_embed = discord.Embed(color=user.color)
@@ -229,6 +230,8 @@ class SupportButton(Button):
                 a = v["answer"]
                 if not a:
                     a = _("Unanswered")
+                else:
+                    has_response = True
                 answers[q] = a
                 form_embed.add_field(name=q, value=a, inline=False)
 
@@ -349,7 +352,8 @@ class SupportButton(Button):
                 "opened": now.isoformat(),
                 "pfp": str(user.avatar.url) if user.avatar else None,
                 "logmsg": log_message.id if log_message else None,
-                "answers": answers
+                "answers": answers,
+                "has_response": has_response
             }
 
 
