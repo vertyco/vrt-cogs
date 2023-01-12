@@ -198,7 +198,7 @@ class Listen:
         if guild.me.guild_permissions.view_audit_log:
             async for entry in guild.audit_logs(limit=5, action=action):
                 if entry.target.id == target.id:
-                    user = log.entry
+                    user = entry.user
                     break
         return user
 

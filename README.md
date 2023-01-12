@@ -65,7 +65,7 @@ If you haven't loaded the Downloader cog already, go ahead and do that first wit
 
 # Contact
 
-For support with my cogs, feel free to hit me up in #support_othercogs in
+For support with my cogs, feel free to hit me up in [#support_othercogs](https://discord.com/channels/240154543684321280/1039309390785810493/1039310040101818439) in
 the [Red Cog Support](https://discord.gg/GET4DVk) server.
 
 # Contributing
