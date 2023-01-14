@@ -3,6 +3,7 @@ import math
 import random
 from datetime import datetime, timedelta
 from typing import List, Union
+import copy
 
 import discord
 from aiocache import SimpleMemoryCache, cached
@@ -123,11 +124,12 @@ def get_attachments(ctx) -> list:
 def get_leaderboard(
     ctx: commands.Context, conf: dict, stat: str, lbtype: str
 ) -> Union[List[discord.Embed], str]:
+    conf = dict(copy.deepcopy(conf))
     if lbtype == "weekly":
         lb = conf["weekly"]["users"]
         title = _("Weekly ")
     else:
-        lb = conf["users"].copy()
+        lb = conf["users"]
         title = _("LevelUp ")
 
         prestige_req = conf["prestige"]
