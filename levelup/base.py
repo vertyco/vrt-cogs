@@ -1055,7 +1055,7 @@ class UserCommands(MixinMeta, ABC):
         if "star" in stat.lower():
             txt = _("Use the `") + str(ctx.prefix) + _("startop` command for that")
             return await ctx.send(txt)
-        conf = self.data[ctx.guild.id].copy()
+        conf = self.data[ctx.guild.id]
         func = functools.partial(get_leaderboard, ctx, conf, stat, "normal")
         embeds = await self.bot.loop.run_in_executor(None, func)
         if isinstance(embeds, str):
