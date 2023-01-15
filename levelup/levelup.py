@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.21.57"
+    __version__ = "2.21.58"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -965,6 +965,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not users:
             if ctx:
                 await ctx.send(_("There are no users with exp"))
+            self.data[guild.id]["weekly"]["last_reset"] = int(datetime.utcnow().timestamp())
             return
 
         total_xp = humanize_number(round(sum(v["xp"] for v in users.values())))
