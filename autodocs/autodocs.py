@@ -1,7 +1,7 @@
 import functools
 import logging
 from io import BytesIO
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
@@ -11,7 +11,11 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 
+from redbot.core.commands.commands import HybridCommand, HybridGroup
+from discord.app_commands.commands import Command as SlashCommand
+
 from .formatter import HELP, IGNORE, CustomCmdFmt
+from .converters import PRIVILEGES
 
 log = logging.getLogger("red.vrt.autodocs")
 _ = Translator("AutoDocs", __file__)
@@ -27,7 +31,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.18"
+    __version__ = "0.4.19"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -53,7 +57,6 @@ class AutoDocs(commands.Cog):
         privilege_level: str,
     ) -> str:
         docs = f"# {cog.qualified_name} {HELP}\n\n"
-
         cog_help = cog.help.replace("\n", "<br/>") if cog.help else None
         if cog_help:
             docs += f"{cog_help}\n\n"
@@ -67,6 +70,7 @@ class AutoDocs(commands.Cog):
                 continue
             docs += doc
 
+        ignored = []
         for cmd in cog.walk_commands():
             if cmd.hidden and not include_hidden:
                 continue
@@ -74,7 +78,15 @@ class AutoDocs(commands.Cog):
                 self.bot, cmd, prefix, replace_botname, extended_info, privilege_level
             )
             doc = c.get_doc()
+            if doc is None:
+                ignored.append(cmd.qualified_name)
             if not doc:
+                continue
+            skip = False
+            for i in ignored:
+                if i in cmd.qualified_name:
+                    skip = True
+            if skip:
                 continue
             docs += doc
 

@@ -167,7 +167,6 @@ class CustomCmdFmt:
             if priv:
                 if priv.value > limit:
                     return None
-                print(self.name, priv.name, priv.value)
                 if priv.value > 1:
                     doc += f" - {RESTRICTED}: `{priv.name}`\n"
 
