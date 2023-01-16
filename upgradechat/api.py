@@ -1,6 +1,7 @@
 import logging
 
 import aiohttp
+from datetime import datetime
 
 log = logging.getLogger("red.vrt.upgradechatapi")
 
@@ -28,13 +29,21 @@ class API:
         token = conf["bearer_token"]
         cid = conf["id"]
         secret = conf["secret"]
+        lr = conf["last_refreshed"]
+
+        if token is None:
+            token = await self.get_auth(cid, secret)
+            update_token = token
+        elif lr is None:
+            token = await self.get_auth(cid, secret)
+            update_token = token
+        elif (datetime.now() - datetime.fromisoformat(lr)).total_seconds() > 3600:
+            token = await self.get_auth(cid, secret)
+            update_token = token
+
         tries = 0
-        while True:
-            if tries == 3:
-                return 404, None, None
-            if token is None and not tries:
-                token = await self.get_auth(cid, secret)
-                update_token = token
+        while tries < 3:
+            tries += 1
             header = {"accept": "application/json", "Authorization": f"Bearer {token}"}
             url = f"https://api.upgrade.chat/v1/products/{uuid}"
             async with aiohttp.ClientSession() as session:
@@ -44,10 +53,11 @@ class API:
                         token = await self.get_auth(cid, secret)
                         if token:
                             update_token = token
-                        tries += 1
                         continue
                     results = await res.json()
                     return status, results, update_token
+
+        return 404, None, None
 
     async def get_user_purchases(self, conf: dict, user_id: int) -> tuple:
         update_token = None
@@ -66,7 +76,7 @@ class API:
             header = {"accept": "application/json", "Authorization": f"Bearer {token}"}
             url = f"https://api.upgrade.chat/v1/orders?offset={offset}&userDiscordId={user_id}"
             async with aiohttp.ClientSession() as session:
-                async with session.get(url=url, headers=header) as res:
+                async with session.get(url=url, headers=header, ssl=False) as res:
                     status = res.status
                     if status == 401:
                         token = await self.get_auth(cid, secret)
@@ -76,7 +86,7 @@ class API:
                         continue
                     if status != 200:
                         log.error(f"Error calling API ({status}) - {res.text}")
-                        break
+                        continue
                     results = await res.json()
                     purchases.extend(results["data"])
                     if not results["has_more"]:

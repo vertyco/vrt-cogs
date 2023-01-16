@@ -11,11 +11,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 
-from redbot.core.commands.commands import HybridCommand, HybridGroup
-from discord.app_commands.commands import Command as SlashCommand
-
 from .formatter import HELP, IGNORE, CustomCmdFmt
-from .converters import PRIVILEGES
 
 log = logging.getLogger("red.vrt.autodocs")
 _ = Translator("AutoDocs", __file__)
