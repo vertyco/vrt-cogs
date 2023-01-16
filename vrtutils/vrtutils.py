@@ -64,7 +64,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.3.13"
+    __version__ = "1.3.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -144,6 +144,7 @@ class VrtUtils(commands.Cog):
 
     # -/-/-/-/-/-/-/-/COMMANDS-/-/-/-/-/-/-/-/
     @commands.command(name="pull")
+    @commands.is_owner()
     async def update_cog(self, ctx, *cogs: InstalledCog):
         """Auto update & reload cogs"""
         ctx.assume_yes = True
@@ -885,7 +886,7 @@ class VrtUtils(commands.Cog):
             em = discord.Embed(
                 title=f"Members with role {role.name}",
                 description=page,
-                color=ctx.author.color
+                color=ctx.author.color,
             )
             em.set_footer(text=f"Page {p + 1}/{pages}")
             embeds.append(em)
