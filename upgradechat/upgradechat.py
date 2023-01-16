@@ -21,7 +21,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.9"
+    __version__ = "0.0.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -38,6 +38,7 @@ class UpgradeChat(commands.Cog):
             "id": None,
             "secret": None,
             "bearer_token": None,  # API token created in upgrade.chat portal
+            "last_refreshed": None,
             "conversion_ratio": 1000,  # If ratio == 100, then 1 USD = 1000 credits
             "claim_msg": "default",  # Reply when a user claims a purchase
             "products": {},  # Upgrade.Chat products added by UUID
@@ -258,6 +259,7 @@ class UpgradeChat(commands.Cog):
             )
             if newtoken:
                 await self.config.guild(ctx.guild).bearer_token.set(newtoken)
+                await self.config.guild(ctx.guild).last_refreshed.set(datetime.now().isoformat())
             if status != 200:
                 return await ctx.send(
                     "I could not find any users associated with your ID!"
