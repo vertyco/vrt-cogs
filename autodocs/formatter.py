@@ -1,5 +1,5 @@
 import logging
-from typing import Union
+from typing import Optional, Union
 
 from discord.app_commands.commands import Command as SlashCommand
 from discord.ext.commands.hybrid import HybridAppCommand
@@ -9,7 +9,7 @@ from redbot.core.commands.commands import HybridCommand, HybridGroup
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .converters import CLASSCONVERTER, CONVERTERS
+from .converters import CLASSCONVERTER, CONVERTERS, PRIVILEGES
 
 log = logging.getLogger("red.vrt.autodocs.formatter")
 _ = Translator("AutoDocs", __file__)
@@ -67,12 +67,14 @@ class CustomCmdFmt:
         prefix: str,
         replace_botname: bool,
         extended_info: bool,
+        privilege_level: str,
     ):
         self.bot = bot
         self.cmd = cmd
         self.prefix = prefix
         self.replace_botname = replace_botname
         self.extended_info = extended_info
+        self.privilege_level = privilege_level
 
         self.is_slash: bool = isinstance(cmd, SlashCommand)
         self.is_hybrid: bool = any(
@@ -107,7 +109,7 @@ class CustomCmdFmt:
             )
             self.aliases: str = humanize_list(cmd.aliases) if cmd.aliases else ""
 
-    def get_doc(self) -> str:
+    def get_doc(self) -> Optional[str]:
         # Get header of command
         if self.is_slash:
             doc = f"{self.hashes} {self.name} ({SLASH} {COMMAND})\n"
@@ -160,8 +162,12 @@ class CustomCmdFmt:
                 usage = usage.replace("[p]", "/")
                 doc += f" - {SLASH} {USAGE}: `{usage}`\n"
 
+            limit = PRIVILEGES[self.privilege_level]
             priv = self.perms.privilege_level
             if priv:
+                if priv.value > limit:
+                    return None
+                print(self.name, priv.name, priv.value)
                 if priv.value > 1:
                     doc += f" - {RESTRICTED}: `{priv.name}`\n"
 

@@ -1,7 +1,7 @@
 import functools
 import logging
 from io import BytesIO
-from typing import List, Optional
+from typing import List, Literal, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
@@ -27,7 +27,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.18"
+    __version__ = "0.4.18"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -50,6 +50,7 @@ class AutoDocs(commands.Cog):
         replace_botname: bool,
         extended_info: bool,
         include_hidden: bool,
+        privilege_level: str,
     ) -> str:
         docs = f"# {cog.qualified_name} {HELP}\n\n"
 
@@ -58,26 +59,22 @@ class AutoDocs(commands.Cog):
             docs += f"{cog_help}\n\n"
 
         for cmd in cog.walk_app_commands():
-            c = CustomCmdFmt(self.bot, cmd, prefix, replace_botname, extended_info)
+            c = CustomCmdFmt(
+                self.bot, cmd, prefix, replace_botname, extended_info, privilege_level
+            )
             doc = c.get_doc()
             if not doc:
-                err = _("Could not fetch docs for slash command {}").format(
-                    cmd.qualified_name
-                )
-                log.warning(err)
                 continue
             docs += doc
 
         for cmd in cog.walk_commands():
             if cmd.hidden and not include_hidden:
                 continue
-            c = CustomCmdFmt(self.bot, cmd, prefix, replace_botname, extended_info)
+            c = CustomCmdFmt(
+                self.bot, cmd, prefix, replace_botname, extended_info, privilege_level
+            )
             doc = c.get_doc()
             if not doc:
-                err = _("Could not fetch docs for command {}").format(
-                    cmd.qualified_name
-                )
-                log.warning(err)
                 continue
             docs += doc
 
@@ -90,6 +87,9 @@ class AutoDocs(commands.Cog):
         replace_botname=_("Replace all occurrences of [botname] with the bots name"),
         extended_info=_("Include extra info like converters and their docstrings"),
         include_hidden=_("Include hidden commands"),
+        privilege_level=_(
+            "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
+        ),
     )
     @commands.is_owner()
     async def makedocs(
@@ -100,6 +100,9 @@ class AutoDocs(commands.Cog):
         replace_botname: Optional[bool] = False,
         extended_info: Optional[bool] = False,
         include_hidden: Optional[bool] = False,
+        privilege_level: Literal[
+            "user", "mod", "admin", "guildowner", "botowner"
+        ] = "botowner",
     ):
         """
         Create a Markdown docs page for a cog and send to discord
@@ -110,6 +113,7 @@ class AutoDocs(commands.Cog):
         `replace_botname:    `(bool) If True, replaces the `botname` placeholder with the bots name
         `extended_info:      `(bool) If True, include extra info like converters and their docstrings
         `include_hidden:     `(bool) If True, includes hidden commands
+        `privilege_level:    `(str) Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)
 
         **Note**
         If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
@@ -138,6 +142,7 @@ class AutoDocs(commands.Cog):
                             replace_botname,
                             extended_info,
                             include_hidden,
+                            privilege_level,
                         )
                         docs = await self.bot.loop.run_in_executor(None, partial_func)
                         filename = f"{folder_name}/{cog.qualified_name}.md"
@@ -162,6 +167,7 @@ class AutoDocs(commands.Cog):
                     replace_botname,
                     extended_info,
                     include_hidden,
+                    privilege_level,
                 )
                 docs = await self.bot.loop.run_in_executor(None, partial_func)
                 buffer = BytesIO(docs.encode())

@@ -118,3 +118,5 @@ CLASSCONVERTER = {
     AppCommandOptionType.role: Role,
     AppCommandOptionType.attachment: Attachment,
 }
+
+PRIVILEGES = {"user": 1, "mod": 2, "admin": 3, "guildowner": 4, "botowner": 5}
