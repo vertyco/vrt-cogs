@@ -1,9 +1,9 @@
+import copy
 import logging
 import math
 import random
 from datetime import datetime, timedelta
 from typing import List, Union
-import copy
 
 import discord
 from aiocache import SimpleMemoryCache, cached

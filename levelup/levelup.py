@@ -965,7 +965,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not users:
             if ctx:
                 await ctx.send(_("There are no users with exp"))
-            self.data[guild.id]["weekly"]["last_reset"] = int(datetime.utcnow().timestamp())
+            self.data[guild.id]["weekly"]["last_reset"] = int(
+                datetime.utcnow().timestamp()
+            )
             return
 
         total_xp = humanize_number(round(sum(v["xp"] for v in users.values())))

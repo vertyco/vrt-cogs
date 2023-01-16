@@ -353,7 +353,7 @@ class SupportButton(Button):
                 "pfp": str(user.avatar.url) if user.avatar else None,
                 "logmsg": log_message.id if log_message else None,
                 "answers": answers,
-                "has_response": has_response
+                "has_response": has_response,
             }
 
 

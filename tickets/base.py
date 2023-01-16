@@ -8,8 +8,8 @@ import discord
 from discord.utils import escape_markdown
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.mod import is_admin_or_superior
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.mod import is_admin_or_superior
 
 from .abc import MixinMeta
 
@@ -159,8 +159,7 @@ class BaseCommands(MixinMeta, ABC):
             if answers:
                 r = _("Response")
                 for q, a in answers.items():
-                    text += f"{self.bot.user.display_name}: {q}\n" \
-                            f"{r}: {a}\n"
+                    text += f"{self.bot.user.display_name}: {q}\n" f"{r}: {a}\n"
             history = await self.fetch_channel_history(channel)
             for msg in history:
                 if msg.author.id == self.bot.user.id:
