@@ -97,9 +97,13 @@ class CustomCmdFmt:
 
         if self.is_slash:
             self.options = cmd.to_dict()["options"]
-            self.desc: str = cmd.description.replace("\n", "<br/>")
+            self.desc: str = cmd.description.replace("\n", "<br/>").replace("`", "")
         else:
-            self.desc: str = cmd.help.replace("\n", "<br/>")
+            try:
+                self.desc: str = cmd.help.replace("\n", "<br/>").replace("`", "")
+            except AttributeError:
+                self.desc: str = cmd.description.replace("\n", "<br/>").replace("`", "")
+
             self.perms = self.cmd.requires
             cd = cmd.cooldown
             self.cooldown: str = (

@@ -27,7 +27,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.19"
+    __version__ = "0.4.20"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
