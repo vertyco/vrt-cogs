@@ -7,10 +7,10 @@
   "end_user_data_statement": "This cog does not store data about users.",
   "hidden": false,
   "install_msg": "Thank you for installing!",
-  "min_bot_version": "3.5.0.dev306",
+  "min_bot_version": "3.5.0.dev307",
   "min_python_version": [
     3,
-    8,
+    9,
     1
   ],
   "permissions": [],
