@@ -16,7 +16,6 @@ from .formatter import HELP, IGNORE, CustomCmdFmt
 log = logging.getLogger("red.vrt.autodocs")
 _ = Translator("AutoDocs", __file__)
 
-
 # redgettext -D autodocs.py converters.py formatter.py
 @cog_i18n(_)
 class AutoDocs(commands.Cog):
@@ -131,6 +130,7 @@ class AutoDocs(commands.Cog):
             if replace_prefix
             else ""
         )
+        ctx.guild.create_scheduled_event()
         async with ctx.typing():
             if cog_name == "all":
                 buffer = BytesIO()
