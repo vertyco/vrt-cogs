@@ -8,7 +8,7 @@ from typing import Union
 
 import colorgram
 import requests
-from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError, ImageFilter
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number
 
@@ -165,6 +165,11 @@ class Generator(MixinMeta, ABC):
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
         transparent_box = Image.new("RGBA", card.size, (0, 0, 0, 100))
         blank.paste(transparent_box, (bar_start - 20, 0))
+
+        # Make the semi-transparent box area blurry
+        blurred = card.filter(ImageFilter.GaussianBlur(3))
+        blurred = blurred.crop(((bar_start - 20), 0, card.size[0], card.size[1]))
+        card.paste(blurred, (bar_start - 20, 0), blurred)
         final = Image.alpha_composite(card, blank)
 
         # Make the level progress bar
