@@ -105,6 +105,7 @@ class BaseCommands(MixinMeta, ABC):
             can_close = True
         if owner_id == str(user.id) and conf["user_can_close"]:
             can_close = True
+
         if not can_close:
             return await ctx.send(_("You do not have permissions to close this ticket"))
         else:
@@ -125,7 +126,7 @@ class BaseCommands(MixinMeta, ABC):
                     reason = None
                 closing_in = int((datetime.datetime.now() + td).timestamp())
                 closemsg = _("This ticket will close {}").format(f"<t:{closing_in}:R>")
-                msg = await ctx.send(closemsg)
+                msg = await ctx.send(f"{owner.mention}, {closemsg}")
                 try:
                     await ctx.bot.wait_for(
                         "message", check=check, timeout=td.total_seconds()
