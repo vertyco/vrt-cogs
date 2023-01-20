@@ -259,7 +259,9 @@ class UpgradeChat(commands.Cog):
             )
             if newtoken:
                 await self.config.guild(ctx.guild).bearer_token.set(newtoken)
-                await self.config.guild(ctx.guild).last_refreshed.set(datetime.now().isoformat())
+                await self.config.guild(ctx.guild).last_refreshed.set(
+                    datetime.now().isoformat()
+                )
             if status != 200:
                 return await ctx.send(
                     "I could not find any users associated with your ID!"

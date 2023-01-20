@@ -164,7 +164,10 @@ class AdminCommands(MixinMeta, ABC):
             )
             if not channel:
                 return await ctx.send(
-                    _("Cannot find channel associated with this panel, make sure to set the channel for the panel message first!")
+                    _(
+                        "Cannot find channel associated with this panel, "
+                        "make sure to set the channel for the panel message first!"
+                    )
                 )
             try:
                 found = await channel.fetch_message(message)
