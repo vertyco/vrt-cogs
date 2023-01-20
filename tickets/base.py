@@ -115,8 +115,10 @@ class BaseCommands(MixinMeta, ABC):
         if reason:
             timestring = reason.split(" ")[0]
             if td := parse_timedelta(timestring):
+
                 def check(m: discord.Message):
                     return m.channel.id == ctx.channel.id
+
                 reason = reason.replace(timestring, "")
                 if not reason.strip():
                     # User provided delayed close with no reason attached
@@ -125,7 +127,9 @@ class BaseCommands(MixinMeta, ABC):
                 closemsg = _("This ticket will close {}").format(f"<t:{closing_in}:R>")
                 msg = await ctx.send(closemsg)
                 try:
-                    await ctx.bot.wait_for("message", check=check, timeout=td.total_seconds())
+                    await ctx.bot.wait_for(
+                        "message", check=check, timeout=td.total_seconds()
+                    )
                 except asyncio.TimeoutError:
                     pass
                 else:

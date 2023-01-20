@@ -1,7 +1,7 @@
 import logging
+from datetime import datetime
 
 import aiohttp
-from datetime import datetime
 
 log = logging.getLogger("red.vrt.upgradechatapi")
 
