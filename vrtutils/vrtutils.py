@@ -64,7 +64,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.3.14"
+    __version__ = "1.4.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -948,3 +948,17 @@ class VrtUtils(commands.Cog):
             await self.bot.tree.sync(guild=ctx.guild)
             await ctx.send("Synced slash commands for this guild!")
         await ctx.tick()
+
+    @commands.command(name="text2binary")
+    async def text2binary(self, ctx: commands.Context, *, text: str):
+        """Convert text to binary"""
+        # binary_string = ''.join(format(ord(c), 'b') for c in text)
+        binary_string = ''.join(format(ord(i), '08b') for i in text)
+        for p in pagify(binary_string):
+            await ctx.send(p)
+
+    @commands.command(name="binary2text")
+    async def binary2text(self, ctx: commands.Context, *, binary_string: str):
+        """Convert a binary string to text"""
+        text = ''.join(chr(int(binary_string[i*8:i*8+8], 2)) for i in range(len(binary_string)//8))
+        await ctx.send(text)
