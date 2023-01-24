@@ -1,7 +1,7 @@
 import functools
 import logging
 from io import BytesIO
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
@@ -16,6 +16,7 @@ from .formatter import HELP, IGNORE, CustomCmdFmt
 log = logging.getLogger("red.vrt.autodocs")
 _ = Translator("AutoDocs", __file__)
 
+
 # redgettext -D autodocs.py converters.py formatter.py
 @cog_i18n(_)
 class AutoDocs(commands.Cog):
@@ -26,7 +27,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.20"
+    __version__ = "0.4.21"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -130,7 +131,6 @@ class AutoDocs(commands.Cog):
             if replace_prefix
             else ""
         )
-        ctx.guild.create_scheduled_event()
         async with ctx.typing():
             if cog_name == "all":
                 buffer = BytesIO()
