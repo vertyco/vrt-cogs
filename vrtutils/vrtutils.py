@@ -64,7 +64,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.4.14"
+    __version__ = "1.4.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -953,12 +953,18 @@ class VrtUtils(commands.Cog):
     async def text2binary(self, ctx: commands.Context, *, text: str):
         """Convert text to binary"""
         # binary_string = ''.join(format(ord(c), 'b') for c in text)
-        binary_string = ''.join(format(ord(i), '08b') for i in text)
-        for p in pagify(binary_string):
-            await ctx.send(p)
+        try:
+            binary_string = ''.join(format(ord(i), '08b') for i in text)
+            for p in pagify(binary_string):
+                await ctx.send(p)
+        except ValueError:
+            await ctx.send("I could not convert that text to binary :(")
 
     @commands.command(name="binary2text")
     async def binary2text(self, ctx: commands.Context, *, binary_string: str):
         """Convert a binary string to text"""
-        text = ''.join(chr(int(binary_string[i*8:i*8+8], 2)) for i in range(len(binary_string)//8))
-        await ctx.send(text)
+        try:
+            text = ''.join(chr(int(binary_string[i*8:i*8+8], 2)) for i in range(len(binary_string)//8))
+            await ctx.send(text)
+        except ValueError:
+            await ctx.send("I could not convert that binary string to text :(")
