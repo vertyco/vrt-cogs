@@ -337,7 +337,9 @@ class Pupper(commands.Cog):
             borf_msg = await rando_channel_obj.send(guild_data["hello_msg"])
 
             emojis = ["👋", "\N{WAVING HAND SIGN}"]
-
+            
+            await start_adding_reactions(borf_msg, emojis)
+            
             def check(r, u):
                 return r.message.id == borf_msg.id and any(
                     emoji in str(r.emoji) for emoji in emojis
