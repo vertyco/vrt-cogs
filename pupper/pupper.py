@@ -7,6 +7,7 @@ import discord
 from redbot.core import Config, bank, checks, commands
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
+from redbot.core.utils.menus import start_adding_reactions
 
 log = logging.getLogger("red.vrt.pupper")
 
