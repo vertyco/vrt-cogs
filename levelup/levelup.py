@@ -114,6 +114,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 "msg": {},
                 "voice": {},
             },  # ChannelID keys, list values for bonus xp range
+            "streambonus": [],  # Bonus voice XP for streaming in voice
             "cooldown": 60,  # Only gives XP every 30 seconds
             "base": 100,  # Base denominator for level algorithm, higher takes longer to level
             "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve
@@ -791,6 +792,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         xp_per_minute = conf["voicexp"]
         bonuses = conf["rolebonuses"]["voice"]
         channel_bonuses = conf["channelbonuses"]["voice"]
+        stream_bonus = conf["streambonus"]
         weekly_on = conf["weekly"]["on"]
         bonusrole = None
         async for member in AsyncIter(guild.members, steps=100, delay=0.001):
@@ -858,6 +860,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     bonuschannelrange = channel_bonuses[cid]
                     bmin = int(bonuschannelrange[0])
                     bmax = int(bonuschannelrange[1]) + 1
+                    bxp = random.choice(range(bmin, bmax))
+                    xp_to_give += bxp
+                if stream_bonus and voice_state.self_stream:
+                    bmin = int(stream_bonus[0])
+                    bmax = int(stream_bonus[1]) + 1
                     bxp = random.choice(range(bmin, bmax))
                     xp_to_give += bxp
                 self.data[gid]["users"][uid]["xp"] += xp_to_give
@@ -1904,6 +1911,29 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             await ctx.send(
                 _("Bonus xp for ") + channel.mention + _(" has been set to ") + str(xp)
             )
+        await self.save_cache(ctx.guild)
+
+    @voice_group.command(name="streambonus")
+    async def voice_stream_bonus(self, ctx: commands.Context, min_xp: int, max_xp: int):
+        """
+        Add a range of bonus XP to users who are Discord streaming
+
+        This bonus applies to voice time xp
+
+        Set both min and max to 0 to remove the bonus
+        """
+        if min_xp > max_xp:
+            return await ctx.send(_("Max xp needs to be higher than min xp"))
+        xp = [min_xp, max_xp]
+        sb = self.data[ctx.guild.id]["streambonus"]
+        if not min_xp and not max_xp:
+            if not sb:
+                return await ctx.send(_("There is no stream bonus set yet"))
+            self.data[ctx.guild.id]["streambonus"] = []
+            await ctx.send(_("Stream bonus has been removed"))
+        else:
+            self.data[ctx.guild.id]["streambonus"] = xp
+            await ctx.send(_("Stream bonus has been set to ") + str(xp))
         await self.save_cache(ctx.guild)
 
     @voice_group.command(name="muted")
