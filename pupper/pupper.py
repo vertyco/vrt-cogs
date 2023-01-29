@@ -339,7 +339,7 @@ class Pupper(commands.Cog):
 
             emojis = ["👋", "\N{WAVING HAND SIGN}"]
             
-            await start_adding_reactions(borf_msg, emojis)
+            start_adding_reactions(borf_msg, emojis)
             
             def check(r, u):
                 return r.message.id == borf_msg.id and any(
