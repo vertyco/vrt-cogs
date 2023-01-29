@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2022-12-20 20:47-0500\n"
-"PO-Revision-Date: 2023-01-07 20:09\n"
+"PO-Revision-Date: 2023-01-29 09:06\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -44,77 +44,77 @@ msgstr ""
 
 #: utils\formatter.py:128
 msgid "Weekly "
-msgstr ""
+msgstr "Tjedna "
 
 #: utils\formatter.py:131
 msgid "LevelUp "
-msgstr ""
+msgstr "LevelUp "
 
 #: utils\formatter.py:141
 msgid "Voice Leaderboard"
-msgstr ""
+msgstr "Voice ljestvica"
 
 #: utils\formatter.py:143
 msgid "Voicetime"
-msgstr ""
+msgstr "Vrijeme u voice-u"
 
 #: utils\formatter.py:148
 msgid "Message Leaderboard"
-msgstr ""
+msgstr "Ljestvica za poruke"
 
 #: utils\formatter.py:150
 msgid "Messages"
-msgstr ""
+msgstr "Poruka"
 
 #: utils\formatter.py:155
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "Ljestvica za zvijezde"
 
 #: utils\formatter.py:157
 msgid "Stars"
-msgstr ""
+msgstr "Zvijezdice"
 
 #: utils\formatter.py:162
 msgid "Exp Leaderboard"
-msgstr ""
+msgstr "Exp Ljestvica"
 
 #: utils\formatter.py:164
 msgid "Exp"
-msgstr ""
+msgstr "Exp"
 
 #: utils\formatter.py:170
 msgid "Total "
-msgstr ""
+msgstr "Ukupno "
 
 #: utils\formatter.py:171
 msgid "Last Reset: "
-msgstr ""
+msgstr "Zadnji reset: "
 
 #: utils\formatter.py:174
 msgid "Next Reset: "
-msgstr ""
+msgstr "Sljedeći reset: "
 
 #: utils\formatter.py:176
 msgid "Total"
-msgstr ""
+msgstr "Ukupno"
 
 #: utils\formatter.py:185
 msgid "There is no data for the weekly "
-msgstr ""
+msgstr "Nema podataka za weekly "
 
 #: utils\formatter.py:187 utils\formatter.py:193
 msgid " leaderboard yet"
-msgstr ""
+msgstr " ljestvicu"
 
 #: utils\formatter.py:191
 msgid "There is no data for the "
-msgstr ""
+msgstr "Nema još podataka za "
 
 #: utils\formatter.py:200
 msgid "You: "
-msgstr ""
+msgstr "Ti: "
 
 #: utils\formatter.py:255 utils\formatter.py:257
 msgid "Pages "
-msgstr ""
+msgstr "Stranica "
 
