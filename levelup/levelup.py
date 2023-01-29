@@ -1085,6 +1085,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         voicexp = conf["voicexp"]
         voicexpbonus = conf["rolebonuses"]["voice"]
         voicechanbonus = conf["channelbonuses"]["voice"]
+        streambonus = conf["streambonus"]
         cooldown = conf["cooldown"]
         base = conf["base"]
         exp = conf["exp"]
@@ -1183,6 +1184,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 text += f"{chan.mention} - {bonusrange}"
             if text:
                 embed.add_field(name=_("Voice XP Bonus Channels"), value=text)
+        if streambonus:
+            text = f"{streambonus[0]}-{streambonus[1]}"
+            embed.add_field(name=_("Stream XP Bonus"), value=text)
         if xpbonus:
             text = ""
             for rid, bonusrange in xpbonus.items():
