@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-01-07 22:06-0500\n"
-"PO-Revision-Date: 2023-01-08 03:17\n"
+"PO-Revision-Date: 2023-01-29 09:06\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -1850,7 +1850,7 @@ msgstr ""
 
 #: levelup.py:2618
 msgid "`Bonus Exp:      `"
-msgstr ""
+msgstr "`Bonus exp:      `"
 
 #: levelup.py:2619
 msgid "Settings"
@@ -1858,11 +1858,11 @@ msgstr ""
 
 #: levelup.py:2622
 msgid "`Reset Day:  `"
-msgstr ""
+msgstr "`Dan reseta: `"
 
 #: levelup.py:2623
 msgid "`Reset Hour: `"
-msgstr ""
+msgstr "`Sat reseta: `"
 
 #: levelup.py:2624
 msgid "`Last Reset: `"
@@ -1874,7 +1874,7 @@ msgstr "`Sljedeći reset: `"
 
 #: levelup.py:2628
 msgid "Auto Reset "
-msgstr ""
+msgstr "Automatski reset "
 
 #: levelup.py:2633
 #, docstring
@@ -1921,7 +1921,7 @@ msgstr ""
 
 #: levelup.py:2670
 msgid "Hour must be 0 to 23"
-msgstr ""
+msgstr "Sat mora bit od 0 do 23"
 
 #: levelup.py:2672
 msgid "Weekly stats auto reset hour is now "
@@ -1933,11 +1933,14 @@ msgid "\n"
 "        What day of the week the weekly stats reset\n"
 "        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        U kojem danu u tjednu se tjedne statistike resetiraju\n"
+"        Postavi dan u tjednu (0 - 6 = Ponedjeljak - Nedjelja) koji će biti dan reseta\n"
+"        "
 
 #: levelup.py:2684
 msgid "Day must be 0 to 6 (Monday to Sunday)"
-msgstr ""
+msgstr "Dan mora bit od 0 to 6 (ponedjeljak do nedjelje)"
 
 #: levelup.py:2687
 msgid "Weekly stats auto reset day is now "
@@ -1967,11 +1970,11 @@ msgstr ""
 
 #: levelup.py:2716
 msgid "I do not have permission to send messages to that channel!"
-msgstr ""
+msgstr "Nemam dozvolu slati poruke u taj kanal!"
 
 #: levelup.py:2720
 msgid "I do not have permission to send embeds to that channel!"
-msgstr ""
+msgstr "Nemam dozvolu slati embede u taj kanal!"
 
 #: levelup.py:2728
 #, docstring
@@ -1981,20 +1984,20 @@ msgstr ""
 
 #: levelup.py:2731
 msgid "I do not have permission to manage roles!"
-msgstr ""
+msgstr "Nemam dozvolu upravljat ulogama!"
 
 #: levelup.py:2738
 #, docstring
 msgid "Toggle whether to give the weekly winner role to all winners or only 1st place"
-msgstr ""
+msgstr "Odaberite želite li ulogu tjednog pobjednika dati svim pobjednicima ili samo prvom mjestu"
 
 #: levelup.py:2743
 msgid "Only the 1st place winner of the weekly stats reset will receive the weekly role"
-msgstr ""
+msgstr "Pobjednik u prvom mjestu je jedini koji će dobiti tjednu ulogu"
 
 #: levelup.py:2750
 msgid "All top members listed in the weekly stat reset will receive the weekly role"
-msgstr ""
+msgstr "Svi najbolji članovi navedeni u tjednom resetu će dobiti tjednu ulogu"
 
 #: levelup.py:2758
 #, docstring

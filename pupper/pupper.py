@@ -7,6 +7,7 @@ import discord
 from redbot.core import Config, bank, checks, commands
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
+from redbot.core.utils.menus import start_adding_reactions
 
 log = logging.getLogger("red.vrt.pupper")
 
@@ -337,7 +338,9 @@ class Pupper(commands.Cog):
             borf_msg = await rando_channel_obj.send(guild_data["hello_msg"])
 
             emojis = ["👋", "\N{WAVING HAND SIGN}"]
-
+            
+            start_adding_reactions(borf_msg, emojis)
+            
             def check(r, u):
                 return r.message.id == borf_msg.id and any(
                     emoji in str(r.emoji) for emoji in emojis
