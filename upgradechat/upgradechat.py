@@ -21,7 +21,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.10"
+    __version__ = "0.0.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -46,6 +46,8 @@ class UpgradeChat(commands.Cog):
             "users": {},  # Claimed purchases stored here with str(user.id) as keys
         }
         self.config.register_guild(**default_guild)
+
+        self._lock = set()
 
     @commands.group(aliases=["upchat"])
     @commands.guild_only()
@@ -248,6 +250,16 @@ class UpgradeChat(commands.Cog):
     @commands.cooldown(1, 60, BucketType.user)
     async def claim(self, ctx: commands.Context):
         """Claim your Upgrade.Chat purchases!"""
+        uid = ctx.author.id
+        if uid in self._lock:
+            return
+        try:
+            self._lock.add(uid)
+            await self.do_claim(ctx)
+        finally:
+            self._lock.discard(uid)
+
+    async def do_claim(self, ctx: commands.Context):
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
             if not conf["id"] or not conf["secret"]:
