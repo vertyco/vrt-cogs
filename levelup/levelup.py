@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.21.59"
+    __version__ = "2.21.60"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1107,7 +1107,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             notifylog = notifylog.mention
         ptype = _("Image") if usepics else _("Embed")
 
-        msg = _("**Cog**\n")
+        msg = _("**Main**\n")
         msg += _("`Profile Type:      `") + f"{ptype}\n"
         msg += _("`Include Balance:   `") + f"{showbal}\n"
         msg += _("`Progress Bar:      `") + f"{barlength} chars long\n"
