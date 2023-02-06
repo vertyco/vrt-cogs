@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 
@@ -86,6 +87,8 @@ class API:
                         continue
                     if status != 200:
                         log.error(f"Error calling API ({status}) - {res.text}")
+                        await asyncio.sleep(5)
+                        tries += 1
                         continue
                     results = await res.json()
                     purchases.extend(results["data"])
