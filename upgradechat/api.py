@@ -1,4 +1,5 @@
 import asyncio
+import json.decoder
 import logging
 from datetime import datetime
 
@@ -80,9 +81,14 @@ class API:
                 async with session.get(url=url, headers=header, ssl=False) as res:
                     status = res.status
                     if status == 429:
-                        data = await res.json(content_type=None)
-                        wait = data.get("Retry-After", 15)
-                        log.warning(f"We are being rate-limited, waiting {wait} seconds...")
+                        try:
+                            data = await res.json(content_type=None)
+                            wait = data.get("Retry-After", 15)
+                            log.warning(
+                                f"We are being rate-limited, waiting {wait} seconds..."
+                            )
+                        except json.decoder.JSONDecodeError:
+                            wait = 15
                         await asyncio.sleep(wait)
                         tries += 1
                         continue
