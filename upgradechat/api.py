@@ -79,6 +79,13 @@ class API:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url=url, headers=header, ssl=False) as res:
                     status = res.status
+                    if status == 429:
+                        data = await res.json(content_type=None)
+                        wait = data.get("Retry-After", 15)
+                        log.warning(f"We are being rate-limited, waiting {wait} seconds...")
+                        await asyncio.sleep(wait)
+                        tries += 1
+                        continue
                     if status == 401:
                         token = await self.get_auth(cid, secret)
                         if token:
