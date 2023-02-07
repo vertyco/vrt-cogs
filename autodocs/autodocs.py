@@ -121,7 +121,8 @@ class AutoDocs(commands.Cog):
         `replace_botname:    `(bool) If True, replaces the `botname` placeholder with the bots name
         `extended_info:      `(bool) If True, include extra info like converters and their docstrings
         `include_hidden:     `(bool) If True, includes hidden commands
-        `privilege_level:    `(str) Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)
+        `privilege_level:    `(str) Hide commands above specified privilege level
+        (user, mod, admin, guildowner, botowner)
 
         **Note**
         If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
