@@ -124,8 +124,8 @@ class AutoDocs(commands.Cog):
         `privilege_level:    `(str) Hide commands above specified privilege level
         (user, mod, admin, guildowner, botowner)
 
-        **Note**
-        If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file
+        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for
+        them and sent in a zip file
         """
         prefix = (
             (await self.bot.get_valid_prefixes(ctx.guild))[0].strip()
