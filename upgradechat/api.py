@@ -72,7 +72,7 @@ class API:
         while True:
             if tries == 3:
                 return 404, None, None
-            if token is None and not tries:
+            if token is None:
                 token = await self.get_auth(cid, secret)
                 update_token = token
             header = {"accept": "application/json", "Authorization": f"Bearer {token}"}
