@@ -337,15 +337,14 @@ class Pupper(commands.Cog):
 
             borf_msg = await rando_channel_obj.send(guild_data["hello_msg"])
 
-            emojis = ["👋", "\N{WAVING HAND SIGN}"]
+            emoji = "\N{WAVING HAND SIGN}"
+            await borf_msg.add_reaction(emoji)
 
-            start_adding_reactions(borf_msg, emojis)
-
-            def check(r, u):
-                return r.message.id == borf_msg.id and any(
-                    emoji in str(r.emoji) for emoji in emojis
-                )
-
+            def check(reaction, user):
+                if user.bot:
+                    return False
+                return user and str(reaction.emoji) == "👋"
+                
             try:
                 reaction, user = await self.bot.wait_for(
                     "reaction_add", check=check, timeout=300.0
