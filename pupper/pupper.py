@@ -350,7 +350,7 @@ class Pupper(commands.Cog):
 
             try:
                 reaction, user = await self.bot.wait_for(
-                    "reaction_add", check=check, timeout=30
+                    "reaction_add", check=check, timeout=300.0
                 )
             except asyncio.TimeoutError:
                 return await borf_msg.delete()
