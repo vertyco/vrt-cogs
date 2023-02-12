@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import (bold, box, humanize_list,
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.1.8"
+__version__ = "3.1.9"
 
 
 class Hunting(commands.Cog):
@@ -25,7 +25,8 @@ class Hunting(commands.Cog):
     ):
         await self.config.user_from_id(user_id).clear()
 
-    def __init__(self, bot):
+    def __init__(self, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, 2784481002, force_registration=True)
 
@@ -34,6 +35,7 @@ class Hunting(commands.Cog):
             "penguin": ":penguin: **_Noot!_**",
             "chicken": ":chicken: **_Bah-gawk!_**",
             "duck": ":duck: **_Quack!_**",
+            "turkey": ":turkey: **_Gobble-Gobble!_**"
         }
         self.in_game = []
         self.paused_games = []
