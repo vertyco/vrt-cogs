@@ -40,7 +40,8 @@ class EconomyTrack(
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         """No data to delete"""
 
-    def __init__(self, bot: Red):
+    def __init__(self, bot: Red, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
         default_global = {"max_points": 43200, "data": []}
