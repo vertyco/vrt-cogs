@@ -18,7 +18,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.1.10"
+__version__ = "3.1.11"
 
 
 class Hunting(commands.Cog):
@@ -214,9 +214,9 @@ class Hunting(commands.Cog):
     async def next(self, ctx):
         """When will the next occurrence happen?"""
         gid = ctx.guild.id
-        last = self.next_bang.get(gid, datetime.datetime.utcnow())
+        last = self.next_bang.get(gid, datetime.datetime.now())
         try:
-            t = abs(datetime.datetime.utcnow() - last)
+            t = abs(datetime.datetime.now() - last)
             total_seconds = int(t.total_seconds())
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
@@ -357,7 +357,7 @@ class Hunting(commands.Cog):
     async def _latest_message_check(self, channel):
         hunt_int_max = await self.config.guild(channel.guild).hunt_interval_maximum()
         async for message in channel.history(limit=5):
-            delta = datetime.datetime.utcnow() - message.created_at
+            delta = datetime.datetime.now() - message.created_at
             if delta.total_seconds() < hunt_int_max * 2 and message.author.id != self.bot.user.id:
                 if channel.id in self.paused_games:
                     self.paused_games.remove(channel.id)
@@ -485,7 +485,7 @@ class Hunting(commands.Cog):
         guild_data = await self.config.guild(message.guild).all()
         wait_time = random.randrange(guild_data["hunt_interval_minimum"], guild_data["hunt_interval_maximum"])
         self.next_bang[message.guild.id] = datetime.datetime.fromtimestamp(
-            int(time.mktime(datetime.datetime.utcnow().timetuple())) + wait_time
+            int(time.mktime(datetime.datetime.now().timetuple())) + wait_time
         )
         await asyncio.sleep(wait_time)
         task = self.bot.loop.create_task(self._wait_for_bang(message.guild, message.channel))
