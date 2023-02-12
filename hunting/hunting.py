@@ -1,20 +1,24 @@
 import asyncio
 import datetime
-from logging import warning
 import math
 import random
 import time
 from typing import Literal
 
 import discord
-from redbot.core import Config, checks, commands, bank
+from redbot.core import Config, bank, checks, commands
 from redbot.core.errors import BalanceTooHigh
-from redbot.core.utils.chat_formatting import (bold, box, humanize_list,
-                                               humanize_number, pagify)
+from redbot.core.utils.chat_formatting import (
+    bold,
+    box,
+    humanize_list,
+    humanize_number,
+    pagify,
+)
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.1.9"
+__version__ = "3.1.10"
 
 
 class Hunting(commands.Cog):
@@ -109,17 +113,17 @@ class Hunting(commands.Cog):
             return await ctx.send(bold("Please shoot something before you can brag about it."))
 
         async with ctx.typing():
-            sorted_acc = sorted(userinfo.items(), key=lambda x: (x[1]["total"]), reverse=True)[:50]
+            sorted_acc: list = sorted(userinfo.items(), key=lambda x: (x[1]["total"]), reverse=True)[:50]
 
         if not hasattr(ctx.guild, "members"):
             global_leaderboard = True
 
-        pound_len = len(str(len(sorted_acc)))
+        # pound_len = len(str(len(sorted_acc)))
         score_len = 10
         header = "{score:{score_len}}{name:2}\n".format(
             score="# Birds Shot",
             score_len=score_len + 5,
-            name="Name" if not str(ctx.author.mobile_status) in ["online", "idle", "dnd"] else "Name",
+            name="Name" if str(ctx.author.mobile_status) not in ["online", "idle", "dnd"] else "Name",
         )
         temp_msg = header
         for account in sorted_acc:
@@ -209,10 +213,11 @@ class Hunting(commands.Cog):
     @hunting.command()
     async def next(self, ctx):
         """When will the next occurrence happen?"""
+        gid = ctx.guild.id
+        last = self.next_bang.get(gid, datetime.datetime.utcnow())
         try:
-            self.next_bang[ctx.guild.id]
-            time = abs(datetime.datetime.utcnow() - self.next_bang[ctx.guild.id])
-            total_seconds = int(time.total_seconds())
+            t = abs(datetime.datetime.utcnow() - last)
+            total_seconds = int(t.total_seconds())
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
             message = f"The next occurrence will be in {hours} hours and {minutes} minutes."
@@ -228,6 +233,7 @@ class Hunting(commands.Cog):
         score = await self.config.user(member).score()
         total = 0
         kill_list = []
+        message = "Something went wrong?"
         if not score:
             message = "Please shoot something before you can brag about it."
 
@@ -339,7 +345,7 @@ class Hunting(commands.Cog):
         """Show the cog version."""
         await ctx.send(f"Hunting version {__version__}.")
 
-    async def _add_score(self, guild, author, avian):
+    async def add_score(self, author: discord.User, avian: str):
         user_data = await self.config.user(author).all()
         try:
             user_data["score"][avian] += 1
@@ -376,6 +382,7 @@ class Hunting(commands.Cog):
         timeout = await self.config.guild(guild).wait_for_bang_timeout()
 
         shooting_type = await self.config.guild(guild).bang_words()
+        author = None
         if shooting_type:
 
             def check(message):
@@ -396,14 +403,14 @@ class Hunting(commands.Cog):
             emoji = "\N{COLLISION SYMBOL}"
             await animal_message.add_reaction(emoji)
 
-            def check(reaction, user):
-                if user.bot:
+            def check(reaction, u):
+                if u.bot:
                     return False
                 if guild != reaction.message.guild:
                     return False
                 if channel != reaction.message.channel:
                     return False
-                return user and str(reaction.emoji) == "💥"
+                return u and str(reaction.emoji) == "💥"
 
             try:
                 await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
@@ -422,20 +429,23 @@ class Hunting(commands.Cog):
         bang_now = time.time()
         time_for_bang = "{:.3f}".format(bang_now - now)
         bangtime = "" if not await self.config.guild(guild).bang_time() else f" in {time_for_bang}s"
+        msg = None
 
-        if random.randrange(0, 17) > 1:
-            await self._add_score(guild, author, animal)
-            reward = await self.maybe_send_reward(guild, author)
-            if reward:
-                cur_name = await bank.get_currency_name(guild)
-                msg = f"{author.display_name} shot a {animal}{bangtime} and earned {reward} {cur_name}!"
+        if author:
+            if random.randrange(0, 17) > 1:
+                await self.add_score(author, animal)
+                reward = await self.maybe_send_reward(guild, author)
+                if reward:
+                    cur_name = await bank.get_currency_name(guild)
+                    msg = f"{author.display_name} shot a {animal}{bangtime} and earned {reward} {cur_name}!"
+                else:
+                    msg = f"{author.display_name} shot a {animal}{bangtime}!"
             else:
-                msg = f"{author.display_name} shot a {animal}{bangtime}!"
-        else:
-            msg = f"{author.display_name} missed the shot and the {animal} got away!"
+                msg = f"{author.display_name} missed the shot and the {animal} got away!"
 
         self.in_game.remove(channel.id)
-        await channel.send(bold(msg))
+        if msg:
+            await channel.send(bold(msg))
 
     async def maybe_send_reward(self, guild, author) -> int:
         max_bal = await bank.get_max_balance(guild)
