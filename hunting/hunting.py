@@ -214,9 +214,9 @@ class Hunting(commands.Cog):
     async def next(self, ctx):
         """When will the next occurrence happen?"""
         gid = ctx.guild.id
-        last = self.next_bang.get(gid, datetime.datetime.now())
+        last = self.next_bang.get(gid, datetime.datetime.now().astimezone())
         try:
-            t = abs(datetime.datetime.now() - last)
+            t = abs(datetime.datetime.now() - last.astimezone())
             total_seconds = int(t.total_seconds())
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
@@ -382,7 +382,6 @@ class Hunting(commands.Cog):
         timeout = await self.config.guild(guild).wait_for_bang_timeout()
 
         shooting_type = await self.config.guild(guild).bang_words()
-        author = None
         if shooting_type:
 
             def check(message):
@@ -390,7 +389,9 @@ class Hunting(commands.Cog):
                     return False
                 if channel != message.channel:
                     return False
-                return message.content.lower().split(" ")[0] == "bang" if message.content else False
+                if not message.content:
+                    return False
+                return message.content.lower().split(" ")[0] == "bang"
 
             try:
                 bang_msg = await self.bot.wait_for("message", check=check, timeout=timeout)
@@ -413,18 +414,10 @@ class Hunting(commands.Cog):
                 return u and str(reaction.emoji) == "💥"
 
             try:
-                await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
+                r, author = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
             except asyncio.TimeoutError:
                 self.in_game.remove(channel.id)
                 return await channel.send(f"The {animal} got away!")
-
-            message_with_reacts = await animal_message.channel.fetch_message(animal_message.id)
-            reacts = message_with_reacts.reactions[0]
-            async for user in reacts.users():
-                if user.bot:
-                    continue
-                author = user
-                break
 
         bang_now = time.time()
         time_for_bang = "{:.3f}".format(bang_now - now)
