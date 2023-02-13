@@ -320,7 +320,8 @@ class SupportButton(Button):
         )
         em = discord.Embed(description=desc, color=user.color)
         if modal:
-            await interaction.followup.send(embed=em, ephemeral=True)
+            with contextlib.suppress(discord.HTTPException):
+                await interaction.followup.send(embed=em, ephemeral=True)
         else:
             await interaction.response.send_message(embed=em, ephemeral=True)
 
