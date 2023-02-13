@@ -24,7 +24,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.16"
+    __version__ = "1.6.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
