@@ -1,8 +1,7 @@
 import asyncio
-import datetime
+from datetime import datetime
 import math
 import random
-import time
 from typing import Literal
 
 import discord
@@ -18,7 +17,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.1.11"
+__version__ = "3.2.11"
 
 
 class Hunting(commands.Cog):
@@ -215,11 +214,10 @@ class Hunting(commands.Cog):
         """When will the next occurrence happen?"""
         gid = ctx.guild.id
         if gid not in self.next_bang:
-            self.next_bang[gid] = datetime.datetime.now().astimezone()
+            self.next_bang[gid] = datetime.now().timestamp()
         last = self.next_bang.get(gid)
         try:
-            t = abs(datetime.datetime.now().astimezone() - last.astimezone())
-            total_seconds = int(t.total_seconds())
+            total_seconds = int(abs(datetime.now().timestamp() - last))
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
             message = f"The next occurrence will be in {hours} hours and {minutes} minutes."
@@ -315,8 +313,8 @@ class Hunting(commands.Cog):
         """
         Change the hunting timing.
 
-        `interval_min` = Minimum time in seconds for a new bird. (120s min)
-        `interval_max` = Maximum time in seconds for a new bird. (240s min)
+        `interval_min` = Minimum time in seconds for a new bird. (60 min)
+        `interval_max` = Maximum time in seconds for a new bird. (120 min)
         `bang_timeout` = Time in seconds for users to shoot a bird before it flies away. (10s min)
         """
         message = ""
@@ -324,11 +322,11 @@ class Hunting(commands.Cog):
             return await ctx.send("`interval_min` needs to be lower than `interval_max`.")
         if interval_min < 0 and interval_max < 0 and bang_timeout < 0:
             return await ctx.send("Please no negative numbers!")
-        if interval_min < 120:
-            interval_min = 120
+        if interval_min < 60:
+            interval_min = 60
             message += "Minimum interval set to minimum of 120s.\n"
-        if interval_max < 240:
-            interval_max = 240
+        if interval_max < 120:
+            interval_max = 120
             message += "Maximum interval set to minimum of 240s.\n"
         if bang_timeout < 10:
             bang_timeout = 10
@@ -356,31 +354,16 @@ class Hunting(commands.Cog):
         user_data["total"] += 1
         await self.config.user(author).set_raw(value=user_data)
 
-    async def _latest_message_check(self, channel):
-        hunt_int_max = await self.config.guild(channel.guild).hunt_interval_maximum()
-        async for message in channel.history(limit=5):
-            delta = datetime.datetime.now().astimezone() - message.created_at.astimezone()
-            if delta.total_seconds() < hunt_int_max * 2 and message.author.id != self.bot.user.id:
-                if channel.id in self.paused_games:
-                    self.paused_games.remove(channel.id)
-                return True
-        if channel.id not in self.paused_games:
-            self.paused_games.append(channel.id)
-            await channel.send(
-                bold("It seems there are no hunters here. The hunt will be resumed when someone treads here again.")
-            )
-        return False
-
-    def _next_sorter(self, guild_id, value):
+    async def do_tha_bang(self, guild: discord.Guild, channel: discord.TextChannel):
         try:
-            self.next_bang[guild_id]
-        except KeyError:
-            self.next_bang[guild_id] = value
+            await self._wait_for_bang(guild, channel)
+        finally:
+            self.in_game.remove(channel.id)
 
-    async def _wait_for_bang(self, guild, channel):
+    async def _wait_for_bang(self, guild: discord.Guild, channel: discord.TextChannel):
         animal = random.choice(list(self.animals.keys()))
         animal_message = await channel.send(self.animals[animal])
-        now = time.time()
+        now = datetime.now().timestamp()
         timeout = await self.config.guild(guild).wait_for_bang_timeout()
 
         shooting_type = await self.config.guild(guild).bang_words()
@@ -398,7 +381,6 @@ class Hunting(commands.Cog):
             try:
                 bang_msg = await self.bot.wait_for("message", check=check, timeout=timeout)
             except asyncio.TimeoutError:
-                self.in_game.remove(channel.id)
                 return await channel.send(f"The {animal} got away!")
             author = bang_msg.author
 
@@ -418,29 +400,24 @@ class Hunting(commands.Cog):
             try:
                 r, author = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
             except asyncio.TimeoutError:
-                self.in_game.remove(channel.id)
                 return await channel.send(f"The {animal} got away!")
 
-        bang_now = time.time()
+        bang_now = datetime.now().timestamp()
         time_for_bang = "{:.3f}".format(bang_now - now)
-        bangtime = "" if not await self.config.guild(guild).bang_time() else f" in {time_for_bang}s"
-        msg = None
+        bangtime = "" if not await self.config.guild(guild).bang_time() else f" in {int(time_for_bang)}s"
 
-        if author:
-            if random.randrange(0, 17) > 1:
-                await self.add_score(author, animal)
-                reward = await self.maybe_send_reward(guild, author)
-                if reward:
-                    cur_name = await bank.get_currency_name(guild)
-                    msg = f"{author.display_name} shot a {animal}{bangtime} and earned {reward} {cur_name}!"
-                else:
-                    msg = f"{author.display_name} shot a {animal}{bangtime}!"
+        if random.randrange(0, 17) > 1:
+            await self.add_score(author, animal)
+            reward = await self.maybe_send_reward(guild, author)
+            if reward:
+                cur_name = await bank.get_currency_name(guild)
+                msg = f"{author.display_name} shot a {animal}{bangtime} and earned {reward} {cur_name}!"
             else:
-                msg = f"{author.display_name} missed the shot and the {animal} got away!"
+                msg = f"{author.display_name} shot a {animal}{bangtime}!"
+        else:
+            msg = f"{author.display_name} missed the shot and the {animal} got away!"
 
-        self.in_game.remove(channel.id)
-        if msg:
-            await channel.send(bold(msg))
+        await channel.send(bold(msg))
 
     async def maybe_send_reward(self, guild, author) -> int:
         max_bal = await bank.get_max_balance(guild)
@@ -449,7 +426,12 @@ class Hunting(commands.Cog):
             range_to_give = await self.config.reward_range()
         else:
             range_to_give = await self.config.guild(guild).reward_range()
-        to_give = random.choice(range(range_to_give[0], range_to_give[1] + 1))
+
+        if range_to_give:
+            to_give = random.choice(range(range_to_give[0], range_to_give[1] + 1))
+        else:
+            to_give = 0
+
         if to_give + user_bal > max_bal:
             to_give = max_bal - user_bal
         try:
@@ -468,28 +450,22 @@ class Hunting(commands.Cog):
             return
         if message.channel.id in self.in_game:
             return
-        channel_list = await self.config.guild(message.guild).channels()
-        if not channel_list:
-            return
-        if message.channel.id not in channel_list:
-            return
-
-        if await self._latest_message_check(message.channel):
-            self.in_game.append(message.channel.id)
 
         guild_data = await self.config.guild(message.guild).all()
-        wait_time = random.randrange(guild_data["hunt_interval_minimum"], guild_data["hunt_interval_maximum"])
-        self.next_bang[message.guild.id] = datetime.datetime.fromtimestamp(
-            int(time.mktime(datetime.datetime.now().timetuple())) + wait_time
-        )
-        await asyncio.sleep(wait_time)
-        task = self.bot.loop.create_task(self._wait_for_bang(message.guild, message.channel))
-        self.game_tasks.append(task)
-        try:
-            del self.next_bang[message.guild.id]
-        except KeyError:
-            pass
+        if not guild_data["channels"]:
+            return
+        if message.channel.id not in guild_data["channels"]:
+            return
+        wait_time = random.randint(guild_data["hunt_interval_minimum"], guild_data["hunt_interval_maximum"])
+        if message.guild.id not in self.next_bang:
+            self.next_bang[message.guild.id] = datetime.now().timestamp() + wait_time
+            return
 
-    def cog_unload(self):
-        for task in self.game_tasks:
-            task.cancel()
+        n = self.next_bang[message.guild.id]
+        if datetime.now().timestamp() < n:
+            return
+        self.in_game.append(message.channel.id)
+        await asyncio.sleep(wait_time)
+        await self.do_tha_bang(message.guild, message.channel)
+        next_wait_time = random.randint(guild_data["hunt_interval_minimum"], guild_data["hunt_interval_maximum"])
+        self.next_bang[message.guild.id] = datetime.now().timestamp() + next_wait_time
