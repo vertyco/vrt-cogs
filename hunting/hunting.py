@@ -214,7 +214,9 @@ class Hunting(commands.Cog):
     async def next(self, ctx):
         """When will the next occurrence happen?"""
         gid = ctx.guild.id
-        last = self.next_bang.get(gid, datetime.datetime.now().astimezone())
+        if gid not in self.next_bang:
+            self.next_bang[gid] = datetime.datetime.now().astimezone()
+        last = self.next_bang.get(gid)
         try:
             t = abs(datetime.datetime.now().astimezone() - last.astimezone())
             total_seconds = int(t.total_seconds())
