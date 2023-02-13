@@ -216,7 +216,7 @@ class Hunting(commands.Cog):
         gid = ctx.guild.id
         last = self.next_bang.get(gid, datetime.datetime.now().astimezone())
         try:
-            t = abs(datetime.datetime.now() - last.astimezone())
+            t = abs(datetime.datetime.now().astimezone() - last.astimezone())
             total_seconds = int(t.total_seconds())
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
