@@ -17,7 +17,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.2.11"
+__version__ = "3.2.12"
 
 
 class Hunting(commands.Cog):
@@ -403,8 +403,8 @@ class Hunting(commands.Cog):
                 return await channel.send(f"The {animal} got away!")
 
         bang_now = datetime.now().timestamp()
-        time_for_bang = "{:.3f}".format(bang_now - now)
-        bangtime = "" if not await self.config.guild(guild).bang_time() else f" in {int(time_for_bang)}s"
+        time_for_bang = round(bang_now - now, 1)
+        bangtime = "" if not await self.config.guild(guild).bang_time() else f" in {time_for_bang}s"
 
         if random.randrange(0, 17) > 1:
             await self.add_score(author, animal)
