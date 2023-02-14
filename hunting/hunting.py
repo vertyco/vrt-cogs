@@ -1,8 +1,9 @@
 import asyncio
-from datetime import datetime
 import math
 import random
+from datetime import datetime
 from typing import Literal
+import logging
 
 import discord
 from redbot.core import Config, bank, checks, commands
@@ -18,6 +19,7 @@ from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
 __version__ = "3.2.12"
+log = logging.getLogger("red.vrt.hunting")
 
 
 class Hunting(commands.Cog):
@@ -40,10 +42,9 @@ class Hunting(commands.Cog):
             "duck": ":duck: **_Quack!_**",
             "turkey": ":turkey: **_Gobble-Gobble!_**"
         }
-        self.in_game = []
-        self.paused_games = []
+        self.in_game = set()
+
         self.next_bang = {}
-        self.game_tasks = []
 
         default_guild = {
             "hunt_interval_minimum": 900,
@@ -354,51 +355,53 @@ class Hunting(commands.Cog):
         user_data["total"] += 1
         await self.config.user(author).set_raw(value=user_data)
 
-    async def do_tha_bang(self, guild: discord.Guild, channel: discord.TextChannel):
+    async def do_tha_bang(self, guild: discord.Guild, channel: discord.TextChannel, conf: dict, wait: int):
         try:
-            await self._wait_for_bang(guild, channel)
+            await asyncio.sleep(wait)
+            await self._wait_for_bang(guild, channel, conf)
+        except Exception as e:
+            log.error(f"Failed to wait for bang: {e}")
         finally:
-            self.in_game.remove(channel.id)
+            self.in_game.discard(channel.id)
 
-    async def _wait_for_bang(self, guild: discord.Guild, channel: discord.TextChannel):
+    async def _wait_for_bang(self, guild: discord.Guild, channel: discord.TextChannel, conf: dict):
+        def mcheck(m: discord.Message):
+            if m.guild != guild:
+                return False
+            if m.channel != channel:
+                return False
+            if not m.content:
+                return False
+            res = m.content.lower().strip()
+            return "bang" in res
+
+        def rcheck(r: discord.Reaction, u: discord.Member):
+            if u.bot:
+                return False
+            if r.message.guild != guild:
+                return False
+            if r.message.channel != channel:
+                return False
+            if not u:
+                return False
+            return str(r.emoji) == "💥"
+
         animal = random.choice(list(self.animals.keys()))
         animal_message = await channel.send(self.animals[animal])
         now = datetime.now().timestamp()
-        timeout = await self.config.guild(guild).wait_for_bang_timeout()
+        timeout = conf["wait_for_bang_timeout"]
 
-        shooting_type = await self.config.guild(guild).bang_words()
-        if shooting_type:
-
-            def check(message):
-                if guild != message.guild:
-                    return False
-                if channel != message.channel:
-                    return False
-                if not message.content:
-                    return False
-                return message.content.lower().split(" ")[0] == "bang"
-
+        if conf["bang_words"]:
             try:
-                bang_msg = await self.bot.wait_for("message", check=check, timeout=timeout)
+                bang_msg = await self.bot.wait_for("message", check=mcheck, timeout=timeout)
             except asyncio.TimeoutError:
                 return await channel.send(f"The {animal} got away!")
             author = bang_msg.author
-
         else:
             emoji = "\N{COLLISION SYMBOL}"
             await animal_message.add_reaction(emoji)
-
-            def check(reaction, u):
-                if u.bot:
-                    return False
-                if guild != reaction.message.guild:
-                    return False
-                if channel != reaction.message.channel:
-                    return False
-                return u and str(reaction.emoji) == "💥"
-
             try:
-                r, author = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
+                reaction, author = await self.bot.wait_for("reaction_add", check=rcheck, timeout=timeout)
             except asyncio.TimeoutError:
                 return await channel.send(f"The {animal} got away!")
 
@@ -456,6 +459,7 @@ class Hunting(commands.Cog):
             return
         if message.channel.id not in guild_data["channels"]:
             return
+
         wait_time = random.randint(guild_data["hunt_interval_minimum"], guild_data["hunt_interval_maximum"])
         if message.guild.id not in self.next_bang:
             self.next_bang[message.guild.id] = datetime.now().timestamp() + wait_time
@@ -464,8 +468,7 @@ class Hunting(commands.Cog):
         n = self.next_bang[message.guild.id]
         if datetime.now().timestamp() < n:
             return
-        self.in_game.append(message.channel.id)
-        await asyncio.sleep(wait_time)
-        await self.do_tha_bang(message.guild, message.channel)
-        next_wait_time = random.randint(guild_data["hunt_interval_minimum"], guild_data["hunt_interval_maximum"])
-        self.next_bang[message.guild.id] = datetime.now().timestamp() + next_wait_time
+
+        self.in_game.add(message.channel.id)
+        self.next_bang[message.guild.id] = datetime.now().timestamp() + wait_time
+        asyncio.create_task(self.do_tha_bang(message.guild, message.channel, guild_data, wait_time))
