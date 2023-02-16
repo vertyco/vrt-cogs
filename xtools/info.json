@@ -23,9 +23,9 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "xmltojson>=0.2.0",
-    "xbox-webapi==2.0.11",
-    "utils>=1.0.1",
+    "xmltojson",
+    "xbox-webapi",
+    "utils",
     "tabulate",
     "dislash.py",
     "pytz"
