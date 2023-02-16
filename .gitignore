@@ -154,3 +154,5 @@ tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt
+makereqs.py
+requirements.txt
