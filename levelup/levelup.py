@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.21.60"
+    __version__ = "2.21.61"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

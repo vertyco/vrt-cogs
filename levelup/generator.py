@@ -985,6 +985,8 @@ class Generator(MixinMeta, ABC):
     def get_image_content_from_url(url: str) -> Union[bytes, None]:
         if url is None:
             return None
+        if str(url) == "None":
+            return None
         try:
             res = requests.get(url)
             return res.content
