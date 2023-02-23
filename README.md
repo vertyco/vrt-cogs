@@ -10,6 +10,10 @@ Various useful and fun cogs for Red V3.
 ![Stargazers](https://img.shields.io/github/stars/Vertyco/Vrt-Cogs?style=for-the-badge)
 ![Lines of code](https://img.shields.io/tokei/lines/github/Vertyco/Vrt-Cogs?color=yellow&label=Lines&style=for-the-badge)
 
+[![Visitors](https://api.visitorbadge.io/api/daily?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Visitors%20Today&countColor=%232ccce4)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
+[![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Total&countColor=%2337d67a)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
+
+
 ![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3.5-red?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
 
@@ -45,7 +49,6 @@ below!
 | [YouTubeDownloader](youtubedownloader/README.md) |   ✓    | <details><summary>Download YouTube videos as audio files.</summary> Allows you to download entire playlists, all videos from a channel, or individual videos as audio files. You can either download them locally or have them sent directly to discord. WARNING: Downloading YouTube videos via 3rd party methods is against their ToS and I am not responsible if you get your bots ip suspended.</details>       |
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vertyco)<br/>
-![visitors](https://visitor-badge.glitch.me/badge?page_id=Vertyco/Vrt-Cogs)
 
 # Installation
 
@@ -85,3 +88,5 @@ If you are interested in contributing to translations for my cogs, [Click Here](
 # Feature Requests
 
 I am open to ideas or suggestions for new cogs and features!
+
+![visitors](https://visitor-badge.glitch.me/badge?page_id=Vertyco/Vrt-Cogs)
