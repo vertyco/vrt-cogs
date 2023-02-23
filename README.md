@@ -6,6 +6,9 @@ Various useful and fun cogs for Red V3.
 ![black](https://img.shields.io/badge/style-black-000000?style=for-the-badge&?link=https://github.com/psf/black)
 ![license](https://img.shields.io/github/license/Vertyco/Vrt-Cogs?style=for-the-badge)
 
+![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3.5-red?style=for-the-badge)
+![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
+
 ![Forks](https://img.shields.io/github/forks/Vertyco/Vrt-Cogs?style=for-the-badge)
 ![Stargazers](https://img.shields.io/github/stars/Vertyco/Vrt-Cogs?style=for-the-badge)
 ![Lines of code](https://img.shields.io/tokei/lines/github/Vertyco/Vrt-Cogs?color=yellow&label=Lines&style=for-the-badge)
@@ -13,9 +16,6 @@ Various useful and fun cogs for Red V3.
 [![Visitors](https://api.visitorbadge.io/api/daily?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Visitors%20Today&countColor=%232ccce4)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Total&countColor=%2337d67a)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
 
-
-![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3.5-red?style=for-the-badge)
-![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
 
 I enjoy working with APIs and making cogs for game servers or other helpful use cases. Check out some of my projects
 below!
