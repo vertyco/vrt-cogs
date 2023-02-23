@@ -2,13 +2,15 @@
 
 Various useful and fun cogs for Red V3.
 
-![Python 3.8](https://img.shields.io/badge/python-v3.11-orange?style=for-the-badge)
-![Discord.py](https://img.shields.io/badge/discord-py-blue?style=for-the-badge)
+![Py](https://img.shields.io/badge/python-v3.11-orange?style=for-the-badge)
 ![black](https://img.shields.io/badge/style-black-000000?style=for-the-badge&?link=https://github.com/psf/black)
 ![license](https://img.shields.io/github/license/Vertyco/Vrt-Cogs?style=for-the-badge)
 
-![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3.5-red?style=for-the-badge)
+![Forks](https://img.shields.io/github/forks/Vertyco/Vrt-Cogs?style=for-the-badge)
+![Stargazers](https://img.shields.io/github/stars/Vertyco/Vrt-Cogs?style=for-the-badge)
 ![Lines of code](https://img.shields.io/tokei/lines/github/Vertyco/Vrt-Cogs?color=yellow&label=Lines&style=for-the-badge)
+
+![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3.5-red?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
 
 I enjoy working with APIs and making cogs for game servers or other helpful use cases. Check out some of my projects
