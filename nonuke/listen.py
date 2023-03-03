@@ -21,6 +21,8 @@ class Listen:
     ):
         if member.id == self.bot.user.id:
             return
+        if isinstance(member, discord.User):
+            return
         if guild.me.top_role <= member.top_role or member == guild.owner:
             return
         gid = guild.id
