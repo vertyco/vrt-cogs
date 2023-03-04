@@ -98,6 +98,8 @@ class API:
                             update_token = token
                         tries += 1
                         continue
+                    if status == 404:
+                        return 404, None, None
                     if status != 200:
                         log.error(f"Error calling API ({status}) - {res.text}")
                         await asyncio.sleep(5)
