@@ -1201,7 +1201,7 @@ class Events(commands.Cog):
         if event["emoji"] and event["emoji"] != emoji_id:
             emoji = self.bot.get_emoji(event["emoji"])
 
-        channel: discord.TextChannel = guild.get_channel(event["channel_id"])
+        channel: discord.TextChannel = guild.get_channel(int(event["channel_id"]))
         subs = event["submissions"]
         rewards = event["rewards"]
         currency = await bank.get_currency_name(guild)
@@ -1216,11 +1216,14 @@ class Events(commands.Cog):
             if any(r.id in rblacklist for r in submitter.roles):
                 continue
             for message_id in message_ids:
+                if isinstance(message_id, list):
+                    # IDFK
+                    message_id = message_id[0]
                 try:
                     message = await channel.fetch_message(message_id)
                 except (discord.NotFound, discord.HTTPException):
                     log.warning(
-                        f"Failed to fetch message ID {message_id} for {submitter}"
+                        f"Failed to fetch message ID {message_id} for {submitter} in {channel.name}"
                     )
                     continue
                 votes = 0
