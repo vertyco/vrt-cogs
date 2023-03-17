@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-01-07 22:06-0500\n"
-"PO-Revision-Date: 2023-01-08 03:17\n"
+"PO-Revision-Date: 2023-03-02 23:30\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,15 @@ msgstr ""
 
 #: base.py:81
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "Oh oh, sieht so aus, als wäre das keine gültige URL"
 
 #: base.py:92
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "Oh oh, sieht so aus, als wäre das kein gültiges Bild. Datei kann nicht identifiziert werden"
 
 #: base.py:99
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "Oh oh, sieht so aus, als wäre das kein gültiges Bild"
 
 #: base.py:180
 #, docstring
@@ -35,40 +35,43 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Belohne eine gute Nudel\n"
+"        Gib einem Nutzer einen Stern dafür, dass er/sie/* eine gute Nudel ist\n"
+"        "
 
 #: base.py:189
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "Cache ist noch nicht geladen, bitte warte noch ein paar Sekunden."
 
 #: base.py:191
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "Du kannst dir selbst keine Sterne geben!"
 
 #: base.py:193
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "Du kannst einem Bot keine Sterne geben!"
 
 #: base.py:209
 msgid "You need to wait "
-msgstr ""
+msgstr "Du musst warten "
 
 #: base.py:211
 msgid " before you can give more stars!"
-msgstr ""
+msgstr " ,bevor du mehr Sterne vergeben kannst!"
 
 #: base.py:217
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "Für diesen Nutzer sind noch keine Daten verfügbar!"
 
 #: base.py:225 base.py:227
 msgid "You just gave a star to "
-msgstr ""
+msgstr "Du hast gerade einen Stern vergeben, an: "
 
 #: base.py:232
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "Teste levelup Bild Generator"
 
 #: base.py:265
 #, docstring
@@ -77,11 +80,15 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Personalisiere deine Profilfarbe\n\n"
+"        Hier ist ein Link zu Googles Farbwähler:\n"
+"        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
+"        "
 
 #: base.py:282 base.py:283 base.py:284 base.py:285
 msgid "Not Set"
-msgstr ""
+msgstr "Nicht gesetzt"
 
 #: base.py:287
 msgid "`Profile Size:    `"
