@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-01-07 22:06-0500\n"
-"PO-Revision-Date: 2023-03-22 13:26\n"
+"PO-Revision-Date: 2023-03-22 14:44\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -153,36 +153,36 @@ msgstr "Geçerli dosya tipi değil, dosya tipi bunlardan biri olmalı: "
 
 #: base.py:354 base.py:416
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Discorddan dosyayı alamadım"
 
 #: base.py:361
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Özel arkaplanın kaydedildi ismi "
 
 #: base.py:366
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Özel bir arkaplanı kaldırın"
 
 #: base.py:373
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "Bu isimle arkaplan fotoğrafı bulamadım"
 
 #: base.py:379 base.py:439
 msgid "Could not delete file: "
-msgstr ""
+msgstr "Dosya silinemedi: "
 
 #: base.py:380
 msgid "Background `"
-msgstr ""
+msgstr "Arkaplan"
 
 #: base.py:380 base.py:440
 msgid "` Has been removed!"
-msgstr ""
+msgstr "Kaldırıldı!"
 
 #: base.py:387
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Özel yazı tipi yolun \n"
 
 #: base.py:393
 #, docstring
@@ -192,33 +192,38 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Discorddan font yükleyin \n\n"
+"        **Argümanlar**\n"
+"        Tercih edilen dosya adı - eğer isim girilir ise girilen isim ile kaydolur\n"
+"        **Not** dosya uzantısı eklemeyin otomatik olarak eklenecektir\n"
+"        "
 
 #: base.py:408
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "Geçerli dosya tipi değil, dosya tipi bunlardan biri olmalı.ttf veya.otf"
 
 #: base.py:423
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Özel yazı tipi kaydedildi ismi "
 
 #: base.py:428
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Özel yazı tipini kaldırın"
 
 #: base.py:434
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Bu isimle yazı tipi bulamadım"
 
 #: base.py:440
 msgid "Font `"
-msgstr ""
+msgstr "Yazı tipi `"
 
 #: base.py:445
 #, docstring
 msgid "View the default backgrounds"
-msgstr ""
+msgstr "Varsayılan arkaplanları göster"
 
 #: base.py:448 base.py:480
 msgid "Image profiles are disabled on this server so this command is off"
@@ -230,28 +235,28 @@ msgstr ""
 
 #: base.py:463
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "Mevcut arkaplanlar şunlardır kullanmak için "
 
 #: base.py:466 base.py:498
 msgid "command"
-msgstr ""
+msgstr "komut"
 
 #: base.py:471
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "Arkaplan kolajı gönderilemedi, dosya boyutu çok büyük olabilir."
 
 #: base.py:477
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "Kullanılabilir yazı tiplerini görüntüleyin"
 
 #: base.py:495
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "Mevcut arkaplanlar şunlardır kullanmak için "
 
 #: base.py:503
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "Yazı tipi kolajı gönderilemedi, dosya boyutu çok büyük olabilir."
 
 #: base.py:508
 #, docstring
