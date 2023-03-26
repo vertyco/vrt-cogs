@@ -11,7 +11,7 @@ from pytube import Channel, Playlist, YouTube
 from pytube.exceptions import VideoUnavailable
 from redbot.core import Config, commands
 from redbot.core.bot import Red
-from redbot.core.data_manager import bundled_data_path
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, humanize_timedelta
 from redbot.core.utils.predicates import MessagePredicate
@@ -266,7 +266,7 @@ class YouTubeDownloader(commands.Cog):
                 em = discord.Embed(description=text, color=color)
                 return await msg.edit(embed=em)
         if not main_path:
-            main_path = bundled_data_path(self)
+            main_path = cog_data_path(self)
         dirname = os.path.join(main_path, folder_name)
         if not os.path.exists(dirname):
             try:
@@ -411,7 +411,7 @@ class YouTubeDownloader(commands.Cog):
                 em = discord.Embed(description=text, color=color)
                 return await msg.edit(embed=em)
         if not main_path:
-            main_path = bundled_data_path(self)
+            main_path = cog_data_path(self)
         dirname = os.path.join(main_path, folder_name)
         if not os.path.exists(dirname):
             try:
