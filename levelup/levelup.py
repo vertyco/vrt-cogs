@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.21.61"
+    __version__ = "2.22.61"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -764,7 +764,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 bxp = random.choice(range(bmin, bmax))
                 xp_to_give += bxp
             cid = str(message.channel.id)
-            if cid in channel_bonuses:
+            cat_cid = str(message.channel.category.id) if message.channel.category else "0"
+            if cid in channel_bonuses or cat_cid in channel_bonuses:
                 bonuschannelrange = channel_bonuses[cid]
                 bmin = int(bonuschannelrange[0])
                 bmax = int(bonuschannelrange[1]) + 1
@@ -1776,7 +1777,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     async def msg_chan_bonus(
         self,
         ctx: commands.Context,
-        channel: discord.TextChannel,
+        channel: Union[discord.TextChannel, discord.CategoryChannel],
         min_xp: int,
         max_xp: int,
     ):
