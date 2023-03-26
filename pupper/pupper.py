@@ -70,8 +70,8 @@ class Pupper(commands.Cog):
 
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
-    @commands.group(aliases=["pupper"])
-    async def pets(self, ctx):
+    @commands.group(name="pets", aliases=["pupper"])
+    async def petscmd(self, ctx):
         """Manage your pet."""
         if ctx.invoked_subcommand is None:
             if ctx.guild.id not in self.cache:
@@ -112,7 +112,7 @@ class Pupper(commands.Cog):
                 await ctx.send(box(page, lang="ini"))
             await ctx.send(f"Last pet: <t:{int(last_pet)}:R>")
 
-    @pets.command()
+    @petscmd.command()
     async def toggle(self, ctx):
         """Toggle pets on the server."""
         toggle = await self.config.guild(ctx.guild).toggle()
@@ -120,7 +120,7 @@ class Pupper(commands.Cog):
         await ctx.send(f"The pet is now {'' if not toggle else 'in'}active.")
         await self.initialize(ctx.guild)
 
-    @pets.command()
+    @petscmd.command()
     async def delete(self, ctx, amount: int = 0):
         """
         Set how long to wait before deleting the thanks message.
@@ -146,7 +146,7 @@ class Pupper(commands.Cog):
         await ctx.send(msg)
         await self.initialize(ctx.guild)
 
-    @pets.command()
+    @petscmd.command()
     async def cooldown(self, ctx, seconds: int = None):
         """Set the pet appearance cooldown in seconds.
 
@@ -160,7 +160,7 @@ class Pupper(commands.Cog):
         await ctx.send(f"Pet appearance cooldown set to {seconds}.")
         await self.initialize(ctx.guild)
 
-    @pets.command()
+    @petscmd.command()
     async def credits(self, ctx, min_amt: int, max_amt: int):
         """Set the pet credits range on successful petting."""
         if min_amt > max_amt:
@@ -171,7 +171,7 @@ class Pupper(commands.Cog):
         await ctx.send(f"Pet credit range set to {min_amt} - {max_amt}.")
         await self.initialize(ctx.guild)
 
-    @pets.command()
+    @petscmd.command()
     async def hello(self, ctx, *, message: str = None):
         """Set the pet greeting message."""
         if not message:
@@ -187,7 +187,7 @@ class Pupper(commands.Cog):
         await ctx.send(f"Pet hello message set to: `{message}`.")
         await self.initialize(ctx.guild)
 
-    @pets.command()
+    @petscmd.command()
     async def thanks(self, ctx, *, message: str = None):
         """Set the pet thanks message."""
         if not message:
@@ -205,7 +205,7 @@ class Pupper(commands.Cog):
 
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
-    @pets.group(invoke_without_command=True)
+    @petscmd.group(invoke_without_command=True)
     async def channel(self, ctx):
         """Channel management for pet appearance."""
         await ctx.send_help()
