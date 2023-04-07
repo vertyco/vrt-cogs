@@ -1146,6 +1146,7 @@ class UserCommands(MixinMeta, ABC):
             return await ctx.send(_("No user data yet!"))
 
     @commands.command(name="weekly")
+    @commands.guild_only()
     async def weekly_lb(self, ctx: commands.Context, stat: Optional[str]):
         """
         View the weekly leaderboard
