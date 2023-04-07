@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.22.61"
+    __version__ = "2.22.62"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2176,7 +2176,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         for i in range(1, 21):
             xp = get_xp(i, base, exp)
             msg += f"Level {i}: {xp} XP Needed\n"
-            time = time_to_level(i, base, exp, cd, xp_range)
+            time = await asyncio.to_thread(time_to_level, i, base, exp, cd, xp_range)
             time = time_formatter(time)
             table.append([i, xp, time])
             x.append(i)
