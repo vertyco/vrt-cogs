@@ -180,7 +180,7 @@ class Hunting(commands.Cog):
         """Toggle whether shooting an eagle is bad."""
         toggle = await self.config.guild(ctx.guild).eagle()
         await self.config.guild(ctx.guild).eagle.set(not toggle)
-        toggle_text = "**Bad**" if toggle else "**Okay**"
+        toggle_text = "**Okay**" if toggle else "**Bad**"
         await ctx.send(f"Shooting an eagle is now {toggle_text}")
 
     @checks.mod_or_permissions(manage_guild=True)
