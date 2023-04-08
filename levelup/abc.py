@@ -75,6 +75,7 @@ class MixinMeta(ABC):
         role_icon: str = None,
         font_name: str = None,
         render_gifs: bool = False,
+        blur: bool = False,
     ):
         raise NotImplementedError
 
