@@ -450,6 +450,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             if "font" not in user:
                 conf["users"][uid]["font"] = None
                 cleaned.append("font not in user")
+            if "blur" not in user:
+                conf["users"][uid]["blur"] = False
+                cleaned.append("blur not in user")
 
             # Make sure all related stats are not strings
             for k, v in user.items():
@@ -516,6 +519,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             "full": True,
             "colors": {"name": None, "stat": None, "levelbar": None},
             "font": None,
+            "blur": False,
         }
 
     def init_user_weekly(self, guild_id: int, user_id: str):

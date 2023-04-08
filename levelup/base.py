@@ -283,13 +283,15 @@ class UserCommands(MixinMeta, ABC):
             stat = colors["stat"] if colors["stat"] else _("Not Set")
             levelbar = colors["levelbar"] if colors["levelbar"] else _("Not Set")
             font = user["font"] if user["font"] else _("Not Set")
+            blur = user["blur"]
 
             desc = _("`Profile Size:    `") + full + "\n"
             desc += _("`Name Color:      `") + name + "\n"
             desc += _("`Stat Color:      `") + stat + "\n"
             desc += _("`Level Bar Color: `") + levelbar + "\n"
             desc += _("`Font:            `") + font + "\n"
-            desc += _("`Background:      `") + str(bg)
+            desc += _("`Background:      `") + str(bg) + "\n"
+            desc += _("`Blur:            `") + str(blur)
 
             em = discord.Embed(
                 title=_("Your Profile Settings"),
@@ -791,6 +793,29 @@ class UserCommands(MixinMeta, ABC):
         self.data[ctx.guild.id]["users"][user_id]["font"] = filename
         await ctx.send(_("Your profile font has been set to ") + filename)
 
+    @set_profile.command(name="blur")
+    async def set_user_blur(self, ctx: commands.Context):
+        """
+        Toggle a slight blur effect on the background image where the text is displayed.
+        """
+        if not self.data[ctx.guild.id]["usepics"]:
+            return await ctx.send(
+                _(
+                    "Image profiles are disabled on this server, this setting has no effect"
+                )
+            )
+
+        users = self.data[ctx.guild.id]["users"]
+        user_id = str(ctx.author.id)
+        if user_id not in users:
+            self.init_user(ctx.guild.id, user_id)
+
+        current = self.data[ctx.guild.id]["users"][user_id]["blur"]
+        self.data[ctx.guild.id]["users"][user_id]["blur"] = not current
+        await ctx.send(
+            _("Your profile background blur has been set to ") + str(not current)
+        )
+
     @commands.command(name="pf")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -850,6 +875,7 @@ class UserCommands(MixinMeta, ABC):
         emoji: dict = p["emoji"]  # Dict
         bg = p["background"]  # Either None, random, or a filename
         font = p["font"]  # Either None or a filename
+        blur = p["blur"]  # Bool
 
         # Calculate remaining needed stats
         next_level = level + 1
@@ -930,6 +956,7 @@ class UserCommands(MixinMeta, ABC):
                     "role_icon": role_icon,
                     "font_name": font,
                     "render_gifs": self.render_gifs,
+                    "blur": blur,
                 }
                 start = perf_counter()
                 file = await self.get_or_fetch_profile(user, args, full)

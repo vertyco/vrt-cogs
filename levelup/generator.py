@@ -43,6 +43,7 @@ class Generator(MixinMeta, ABC):
         role_icon: str = None,
         font_name: str = None,
         render_gifs: bool = False,
+        blur: bool = False,
     ):
         # get profile pic
         if profile_image:
@@ -167,9 +168,10 @@ class Generator(MixinMeta, ABC):
         blank.paste(transparent_box, (bar_start - 20, 0))
 
         # Make the semi-transparent box area blurry
-        blurred = card.filter(ImageFilter.GaussianBlur(3))
-        blurred = blurred.crop(((bar_start - 20), 0, card.size[0], card.size[1]))
-        card.paste(blurred, (bar_start - 20, 0), blurred)
+        if blur:
+            blurred = card.filter(ImageFilter.GaussianBlur(3))
+            blurred = blurred.crop(((bar_start - 20), 0, card.size[0], card.size[1]))
+            card.paste(blurred, (bar_start - 20, 0), blurred)
         final = Image.alpha_composite(card, blank)
 
         # Make the level progress bar
@@ -523,6 +525,7 @@ class Generator(MixinMeta, ABC):
         role_icon: str = None,
         font_name: str = None,
         render_gifs: bool = False,
+        blur: bool = False,
     ):
         # Colors
         base = self.rand_rgb()
@@ -606,6 +609,12 @@ class Generator(MixinMeta, ABC):
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
         transparent_box = Image.new("RGBA", card.size, (0, 0, 0, 100))
         blank.paste(transparent_box, (240, 0))
+
+        # Make the semi-transparent box area blurry
+        if blur:
+            blurred = card.filter(ImageFilter.GaussianBlur(3))
+            blurred = blurred.crop((240, 0, card.size[0], card.size[1]))
+            card.paste(blurred, (240, 0), blurred)
         card = Image.alpha_composite(card, blank)
 
         # Draw
