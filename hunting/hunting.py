@@ -18,7 +18,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.3.12"
+__version__ = "3.4.12"
 log = logging.getLogger("red.vrt.hunting")
 
 
@@ -48,6 +48,7 @@ class Hunting(commands.Cog):
             "turkey": ":turkey: **_Gobble-Gobble!_**",
             "owl": ":owl: **_Hoo-Hooo!_**",
             "eagle": ":eagle: **_Caw!_**",
+            "dodo": ":dodo: **_Squak!_**",
         }
         self.in_game = set()
 
