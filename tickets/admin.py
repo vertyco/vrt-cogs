@@ -343,7 +343,10 @@ class AdminCommands(MixinMeta, ABC):
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))
-            channel = ctx.guild.get_channel(panels[panel_name]["channel_id"])
+            cid = panels[panel_name]["channel_id"]
+            if not cid:
+                return await ctx.send(_("Set a panel channel first!"))
+            channel = ctx.guild.get_channel(cid)
             if not channel.permissions_for(
                 ctx.guild.me
             ).create_private_threads:
