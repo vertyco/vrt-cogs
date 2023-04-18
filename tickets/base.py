@@ -22,14 +22,18 @@ _ = Translator("Tickets", __file__)
 
 class BaseCommands(MixinMeta, ABC):
     @commands.command(name="add")
-    async def add_user_to_ticket(self, ctx: commands.Context, *, user: discord.Member):
+    async def add_user_to_ticket(
+        self, ctx: commands.Context, *, user: discord.Member
+    ):
         """Add a user to your ticket"""
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
             return await ctx.send(
-                _("This is not a ticket channel, or it has been removed from config")
+                _(
+                    "This is not a ticket channel, or it has been removed from config"
+                )
             )
         # If a mod tries
         can_add = False
@@ -46,8 +50,16 @@ class BaseCommands(MixinMeta, ABC):
             return await ctx.send(
                 _("You do not have permissions to add users to this ticket")
             )
-        await ctx.channel.set_permissions(user, read_messages=True, send_messages=True)
-        await ctx.send(f"**{user.name}** " + _("has been added to this ticket!"))
+        channel = ctx.channel
+        if isinstance(channel, discord.TextChannel):
+            await ctx.channel.set_permissions(
+                user, read_messages=True, send_messages=True
+            )
+        else:
+            await channel.add_user(user)
+        await ctx.send(
+            f"**{user.name}** " + _("has been added to this ticket!")
+        )
 
     @commands.command(name="renameticket", aliases=["renamet"])
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
@@ -57,7 +69,9 @@ class BaseCommands(MixinMeta, ABC):
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
             return await ctx.send(
-                _("This is not a ticket channel, or it has been removed from config")
+                _(
+                    "This is not a ticket channel, or it has been removed from config"
+                )
             )
         can_rename = False
         for role in ctx.author.roles:
@@ -74,10 +88,14 @@ class BaseCommands(MixinMeta, ABC):
                 _("You do not have permissions to rename this ticket")
             )
         await ctx.channel.edit(name=new_name)
-        await ctx.send(_("Ticket has been renamed"))
+        # Threads already alert to name changes
+        if isinstance(ctx.channel, discord.TextChannel):
+            await ctx.send(_("Ticket has been renamed"))
 
     @commands.command(name="close")
-    async def close_a_ticket(self, ctx: commands.Context, *, reason: str = None):
+    async def close_a_ticket(
+        self, ctx: commands.Context, *, reason: str = None
+    ):
         """
         Close your ticket
 
@@ -93,7 +111,9 @@ class BaseCommands(MixinMeta, ABC):
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
             return await ctx.send(
-                _("This is not a ticket channel, or it has been removed from config")
+                _(
+                    "This is not a ticket channel, or it has been removed from config"
+                )
             )
         can_close = False
         for role in user.roles:
@@ -107,7 +127,9 @@ class BaseCommands(MixinMeta, ABC):
             can_close = True
 
         if not can_close:
-            return await ctx.send(_("You do not have permissions to close this ticket"))
+            return await ctx.send(
+                _("You do not have permissions to close this ticket")
+            )
         else:
             owner = ctx.guild.get_member(int(owner_id))
             if not owner:
@@ -125,7 +147,9 @@ class BaseCommands(MixinMeta, ABC):
                     # User provided delayed close with no reason attached
                     reason = None
                 closing_in = int((datetime.datetime.now() + td).timestamp())
-                closemsg = _("This ticket will close {}").format(f"<t:{closing_in}:R>")
+                closemsg = _("This ticket will close {}").format(
+                    f"<t:{closing_in}:R>"
+                )
                 msg = await ctx.send(f"{owner.mention}, {closemsg}")
                 try:
                     await ctx.bot.wait_for(
@@ -138,7 +162,9 @@ class BaseCommands(MixinMeta, ABC):
                     await msg.edit(content=cancelled)
                     return
 
-        await self.close_ticket(owner, ctx.channel, conf, reason, ctx.author.name)
+        await self.close_ticket(
+            owner, ctx.channel, conf, reason, ctx.author.name
+        )
 
     async def close_ticket(
         self,
@@ -157,11 +183,32 @@ class BaseCommands(MixinMeta, ABC):
             return
         if cid not in opened[uid]:
             return
+
         ticket = opened[uid][cid]
         pfp = ticket["pfp"]
         opened = ticket["opened"]
         panel_name = ticket["panel"]
         panel = conf["panels"][panel_name]
+
+        if (
+            not channel.permissions_for(member.guild.me).manage_channels
+            and not panel["threads"]
+        ):
+            return await channel.send(
+                _(
+                    "I am missing the `Manage Channels` permission to close this ticket!"
+                )
+            )
+        if (
+            not channel.permissions_for(member.guild.me).manage_threads
+            and panel["threads"]
+        ):
+            return await channel.send(
+                _(
+                    "I am missing the `Manage Threads` permission to close this ticket!"
+                )
+            )
+
         opened = int(datetime.datetime.fromisoformat(opened).timestamp())
         closed = int(datetime.datetime.now().timestamp())
         closer_name = escape_markdown(closedby)
@@ -176,18 +223,23 @@ class BaseCommands(MixinMeta, ABC):
         desc += _("`Closed by: `") + f"{closer_name}\n"
         desc += _("`Reason:    `") + str(reason)
         embed = discord.Embed(
-            title=_("Ticket Closed"), description=desc, color=discord.Color.green()
+            title=_("Ticket Closed"),
+            description=desc,
+            color=discord.Color.green(),
         )
         embed.set_thumbnail(url=pfp)
         log_chan = (
-            self.bot.get_channel(panel["log_channel"]) if panel["log_channel"] else None
+            self.bot.get_channel(panel["log_channel"])
+            if panel["log_channel"]
+            else None
         )
         text = ""
         filename = f"{member.name}-{member.id}.txt"
         filename = filename.replace("/", "")
         if conf["transcript"]:
             em = discord.Embed(
-                description=_("Archiving channel..."), color=discord.Color.magenta()
+                description=_("Archiving channel..."),
+                color=discord.Color.magenta(),
             )
             em.set_footer(text=_("This channel will be deleted once complete"))
             em.set_thumbnail(url=LOADING)
@@ -196,7 +248,9 @@ class BaseCommands(MixinMeta, ABC):
             if answers:
                 r = _("Response")
                 for q, a in answers.items():
-                    text += f"{self.bot.user.display_name}: {q}\n" f"{r}: {a}\n"
+                    text += (
+                        f"{self.bot.user.display_name}: {q}\n" f"{r}: {a}\n"
+                    )
             history = await self.fetch_channel_history(channel)
             for msg in history:
                 if msg.author.id == self.bot.user.id:
@@ -233,7 +287,9 @@ class BaseCommands(MixinMeta, ABC):
         if conf["dm"]:
             try:
                 if text:
-                    file = discord.File(BytesIO(text.encode()), filename=filename)
+                    file = discord.File(
+                        BytesIO(text.encode()), filename=filename
+                    )
                     await member.send(embed=embed, file=file)
                 else:
                     await member.send(embed=embed)
@@ -261,7 +317,9 @@ class BaseCommands(MixinMeta, ABC):
         return history
 
     @staticmethod
-    async def ticket_owner_hastyped(channel: discord.TextChannel, user: discord.Member):
+    async def ticket_owner_hastyped(
+        channel: discord.TextChannel, user: discord.Member
+    ):
         async for msg in channel.history(limit=50, oldest_first=True):
             if msg.author.id == user.id:
                 return True

@@ -10,13 +10,16 @@ from discord import ButtonStyle, Interaction, TextStyle
 from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_list
 
 _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
 
 
 async def wait_reply(
-    ctx: commands.Context, timeout: Optional[int] = 60, delete: Optional[bool] = True
+    ctx: commands.Context,
+    timeout: Optional[int] = 60,
+    delete: Optional[bool] = True,
 ) -> Optional[str]:
     def check(message: discord.Message):
         return message.author == ctx.author and message.channel == ctx.channel
@@ -170,10 +173,14 @@ class SupportButton(Button):
         for rid_uid in blacklist:
             if rid_uid == user.id:
                 em = discord.Embed(
-                    description=_("You been blacklisted from creating tickets!"),
+                    description=_(
+                        "You been blacklisted from creating tickets!"
+                    ),
                     color=discord.Color.red(),
                 )
-                return await interaction.response.send_message(embed=em, ephemeral=True)
+                return await interaction.response.send_message(
+                    embed=em, ephemeral=True
+                )
             elif rid_uid in roles:
                 em = discord.Embed(
                     description=_(
@@ -181,24 +188,34 @@ class SupportButton(Button):
                     ),
                     color=discord.Color.red(),
                 )
-                return await interaction.response.send_message(embed=em, ephemeral=True)
+                return await interaction.response.send_message(
+                    embed=em, ephemeral=True
+                )
 
         panel = conf["panels"][self.panel_name]
         max_tickets = conf["max_tickets"]
         opened = conf["opened"]
         user_can_close = conf["user_can_close"]
         logchannel = (
-            guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
+            guild.get_channel(panel["log_channel"])
+            if panel["log_channel"]
+            else None
         )
         uid = str(user.id)
         if uid in opened and max_tickets <= len(opened[uid]):
             em = discord.Embed(
-                description=_("You have the maximum amount of tickets opened already!"),
+                description=_(
+                    "You have the maximum amount of tickets opened already!"
+                ),
                 color=discord.Color.red(),
             )
-            return await interaction.response.send_message(embed=em, ephemeral=True)
+            return await interaction.response.send_message(
+                embed=em, ephemeral=True
+            )
         category = (
-            guild.get_channel(panel["category_id"]) if panel["category_id"] else None
+            guild.get_channel(panel["category_id"])
+            if panel["category_id"]
+            else None
         )
         if not category:
             em = discord.Embed(
@@ -208,7 +225,9 @@ class SupportButton(Button):
                 ),
                 color=discord.Color.red(),
             )
-            return await interaction.response.send_message(embed=em, ephemeral=True)
+            return await interaction.response.send_message(
+                embed=em, ephemeral=True
+            )
 
         # Throw modal before creating ticket if the panel has one
         form_embed = discord.Embed()
@@ -247,7 +266,9 @@ class SupportButton(Button):
             if guild.get_role(role_id)
         ]
         overwrite = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            guild.default_role: discord.PermissionOverwrite(
+                read_messages=False
+            ),
             guild.me: read_and_manage,
             user: can_read_send,
         }
@@ -265,23 +286,50 @@ class SupportButton(Button):
             "time": now.strftime("%I-%M-%p"),
         }
         channel_name = name_fmt.format(**params) if name_fmt else user.name
-        try:
-            channel = await category.create_text_channel(
+        # try:
+        if panel["threads"]:
+            archive = round(conf["inactive"] * 3600)
+            reason = _("{} ticket for {}").format(
+                self.panel_name, str(interaction.user)
+            )
+            channel_or_thread: discord.Thread = (
+                await interaction.channel.create_thread(
+                    name=channel_name,
+                    auto_archive_duration=archive,
+                    reason=reason,
+                    invitable=True,
+                )
+            )
+            await channel_or_thread.add_user(interaction.user)
+            mentions = [
+                guild.get_role(role_id).mention
+                for role_id in conf["support_roles"]
+                if guild.get_role(role_id)
+            ]
+            await channel_or_thread.send(humanize_list(mentions))
+        else:
+            channel_or_thread = await category.create_text_channel(
                 channel_name, overwrites=overwrite
             )
-        except discord.Forbidden:
-            em = discord.Embed(
-                description=_(
-                    "I do not have permission to create new channels, please contact an admin!"
-                ),
-                color=discord.Color.red(),
-            )
-            if modal:
-                return await interaction.followup.send(embed=em, ephemeral=True)
-            else:
-                return await interaction.response.send_message(embed=em, ephemeral=True)
+        # except discord.Forbidden:
+        #     em = discord.Embed(
+        #         description=_(
+        #             "I do not have permission to create your ticket channel or thread, please contact an admin!"
+        #         ),
+        #         color=discord.Color.red(),
+        #     )
+        #     if modal:
+        #         return await interaction.followup.send(
+        #             embed=em, ephemeral=True
+        #         )
+        #     else:
+        #         return await interaction.response.send_message(
+        #             embed=em, ephemeral=True
+        #         )
 
-        default_message = _("Welcome to your ticket channel ") + f"{user.display_name}!"
+        default_message = (
+            _("Welcome to your ticket channel ") + f"{user.display_name}!"
+        )
         if user_can_close:
             default_message += _(
                 "\nYou or an admin can close this with the `close` command"
@@ -298,26 +346,28 @@ class SupportButton(Button):
             embeds = []
             for einfo in messages:
                 em = discord.Embed(
-                    title=einfo["title"].format(**params) if einfo["title"] else None,
+                    title=einfo["title"].format(**params)
+                    if einfo["title"]
+                    else None,
                     description=einfo["desc"].format(**params),
                     color=user.color,
                 )
                 if einfo["footer"]:
                     em.set_footer(text=einfo["footer"].format(**params))
                 embeds.append(em)
-            msg = await channel.send(user.mention, embeds=embeds)
+            msg = await channel_or_thread.send(user.mention, embeds=embeds)
         else:
             em = discord.Embed(description=default_message, color=user.color)
             if user.avatar:
                 em.set_thumbnail(url=user.avatar.url)
-            msg = await channel.send(user.mention, embed=em)
+            msg = await channel_or_thread.send(user.mention, embed=em)
 
         if len(form_embed.fields) > 0:
-            await channel.send(embed=form_embed)
+            await channel_or_thread.send(embed=form_embed)
 
-        desc = _("Your ticket channel has been created, **[CLICK HERE]({})**").format(
-            msg.jump_url
-        )
+        desc = _(
+            "Your ticket channel has been created, **[CLICK HERE]({})**"
+        ).format(msg.jump_url)
         em = discord.Embed(description=desc, color=user.color)
         if modal:
             with contextlib.suppress(discord.HTTPException):
@@ -333,9 +383,13 @@ class SupportButton(Button):
                 + _(" was opened ")
                 + f"<t:{ts}:R>\n"
             )
-            desc += _("To view this ticket, **[Click Here]({})**").format(msg.jump_url)
+            desc += _("To view this ticket, **[Click Here]({})**").format(
+                msg.jump_url
+            )
             em = discord.Embed(
-                title=_("Ticket opened"), description=desc, color=discord.Color.red()
+                title=_("Ticket opened"),
+                description=desc,
+                color=discord.Color.red(),
             )
             if user.avatar:
                 em.set_thumbnail(url=user.avatar.url)
@@ -348,7 +402,7 @@ class SupportButton(Button):
             opened = conf["opened"]
             if uid not in opened:
                 opened[uid] = {}
-            opened[uid][str(channel.id)] = {
+            opened[uid][str(channel_or_thread.id)] = {
                 "panel": self.panel_name,
                 "opened": now.isoformat(),
                 "pfp": str(user.avatar.url) if user.avatar else None,
