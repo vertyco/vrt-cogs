@@ -18,13 +18,15 @@ _ = Translator("Tickets", __file__)
 
 # redgettext -D tickets.py base.py admin.py views.py menu.py
 @cog_i18n(_)
-class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMetaClass):
+class Tickets(
+    BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMetaClass
+):
     """
     Support ticket system with multi-panel functionality
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.17"
+    __version__ = "1.7.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -74,6 +76,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
             "ticket_name": None,  # (Optional) Name format for the ticket channel
             "log_channel": 0,  # (Optional) Log open/closed tickets
             "modal": {},  # (Optional) Modal fields to fill out before ticket is opened
+            "threads": False,  # Whether this panel makes a thread or channel
             # Ticker
             "ticket_num": 1,
         }
@@ -81,12 +84,12 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
         self.modal_schema = {
             "label": "",  # <Required>
             "style": "short",  # <Required>
-            "placeholder": None,  # (Optional
-            "default": None,  # (Optional
-            "required": True,  # (Optional
-            "min_length": None,  # (Optional
-            "max_length": None,  # (Optional
-            "answer": None,  # (Optional
+            "placeholder": None,  # (Optional)
+            "default": None,  # (Optional)
+            "required": True,  # (Optional)
+            "min_length": None,  # (Optional)
+            "max_length": None,  # (Optional)
+            "answer": None,  # (Optional)
         }
 
         self.valid = []  # Valid ticket channels
@@ -202,8 +205,12 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
                     if not channel:
                         continue
                     now = datetime.datetime.now()
-                    opened_on = datetime.datetime.fromisoformat(ticket["opened"])
-                    hastyped = await self.ticket_owner_hastyped(channel, member)
+                    opened_on = datetime.datetime.fromisoformat(
+                        ticket["opened"]
+                    )
+                    hastyped = await self.ticket_owner_hastyped(
+                        channel, member
+                    )
                     if hastyped and channel_id not in self.valid:
                         self.valid.append(channel_id)
                         continue
@@ -226,7 +233,9 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
                             member,
                             channel,
                             conf,
-                            _("(Auto-Close) Opened ticket with no response for ")
+                            _(
+                                "(Auto-Close) Opened ticket with no response for "
+                            )
                             + f"{inactive} {time}",
                             self.bot.user.name,
                         )
@@ -262,7 +271,7 @@ class Tickets(BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMeta
         if not tickets:
             return
 
-        for cid, ticket in tickets.items():
+        for cid in tickets:
             chan = self.bot.get_channel(int(cid))
             if not chan:
                 continue
