@@ -264,7 +264,7 @@ class BaseCommands(MixinMeta, ABC):
                     text += _("Files uploaded: ") + humanize_list(att) + "\n"
 
         # Send off new messages
-        if log_chan:
+        if log_chan and ticket["logmsg"]:
             if text:
                 file = discord.File(BytesIO(text.encode()), filename=filename)
                 await log_chan.send(embed=embed, file=file)

@@ -5,7 +5,7 @@ import discord
 from discord import Embed
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, humanize_list
 
 from .abc import MixinMeta
 from .menu import SMALL_CONTROLS, MenuButton, menu
@@ -954,6 +954,12 @@ class AdminCommands(MixinMeta, ABC):
                 if info["log_channel"]
                 else "None"
             )
+            role_ids = info.get("roles", [])
+            roles = [
+                ctx.guild.get_role(r).mention
+                for r in role_ids
+                if ctx.guild.get_role(r)
+            ]
 
             desc = _("`Category:       `") + f"{cat}\n"
             desc += _("`Channel:        `") + f"{channel}\n"
@@ -975,6 +981,8 @@ class AdminCommands(MixinMeta, ABC):
                 description=desc,
                 color=ctx.author.color,
             )
+            if roles:
+                em.add_field(name=_("Panel Roles"), value=humanize_list(roles))
             em.set_footer(text=_("Page ") + f"{page}/{pages}")
             page += 1
             embeds.append(em)
@@ -1091,6 +1099,43 @@ class AdminCommands(MixinMeta, ABC):
                 roles.append(role.id)
                 await ctx.send(
                     role.name + _(" has been added to support roles")
+                )
+
+    @tickets.command(name="panelrole")
+    async def set_panel_role(
+        self, ctx: commands.Context, panel_name: str, *, role: discord.Role
+    ):
+        """
+        Add/Remove roles for a specific panel
+
+        To remove a role, simply run this command with it again to remove it
+
+        These roles are a specialized subset of the main support roles.
+        Use this role type if you want to isolate specific groups to a certain panel.
+        """
+        panel_name = panel_name.lower()
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+            panel = panels[panel_name]
+            if "roles" not in panel:
+                panel["roles"] = []
+            roles = panel["roles"]
+            if role.id in roles:
+                panels[panel_name]["roles"].remove(role.id)
+                await ctx.send(
+                    role.name
+                    + _(" has been removed from the {} panel roles").format(
+                        panel_name
+                    )
+                )
+            else:
+                panels[panel_name]["roles"].append(role.id)
+                await ctx.send(
+                    role.name
+                    + _(" has been added to the {} panel roles").format(
+                        panel_name
+                    )
                 )
 
     @tickets.command(name="blacklist")

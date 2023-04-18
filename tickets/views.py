@@ -10,7 +10,6 @@ from discord import ButtonStyle, Interaction, TextStyle
 from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list
 
 _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
@@ -265,6 +264,12 @@ class SupportButton(Button):
             for role_id in conf["support_roles"]
             if guild.get_role(role_id)
         ]
+        sub_support = [
+            guild.get_role(role_id)
+            for role_id in panel.get("roles", [])
+            if guild.get_role(role_id)
+        ]
+        support.extend(sub_support)
         overwrite = {
             guild.default_role: discord.PermissionOverwrite(
                 read_messages=False
@@ -274,9 +279,9 @@ class SupportButton(Button):
         }
         for role in support:
             overwrite[role] = can_read_send
-        num = conf["panels"][self.panel_name]["ticket_num"]
+        num = panel["ticket_num"]
         now = datetime.now()
-        name_fmt = conf["panels"][self.panel_name]["ticket_name"]
+        name_fmt = panel["ticket_name"]
         params = {
             "num": str(num),
             "user": user.name,
@@ -286,46 +291,43 @@ class SupportButton(Button):
             "time": now.strftime("%I-%M-%p"),
         }
         channel_name = name_fmt.format(**params) if name_fmt else user.name
-        # try:
-        if panel["threads"]:
-            archive = round(conf["inactive"] * 3600)
-            reason = _("{} ticket for {}").format(
-                self.panel_name, str(interaction.user)
-            )
-            channel_or_thread: discord.Thread = (
-                await interaction.channel.create_thread(
-                    name=channel_name,
-                    auto_archive_duration=archive,
-                    reason=reason,
-                    invitable=True,
+        try:
+            if panel["threads"]:
+                archive = round(conf["inactive"] * 3600)
+                reason = _("{} ticket for {}").format(
+                    self.panel_name, str(interaction.user)
                 )
+                channel_or_thread: discord.Thread = (
+                    await interaction.channel.create_thread(
+                        name=channel_name,
+                        auto_archive_duration=archive,
+                        reason=reason,
+                        invitable=True,
+                    )
+                )
+                await channel_or_thread.add_user(interaction.user)
+                for role in support:
+                    for member in role.members:
+                        await channel_or_thread.add_user(member)
+            else:
+                channel_or_thread = await category.create_text_channel(
+                    channel_name, overwrites=overwrite
+                )
+        except discord.Forbidden:
+            em = discord.Embed(
+                description=_(
+                    "I do not have permission to create your ticket channel or thread, please contact an admin!"
+                ),
+                color=discord.Color.red(),
             )
-            await channel_or_thread.add_user(interaction.user)
-            mentions = [
-                guild.get_role(role_id).mention
-                for role_id in conf["support_roles"]
-                if guild.get_role(role_id)
-            ]
-            await channel_or_thread.send(humanize_list(mentions))
-        else:
-            channel_or_thread = await category.create_text_channel(
-                channel_name, overwrites=overwrite
-            )
-        # except discord.Forbidden:
-        #     em = discord.Embed(
-        #         description=_(
-        #             "I do not have permission to create your ticket channel or thread, please contact an admin!"
-        #         ),
-        #         color=discord.Color.red(),
-        #     )
-        #     if modal:
-        #         return await interaction.followup.send(
-        #             embed=em, ephemeral=True
-        #         )
-        #     else:
-        #         return await interaction.response.send_message(
-        #             embed=em, ephemeral=True
-        #         )
+            if modal:
+                return await interaction.followup.send(
+                    embed=em, ephemeral=True
+                )
+            else:
+                return await interaction.response.send_message(
+                    embed=em, ephemeral=True
+                )
 
         default_message = (
             _("Welcome to your ticket channel ") + f"{user.display_name}!"
