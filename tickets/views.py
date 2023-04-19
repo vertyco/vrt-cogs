@@ -298,7 +298,7 @@ class SupportButton(Button):
                 archive = round(conf["inactive"] * 60)
                 arr = np.asarray([60, 1440, 4320, 10080])
                 index = (np.abs(arr - archive)).argmin()
-                auto_archive_duration = arr[index]
+                auto_archive_duration = int(arr[index])
 
                 reason = _("{} ticket for {}").format(
                     self.panel_name, str(interaction.user)
