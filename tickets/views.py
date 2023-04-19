@@ -292,7 +292,7 @@ class SupportButton(Button):
         }
         channel_name = name_fmt.format(**params) if name_fmt else user.name
         try:
-            if panel["threads"]:
+            if panel.get("threads"):
                 archive = round(conf["inactive"] * 3600)
                 reason = _("{} ticket for {}").format(
                     self.panel_name, str(interaction.user)
