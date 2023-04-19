@@ -161,7 +161,7 @@ class Tickets(
             # Refresh view for logs of opened tickets (v1.8.18 update)
             try:
                 for opened_tickets in data["opened"].values():
-                    for channel_id, ticket_info in opened_tickets.items():
+                    for ticket_info in opened_tickets.values():
                         if not ticket_info["logmsg"]:
                             continue
                         panel_name = ticket_info["panel"]
@@ -176,6 +176,9 @@ class Tickets(
                                 ticket_info["logmsg"]
                             )
                         except discord.NotFound:
+                            log.warning(
+                                f"Failed to get log channel message in {guild.name}"
+                            )
                             continue
                         if not logmsg:
                             continue
