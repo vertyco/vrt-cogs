@@ -1281,6 +1281,21 @@ class AdminCommands(MixinMeta, ABC):
                 _("Transcripts of closed tickets will now be saved")
             )
 
+    @tickets.command(name="updatemessage")
+    async def update_message(
+        self,
+        ctx: commands.Context,
+        source: discord.Message,
+        target: discord.Message,
+    ):
+        """Update a message with another message (Target gets updated using the source)"""
+        await target.edit(
+            embeds=source.embeds,
+            content=target.content,
+            attachments=target.attachments,
+        )
+        await ctx.tick()
+
     @tickets.command(name="embed")
     async def make_panel_message(
         self,
