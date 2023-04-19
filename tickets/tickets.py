@@ -10,7 +10,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from .abc import CompositeMetaClass
 from .admin import AdminCommands
 from .base import BaseCommands
-from .views import PanelView
+from .views import LogView, PanelView
 
 log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.8.18"
+    __version__ = "1.9.18"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -117,6 +117,7 @@ class Tickets(
             guild = self.bot.get_guild(gid)
             if not guild:
                 continue
+            # Refresh buttons for all panels
             panels = data["panels"]
             to_deploy = {}  # Message ID keys for multi-button support
             for panel_name, panel in panels.items():
@@ -150,9 +151,34 @@ class Tickets(
             if not to_deploy:
                 continue
 
-            for panels in to_deploy.values():
-                panelview = PanelView(guild, self.config, panels)
-                await panelview.start()
+            try:
+                for panels in to_deploy.values():
+                    panelview = PanelView(guild, self.config, panels)
+                    await panelview.start()
+            except discord.NotFound:
+                log.warning(f"Failed to refresh panels in {guild.name}")
+
+            # Refresh view for logs of opened tickets (v1.8.18 update)
+            try:
+                for opened in data["opened"].values():
+                    for cid, ticket_info in opened.items():
+                        if not ticket_info["logmsg"]:
+                            continue
+                        channel = guild.get_channel(int(cid))
+                        if not channel:
+                            continue
+                        try:
+                            logmsg = await channel.fetch_message(
+                                ticket_info["logmsg"]
+                            )
+                        except discord.NotFound:
+                            continue
+                        if not logmsg:
+                            continue
+                        view = LogView(guild, channel)
+                        await logmsg.edit(view=view)
+            except discord.NotFound:
+                log.warning(f"Failed to refresh log views in {guild.name}")
 
     # Clean up any ticket data that comes from a deleted channel or unknown user
     async def cleanup(self):

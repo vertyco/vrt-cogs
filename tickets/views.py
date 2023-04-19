@@ -395,7 +395,8 @@ class SupportButton(Button):
             )
             if user.avatar:
                 em.set_thumbnail(url=user.avatar.url)
-            log_message = await logchannel.send(embed=em)
+            view = LogView(guild, channel_or_thread)
+            log_message = await logchannel.send(embed=em, view=view)
         else:
             log_message = None
 
@@ -432,3 +433,41 @@ class PanelView(View):
         chan = self.guild.get_channel(self.panels[0]["channel_id"])
         message = await chan.fetch_message(self.panels[0]["message_id"])
         await message.edit(view=self)
+
+
+class LogView(View):
+    def __init__(
+        self,
+        guild: discord.Guild,
+        channel: Union[discord.TextChannel, discord.Thread],
+    ):
+        super().__init__(timeout=None)
+        self.guild = guild
+        self.channel = channel
+
+    @discord.ui.button(label="Join Ticket", style=ButtonStyle.green)
+    async def join_ticket(self, interaction: Interaction, button: Button):
+        user = interaction.user
+        perms = [
+            self.channel.permissions_for(user).view_channel,
+            self.channel.permissions_for(user).send_messages,
+        ]
+        if all(perms):
+            return await interaction.response.send_message(
+                _("You already have access to this ticket!"),
+                ephemeral=True,
+                delete_after=60,
+            )
+        if isinstance(self.channel, discord.TextChannel):
+            await self.channel.set_permissions(
+                user, read_messages=True, send_messages=True
+            )
+        else:
+            await self.channel.add_user(user)
+        await interaction.response.send_message(
+            _("You have been added to the ticket **{}**").format(
+                self.channel.name
+            ),
+            ephemeral=True,
+            delete_after=60,
+        )
