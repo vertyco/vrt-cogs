@@ -971,7 +971,6 @@ class AdminCommands(MixinMeta, ABC):
             desc += _("`ButtonEmoji:    `") + f"{info['button_emoji']}\n"
             desc += _("`TicketNum:      `") + f"{info['ticket_num']}\n"
             desc += _("`Use Threads:    `") + f"{info['threads']}\n"
-            desc += _("`Auto-Add:       `") + f"{info['auto_add']}\n"
             desc += (
                 _("`TicketMessages: `") + f"{len(info['ticket_messages'])}\n"
             )
@@ -1071,6 +1070,12 @@ class AdminCommands(MixinMeta, ABC):
             embed.add_field(
                 name=_("Blacklist"), value=blacklisted, inline=False
             )
+        embed.add_field(
+            name=_("Thread Ticket Auto-Add"),
+            value=_(
+                "Auto-add support and panel roles to tickets that use threads: **{}**"
+            ).format(str(conf["auto_add"])),
+        )
         await ctx.send(embed=embed)
 
     @tickets.command()
