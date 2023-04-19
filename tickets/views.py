@@ -312,9 +312,10 @@ class SupportButton(Button):
                     )
                 )
                 await channel_or_thread.add_user(interaction.user)
-                for role in support:
-                    for member in role.members:
-                        await channel_or_thread.add_user(member)
+                if conf["auto_add"]:
+                    for role in support:
+                        for member in role.members:
+                            await channel_or_thread.add_user(member)
             else:
                 channel_or_thread = await category.create_text_channel(
                     channel_name, overwrites=overwrite

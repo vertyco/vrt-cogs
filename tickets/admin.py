@@ -971,6 +971,7 @@ class AdminCommands(MixinMeta, ABC):
             desc += _("`ButtonEmoji:    `") + f"{info['button_emoji']}\n"
             desc += _("`TicketNum:      `") + f"{info['ticket_num']}\n"
             desc += _("`Use Threads:    `") + f"{info['threads']}\n"
+            desc += _("`Auto-Add:       `") + f"{info['auto_add']}\n"
             desc += (
                 _("`TicketMessages: `") + f"{len(info['ticket_messages'])}\n"
             )
@@ -1260,6 +1261,29 @@ class AdminCommands(MixinMeta, ABC):
             await self.config.guild(ctx.guild).user_can_manage.set(True)
             await ctx.send(
                 _("User can now manage their support ticket channel")
+            )
+
+    @tickets.command(name="autoadd")
+    async def toggle_autoadd(self, ctx: commands.Context):
+        """
+        (Toggle) Auto-add support and panel roles to thread tickets
+
+        Adding a user to a thread pings them, so this is off by default
+        """
+        toggle = await self.config.guild(ctx.guild).auto_add()
+        if toggle:
+            await self.config.guild(ctx.guild).auto_add.set(False)
+            await ctx.send(
+                _(
+                    "Support and panel roles will no longer be auto-added to thread tickets"
+                )
+            )
+        else:
+            await self.config.guild(ctx.guild).auto_add.set(True)
+            await ctx.send(
+                _(
+                    "Support and panel roles will be auto-added to thread tickets"
+                )
             )
 
     @tickets.command(name="transcript")
