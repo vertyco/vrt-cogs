@@ -336,7 +336,7 @@ class SupportButton(Button):
                     embed=em, ephemeral=True
                 )
 
-        prefix = await self.view.bot.get_valid_prefixes(self.view.guild)[0]
+        prefix = (await self.view.bot.get_valid_prefixes(self.view.guild))[0]
         default_message = (
             _("Welcome to your ticket channel ") + f"{user.display_name}!"
         )
