@@ -160,11 +160,11 @@ class Tickets(
 
             # Refresh view for logs of opened tickets (v1.8.18 update)
             try:
-                for opened in data["opened"].values():
-                    for cid, ticket_info in opened.items():
+                for opened_tickets in data["opened"].values():
+                    for channel_id, ticket_info in opened_tickets.items():
                         if not ticket_info["logmsg"]:
                             continue
-                        channel = guild.get_channel(int(cid))
+                        channel = guild.get_channel(int(channel_id))
                         if not channel:
                             continue
                         try:
