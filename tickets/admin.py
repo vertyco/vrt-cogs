@@ -1319,7 +1319,7 @@ class AdminCommands(MixinMeta, ABC):
         msg = await ctx.send(embed=em)
         yes = await confirm(ctx, msg)
         if yes:
-            em = Embed(description=_("Type your footer"), color=color)
+            em = Embed(description=_("Enter the desired footer"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             footer = await wait_reply(ctx, 300)
@@ -1338,7 +1338,9 @@ class AdminCommands(MixinMeta, ABC):
         await msg.edit(embed=em)
         yes = await confirm(ctx, msg)
         if yes:
-            em = Embed(description=_("Type your footer"), color=color)
+            em = Embed(
+                description=_("Enter a url for the thumbnail"), color=color
+            )
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             thumbnail = await wait_reply(ctx, 300)
@@ -1357,7 +1359,7 @@ class AdminCommands(MixinMeta, ABC):
         await msg.edit(embed=em)
         yes = await confirm(ctx, msg)
         if yes:
-            em = Embed(description=_("Type your footer"), color=color)
+            em = Embed(description=_("Enter a url for the image"), color=color)
             em.set_footer(text=foot)
             await msg.edit(embed=em)
             image = await wait_reply(ctx, 300)
@@ -1424,4 +1426,11 @@ class AdminCommands(MixinMeta, ABC):
             else:
                 break
 
-        await channel.send(embed=embed)
+        try:
+            await channel.send(embed=embed)
+        except Exception as e:
+            await ctx.send(
+                _("Failed to send embed!\nException: {}").format(
+                    box(str(e), "py")
+                )
+            )
