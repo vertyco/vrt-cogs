@@ -118,9 +118,9 @@ class Tickets(
             if not guild:
                 continue
             # Refresh buttons for all panels
-            panels = data["panels"]
+            all_panels = data["panels"]
             to_deploy = {}  # Message ID keys for multi-button support
-            for panel_name, panel in panels.items():
+            for panel_name, panel in all_panels.items():
                 catid = panel["category_id"]
                 cid = panel["channel_id"]
                 mid = panel["message_id"]
@@ -165,7 +165,7 @@ class Tickets(
                         if not ticket_info["logmsg"]:
                             continue
                         panel_name = ticket_info["panel"]
-                        panel = panels[panel_name]
+                        panel = all_panels[panel_name]
                         if not panel["log_channel"]:
                             continue
                         channel = guild.get_channel(panel["log_channel"])
