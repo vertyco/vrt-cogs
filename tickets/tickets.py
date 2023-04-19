@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.10.24"
+    __version__ = "1.10.25"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -59,6 +59,7 @@ class Tickets(
             "user_can_close": True,
             "user_can_manage": False,
             "transcript": False,
+            "auto_add": False,  # Auto-add support/subroles to thread tickets
         }
         self.config.register_guild(**default_guild)
 
