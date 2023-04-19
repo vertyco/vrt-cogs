@@ -275,7 +275,7 @@ class BaseCommands(MixinMeta, ABC):
             log_msg_id = ticket["logmsg"]
             try:
                 log_msg = await log_chan.fetch_message(log_msg_id)
-            except discord.NotFound:
+            except discord.HTTPException:
                 log.warning("Failed to get log channel message")
                 log_msg = None
             if log_msg:
