@@ -385,6 +385,7 @@ class SupportButton(Button):
                 + _(" was opened ")
                 + f"<t:{ts}:R>\n"
             )
+            desc += _("`Panel Type: `{}\n").format(self.panel_name)
             desc += _("To view this ticket, **[Click Here]({})**").format(
                 msg.jump_url
             )
