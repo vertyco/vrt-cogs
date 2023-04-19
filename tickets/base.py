@@ -189,10 +189,10 @@ class BaseCommands(MixinMeta, ABC):
         opened = ticket["opened"]
         panel_name = ticket["panel"]
         panel = conf["panels"][panel_name]
-
+        threads = panel.get("threads")
         if (
             not channel.permissions_for(member.guild.me).manage_channels
-            and not panel["threads"]
+            and not threads
         ):
             return await channel.send(
                 _(
@@ -201,7 +201,7 @@ class BaseCommands(MixinMeta, ABC):
             )
         if (
             not channel.permissions_for(member.guild.me).manage_threads
-            and panel["threads"]
+            and threads
         ):
             return await channel.send(
                 _(
