@@ -19,7 +19,9 @@
     "manage_channels"
   ],
   "required_cogs": {},
-  "requirements": [],
+  "requirements": [
+    "numpy"
+  ],
   "short": "Advanced support ticket system",
   "tags": [
     "utility",
