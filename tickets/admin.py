@@ -56,7 +56,8 @@ class AdminCommands(MixinMeta, ABC):
         step3 += _(
             "At this point the ticket panel will be activated, "
             "all following steps are for extra customization.\n"
-        )
+            "If you need a message to add the buttons to, you can use the `{}tickets embed` command"
+        ).format(ctx.prefix)
         step3 += _(
             "If the bot is having trouble finding the message, run the command in the same channel as it."
         )
@@ -108,6 +109,7 @@ class AdminCommands(MixinMeta, ABC):
             "<panel_name> <channel>`"
         )
         em.add_field(name=_("Log Channel"), value=step11, inline=False)
+
         tip = _(
             "Tip: you can create multiple support panels using the same message for a multi-button panel"
         )
@@ -1278,3 +1280,133 @@ class AdminCommands(MixinMeta, ABC):
             await ctx.send(
                 _("Transcripts of closed tickets will now be saved")
             )
+
+    @tickets.command(name="embed")
+    async def make_panel_message(
+        self,
+        ctx: commands.Context,
+        color: Optional[discord.Color],
+        channel: Optional[discord.TextChannel],
+        title: str,
+        *,
+        description: str,
+    ):
+        """Create an embed for ticket panel buttons to be added to"""
+        foot = _("type 'cancel' to cancel")
+        channel = channel or ctx.channel
+        color = color or await ctx.author.color
+        # FOOTER
+        em = Embed(
+            description=_("Would you like this embed to have a footer?"),
+            color=color,
+        )
+        em.set_footer(text=foot)
+        msg = await ctx.send(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes:
+            em = Embed(description=_("Type your footer"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            footer = await wait_reply(ctx, 300)
+            if footer and footer.lower().strip() == _("cancel"):
+                em = Embed(description=_("Embed creation cancelled"))
+                return await msg.edit(embed=em)
+        else:
+            footer = None
+
+        # Thumbnail
+        em = Embed(
+            description=_("Would you like this embed to have a thumbnail?"),
+            color=color,
+        )
+        em.set_footer(text=foot)
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes:
+            em = Embed(description=_("Type your footer"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            thumbnail = await wait_reply(ctx, 300)
+            if thumbnail and thumbnail.lower().strip() == _("cancel"):
+                em = Embed(description=_("Embed creation cancelled"))
+                return await msg.edit(embed=em)
+        else:
+            thumbnail = None
+
+        # Image
+        em = Embed(
+            description=_("Would you like this embed to have an image?"),
+            color=color,
+        )
+        em.set_footer(text=foot)
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes:
+            em = Embed(description=_("Type your footer"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            image = await wait_reply(ctx, 300)
+            if image and image.lower().strip() == _("cancel"):
+                em = Embed(description=_("Embed creation cancelled"))
+                return await msg.edit(embed=em)
+        else:
+            image = None
+
+        embed = discord.Embed(
+            title=title, description=description, color=color
+        )
+        if footer:
+            embed.set_footer(text=footer)
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail)
+        if image:
+            embed.set_image(url=image)
+
+        fields = 0
+        while fields < 25:
+            if not fields:
+                em = Embed(
+                    description=_(
+                        "Would you like to add a field to this embed?"
+                    ),
+                    color=color,
+                )
+            else:
+                em = Embed(
+                    description=_(
+                        "Would you like to add another field to this embed?\n*There are currently {} fields*"
+                    ).format(fields),
+                    color=color,
+                )
+            await msg.edit(embed=em)
+            yes = await confirm(ctx, msg)
+            if yes:
+                em = Embed(
+                    description=_("Enter the name of the field"), color=color
+                )
+                em.set_footer(text=foot)
+                await msg.edit(embed=em)
+                name = await wait_reply(ctx, 300)
+                if name and name.lower().strip() == "cancel":
+                    break
+                em = Embed(
+                    description=_("Enter the value of the field"), color=color
+                )
+                em.set_footer(text=foot)
+                await msg.edit(embed=em)
+                value = await wait_reply(ctx, 300)
+                if value and value.lower().strip() == "cancel":
+                    break
+                em = Embed(
+                    description=_("Do you want this field to be inline?"),
+                    color=color,
+                )
+                await msg.edit(embed=em)
+                yes = await confirm(ctx, msg)
+                inline = True if yes else False
+                embed.add_field(name=name, value=value, inline=inline)
+                fields += 1
+            else:
+                break
+
+        await channel.send(embed=embed)
