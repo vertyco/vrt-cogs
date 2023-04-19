@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.10.21"
+    __version__ = "1.10.22"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -153,7 +153,7 @@ class Tickets(
 
             try:
                 for panels in to_deploy.values():
-                    panelview = PanelView(guild, self.config, panels)
+                    panelview = PanelView(self.bot, guild, self.config, panels)
                     await panelview.start()
             except discord.NotFound:
                 log.warning(f"Failed to refresh panels in {guild.name}")
