@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional, Union
 
 import discord
+import numpy as np
 from discord import ButtonStyle, Interaction, TextStyle
 from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
@@ -294,14 +295,18 @@ class SupportButton(Button):
         channel_name = name_fmt.format(**params) if name_fmt else user.name
         try:
             if panel.get("threads"):
-                archive = round(conf["inactive"] * 3600)
+                archive = round(conf["inactive"] * 60)
+                arr = np.asarray([60, 1440, 4320, 10080])
+                index = (np.abs(arr - archive)).argmin()
+                auto_archive_duration = arr[index]
+
                 reason = _("{} ticket for {}").format(
                     self.panel_name, str(interaction.user)
                 )
                 channel_or_thread: discord.Thread = (
                     await interaction.channel.create_thread(
                         name=channel_name,
-                        auto_archive_duration=archive,
+                        auto_archive_duration=auto_archive_duration,
                         reason=reason,
                         invitable=True,
                     )
