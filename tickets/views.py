@@ -9,6 +9,7 @@ import discord
 from discord import ButtonStyle, Interaction, TextStyle
 from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
+from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 
 _ = Translator("SupportViews", __file__)
@@ -329,13 +330,14 @@ class SupportButton(Button):
                     embed=em, ephemeral=True
                 )
 
+        prefix = self.view.bot.get_valid_prefixes(self.view.guild)[0]
         default_message = (
             _("Welcome to your ticket channel ") + f"{user.display_name}!"
         )
         if user_can_close:
             default_message += _(
-                "\nYou or an admin can close this with the `close` command"
-            )
+                "\nYou or an admin can close this with the `{}close` command"
+            ).format(prefix)
 
         messages = conf["panels"][self.panel_name]["ticket_messages"]
         params = {
@@ -419,11 +421,13 @@ class SupportButton(Button):
 class PanelView(View):
     def __init__(
         self,
+        bot: Red,
         guild: discord.Guild,
         config: Config,
         panels: list,  # List of support panels that have the same message/channel ID
     ):
         super().__init__(timeout=None)
+        self.bot = bot
         self.guild = guild
         self.config = config
         self.panels = panels
