@@ -1428,6 +1428,7 @@ class AdminCommands(MixinMeta, ABC):
 
         try:
             await channel.send(embed=embed)
+            await msg.edit(content=_("Your embed has been sent!"), embed=None)
         except Exception as e:
             await ctx.send(
                 _("Failed to send embed!\nException: {}").format(
