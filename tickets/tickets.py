@@ -164,7 +164,11 @@ class Tickets(
                     for channel_id, ticket_info in opened_tickets.items():
                         if not ticket_info["logmsg"]:
                             continue
-                        channel = guild.get_channel(int(channel_id))
+                        panel_name = ticket_info["panel"]
+                        panel = panels[panel_name]
+                        if not panel["log_channel"]:
+                            continue
+                        channel = guild.get_channel(panel["log_channel"])
                         if not channel:
                             continue
                         try:
