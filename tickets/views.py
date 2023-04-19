@@ -452,7 +452,9 @@ class LogView(View):
         user = interaction.user
         if user.id in self.added:
             return await interaction.response.send_message(
-                _("You have already been added to this ticket!")
+                _("You have already been added to this ticket!"),
+                ephemeral=True,
+                delete_after=60,
             )
         perms = [
             self.channel.permissions_for(user).view_channel,
