@@ -1228,7 +1228,7 @@ class AdminCommands(MixinMeta, ABC):
                 await ctx.send(txt)
         elif ctx:
             await ctx.send(_("There are no tickets to prune"))
-        elif not ctx:
+        elif not ctx and count:
             log.info(f"{count} tickets pruned from {guild.name}")
 
     # TOGGLES --------------------------------------------------------------------------------
