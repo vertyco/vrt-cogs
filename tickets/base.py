@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import Union
 
 import discord
+from discord import app_commands
 from discord.utils import escape_markdown
 from redbot.core import commands
 from redbot.core.commands import parse_timedelta
@@ -21,7 +22,12 @@ _ = Translator("Tickets", __file__)
 
 
 class BaseCommands(MixinMeta, ABC):
-    @commands.command(name="add")
+    @commands.hybrid_command(
+        name="add", description="Add a user to your ticket"
+    )
+    @app_commands.describe(
+        user="The Discord user you want to add to your ticket"
+    )
     async def add_user_to_ticket(
         self, ctx: commands.Context, *, user: discord.Member
     ):
@@ -61,7 +67,10 @@ class BaseCommands(MixinMeta, ABC):
             f"**{user.name}** " + _("has been added to this ticket!")
         )
 
-    @commands.command(name="renameticket", aliases=["renamet"])
+    @commands.hybrid_command(
+        name="renameticket", description="Rename your ticket"
+    )
+    @app_commands.describe(new_name="The new name for your ticket")
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
         """Rename your ticket channel"""
         conf = await self.config.guild(ctx.guild).all()
@@ -92,7 +101,8 @@ class BaseCommands(MixinMeta, ABC):
         if isinstance(ctx.channel, discord.TextChannel):
             await ctx.send(_("Ticket has been renamed"))
 
-    @commands.command(name="close")
+    @commands.hybrid_command(name="close", description="Close your ticket")
+    @app_commands.describe(reason="Reason for closing the ticket")
     async def close_a_ticket(
         self, ctx: commands.Context, *, reason: str = None
     ):
