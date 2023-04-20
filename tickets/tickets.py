@@ -23,7 +23,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.10.31"
+    __version__ = "1.11.31"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -298,3 +298,33 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                 log.error(
                     f"Failed to auto-close ticket for {member} leaving {member.guild}\nException: {e}"
                 )
+
+    @commands.Cog.listener()
+    async def on_thread_delete(self, thread: discord.Thread):
+        if not thread:
+            return
+        async with self.config.guild(thread.guild).all() as conf:
+            for user_id, tickets in conf["opened"].items():
+                for channel_id, ticket in tickets.items():
+                    if channel_id != thread.id:
+                        continue
+
+                    panel = conf["panels"][ticket["panel"]]
+                    log_message_id = ticket["logmsg"]
+                    log_channel_id = panel["log_channel"]
+
+                    if log_channel_id and log_message_id:
+                        log_channel = thread.guild.get_channel(log_channel_id)
+                        try:
+                            log_message = await log_channel.fetch_message(
+                                log_message_id
+                            )
+                            await log_message.delete()
+                        except discord.NotFound:
+                            pass
+
+                    del conf["opened"][user_id][channel_id]
+                    log.info(
+                        f"Removed {thread.name} thread from config in {thread.guild.name}"
+                    )
+                    return
