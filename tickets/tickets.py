@@ -134,6 +134,11 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                     await chan.fetch_message(mid)
                 except discord.NotFound:
                     continue
+                except discord.Forbidden:
+                    log.info(
+                        f"I can no longer see a set panel channel in {guild.name}"
+                    )
+                    continue
 
                 # v1.3.10 schema update (Modals)
                 if "modals" not in panel:
