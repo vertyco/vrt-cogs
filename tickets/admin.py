@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 from typing import Optional, Union
 
@@ -11,6 +12,7 @@ from .abc import MixinMeta
 from .menu import SMALL_CONTROLS, MenuButton, menu
 from .views import TestButton, confirm, wait_reply
 
+log = logging.getLogger("red.vrt.admincommands")
 _ = Translator("TicketsCommands", __file__)
 
 
@@ -1184,30 +1186,50 @@ class AdminCommands(MixinMeta, ABC):
     @tickets.command(name="cleanup")
     async def cleanup_tickets(self, ctx: commands.Context):
         """Cleanup tickets that no longer exist"""
-        opened = await self.config.guild(ctx.guild).opened()
-        if not opened:
-            return await ctx.send(_("No old tickets to clean."))
-        cleaned = 0
-        async with self.config.guild(ctx.guild).opened() as op:
-            for uid, tickets in opened.items():
-                if not ctx.guild.get_member(int(uid)):
-                    cleaned += len(tickets.keys())
-                    del op[uid]
+        async with ctx.typing():
+            await self.prune_invalid_tickets(ctx.guild, ctx)
+
+    async def prune_invalid_tickets(
+        self, guild: discord.Guild, ctx: Optional[commands.Context] = None
+    ):
+        opened_tickets = await self.config.guild(guild).opened()
+        if not opened_tickets:
+            if ctx:
+                await ctx.send(_("There are no tickets to prune."))
+            return
+
+        valid_opened_tickets = {}
+        count = 0
+        for user_id, tickets in opened_tickets.items():
+            if not guild.get_member(int(user_id)):
+                count += len(tickets.keys)
+                continue
+
+            valid_user_tickets = {}
+            for channel_id, ticket in tickets.items():
+                if not guild.get_channel_or_thread(int(channel_id)):
+                    count += 1
                     continue
-                for channel_id, t_info in opened[uid].items():
-                    if not ctx.guild.get_channel(int(channel_id)):
-                        cleaned += 1
-                        del op[uid][channel_id]
-        if cleaned:
-            txt = (
-                _("Pruned `")
-                + str(cleaned)
-                + _("` invalid ")
-                + f"{_('ticket') if cleaned == 1 else _('tickets')}."
-            )
-            await ctx.send(txt)
-        else:
-            await ctx.send(_("There were no tickets to prune."))
+                else:
+                    valid_user_tickets[channel_id] = ticket
+
+            if valid_user_tickets:
+                valid_opened_tickets[user_id] = valid_user_tickets
+
+        if valid_opened_tickets and count:
+            await self.config.guild(guild).opened.set(valid_opened_tickets)
+            if ctx:
+                txt = (
+                    _("Pruned `")
+                    + str(count)
+                    + _("` invalid ")
+                    + f"{_('ticket') if count == 1 else _('tickets')}."
+                )
+                await ctx.send(txt)
+        elif ctx:
+            await ctx.send(_("There are no tickets to prune"))
+        elif not ctx:
+            log.info(f"{count} tickets pruned from {guild.name}")
 
     # TOGGLES --------------------------------------------------------------------------------
     @tickets.command(name="dm")
