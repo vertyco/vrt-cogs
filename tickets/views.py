@@ -404,6 +404,12 @@ class SupportButton(Button):
             )
             if user.avatar:
                 em.set_thumbnail(url=user.avatar.url)
+
+            for question, answer in answers.items():
+                em.add_field(
+                    name=f"__{question}__", value=answer, inline=False
+                )
+
             view = LogView(guild, channel_or_thread)
             log_message = await logchannel.send(embed=em, view=view)
         else:
