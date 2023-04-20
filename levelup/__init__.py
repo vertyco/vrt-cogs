@@ -1,18 +1,15 @@
 # redgettext base.py generator.py levelup.py utils/formatter.py --command-docstring
 import asyncio
-import json
 import logging
-from pathlib import Path
 
 import discord
 from redbot.core.bot import Red
+from redbot.core.utils import get_end_user_data_statement
 
 from .levelup import LevelUp
 
+__red_end_user_data_statement__ = get_end_user_data_statement(__file__)
 log = logging.getLogger("red.vrt.levelup")
-
-with open(Path(__file__).parent / "info.json") as fp:
-    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
 
 
 async def setup(bot: Red):
