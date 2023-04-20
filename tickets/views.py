@@ -287,6 +287,7 @@ class SupportButton(Button):
         params = {
             "num": str(num),
             "user": user.name,
+            "displayname": user.display_name,
             "id": str(user.id),
             "shortdate": now.strftime("%m-%d"),
             "longdate": now.strftime("%m-%d-%Y"),

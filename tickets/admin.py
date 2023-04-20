@@ -324,6 +324,7 @@ class AdminCommands(MixinMeta, ABC):
         You can include the following in the name
         `{num}` - Ticket number
         `{user}` - user's name
+        `{displayname}` - user's display name
         `{id}` - user's ID
         `{shortdate}` - mm-dd
         `{longdate}` - mm-dd-yyyy
