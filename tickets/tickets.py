@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.10.28"
+    __version__ = "1.10.30"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

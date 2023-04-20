@@ -387,18 +387,21 @@ class SupportButton(Button):
 
         if logchannel:
             ts = int(now.timestamp())
-            desc = (
-                _("Ticket created by ")
-                + f"**{user.name}-{user.id}**"
-                + _(" was opened ")
-                + f"<t:{ts}:R>\n"
-            )
-            desc += _("`Panel Type: `{}\n").format(self.panel_name)
-            desc += _("To view this ticket, **[Click Here]({})**").format(
-                msg.jump_url
+            desc = _(
+                "`Created By: `{}\n"
+                "`User ID:    `{}\n"
+                "`Opened:     `{}\n"
+                "`Panel Name: `{}\n"
+                "**[Click to Jump!]({})**"
+            ).format(
+                str(user),
+                user.id,
+                f"<t:{ts}:R>",
+                self.panel_name,
+                msg.jump_url,
             )
             em = discord.Embed(
-                title=_("Ticket opened"),
+                title=_("Ticket Opened"),
                 description=desc,
                 color=discord.Color.red(),
             )
