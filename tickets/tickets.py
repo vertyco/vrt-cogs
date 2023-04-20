@@ -7,9 +7,7 @@ from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
-from .abc import CompositeMetaClass
-from .admin import AdminCommands
-from .base import BaseCommands
+from .abc import CompositeMetaClass, TicketCommands
 from .views import LogView, PanelView
 
 log = logging.getLogger("red.vrt.tickets")
@@ -18,9 +16,7 @@ _ = Translator("Tickets", __file__)
 
 # redgettext -D tickets.py base.py admin.py views.py menu.py
 @cog_i18n(_)
-class Tickets(
-    BaseCommands, AdminCommands, commands.Cog, metaclass=CompositeMetaClass
-):
+class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
     Support ticket system with multi-panel functionality
     """
