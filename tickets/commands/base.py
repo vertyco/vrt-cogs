@@ -14,7 +14,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.mod import is_admin_or_superior
 
-from .abc import MixinMeta
+from ..abc import MixinMeta
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")

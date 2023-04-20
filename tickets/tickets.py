@@ -7,7 +7,8 @@ from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
-from .abc import CompositeMetaClass, TicketCommands
+from .abc import CompositeMetaClass
+from .commands import TicketCommands
 from .views import LogView, PanelView
 
 log = logging.getLogger("red.vrt.tickets")
