@@ -1196,14 +1196,16 @@ class AdminCommands(MixinMeta, ABC):
         opened_tickets = await self.config.guild(guild).opened()
         if not opened_tickets:
             if ctx:
-                await ctx.send(_("There are no tickets to prune."))
+                await ctx.send(
+                    _("There are no tickets stored in the database.")
+                )
             return
 
         valid_opened_tickets = {}
         count = 0
         for user_id, tickets in opened_tickets.items():
             if not guild.get_member(int(user_id)):
-                count += len(tickets.keys)
+                count += len(tickets.keys())
                 continue
 
             valid_user_tickets = {}
@@ -1217,19 +1219,20 @@ class AdminCommands(MixinMeta, ABC):
             if valid_user_tickets:
                 valid_opened_tickets[user_id] = valid_user_tickets
 
-        if valid_opened_tickets and count:
+        if count:
             await self.config.guild(guild).opened.set(valid_opened_tickets)
-            if ctx:
-                txt = (
-                    _("Pruned `")
-                    + str(count)
-                    + _("` invalid ")
-                    + f"{_('ticket') if count == 1 else _('tickets')}."
-                )
-                await ctx.send(txt)
-        elif ctx:
+
+        if count and ctx:
+            txt = (
+                _("Pruned `")
+                + str(count)
+                + _("` invalid ")
+                + f"{_('ticket') if count == 1 else _('tickets')}."
+            )
+            await ctx.send(txt)
+        elif not count and ctx:
             await ctx.send(_("There are no tickets to prune"))
-        elif not ctx and count:
+        elif count and not ctx:
             log.info(f"{count} tickets pruned from {guild.name}")
 
     # TOGGLES --------------------------------------------------------------------------------
