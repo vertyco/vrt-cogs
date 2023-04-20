@@ -322,6 +322,7 @@ class AdminCommands(MixinMeta, ABC):
         Set the default ticket channel name for a panel
 
         You can include the following in the name
+        `{panel}` - The panel name
         `{num}` - Ticket number
         `{user}` - user's name
         `{displayname}` - user's display name
