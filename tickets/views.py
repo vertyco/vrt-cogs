@@ -285,7 +285,6 @@ class SupportButton(Button):
         now = datetime.now()
         name_fmt = panel["ticket_name"]
         params = {
-            "panel": self.panel_name,
             "num": str(num),
             "user": user.name,
             "displayname": user.display_name,
