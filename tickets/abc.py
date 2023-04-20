@@ -7,9 +7,6 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.config import Config
 
-from .admin import AdminCommands
-from .base import BaseCommands
-
 
 class CompositeMetaClass(CogMeta, ABCMeta):
     """Type detection"""
@@ -32,9 +29,3 @@ class MixinMeta(metaclass=ABCMeta):
         self, guild: discord.Guild, ctx: Optional[commands.Context] = None
     ):
         raise NotImplementedError
-
-
-class TicketCommands(
-    AdminCommands, BaseCommands, metaclass=CompositeMetaClass
-):
-    """Subclass all command classes"""
