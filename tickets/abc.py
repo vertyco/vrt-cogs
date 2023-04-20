@@ -1,7 +1,9 @@
 from abc import ABC, ABCMeta, abstractmethod
+from typing import Optional
 
 import discord
 from discord.ext.commands.cog import CogMeta
+from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.config import Config
 
@@ -20,4 +22,10 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def initialize(self, target_guild: discord.Guild = None) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def prune_invalid_tickets(
+        self, guild: discord.Guild, ctx: Optional[commands.Context] = None
+    ):
         raise NotImplementedError

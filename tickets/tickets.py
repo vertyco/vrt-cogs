@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.10.26"
+    __version__ = "1.10.27"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -188,36 +188,11 @@ class Tickets(
             except discord.NotFound:
                 log.warning(f"Failed to refresh log views in {guild.name}")
 
-    # Clean up any ticket data that comes from a deleted channel or unknown user
-    async def cleanup(self):
-        for guild in self.bot.guilds:
-            t = await self.config.guild(guild).opened()
-            if not t:
-                continue
-            current_tickets = {}
-            count = 0
-            for uid, tickets in t.items():
-                if not guild.get_member(int(uid)):
-                    count += 1
-                    continue
-                new_tickets = {}
-                for cid, data in tickets.items():
-                    if not guild.get_channel(int(cid)):
-                        count += 1
-                        continue
-                    else:
-                        new_tickets[cid] = data
-                if new_tickets:
-                    current_tickets[uid] = new_tickets
-
-            if current_tickets and count:
-                await self.config.guild(guild).opened.set(current_tickets)
-                log.info(f"{count} tickets pruned from {guild.name}")
-
     @tasks.loop(minutes=20)
     async def auto_close(self):
         actasks = []
         for guild in self.bot.guilds:
+            await self.prune_invalid_tickets(guild)
             conf = await self.config.guild(guild).all()
             inactive = conf["inactive"]
             if not inactive:
@@ -286,12 +261,11 @@ class Tickets(
 
         if tasks:
             await asyncio.gather(*actasks)
-        await self.cleanup()
 
     @auto_close.before_loop
     async def before_auto_close(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(30)
+        await asyncio.sleep(300)
 
     # Will automatically close/cleanup any tickets if a member leaves that has an open ticket
     @commands.Cog.listener()
