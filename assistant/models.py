@@ -9,6 +9,7 @@ class GuildSettings(BaseModel):
     api_key: str = ""
     endswith_questionmark: bool = False
     max_retention: int = 1
+    min_length: int = 7
 
 
 class DB(BaseModel):

@@ -38,7 +38,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.4"
+    __version__ = "0.1.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -94,7 +94,7 @@ class Assistant(commands.Cog):
         content = message.content
         if not content.endswith("?") and conf.endswith_questionmark:
             return
-        if len(content.strip()) < 5:
+        if len(content.strip()) < conf.min_length:
             return
         reply = await self.get_answer(
             content.lower().strip(), message.author, conf
@@ -156,7 +156,8 @@ class Assistant(commands.Cog):
             f"`API Key:       `{conf.api_key if conf.api_key else 'Not Set'}\n"
             f"`Channel:       `{channel}\n"
             f"`? Required:    `{conf.endswith_questionmark}\n"
-            f"`Max Retention: `{conf.max_retention}"
+            f"`Max Retention: `{conf.max_retention}\n"
+            f"`Min Length:    `{conf.min_length}"
         )
         file = (
             discord.File(
@@ -264,6 +265,29 @@ class Assistant(commands.Cog):
         conf.max_retention = max_retention
         if max_retention == 0:
             await ctx.send("Conversation retention has been disabled")
+        else:
+            await ctx.tick()
+        await self.save_conf()
+
+    @assistant.command(name="minlength")
+    async def min_length(
+        self, ctx: commands.Context, min_question_length: int
+    ):
+        """
+        set the minimum character length for questions to be answered
+
+        Set to 0 to respond to anything
+        """
+        if min_question_length < 0:
+            return await ctx.send(
+                "Minimum length needs to be at least 0 or higher"
+            )
+        conf = self.db.get_conf(ctx.guild)
+        conf.min_length = min_question_length
+        if min_question_length == 0:
+            await ctx.send(
+                f"{ctx.bot.user.name} will respond regardless of message length"
+            )
         else:
             await ctx.tick()
         await self.save_conf()
