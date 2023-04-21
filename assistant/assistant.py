@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.14"
+    __version__ = "0.2.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -178,13 +178,16 @@ class Assistant(commands.Cog):
         pass
 
     @assistant.command(name="view")
-    async def view_settings(self, ctx: commands.Context):
-        """View current settings"""
+    async def view_settings(self, ctx: commands.Context, private: bool = True):
+        """
+        View current settings
+
+        To send in current channel, use `[p]assistant view false`
+        """
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
         desc = (
             f"`Enabled:       `{conf.enabled}\n"
-            f"`API Key:       `{conf.api_key if conf.api_key else 'Not Set'}\n"
             f"`Channel:       `{channel}\n"
             f"`? Required:    `{conf.endswith_questionmark}\n"
             f"`Mentions:      `{conf.mention}\n"
@@ -211,19 +214,29 @@ class Assistant(commands.Cog):
             description=desc,
             color=ctx.author.color,
         )
+        if private:
+            embed.add_field(
+                name="OpenAI Key",
+                value=conf.api_key if conf.api_key else "Not Set",
+                inline=False,
+            )
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
         files = []
         if system_file:
             files.append(system_file)
         if prompt_file:
             files.append(prompt_file)
-        try:
-            await ctx.author.send(embed=embed, files=files)
-            await ctx.send(
-                "Sent your current settings for this server in DMs!"
-            )
-        except discord.Forbidden:
-            await ctx.send("You need to allow DMs so I can message you!")
+
+        if private:
+            try:
+                await ctx.author.send(embed=embed, files=files)
+                await ctx.send(
+                    "Sent your current settings for this server in DMs!"
+                )
+            except discord.Forbidden:
+                await ctx.send("You need to allow DMs so I can message you!")
+        else:
+            await ctx.send(embed=embed, files=files)
 
     @assistant.command(name="openaikey", aliases=["key"])
     async def set_openai_key(self, ctx: commands.Context):
