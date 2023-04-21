@@ -163,6 +163,7 @@ class BaseCommands(MixinMeta):
                     f"<t:{closing_in}:R>"
                 )
                 msg = await ctx.send(f"{owner.mention}, {closemsg}")
+                await asyncio.sleep(1.5)
                 try:
                     await ctx.bot.wait_for(
                         "message", check=check, timeout=td.total_seconds()
