@@ -27,5 +27,5 @@ class MixinMeta(metaclass=ABCMeta):
     @abstractmethod
     async def prune_invalid_tickets(
         self, guild: discord.Guild, ctx: Optional[commands.Context] = None
-    ):
+    ) -> None:
         raise NotImplementedError

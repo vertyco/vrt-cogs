@@ -1,5 +1,4 @@
 import logging
-from abc import ABC
 from typing import Optional, Union
 
 import discord
@@ -16,7 +15,7 @@ log = logging.getLogger("red.vrt.admincommands")
 _ = Translator("TicketsCommands", __file__)
 
 
-class AdminCommands(MixinMeta, ABC):
+class AdminCommands(MixinMeta):
     @commands.group(aliases=["tset"])
     @commands.guild_only()
     @commands.admin()
