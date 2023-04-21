@@ -5,7 +5,7 @@ from typing import List, Literal, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
-from aiocache import SimpleMemoryCache, cached
+from aiocache import cached
 from discord import app_commands
 from redbot.core import commands
 from redbot.core.bot import Red
@@ -27,7 +27,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.21"
+    __version__ = "0.4.22"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -59,7 +59,12 @@ class AutoDocs(commands.Cog):
 
         for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(
-                self.bot, cmd, prefix, replace_botname, extended_info, privilege_level
+                self.bot,
+                cmd,
+                prefix,
+                replace_botname,
+                extended_info,
+                privilege_level,
             )
             doc = c.get_doc()
             if not doc:
@@ -71,7 +76,12 @@ class AutoDocs(commands.Cog):
             if cmd.hidden and not include_hidden:
                 continue
             c = CustomCmdFmt(
-                self.bot, cmd, prefix, replace_botname, extended_info, privilege_level
+                self.bot,
+                cmd,
+                prefix,
+                replace_botname,
+                extended_info,
+                privilege_level,
             )
             doc = c.get_doc()
             if doc is None:
@@ -88,12 +98,22 @@ class AutoDocs(commands.Cog):
 
         return docs
 
-    @commands.hybrid_command(name="makedocs", description=_("Create docs for a cog"))
+    @commands.hybrid_command(
+        name="makedocs", description=_("Create docs for a cog")
+    )
     @app_commands.describe(
-        cog_name=_("The name of the cog you want to make docs for (Case Sensitive)"),
-        replace_prefix=_("Replace all occurrences of [p] with the bots prefix"),
-        replace_botname=_("Replace all occurrences of [botname] with the bots name"),
-        extended_info=_("Include extra info like converters and their docstrings"),
+        cog_name=_(
+            "The name of the cog you want to make docs for (Case Sensitive)"
+        ),
+        replace_prefix=_(
+            "Replace all occurrences of [p] with the bots prefix"
+        ),
+        replace_botname=_(
+            "Replace all occurrences of [botname] with the bots name"
+        ),
+        extended_info=_(
+            "Include extra info like converters and their docstrings"
+        ),
         include_hidden=_("Include hidden commands"),
         privilege_level=_(
             "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
@@ -153,16 +173,23 @@ class AutoDocs(commands.Cog):
                             include_hidden,
                             privilege_level,
                         )
-                        docs = await self.bot.loop.run_in_executor(None, partial_func)
+                        docs = await self.bot.loop.run_in_executor(
+                            None, partial_func
+                        )
                         filename = f"{folder_name}/{cog.qualified_name}.md"
                         arc.writestr(
-                            filename, docs, compress_type=ZIP_DEFLATED, compresslevel=9
+                            filename,
+                            docs,
+                            compress_type=ZIP_DEFLATED,
+                            compresslevel=9,
                         )
 
                 buffer.name = f"{folder_name}.zip"
                 buffer.seek(0)
                 file = discord.File(buffer)
-                txt = _("Here are the docs for all of your currently loaded cogs!")
+                txt = _(
+                    "Here are the docs for all of your currently loaded cogs!"
+                )
             else:
                 cog = self.bot.get_cog(cog_name)
                 if not cog:
@@ -183,11 +210,13 @@ class AutoDocs(commands.Cog):
                 buffer.name = f"{cog.qualified_name}.md"
                 buffer.seek(0)
                 file = discord.File(buffer)
-                txt = _("Here are your docs for {}!").format(cog.qualified_name)
+                txt = _("Here are your docs for {}!").format(
+                    cog.qualified_name
+                )
 
             await ctx.send(txt, file=file)
 
-    @cached(ttl=8, cache=SimpleMemoryCache)
+    @cached(ttl=8)
     async def get_coglist(self, string: str) -> List[app_commands.Choice]:
         cogs = set("all")
         for cmd in self.bot.walk_commands():
