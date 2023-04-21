@@ -158,6 +158,7 @@ class Assistant(commands.Cog):
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
         desc = (
+            f"`Enabled:       `{conf.enabled}\n"
             f"`API Key:       `{conf.api_key if conf.api_key else 'Not Set'}\n"
             f"`Channel:       `{channel}\n"
             f"`? Required:    `{conf.endswith_questionmark}\n"
@@ -184,6 +185,7 @@ class Assistant(commands.Cog):
             description=desc,
             color=ctx.author.color,
         )
+        embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
         files = []
         if system_file:
             files.append(system_file)
