@@ -164,9 +164,17 @@ class Assistant(commands.Cog):
             f"`Max Retention: `{conf.max_retention}\n"
             f"`Min Length:    `{conf.min_length}"
         )
-        file = (
+        system_file = (
             discord.File(
-                BytesIO(conf.prompt.encode()), filename="CurrentPrompt.txt"
+                BytesIO(conf.system_prompt.encode()),
+                filename="SystemPrompt.txt",
+            )
+            if conf.system_prompt
+            else None
+        )
+        prompt_file = (
+            discord.File(
+                BytesIO(conf.prompt.encode()), filename="InitialPrompt.txt"
             )
             if conf.prompt
             else None
@@ -176,8 +184,13 @@ class Assistant(commands.Cog):
             description=desc,
             color=ctx.author.color,
         )
+        files = []
+        if system_file:
+            files.append(system_file)
+        if prompt_file:
+            files.append(prompt_file)
         try:
-            await ctx.author.send(embed=embed, file=file)
+            await ctx.author.send(embed=embed, files=files)
             await ctx.send(
                 "Sent your current settings for this server in DMs!"
             )
