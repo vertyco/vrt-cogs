@@ -38,7 +38,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.1.4"
+    __version__ = "0.2.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -245,6 +245,18 @@ class Assistant(commands.Cog):
         else:
             conf.endswith_questionmark = True
             await ctx.send("Questions must end in **?** to be answered")
+        await self.save_conf()
+
+    @assistant.command(name="toggle")
+    async def toggle_gpt(self, ctx: commands.Context):
+        """Toggle the assistant on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.enabled:
+            conf.enabled = False
+            await ctx.send("The assistant is now **Disabled**")
+        else:
+            conf.enabled = True
+            await ctx.send("The assistant is now **Enabled**")
         await self.save_conf()
 
     @assistant.command(name="maxretention")

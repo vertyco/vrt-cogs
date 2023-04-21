@@ -10,6 +10,7 @@ class GuildSettings(BaseModel):
     endswith_questionmark: bool = False
     max_retention: int = 1
     min_length: int = 7
+    enabled: bool = True
 
 
 class DB(BaseModel):
