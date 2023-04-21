@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 
 class GuildSettings(BaseModel):
+    system_prompt: str = ""
     prompt: str = ""
     channel_id: int = 0
     api_key: str = ""
@@ -44,8 +45,12 @@ class Conversation(BaseModel):
         self.messages = self.messages[-conf.max_retention :]
         self.messages.append({"role": role, "content": message})
 
-    def prepare_chat(self, initial_prompt: str) -> list[dict]:
+    def prepare_chat(
+        self, system_prompt: str = "", initial_prompt: str = ""
+    ) -> list[dict]:
         prepared = []
+        if system_prompt:
+            prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt:
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
