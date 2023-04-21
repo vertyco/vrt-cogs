@@ -38,7 +38,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.4"
+    __version__ = "0.2.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -117,9 +117,10 @@ class Assistant(commands.Cog):
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         system = (
             f"You are {self.bot.user.name},"
-            f"Todays date time is {timestamp},"
+            f"Current date and time is {timestamp},"
             f"Todays date is {date},"
-            f"Member count is {author.guild.member_count}"
+            f"Member count is {author.guild.member_count},"
+            f"Guild owner is {author.guild.owner}"
         )
 
         conversation = self.chats.get_conversation(author)
