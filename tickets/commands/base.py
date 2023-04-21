@@ -27,6 +27,7 @@ class BaseCommands(MixinMeta):
     @app_commands.describe(
         user="The Discord user you want to add to your ticket"
     )
+    @commands.guild_only()
     async def add_user_to_ticket(
         self, ctx: commands.Context, *, user: discord.Member
     ):
@@ -70,6 +71,7 @@ class BaseCommands(MixinMeta):
         name="renameticket", description="Rename your ticket"
     )
     @app_commands.describe(new_name="The new name for your ticket")
+    @commands.guild_only()
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
         """Rename your ticket channel"""
         conf = await self.config.guild(ctx.guild).all()
@@ -102,6 +104,7 @@ class BaseCommands(MixinMeta):
 
     @commands.hybrid_command(name="close", description="Close your ticket")
     @app_commands.describe(reason="Reason for closing the ticket")
+    @commands.guild_only()
     async def close_a_ticket(
         self, ctx: commands.Context, *, reason: str = None
     ):
