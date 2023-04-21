@@ -1205,7 +1205,7 @@ class AdminCommands(MixinMeta, ABC):
         count = 0
         for user_id, tickets in opened_tickets.items():
             if not guild.get_member(int(user_id)):
-                count += len(tickets.keys())
+                count += len(list(tickets.keys()))
                 continue
 
             valid_user_tickets = {}
