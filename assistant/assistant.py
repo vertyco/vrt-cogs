@@ -125,9 +125,7 @@ class Assistant(commands.Cog):
         )
 
         conversation = self.chats.get_conversation(author)
-        conversation.update_messages(
-            conf, f"{author.display_name}: {message}", "user"
-        )
+        conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system, conf.prompt)
 
         response = openai.ChatCompletion.create(
