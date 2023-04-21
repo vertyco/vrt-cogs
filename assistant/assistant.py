@@ -120,7 +120,8 @@ class Assistant(commands.Cog):
             f"Current date and time is {timestamp},"
             f"Todays date is {date},"
             f"Member count is {author.guild.member_count},"
-            f"Guild owner is {author.guild.owner}"
+            f"Server owner is {author.guild.owner.display_name},"
+            f"User's name is {author.display_name}"
         )
 
         conversation = self.chats.get_conversation(author)
