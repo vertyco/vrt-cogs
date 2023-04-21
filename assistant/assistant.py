@@ -39,7 +39,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.9"
+    __version__ = "0.2.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -104,9 +104,9 @@ class Assistant(commands.Cog):
                 reply = await self.get_answer(
                     content.lower().strip(), message.author, conf
                 )
-                await message.reply(reply)
+                await message.reply(reply, mention_author=conf.mention)
             except InvalidRequestError as e:
-                await message.reply(str(e.error))
+                await message.reply(str(e.error), mention_author=conf.mention)
 
     @cached(ttl=120)
     async def get_answer(
@@ -172,6 +172,7 @@ class Assistant(commands.Cog):
             f"`API Key:       `{conf.api_key if conf.api_key else 'Not Set'}\n"
             f"`Channel:       `{channel}\n"
             f"`? Required:    `{conf.endswith_questionmark}\n"
+            f"`Mentions:      `{conf.mention}\n"
             f"`Max Retention: `{conf.max_retention}\n"
             f"`Min Length:    `{conf.min_length}"
         )
@@ -353,6 +354,18 @@ class Assistant(commands.Cog):
         else:
             conf.enabled = True
             await ctx.send("The assistant is now **Enabled**")
+        await self.save_conf()
+
+    @assistant.command(name="mention")
+    async def toggle_mention(self, ctx: commands.Context):
+        """Toggle whether to ping the user on replies"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.mention:
+            conf.mention = False
+            await ctx.send("Mentions are now **Disabled**")
+        else:
+            conf.mention = True
+            await ctx.send("Mentions are now **Enabled**")
         await self.save_conf()
 
     @assistant.command(name="maxretention")
