@@ -38,7 +38,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.6"
+    __version__ = "0.2.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -279,6 +279,8 @@ class Assistant(commands.Cog):
     async def max_retention(self, ctx: commands.Context, max_retention: int):
         """
         Set the max messages for a conversation
+
+        Conversation retention is cached and gets reset when the bot restarts or the cog reloads.
 
         Regardless of this number, the initial prompt and internal system message are always included,
         this only applies to any conversation between the user and bot after that.
