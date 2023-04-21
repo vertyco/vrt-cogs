@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.12"
+    __version__ = "0.2.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -112,7 +112,10 @@ class Assistant(commands.Cog):
                 )
                 await message.reply(reply, mention_author=conf.mention)
             except InvalidRequestError as e:
-                await message.reply(str(e.error), mention_author=conf.mention)
+                if error := e.error:
+                    await message.reply(
+                        error["message"], mention_author=conf.mention
+                    )
 
     @cached(ttl=120)
     async def get_answer(
