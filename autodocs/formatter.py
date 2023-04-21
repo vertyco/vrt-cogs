@@ -115,17 +115,18 @@ class CustomCmdFmt:
                 ).replace("`", "")
             try:
                 self.perms = self.cmd.requires
+                cd = cmd.cooldown
+                aliases = cmd.aliases
             except AttributeError:
                 self.perms = None
-            cd = cmd.cooldown
+                cd = None
+                aliases = None
             self.cooldown: str = (
                 f"{cd.rate} {PER} {cd.per} {SECOND if int(cd.per) == 1 else SECONDS}"
                 if cd
                 else None
             )
-            self.aliases: str = (
-                humanize_list(cmd.aliases) if cmd.aliases else ""
-            )
+            self.aliases: str = humanize_list(aliases) if aliases else ""
 
     def get_doc(self) -> Optional[str]:
         # Get header of command
