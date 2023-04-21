@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import logging
-from abc import ABC
 from io import BytesIO
 from typing import Union
 
@@ -21,7 +20,7 @@ log = logging.getLogger("red.vrt.tickets.base")
 _ = Translator("Tickets", __file__)
 
 
-class BaseCommands(MixinMeta, ABC):
+class BaseCommands(MixinMeta):
     @commands.hybrid_command(
         name="add", description="Add a user to your ticket"
     )
