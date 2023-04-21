@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.11"
+    __version__ = "0.2.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -96,7 +96,12 @@ class Assistant(commands.Cog):
         if channel.id != conf.channel_id:
             return
         content = message.content
-        if not content.endswith("?") and conf.endswith_questionmark:
+        mentions = [member.id for member in message.mentions]
+        if (
+            not content.endswith("?")
+            and conf.endswith_questionmark
+            and self.bot.user.id not in mentions
+        ):
             return
         if len(content.strip()) < conf.min_length:
             return
