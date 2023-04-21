@@ -103,7 +103,7 @@ class Assistant(commands.Cog):
         )
         await message.reply(reply)
 
-    @cached(ttl=172800)
+    @cached(ttl=120)
     async def get_answer(
         self, message: str, author: discord.Member, conf: GuildSettings
     ):
