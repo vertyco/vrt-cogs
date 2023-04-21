@@ -7,6 +7,7 @@ import aiohttp
 import discord
 import openai
 from aiocache import cached
+from openai.error import InvalidRequestError
 from redbot.core import Config, commands
 
 from .models import DB, Conversations, GuildSettings
@@ -38,7 +39,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.8"
+    __version__ = "0.2.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -98,10 +99,14 @@ class Assistant(commands.Cog):
             return
         if len(content.strip()) < conf.min_length:
             return
-        reply = await self.get_answer(
-            content.lower().strip(), message.author, conf
-        )
-        await message.reply(reply)
+        async with channel.typing():
+            try:
+                reply = await self.get_answer(
+                    content.lower().strip(), message.author, conf
+                )
+                await message.reply(reply)
+            except InvalidRequestError as e:
+                await message.reply(str(e.error))
 
     @cached(ttl=120)
     async def get_answer(
@@ -149,7 +154,11 @@ class Assistant(commands.Cog):
     @commands.group(name="assistant", aliases=["ass"])
     @commands.guildowner()
     async def assistant(self, ctx: commands.Context):
-        """Setup the assistant"""
+        """
+        Setup the assistant
+
+        You will need an api key to use the assistant. https://platform.openai.com/account/api-keys
+        """
         pass
 
     @assistant.command(name="view")
