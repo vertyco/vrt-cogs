@@ -169,7 +169,7 @@ class Assistant(commands.Cog):
         return reply
 
     @commands.group(name="assistant", aliases=["ass"])
-    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guildowner()
     async def assistant(self, ctx: commands.Context):
         """
         Setup the assistant
