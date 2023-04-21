@@ -31,10 +31,14 @@ def get_attachments(ctx: commands.Context) -> list:
 
 
 class Assistant(commands.Cog):
-    """Set up a helpful assistant for your Discord server, powered by ChatGPT"""
+    """
+    Set up a helpful assistant for your Discord server, powered by ChatGPT
+
+    This cog uses GPT-3.5-Turbo **Only** right now.
+    """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -166,7 +170,13 @@ class Assistant(commands.Cog):
             description=desc,
             color=ctx.author.color,
         )
-        await ctx.send(embed=embed, file=file)
+        try:
+            await ctx.author.send(embed=embed, file=file)
+            await ctx.send(
+                "Sent your current settings for this server in DMs!"
+            )
+        except discord.Forbidden:
+            await ctx.send("You need to allow DMs so I can message you!")
 
     @assistant.command(name="openaikey", aliases=["key"])
     async def set_openai_key(self, ctx: commands.Context):
