@@ -38,7 +38,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.7"
+    __version__ = "0.2.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -126,11 +126,12 @@ class Assistant(commands.Cog):
             "members": author.guild.member_count,
             "user": author.display_name,
         }
+        system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
         conversation = self.chats.get_conversation(author)
         conversation.update_messages(conf, message, "user")
-        messages = conversation.prepare_chat(initial_prompt)
+        messages = conversation.prepare_chat(system_prompt, initial_prompt)
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -205,7 +206,7 @@ class Assistant(commands.Cog):
         await self.save_conf()
 
     @assistant.command(name="prompt", aliases=["pre"])
-    async def set_pre_prompt(
+    async def set_initial_prompt(
         self, ctx: commands.Context, *, prompt: str = None
     ):
         """
@@ -230,13 +231,67 @@ class Assistant(commands.Cog):
                         prompt = (await resp.read()).decode()
             except Exception as e:
                 return await ctx.send(f"Error:```py\n{e}\n```")
-        if not prompt:
-            return await ctx.send(
-                "Please provide a prompt or text file containing a prompt"
-            )
+
         conf = self.db.get_conf(ctx.guild)
-        conf.prompt = prompt.strip()
-        await ctx.send("Initial prompt has been set!")
+
+        if not prompt and conf.prompt:
+            conf.prompt = ""
+            await ctx.send("The initial prompt has been removed!")
+        elif not prompt and not conf.prompt:
+            await ctx.send("Please include an initial prompt or .txt file!")
+        elif prompt and conf.prompt:
+            conf.prompt = prompt.strip()
+            await ctx.send("The initial prompt has been overwritten!")
+        else:
+            conf.prompt = prompt.strip()
+            await ctx.send("Initial prompt has been set!")
+
+        await self.save_conf()
+
+    @assistant.command(name="system", aliases=["sys"])
+    async def set_system_prompt(
+        self, ctx: commands.Context, *, system_prompt: str = None
+    ):
+        """
+        Set the system prompt for GPT to use
+
+        **Note**
+        The current GPT-3.5-Turbo model doesn't really listen to the system prompt very well.
+
+        **Tips**
+        You can use the following placeholders in your prompt for real-time info
+        To use a place holder simply format your prompt as "`some {placeholder} with text`"
+        `botname` - The bots display name
+        `timestamp` - the current time in Discord's timestamp format
+        `date` - todays date (Month, Day, Year)
+        `time` - current time in 12hr format (HH:MM AM/PM Timezone)
+        `members` - current member count of the server
+        `user` - the current user asking the question
+        """
+        content = get_attachments(ctx)
+        if content:
+            url = content[0].url
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as resp:
+                        system_prompt = (await resp.read()).decode()
+            except Exception as e:
+                return await ctx.send(f"Error:```py\n{e}\n```")
+
+        conf = self.db.get_conf(ctx.guild)
+
+        if not system_prompt and conf.system_prompt:
+            conf.system_prompt = ""
+            await ctx.send("The system prompt has been removed!")
+        elif not system_prompt and not conf.system_prompt:
+            await ctx.send("Please include a system prompt or .txt file!")
+        elif system_prompt and conf.system_prompt:
+            conf.system_prompt = system_prompt.strip()
+            await ctx.send("The system prompt has been overwritten!")
+        else:
+            conf.system_prompt = system_prompt.strip()
+            await ctx.send("System prompt has been set!")
+
         await self.save_conf()
 
     @assistant.command(name="channel")
