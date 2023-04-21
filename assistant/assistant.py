@@ -38,7 +38,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -198,7 +198,6 @@ class Assistant(commands.Cog):
             content="OpenAI key has been set!", embed=None, view=None
         )
         await self.save_conf()
-        await ctx.message.delete()
 
     @assistant.command(name="prompt", aliases=["pre"])
     async def set_pre_prompt(
