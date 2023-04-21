@@ -38,7 +38,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.5"
+    __version__ = "0.2.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -115,20 +115,22 @@ class Assistant(commands.Cog):
     def call_openai(
         self, message: str, author: discord.Member, conf: GuildSettings
     ):
-        date = datetime.now().astimezone().strftime("%B %d, %Y")
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
-        system = (
-            f"You are {self.bot.user.name},"
-            f"Current date and time: {timestamp},"
-            f"Todays date: {date},"
-            f"Member count: {author.guild.member_count},"
-            f"Server owner: {author.guild.owner.display_name},"
-            f"User's name: {author.display_name}"
-        )
+        date = datetime.now().astimezone().strftime("%B %d, %Y")
+        time = datetime.now().astimezone().strftime("%I:%M %p %Z")
+        params = {
+            "botname": self.bot.user.name,
+            "timestamp": timestamp,
+            "date": date,
+            "time": time,
+            "members": author.guild.member_count,
+            "user": author.display_name,
+        }
+        initial_prompt = conf.prompt.format(**params)
 
         conversation = self.chats.get_conversation(author)
         conversation.update_messages(conf, message, "user")
-        messages = conversation.prepare_chat(system, conf.prompt)
+        messages = conversation.prepare_chat(initial_prompt)
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -138,7 +140,7 @@ class Assistant(commands.Cog):
         )
         try:
             reply = response["choices"][0]["message"]["content"]
-            conversation.update_messages(conf, reply, "system")
+            conversation.update_messages(conf, reply, "assistant")
         except KeyError:
             reply = str(response)
         return reply
@@ -206,7 +208,19 @@ class Assistant(commands.Cog):
     async def set_pre_prompt(
         self, ctx: commands.Context, *, prompt: str = None
     ):
-        """Set the initial prompt for GPT to use"""
+        """
+        Set the initial prompt for GPT to use
+
+        **Tips**
+        You can use the following placeholders in your prompt for real-time info
+        To use a place holder simply format your prompt as "`some {placeholder} with text`"
+        `botname` - The bots display name
+        `timestamp` - the current time in Discord's timestamp format
+        `date` - todays date (Month, Day, Year)
+        `time` - current time in 12hr format (HH:MM AM/PM Timezone)
+        `members` - current member count of the server
+        `user` - the current user asking the question
+        """
         content = get_attachments(ctx)
         if content:
             url = content[0].url

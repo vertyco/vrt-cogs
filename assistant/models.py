@@ -8,7 +8,7 @@ class GuildSettings(BaseModel):
     channel_id: int = 0
     api_key: str = ""
     endswith_questionmark: bool = False
-    max_retention: int = 1
+    max_retention: int = 0
     min_length: int = 7
     enabled: bool = True
 
@@ -31,7 +31,9 @@ class DB(BaseModel):
 class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
 
-    def update_messages(self, conf: GuildSettings, message: str, role: str):
+    def update_messages(
+        self, conf: GuildSettings, message: str, role: str
+    ) -> None:
         """Update conversation cache
 
         Args:
@@ -39,14 +41,13 @@ class Conversation(BaseModel):
             message (str): the message
             role (str): 'system' or 'user'
         """
-        self.messages.append({"role": role, "content": message})
         self.messages = self.messages[-conf.max_retention :]
+        self.messages.append({"role": role, "content": message})
 
-    def prepare_chat(self, system_message: str, initial_prompt: str):
-        prepared = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": initial_prompt},
-        ]
+    def prepare_chat(self, initial_prompt: str) -> list[dict]:
+        prepared = []
+        if initial_prompt:
+            prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
         return prepared
 
@@ -56,7 +57,7 @@ class Conversations(BaseModel):
 
     conversations: dict[int, Conversation] = {}
 
-    def get_conversation(self, member: discord.Member):
+    def get_conversation(self, member: discord.Member) -> Conversation:
         key = f"{member.id}{member.guild.id}"
         if key in self.conversations:
             return self.conversations[key]
