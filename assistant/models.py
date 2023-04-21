@@ -43,7 +43,10 @@ class Conversation(BaseModel):
             message (str): the message
             role (str): 'system' or 'user'
         """
-        self.messages = self.messages[-conf.max_retention :]
+        if conf.max_retention:
+            self.messages = self.messages[-conf.max_retention :]
+        else:
+            self.messages.clear()
         self.messages.append({"role": role, "content": message})
 
     def prepare_chat(
