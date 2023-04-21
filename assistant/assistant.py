@@ -280,6 +280,7 @@ class Assistant(commands.Cog):
         `avatar` - the user's avatar url
         `owner` - the owner of the server
         `servercreated` - the create date/time of the server
+        `server` - the name of the server
         """
         content = get_attachments(ctx)
         if content:
@@ -330,6 +331,7 @@ class Assistant(commands.Cog):
         `avatar` - the user's avatar url
         `owner` - the owner of the server
         `servercreated` - the create date/time of the server
+        `server` - the name of the server
         """
         content = get_attachments(ctx)
         if content:
