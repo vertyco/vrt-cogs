@@ -219,7 +219,7 @@ class Assistant(commands.Cog):
                 "Please provide a prompt or text file containing a prompt"
             )
         conf = self.db.get_conf(ctx.guild)
-        conf.prompt = prompt
+        conf.prompt = prompt.strip()
         await ctx.send("Initial prompt has been set!")
         await self.save_conf()
 
