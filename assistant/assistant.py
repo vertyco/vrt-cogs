@@ -9,6 +9,7 @@ import openai
 from aiocache import cached
 from openai.error import InvalidRequestError
 from redbot.core import Config, commands
+from redbot.core.utils.chat_formatting import humanize_list
 
 from .models import DB, Conversations, GuildSettings
 from .views import SetAPI
@@ -39,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.10"
+    __version__ = "0.2.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -123,6 +124,7 @@ class Assistant(commands.Cog):
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         date = datetime.now().astimezone().strftime("%B %d, %Y")
         time = datetime.now().astimezone().strftime("%I:%M %p %Z")
+        roles = [role.name for role in author.roles]
         params = {
             "botname": self.bot.user.name,
             "timestamp": timestamp,
@@ -130,6 +132,11 @@ class Assistant(commands.Cog):
             "time": time,
             "members": author.guild.member_count,
             "user": author.display_name,
+            "datetime": str(datetime.now()),
+            "roles": humanize_list(roles),
+            "avatar": author.avatar.url if author.avatar else "",
+            "owner": author.guild.owner,
+            "servercreated": str(author.guild.created_at),
         }
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
@@ -247,6 +254,10 @@ class Assistant(commands.Cog):
         `time` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
         `user` - the current user asking the question
+        `roles` - the names of the user's roles
+        `avatar` - the user's avatar url
+        `owner` - the owner of the server
+        `servercreated` - the create date/time of the server
         """
         content = get_attachments(ctx)
         if content:
@@ -293,6 +304,10 @@ class Assistant(commands.Cog):
         `time` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
         `user` - the current user asking the question
+        `roles` - the names of the user's roles
+        `avatar` - the user's avatar url
+        `owner` - the owner of the server
+        `servercreated` - the create date/time of the server
         """
         content = get_attachments(ctx)
         if content:
