@@ -11,6 +11,7 @@ class GuildSettings(BaseModel):
     endswith_questionmark: bool = False
     max_retention: int = 0
     min_length: int = 7
+    mention: bool = False
     enabled: bool = True
 
 
