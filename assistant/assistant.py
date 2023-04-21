@@ -145,6 +145,7 @@ class Assistant(commands.Cog):
             "avatar": author.avatar.url if author.avatar else "",
             "owner": author.guild.owner,
             "servercreated": str(author.guild.created_at),
+            "server": author.guild.name,
         }
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
@@ -168,7 +169,7 @@ class Assistant(commands.Cog):
         return reply
 
     @commands.group(name="assistant", aliases=["ass"])
-    @commands.guildowner()
+    @commands.has_guild_permissions(manage_guild=True)
     async def assistant(self, ctx: commands.Context):
         """
         Setup the assistant
