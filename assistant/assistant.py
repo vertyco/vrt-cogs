@@ -319,7 +319,7 @@ class Assistant(commands.Cog):
 
     @assistant.command(name="questionmark")
     async def toggle_question(self, ctx: commands.Context):
-        """Toggle whether questions need to end with a question mark to be answered"""
+        """Toggle whether questions need to end with **__?__**"""
         conf = self.db.get_conf(ctx.guild)
         if conf.endswith_questionmark:
             conf.endswith_questionmark = False
@@ -372,7 +372,7 @@ class Assistant(commands.Cog):
         self, ctx: commands.Context, min_question_length: int
     ):
         """
-        set the minimum character length for questions to be answered
+        set min character length for questions
 
         Set to 0 to respond to anything
         """
