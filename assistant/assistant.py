@@ -117,11 +117,11 @@ class Assistant(commands.Cog):
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         system = (
             f"You are {self.bot.user.name},"
-            f"Current date and time is {timestamp},"
-            f"Todays date is {date},"
-            f"Member count is {author.guild.member_count},"
-            f"Server owner is {author.guild.owner.display_name},"
-            f"User's name is {author.display_name}"
+            f"Current date and time: {timestamp},"
+            f"Todays date: {date},"
+            f"Member count: {author.guild.member_count},"
+            f"Server owner: {author.guild.owner.display_name},"
+            f"User's name: {author.display_name}"
         )
 
         conversation = self.chats.get_conversation(author)
