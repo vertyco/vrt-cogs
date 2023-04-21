@@ -62,7 +62,11 @@ class CustomCmdFmt:
         self,
         bot: Red,
         cmd: Union[
-            HybridGroup, HybridCommand, HybridAppCommand, SlashCommand, commands.Command
+            HybridGroup,
+            HybridCommand,
+            HybridAppCommand,
+            SlashCommand,
+            commands.Command,
         ],
         prefix: str,
         replace_botname: bool,
@@ -97,21 +101,31 @@ class CustomCmdFmt:
 
         if self.is_slash:
             self.options = cmd.to_dict()["options"]
-            self.desc: str = cmd.description.replace("\n", "<br/>").replace("`", "")
+            self.desc: str = cmd.description.replace("\n", "<br/>").replace(
+                "`", ""
+            )
         else:
             try:
-                self.desc: str = cmd.help.replace("\n", "<br/>").replace("`", "")
+                self.desc: str = cmd.help.replace("\n", "<br/>").replace(
+                    "`", ""
+                )
             except AttributeError:
-                self.desc: str = cmd.description.replace("\n", "<br/>").replace("`", "")
-
-            self.perms = self.cmd.requires
+                self.desc: str = cmd.description.replace(
+                    "\n", "<br/>"
+                ).replace("`", "")
+            try:
+                self.perms = self.cmd.requires
+            except AttributeError:
+                self.perms = None
             cd = cmd.cooldown
             self.cooldown: str = (
                 f"{cd.rate} {PER} {cd.per} {SECOND if int(cd.per) == 1 else SECONDS}"
                 if cd
                 else None
             )
-            self.aliases: str = humanize_list(cmd.aliases) if cmd.aliases else ""
+            self.aliases: str = (
+                humanize_list(cmd.aliases) if cmd.aliases else ""
+            )
 
     def get_doc(self) -> Optional[str]:
         # Get header of command
@@ -167,12 +181,13 @@ class CustomCmdFmt:
                 doc += f" - {SLASH} {USAGE}: `{usage}`\n"
 
             limit = PRIVILEGES[self.privilege_level]
-            priv = self.perms.privilege_level
-            if priv:
-                if priv.value > limit:
-                    return None
-                if priv.value > 1:
-                    doc += f" - {RESTRICTED}: `{priv.name}`\n"
+            if perms := self.perms:
+                priv = perms.privilege_level
+                if priv:
+                    if priv.value > limit:
+                        return None
+                    if priv.value > 1:
+                        doc += f" - {RESTRICTED}: `{priv.name}`\n"
 
             if self.aliases:
                 doc += f" - {ALIASES}: `{self.aliases}`\n"
@@ -203,17 +218,21 @@ class CustomCmdFmt:
                         log.warning(err)
                         continue
                     elif not docstring:
-                        err = _("Could not get docstring for {} converter").format(
+                        err = _(
+                            "Could not get docstring for {} converter"
+                        ).format(str(p))
+                        log.warning(err)
+                        continue
+                    elif not cls:
+                        err = _("Could not get class for {} converter").format(
                             str(p)
                         )
                         log.warning(err)
                         continue
-                    elif not cls:
-                        err = _("Could not get class for {} converter").format(str(p))
-                        log.warning(err)
-                        continue
 
-                    cstring = str(cls).replace("<class '", "").replace("'>", "")
+                    cstring = (
+                        str(cls).replace("<class '", "").replace("'>", "")
+                    )
                     ext += f"> ### {p.name}: {cstring}\n"
                     ext += f"> - {AUTOCOMPLETE}: {autocomplete}\n"
 
@@ -260,9 +279,9 @@ class CustomCmdFmt:
                         docstring = CONVERTERS.get(converter.__args__[0])
 
                     if not docstring:
-                        err = _("Could not get docstring for {} converter").format(
-                            str(p)
-                        )
+                        err = _(
+                            "Could not get docstring for {} converter"
+                        ).format(str(p))
                         log.warning(err)
                         continue
 
