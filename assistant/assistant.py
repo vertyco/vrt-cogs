@@ -86,6 +86,8 @@ class Assistant(commands.Cog):
         if not message.channel:
             return
         conf = self.db.get_conf(message.guild)
+        if not conf.enabled:
+            return
         if not conf.api_key:
             return
         channel = message.channel
