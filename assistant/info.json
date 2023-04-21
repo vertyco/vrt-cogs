@@ -1,0 +1,36 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Chat GPT cog with configurable prompt injection",
+  "disabled": false,
+  "end_user_data_statement": "This cog doesn't store data about users",
+  "hidden": false,
+  "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys",
+  "min_bot_version": "3.5.0.dev0",
+  "permissions": [
+    "read_messages",
+    "send_messages"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "openai",
+    "aiocache",
+    "ujson",
+    "msgpack",
+    "aiohttp",
+    "pydantic",
+    "orjson"
+  ],
+  "short": "Another GPT Cog",
+  "tags": [
+    "utility",
+    "assistant",
+    "gpt",
+    "ai",
+    "chat",
+    "chatgpt",
+    "chat-gpt"
+  ],
+  "type": "COG"
+}
