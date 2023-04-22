@@ -37,6 +37,11 @@ class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
+    def character_count(self, conf: GuildSettings, message: str) -> int:
+        initial = len(conf.system_prompt) + len(conf.prompt) + len(message)
+        counts = sum(len(message["content"]) for message in self.messages)
+        return initial + counts
+
     def update_messages(
         self, conf: GuildSettings, message: str, role: str
     ) -> None:
@@ -56,6 +61,8 @@ class Conversation(BaseModel):
             self.messages.clear()
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
+            while self.character_count() > 16384 and self.messages:
+                self.messages.pop(0)
 
         self.messages.append({"role": role, "content": message})
         self.last_updated = datetime.now().timestamp()
