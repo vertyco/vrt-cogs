@@ -9,7 +9,7 @@ import openai
 from aiocache import cached
 from openai.error import InvalidRequestError
 from redbot.core import Config, commands
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .models import DB, Conversations, GuildSettings
 from .views import SetAPI
@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.19"
+    __version__ = "0.4.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -108,7 +108,12 @@ class Assistant(commands.Cog):
         async with channel.typing():
             try:
                 reply = await self.get_answer(content, message.author, conf)
-                await message.reply(reply, mention_author=conf.mention)
+                parts = [p for p in pagify(reply, page_length=2000)]
+                for index, p in enumerate(parts):
+                    if not index:
+                        await message.reply(p, mention_author=conf.mention)
+                    else:
+                        await message.channel.send(p)
             except InvalidRequestError as e:
                 if error := e.error:
                     await message.reply(
@@ -125,7 +130,12 @@ class Assistant(commands.Cog):
         async with ctx.typing():
             try:
                 reply = await self.get_answer(question, ctx.author, conf)
-                await ctx.reply(reply, mention_author=conf.mention)
+                parts = [p for p in pagify(reply, page_length=2000)]
+                for index, p in enumerate(parts):
+                    if not index:
+                        await ctx.reply(p, mention_author=conf.mention)
+                    else:
+                        await ctx.send(p)
             except Exception as e:
                 await ctx.send(f"**Error**\n```py\n{e}\n```")
 
@@ -307,6 +317,11 @@ class Assistant(commands.Cog):
 
         conf = self.db.get_conf(ctx.guild)
 
+        if prompt and (len(prompt) + len(conf.system_prompt)) >= 16000:
+            return await ctx.send(
+                "Training data is too large! Initial and system prompt need to be under 16k characters."
+            )
+
         if not prompt and conf.prompt:
             conf.prompt = ""
             await ctx.send("The initial prompt has been removed!")
@@ -362,6 +377,11 @@ class Assistant(commands.Cog):
                 return await ctx.send(f"Error:```py\n{e}\n```")
 
         conf = self.db.get_conf(ctx.guild)
+
+        if system_prompt and (len(system_prompt) + len(conf.prompt)) >= 16000:
+            return await ctx.send(
+                "Training data is too large! System and initial prompt need to be under 16k characters"
+            )
 
         if not system_prompt and conf.system_prompt:
             conf.system_prompt = ""
@@ -453,6 +473,14 @@ class Assistant(commands.Cog):
         else:
             await ctx.tick()
         await self.save_conf()
+
+        if max_retention > 15:
+            await ctx.send(
+                (
+                    "**NOTE:** Setting message retention too high may result in going over the token limit, "
+                    "if this happens the bot may not respond until the retention is lowered."
+                )
+            )
 
     @assistant.command(name="maxtime")
     async def max_retention_time(
