@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.18"
+    __version__ = "0.3.19"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -114,6 +114,8 @@ class Assistant(commands.Cog):
                     await message.reply(
                         error["message"], mention_author=conf.mention
                     )
+            except Exception as e:
+                await message.channel.send(f"**Error**\n```py\n{e}\n```")
 
     @commands.command(name="chat")
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -125,7 +127,7 @@ class Assistant(commands.Cog):
                 reply = await self.get_answer(question, ctx.author, conf)
                 await ctx.reply(reply, mention_author=conf.mention)
             except Exception as e:
-                await ctx.reply(f"**Error**\n```py\n{e}\n```")
+                await ctx.send(f"**Error**\n```py\n{e}\n```")
 
     @cached(ttl=120)
     async def get_answer(
