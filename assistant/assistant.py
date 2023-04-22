@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.17"
+    __version__ = "0.3.18"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -161,8 +161,7 @@ class Assistant(commands.Cog):
         initial_prompt = conf.prompt.format(**params)
 
         conversation = self.chats.get_conversation(author)
-        user_message = f"{author.display_name}: {message}"
-        conversation.update_messages(conf, user_message, "user")
+        conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
 
         response = openai.ChatCompletion.create(
