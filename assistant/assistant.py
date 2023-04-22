@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.16"
+    __version__ = "0.3.17"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -198,12 +198,13 @@ class Assistant(commands.Cog):
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
         desc = (
-            f"`Enabled:       `{conf.enabled}\n"
-            f"`Channel:       `{channel}\n"
-            f"`? Required:    `{conf.endswith_questionmark}\n"
-            f"`Mentions:      `{conf.mention}\n"
-            f"`Max Retention: `{conf.max_retention}\n"
-            f"`Min Length:    `{conf.min_length}"
+            f"`Enabled:          `{conf.enabled}\n"
+            f"`Channel:          `{channel}\n"
+            f"`? Required:       `{conf.endswith_questionmark}\n"
+            f"`Mentions:         `{conf.mention}\n"
+            f"`Max Retention:    `{conf.max_retention}\n"
+            f"`Retention Expire: `{conf.max_retention_time}s\n"
+            f"`Min Length:       `{conf.min_length}"
         )
         system_file = (
             discord.File(
@@ -447,6 +448,32 @@ class Assistant(commands.Cog):
         conf.max_retention = max_retention
         if max_retention == 0:
             await ctx.send("Conversation retention has been disabled")
+        else:
+            await ctx.tick()
+        await self.save_conf()
+
+    @assistant.command(name="maxtime")
+    async def max_retention_time(
+        self, ctx: commands.Context, retention_time: int
+    ):
+        """
+        Set the conversation expiration time
+
+        Regardless of this number, the initial prompt and internal system message are always included,
+        this only applies to any conversation between the user and bot after that.
+
+        Set to 0 to store conversations indefinitely or until the bot restarts or cog is reloaded
+        """
+        if retention_time < 0:
+            return await ctx.send(
+                "Max retention time needs to be at least 0 or higher"
+            )
+        conf = self.db.get_conf(ctx.guild)
+        conf.max_retention_time = retention_time
+        if retention_time == 0:
+            await ctx.send(
+                "Conversations will be stored until the bot restarts or the cog is reloaded"
+            )
         else:
             await ctx.tick()
         await self.save_conf()
