@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.15"
+    __version__ = "0.3.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -107,15 +107,25 @@ class Assistant(commands.Cog):
             return
         async with channel.typing():
             try:
-                reply = await self.get_answer(
-                    content.lower().strip(), message.author, conf
-                )
+                reply = await self.get_answer(content, message.author, conf)
                 await message.reply(reply, mention_author=conf.mention)
             except InvalidRequestError as e:
                 if error := e.error:
                     await message.reply(
                         error["message"], mention_author=conf.mention
                     )
+
+    @commands.command(name="ask")
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def ask_question(self, ctx: commands.Context, *, question: str):
+        """Ask [botname] a question!"""
+        conf = self.db.get_conf(ctx.guild)
+        async with ctx.typing():
+            try:
+                reply = await self.get_answer(question, ctx.author, conf)
+                await ctx.reply(reply, mention_author=conf.mention)
+            except Exception as e:
+                await ctx.reply(f"**Error**\n```py\n{e}\n```")
 
     @cached(ttl=120)
     async def get_answer(
