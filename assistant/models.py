@@ -61,7 +61,9 @@ class Conversation(BaseModel):
             self.messages.clear()
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
-            while self.character_count() > 16384 and self.messages:
+            while (
+                self.character_count(conf, message) > 16384 and self.messages
+            ):
                 self.messages.pop(0)
 
         self.messages.append({"role": role, "content": message})
