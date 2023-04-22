@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.15"
+    __version__ = "0.3.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -308,7 +308,12 @@ class Assistant(commands.Cog):
             conf.prompt = ""
             await ctx.send("The initial prompt has been removed!")
         elif not prompt and not conf.prompt:
-            await ctx.send("Please include an initial prompt or .txt file!")
+            await ctx.send(
+                (
+                    "Please include an initial prompt or .txt file!\n"
+                    f"Use `{ctx.prefix}help assistant prompt` to view details for this command"
+                )
+            )
         elif prompt and conf.prompt:
             conf.prompt = prompt.strip()
             await ctx.send("The initial prompt has been overwritten!")
@@ -359,7 +364,12 @@ class Assistant(commands.Cog):
             conf.system_prompt = ""
             await ctx.send("The system prompt has been removed!")
         elif not system_prompt and not conf.system_prompt:
-            await ctx.send("Please include a system prompt or .txt file!")
+            await ctx.send(
+                (
+                    "Please include a system prompt or .txt file!\n"
+                    f"Use `{ctx.prefix}help assistant system` to view details for this command"
+                )
+            )
         elif system_prompt and conf.system_prompt:
             conf.system_prompt = system_prompt.strip()
             await ctx.send("The system prompt has been overwritten!")

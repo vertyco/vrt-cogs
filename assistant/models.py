@@ -4,8 +4,8 @@ from pydantic import BaseModel
 
 
 class GuildSettings(BaseModel):
-    system_prompt: str = ""
-    prompt: str = ""
+    system_prompt: str = "You are a helpful discord assistant named {botname}"
+    prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
     channel_id: int = 0
     api_key: str = ""
     endswith_questionmark: bool = False
