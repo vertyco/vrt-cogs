@@ -142,6 +142,7 @@ class Assistant(commands.Cog):
         self, message: str, author: discord.Member, conf: GuildSettings
     ):
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
+        created = f"<t:{round(author.guild.created_at.timestamp())}:F>"
         date = datetime.now().astimezone().strftime("%B %d, %Y")
         time = datetime.now().astimezone().strftime("%I:%M %p %Z")
         roles = [role.name for role in author.roles]
@@ -156,7 +157,7 @@ class Assistant(commands.Cog):
             "roles": humanize_list(roles),
             "avatar": author.avatar.url if author.avatar else "",
             "owner": author.guild.owner,
-            "servercreated": str(author.guild.created_at),
+            "servercreated": created,
             "server": author.guild.name,
         }
         system_prompt = conf.system_prompt.format(**params)
