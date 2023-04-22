@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import discord
 import orjson
 from pydantic import BaseModel
@@ -10,6 +12,7 @@ class GuildSettings(BaseModel):
     api_key: str = ""
     endswith_questionmark: bool = False
     max_retention: int = 0
+    max_retention_time: int = 1800
     min_length: int = 7
     mention: bool = False
     enabled: bool = True
@@ -32,6 +35,7 @@ class DB(BaseModel):
 
 class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
+    last_updated: float = 0.0
 
     def update_messages(
         self, conf: GuildSettings, message: str, role: str
@@ -43,11 +47,18 @@ class Conversation(BaseModel):
             message (str): the message
             role (str): 'system' or 'user'
         """
-        if conf.max_retention:
-            self.messages = self.messages[-conf.max_retention :]
-        else:
+        clear = [
+            (datetime.now().timestamp() - self.last_updated)
+            > conf.max_retention_time,
+            not conf.max_retention,
+        ]
+        if any(clear):
             self.messages.clear()
+        elif conf.max_retention:
+            self.messages = self.messages[-conf.max_retention :]
+
         self.messages.append({"role": role, "content": message})
+        self.last_updated = datetime.now().timestamp()
 
     def prepare_chat(
         self, system_prompt: str = "", initial_prompt: str = ""
