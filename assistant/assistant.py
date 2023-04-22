@@ -9,7 +9,7 @@ import openai
 from aiocache import cached
 from openai.error import InvalidRequestError
 from redbot.core import Config, commands
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import humanize_list, humanize_number, pagify
 
 from .models import DB, Conversations, GuildSettings
 from .views import SetAPI
@@ -209,6 +209,8 @@ class Assistant(commands.Cog):
         """
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
+        system_length = len(conf.system_prompt)
+        prompt_length = len(conf.prompt)
         desc = (
             f"`Enabled:          `{conf.enabled}\n"
             f"`Channel:          `{channel}\n"
@@ -216,7 +218,9 @@ class Assistant(commands.Cog):
             f"`Mentions:         `{conf.mention}\n"
             f"`Max Retention:    `{conf.max_retention}\n"
             f"`Retention Expire: `{conf.max_retention_time}s\n"
-            f"`Min Length:       `{conf.min_length}"
+            f"`Min Length:       `{conf.min_length}\n"
+            f"`System Message:   `{humanize_number(system_length)} chars\n"
+            f"`Initial Prompt:   `{humanize_number(prompt_length)} chars"
         )
         system_file = (
             discord.File(
