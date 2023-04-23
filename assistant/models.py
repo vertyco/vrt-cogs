@@ -63,7 +63,7 @@ class Conversation(BaseModel):
             self.messages = self.messages[-conf.max_retention :]
 
     def update_messages(
-        self, conf: GuildSettings, message: str, role: str, name: str
+        self, conf: GuildSettings, message: str, role: str
     ) -> None:
         """Update conversation cache
 
@@ -76,7 +76,7 @@ class Conversation(BaseModel):
         while self.token_count(conf, message) > 4096 and self.messages:
             self.messages.pop(0)
 
-        self.messages.append({"role": role, "content": message, "name": name})
+        self.messages.append({"role": role, "content": message})
         self.last_updated = datetime.now().timestamp()
 
     def prepare_chat(
