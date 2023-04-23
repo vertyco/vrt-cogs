@@ -135,6 +135,8 @@ class Admin(MixinMeta):
 
         **Note:** This just meant to get you headed in the right direction, creating a perfect training prompt takes trial and error.
         """
+        if not channels:
+            return await ctx.send_help()
         conf = self.db.get_conf(ctx.guild)
         system_prompt = (
             f"You are writing a training prompt for Q&A about {ctx.guild.name}"
@@ -206,9 +208,11 @@ class Admin(MixinMeta):
             embed.description = (
                 f"Here is your training prompt. Keep in mind this may not be perfect in any way.\n"
                 f"This prompt uses {humanize_number(tokens)} tokens.\n"
-                f"Tokens consumed during training: {humanize_number(tokens_consumed)}"
+                f"Tokens consumed during training: {humanize_number(tokens_consumed)}\n\n"
+                "**Note:** Keep in mind this is not a replacement for good prompting, its just to get you going."
             )
             embed.set_thumbnail(url=None)
+            embed.clear_fields()
             await msg.edit(embed=embed, attachments=[prompt_file])
 
     @assistant.command(name="prompt", aliases=["pre"])
