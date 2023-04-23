@@ -139,9 +139,6 @@ class Admin(MixinMeta):
         if not channels:
             return await ctx.send_help()
         conf = self.db.get_conf(ctx.guild)
-        system_prompt = (
-            f"You are writing a training prompt for Q&A about {ctx.guild.name}"
-        )
         initial_prompt = (
             "Condense the following information as much as possible, "
             "the result will be used as the initial prompt to provide Q&A so keep thinks bulleted.\n"
@@ -196,14 +193,14 @@ class Admin(MixinMeta):
                 condensed_training_data = ""
                 for chunk in token_pagify(training_data):
                     reply, usage = await self.get_training_response(
-                        chunk, conf, system_prompt
+                        f"{initial_prompt}\n{chunk}", conf
                     )
                     condensed_training_data += f"{reply.strip()}\n"
                     tokens_consumed += usage
                 training_data = condensed_training_data
 
             pre_final_prompt, usage = await self.get_training_response(
-                training_data, conf, system_prompt
+                f"{initial_prompt}\n{training_data}", conf
             )
             tokens_consumed += usage
             final_prompt = (
