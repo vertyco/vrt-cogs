@@ -132,7 +132,7 @@ class Admin(MixinMeta):
         `servercreated` - the create date/time of the server
         `server` - the name of the server
         `messages` - count of messages between the user and bot
-        `characters` - count of total characters for all messages between the user and bot
+        `tokens` - the token count of the current conversation
         `retention` - max retention number
         `retentiontime` - max retention time seconds
         """
@@ -200,7 +200,7 @@ class Admin(MixinMeta):
         `servercreated` - the create date/time of the server
         `server` - the name of the server
         `messages` - count of messages between the user and bot
-        `characters` - count of total characters for all messages between the user and bot
+        `tokens` - the token count of the current conversation
         `retention` - max retention number
         `retentiontime` - max retention time seconds
         """
