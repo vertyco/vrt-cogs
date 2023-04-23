@@ -134,6 +134,7 @@ class Admin(MixinMeta):
         The idea is to have the bot compile the information, condense it and provide a usable training prompt for your Q&A channel.
 
         **Note:** This just meant to get you headed in the right direction, creating a perfect training prompt takes trial and error.
+        Make sure to train on channels containing information about the server and NOT chat channels.
         """
         if not channels:
             return await ctx.send_help()
