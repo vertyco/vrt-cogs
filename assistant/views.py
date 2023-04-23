@@ -36,7 +36,7 @@ class SetAPI(discord.ui.View):
         label="Set OpenAI Key", style=discord.ButtonStyle.primary
     )
     async def confirm(
-        self, interaction: discord.Interaction, b: discord.ui.Button
+            self, interaction: discord.Interaction, b: discord.ui.Button
     ):
         modal = APIModal()
         await interaction.response.send_modal(modal)

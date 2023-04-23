@@ -43,7 +43,7 @@ class Conversation(BaseModel):
         return initial + counts
 
     def update_messages(
-        self, conf: GuildSettings, message: str, role: str
+            self, conf: GuildSettings, message: str, role: str
     ) -> None:
         """Update conversation cache
 
@@ -60,9 +60,9 @@ class Conversation(BaseModel):
         if any(clear):
             self.messages.clear()
         elif conf.max_retention:
-            self.messages = self.messages[-conf.max_retention :]
+            self.messages = self.messages[-conf.max_retention:]
             while (
-                self.character_count(conf, message) > 16384 and self.messages
+                    self.character_count(conf, message) > 16384 and self.messages
             ):
                 self.messages.pop(0)
 
@@ -70,7 +70,7 @@ class Conversation(BaseModel):
         self.last_updated = datetime.now().timestamp()
 
     def prepare_chat(
-        self, system_prompt: str = "", initial_prompt: str = ""
+            self, system_prompt: str = "", initial_prompt: str = ""
     ) -> list[dict]:
         prepared = []
         if system_prompt:
