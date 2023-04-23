@@ -45,7 +45,7 @@ class Conversation(BaseModel):
 
     def token_count(self, conf: GuildSettings, message: str) -> int:
         initial = conf.system_prompt + conf.prompt + message
-        return num_tokens_from_string(initial + self.user_token_count())
+        return num_tokens_from_string(initial) + self.user_token_count()
 
     def is_expired(self, conf: GuildSettings):
         return (
