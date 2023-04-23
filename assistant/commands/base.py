@@ -30,7 +30,7 @@ class Base(MixinMeta):
             except Exception as e:
                 await ctx.send(f"**Error**\n```py\n{e}\n```")
 
-    @commands.command(name="tokencount")
+    @commands.command(name="convostats")
     @commands.guild_only()
     async def token_count(
         self, ctx: commands.Context, *, user: discord.Member = None
