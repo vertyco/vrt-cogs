@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import discord
 import orjson
@@ -83,7 +84,7 @@ class Conversation(BaseModel):
 
     def prepare_chat(
         self, system_prompt: str = "", initial_prompt: str = ""
-    ) -> list[dict]:
+    ) -> List[dict]:
         prepared = []
         if system_prompt:
             prepared.append({"role": "system", "content": system_prompt})

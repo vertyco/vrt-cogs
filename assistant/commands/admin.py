@@ -1,12 +1,19 @@
 import logging
 from io import BytesIO
+from typing import Union
 
 import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import humanize_list, humanize_number
 
 from ..abc import MixinMeta
-from ..common.utils import get_attachments, num_tokens_from_string
+from ..common.utils import (
+    extract_message_content,
+    fetch_channel_history,
+    get_attachments,
+    num_tokens_from_string,
+    token_pagify,
+)
 from ..views import SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -110,6 +117,97 @@ class Admin(MixinMeta):
             content="OpenAI key has been set!", embed=None, view=None
         )
         await self.save_conf()
+
+    @assistant.command(name="train")
+    async def create_training_prompt(
+        self,
+        ctx: commands.Context,
+        *channels: Union[
+            discord.TextChannel, discord.Thread, discord.ForumChannel
+        ],
+    ):
+        """
+        Automatically create a training prompt for your server
+
+        **How to Use**
+        Include channels that give helpful info about your server, NOT normal chat channels. The bot will only scan the first 20 messages of each channel.
+        The idea is to have the bot compile the information, condense it and provide a usable training prompt for your Q&A channel.
+
+        **Note:** This just meant to get you headed in the right direction, creating a perfect training prompt takes trial and error.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        system_prompt = (
+            f"You are writing a training prompt for Q&A about {ctx.guild.name}"
+        )
+        loading = "https://i.imgur.com/l3p6EMX.gif"
+        color = ctx.author.color
+        channel_list = humanize_list([c.mention for c in channels])
+        embed = discord.Embed(
+            description="Scanning channels shortly, please wait...",
+            color=color,
+        )
+        embed.set_thumbnail(url=loading)
+        embed.add_field(name="Channels being trained", value=channel_list)
+        async with ctx.typing():
+            msg = await ctx.send(embed=embed)
+            training_data = ""
+            tokens_consumed = 0
+            for channel in channels:
+                embed.description = f"Processing {channel.mention}..."
+                await msg.edit(embed=embed)
+                system = f"{system_prompt}, The current channel is {channel.name} (mention: {channel.mention})"
+                channelcontent = ""
+                for message in await fetch_channel_history(channel):
+                    if content := extract_message_content(message):
+                        channelcontent += f"{content}\n"
+                if channelcontent:
+                    for chunk in token_pagify(channelcontent):
+                        reply, usage = await self.get_training_response(
+                            chunk, conf, system
+                        )
+                        training_data += f"{reply.strip()}\n"
+                        tokens_consumed += usage
+
+            if num_tokens_from_string(training_data) > 3000:
+                embed.description = "Condensing compiled channel content..."
+                await msg.edit(embed=embed)
+
+            while num_tokens_from_string(training_data) > 3000:
+                condensed_training_data = ""
+                for chunk in token_pagify(training_data):
+                    reply, usage = await self.get_training_response(
+                        chunk, conf, system_prompt
+                    )
+                    condensed_training_data += f"{reply.strip()}\n"
+                    tokens_consumed += usage
+                training_data = condensed_training_data
+
+            pre_final_prompt, usage = await self.get_training_response(
+                training_data, conf, system_prompt
+            )
+            tokens_consumed += usage
+            final_prompt = (
+                "You are a bot named {botname} - and are currently chatting in a Discord server called {server}\n\n"
+                "Consider the following in your responses:\n"
+                "- Answer questions in as few characters as possible\n"
+                "- Current time: {timestamp}\n"
+                "- Member count: {members}\n"
+                "- The server owner is {owner}\n"
+                "- The server was created on {servercreated}\n"
+                f"{pre_final_prompt}\n\n"
+                "The person you are replying to is {user}"
+            )
+            prompt_file = discord.File(
+                BytesIO(final_prompt.encode()), filename="TrainingPrompt.txt"
+            )
+            tokens = num_tokens_from_string(final_prompt)
+            embed.description = (
+                f"Here is your training prompt. Keep in mind this may not be perfect in any way.\n"
+                f"This prompt uses {humanize_number(tokens)} tokens.\n"
+                f"Tokens consumed during training: {humanize_number(tokens_consumed)}"
+            )
+            embed.set_thumbnail(url=None)
+            await msg.edit(embed=embed, attachments=[prompt_file])
 
     @assistant.command(name="prompt", aliases=["pre"])
     async def set_initial_prompt(

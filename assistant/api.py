@@ -23,6 +23,29 @@ class API(MixinMeta):
         )
         return reply
 
+    async def get_training_response(
+        self, text: str, conf: GuildSettings, system: str
+    ) -> tuple:
+        prompt = (
+            "Condense the following information as much as possible, "
+            "the result will be used as the initial prompt to provide Q&A so keep thinks bulleted.\n"
+            "Maintain all channel mentions in the <#ID> format.\n"
+            f"{text}"
+        )
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+        response = await asyncio.to_thread(
+            self.call_openai, conf, messages, 0.01
+        )
+        try:
+            reply = response["choices"][0]["message"]["content"]
+            usage = response["usage"]["total_tokens"]
+            return reply, usage
+        except KeyError:
+            return None, None
+
     def prepare_call(
         self, message: str, author: discord.Member, conf: GuildSettings
     ):
@@ -69,11 +92,13 @@ class API(MixinMeta):
         conversation.cleanup(conf)
         return reply
 
-    def call_openai(self, conf: GuildSettings, messages: dict) -> dict:
+    def call_openai(
+        self, conf: GuildSettings, messages: dict, temperature: float = 0
+    ) -> dict:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            temperature=0,
+            temperature=temperature,
             api_key=conf.api_key,
         )
         return response

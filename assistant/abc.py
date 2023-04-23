@@ -23,3 +23,9 @@ class MixinMeta(metaclass=ABCMeta):
         self, message: str, author: discord.Member, conf: GuildSettings
     ) -> str:
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_training_response(
+        self, text: str, conf: GuildSettings, system: str
+    ) -> tuple:
+        raise NotImplementedError
