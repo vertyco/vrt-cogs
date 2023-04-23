@@ -29,6 +29,7 @@ class Base(MixinMeta):
                         await ctx.send(p)
             except Exception as e:
                 await ctx.send(f"**Error**\n```py\n{e}\n```")
+                log.error("Chat command failed", exc_info=e)
 
     @commands.command(name="convostats")
     @commands.guild_only()
