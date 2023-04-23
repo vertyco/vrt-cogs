@@ -28,6 +28,12 @@ class AssistantListener(MixinMeta):
         # Ignore if channel doesn't exist
         if not message.channel:
             return
+        # Ignore references to other members
+        if hasattr(message, "reference"):
+            ref = message.reference.resolved
+            if ref and ref.author.id != self.bot.user.id:
+                return
+
         conf = self.db.get_conf(message.guild)
         if not conf.enabled:
             return
