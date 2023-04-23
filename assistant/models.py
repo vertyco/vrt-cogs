@@ -41,6 +41,8 @@ class Conversation(BaseModel):
 
     def user_token_count(self) -> int:
         messages = "".join(message["content"] for message in self.messages)
+        if not self.messages:
+            messages = ""
         return num_tokens_from_string(messages)
 
     def token_count(self, conf: GuildSettings, message: str) -> int:
