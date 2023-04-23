@@ -70,6 +70,7 @@ class API(MixinMeta):
         conversation.update_messages(
             conf, reply, "assistant", self.bot.user.display_name
         )
+        conversation.cleanup(conf)
         return reply
 
     def call_openai(self, conf: GuildSettings, messages: dict) -> dict:
