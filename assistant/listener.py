@@ -29,7 +29,7 @@ class AssistantListener(MixinMeta):
         if not message.channel:
             return
         # Ignore references to other members
-        if hasattr(message, "reference"):
+        if hasattr(message, "reference") and message.reference:
             ref = message.reference.resolved
             if ref and ref.author.id != self.bot.user.id:
                 return
