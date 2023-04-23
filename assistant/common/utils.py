@@ -7,14 +7,16 @@ log = logging.getLogger("red.vrt.assistant.utils")
 
 def get_attachments(message: discord.Message) -> list[discord.Attachment]:
     """Get all attachments from context"""
-    content = []
+    attachments = []
     if message.attachments:
-        atchmts = [a for a in message.attachments]
-        content.extend(atchmts)
+        direct_attachments = [a for a in message.attachments]
+        attachments.extend(direct_attachments)
     if hasattr(message, "reference"):
         try:
-            atchmts = [a for a in message.reference.resolved.attachments]
-            content.extend(atchmts)
+            referenced_attachments = [
+                a for a in message.reference.resolved.attachments
+            ]
+            attachments.extend(referenced_attachments)
         except AttributeError:
             pass
-    return content
+    return attachments
