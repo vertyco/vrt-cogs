@@ -157,7 +157,9 @@ class Admin(MixinMeta):
                 await msg.edit(embed=embed)
                 system = f"{system_prompt}, The current channel is {channel.name} (mention: {channel.mention})"
                 channelcontent = ""
-                for message in await fetch_channel_history(channel):
+                for message in await fetch_channel_history(
+                    channel, oldest=False
+                ):
                     if content := extract_message_content(message):
                         channelcontent += f"{content}\n"
                 if channelcontent:
