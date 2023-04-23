@@ -4,7 +4,7 @@
   ],
   "description": "Chat GPT assistant(or chat) cog with configurable prompt injection",
   "disabled": false,
-  "end_user_data_statement": "This cog doesn't store data about users",
+  "end_user_data_statement": "This cog doesn't store data about users, however it does store prompts and OpenAI API keys on a per server basis",
   "hidden": false,
   "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys",
   "min_bot_version": "3.5.0.dev0",

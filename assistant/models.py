@@ -44,6 +44,11 @@ class Conversation(BaseModel):
         counts = sum(len(message["content"]) for message in self.messages)
         return num_tokens_from_string(initial + counts)
 
+    def is_expired(self, conf: GuildSettings):
+        return (
+            datetime.now().timestamp() - self.last_updated
+        ) > conf.max_retention_time
+
     def update_messages(
         self, conf: GuildSettings, message: str, role: str, name: str
     ) -> None:
@@ -56,8 +61,7 @@ class Conversation(BaseModel):
             name (str): the name of the bot or user
         """
         clear = [
-            (datetime.now().timestamp() - self.last_updated)
-            > conf.max_retention_time,
+            self.is_expired(conf),
             not conf.max_retention,
         ]
         if any(clear):
