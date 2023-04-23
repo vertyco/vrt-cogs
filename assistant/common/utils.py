@@ -35,7 +35,7 @@ def num_tokens_from_string(string: str) -> int:
 
 async def fetch_channel_history(
     channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
-    limit: int = 20,
+    limit: int = 50,
     oldest: bool = True,
 ) -> List[discord.Message]:
     history = []
