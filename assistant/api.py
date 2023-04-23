@@ -54,7 +54,9 @@ class API(MixinMeta):
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
-        conversation.update_messages(conf, message, "user")
+        conversation.update_messages(
+            conf, message, "user", author.display_name
+        )
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
 
         response = self.call_openai(conf, messages)
@@ -65,7 +67,9 @@ class API(MixinMeta):
         except KeyError:
             reply = str(response)
             # usage = None
-        conversation.update_messages(conf, reply, "assistant")
+        conversation.update_messages(
+            conf, reply, "assistant", self.bot.user.display_name
+        )
         return reply
 
     def call_openai(self, conf: GuildSettings, messages: dict) -> dict:
