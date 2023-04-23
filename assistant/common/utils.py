@@ -26,5 +26,7 @@ def get_attachments(message: discord.Message) -> list[discord.Attachment]:
 
 def num_tokens_from_string(string: str) -> int:
     """Returns the number of tokens in a text string."""
+    if not len(string):
+        return 0
     num_tokens = len(encoding.encode(string))
     return num_tokens
