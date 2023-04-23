@@ -168,9 +168,16 @@ class Admin(MixinMeta):
                 if isinstance(channel, discord.TextChannel):
                     prompt += f"Channel topic: {channel.topic}\n"
                 channelcontent = ""
+                pins = [m for m in await channel.pins()]
+                ids = [pin.id for pin in pins]
+                for pin in pins:
+                    if content := extract_message_content(pin):
+                        channelcontent += f"{content}\n"
                 for message in await fetch_channel_history(
                     channel, oldest=False
                 ):
+                    if message.id in ids:
+                        continue
                     if content := extract_message_content(message):
                         channelcontent += f"{content}\n"
                 if channelcontent:
