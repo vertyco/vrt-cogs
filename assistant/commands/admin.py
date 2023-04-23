@@ -32,8 +32,8 @@ class Admin(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
-        system_length = len(conf.system_prompt)
-        prompt_length = len(conf.prompt)
+        system_tokens = num_tokens_from_string(conf.system_prompt)
+        prompt_tokens = num_tokens_from_string(conf.prompt)
         desc = (
             f"`Enabled:          `{conf.enabled}\n"
             f"`Channel:          `{channel}\n"
@@ -42,8 +42,8 @@ class Admin(MixinMeta):
             f"`Max Retention:    `{conf.max_retention}\n"
             f"`Retention Expire: `{conf.max_retention_time}s\n"
             f"`Min Length:       `{conf.min_length}\n"
-            f"`System Message:   `{humanize_number(system_length)} chars\n"
-            f"`Initial Prompt:   `{humanize_number(prompt_length)} chars"
+            f"`System Message:   `{humanize_number(system_tokens)} tokens\n"
+            f"`Initial Prompt:   `{humanize_number(prompt_tokens)} tokens"
         )
         system_file = (
             discord.File(
