@@ -18,6 +18,14 @@ class API(MixinMeta):
     async def get_chat_response(
         self, message: str, author: discord.Member, conf: GuildSettings
     ) -> str:
+        reply = await asyncio.to_thread(
+            self.prepare_call, message, author, conf
+        )
+        return reply
+
+    def prepare_call(
+        self, message: str, author: discord.Member, conf: GuildSettings
+    ):
         conversation = self.chats.get_conversation(author)
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         created = f"<t:{round(author.guild.created_at.timestamp())}:F>"
@@ -49,7 +57,7 @@ class API(MixinMeta):
         conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
 
-        response = await asyncio.to_thread(self.call_openai, conf, messages)
+        response = self.call_openai(conf, messages)
         try:
             reply = response["choices"][0]["message"]["content"]
             # usage = response["usage"]

@@ -6,7 +6,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
-from ..common.utils import get_attachments
+from ..common.utils import get_attachments, num_tokens_from_string
 from ..views import SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -112,7 +112,7 @@ class Admin(MixinMeta):
 
     @assistant.command(name="prompt", aliases=["pre"])
     async def set_initial_prompt(
-        self, ctx: commands.Context, *, prompt: str = None
+        self, ctx: commands.Context, *, prompt: str = ""
     ):
         """
         Set the initial prompt for GPT to use
@@ -145,9 +145,15 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
 
-        if prompt and (len(prompt) + len(conf.system_prompt)) >= 16000:
+        ptokens = num_tokens_from_string(prompt)
+        stokens = num_tokens_from_string(conf.system_prompt)
+        combined = ptokens + stokens
+        if combined > 3000:
             return await ctx.send(
-                "Training data is too large! Initial and system prompt need to be under 16k characters."
+                (
+                    f"Your system and initial prompt combined will use {humanize_number(combined)} tokens!"
+                    "Write a prompt combination using 3k tokens or less to allow 1k tokens for responses."
+                )
             )
 
         if not prompt and conf.prompt:
@@ -206,6 +212,17 @@ class Admin(MixinMeta):
                 return await ctx.send(f"Error:```py\n{e}\n```")
 
         conf = self.db.get_conf(ctx.guild)
+
+        ptokens = num_tokens_from_string(conf.prompt)
+        stokens = num_tokens_from_string(system_prompt)
+        combined = ptokens + stokens
+        if combined > 3000:
+            return await ctx.send(
+                (
+                    f"Your system and initial prompt combined will use {humanize_number(combined)} tokens!"
+                    "Write a prompt combination using 3k tokens or less to allow 1k tokens for responses."
+                )
+            )
 
         if system_prompt and (len(system_prompt) + len(conf.prompt)) >= 16000:
             return await ctx.send(

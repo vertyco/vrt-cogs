@@ -10,6 +10,7 @@ log = logging.getLogger("red.vrt.assistant.base")
 
 class Base(MixinMeta):
     @commands.command(name="chat")
+    @commands.guild_only()
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def ask_question(self, ctx: commands.Context, *, question: str):
         """Ask [botname] a question!"""
