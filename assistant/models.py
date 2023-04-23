@@ -39,10 +39,13 @@ class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
+    def user_token_count(self) -> int:
+        messages = "".join(message["content"] for message in self.messages)
+        return num_tokens_from_string(messages)
+
     def token_count(self, conf: GuildSettings, message: str) -> int:
         initial = conf.system_prompt + conf.prompt + message
-        user = "".join(message["content"] for message in self.messages)
-        return num_tokens_from_string(initial + user)
+        return num_tokens_from_string(initial + self.user_token_count())
 
     def is_expired(self, conf: GuildSettings):
         return (
