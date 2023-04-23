@@ -130,11 +130,11 @@ class Admin(MixinMeta):
         Automatically create a training prompt for your server
 
         **How to Use**
-        Include channels that give helpful info about your server, NOT normal chat channels. The bot will only scan the first 20 messages of each channel.
+        Include channels that give helpful info about your server, NOT normal chat channels.
+        The bot will scan all pinned messages in addition to the most recent 50 messages.
         The idea is to have the bot compile the information, condense it and provide a usable training prompt for your Q&A channel.
 
         **Note:** This just meant to get you headed in the right direction, creating a perfect training prompt takes trial and error.
-        Make sure to train on channels containing information about the server and NOT chat channels.
         """
         if not channels:
             return await ctx.send_help()
