@@ -40,7 +40,7 @@ class Assistant(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.4.1"
+    __version__ = "0.5.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -151,11 +151,14 @@ class Assistant(commands.Cog):
     def call_openai(
         self, message: str, author: discord.Member, conf: GuildSettings
     ):
+        conversation = self.chats.get_conversation(author)
+
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         created = f"<t:{round(author.guild.created_at.timestamp())}:F>"
         date = datetime.now().astimezone().strftime("%B %d, %Y")
         time = datetime.now().astimezone().strftime("%I:%M %p %Z")
         roles = [role.name for role in author.roles]
+
         params = {
             "botname": self.bot.user.name,
             "timestamp": timestamp,
@@ -169,11 +172,14 @@ class Assistant(commands.Cog):
             "owner": author.guild.owner,
             "servercreated": created,
             "server": author.guild.name,
+            "messages": len(conversation.messages),
+            "characters": conversation.character_count(conf, message),
+            "retention": conf.max_retention,
+            "retentiontime": conf.max_retention_time,
         }
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
-        conversation = self.chats.get_conversation(author)
         conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
 
@@ -308,6 +314,10 @@ class Assistant(commands.Cog):
         `owner` - the owner of the server
         `servercreated` - the create date/time of the server
         `server` - the name of the server
+        `messages` - count of messages between the user and bot
+        `characters` - count of total characters for all messages between the user and bot
+        `retention` - max retention number
+        `retentiontime` - max retention time seconds
         """
         content = get_attachments(ctx)
         if content:
@@ -369,6 +379,10 @@ class Assistant(commands.Cog):
         `owner` - the owner of the server
         `servercreated` - the create date/time of the server
         `server` - the name of the server
+        `messages` - count of messages between the user and bot
+        `characters` - count of total characters for all messages between the user and bot
+        `retention` - max retention number
+        `retentiontime` - max retention time seconds
         """
         content = get_attachments(ctx)
         if content:
