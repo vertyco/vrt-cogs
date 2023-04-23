@@ -1,5 +1,6 @@
 import logging
 
+import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 
@@ -28,3 +29,24 @@ class Base(MixinMeta):
                         await ctx.send(p)
             except Exception as e:
                 await ctx.send(f"**Error**\n```py\n{e}\n```")
+
+    @commands.command(name="tokencount")
+    @commands.guild_only()
+    async def token_count(
+        self, ctx: commands.Context, *, user: discord.Member = None
+    ):
+        """Check the token and message count of yourself or another user's conversation"""
+        if not user:
+            user = ctx.author
+        conversation = self.chats.get_conversation(user)
+        messages = len(conversation.messages)
+        embed = discord.Embed(
+            title="Token Usage",
+            description=(
+                f"`Messages: `{messages}\n"
+                f"`Tokens:   `{conversation.token_count}\n"
+                f"`Expired:  `{conversation.is_expired()}"
+            ),
+            color=user.color,
+        )
+        await ctx.send(embed=embed)
