@@ -4,6 +4,8 @@ import discord
 import orjson
 from pydantic import BaseModel
 
+from .common.utils import num_tokens_from_string
+
 
 class GuildSettings(BaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
@@ -37,13 +39,13 @@ class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
-    def character_count(self, conf: GuildSettings, message: str) -> int:
+    def token_count(self, conf: GuildSettings, message: str) -> int:
         initial = len(conf.system_prompt) + len(conf.prompt) + len(message)
         counts = sum(len(message["content"]) for message in self.messages)
-        return initial + counts
+        return num_tokens_from_string(initial + counts)
 
     def update_messages(
-        self, conf: GuildSettings, message: str, role: str
+        self, conf: GuildSettings, message: str, role: str, name: str
     ) -> None:
         """Update conversation cache
 
@@ -51,6 +53,7 @@ class Conversation(BaseModel):
             conf (GuildSettings): guild settings
             message (str): the message
             role (str): 'system', 'user' or 'assistant'
+            name (str): the name of the bot or user
         """
         clear = [
             (datetime.now().timestamp() - self.last_updated)
@@ -61,12 +64,10 @@ class Conversation(BaseModel):
             self.messages.clear()
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
-            while (
-                self.character_count(conf, message) > 16384 and self.messages
-            ):
+            while self.token_count(conf, message) > 4096 and self.messages:
                 self.messages.pop(0)
 
-        self.messages.append({"role": role, "content": message})
+        self.messages.append({"role": role, "content": message, "name": name})
         self.last_updated = datetime.now().timestamp()
 
     def prepare_chat(

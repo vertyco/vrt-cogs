@@ -20,7 +20,8 @@
     "msgpack",
     "aiohttp",
     "pydantic",
-    "orjson"
+    "orjson",
+    "tiktoken"
   ],
   "short": "Another GPT Cog",
   "tags": [
