@@ -45,7 +45,7 @@ class Base(MixinMeta):
             title="Token Usage",
             description=(
                 f"`Messages: `{messages}\n"
-                f"`Tokens:   `{conversation.token_count}\n"
+                f"`Tokens:   `{conversation.token_count(conf, '')}\n"
                 f"`Expired:  `{conversation.is_expired(conf)}"
             ),
             color=user.color,
