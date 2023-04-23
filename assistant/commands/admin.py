@@ -15,6 +15,7 @@ log = logging.getLogger("red.vrt.assistant.admin")
 class Admin(MixinMeta):
     @commands.group(name="assistant", aliases=["ass"])
     @commands.guildowner()
+    @commands.guild_only()
     async def assistant(self, ctx: commands.Context):
         """
         Setup the assistant
