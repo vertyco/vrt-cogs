@@ -24,16 +24,9 @@ class API(MixinMeta):
         return reply
 
     async def get_training_response(
-        self, text: str, conf: GuildSettings, system: str
+        self, prompt: str, conf: GuildSettings
     ) -> tuple:
-        prompt = (
-            "Condense the following information as much as possible, "
-            "the result will be used as the initial prompt to provide Q&A so keep thinks bulleted.\n"
-            "Maintain all channel mentions in the <#ID> format.\n"
-            f"{text}"
-        )
         messages = [
-            {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ]
         response = await asyncio.to_thread(

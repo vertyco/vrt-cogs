@@ -142,6 +142,12 @@ class Admin(MixinMeta):
         system_prompt = (
             f"You are writing a training prompt for Q&A about {ctx.guild.name}"
         )
+        initial_prompt = (
+            "Condense the following information as much as possible, "
+            "the result will be used as the initial prompt to provide Q&A so keep thinks bulleted.\n"
+            "Maintain all channel mentions in the <#ID> format.\n"
+            f"The name of the Discord server is {ctx.guild.name}\n"
+        )
         loading = "https://i.imgur.com/l3p6EMX.gif"
         color = ctx.author.color
         channel_list = humanize_list([c.mention for c in channels])
@@ -158,7 +164,9 @@ class Admin(MixinMeta):
             for channel in channels:
                 embed.description = f"Processing {channel.mention}..."
                 await msg.edit(embed=embed)
-                system = f"{system_prompt}, The current channel is {channel.name} (mention: {channel.mention})"
+                prompt = f"{initial_prompt}Current channel: {channel.name}\nChannel mention: {channel.mention}\n"
+                if isinstance(channel, discord.TextChannel):
+                    prompt += f"Channel topic: {channel.topic}\n"
                 channelcontent = ""
                 for message in await fetch_channel_history(
                     channel, oldest=False
@@ -168,7 +176,7 @@ class Admin(MixinMeta):
                 if channelcontent:
                     for chunk in token_pagify(channelcontent):
                         reply, usage = await self.get_training_response(
-                            chunk, conf, system
+                            f"{prompt}\n{chunk}", conf
                         )
                         training_data += f"{reply.strip()}\n"
                         tokens_consumed += usage
