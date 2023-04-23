@@ -38,6 +38,7 @@ class Base(MixinMeta):
         """Check the token and message count of yourself or another user's conversation"""
         if not user:
             user = ctx.author
+        conf = self.db.get_conf(ctx.guild)
         conversation = self.chats.get_conversation(user)
         messages = len(conversation.messages)
         embed = discord.Embed(
@@ -45,7 +46,7 @@ class Base(MixinMeta):
             description=(
                 f"`Messages: `{messages}\n"
                 f"`Tokens:   `{conversation.token_count}\n"
-                f"`Expired:  `{conversation.is_expired()}"
+                f"`Expired:  `{conversation.is_expired(conf)}"
             ),
             color=user.color,
         )
