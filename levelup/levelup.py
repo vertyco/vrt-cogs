@@ -1688,8 +1688,8 @@ class LevelUp(
 
         # If leveler is installed then libs should import fine
         try:
-            from motor.motor_asyncio import AsyncIOMotorClient
-            from pymongo import errors as mongoerrors
+            from motor.motor_asyncio import AsyncIOMotorClient  # type: ignore
+            from pymongo import errors as mongoerrors  # type: ignore
         except Exception as e:
             log.warning(f"pymongo Import Error: {e}")
             return await ctx.send(_("Failed to import modules"))
