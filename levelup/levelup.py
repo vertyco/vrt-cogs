@@ -72,7 +72,7 @@ class LevelUp(
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.22.63"
+    __version__ = "2.22.64"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2631,7 +2631,7 @@ class LevelUp(
         txt = (
             _("Level ")
             + str(level)
-            + _("has been ")
+            + _(" has been ")
             + overwrite
             + _(" as ")
             + role.mention
