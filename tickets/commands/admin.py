@@ -57,7 +57,7 @@ class AdminCommands(MixinMeta):
         step3 += _(
             "At this point the ticket panel will be activated, "
             "all following steps are for extra customization.\n"
-            "If you need a message to add the buttons to, you can use the `{}tickets embed` command"
+            "If you need a message to add the buttons to, you can use the `{}tickets embed` command.\n"
         ).format(ctx.prefix)
         step3 += _(
             "If the bot is having trouble finding the message, run the command in the same channel as it."
