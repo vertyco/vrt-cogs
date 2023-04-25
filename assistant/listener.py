@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import discord
@@ -6,6 +7,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
+from .models import GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.listener")
 
@@ -53,6 +55,13 @@ class AssistantListener(MixinMeta):
         if len(content.strip()) < conf.min_length:
             return
         async with channel.typing():
+            await self.try_replying(message, content, conf)
+
+    async def try_replying(
+        self, message: discord.Message, content: str, conf: GuildSettings
+    ):
+        tries = 1
+        while tries <= 3:
             try:
                 reply = await self.get_chat_response(
                     content, message.author, conf
@@ -63,10 +72,17 @@ class AssistantListener(MixinMeta):
                         await message.reply(p, mention_author=conf.mention)
                     else:
                         await message.channel.send(p)
+                return
             except InvalidRequestError as e:
-                if error := e.error:
+                if error := e.error and tries == 3:
                     await message.reply(
                         error["message"], mention_author=conf.mention
                     )
+                elif tries == 3:
+                    log.error("Invalid Request Error", exc_info=e)
             except Exception as e:
-                await message.channel.send(f"**Error**\n```py\n{e}\n```")
+                if tries == 3:
+                    await message.channel.send(f"**Error**\n```py\n{e}\n```")
+                    log.error("Listener Reply Error", exc_info=e)
+            tries += 1
+            await asyncio.sleep(2)
