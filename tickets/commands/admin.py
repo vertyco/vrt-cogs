@@ -1248,7 +1248,7 @@ class AdminCommands(MixinMeta):
 
     @tickets.command(name="threadclose")
     async def toggle_thread_closing(self, ctx: commands.Context):
-        """(Toggle) Thread tickets being closed instead of deleted"""
+        """(Toggle) Thread tickets being closed & archived instead of deleted"""
         toggle = await self.config.guild(ctx.guild).thread_close()
         if toggle:
             await self.config.guild(ctx.guild).thread_close.set(False)
