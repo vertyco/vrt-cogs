@@ -1246,6 +1246,17 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).dm.set(True)
             await ctx.send(_("DM alerts have been **Enabled**"))
 
+    @tickets.command(name="threadclose")
+    async def toggle_thread_closing(self, ctx: commands.Context):
+        """(Toggle) Thread tickets being closed instead of deleted"""
+        toggle = await self.config.guild(ctx.guild).thread_close()
+        if toggle:
+            await self.config.guild(ctx.guild).thread_close.set(False)
+            await ctx.send(_("Closed ticket threads will be **Deleted**"))
+        else:
+            await self.config.guild(ctx.guild).thread_close.set(True)
+            await ctx.send(_("Closed ticket threads will be **Closed**"))
+
     @tickets.command(name="selfrename")
     async def toggle_rename(self, ctx: commands.Context):
         """(Toggle) If users can rename their own tickets"""
