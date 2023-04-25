@@ -1255,7 +1255,9 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("Closed ticket threads will be **Deleted**"))
         else:
             await self.config.guild(ctx.guild).thread_close.set(True)
-            await ctx.send(_("Closed ticket threads will be **Closed**"))
+            await ctx.send(
+                _("Closed ticket threads will be **Closed & Archived**")
+            )
 
     @tickets.command(name="selfrename")
     async def toggle_rename(self, ctx: commands.Context):
