@@ -312,7 +312,7 @@ class BaseCommands(MixinMeta):
         # Delete ticket channel
         try:
             if isinstance(channel, discord.Thread) and conf["thread_close"]:
-                await channel.edit(archived=True)
+                await channel.edit(archived=True, locked=True)
             else:
                 await channel.delete()
         except Exception as e:
