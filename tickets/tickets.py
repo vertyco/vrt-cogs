@@ -57,7 +57,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             "user_can_manage": False,
             "transcript": False,
             "auto_add": False,  # Auto-add support/subroles to thread tickets
-            "thread_close": False,
+            "thread_close": True,
         }
         self.config.register_guild(**default_guild)
 
