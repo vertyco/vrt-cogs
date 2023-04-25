@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import logging
 from io import BytesIO
-from typing import Union
+from typing import List, Union
 
 import discord
 from discord import app_commands
@@ -275,14 +275,31 @@ class BaseCommands(MixinMeta):
                     text += f"{msg.author.name}: {msg.content}\n"
                 if att:
                     text += _("Files uploaded: ") + humanize_list(att) + "\n"
+        else:
+            history = await self.fetch_channel_history(channel, limit=1)
 
         # Send off new messages
+        view = None
+        if (
+            history
+            and isinstance(channel, discord.Thread)
+            and conf["thread_close"]
+        ):
+            jump_url = history[0].jump_url
+            view = discord.ui.View()
+            view.add_item(
+                discord.ui.Button(
+                    label="View Thread",
+                    style=discord.ButtonStyle.link,
+                    url=jump_url,
+                )
+            )
         if log_chan and ticket["logmsg"]:
             if text:
                 file = discord.File(BytesIO(text.encode()), filename=filename)
-                await log_chan.send(embed=embed, file=file)
+                await log_chan.send(embed=embed, file=file, view=view)
             else:
-                await log_chan.send(embed=embed)
+                await log_chan.send(embed=embed, view=view)
 
             # Delete old log msg
             log_msg_id = ticket["logmsg"]
@@ -326,9 +343,11 @@ class BaseCommands(MixinMeta):
             del tickets[uid][cid]
 
     @staticmethod
-    async def fetch_channel_history(channel: discord.TextChannel):
+    async def fetch_channel_history(
+        channel: discord.TextChannel, limit: int = None
+    ) -> List[discord.Message]:
         history = []
-        async for msg in channel.history(oldest_first=True):
+        async for msg in channel.history(oldest_first=True, limit=limit):
             history.append(msg)
         return history
 
