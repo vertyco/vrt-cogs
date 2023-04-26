@@ -32,8 +32,8 @@ class BaseCommands(MixinMeta):
         self, ctx: commands.Context, *, user: discord.Member
     ):
         """Add a user to your ticket"""
-        if inter := ctx.interaction:
-            await inter.response.defer()
+        # if inter := ctx.interaction:
+        #     await inter.response.defer()
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
@@ -77,8 +77,8 @@ class BaseCommands(MixinMeta):
     @commands.guild_only()
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
         """Rename your ticket channel"""
-        if inter := ctx.interaction:
-            await inter.response.defer()
+        # if inter := ctx.interaction:
+        #     await inter.response.defer()
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
@@ -123,8 +123,8 @@ class BaseCommands(MixinMeta):
         `[p]close 1h` - closes in 1 hour with no reason attached
         `[p]close 1m thanks for helping!` - closes in 1 minute with reason "thanks for helping!"
         """
-        if inter := ctx.interaction:
-            await inter.response.defer()
+        # if inter := ctx.interaction:
+        #     await inter.response.defer()
         user = ctx.author
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
