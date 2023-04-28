@@ -136,14 +136,13 @@ class BaseCommands(MixinMeta):
                 )
             )
         can_close = False
-        for role in user.roles:
-            if role.id in conf["support_roles"]:
-                can_close = True
-        if user.id == ctx.guild.owner_id:
+        if any([r.id in conf["support_roles"] for r in user.roles]):
             can_close = True
-        if await is_admin_or_superior(self.bot, user):
+        elif user.id == ctx.guild.owner_id:
             can_close = True
-        if owner_id == str(user.id) and conf["user_can_close"]:
+        elif await is_admin_or_superior(self.bot, user):
+            can_close = True
+        elif owner_id == str(user.id) and conf["user_can_close"]:
             can_close = True
 
         if not can_close:

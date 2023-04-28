@@ -23,7 +23,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.12.3"
+    __version__ = "1.12.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -163,33 +163,41 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                 log.warning(f"Failed to refresh panels in {guild.name}")
 
             # Refresh view for logs of opened tickets (v1.8.18 update)
-            try:
-                for opened_tickets in data["opened"].values():
-                    for ticket_info in opened_tickets.values():
-                        if not ticket_info["logmsg"]:
-                            continue
-                        panel_name = ticket_info["panel"]
-                        panel = all_panels[panel_name]
-                        if not panel["log_channel"]:
-                            continue
-                        channel = guild.get_channel(panel["log_channel"])
-                        if not channel:
-                            continue
-                        try:
-                            logmsg = await channel.fetch_message(
-                                ticket_info["logmsg"]
-                            )
-                        except discord.NotFound:
-                            log.warning(
-                                f"Failed to get log channel message in {guild.name}"
-                            )
-                            continue
-                        if not logmsg:
-                            continue
-                        view = LogView(guild, channel)
+            for uid, opened_tickets in data["opened"].items():
+                member = guild.get_member(int(uid))
+                if not member:
+                    continue
+                for ticket_info in opened_tickets.values():
+                    if not ticket_info["logmsg"]:
+                        continue
+                    panel_name = ticket_info["panel"]
+                    panel = all_panels[panel_name]
+                    if not panel["log_channel"]:
+                        continue
+                    channel = guild.get_channel(int(panel["log_channel"]))
+                    if not channel:
+                        log.warning(
+                            f"Log channel no longer exits for {member.display_name}'s ticket in {guild.name}"
+                        )
+                        continue
+                    try:
+                        logmsg = await channel.fetch_message(
+                            ticket_info["logmsg"]
+                        )
+                    except discord.NotFound:
+                        log.warning(
+                            f"Failed to get log channel message in {guild.name}"
+                        )
+                        continue
+                    if not logmsg:
+                        continue
+                    view = LogView(guild, channel)
+                    try:
                         await logmsg.edit(view=view)
-            except discord.NotFound:
-                log.warning(f"Failed to refresh log views in {guild.name}")
+                    except discord.NotFound:
+                        log.warning(
+                            f"Failed to refresh log views in {guild.name}"
+                        )
 
     @tasks.loop(minutes=20)
     async def auto_close(self):
