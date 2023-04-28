@@ -21,7 +21,7 @@ class API(MixinMeta):
         conversation = self.chats.get_conversation(author)
         try:
             reply = await asyncio.to_thread(
-                self.prepare_call, message, author, conf
+                self.prepare_call, message, author, conf, conversation
             )
         finally:
             conversation.cleanup(conf)
