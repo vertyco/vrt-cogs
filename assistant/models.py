@@ -55,7 +55,7 @@ class Conversation(BaseModel):
             datetime.now().timestamp() - self.last_updated
         ) > conf.max_retention_time
 
-    def cleanup(self, conf: GuildSettings):
+    def cleanup(self, conf: GuildSettings, message: str = ""):
         clear = [
             self.is_expired(conf),
             not conf.max_retention,
@@ -64,6 +64,9 @@ class Conversation(BaseModel):
             self.messages.clear()
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
+        # 4096 is max tokens but chop off till less than 4000
+        while self.token_count(conf, message) > 4000 and self.messages:
+            self.messages.pop(0)
 
     def update_messages(
         self, conf: GuildSettings, message: str, role: str
@@ -76,9 +79,7 @@ class Conversation(BaseModel):
             role (str): 'system', 'user' or 'assistant'
             name (str): the name of the bot or user
         """
-        while self.token_count(conf, message) > 4096 and self.messages:
-            self.messages.pop(0)
-
+        self.cleanup(conf, message)
         self.messages.append({"role": role, "content": message})
         self.last_updated = datetime.now().timestamp()
 

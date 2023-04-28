@@ -8,7 +8,7 @@ from aiocache import cached
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
-from .models import GuildSettings
+from .models import Conversation, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
 
@@ -18,9 +18,13 @@ class API(MixinMeta):
     async def get_chat_response(
         self, message: str, author: discord.Member, conf: GuildSettings
     ) -> str:
-        reply = await asyncio.to_thread(
-            self.prepare_call, message, author, conf
-        )
+        conversation = self.chats.get_conversation(author)
+        try:
+            reply = await asyncio.to_thread(
+                self.prepare_call, message, author, conf
+            )
+        finally:
+            conversation.cleanup(conf)
         return reply
 
     async def get_training_response(
@@ -40,9 +44,12 @@ class API(MixinMeta):
             return None, None
 
     def prepare_call(
-        self, message: str, author: discord.Member, conf: GuildSettings
+        self,
+        message: str,
+        author: discord.Member,
+        conf: GuildSettings,
+        conversation: Conversation,
     ):
-        conversation = self.chats.get_conversation(author)
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         created = f"<t:{round(author.guild.created_at.timestamp())}:F>"
         date = datetime.now().astimezone().strftime("%B %d, %Y")
@@ -82,7 +89,6 @@ class API(MixinMeta):
             reply = str(response)
             # usage = None
         conversation.update_messages(conf, reply, "assistant")
-        conversation.cleanup(conf)
         return reply
 
     def call_openai(
