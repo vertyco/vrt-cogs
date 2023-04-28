@@ -23,7 +23,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.12.4"
+    __version__ = "1.12.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -167,21 +167,24 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                 member = guild.get_member(int(uid))
                 if not member:
                     continue
-                for ticket_info in opened_tickets.values():
+                for ticket_channel_id, ticket_info in opened_tickets.items():
+                    ticket_channel = guild.get_channel(int(ticket_channel_id))
+                    if not ticket_channel:
+                        continue
                     if not ticket_info["logmsg"]:
                         continue
                     panel_name = ticket_info["panel"]
                     panel = all_panels[panel_name]
                     if not panel["log_channel"]:
                         continue
-                    channel = guild.get_channel(int(panel["log_channel"]))
-                    if not channel:
+                    log_channel = guild.get_channel(int(panel["log_channel"]))
+                    if not log_channel:
                         log.warning(
                             f"Log channel no longer exits for {member.display_name}'s ticket in {guild.name}"
                         )
                         continue
                     try:
-                        logmsg = await channel.fetch_message(
+                        logmsg = await log_channel.fetch_message(
                             ticket_info["logmsg"]
                         )
                     except discord.NotFound:
@@ -191,7 +194,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                         continue
                     if not logmsg:
                         continue
-                    view = LogView(guild, channel)
+                    view = LogView(guild, ticket_channel)
                     try:
                         await logmsg.edit(view=view)
                     except discord.NotFound:
