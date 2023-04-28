@@ -472,7 +472,9 @@ class LogView(View):
         user = interaction.user
         if user.id in self.added:
             return await interaction.response.send_message(
-                _("You have already been added to this ticket!"),
+                _("You have already been added to the ticket **{}**!").format(
+                    self.channel.name
+                ),
                 ephemeral=True,
                 delete_after=60,
             )
@@ -483,7 +485,9 @@ class LogView(View):
         if isinstance(self.channel, discord.TextChannel):
             if all(perms):
                 return await interaction.response.send_message(
-                    _("You already have access to this ticket!"),
+                    _("You already have access to the ticket **{}**!").format(
+                        self.channel.name
+                    ),
                     ephemeral=True,
                     delete_after=60,
                 )
