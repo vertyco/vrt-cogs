@@ -12,6 +12,7 @@ from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import pagify
 
 _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
@@ -245,15 +246,30 @@ class SupportButton(Button):
             m = TicketModal(self.panel_name, modal)
             await interaction.response.send_modal(m)
             await m.wait()
-            for v in m.fields.values():
-                q = v["label"]
-                a = v["answer"]
-                if not a:
-                    a = _("Unanswered")
+
+            for submission_info in m.fields.values():
+                question = submission_info["label"]
+                answer = submission_info["answer"]
+                if not answer:
+                    answer = _("Unanswered")
                 else:
                     has_response = True
-                answers[q] = a
-                form_embed.add_field(name=q, value=a, inline=False)
+
+                answers[question] = answer
+
+                if len(answer) <= 1024:
+                    form_embed.add_field(
+                        name=question, value=answer, inline=False
+                    )
+                    continue
+
+                chunks = [ans for ans in pagify(answer, page_length=1024)]
+                for index, chunk in enumerate(chunks):
+                    form_embed.add_field(
+                        name=f"{question} ({index + 1})",
+                        value=chunk,
+                        inline=False,
+                    )
 
         can_read_send = discord.PermissionOverwrite(
             read_messages=True, send_messages=True, attach_files=True
