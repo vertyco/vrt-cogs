@@ -30,7 +30,11 @@ def get_xp(level: int, base: int, exp: int) -> int:
 
 # Estimate how much time it would take to reach a certain level based on current algorithm
 def time_to_level(
-    level: int, base: int, exp: Union[int, float], cooldown: int, xp_range: list
+    level: int,
+    base: int,
+    exp: Union[int, float],
+    cooldown: int,
+    xp_range: list,
 ) -> int:
     xp_needed = get_xp(level, base, exp)
     xp_obtained = 0
@@ -136,31 +140,41 @@ def get_leaderboard(
         for uid, data in lb.items():
             prestige = data["prestige"]
             if prestige:
-                data["xp"] += prestige * get_xp(prestige_req, conf["base"], conf["exp"])
+                data["xp"] += prestige * get_xp(
+                    prestige_req, conf["base"], conf["exp"]
+                )
 
     if "v" in stat.lower():
-        sorted_users = sorted(lb.items(), key=lambda x: x[1]["voice"], reverse=True)
+        sorted_users = sorted(
+            lb.items(), key=lambda x: x[1]["voice"], reverse=True
+        )
         title += _("Voice Leaderboard")
         key = "voice"
         statname = _("Voicetime")
         col = "🎙️"
         total = time_formatter(sum(v["voice"] for v in lb.values()))
     elif "m" in stat.lower():
-        sorted_users = sorted(lb.items(), key=lambda x: x[1]["messages"], reverse=True)
+        sorted_users = sorted(
+            lb.items(), key=lambda x: x[1]["messages"], reverse=True
+        )
         title += _("Message Leaderboard")
         key = "messages"
         statname = _("Messages")
         col = "💬"
         total = humanize_number(round(sum(v["messages"] for v in lb.values())))
     elif "s" in stat.lower():
-        sorted_users = sorted(lb.items(), key=lambda x: x[1]["stars"], reverse=True)
+        sorted_users = sorted(
+            lb.items(), key=lambda x: x[1]["stars"], reverse=True
+        )
         title += _("Star Leaderboard")
         key = "stars"
         statname = _("Stars")
         col = "⭐"
         total = humanize_number(round(sum(v["stars"] for v in lb.values())))
     else:  # Exp
-        sorted_users = sorted(lb.items(), key=lambda x: x[1]["xp"], reverse=True)
+        sorted_users = sorted(
+            lb.items(), key=lambda x: x[1]["xp"], reverse=True
+        )
         title += _("Exp Leaderboard")
         key = "xp"
         statname = _("Exp")
@@ -199,7 +213,10 @@ def get_leaderboard(
     you = ""
     for i in sorted_users:
         if i[0] == str(ctx.author.id):
-            you = _("You: ") + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
+            you = (
+                _("You: ")
+                + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
+            )
 
     pages = math.ceil(len(sorted_users) / 10)
     start = 0
@@ -240,7 +257,10 @@ def get_leaderboard(
             headers = ["#", "🎖", col, "Name"]
 
         msg = tabulate(
-            tabular_data=table, headers=headers, numalign="left", stralign="left"
+            tabular_data=table,
+            headers=headers,
+            numalign="left",
+            stralign="left",
         )
         embed = discord.Embed(
             title=title,
@@ -293,7 +313,9 @@ async def get_user_position(conf: dict, user_id: str) -> dict:
         total_xp += xp
         if user == user_id:
             user_xp = xp
-    sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+    sorted_users = sorted(
+        leaderboard.items(), key=lambda x: x[1], reverse=True
+    )
     for i in sorted_users:
         if i[0] == user_id:
             if total_xp:
