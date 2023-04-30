@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 from time import monotonic
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import discord
 import matplotlib
@@ -72,7 +72,7 @@ class LevelUp(
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.22.64"
+    __version__ = "2.22.65"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2267,6 +2267,10 @@ class LevelUp(
 
         Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)
         """
+        if exponent_multiplier <= 0:
+            return await ctx.send(_("Your exponent needs to be higher than 0"))
+        if exponent_multiplier > 5:
+            return await ctx.send(_("Your exponent needs to be 5 or lower"))
         self.data[ctx.guild.id]["exp"] = exponent_multiplier
         await ctx.tick()
         await self.save_cache(ctx.guild)
@@ -2324,35 +2328,13 @@ class LevelUp(
         exp = conf["exp"]
         cd = conf["cooldown"]
         xp_range = conf["xp"]
-        msg = ""
-        table = []
-        x = []
-        y = []
-        for i in range(1, 21):
-            xp = get_xp(i, base, exp)
-            msg += f"Level {i}: {xp} XP Needed\n"
-            time = await asyncio.to_thread(
-                time_to_level, i, base, exp, cd, xp_range
+        async with ctx.typing():
+            level_text, file_bytes = await asyncio.to_thread(
+                self.plot_levels, conf
             )
-            time = time_formatter(time)
-            table.append([i, xp, time])
-            x.append(i)
-            y.append(xp)
-        headers = ["Level", "XP Needed", "AproxTime"]
-        data = tabulate.tabulate(table, headers, tablefmt="presto")
-        with plt.style.context("dark_background"):
-            plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
-            plt.xlabel("Level", fontsize=10)
-            plt.ylabel("Experience Required", fontsize=10)
-            plt.title("XP Curve")
-            plt.grid(axis="y")
-            plt.grid(axis="x")
-            result = BytesIO()
-            plt.savefig(result, format="png", dpi=200)
-            plt.close()
-            result.seek(0)
-            file = discord.File(result, filename="lvlexample.png")
-            img = "attachment://lvlexample.png"
+
+        file = discord.File(BytesIO(file_bytes), filename="lvlexample.png")
+        img = "attachment://lvlexample.png"
         example = _(
             "XP required for a level = Base * Level^Exp\n\n"
             "Approx time is the time it would take for a user to reach a level if they "
@@ -2366,7 +2348,7 @@ class LevelUp(
             _("`Message Cooldown: `")
             + f"{cd}\n"
             + f"{box(example)}\n"
-            + f"{box(data, lang='python')}"
+            + f"{box(level_text, lang='python')}"
         )
         embed = discord.Embed(
             title="Level Example",
@@ -2375,6 +2357,37 @@ class LevelUp(
         )
         embed.set_image(url=img)
         await ctx.send(embed=embed, file=file)
+
+    def plot_levels(self, conf: dict) -> Tuple[str, bytes]:
+        base = conf["base"]
+        exp = conf["exp"]
+        cd = conf["cooldown"]
+        xp_range = conf["xp"]
+        msg = ""
+        table = []
+        x = []
+        y = []
+        for level in range(1, 21):
+            xp = get_xp(level, base, exp)
+            msg += f"Level {level}: {xp} XP Needed\n"
+            time = time_to_level(level, base, exp, cd, xp_range)
+            time = time_formatter(time)
+            table.append([level, xp, time])
+            x.append(level)
+            y.append(xp)
+        headers = ["Level", "XP Needed", "AproxTime"]
+        level_text = tabulate.tabulate(table, headers, tablefmt="presto")
+        with plt.style.context("dark_background"):
+            plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
+            plt.xlabel("Level", fontsize=10)
+            plt.ylabel("Experience Required", fontsize=10)
+            plt.title("XP Curve")
+            plt.grid(axis="y")
+            plt.grid(axis="x")
+            result = BytesIO()
+            plt.savefig(result, format="png", dpi=200)
+            plt.close()
+            return level_text, result.getvalue()
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
