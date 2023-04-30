@@ -2269,8 +2269,8 @@ class LevelUp(
         """
         if exponent_multiplier <= 0:
             return await ctx.send(_("Your exponent needs to be higher than 0"))
-        if exponent_multiplier > 5:
-            return await ctx.send(_("Your exponent needs to be 5 or lower"))
+        if exponent_multiplier > 10:
+            return await ctx.send(_("Your exponent needs to be 10 or lower"))
         self.data[ctx.guild.id]["exp"] = exponent_multiplier
         await ctx.tick()
         await self.save_cache(ctx.guild)
