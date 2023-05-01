@@ -256,6 +256,7 @@ class BaseCommands(MixinMeta):
         text = ""
         filename = f"{member.name}-{member.id}.txt"
         filename = filename.replace("/", "")
+        archive_msg = None
         if conf["transcript"]:
             em = discord.Embed(
                 description=_("Archiving channel..."),
@@ -263,7 +264,7 @@ class BaseCommands(MixinMeta):
             )
             em.set_footer(text=_("This channel will be deleted once complete"))
             em.set_thumbnail(url=LOADING)
-            await channel.send(embed=em)
+            archive_msg = await channel.send(embed=em)
             answers = ticket.get("answers")
             if answers:
                 r = _("Response")
@@ -337,6 +338,8 @@ class BaseCommands(MixinMeta):
         try:
             if isinstance(channel, discord.Thread) and conf["thread_close"]:
                 await channel.edit(archived=True, locked=True)
+                if archive_msg:
+                    await archive_msg.delete()
             else:
                 await channel.delete()
         except Exception as e:
