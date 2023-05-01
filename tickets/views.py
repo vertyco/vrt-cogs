@@ -325,7 +325,7 @@ class SupportButton(Button):
                         name=channel_name,
                         auto_archive_duration=auto_archive_duration,
                         reason=reason,
-                        invitable=True,
+                        invitable=conf["user_can_manage"],
                     )
                 )
                 await channel_or_thread.add_user(interaction.user)
