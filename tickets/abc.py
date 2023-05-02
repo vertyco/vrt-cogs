@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Optional
+from typing import List, Optional, Union
 
 import discord
 from discord.ext.commands.cog import CogMeta
@@ -22,6 +22,33 @@ class MixinMeta(metaclass=ABCMeta):
 
     @abstractmethod
     async def initialize(self, target_guild: discord.Guild = None) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def close_ticket(
+        self,
+        member: Union[discord.Member, discord.User],
+        channel: discord.TextChannel,
+        conf: dict,
+        reason: str,
+        closedby: str,
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def fetch_channel_history(
+        channel: discord.TextChannel, limit: int = None
+    ) -> List[discord.Message]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def ticket_owner_hastyped(
+        channel: discord.TextChannel, user: discord.Member
+    ) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_ticket_owner(opened: dict, channel_id: str) -> Optional[str]:
         raise NotImplementedError
 
     @abstractmethod

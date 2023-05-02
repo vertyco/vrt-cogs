@@ -14,6 +14,8 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify
 
+from .utils import update_active_overview
+
 _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
 
@@ -298,7 +300,7 @@ class SupportButton(Button):
         for role in support:
             overwrite[role] = can_read_send
         num = panel["ticket_num"]
-        now = datetime.now()
+        now = datetime.now().astimezone()
         name_fmt = panel["ticket_name"]
         params = {
             "num": str(num),
@@ -437,10 +439,9 @@ class SupportButton(Button):
 
         async with self.view.config.guild(guild).all() as conf:
             conf["panels"][self.panel_name]["ticket_num"] += 1
-            opened = conf["opened"]
-            if uid not in opened:
-                opened[uid] = {}
-            opened[uid][str(channel_or_thread.id)] = {
+            if uid not in conf["opened"]:
+                conf["opened"][uid] = {}
+            conf["opened"][uid][str(channel_or_thread.id)] = {
                 "panel": self.panel_name,
                 "opened": now.isoformat(),
                 "pfp": str(user.avatar.url) if user.avatar else None,
@@ -448,6 +449,10 @@ class SupportButton(Button):
                 "answers": answers,
                 "has_response": has_response,
             }
+
+            new_id = await update_active_overview(guild, conf)
+            if new_id:
+                conf["overview_msg"] = new_id
 
 
 class PanelView(View):
