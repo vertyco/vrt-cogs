@@ -9,21 +9,24 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
 from .commands import TicketCommands
+from .utils import Utils, update_active_overview
 from .views import LogView, PanelView
 
 log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
 
 
-# redgettext -D tickets.py base.py admin.py views.py menu.py
+# redgettext -D tickets.py commands/base.py commands/admin.py views.py menu.py utils.py
 @cog_i18n(_)
-class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
+class Tickets(
+    TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass
+):
     """
     Support ticket system with multi-panel functionality
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.12.8"
+    __version__ = "1.13.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -43,21 +46,23 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
         self.config = Config.get_conf(self, 117117, force_registration=True)
         default_guild = {
             # Settings
-            "support_roles": [],  # Role ids
-            "blacklist": [],  # User ids
+            "support_roles": [],  # Role ids that have access to all tickets
+            "blacklist": [],  # User ids that cannot open any tickets
             "max_tickets": 1,  # Max amount of tickets a user can have open at a time of any kind
             "inactive": 0,  # Auto close tickets with X hours of inactivity (0 = disabled)
+            "overview_channel": 0,  # Overview of open tickets across panels
+            "overview_msg": 0,  # Message id of the overview info
             # Ticket data
             "opened": {},  # All opened tickets
             "panels": {},  # All ticket panels
             # Toggles
-            "dm": False,
-            "user_can_rename": False,
-            "user_can_close": True,
-            "user_can_manage": False,
-            "transcript": False,
+            "dm": False,  # Whether to DM the user when their ticket is closed
+            "user_can_rename": False,  # Ticket opener can rename their ticket channel
+            "user_can_close": True,  # Ticket opener can close their own ticket
+            "user_can_manage": False,  # Ticket opener can add other users to their ticket
+            "transcript": False,  # Save a transcript of the ticket conversation on close
             "auto_add": False,  # Auto-add support/subroles to thread tickets
-            "thread_close": True,
+            "thread_close": True,  # Whether to close/lock the thread instead of deleting it
         }
         self.config.register_guild(**default_guild)
 
@@ -116,6 +121,11 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             guild = self.bot.get_guild(gid)
             if not guild:
                 continue
+            # Refresh overview panel
+            new_id = await update_active_overview(guild, data)
+            if new_id:
+                await self.config.guild(guild).overview_msg.set(new_id)
+
             # Refresh buttons for all panels
             all_panels = data["panels"]
             to_deploy = {}  # Message ID keys for multi-button support
@@ -168,7 +178,9 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                 if not member:
                     continue
                 for ticket_channel_id, ticket_info in opened_tickets.items():
-                    ticket_channel = guild.get_channel(int(ticket_channel_id))
+                    ticket_channel = guild.get_channel_or_thread(
+                        int(ticket_channel_id)
+                    )
                     if not ticket_channel:
                         continue
                     if not ticket_info["logmsg"]:
@@ -225,7 +237,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                         continue
                     if channel_id in self.valid:
                         continue
-                    channel = guild.get_channel(int(channel_id))
+                    channel = guild.get_channel_or_thread(int(channel_id))
                     if not channel:
                         continue
                     now = datetime.datetime.now()
@@ -295,7 +307,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             return
 
         for cid in tickets:
-            chan = self.bot.get_channel(int(cid))
+            chan = self.bot.get_channel_or_thread(int(cid))
             if not chan:
                 continue
             try:

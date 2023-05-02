@@ -9,6 +9,7 @@ from redbot.core.utils.chat_formatting import box, humanize_list
 
 from ..abc import MixinMeta
 from ..menu import SMALL_CONTROLS, MenuButton, menu
+from ..utils import update_active_overview
 from ..views import TestButton, confirm, wait_reply
 
 log = logging.getLogger("red.vrt.admincommands")
@@ -1183,56 +1184,38 @@ class AdminCommands(MixinMeta):
         await self.config.guild(ctx.guild).inactive.set(hours)
         await ctx.tick()
 
+    @tickets.command(name="overview")
+    async def set_active_channel(
+        self,
+        ctx: commands.Context,
+        *,
+        channel: Optional[discord.TextChannel] = None,
+    ):
+        """
+        Set a channel for the live overview message
+
+        The overview message shows all active tickets across all configured panels for a server.
+        """
+        if not channel:
+            await ctx.send(_("Overview channel has been **Disabled**"))
+            await self.config.guild(ctx.guild).overview_channel.set(0)
+        else:
+            await ctx.send(
+                _("Overview channel has been set to {}").format(
+                    channel.mention
+                )
+            )
+            await self.config.guild(ctx.guild).overview_channel.set(channel.id)
+            conf = await self.config.guild(ctx.guild).all()
+            new_id = await update_active_overview(ctx.guild, conf)
+            if new_id:
+                await self.config.guild(ctx.guild).overview_msg.set(new_id)
+
     @tickets.command(name="cleanup")
     async def cleanup_tickets(self, ctx: commands.Context):
         """Cleanup tickets that no longer exist"""
         async with ctx.typing():
             await self.prune_invalid_tickets(ctx.guild, ctx)
-
-    async def prune_invalid_tickets(
-        self, guild: discord.Guild, ctx: Optional[commands.Context] = None
-    ):
-        opened_tickets = await self.config.guild(guild).opened()
-        if not opened_tickets:
-            if ctx:
-                await ctx.send(
-                    _("There are no tickets stored in the database.")
-                )
-            return
-
-        valid_opened_tickets = {}
-        count = 0
-        for user_id, tickets in opened_tickets.items():
-            if not guild.get_member(int(user_id)):
-                count += len(list(tickets.keys()))
-                continue
-
-            valid_user_tickets = {}
-            for channel_id, ticket in tickets.items():
-                if not guild.get_channel_or_thread(int(channel_id)):
-                    count += 1
-                    continue
-                else:
-                    valid_user_tickets[channel_id] = ticket
-
-            if valid_user_tickets:
-                valid_opened_tickets[user_id] = valid_user_tickets
-
-        if count:
-            await self.config.guild(guild).opened.set(valid_opened_tickets)
-
-        if count and ctx:
-            txt = (
-                _("Pruned `")
-                + str(count)
-                + _("` invalid ")
-                + f"{_('ticket') if count == 1 else _('tickets')}."
-            )
-            await ctx.send(txt)
-        elif not count and ctx:
-            await ctx.send(_("There are no tickets to prune"))
-        elif count and not ctx:
-            log.info(f"{count} tickets pruned from {guild.name}")
 
     # TOGGLES --------------------------------------------------------------------------------
     @tickets.command(name="dm")
