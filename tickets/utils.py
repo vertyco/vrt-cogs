@@ -165,14 +165,17 @@ class Utils(MixinMeta):
             except discord.Forbidden:
                 pass
 
-        # Delete ticket channel
-        try:
-            if isinstance(channel, discord.Thread) and conf["thread_close"]:
+        # Delete/close ticket channel
+        if isinstance(channel, discord.Thread) and conf["thread_close"]:
+            try:
                 await channel.edit(archived=True, locked=True)
-            else:
+            except Exception as e:
+                log.error("Failed to archive thread ticket", exc_info=e)
+        else:
+            try:
                 await channel.delete()
-        except Exception as e:
-            log.warning(f"Failed to delete ticket channel: {e}")
+            except Exception as e:
+                log.error("Failed to delete ticket channel", exc_info=e)
 
         async with self.config.guild(member.guild).all() as conf:
             tickets = conf["opened"]
