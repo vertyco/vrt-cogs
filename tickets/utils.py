@@ -277,7 +277,7 @@ def prep_overview_embeds(
             panel_name = ticket_info["panel"]
 
             entry = [
-                channel.mention,
+                channel.name,
                 panel_name,
                 int(open_time_obj.timestamp()),
                 member.display_name,

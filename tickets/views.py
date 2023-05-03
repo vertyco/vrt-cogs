@@ -410,12 +410,14 @@ class SupportButton(Button):
                 "`Created By: `{}\n"
                 "`User ID:    `{}\n"
                 "`Opened:     `{}\n"
+                "`Ticket:     `{}\n"
                 "`Panel Name: `{}\n"
                 "**[Click to Jump!]({})**"
             ).format(
                 str(user),
                 user.id,
                 f"<t:{ts}:R>",
+                channel_name,
                 self.panel_name,
                 msg.jump_url,
             )
