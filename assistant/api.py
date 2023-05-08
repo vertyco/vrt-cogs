@@ -95,7 +95,7 @@ class API(MixinMeta):
         self, conf: GuildSettings, messages: dict, temperature: float = 0
     ) -> dict:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=conf.model,
             messages=messages,
             temperature=temperature,
             api_key=conf.api_key,
