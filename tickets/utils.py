@@ -237,12 +237,14 @@ class Utils(MixinMeta):
         for user_id, tickets in opened_tickets.items():
             if not guild.get_member(int(user_id)):
                 count += len(list(tickets.keys()))
+                log.info(f"Cleaning up user {user_id}'s tickets")
                 continue
 
             valid_user_tickets = {}
             for channel_id, ticket in tickets.items():
                 if not guild.get_channel_or_thread(int(channel_id)):
                     count += 1
+                    log.info(f"Cleaning up channel {channel_id} from {user_id}'s tickets")
                     continue
                 else:
                     valid_user_tickets[channel_id] = ticket
