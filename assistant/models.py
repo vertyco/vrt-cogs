@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from .common.utils import num_tokens_from_string
 
-MODELS = ["gpt-3.5-turbo", "gpt-4"]
+MODELS = ["gpt-3.5-turbo", "gpt-4", "gpt-4-32k"]
 
 
 class GuildSettings(BaseModel):

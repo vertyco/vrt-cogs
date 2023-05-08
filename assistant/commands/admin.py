@@ -522,7 +522,7 @@ class Admin(MixinMeta):
         """
         Set the GPT model to use
 
-        Valid models are `gpt-3.5-turbo` and `gpt-4`
+        Valid models are `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k
         """
         if model not in MODELS:
             return await ctx.send("Invalid model type!")
