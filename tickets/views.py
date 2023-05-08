@@ -12,7 +12,7 @@ from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
 from .utils import update_active_overview
 
@@ -370,11 +370,11 @@ class SupportButton(Button):
                 channel_or_thread = await category.create_text_channel(
                     channel_name, overwrites=overwrite
                 )
-        except discord.Forbidden:
+        except Exception as e:
             em = discord.Embed(
                 description=_(
-                    "I do not have permission to create your ticket channel or thread, please contact an admin!"
-                ),
+                    "There was an error while preparing your ticket, please contact an admin!\n{}"
+                ).format(box(str(e), "py")),
                 color=discord.Color.red(),
             )
             if modal:
