@@ -180,5 +180,9 @@ class BaseCommands(MixinMeta):
                 _("Closing..."), ephemeral=True, delete_after=4
             )
         await self.close_ticket(
-            owner, ctx.channel, conf, reason, ctx.author.name
+            member=owner,
+            channel=ctx.channel,
+            conf=conf,
+            reason=reason,
+            closedby=ctx.author.display_name,
         )

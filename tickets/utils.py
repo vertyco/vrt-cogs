@@ -69,7 +69,8 @@ class Utils(MixinMeta):
             "Ticket created by **{}-{}** has been closed.\n"
             "`PanelType: `{}\n"
             "`Opened on: `<t:{}:F>\n"
-            "`Closed by: `<t:{}:F>\n"
+            "`Closed on: `<t:{}:F>\n"
+            "`Closed by: `{}\n"
             "`Reason:    `{}\n"
         ).format(
             member.display_name,
