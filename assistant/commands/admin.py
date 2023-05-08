@@ -269,11 +269,12 @@ class Admin(MixinMeta):
         ptokens = num_tokens_from_string(prompt)
         stokens = num_tokens_from_string(conf.system_prompt)
         combined = ptokens + stokens
-        if combined > 3000:
+        max_tokens = round(conf.max_tokens * 0.9)
+        if combined >= max_tokens:
             return await ctx.send(
                 (
-                    f"Your system and initial prompt combined will use {humanize_number(combined)} tokens!"
-                    "Write a prompt combination using 3k tokens or less to allow 1k tokens for responses."
+                    f"Your system and initial prompt combined will use {humanize_number(combined)} tokens!\n"
+                    f"Write a prompt combination using {humanize_number(max_tokens)} tokens or less to leave 10% of your configured max tokens for your response."
                 )
             )
 
@@ -337,11 +338,12 @@ class Admin(MixinMeta):
         ptokens = num_tokens_from_string(conf.prompt)
         stokens = num_tokens_from_string(system_prompt)
         combined = ptokens + stokens
-        if combined > 3000:
+        max_tokens = round(conf.max_tokens * 0.9)
+        if combined >= max_tokens:
             return await ctx.send(
                 (
-                    f"Your system and initial prompt combined will use {humanize_number(combined)} tokens!"
-                    "Write a prompt combination using 3k tokens or less to allow 1k tokens for responses."
+                    f"Your system and initial prompt combined will use {humanize_number(combined)} tokens!\n"
+                    f"Write a prompt combination using {humanize_number(max_tokens)} tokens or less to leave 10% of your configured max tokens for your response."
                 )
             )
 
@@ -508,8 +510,8 @@ class Admin(MixinMeta):
 
         Using more than the model can handle will raise exceptions.
         """
-        if max_tokens < 100:
-            return await ctx.send("Use at least 100 tokens for the model")
+        if max_tokens < 1000:
+            return await ctx.send("Use at least 1000 tokens for the model")
         conf = self.db.get_conf(ctx.guild)
         conf.max_tokens = max_tokens
         await ctx.send(
