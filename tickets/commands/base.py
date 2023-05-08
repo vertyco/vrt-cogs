@@ -1,8 +1,10 @@
 import asyncio
 import datetime
 import logging
+from typing import Optional
 
 import discord
+from discord import app_commands
 from redbot.core import commands
 from redbot.core.commands import parse_timedelta
 from redbot.core.i18n import Translator
@@ -16,20 +18,18 @@ _ = Translator("Tickets", __file__)
 
 
 class BaseCommands(MixinMeta):
-    # @commands.hybrid_command(
-    #     name="add", description="Add a user to your ticket"
-    # )
-    # @app_commands.describe(
-    #     user="The Discord user you want to add to your ticket"
-    # )
-    @commands.command(name="add")
+    @commands.hybrid_command(
+        name="add", description="Add a user to your ticket"
+    )
+    @app_commands.describe(
+        user="The Discord user you want to add to your ticket"
+    )
+    # @commands.command(name="add")
     @commands.guild_only()
     async def add_user_to_ticket(
         self, ctx: commands.Context, *, user: discord.Member
     ):
         """Add a user to your ticket"""
-        # if inter := ctx.interaction:
-        #     await inter.response.defer()
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
@@ -65,16 +65,14 @@ class BaseCommands(MixinMeta):
             f"**{user.name}** " + _("has been added to this ticket!")
         )
 
-    # @commands.hybrid_command(
-    #     name="renameticket", description="Rename your ticket"
-    # )
-    # @app_commands.describe(new_name="The new name for your ticket")
-    @commands.command(name="renameticket", aliases=["renamet"])
+    @commands.hybrid_command(
+        name="renameticket", description="Rename your ticket"
+    )
+    @app_commands.describe(new_name="The new name for your ticket")
+    # @commands.command(name="renameticket", aliases=["renamet"])
     @commands.guild_only()
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
         """Rename your ticket channel"""
-        # if inter := ctx.interaction:
-        #     await inter.response.defer()
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
@@ -102,13 +100,15 @@ class BaseCommands(MixinMeta):
         # Threads already alert to name changes
         if isinstance(ctx.channel, discord.TextChannel):
             await ctx.send(_("Ticket has been renamed"))
+        elif ctx.interaction:
+            await ctx.interaction.response.defer()
 
-    # @commands.hybrid_command(name="close", description="Close your ticket")
-    # @app_commands.describe(reason="Reason for closing the ticket")
-    @commands.command(name="close")
+    @commands.hybrid_command(name="close", description="Close your ticket")
+    @app_commands.describe(reason="Reason for closing the ticket")
+    # @commands.command(name="close")
     @commands.guild_only()
     async def close_a_ticket(
-        self, ctx: commands.Context, *, reason: str = None
+        self, ctx: commands.Context, *, reason: Optional[str] = None
     ):
         """
         Close your ticket
@@ -119,8 +119,6 @@ class BaseCommands(MixinMeta):
         `[p]close 1h` - closes in 1 hour with no reason attached
         `[p]close 1m thanks for helping!` - closes in 1 minute with reason "thanks for helping!"
         """
-        # if inter := ctx.interaction:
-        #     await inter.response.defer()
         user = ctx.author
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
@@ -177,7 +175,10 @@ class BaseCommands(MixinMeta):
                     cancelled = _("Closing cancelled!")
                     await msg.edit(content=cancelled)
                     return
-
+        if ctx.interaction:
+            await ctx.interaction.response.send_message(
+                _("Closing..."), ephemeral=True, delete_after=4
+            )
         await self.close_ticket(
             owner, ctx.channel, conf, reason, ctx.author.name
         )

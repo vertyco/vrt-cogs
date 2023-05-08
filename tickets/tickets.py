@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.13.2"
+    __version__ = "1.14.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -71,6 +71,7 @@ class Tickets(
             "category_id": 0,  # <Required>
             "channel_id": 0,  # <Required>
             "message_id": 0,  # <Required>
+            "alt_channel": 0,  # (Optional) Open tickets from another channel/category
             # Button settings
             "button_text": "Open a Ticket",  # (Optional)
             "button_color": "blue",  # (Optional)
@@ -126,7 +127,16 @@ class Tickets(
             if new_id:
                 await self.config.guild(guild).overview_msg.set(new_id)
 
+            # v1.14.0 Migration, new support role schema
+            cleaned = []
+            for i in data["support_roles"]:
+                if isinstance(i, int):
+                    cleaned.append([i, False])
+            if cleaned:
+                await self.config.guild(guild).support_roles.set(cleaned)
+
             # Refresh buttons for all panels
+            migrations = False
             all_panels = data["panels"]
             to_deploy = {}  # Message ID keys for multi-button support
             for panel_name, panel in all_panels.items():
@@ -154,6 +164,22 @@ class Tickets(
                 # v1.3.10 schema update (Modals)
                 if "modals" not in panel:
                     panel["modals"] = {}
+                    migrations = True
+                # Schema update (Sub support roles)
+                if "roles" not in panel:
+                    panel["roles"] = []
+                    migrations = True
+                # v1.14.0 Schema update (Mentionable support roles + alt channel)
+                cleaned = []
+                for i in panel["roles"]:
+                    if isinstance(i, int):
+                        cleaned.append([i, False])
+                if cleaned:
+                    panel["roles"] = cleaned
+                    migrations = True
+                if "alt_channel" not in panel:
+                    panel["alt_channel"] = 0
+                    migrations = True
 
                 panel["name"] = panel_name
                 key = f"{cid}-{mid}"
@@ -164,6 +190,10 @@ class Tickets(
 
             if not to_deploy:
                 continue
+
+            # Update config for any migrations
+            if migrations:
+                await self.config.guild(guild).panels.set(all_panels)
 
             try:
                 for panels in to_deploy.values():
@@ -307,7 +337,7 @@ class Tickets(
             return
 
         for cid in tickets:
-            chan = self.bot.get_channel_or_thread(int(cid))
+            chan = member.guild.get_channel_or_thread(int(cid))
             if not chan:
                 continue
             try:
