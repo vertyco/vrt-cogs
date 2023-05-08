@@ -7,6 +7,8 @@ from pydantic import BaseModel
 
 from .common.utils import num_tokens_from_string
 
+MODELS = ["gpt-3.5-turbo", "gpt-4"]
+
 
 class GuildSettings(BaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
@@ -16,9 +18,11 @@ class GuildSettings(BaseModel):
     endswith_questionmark: bool = False
     max_retention: int = 0
     max_retention_time: int = 1800
+    max_tokens: int = 4000
     min_length: int = 7
     mention: bool = False
     enabled: bool = True
+    model: str = "gpt-3.5-turbo"
 
 
 class DB(BaseModel):
@@ -64,9 +68,15 @@ class Conversation(BaseModel):
             self.messages.clear()
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
-        # 4096 is max tokens but chop off till less than 4000
-        while self.token_count(conf, message) > 4000 and self.messages:
+        # 4096 is max tokens for 3.5
+        while (
+            self.token_count(conf, message) > conf.max_tokens and self.messages
+        ):
             self.messages.pop(0)
+
+    def reset(self):
+        self.last_updated = datetime.now().timestamp()
+        self.messages.clear()
 
     def update_messages(
         self, conf: GuildSettings, message: str, role: str

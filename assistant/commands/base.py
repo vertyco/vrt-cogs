@@ -52,3 +52,11 @@ class Base(MixinMeta):
             color=user.color,
         )
         await ctx.send(embed=embed)
+
+    @commands.command(name="clearconvo")
+    @commands.guild_only()
+    async def clear_convo(self, ctx: commands.Context):
+        """Reset your conversation"""
+        conversation = self.chats.get_conversation(ctx.author)
+        conversation.reset()
+        await ctx.tick()

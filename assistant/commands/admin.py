@@ -14,6 +14,7 @@ from ..common.utils import (
     num_tokens_from_string,
     token_pagify,
 )
+from ..models import MODELS
 from ..views import SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -49,9 +50,11 @@ class Admin(MixinMeta):
             f"`Mentions:         `{conf.mention}\n"
             f"`Max Retention:    `{conf.max_retention}\n"
             f"`Retention Expire: `{conf.max_retention_time}s\n"
+            f"`Max Tokens:       `{conf.max_tokens}\n"
             f"`Min Length:       `{conf.min_length}\n"
             f"`System Message:   `{humanize_number(system_tokens)} tokens\n"
-            f"`Initial Prompt:   `{humanize_number(prompt_tokens)} tokens"
+            f"`Initial Prompt:   `{humanize_number(prompt_tokens)} tokens\n"
+            f"`Model:            `{conf.model}"
         )
         system_file = (
             discord.File(
@@ -493,4 +496,37 @@ class Admin(MixinMeta):
             )
         else:
             await ctx.tick()
+        await self.save_conf()
+
+    @assistant.command(name="maxtokens")
+    async def max_tokens(self, ctx: commands.Context, max_tokens: int):
+        """
+        Set the max tokens the model can use at once
+
+        For GPT3.5 use 4000 or less.
+        For GPT4 user 8000 or less (if 8k version).
+
+        Using more than the model can handle will raise exceptions.
+        """
+        if max_tokens < 100:
+            return await ctx.send("Use at least 100 tokens for the model")
+        conf = self.db.get_conf(ctx.guild)
+        conf.max_tokens = max_tokens
+        await ctx.send(
+            f"The max tokens the current model will use is {max_tokens}"
+        )
+        await self.save_conf()
+
+    @assistant.command(name="model")
+    async def set_model(self, ctx: commands.Context, model: str):
+        """
+        Set the GPT model to use
+
+        Valid models are `gpt-3.5-turbo` and `gpt-4`
+        """
+        if model not in MODELS:
+            return await ctx.send("Invalid model type!")
+        conf = self.db.get_conf(ctx.guild)
+        conf.model = model
+        await ctx.send(f"The {model} model will now be used")
         await self.save_conf()

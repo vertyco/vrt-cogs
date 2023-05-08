@@ -21,13 +21,11 @@ class Assistant(
     metaclass=CompositeMetaClass,
 ):
     """
-    Set up a helpful assistant for your Discord server, powered by ChatGPT
-
-    This cog uses GPT-3.5-Turbo **Only** right now.
+    Set up a helpful assistant for your Discord server, powered by the ChatGPT API
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "1.1.4"
+    __version__ = "1.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
