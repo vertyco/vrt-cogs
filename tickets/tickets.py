@@ -216,6 +216,8 @@ class Tickets(
                     if not ticket_info["logmsg"]:
                         continue
                     panel_name = ticket_info["panel"]
+                    if panel_name not in all_panels:
+                        continue
                     panel = all_panels[panel_name]
                     if not panel["log_channel"]:
                         continue
