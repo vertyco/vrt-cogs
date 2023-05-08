@@ -29,17 +29,10 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from .diskspeed import get_disk_speed
+from .dpymenu import DEFAULT_CONTROLS, confirm, menu
 
 log = logging.getLogger("red.vrt.vrtutils")
-dpy = discord.__version__
-if dpy > "1.7.4":
-    from .dpymenu import DEFAULT_CONTROLS, confirm, menu
-
-    DPY2 = True
-else:
-    from .dislashmenu import DEFAULT_CONTROLS, confirm, menu
-
-    DPY2 = False
+DPY = discord.__version__
 
 
 async def wait_reply(ctx: commands.Context, timeout: int = 60):
@@ -68,7 +61,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.5.15"
+    __version__ = "1.6.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -80,10 +73,6 @@ class VrtUtils(commands.Cog):
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = bot
-        if not DPY2:
-            from dislash import InteractionClient
-
-            InteractionClient(bot, sync_commands=False)
         self.path = cog_data_path(self)
         self.threadpool = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="vrt_utils"
@@ -442,7 +431,7 @@ class VrtUtils(commands.Cog):
                 f"Commands: {commandcount}\n"
                 f"Uptime:   {uptime}\n"
                 f"Red:      {red_version}\n"
-                f"DPy:      {dpy}\n"
+                f"DPy:      {DPY}\n"
                 f"Python:   {py_version}"
             )
             embed.add_field(
@@ -502,10 +491,7 @@ class VrtUtils(commands.Cog):
                 inline=False,
             )
 
-            if DPY2:
-                bot_icon = self.bot.user.avatar.url.format("png")
-            else:
-                bot_icon = self.bot.user.avatar_url_as(format="png")
+            bot_icon = self.bot.user.avatar.url.format("png")
             embed.set_thumbnail(url=bot_icon)
             embed.set_footer(text=f"System: {ostype}\nUptime: {sys_uptime}")
             await ctx.send(embed=embed)
@@ -535,11 +521,8 @@ class VrtUtils(commands.Cog):
             description=created_on,
             color=await ctx.embed_color(),
         )
-        if DPY2:
-            if member.avatar:
-                embed.set_image(url=member.avatar.url)
-        else:
-            embed.set_image(url=member.avatar_url)
+        if member.avatar:
+            embed.set_image(url=member.avatar.url)
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -603,12 +586,8 @@ class VrtUtils(commands.Cog):
             guild: discord.Guild = guild
             if guild.id == ctx.guild.id:
                 page = i
-            if DPY2:
-                guild_splash = guild.splash.url if guild.splash else None
-                guild_icon = guild.icon.url if guild.icon else None
-            else:
-                guild_splash = guild.splash_url
-                guild_icon = guild.icon_url
+            guild_splash = guild.splash.url if guild.splash else None
+            guild_icon = guild.icon.url if guild.icon else None
             created = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
             time_elapsed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
             try:
@@ -778,23 +757,9 @@ class VrtUtils(commands.Cog):
                 break
         else:  # No existing invite found that is valid
             channel = None
-            if not DPY2:
-                channels_and_perms = zip(
-                    guild.text_channels,
-                    map(guild.me.permissions_in, guild.text_channels),
-                )
-                channel = next(
-                    (
-                        channel
-                        for channel, perms in channels_and_perms
-                        if perms.create_instant_invite
-                    ),
-                    None,
-                )
-            else:
-                for channel in guild.text_channels:
-                    if channel.permissions_for(guild.me).create_instant_invite:
-                        break
+            for channel in guild.text_channels:
+                if channel.permissions_for(guild.me).create_instant_invite:
+                    break
             try:
                 if channel is not None:
                     # Create invite that expires after max_age
@@ -1005,25 +970,6 @@ class VrtUtils(commands.Cog):
             await msg.edit(content=f"Deleted {deleted} threads!")
         else:
             await msg.edit(content="No threads to delete!")
-
-    @commands.command(name="syncslash")
-    @commands.is_owner()
-    async def sync_slash(self, ctx: commands.Context, global_sync: bool):
-        """
-        Sync slash commands
-
-        **Arguments**
-        `global_sync:` If True, syncs global slash commands, syncs current guild by default
-        """
-        if not DPY2:
-            return await ctx.send("This command can only be used with DPy2")
-        if global_sync:
-            await self.bot.tree.sync()
-            await ctx.send("Synced global slash commands!")
-        else:
-            await self.bot.tree.sync(guild=ctx.guild)
-            await ctx.send("Synced slash commands for this guild!")
-        await ctx.tick()
 
     @commands.command(name="text2binary")
     async def text2binary(self, ctx: commands.Context, *, text: str):
