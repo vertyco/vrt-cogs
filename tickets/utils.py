@@ -67,9 +67,9 @@ class Utils(MixinMeta):
 
         desc = _(
             "Ticket created by **{}-{}** has been closed.\n"
-            "`PanelType: `<t:{}:F>\n"
+            "`PanelType: `{}\n"
             "`Opened on: `<t:{}:F>\n"
-            "`Closed by: `{}\n"
+            "`Closed by: `<t:{}:F>\n"
             "`Reason:    `{}\n"
         ).format(
             member.display_name,
@@ -244,7 +244,9 @@ class Utils(MixinMeta):
             for channel_id, ticket in tickets.items():
                 if not guild.get_channel_or_thread(int(channel_id)):
                     count += 1
-                    log.info(f"Cleaning up channel {channel_id} from {user_id}'s tickets")
+                    log.info(
+                        f"Cleaning up channel {channel_id} from {user_id}'s tickets"
+                    )
                     continue
                 else:
                     valid_user_tickets[channel_id] = ticket
