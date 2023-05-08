@@ -37,7 +37,6 @@ class Utils(MixinMeta):
 
         ticket = opened[uid][cid]
         pfp = ticket["pfp"]
-        opened = ticket["opened"]
         panel_name = ticket["panel"]
         panel = conf["panels"][panel_name]
         threads = panel.get("threads")
@@ -61,7 +60,7 @@ class Utils(MixinMeta):
                 )
             )
 
-        opened = int(datetime.fromisoformat(opened).timestamp())
+        opened = int(datetime.fromisoformat(ticket["opened"]).timestamp())
         closed = int(datetime.now().timestamp())
         closer_name = escape_markdown(closedby)
 
