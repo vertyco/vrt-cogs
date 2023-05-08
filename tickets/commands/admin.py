@@ -5,7 +5,7 @@ import discord
 from discord import Embed
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, humanize_list
+from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
 from ..menu import SMALL_CONTROLS, MenuButton, menu
@@ -959,12 +959,12 @@ class AdminCommands(MixinMeta):
                 if info["log_channel"]
                 else "None"
             )
-            role_ids = info.get("roles", [])
-            roles = [
-                ctx.guild.get_role(r).mention
-                for r in role_ids
-                if ctx.guild.get_role(r)
-            ]
+            panel_roles = ""
+            for role_id, mention_toggle in info.get("roles", []):
+                role = ctx.guild.get_role(role_id)
+                if not role:
+                    continue
+                panel_roles += f"{role.mention}({mention_toggle})\n"
 
             desc = _("`Category:       `") + f"{cat}\n"
             desc += _("`Channel:        `") + f"{channel}\n"
@@ -986,8 +986,8 @@ class AdminCommands(MixinMeta):
                 description=desc,
                 color=ctx.author.color,
             )
-            if roles:
-                em.add_field(name=_("Panel Roles"), value=humanize_list(roles))
+            if panel_roles:
+                em.add_field(name=_("Panel Roles(Mention)"), value=panel_roles)
             em.set_footer(text=_("Page ") + f"{page}/{pages}")
             page += 1
             embeds.append(em)
@@ -1043,10 +1043,10 @@ class AdminCommands(MixinMeta):
         support = conf["support_roles"]
         suproles = ""
         if support:
-            for role_id in support:
+            for role_id, mention_toggle in support:
                 role = ctx.guild.get_role(role_id)
                 if role:
-                    suproles += f"{role.mention}\n"
+                    suproles += f"{role.mention}({mention_toggle})\n"
         blacklist = conf["blacklist"]
         blacklisted = ""
         if blacklist:
@@ -1067,7 +1067,7 @@ class AdminCommands(MixinMeta):
         )
         if suproles:
             embed.add_field(
-                name=_("Support Roles"), value=suproles, inline=False
+                name=_("Support Roles(Mention)"), value=suproles, inline=False
             )
         if blacklisted:
             embed.add_field(
@@ -1093,61 +1093,106 @@ class AdminCommands(MixinMeta):
 
     @tickets.command(name="supportrole")
     async def set_support_role(
-        self, ctx: commands.Context, *, role: discord.Role
+        self,
+        ctx: commands.Context,
+        role: discord.Role,
+        mention: Optional[bool] = False,
     ):
         """
         Add/Remove ticket support roles (one at a time)
 
+        **Optional**: include `true` for mention to have that role mentioned when a ticket is opened
+
         To remove a role, simply run this command with it again to remove it
         """
+        entry = [role.id, mention]
         async with self.config.guild(ctx.guild).support_roles() as roles:
-            if role.id in roles:
-                roles.remove(role.id)
-                await ctx.send(
-                    role.name + _(" has been removed from support roles")
-                )
+            for i in roles.copy():
+                if i[0] == role.id:
+                    roles.remove(i)
+                    return await ctx.send(
+                        _("{} has been removed from support roles")
+                    )
             else:
-                roles.append(role.id)
+                roles.append(entry)
                 await ctx.send(
                     role.name + _(" has been added to support roles")
                 )
 
     @tickets.command(name="panelrole")
     async def set_panel_role(
-        self, ctx: commands.Context, panel_name: str, *, role: discord.Role
+        self,
+        ctx: commands.Context,
+        panel_name: str,
+        role: discord.Role,
+        mention: Optional[bool] = False,
     ):
         """
         Add/Remove roles for a specific panel
 
         To remove a role, simply run this command with it again to remove it
 
+        **Optional**: include `true` for mention to have that role mentioned when a ticket is opened
+
         These roles are a specialized subset of the main support roles.
         Use this role type if you want to isolate specific groups to a certain panel.
         """
         panel_name = panel_name.lower()
+        entry = [role.id, mention]
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))
-            panel = panels[panel_name]
-            if "roles" not in panel:
-                panel["roles"] = []
-            roles = panel["roles"]
-            if role.id in roles:
-                panels[panel_name]["roles"].remove(role.id)
-                await ctx.send(
-                    role.name
-                    + _(" has been removed from the {} panel roles").format(
-                        panel_name
+            if "roles" not in panels[panel_name]:
+                panels[panel_name]["roles"] = []
+            for i in panels[panel_name]["roles"].copy():
+                if i[0] == role.id:
+                    panels[panel_name]["roles"].remove(i)
+                    return await ctx.send(
+                        _(
+                            "{} has been removed from the {} panel roles"
+                        ).format(role.name, panel_name)
                     )
-                )
             else:
-                panels[panel_name]["roles"].append(role.id)
+                panels[panel_name]["roles"].append(entry)
                 await ctx.send(
                     role.name
                     + _(" has been added to the {} panel roles").format(
                         panel_name
                     )
                 )
+
+    @tickets.command(name="altchannel")
+    async def set_alt_channel(
+        self,
+        ctx: commands.Context,
+        panel_name: str,
+        *,
+        channel: Union[discord.TextChannel, discord.CategoryChannel],
+    ):
+        """
+        Set an alternate channel that tickets will be opened under for a panel
+
+        If the panel uses threads, this needs to be a normal text channel.
+        If the panel uses channels, this needs to be a category.
+
+        If the panel is a channel type and a channel is used, the bot will use the category associated wit the channel.
+
+        To remove the alt channel, specify the existing one
+        """
+        panel_name = panel_name.lower()
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+            panel = panels[panel_name]
+            if panel.get("alt_channel", 0) == channel.id:
+                panel["alt_channel"] = 0
+                return await ctx.send(
+                    _("Alt channel has been removed for this panel!")
+                )
+            panel["alt_channel"] = channel.id
+            await ctx.send(
+                _("Alt channel has been set to {}!").format(channel.name)
+            )
 
     @tickets.command(name="blacklist")
     async def set_blacklist(
@@ -1359,7 +1404,7 @@ class AdminCommands(MixinMeta):
         """Create an embed for ticket panel buttons to be added to"""
         foot = _("type 'cancel' to cancel")
         channel = channel or ctx.channel
-        color = color or await ctx.author.color
+        color = color or ctx.author.color
         # FOOTER
         em = Embed(
             description=_("Would you like this embed to have a footer?"),

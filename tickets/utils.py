@@ -64,16 +64,23 @@ class Utils(MixinMeta):
         opened = int(datetime.fromisoformat(opened).timestamp())
         closed = int(datetime.now().timestamp())
         closer_name = escape_markdown(closedby)
-        desc = (
-            _("Ticket created by ")
-            + f"**{member.name}-{member.id}**"
-            + _(" has been closed.\n")
+
+        desc = _(
+            "Ticket created by **{}-{}** has been closed.\n"
+            "`PanelType: `<t:{}:F>\n"
+            "`Opened on: `<t:{}:F>\n"
+            "`Closed by: `{}\n"
+            "`Reason:    `{}\n"
+        ).format(
+            member.display_name,
+            member.id,
+            panel_name,
+            opened,
+            closed,
+            closer_name,
+            str(reason),
         )
-        desc += _("`PanelType: `") + f"{panel_name}\n"
-        desc += _("`Opened on: `") + f"<t:{opened}:F>\n"
-        desc += _("`Closed on: `") + f"<t:{closed}:F>\n"
-        desc += _("`Closed by: `") + f"{closer_name}\n"
-        desc += _("`Reason:    `") + str(reason)
+
         embed = discord.Embed(
             title=_("Ticket Closed"),
             description=desc,
@@ -95,7 +102,7 @@ class Utils(MixinMeta):
             )
             em.set_footer(text=_("This channel will be deleted once complete"))
             em.set_thumbnail(url=LOADING)
-            await channel.send(embed=em, delete_after=60)
+            temp_message = await channel.send(embed=em)
             answers = ticket.get("answers")
             if answers:
                 r = _("Response")
@@ -114,6 +121,7 @@ class Utils(MixinMeta):
                     text += f"{msg.author.name}: {msg.content}\n"
                 if att:
                     text += _("Files uploaded: ") + humanize_list(att) + "\n"
+            await temp_message.delete()
         else:
             history = await self.fetch_channel_history(channel, limit=1)
 

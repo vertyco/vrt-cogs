@@ -12,7 +12,7 @@ from discord.ui import Button, Modal, TextInput, View
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .utils import update_active_overview
 
@@ -279,17 +279,29 @@ class SupportButton(Button):
         read_and_manage = discord.PermissionOverwrite(
             read_messages=True, send_messages=True, manage_channels=True
         )
-        support = [
-            guild.get_role(role_id)
-            for role_id in conf["support_roles"]
-            if guild.get_role(role_id)
-        ]
-        sub_support = [
-            guild.get_role(role_id)
-            for role_id in panel.get("roles", [])
-            if guild.get_role(role_id)
-        ]
-        support.extend(sub_support)
+
+        support_roles = []
+        support_mentions = []
+        panel_roles = []
+        panel_mentions = []
+        for role_id, mention_toggle in conf["support_roles"]:
+            role = guild.get_role(role_id)
+            if not role:
+                continue
+            support_roles.append(role)
+            if mention_toggle:
+                support_mentions.append(role.mention)
+        for role_id, mention_toggle in panel.get("roles", []):
+            role = guild.get_role(role_id)
+            if not role:
+                continue
+            panel_roles.append(role)
+            if mention_toggle:
+                panel_mentions.append(role.mention)
+
+        support_roles.extend(panel_roles)
+        support_mentions.extend(panel_mentions)
+
         overwrite = {
             guild.default_role: discord.PermissionOverwrite(
                 read_messages=False
@@ -297,8 +309,9 @@ class SupportButton(Button):
             guild.me: read_and_manage,
             user: can_read_send,
         }
-        for role in support:
+        for role in support_roles:
             overwrite[role] = can_read_send
+
         num = panel["ticket_num"]
         now = datetime.now().astimezone()
         name_fmt = panel["ticket_name"]
@@ -314,6 +327,13 @@ class SupportButton(Button):
         channel_name = name_fmt.format(**params) if name_fmt else user.name
         try:
             if panel.get("threads"):
+                channel = interaction.channel
+                if alt_cid := panel.get("alt_channel"):
+                    alt_channel = guild.get_channel(alt_cid)
+                    if alt_channel and isinstance(
+                        alt_channel, discord.TextChannel
+                    ):
+                        channel = alt_channel
                 archive = round(conf["inactive"] * 60)
                 arr = np.asarray([60, 1440, 4320, 10080])
                 index = (np.abs(arr - archive)).argmin()
@@ -323,7 +343,7 @@ class SupportButton(Button):
                     self.panel_name, str(interaction.user)
                 )
                 channel_or_thread: discord.Thread = (
-                    await interaction.channel.create_thread(
+                    await channel.create_thread(
                         name=channel_name,
                         auto_archive_duration=auto_archive_duration,
                         reason=reason,
@@ -331,11 +351,22 @@ class SupportButton(Button):
                     )
                 )
                 await channel_or_thread.add_user(interaction.user)
-                if conf["auto_add"]:
-                    for role in support:
+                if conf["auto_add"] and not support_mentions:
+                    for role in support_roles:
                         for member in role.members:
                             await channel_or_thread.add_user(member)
             else:
+                if alt_cid := panel.get("alt_channel"):
+                    alt_channel = guild.get_channel(alt_cid)
+                    if alt_channel and isinstance(
+                        alt_channel, discord.CategoryChannel
+                    ):
+                        category = alt_channel
+                    elif alt_channel and isinstance(
+                        alt_channel, discord.TextChannel
+                    ):
+                        if alt_channel.category:
+                            category = alt_channel.category
                 channel_or_thread = await category.create_text_channel(
                     channel_name, overwrites=overwrite
                 )
@@ -364,13 +395,20 @@ class SupportButton(Button):
                 "\nYou or an admin can close this with the `{}close` command"
             ).format(prefix)
 
-        messages = conf["panels"][self.panel_name]["ticket_messages"]
+        messages = panel["ticket_messages"]
         params = {
             "username": user.name,
             "displayname": user.display_name,
             "mention": user.mention,
             "id": str(user.id),
         }
+        content = "" if panel.get("threads") else user.mention
+        if support_mentions:
+            if not panel.get("threads"):
+                support_mentions.append(user.mention)
+            content = humanize_list(support_mentions)
+
+        allowed_mentions = discord.AllowedMentions(roles=True)
         if messages:
             embeds = []
             for einfo in messages:
@@ -384,12 +422,19 @@ class SupportButton(Button):
                 if einfo["footer"]:
                     em.set_footer(text=einfo["footer"].format(**params))
                 embeds.append(em)
-            msg = await channel_or_thread.send(user.mention, embeds=embeds)
+
+            msg = await channel_or_thread.send(
+                content=content,
+                embeds=embeds,
+                allowed_mentions=allowed_mentions,
+            )
         else:
             em = discord.Embed(description=default_message, color=user.color)
             if user.avatar:
                 em.set_thumbnail(url=user.avatar.url)
-            msg = await channel_or_thread.send(user.mention, embed=em)
+            msg = await channel_or_thread.send(
+                content=content, embed=em, allowed_mentions=allowed_mentions
+            )
 
         if len(form_embed.fields) > 0:
             await channel_or_thread.send(embed=form_embed)
