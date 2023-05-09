@@ -1122,7 +1122,7 @@ class AdminCommands(MixinMeta):
                 await ctx.send(
                     role.name + _(" has been added to support roles")
                 )
-            await self.initialize(ctx.guild)
+        await self.initialize(ctx.guild)
 
     @tickets.command(name="panelrole")
     async def set_panel_role(
@@ -1165,7 +1165,7 @@ class AdminCommands(MixinMeta):
                         panel_name
                     )
                 )
-            await self.initialize(ctx.guild)
+        await self.initialize(ctx.guild)
 
     @tickets.command(name="altchannel")
     async def set_alt_channel(
@@ -1199,7 +1199,7 @@ class AdminCommands(MixinMeta):
             await ctx.send(
                 _("Alt channel has been set to {}!").format(channel.name)
             )
-            await self.initialize(ctx.guild)
+        await self.initialize(ctx.guild)
 
     @tickets.command(name="priority")
     async def set_priority(
@@ -1218,7 +1218,7 @@ class AdminCommands(MixinMeta):
                     priority
                 )
             )
-            await self.initialize(ctx.guild)
+        await self.initialize(ctx.guild)
 
     @tickets.command(name="row")
     async def set_row(self, ctx: commands.Context, panel_name: str, row: int):
@@ -1254,7 +1254,7 @@ class AdminCommands(MixinMeta):
                     row
                 )
             )
-            await self.initialize(ctx.guild)
+        await self.initialize(ctx.guild)
 
     @tickets.command(name="blacklist")
     async def set_blacklist(
