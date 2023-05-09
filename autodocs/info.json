@@ -6,8 +6,8 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not store data about users.",
   "hidden": false,
-  "install_msg": "Thank you for installing!",
-  "min_bot_version": "3.5.0.dev307",
+  "install_msg": "Thank you for installing Autodocs!",
+  "min_bot_version": "3.5.0",
   "min_python_version": [
     3,
     9,
@@ -19,7 +19,7 @@
     "ujson",
     "msgpack"
   ],
-  "short": "EZ Cog Docs",
+  "short": "EZ Cog Doc Generation",
   "tags": [
     "utility",
     "docs",
