@@ -61,7 +61,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.1"
+    __version__ = "1.6.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -455,7 +455,7 @@ class VrtUtils(commands.Cog):
                         space = ""
                     bar = self.get_bar(0, 0, perc, width=16)
                     cpustats += f"Core {i}:{space} {bar}\n"
-            for p in pagify(cpustats):
+            for p in pagify(cpustats, page_length=1024):
                 embed.add_field(
                     name="\N{DESKTOP COMPUTER} CPU",
                     value=box(p, lang="python"),
