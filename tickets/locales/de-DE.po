@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-05-09 08:57-0400\n"
-"PO-Revision-Date: 2023-05-09 13:13\n"
+"POT-Creation-Date: 2023-05-09 10:55-0400\n"
+"PO-Revision-Date: 2023-05-09 14:57\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -33,15 +33,15 @@ msgstr ""
 msgid "No data to delete"
 msgstr ""
 
-#: tickets.py:289
+#: tickets.py:299
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr ""
 
-#: tickets.py:304
+#: tickets.py:314
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr ""
 
-#: tickets.py:350
+#: tickets.py:360
 msgid "User left guild(Auto-Close)"
 msgstr ""
 
@@ -133,54 +133,54 @@ msgstr ""
 msgid "{} Panel"
 msgstr ""
 
-#: views.py:180
+#: views.py:181
 msgid "You been blacklisted from creating tickets!"
 msgstr ""
 
-#: views.py:190
+#: views.py:191
 msgid "You have a role that has been blacklisted from creating tickets!"
 msgstr ""
 
-#: views.py:211
+#: views.py:212
 msgid "You have the maximum amount of tickets opened already!"
 msgstr ""
 
-#: views.py:226
+#: views.py:227
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
 msgstr ""
 
-#: views.py:242
+#: views.py:243
 msgid "Submission Info"
 msgstr ""
 
-#: views.py:256
+#: views.py:257
 msgid "Unanswered"
 msgstr ""
 
-#: views.py:342
+#: views.py:343
 msgid "{} ticket for {}"
 msgstr ""
 
-#: views.py:375
+#: views.py:376
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
 msgstr ""
 
-#: views.py:391
+#: views.py:392
 msgid "Welcome to your ticket channel "
 msgstr ""
 
-#: views.py:394
+#: views.py:395
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
 msgstr ""
 
-#: views.py:442
+#: views.py:443
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
 msgstr ""
 
-#: views.py:454
+#: views.py:455
 msgid "`Created By: `{}\n"
 "`User ID:    `{}\n"
 "`Opened:     `{}\n"
@@ -189,23 +189,23 @@ msgid "`Created By: `{}\n"
 "**[Click to Jump!]({})**"
 msgstr ""
 
-#: views.py:470
+#: views.py:471
 msgid "Ticket Opened"
 msgstr ""
 
-#: views.py:543
+#: views.py:544
 msgid "You have already been added to the ticket **{}**!"
 msgstr ""
 
-#: views.py:556
+#: views.py:557
 msgid "You already have access to the ticket **{}**!"
 msgstr ""
 
-#: views.py:566
+#: views.py:567
 msgid "{} was added to the ticket"
 msgstr ""
 
-#: views.py:572
+#: views.py:573
 msgid "You have been added to the ticket **{}**"
 msgstr ""
 
