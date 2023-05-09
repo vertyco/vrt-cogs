@@ -1,15 +1,13 @@
-import json
-from pathlib import Path
-
 import discord
+from redbot.core.bot import Red
+from redbot.core.utils import get_end_user_data_statement
 
 from .economytrack import EconomyTrack
 
-with open(Path(__file__).parent / "info.json") as fp:
-    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
+__red_end_user_data_statement__ = get_end_user_data_statement(__file__)
 
 
-async def setup(bot):
+async def setup(bot: Red):
     cog = EconomyTrack(bot)
     if discord.__version__ > "1.7.3":
         await bot.add_cog(cog)
