@@ -131,11 +131,13 @@ class BaseCommands(MixinMeta):
 
         panel_name = opened[owner_id][str(ctx.channel.id)]["panel"]
         panel_roles = conf["panels"][panel_name]["roles"]
+        user_roles = [r.id for r in ctx.author.roles]
+
+        support_roles = [i[0] for i in conf["support_roles"]]
+        support_roles.extend([i[0] for i in panel_roles])
 
         can_close = False
-        if any([r.id in conf["support_roles"] for r in ctx.author.roles]):
-            can_close = True
-        elif any([r.id in panel_roles for r in ctx.author.roles]):
+        if any(i in support_roles for i in user_roles):
             can_close = True
         elif ctx.author.id == ctx.guild.owner_id:
             can_close = True
