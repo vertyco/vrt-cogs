@@ -61,7 +61,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.0"
+    __version__ = "1.6.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -374,6 +374,7 @@ class VrtUtils(commands.Cog):
             recv = self.get_size(net.bytes_recv)
 
             # -/-/-/OS-/-/-/
+            ostype = "Unknown"
             if os.name == "nt":
                 osdat = platform.uname()
                 ostype = (
@@ -386,8 +387,6 @@ class VrtUtils(commands.Cog):
                 import distro
 
                 ostype = f"{distro.name()} {distro.version()}"
-            else:
-                ostype = "Unknown"
 
             td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(
                 psutil.boot_time()
@@ -454,16 +453,17 @@ class VrtUtils(commands.Cog):
                     space = " "
                     if i >= 10:
                         space = ""
-                    bar = self.get_bar(0, 0, perc)
+                    bar = self.get_bar(0, 0, perc, width=16)
                     cpustats += f"Core {i}:{space} {bar}\n"
-            embed.add_field(
-                name="\N{DESKTOP COMPUTER} CPU",
-                value=box(cpustats, lang="python"),
-                inline=False,
-            )
+            for p in pagify(cpustats):
+                embed.add_field(
+                    name="\N{DESKTOP COMPUTER} CPU",
+                    value=box(p, lang="python"),
+                    inline=False,
+                )
 
-            rambar = self.get_bar(0, 0, ram.percent, width=30)
-            diskbar = self.get_bar(0, 0, disk.percent, width=30)
+            rambar = self.get_bar(0, 0, ram.percent, width=18)
+            diskbar = self.get_bar(0, 0, disk.percent, width=18)
             memtext = (
                 f"RAM ({ram_used}/{ram_total})\n"
                 f"{rambar}\n"
@@ -476,7 +476,7 @@ class VrtUtils(commands.Cog):
                 inline=False,
             )
 
-            disk_usage_bar = self.get_bar(0, 0, disk_usage, width=30)
+            disk_usage_bar = self.get_bar(0, 0, disk_usage, width=18)
             i_o = f"DISK LOAD\n" f"{disk_usage_bar}"
             embed.add_field(
                 name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
