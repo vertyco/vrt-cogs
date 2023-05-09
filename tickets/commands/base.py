@@ -129,7 +129,7 @@ class BaseCommands(MixinMeta):
                 )
             )
 
-        panel_name = opened[str(ctx.author.id)][str(ctx.channel.id)]["panel"]
+        panel_name = opened[owner_id][str(ctx.channel.id)]["panel"]
         panel_roles = conf["panels"][panel_name]["roles"]
 
         can_close = False
