@@ -155,6 +155,7 @@ class SupportButton(Button):
             label=panel["button_text"],
             custom_id=panel["name"],
             emoji=panel["button_emoji"],
+            row=panel.get("row"),
         )
         self.panel_name = panel["name"]
 

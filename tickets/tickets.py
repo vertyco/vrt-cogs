@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.14.6"
+    __version__ = "1.15.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -76,6 +76,8 @@ class Tickets(
             "button_text": "Open a Ticket",  # (Optional)
             "button_color": "blue",  # (Optional)
             "button_emoji": None,  # (Optional) Either None or an emoji for the button
+            "priority": 1,  # (Optional) Button order
+            "row": None,  # Row for the button to be placed
             # Ticket settings
             "ticket_messages": [],  # (Optional) A list of messages to be sent
             "ticket_name": None,  # (Optional) Name format for the ticket channel
@@ -180,6 +182,11 @@ class Tickets(
                 if "alt_channel" not in panel:
                     panel["alt_channel"] = 0
                     migrations = True
+                # v1.15.0 schema update (Button priority and rows)
+                if "row" not in panel or "priority" not in panel:
+                    panel["row"] = None
+                    panel["priority"] = 1
+                    migrations = True
 
                 panel["name"] = panel_name
                 key = f"{cid}-{mid}"
@@ -197,7 +204,10 @@ class Tickets(
 
             try:
                 for panels in to_deploy.values():
-                    panelview = PanelView(self.bot, guild, self.config, panels)
+                    sorted_panels = sorted(panels, key=lambda x: x["priority"])
+                    panelview = PanelView(
+                        self.bot, guild, self.config, sorted_panels
+                    )
                     await panelview.start()
             except discord.NotFound:
                 log.warning(f"Failed to refresh panels in {guild.name}")

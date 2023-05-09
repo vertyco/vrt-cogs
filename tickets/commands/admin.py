@@ -979,7 +979,9 @@ class AdminCommands(MixinMeta):
             )
             desc += _("`TicketName:     `") + f"{info['ticket_name']}\n"
             desc += _("`Modal Fields:   `") + f"{len(info.get('modal', {}))}\n"
-            desc += _("`LogChannel:     `") + f"{logchannel}"
+            desc += _("`LogChannel:     `") + f"{logchannel}\n"
+            desc += _("`Priority:       `") + f"{info.get('priority', 1)}\n"
+            desc += _("`Button Row:     `") + f"{info.get('row')}"
 
             em = Embed(
                 title=_("Panel: ") + panel_name,
@@ -1110,7 +1112,7 @@ class AdminCommands(MixinMeta):
             for i in roles.copy():
                 if i[0] == role.id:
                     roles.remove(i)
-                    return await ctx.send(
+                    await ctx.send(
                         _("{} has been removed from support roles").format(
                             role.name
                         )
@@ -1120,6 +1122,7 @@ class AdminCommands(MixinMeta):
                 await ctx.send(
                     role.name + _(" has been added to support roles")
                 )
+            await self.initialize(ctx.guild)
 
     @tickets.command(name="panelrole")
     async def set_panel_role(
@@ -1149,7 +1152,7 @@ class AdminCommands(MixinMeta):
             for i in panels[panel_name]["roles"].copy():
                 if i[0] == role.id:
                     panels[panel_name]["roles"].remove(i)
-                    return await ctx.send(
+                    await ctx.send(
                         _(
                             "{} has been removed from the {} panel roles"
                         ).format(role.name, panel_name)
@@ -1162,6 +1165,7 @@ class AdminCommands(MixinMeta):
                         panel_name
                     )
                 )
+            await self.initialize(ctx.guild)
 
     @tickets.command(name="altchannel")
     async def set_alt_channel(
@@ -1195,6 +1199,62 @@ class AdminCommands(MixinMeta):
             await ctx.send(
                 _("Alt channel has been set to {}!").format(channel.name)
             )
+            await self.initialize(ctx.guild)
+
+    @tickets.command(name="priority")
+    async def set_priority(
+        self, ctx: commands.Context, panel_name: str, priority: int
+    ):
+        """Set the priority order of a panel's button"""
+        if priority < 1 or priority > 25:
+            return await ctx.send(_("Priority needs to be between 1 and 25"))
+        panel_name = panel_name.lower()
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+            panels[panel_name]["priority"] = priority
+            await ctx.send(
+                _("Priority for this panel has been set to {}!").format(
+                    priority
+                )
+            )
+            await self.initialize(ctx.guild)
+
+    @tickets.command(name="row")
+    async def set_row(self, ctx: commands.Context, panel_name: str, row: int):
+        """Set the row of a panel's button (0 - 4)"""
+        if row < 0 or row > 4:
+            return await ctx.send(_("Row needs to be between 0 and 4"))
+        panel_name = panel_name.lower()
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+
+            panel = panels[panel_name]
+            panel_key = f"{panel['channel-id']}{panel['messaage_id']}"
+            count = 0
+            for i in panels.values():
+                panel_key2 = f"{i['channel-id']}{i['messaage_id']}"
+                if panel_key != panel_key2:
+                    continue
+                if not i["row"]:
+                    continue
+                if i["row"] == row:
+                    count += 1
+
+            if count > 4:
+                return await ctx.send(
+                    _(
+                        "This panel message already has the max amount of buttons for that specific row"
+                    )
+                )
+            panels[panel_name]["row"] = row
+            await ctx.send(
+                _("The row number for this panel has been set to {}!").format(
+                    row
+                )
+            )
+            await self.initialize(ctx.guild)
 
     @tickets.command(name="blacklist")
     async def set_blacklist(
