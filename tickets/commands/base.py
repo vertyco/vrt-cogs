@@ -119,7 +119,6 @@ class BaseCommands(MixinMeta):
         `[p]close 1h` - closes in 1 hour with no reason attached
         `[p]close 1m thanks for helping!` - closes in 1 minute with reason "thanks for helping!"
         """
-        user = ctx.author
         conf = await self.config.guild(ctx.guild).all()
         opened = conf["opened"]
         owner_id = self.get_ticket_owner(opened, str(ctx.channel.id))
@@ -129,14 +128,20 @@ class BaseCommands(MixinMeta):
                     "This is not a ticket channel, or it has been removed from config"
                 )
             )
+
+        panel_name = opened[str(ctx.author.id)][str(ctx.channel.id)]["panel"]
+        panel_roles = conf["panels"][panel_name]["roles"]
+
         can_close = False
-        if any([r.id in conf["support_roles"] for r in user.roles]):
+        if any([r.id in conf["support_roles"] for r in ctx.author.roles]):
             can_close = True
-        elif user.id == ctx.guild.owner_id:
+        elif any([r.id in panel_roles for r in ctx.author.roles]):
             can_close = True
-        elif await is_admin_or_superior(self.bot, user):
+        elif ctx.author.id == ctx.guild.owner_id:
             can_close = True
-        elif owner_id == str(user.id) and conf["user_can_close"]:
+        elif await is_admin_or_superior(self.bot, ctx.author):
+            can_close = True
+        elif owner_id == str(ctx.author.id) and conf["user_can_close"]:
             can_close = True
 
         if not can_close:
