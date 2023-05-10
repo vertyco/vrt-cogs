@@ -20,6 +20,7 @@ class Utils(MixinMeta):
     async def close_ticket(
         self,
         member: Union[discord.Member, discord.User],
+        guild: discord.Guild,
         channel: discord.TextChannel,
         conf: dict,
         reason: str,
@@ -42,7 +43,7 @@ class Utils(MixinMeta):
         threads = panel.get("threads")
 
         if (
-            not channel.permissions_for(member.guild.me).manage_channels
+            not channel.permissions_for(guild.me).manage_channels
             and not threads
         ):
             return await channel.send(
@@ -51,7 +52,7 @@ class Utils(MixinMeta):
                 )
             )
         if (
-            not channel.permissions_for(member.guild.me).manage_threads
+            not channel.permissions_for(guild.me).manage_threads
             and threads
         ):
             return await channel.send(
@@ -185,7 +186,7 @@ class Utils(MixinMeta):
             except Exception as e:
                 log.error("Failed to delete ticket channel", exc_info=e)
 
-        async with self.config.guild(member.guild).all() as conf:
+        async with self.config.guild(guild).all() as conf:
             tickets = conf["opened"]
             if uid not in tickets:
                 return
@@ -193,7 +194,7 @@ class Utils(MixinMeta):
                 return
             del tickets[uid][cid]
 
-            new_id = await update_active_overview(member.guild, conf)
+            new_id = await update_active_overview(guild, conf)
             if new_id:
                 conf["overview_msg"] = new_id
 

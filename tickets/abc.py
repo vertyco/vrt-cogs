@@ -28,6 +28,7 @@ class MixinMeta(metaclass=ABCMeta):
     async def close_ticket(
         self,
         member: Union[discord.Member, discord.User],
+        guild: discord.Guild,
         channel: discord.TextChannel,
         conf: dict,
         reason: str,
