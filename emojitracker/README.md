@@ -8,11 +8,6 @@ Track emojis and view leaderboards/most emojis used ect..<br/><br/>This cog will
 
 Add/Remove a server from the blacklist<br/><br/>Enter a Guild ID to add it to the blacklist, to remove, simply enter it again
 
-Extended Arg Info
-> ### server_id: int
-> ```
-> A number without decimal places.
-> ```
 # viewblacklist
  - Usage: `[p]viewblacklist `
  - Restricted to: `BOT_OWNER`

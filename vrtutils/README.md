@@ -4,6 +4,7 @@ Random utility commands
 
 # pull
  - Usage: `[p]pull <cogs> `
+ - Restricted to: `BOT_OWNER`
 
 Auto update & reload cogs
 
@@ -20,33 +21,18 @@ Get disk R/W performance for the server your bot is on<br/><br/>The results of t
 
 Run a pip command from within your bots venv
 
-Extended Arg Info
-> ### command: str
-> ```
-> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
-> ```
 # runshell
  - Usage: `[p]runshell <command> `
  - Restricted to: `BOT_OWNER`
 
 Run a shell command from within your bots venv
 
-Extended Arg Info
-> ### command: str
-> ```
-> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
-> ```
 # findserverbyid
  - Usage: `[p]findserverbyid <server_id> `
  - Restricted to: `BOT_OWNER`
 
 Find a server by ID
 
-Extended Arg Info
-> ### server_id: int
-> ```
-> A number without decimal places.
-> ```
 # botinfo
  - Usage: `[p]botinfo `
 
@@ -57,11 +43,6 @@ Get info about the bot
 
 Find a user by ID
 
-Extended Arg Info
-> ### user_id: Union[int, discord.user.User]
-> ```
-> A number without decimal places.
-> ```
 # botip
  - Usage: `[p]botip `
  - Restricted to: `BOT_OWNER`
@@ -86,57 +67,46 @@ View servers your bot is in
 
 See which channel is the oldest
 
-Extended Arg Info
-> ### amount: int = 10
-> ```
-> A number without decimal places.
-> ```
 # oldestmembers
  - Usage: `[p]oldestmembers [amount=10] [include_bots=False] `
  - Aliases: `oldestusers`
  - Checks: `server_only`
 
-See which users have been in the server the longest<br/><br/>**Arguments**<br/>`amount:` how many members to display<br/>`include_bots:` (True/False) whether to include bots
+See which users have been in the server the longest<br/><br/>**Arguments**<br/>amount: how many members to display<br/>include_bots: (True/False) whether to include bots
 
-Extended Arg Info
-> ### amount: Optional[int] = 10
-> ```
-> A number without decimal places.
-> ```
-> ### include_bots: Optional[bool] = False
-> ```
-> Can be 1, 0, true, false, t, f
-> ```
 # oldestaccounts
  - Usage: `[p]oldestaccounts [amount=10] [include_bots=False] `
  - Checks: `server_only`
 
-See which users have the oldest Discord accounts<br/><br/>**Arguments**<br/>`amount:` how many members to display<br/>`include_bots:` (True/False) whether to include bots
+See which users have the oldest Discord accounts<br/><br/>**Arguments**<br/>amount: how many members to display<br/>include_bots: (True/False) whether to include bots
 
-Extended Arg Info
-> ### amount: Optional[int] = 10
-> ```
-> A number without decimal places.
-> ```
-> ### include_bots: Optional[bool] = False
-> ```
-> Can be 1, 0, true, false, t, f
-> ```
+# rolemembers
+ - Usage: `[p]rolemembers <role> `
+ - Checks: `server_only`
+
+View all members that have a specific role
+
 # wipevcs
  - Usage: `[p]wipevcs `
  - Restricted to: `GUILD_OWNER`
  - Checks: `server_only`
 
-Clear all voice channels from a server<br/><br/>This command was made to recover from Nuked servers that were VC spammed.<br/>Hopefully it will never need to be used again.
+Clear all voice channels from a server
 
-# syncslash
- - Usage: `[p]syncslash <global_sync> `
- - Restricted to: `BOT_OWNER`
+# wipethreads
+ - Usage: `[p]wipethreads `
+ - Restricted to: `GUILD_OWNER`
+ - Checks: `server_only`
 
-Sync slash commands<br/><br/>**Arguments**<br/>`global_sync:` If True, syncs global slash commands, syncs current server by default
+Clear all threads from a server
 
-Extended Arg Info
-> ### global_sync: bool
-> ```
-> Can be 1, 0, true, false, t, f
-> ```
+# text2binary
+ - Usage: `[p]text2binary <text> `
+
+Convert text to binary
+
+# binary2text
+ - Usage: `[p]binary2text <binary_string> `
+
+Convert a binary string to text
+
