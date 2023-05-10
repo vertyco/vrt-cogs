@@ -51,10 +51,7 @@ class Utils(MixinMeta):
                     "I am missing the `Manage Channels` permission to close this ticket!"
                 )
             )
-        if (
-            not channel.permissions_for(guild.me).manage_threads
-            and threads
-        ):
+        if not channel.permissions_for(guild.me).manage_threads and threads:
             return await channel.send(
                 _(
                     "I am missing the `Manage Threads` permission to close this ticket!"
@@ -223,53 +220,57 @@ class Utils(MixinMeta):
                 return uid
 
     async def prune_invalid_tickets(
-        self, guild: discord.Guild, ctx: Optional[commands.Context] = None
-    ) -> None:
-        opened_tickets = await self.config.guild(guild).opened()
+        self,
+        guild: discord.Guild,
+        conf: dict,
+        ctx: Optional[commands.Context] = None,
+    ) -> bool:
+        opened_tickets = conf["opened"]
         if not opened_tickets:
             if ctx:
                 await ctx.send(
                     _("There are no tickets stored in the database.")
                 )
-            return
+            return False
+
+        member_ids = {m.id for m in guild.members}
+        channel_ids = [c.id for c in guild.channels]
+        channel_ids.extend([c.id for c in guild.threads])
 
         valid_opened_tickets = {}
         count = 0
         for user_id, tickets in opened_tickets.items():
-            if not guild.get_member(int(user_id)):
+            if int(user_id) not in member_ids:
                 count += len(list(tickets.keys()))
-                log.info(f"Cleaning up user {user_id}'s tickets")
+                log.info(f"Cleaning up user {user_id}'s tickets for leaving")
                 continue
 
             valid_user_tickets = {}
             for channel_id, ticket in tickets.items():
-                if not guild.get_channel_or_thread(int(channel_id)):
-                    count += 1
-                    log.info(
-                        f"Cleaning up channel {channel_id} from {user_id}'s tickets"
-                    )
-                    continue
-                else:
+                if int(channel_id) in channel_ids:
                     valid_user_tickets[channel_id] = ticket
+                    continue
+                count += 1
+                log.info(
+                    f"Ticket channel {channel_id} no longer exists for user {user_id}"
+                )
 
             if valid_user_tickets:
                 valid_opened_tickets[user_id] = valid_user_tickets
 
-        if count:
+        if valid_opened_tickets and count:
             await self.config.guild(guild).opened.set(valid_opened_tickets)
 
         if count and ctx:
-            txt = (
-                _("Pruned `")
-                + str(count)
-                + _("` invalid ")
-                + f"{_('ticket') if count == 1 else _('tickets')}."
-            )
+            grammar = _("ticket") if count == 1 else _("tickets")
+            txt = _("Pruned `{}` invalid {}").format(count, grammar)
             await ctx.send(txt)
         elif not count and ctx:
             await ctx.send(_("There are no tickets to prune"))
         elif count and not ctx:
             log.info(f"{count} tickets pruned from {guild.name}")
+
+        return True if count else False
 
 
 def prep_overview_embeds(

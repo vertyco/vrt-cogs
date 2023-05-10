@@ -125,7 +125,8 @@ class BaseCommands(MixinMeta):
         if not owner_id:
             return await ctx.send(
                 _(
-                    "This is not a ticket channel, or it has been removed from config"
+                    "Cannot find the owner of this ticket! "
+                    "Maybe it was removed from config?"
                 )
             )
 

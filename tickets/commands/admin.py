@@ -1322,7 +1322,8 @@ class AdminCommands(MixinMeta):
     async def cleanup_tickets(self, ctx: commands.Context):
         """Cleanup tickets that no longer exist"""
         async with ctx.typing():
-            await self.prune_invalid_tickets(ctx.guild, ctx)
+            conf = await self.config.guild(ctx.guild).all()
+            await self.prune_invalid_tickets(ctx.guild, conf, ctx)
 
     # TOGGLES --------------------------------------------------------------------------------
     @tickets.command(name="dm")
