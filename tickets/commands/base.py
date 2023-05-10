@@ -188,6 +188,7 @@ class BaseCommands(MixinMeta):
             )
         await self.close_ticket(
             member=owner,
+            guild=ctx.guild,
             channel=ctx.channel,
             conf=conf,
             reason=reason,

@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.15.0"
+    __version__ = "1.15.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -309,6 +309,7 @@ class Tickets(
                     try:
                         await self.close_ticket(
                             member,
+                            guild,
                             channel,
                             conf,
                             _(
@@ -340,7 +341,10 @@ class Tickets(
     async def on_member_remove(self, member: discord.Member):
         if not member:
             return
-        conf = await self.config.guild(member.guild).all()
+        guild = member.guild
+        if not guild:
+            return
+        conf = await self.config.guild(guild).all()
         opened = conf["opened"]
         if str(member.id) not in opened:
             return
@@ -349,12 +353,13 @@ class Tickets(
             return
 
         for cid in tickets:
-            chan = member.guild.get_channel_or_thread(int(cid))
+            chan = guild.get_channel_or_thread(int(cid))
             if not chan:
                 continue
             try:
                 await self.close_ticket(
                     member,
+                    guild,
                     chan,
                     conf,
                     _("User left guild(Auto-Close)"),
