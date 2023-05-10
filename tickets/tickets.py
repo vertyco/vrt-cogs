@@ -26,7 +26,7 @@ class Tickets(
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.15.1"
+    __version__ = "1.15.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -124,6 +124,9 @@ class Tickets(
             guild = self.bot.get_guild(gid)
             if not guild:
                 continue
+            pruned = await self.prune_invalid_tickets(guild, data)
+            if pruned:
+                data = await self.config.guild(guild).all()
             # Refresh overview panel
             new_id = await update_active_overview(guild, data)
             if new_id:
@@ -259,9 +262,13 @@ class Tickets(
     @tasks.loop(minutes=20)
     async def auto_close(self):
         actasks = []
-        for guild in self.bot.guilds:
-            await self.prune_invalid_tickets(guild)
-            conf = await self.config.guild(guild).all()
+        conf = await self.config.all_guilds()
+        for gid, conf in conf.items():
+            if not conf:
+                continue
+            guild = self.bot.get_guild(gid)
+            if not guild:
+                continue
             inactive = conf["inactive"]
             if not inactive:
                 continue
