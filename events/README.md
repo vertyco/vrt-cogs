@@ -21,45 +21,40 @@ Enter an event if one exists
 
 Create, manage and view events
 
-## events blacklistrole
- - Usage: `[p]events blacklistrole <role> `
+## events notifyrole
+ - Usage: `[p]events notifyrole <role> `
 
-Add/Remove blacklisted roles<br/><br/>These roles are not allowed to enter events, but can still vote on them
+Add/Remove notify roles<br/><br/>These roles will be pinged on event start and completion
 
-Extended Arg Info
-> ### role: discord.role.Role
-> 
-> 
->     1. Lookup by ID.
->     2. Lookup by mention.
->     3. Lookup by name
-> 
->     
-## events blacklistuser
- - Usage: `[p]events blacklistuser <user> `
+## events delete
+ - Usage: `[p]events delete `
 
-Add/Remove blacklisted users<br/><br/>These users are not allowed to enter events, but can still vote on them
+Delete an event outright
 
-Extended Arg Info
-> ### user: discord.member.Member
-> 
-> 
->     1. Lookup by ID.
->     2. Lookup by mention.
->     3. Lookup by name#discrim
->     4. Lookup by name
->     5. Lookup by nickname
-> 
->     
 ## events create
  - Usage: `[p]events create `
 
 Create a new event
 
+## events staffrole
+ - Usage: `[p]events staffrole <role> `
+
+Add/Remove staff roles<br/><br/>If ping staff is enabled, these roles will be pinged on event completion
+
+## events remove
+ - Usage: `[p]events remove <user> `
+
+Remove a user from an active event
+
 ## events resultdelete
  - Usage: `[p]events resultdelete `
 
 (Toggle) Include event results in the messages to delete on cleanup<br/><br/>If this is on when an event is deleted and the user chooses to clean up the messages,<br/>the results announcement will also be deleted
+
+## events blacklistuser
+ - Usage: `[p]events blacklistuser <user> `
+
+Add/Remove blacklisted users<br/><br/>These users are not allowed to enter events, but can still vote on them
 
 ## events end
  - Usage: `[p]events end `
@@ -69,98 +64,35 @@ End an event early, counting votes/announcing the winner<br/><br/>This will also
 ## events shorten
  - Usage: `[p]events shorten <time_string> `
 
-Shorten the runtime of an event<br/><br/>**Examples**<br/>`10d` - 10 days<br/>`7d4h` - 7 days 4 hours
+Shorten the runtime of an event<br/><br/>**Examples**<br/>10d - 10 days<br/>7d4h - 7 days 4 hours
 
-Extended Arg Info
-> ### time_string: str
-> ```
-> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
-> ```
-## events pingstaff
- - Usage: `[p]events pingstaff `
+## events emoji
+ - Usage: `[p]events emoji <emoji> `
 
-(Toggle) Ping staff on event completion
+Set the default emoji for votes<br/><br/>Changing the vote emoji only affects events created after this is changed.<br/>Existing events will still use the previous emoji for votes
+
+## events extend
+ - Usage: `[p]events extend <time_string> `
+
+Extend the runtime of an event<br/><br/>**Examples**<br/>10d - 10 days<br/>7d4h - 7 days 4 hours
+
+## events autodelete
+ - Usage: `[p]events autodelete `
+
+(Toggle) Auto delete events from config when they complete<br/><br/>If auto delete is enabled, the messages in the event channel will need to be cleaned up manually
 
 ## events view
  - Usage: `[p]events view `
 
 View the current events and settings
 
-## events extend
- - Usage: `[p]events extend <time_string> `
+## events pingstaff
+ - Usage: `[p]events pingstaff `
 
-Extend the runtime of an event<br/><br/>**Examples**<br/>`10d` - 10 days<br/>`7d4h` - 7 days 4 hours
+(Toggle) Ping staff on event completion
 
-Extended Arg Info
-> ### time_string: str
-> ```
-> A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".
-> ```
-## events remove
- - Usage: `[p]events remove <user> `
+## events blacklistrole
+ - Usage: `[p]events blacklistrole <role> `
 
-Remove a user from an active event
-
-Extended Arg Info
-> ### user: discord.member.Member
-> 
-> 
->     1. Lookup by ID.
->     2. Lookup by mention.
->     3. Lookup by name#discrim
->     4. Lookup by name
->     5. Lookup by nickname
-> 
->     
-## events autodelete
- - Usage: `[p]events autodelete `
-
-(Toggle) Auto delete events from config when they complete<br/><br/>If auto delete is enabled, the messages in the event channel will need to be cleaned up manually
-
-## events notifyrole
- - Usage: `[p]events notifyrole <role> `
-
-Add/Remove notify roles<br/><br/>These roles will be pinged on event start and completion
-
-Extended Arg Info
-> ### role: discord.role.Role
-> 
-> 
->     1. Lookup by ID.
->     2. Lookup by mention.
->     3. Lookup by name
-> 
->     
-## events staffrole
- - Usage: `[p]events staffrole <role> `
-
-Add/Remove staff roles<br/><br/>If ping staff is enabled, these roles will be pinged on event completion
-
-Extended Arg Info
-> ### role: discord.role.Role
-> 
-> 
->     1. Lookup by ID.
->     2. Lookup by mention.
->     3. Lookup by name
-> 
->     
-## events emoji
- - Usage: `[p]events emoji <emoji> `
-
-Set the default emoji for votes<br/><br/>Changing the vote emoji only affects events created after this is changed.<br/>Existing events will still use the previous emoji for votes
-
-Extended Arg Info
-> ### emoji: Optional[discord.emoji.Emoji]
-> 
-> 
->     1. Lookup by ID.
->     2. Lookup by extracting ID from the emoji.
->     3. Lookup by name
-> 
->     
-## events delete
- - Usage: `[p]events delete `
-
-Delete an event outright
+Add/Remove blacklisted roles<br/><br/>These roles are not allowed to enter events, but can still vote on them
 
