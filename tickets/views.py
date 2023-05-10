@@ -3,7 +3,7 @@ import contextlib
 import logging
 import traceback
 from datetime import datetime
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 import discord
 import numpy as np
@@ -126,10 +126,13 @@ class TestButton(View):
 
 
 class TicketModal(Modal):
-    def __init__(self, title: str, fields: dict):
-        self.fields = fields
-        super().__init__(title=_("{} Panel").format(title.upper()))
-        for info in fields.values():
+    def __init__(self, title: str, data: dict):
+        super().__init__(
+            title=_("{} Panel").format(title.upper()), timeout=300
+        )
+        self.fields = {}
+        self.inputs: Dict[str, TextInput] = {}
+        for key, info in data.items():
             field = TextInput(
                 label=info["label"],
                 style=get_modal_style(info["style"]),
@@ -140,11 +143,11 @@ class TicketModal(Modal):
                 max_length=info["max_length"],
             )
             self.add_item(field)
-            info["field"] = field
+            self.inputs[key] = field
 
     async def on_submit(self, interaction: discord.Interaction):
-        for v in self.fields.values():
-            v["answer"] = v["field"].value
+        for k, v in self.inputs.items():
+            self.fields[k] = {"question": v.label, "answer": v.value}
         await interaction.response.defer()
 
 
