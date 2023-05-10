@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-05-09 10:55-0400\n"
-"PO-Revision-Date: 2023-05-09 14:58\n"
+"POT-Creation-Date: 2023-05-10 09:08-0400\n"
+"PO-Revision-Date: 2023-05-10 13:19\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -33,27 +33,27 @@ msgstr ""
 msgid "No data to delete"
 msgstr ""
 
-#: tickets.py:299
+#: tickets.py:304
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr ""
 
-#: tickets.py:314
+#: tickets.py:320
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr ""
 
-#: tickets.py:360
+#: tickets.py:370
 msgid "User left guild(Auto-Close)"
 msgstr ""
 
-#: utils.py:49
+#: utils.py:50
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
 msgstr ""
 
-#: utils.py:58
+#: utils.py:56
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
 msgstr ""
 
-#: utils.py:67
+#: utils.py:65
 msgid "Ticket created by **{}-{}** has been closed.\n"
 "`PanelType: `{}\n"
 "`Opened on: `<t:{}:F>\n"
@@ -62,36 +62,28 @@ msgid "Ticket created by **{}-{}** has been closed.\n"
 "`Reason:    `{}\n"
 msgstr ""
 
-#: utils.py:85
+#: utils.py:83
 msgid "Ticket Closed"
 msgstr ""
 
-#: utils.py:100
+#: utils.py:98
 msgid "Archiving channel..."
 msgstr ""
 
-#: utils.py:103
+#: utils.py:101
 msgid "This channel will be deleted once complete"
 msgstr ""
 
-#: utils.py:108
+#: utils.py:106
 msgid "Response"
 msgstr ""
 
-#: utils.py:123
+#: utils.py:121
 msgid "Files uploaded: "
 msgstr ""
 
-#: utils.py:231
+#: utils.py:232
 msgid "There are no tickets stored in the database."
-msgstr ""
-
-#: utils.py:262
-msgid "Pruned `"
-msgstr ""
-
-#: utils.py:264
-msgid "` invalid "
 msgstr ""
 
 #: utils.py:265
@@ -102,19 +94,23 @@ msgstr ""
 msgid "tickets"
 msgstr ""
 
+#: utils.py:266
+msgid "Pruned `{}` invalid {}"
+msgstr ""
+
 #: utils.py:269
 msgid "There are no tickets to prune"
 msgstr ""
 
-#: utils.py:277
+#: utils.py:279
 msgid "Ticket Overview"
 msgstr ""
 
-#: utils.py:302
+#: utils.py:304
 msgid "There are no active tickets."
 msgstr ""
 
-#: utils.py:333
+#: utils.py:335
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
