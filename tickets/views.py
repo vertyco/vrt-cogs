@@ -257,7 +257,7 @@ class SupportButton(Button):
                 return await interaction.response.defer()
 
             for submission_info in m.fields.values():
-                question = submission_info["label"]
+                question = submission_info["question"]
                 answer = submission_info["answer"]
                 if not answer:
                     answer = _("Unanswered")
