@@ -128,7 +128,7 @@ class TestButton(View):
 class TicketModal(Modal):
     def __init__(self, title: str, data: dict):
         super().__init__(
-            title=_("{} Panel").format(title.upper()), timeout=300
+            title=_("{} Ticket").format(title.upper()), timeout=300
         )
         self.fields = {}
         self.inputs: Dict[str, TextInput] = {}
@@ -252,6 +252,9 @@ class SupportButton(Button):
             m = TicketModal(self.panel_name, modal)
             await interaction.response.send_modal(m)
             await m.wait()
+
+            if not m.fields:
+                return await interaction.response.defer()
 
             for submission_info in m.fields.values():
                 question = submission_info["label"]
