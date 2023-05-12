@@ -1150,4 +1150,9 @@ class UserCommands(MixinMeta, ABC):
         if not conf["weekly"]["last_embed"]:
             return await ctx.send(_("There is no recorded weekly embed saved"))
         embed = discord.Embed.from_dict(conf["weekly"]["last_embed"])
+        embed.title = _("Last Weekly Winners")
+        new_desc = _("{}\n`Last Reset:     `{}").format(
+            embed.description, f"<t:{conf['weekly']['last_reset']}:R>"
+        )
+        embed.description = new_desc
         await ctx.send(embed=embed)
