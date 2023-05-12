@@ -89,9 +89,7 @@ class UserCommands(MixinMeta, ABC):
         except Exception as e:
             if "cannot identify image file" in str(e):
                 await ctx.send(
-                    _(
-                        "Uh Oh, looks like that is not a valid image, cannot identify the file"
-                    )
+                    _("Uh Oh, looks like that is not a valid image, cannot identify the file")
                 )
                 return
             else:
@@ -164,14 +162,10 @@ class UserCommands(MixinMeta, ABC):
     # Hacky way to get user banner
     @cached(ttl=7200, cache=SimpleMemoryCache)
     async def get_banner(self, user: discord.Member) -> str:
-        req = await self.bot.http.request(
-            discord.http.Route("GET", "/users/{uid}", uid=user.id)
-        )
+        req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
         banner_id = req["banner"]
         if banner_id:
-            banner_url = (
-                f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
-            )
+            banner_url = f"https://cdn.discordapp.com/banners/{user.id}/{banner_id}?size=1024"
             return banner_url
 
     @commands.command(name="stars", aliases=["givestar", "addstar", "thanks"])
@@ -324,9 +318,7 @@ class UserCommands(MixinMeta, ABC):
 
     @set_profile.command(name="addbackground")
     @commands.is_owner()
-    async def add_background(
-        self, ctx: commands.Context, preferred_filename: str = None
-    ):
+    async def add_background(self, ctx: commands.Context, preferred_filename: str = None):
         """
         Add a custom background to the cog from discord
 
@@ -342,9 +334,7 @@ class UserCommands(MixinMeta, ABC):
         filename = content[0].filename
         if not any([i in filename.lower() for i in valid]):
             return await ctx.send(
-                _(
-                    "That is not a valid format, must be on of the following extensions: "
-                )
+                _("That is not a valid format, must be on of the following extensions: ")
                 + humanize_list(valid)
             )
         ext = ".png"
@@ -371,9 +361,7 @@ class UserCommands(MixinMeta, ABC):
             if filename.lower() in f.lower():
                 break
         else:
-            return await ctx.send(
-                _("I could not find any background images with that name")
-            )
+            return await ctx.send(_("I could not find any background images with that name"))
         file = os.path.join(bgpath, f)
         try:
             os.remove(file)
@@ -469,9 +457,7 @@ class UserCommands(MixinMeta, ABC):
             try:
                 await ctx.send(txt, file=file)
             except discord.HTTPException:
-                await ctx.send(
-                    _("Could not send background collage, file size may be too large.")
-                )
+                await ctx.send(_("Could not send background collage, file size may be too large."))
 
     @set_profile.command(name="fonts")
     @commands.cooldown(1, 30, commands.BucketType.user)
@@ -494,16 +480,12 @@ class UserCommands(MixinMeta, ABC):
                 buffer.name = f"{ctx.author.id}.png"
             buffer.seek(0)
             file = discord.File(buffer)
-            txt = _(
-                "Here are the current fonts, to set one permanently you can use the "
-            )
+            txt = _("Here are the current fonts, to set one permanently you can use the ")
             txt += f"`{ctx.prefix}mypf font <fontname>` " + _("command")
             try:
                 await ctx.send(txt, file=file)
             except discord.HTTPException:
-                await ctx.send(
-                    _("Could not send font collage, file size may be too large.")
-                )
+                await ctx.send(_("Could not send font collage, file size may be too large."))
 
     @set_profile.command(name="type")
     async def toggle_profile_type(self, ctx: commands.Context):
@@ -515,17 +497,13 @@ class UserCommands(MixinMeta, ABC):
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(
-                _(
-                    "Image profiles are disabled on this server, this setting has no effect"
-                )
+                _("Image profiles are disabled on this server, this setting has no effect")
             )
         users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
         if user_id not in users:
             return await ctx.send(
-                _(
-                    "You have no information stored about your account yet. Talk for a bit first"
-                )
+                _("You have no information stored about your account yet. Talk for a bit first")
             )
         full = users[user_id]["full"]
         if full:
@@ -548,9 +526,7 @@ class UserCommands(MixinMeta, ABC):
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(
-                _(
-                    "Image profiles are disabled on this server, this setting has no effect"
-                )
+                _("Image profiles are disabled on this server, this setting has no effect")
             )
         users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
@@ -565,9 +541,7 @@ class UserCommands(MixinMeta, ABC):
             rgb = hex_to_rgb(hex_color)
         except ValueError:
             return await ctx.send(
-                _(
-                    "That is an invalid color, please use a valid integer color code or hex color."
-                )
+                _("That is an invalid color, please use a valid integer color code or hex color.")
             )
         try:
             embed = discord.Embed(
@@ -596,9 +570,7 @@ class UserCommands(MixinMeta, ABC):
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(
-                _(
-                    "Image profiles are disabled on this server, this setting has no effect"
-                )
+                _("Image profiles are disabled on this server, this setting has no effect")
             )
         users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
@@ -613,9 +585,7 @@ class UserCommands(MixinMeta, ABC):
             rgb = hex_to_rgb(hex_color)
         except ValueError:
             return await ctx.send(
-                _(
-                    "That is an invalid color, please use a valid integer color code or hex color."
-                )
+                _("That is an invalid color, please use a valid integer color code or hex color.")
             )
 
         try:
@@ -645,9 +615,7 @@ class UserCommands(MixinMeta, ABC):
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(
-                _(
-                    "Image profiles are disabled on this server, this setting has no effect"
-                )
+                _("Image profiles are disabled on this server, this setting has no effect")
             )
         users = self.data[ctx.guild.id]["users"]
         user_id = str(ctx.author.id)
@@ -662,9 +630,7 @@ class UserCommands(MixinMeta, ABC):
             rgb = hex_to_rgb(hex_color)
         except ValueError:
             return await ctx.send(
-                _(
-                    "That is an invalid color, please use a valid integer color code or hex color."
-                )
+                _("That is an invalid color, please use a valid integer color code or hex color.")
             )
 
         try:
@@ -709,9 +675,7 @@ class UserCommands(MixinMeta, ABC):
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(
-                _(
-                    "Image profiles are disabled on this server, this setting has no effect"
-                )
+                _("Image profiles are disabled on this server, this setting has no effect")
             )
 
         users = self.data[ctx.guild.id]["users"]
@@ -754,9 +718,7 @@ class UserCommands(MixinMeta, ABC):
                     await ctx.send(_("Your background image has been set!"))
         else:
             self.data[ctx.guild.id]["users"][user_id]["background"] = None
-            await ctx.send(
-                _("Your background has been removed since you did not specify a url!")
-            )
+            await ctx.send(_("Your background has been removed since you did not specify a url!"))
         await ctx.tick()
 
     @set_profile.command(name="font")
@@ -769,9 +731,7 @@ class UserCommands(MixinMeta, ABC):
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(
-                _(
-                    "Image profiles are disabled on this server, this setting has no effect"
-                )
+                _("Image profiles are disabled on this server, this setting has no effect")
             )
 
         users = self.data[ctx.guild.id]["users"]
@@ -800,9 +760,7 @@ class UserCommands(MixinMeta, ABC):
         """
         if not self.data[ctx.guild.id]["usepics"]:
             return await ctx.send(
-                _(
-                    "Image profiles are disabled on this server, this setting has no effect"
-                )
+                _("Image profiles are disabled on this server, this setting has no effect")
             )
 
         users = self.data[ctx.guild.id]["users"]
@@ -812,9 +770,7 @@ class UserCommands(MixinMeta, ABC):
 
         current = self.data[ctx.guild.id]["users"][user_id]["blur"]
         self.data[ctx.guild.id]["users"][user_id]["blur"] = not current
-        await ctx.send(
-            _("Your profile background blur has been set to ") + str(not current)
-        )
+        await ctx.send(_("Your profile background blur has been set to ") + str(not current))
 
     @commands.command(name="pf")
     @commands.guild_only()
@@ -841,13 +797,9 @@ class UserCommands(MixinMeta, ABC):
             return await ctx.send(_("No information available yet!"))
 
         if usepics and not ctx.channel.permissions_for(ctx.me).attach_files:
-            return await ctx.send(
-                _("I do not have permission to send images to this channel")
-            )
+            return await ctx.send(_("I do not have permission to send images to this channel"))
         if not usepics and not ctx.channel.permissions_for(ctx.me).embed_links:
-            return await ctx.send(
-                _("I do not have permission to send embeds to this channel")
-            )
+            return await ctx.send(_("I do not have permission to send embeds to this channel"))
 
         bal = await bank.get_balance(user)
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -886,12 +838,7 @@ class UserCommands(MixinMeta, ABC):
             if not usepics:
                 msg = "🎖｜" + _("Level ") + humanize_number(level) + "\n"
                 if prestige:
-                    msg += (
-                        "🏆｜"
-                        + _("Prestige ")
-                        + humanize_number(prestige)
-                        + f" {emoji['str']}\n"
-                    )
+                    msg += "🏆｜" + _("Prestige ") + humanize_number(prestige) + f" {emoji['str']}\n"
                 msg += f"⭐｜{humanize_number(stars)}" + _(" stars\n")
                 msg += f"💬｜{humanize_number(messages)}" + _(" messages sent\n")
                 msg += f"🎙｜{time_formatter(voice)}" + _(" in voice\n")
@@ -927,9 +874,7 @@ class UserCommands(MixinMeta, ABC):
                     "base": hex_to_rgb(str(user.colour)),
                     "name": hex_to_rgb(colors["name"]) if colors["name"] else None,
                     "stat": hex_to_rgb(colors["stat"]) if colors["stat"] else None,
-                    "levelbar": hex_to_rgb(colors["levelbar"])
-                    if colors["levelbar"]
-                    else None,
+                    "levelbar": hex_to_rgb(colors["levelbar"]) if colors["levelbar"] else None,
                 }
 
                 args = {
@@ -947,9 +892,7 @@ class UserCommands(MixinMeta, ABC):
                     "messages": humanize_number(messages),
                     "voice": time_formatter(voice),
                     "prestige": prestige,
-                    "emoji": emoji["url"]
-                    if emoji and isinstance(emoji, dict)
-                    else None,
+                    "emoji": emoji["url"] if emoji and isinstance(emoji, dict) else None,
                     "stars": stars,
                     "balance": bal if showbal else 0,
                     "currency": currency_name,
@@ -962,9 +905,7 @@ class UserCommands(MixinMeta, ABC):
                 file = await self.get_or_fetch_profile(user, args, full)
                 rtime = round((perf_counter() - start) * 1000)
                 if not file:
-                    return await ctx.send(
-                        "Failed to generate profile image :( try again in a bit"
-                    )
+                    return await ctx.send("Failed to generate profile image :( try again in a bit")
                 start2 = perf_counter()
                 try:
                     await ctx.reply(file=file, mention_author=mention)
@@ -1024,9 +965,7 @@ class UserCommands(MixinMeta, ABC):
 
         if pending_prestige not in prestige_data:
             return await ctx.send(
-                _("Prestige level ")
-                + str(pending_prestige)
-                + _(" has not been set yet!")
+                _("Prestige level ") + str(pending_prestige) + _(" has not been set yet!")
             )
 
         role_id = prestige_data[pending_prestige]["role"]
@@ -1044,9 +983,7 @@ class UserCommands(MixinMeta, ABC):
         current_xp = user["xp"]
         xp_at_prestige = get_xp(required_level, conf["base"], conf["exp"])
         leftover_xp = current_xp - xp_at_prestige if current_xp > xp_at_prestige else 0
-        newlevel = (
-            get_level(leftover_xp, conf["base"], conf["exp"]) if leftover_xp > 0 else 1
-        )
+        newlevel = get_level(leftover_xp, conf["base"], conf["exp"]) if leftover_xp > 0 else 1
 
         self.data[ctx.guild.id]["users"][user_id]["prestige"] = int(pending_prestige)
         self.data[ctx.guild.id]["users"][user_id]["emoji"] = emoji
@@ -1190,9 +1127,7 @@ class UserCommands(MixinMeta, ABC):
             return await ctx.send(_("Weekly stats are disabled for this guild"))
         if not conf["weekly"]["users"]:
             return await ctx.send(
-                _(
-                    "There is no data for the weekly leaderboard yet, please chat a bit first."
-                )
+                _("There is no data for the weekly leaderboard yet, please chat a bit first.")
             )
         func = functools.partial(get_leaderboard, ctx, conf, stat, "weekly")
         embeds = await self.bot.loop.run_in_executor(None, func)
@@ -1204,3 +1139,15 @@ class UserCommands(MixinMeta, ABC):
             await ctx.send(embed=embed)
         else:
             await menu(ctx, embeds, DEFAULT_CONTROLS)
+
+    @commands.command(name="lastweekly")
+    @commands.guild_only()
+    async def last_weekly(self, ctx: commands.Context):
+        """View the last weekly embed"""
+        conf = self.data[ctx.guild.id]
+        if not conf["weekly"]["on"]:
+            return await ctx.send(_("Weekly stats are disabled for this guild"))
+        if not conf["weekly"]["last_embed"]:
+            return await ctx.send(_("There is no recorded weekly embed saved"))
+        embed = discord.Embed.from_dict(conf["weekly"]["last_embed"])
+        await ctx.send(embed=embed)
