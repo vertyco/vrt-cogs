@@ -55,9 +55,9 @@ class Conversation(BaseModel):
         return num_tokens_from_string(initial) + self.user_token_count()
 
     def is_expired(self, conf: GuildSettings):
-        return (
-            datetime.now().timestamp() - self.last_updated
-        ) > conf.max_retention_time
+        if not conf.max_retention_time:
+            return False
+        return (datetime.now().timestamp() - self.last_updated) > conf.max_retention_time
 
     def cleanup(self, conf: GuildSettings, message: str = ""):
         clear = [
@@ -69,18 +69,14 @@ class Conversation(BaseModel):
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
         # 4096 is max tokens for 3.5
-        while (
-            self.token_count(conf, message) > conf.max_tokens and self.messages
-        ):
+        while self.token_count(conf, message) > conf.max_tokens and self.messages:
             self.messages.pop(0)
 
     def reset(self):
         self.last_updated = datetime.now().timestamp()
         self.messages.clear()
 
-    def update_messages(
-        self, conf: GuildSettings, message: str, role: str
-    ) -> None:
+    def update_messages(self, conf: GuildSettings, message: str, role: str) -> None:
         """Update conversation cache
 
         Args:
@@ -93,9 +89,7 @@ class Conversation(BaseModel):
         self.messages.append({"role": role, "content": message})
         self.last_updated = datetime.now().timestamp()
 
-    def prepare_chat(
-        self, system_prompt: str = "", initial_prompt: str = ""
-    ) -> List[dict]:
+    def prepare_chat(self, system_prompt: str = "", initial_prompt: str = "") -> List[dict]:
         prepared = []
         if system_prompt:
             prepared.append({"role": "system", "content": system_prompt})
