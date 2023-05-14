@@ -25,7 +25,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "1.2.3"
+    __version__ = "1.3.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -51,5 +51,6 @@ class Assistant(
         self.db = await asyncio.to_thread(DB.parse_obj, data)
 
     async def save_conf(self):
+        log.info("Saving config")
         data = await asyncio.to_thread(self.db.dict)
         await self.config.db.set(data)

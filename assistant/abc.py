@@ -25,7 +25,9 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_training_response(
-        self, prompt: str, conf: GuildSettings
-    ) -> tuple:
+    async def get_training_response(self, prompt: str, conf: GuildSettings) -> tuple:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def save_conf(self):
         raise NotImplementedError
