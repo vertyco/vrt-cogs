@@ -82,7 +82,7 @@ class EmbeddingModal(discord.ui.Modal):
 
 class EmbeddingMenu(discord.ui.View):
     def __init__(self, ctx: commands.Context, conf: GuildSettings, save_func: Callable):
-        super().__init__(timeout=120)
+        super().__init__(timeout=600)
         self.ctx = ctx
         self.conf = conf
         self.save = save_func
