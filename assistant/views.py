@@ -107,6 +107,29 @@ class EmbeddingMenu(discord.ui.View):
             embeddings={k: v.dict() for k, v in self.conf.embeddings.items()}, place=self.place
         )
 
+    async def process_embeddings(self, df: pd.DataFrame):
+        for row in df.values:
+            name = row[0]
+            text = row[1]
+            embedding = await get_embedding_async(text)
+            if not embedding:
+                log.warning(f"Failed to process {name} embedding")
+            self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+        await self.ctx.send("Your embeddings upload has finished processing!")
+        self.pages = self.get_pages()
+        await self.save()
+
+    async def add_embedding(self, name: str, text: str):
+        embedding = await get_embedding_async(text)
+        if not embedding:
+            return await self.ctx.send(
+                f"Failed to process embedding `{name}`\nContent: ```\n{text}\n```"
+            )
+        if name in self.conf.embeddings:
+            return await self.ctx.send(f"An embedding with the name `{name}` already exists!")
+        self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+        await self.save()
+
     async def start(self):
         self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
 
@@ -190,16 +213,10 @@ class EmbeddingMenu(discord.ui.View):
         await modal.wait()
         if not modal.name or not modal.text:
             return
-        embedding = await get_embedding_async(modal.text)
-        if modal.name in self.conf.embeddings:
-            return await interaction.followup.send(
-                "An embedding with this name already exists!", ephemeral=True
-            )
-        self.conf.embeddings[modal.name] = Embedding(text=modal.text, embedding=embedding)
-        self.pages = self.get_pages()
-        await self.message.edit(embed=self.pages[self.page])
-        await self.ctx.send("Your embedding has been created!")
-        await self.save()
+        asyncio.create_task(self.add_embedding(modal.name, modal.text))
+        await interaction.followup.send(
+            "Your embedding is processing and will appear when ready!", ephemeral=True
+        )
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
@@ -280,20 +297,9 @@ class EmbeddingMenu(discord.ui.View):
                 "The .csv file you uploaded contains invalid formatting, columns must be ['name', 'text']",
                 ephemeral=True,
             )
-        for row in df.values:
-            name = row[0]
-            text = row[1]
-            embedding = await get_embedding_async(text)
-            if not embedding:
-                await interaction.followup.send(f"Failed to process {name}", ephemeral=True)
-            self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
-
-        self.pages = self.get_pages()
-        await self.message.edit(embed=self.pages[self.page])
-        await self.save()
-
+        asyncio.create_task(self.process_embeddings(df))
         await interaction.followup.send(
-            "Your embeddings have been imported successfully!",
+            "Your embeddings have been imported and are processing in the background, come back later to view them!",
             ephemeral=True,
         )
 

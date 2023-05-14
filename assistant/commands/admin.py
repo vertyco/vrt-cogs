@@ -11,10 +11,10 @@ from ..common.utils import (
     extract_message_content,
     fetch_channel_history,
     get_attachments,
+    get_embedding_async,
     num_tokens_from_string,
-    token_pagify,
 )
-from ..models import MODELS
+from ..models import MODELS, Embedding
 from ..views import EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -134,12 +134,6 @@ class Admin(MixinMeta):
         if not channels:
             return await ctx.send_help()
         conf = self.db.get_conf(ctx.guild)
-        initial_prompt = (
-            "Condense the following information as much as possible, "
-            "the result will be used as the initial prompt to provide Q&A so keep thinks bulleted.\n"
-            "Maintain all channel mentions in the <#ID> format.\n"
-            f"The name of the Discord server is {ctx.guild.name}\n"
-        )
         loading = "https://i.imgur.com/l3p6EMX.gif"
         color = ctx.author.color
         channel_list = humanize_list([c.mention for c in channels])
@@ -151,73 +145,30 @@ class Admin(MixinMeta):
         embed.add_field(name="Channels being trained", value=channel_list)
         async with ctx.typing():
             msg = await ctx.send(embed=embed)
-            training_data = ""
-            tokens_consumed = 0
+            created = 0
             for channel in channels:
-                embed.description = f"Processing {channel.mention}..."
-                await msg.edit(embed=embed)
-                prompt = f"{initial_prompt}Current channel: {channel.name}\nChannel mention: {channel.mention}\n"
+                messages = [i for i in channel.pins]
+                for i in await fetch_channel_history(channel, oldest=False, limit=50):
+                    messages.append(i)
+                text = f"Channel name: {channel.name}\nChannel mention: {channel.mention}\n"
                 if isinstance(channel, discord.TextChannel):
-                    prompt += f"Channel topic: {channel.topic}\n"
-                channelcontent = ""
-                pins = [m for m in await channel.pins()]
-                ids = [pin.id for pin in pins]
-                for pin in pins:
-                    if content := extract_message_content(pin):
-                        channelcontent += f"{content}\n"
-                for message in await fetch_channel_history(channel, oldest=False):
-                    if message.id in ids:
-                        continue
+                    text += f"Channel topic: {channel.topic}\n"
+                for message in messages:
                     if content := extract_message_content(message):
-                        channelcontent += f"{content}\n"
-                if channelcontent:
-                    for chunk in token_pagify(channelcontent):
-                        reply, usage = await self.get_training_response(f"{prompt}\n{chunk}", conf)
-                        training_data += f"{reply.strip()}\n"
-                        tokens_consumed += usage
+                        text += content
+                        key = f"{channel.name}-{message.id}"
+                        embedding = await get_embedding_async(text)
+                        conf.embeddings[key] = Embedding(text, embedding)
+                        created += 1
 
-            if num_tokens_from_string(training_data) > 3000:
-                embed.description = "Condensing compiled channel content..."
-                await msg.edit(embed=embed)
-
-            while num_tokens_from_string(training_data) > 3000:
-                condensed_training_data = ""
-                for chunk in token_pagify(training_data):
-                    reply, usage = await self.get_training_response(
-                        f"{initial_prompt}\n{chunk}", conf
-                    )
-                    condensed_training_data += f"{reply.strip()}\n"
-                    tokens_consumed += usage
-                training_data = condensed_training_data
-
-            pre_final_prompt, usage = await self.get_training_response(
-                f"{initial_prompt}\n{training_data}", conf
-            )
-            tokens_consumed += usage
-            final_prompt = (
-                "You are a bot named {botname} - and are currently chatting in a Discord server called {server}\n\n"
-                "Consider the following in your responses:\n"
-                "- Answer questions in as few characters as possible\n"
-                "- Current time: {timestamp}\n"
-                "- Member count: {members}\n"
-                "- The server owner is {owner}\n"
-                "- The server was created on {servercreated}\n"
-                f"{pre_final_prompt}\n\n"
-                "The person you are replying to is {user}"
-            )
-            prompt_file = discord.File(
-                BytesIO(final_prompt.encode()), filename="TrainingPrompt.txt"
-            )
-            tokens = num_tokens_from_string(final_prompt)
-            embed.description = (
-                f"Here is your training prompt. Keep in mind this may not be perfect in any way.\n"
-                f"This prompt uses {humanize_number(tokens)} tokens.\n"
-                f"Tokens consumed during training: {humanize_number(tokens_consumed)}\n\n"
-                "**Note:** Keep in mind this is not a replacement for good prompting, its just to get you going."
-            )
-            embed.set_thumbnail(url=None)
+            if not created:
+                embed.description = "No content found!"
+                embed.clear_fields()
+                return await msg.edit(embed=embed)
+            embed.description = f"Training finished, {created} embedding entries created!"
             embed.clear_fields()
-            await msg.edit(embed=embed, attachments=[prompt_file])
+            await msg.edit(embed=embed)
+            await self.save_conf()
 
     @assistant.command(name="prompt", aliases=["pre"])
     async def set_initial_prompt(self, ctx: commands.Context, *, prompt: str = ""):
@@ -511,6 +462,20 @@ class Admin(MixinMeta):
         view = EmbeddingMenu(ctx, conf, self.save_conf)
         await view.start()
 
+    @assistant.command(name="resetembeddings")
+    async def wipe_embeddings(self, ctx: commands.Context, yes_or_no: bool):
+        """
+        Wipe saved embeddings for the assistant
+
+        This will delete any and all saved embedding training data for the assistant.
+        """
+        if not yes_or_no:
+            return await ctx.send("Not wiping embedding data")
+        conf = self.db.get_conf(ctx.guild)
+        conf.embeddings = {}
+        await ctx.send("All embedding data has been wiped!")
+        await self.save_conf()
+
     @assistant.command(name="topn")
     async def set_topn(self, ctx: commands.Context, top_n: int):
         """
@@ -533,6 +498,8 @@ class Admin(MixinMeta):
         Relatedness threshold between 0 and 1 to include in embeddings during chat
 
         Questions are converted to embeddings and compared against stored embeddings to pull the most relevant, this is the score that is derived from that comparison
+
+        **Hint**: The closer to 1 you get, the more deterministic and accurate the results may be, just don't be *too* strict or there wont be any results.
         """
         if not 0 <= mimimum_relatedness <= 1:
             return await ctx.send("Minimum relatedness must be between 0 and 1")
