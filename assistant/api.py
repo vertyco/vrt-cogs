@@ -5,6 +5,7 @@ from datetime import datetime
 import discord
 import openai
 from aiocache import cached
+from openai.embeddings_utils import get_embedding
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
@@ -20,22 +21,16 @@ class API(MixinMeta):
     ) -> str:
         conversation = self.chats.get_conversation(author)
         try:
-            reply = await asyncio.to_thread(
-                self.prepare_call, message, author, conf, conversation
-            )
+            reply = await asyncio.to_thread(self.prepare_call, message, author, conf, conversation)
         finally:
             conversation.cleanup(conf)
         return reply
 
-    async def get_training_response(
-        self, prompt: str, conf: GuildSettings
-    ) -> tuple:
+    async def get_training_response(self, prompt: str, conf: GuildSettings) -> tuple:
         messages = [
             {"role": "user", "content": prompt},
         ]
-        response = await asyncio.to_thread(
-            self.call_openai, conf, messages, 0.01
-        )
+        response = await asyncio.to_thread(self.call_openai, conf, messages, 0.01)
         try:
             reply = response["choices"][0]["message"]["content"]
             usage = response["usage"]["total_tokens"]
@@ -49,7 +44,7 @@ class API(MixinMeta):
         author: discord.Member,
         conf: GuildSettings,
         conversation: Conversation,
-    ):
+    ) -> str:
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         created = f"<t:{round(author.guild.created_at.timestamp())}:F>"
         date = datetime.now().astimezone().strftime("%B %d, %Y")
@@ -77,6 +72,13 @@ class API(MixinMeta):
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
+        query_embedding = get_embedding(message, engine="text-embedding-ada-002")
+        embeddings = conf.get_related_embeddings(query_embedding)
+        if embeddings:
+            initial_prompt += "\nContext:\n"
+            for i in embeddings:
+                initial_prompt += f"{i[0]}\n"
+
         conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
 
@@ -91,9 +93,7 @@ class API(MixinMeta):
         conversation.update_messages(conf, reply, "assistant")
         return reply
 
-    def call_openai(
-        self, conf: GuildSettings, messages: dict, temperature: float = 0
-    ) -> dict:
+    def call_openai(self, conf: GuildSettings, messages: dict, temperature: float = 0) -> dict:
         response = openai.ChatCompletion.create(
             model=conf.model,
             messages=messages,

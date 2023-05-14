@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import List
+from typing import Dict, List, Tuple
 
 import discord
 import orjson
+from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 
 from .common.utils import num_tokens_from_string
@@ -10,9 +11,17 @@ from .common.utils import num_tokens_from_string
 MODELS = ["gpt-3.5-turbo", "gpt-4", "gpt-4-32k"]
 
 
+class Embedding(BaseModel):
+    text: str
+    embedding: List[float]
+
+
 class GuildSettings(BaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
+    embeddings: Dict[str, Embedding] = {}
+    top_n: int = 3
+    min_relatedness: float = 0.4
     channel_id: int = 0
     api_key: str = ""
     endswith_questionmark: bool = False
@@ -23,6 +32,19 @@ class GuildSettings(BaseModel):
     mention: bool = False
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
+
+    def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, float]]:
+        if not self.top_n:
+            return []
+        strings_and_relatedness = [
+            (i.text, cosine_similarity(query_embedding, i.embedding))
+            for i in self.embeddings.values()
+        ]
+        strings_and_relatedness = [
+            i for i in strings_and_relatedness if i[1] >= self.min_relatedness
+        ]
+        strings_and_relatedness.sort(key=lambda x: x[1], reverse=True)
+        return strings_and_relatedness[: self.top_n]
 
 
 class DB(BaseModel):
