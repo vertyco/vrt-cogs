@@ -93,7 +93,15 @@ def token_pagify(text: str, max_tokens: int = 2000):
 
 
 async def get_embedding_async(text: str) -> List[float]:
-    return await asyncio.to_thread(get_embedding, text, "text-embedding-ada-002")
+    tries = 0
+    while tries < 3:
+        try:
+            embedding = await asyncio.to_thread(get_embedding, text, "text-embedding-ada-002")
+            return embedding
+        except Exception as e:
+            log.error("Failed to fetch embeddings", exc_info=e)
+        tries += 1
+    return []
 
 
 def embedding_embeds(embeddings: Dict[str, dict], place: int):
