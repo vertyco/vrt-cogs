@@ -284,6 +284,8 @@ class EmbeddingMenu(discord.ui.View):
             name = row[0]
             text = row[1]
             embedding = await get_embedding_async(text)
+            if not embedding:
+                await interaction.followup.send(f"Failed to process {name}", ephemeral=True)
             self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
 
         self.pages = self.get_pages()

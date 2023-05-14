@@ -122,14 +122,14 @@ class Admin(MixinMeta):
         *channels: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
     ):
         """
-        Automatically create a training prompt for your server
+        Automatically create embedding data to train your assistant
 
         **How to Use**
         Include channels that give helpful info about your server, NOT normal chat channels.
         The bot will scan all pinned messages in addition to the most recent 50 messages.
-        The idea is to have the bot compile the information, condense it and provide a usable training prompt for your Q&A channel.
+        The idea is to have the bot compile the information, condense it and provide a usable training embeddings for your Q&A channel.
 
-        **Note:** This just meant to get you headed in the right direction, creating a perfect training prompt takes trial and error.
+        **Note:** This just meant to get you headed in the right direction, creating quality training data takes trial and error.
         """
         if not channels:
             return await ctx.send_help()
