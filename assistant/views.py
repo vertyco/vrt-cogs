@@ -110,23 +110,18 @@ class EmbeddingMenu(discord.ui.View):
     async def start(self):
         self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
 
-    @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{SQUARED NEW}")
-    async def new_embedding(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = EmbeddingModal(title="Add an embedding")
-        await interaction.response.send_modal(modal)
-        await modal.wait()
-        if not modal.name or not modal.text:
-            return
-        embedding = await get_embedding_async(modal.text)
-        if modal.name in self.conf.embeddings:
-            return await interaction.followup.send(
-                "An embedding with this name already exists!", ephemeral=True
+    @discord.ui.button(
+        style=discord.ButtonStyle.primary,
+        emoji="\N{LEFT-POINTING MAGNIFYING GLASS}",
+    )
+    async def view(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.message.embeds[0].fields:
+            return await interaction.response.send_message(
+                "No embeddings to inspect!", ephemeral=True
             )
-        self.conf.embeddings[modal.name] = Embedding(text=modal.text, embedding=embedding)
-        self.pages = self.get_pages()
-        await self.message.edit(embed=self.pages[self.page])
-        await self.ctx.send("Your embedding has been created!")
-        await self.save()
+        name = self.message.embeds[0].fields[self.place].name.replace("➣ ", "", 1)
+        embedding = self.conf.embeddings[name]
+        await interaction.response.send_message(f"```\n{embedding.text}\n```", ephemeral=True)
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
@@ -188,19 +183,23 @@ class EmbeddingMenu(discord.ui.View):
         self.page %= len(self.pages)
         await self.message.edit(embed=self.pages[self.page])
 
-    @discord.ui.button(
-        style=discord.ButtonStyle.primary,
-        emoji="\N{LEFT-POINTING MAGNIFYING GLASS}",
-        row=2,
-    )
-    async def view(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.message.embeds[0].fields:
-            return await interaction.response.send_message(
-                "No embeddings to edit!", ephemeral=True
+    @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{SQUARED NEW}", row=2)
+    async def new_embedding(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = EmbeddingModal(title="Add an embedding")
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if not modal.name or not modal.text:
+            return
+        embedding = await get_embedding_async(modal.text)
+        if modal.name in self.conf.embeddings:
+            return await interaction.followup.send(
+                "An embedding with this name already exists!", ephemeral=True
             )
-        name = self.message.embeds[0].fields[self.place].name.replace("➣ ", "", 1)
-        embedding = self.conf.embeddings[name]
-        await interaction.response.send_message(f"```\n{embedding.text}\n```", ephemeral=True)
+        self.conf.embeddings[modal.name] = Embedding(text=modal.text, embedding=embedding)
+        self.pages = self.get_pages()
+        await self.message.edit(embed=self.pages[self.page])
+        await self.ctx.send("Your embedding has been created!")
+        await self.save()
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
@@ -249,6 +248,9 @@ class EmbeddingMenu(discord.ui.View):
             reply = await self.ctx.bot.wait_for("message", timeout=60, check=check)
         except asyncio.TimeoutError:
             return await interaction.followup.send("Embedding upload cancelled", ephemeral=True)
+
+        if reply.content == "cancel":
+            return await interaction.followup.send("Import cancelled.", ephemeral=True)
 
         attachments = get_attachments(reply)
         if not attachments:
