@@ -113,7 +113,8 @@ class EmbeddingMenu(discord.ui.View):
             text = row[1]
             embedding = await get_embedding_async(text, self.conf.api_key)
             if not embedding:
-                log.warning(f"Failed to process {name} embedding")
+                await self.ctx.send(f"Failed to process {name} embedding")
+                continue
             self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         await self.ctx.send("Your embeddings upload has finished processing!")
         self.pages = self.get_pages()

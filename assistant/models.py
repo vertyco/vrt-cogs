@@ -34,7 +34,7 @@ class GuildSettings(BaseModel):
     model: str = "gpt-3.5-turbo"
 
     def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, float]]:
-        if not self.top_n:
+        if not self.top_n or not query_embedding or not self.embeddings:
             return []
         strings_and_relatedness = [
             (i.text, cosine_similarity(query_embedding, i.embedding))
