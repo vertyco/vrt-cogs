@@ -180,6 +180,8 @@ class EmbeddingMenu(discord.ui.View):
         self.conf.embeddings[modal.name] = Embedding(
             nickname=modal.name, text=modal.text, embedding=embedding
         )
+        self.pages = self.get_pages()
+        await self.message.edit(embed=self.pages[self.page])
         await interaction.followup.send("Your embedding has been modified!", ephemeral=True)
         await self.save()
 
