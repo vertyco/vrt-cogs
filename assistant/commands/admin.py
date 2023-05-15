@@ -160,7 +160,9 @@ class Admin(MixinMeta):
                         text += content
                         key = f"{channel.name}-{message.id}"
                         embedding = await get_embedding_async(text, conf.api_key)
-                        conf.embeddings[key] = Embedding(text, embedding)
+                        if not embedding:
+                            continue
+                        conf.embeddings[key] = Embedding(text=text, embedding=embedding)
                         created += 1
 
             if not created:
