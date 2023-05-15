@@ -184,6 +184,7 @@ class Admin(MixinMeta):
         To use a place holder simply format your prompt as "`some {placeholder} with text`"
         `botname` - The bots display name
         `timestamp` - the current time in Discord's timestamp format
+        `day` - the current day of the week
         `date` - todays date (Month, Day, Year)
         `time` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
@@ -251,6 +252,7 @@ class Admin(MixinMeta):
         To use a place holder simply format your prompt as "`some {placeholder} with text`"
         `botname` - The bots display name
         `timestamp` - the current time in Discord's timestamp format
+        `day` - the current day of the week
         `date` - todays date (Month, Day, Year)
         `time` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
