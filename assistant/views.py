@@ -178,6 +178,10 @@ class EmbeddingMenu(discord.ui.View):
             return
         async with self.ctx.typing():
             embedding = await get_embedding_async(modal.text, self.conf.api_key)
+            if not embedding:
+                return await interaction.followup.send(
+                    "Failed to edit that embedding, please try again later", ephemeral=True
+                )
         self.conf.embeddings[modal.name] = Embedding(
             nickname=modal.name, text=modal.text, embedding=embedding
         )
