@@ -118,7 +118,7 @@ class EmbeddingMenu(discord.ui.View):
             self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         await self.ctx.send("Your embeddings upload has finished processing!")
         self.pages = self.get_pages()
-        await self.message.edit(embed=self.pages[self.page])
+        self.message = await self.message.edit(embed=self.pages[self.page])
         await self.save()
 
     async def add_embedding(self, name: str, text: str):
@@ -131,7 +131,7 @@ class EmbeddingMenu(discord.ui.View):
             return await self.ctx.send(f"An embedding with the name `{name}` already exists!")
         self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         self.pages = self.get_pages()
-        await self.message.edit(embed=self.pages[self.page])
+        self.message = await self.message.edit(embed=self.pages[self.page])
         await self.ctx.send(f"Your embedding labeled `{name}` has been processed!")
         await self.save()
 
@@ -161,7 +161,7 @@ class EmbeddingMenu(discord.ui.View):
             self.place -= 1
             self.place %= len(fields)
             self.pages = self.get_pages()
-            await self.message.edit(embed=self.pages[self.page])
+            self.message = await self.message.edit(embed=self.pages[self.page])
 
     @discord.ui.button(style=discord.ButtonStyle.primary, emoji="\N{MEMO}")
     async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -243,7 +243,7 @@ class EmbeddingMenu(discord.ui.View):
             self.place += 1
             self.place %= len(fields)
             self.pages = self.get_pages()
-            await self.message.edit(embed=self.pages[self.page])
+            self.message = await self.message.edit(embed=self.pages[self.page])
 
     @discord.ui.button(
         style=discord.ButtonStyle.danger, emoji="\N{WASTEBASKET}\N{VARIATION SELECTOR-16}", row=2
@@ -258,7 +258,7 @@ class EmbeddingMenu(discord.ui.View):
         del self.conf.embeddings[name]
         self.pages = self.get_pages()
         self.page %= len(self.pages)
-        await self.message.edit(embed=self.pages[self.page])
+        self.message = await self.message.edit(embed=self.pages[self.page])
         await self.save()
 
     @discord.ui.button(
