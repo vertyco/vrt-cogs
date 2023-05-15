@@ -169,8 +169,8 @@ class EmbeddingMenu(discord.ui.View):
                 "No embeddings to edit!", ephemeral=True
             )
         name = self.message.embeds[0].fields[self.place].name.replace("➣ ", "", 1)
-        embedding = self.conf.embeddings[name]
-        modal = EmbeddingModal(title="Edit embedding", name=name, text=embedding.text)
+        embedding_obj = self.conf.embeddings[name]
+        modal = EmbeddingModal(title="Edit embedding", name=name, text=embedding_obj.text)
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.name or not modal.text:
@@ -180,6 +180,8 @@ class EmbeddingMenu(discord.ui.View):
         self.conf.embeddings[modal.name] = Embedding(
             nickname=modal.name, text=modal.text, embedding=embedding
         )
+        if modal.name != name:
+            del self.conf.embeddings[name]
         self.pages = self.get_pages()
         await self.message.edit(embed=self.pages[self.page])
         await interaction.followup.send("Your embedding has been modified!", ephemeral=True)
