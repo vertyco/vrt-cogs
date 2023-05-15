@@ -60,6 +60,9 @@ class API(MixinMeta):
         initial_prompt = conf.prompt.format(**params)
 
         query_embedding = get_embedding(text=message, api_key=conf.api_key)
+        if not query_embedding:
+            log.info(f"Could not get embedding for message: {message}")
+
         embeddings = conf.get_related_embeddings(query_embedding)
         if embeddings:
             initial_prompt += "\nContext:\n"
