@@ -153,7 +153,7 @@ class Admin(MixinMeta):
                 text = f"Channel name: {channel.name}\nChannel mention: {channel.mention}\n"
                 if isinstance(channel, discord.TextChannel):
                     text += f"Channel topic: {channel.topic}\n"
-                    for pin in channel.pins():
+                    for pin in await channel.pins():
                         messages.append(pin)
                 for message in messages:
                     if content := extract_message_content(message):
