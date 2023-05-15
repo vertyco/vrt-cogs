@@ -4,7 +4,7 @@ from typing import Union
 
 import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import humanize_list, humanize_number
+from redbot.core.utils.chat_formatting import humanize_list, humanize_number, pagify
 
 from ..abc import MixinMeta
 from ..common.utils import (
@@ -535,7 +535,9 @@ class Admin(MixinMeta):
                     "No embeddings could be related to this query with the current settings"
                 )
             for em, score in embeddings:
-                await ctx.send(f"`Score: `{score}\n```\n{em}\n```")
+                for p in pagify(em, page_length=4000):
+                    embed = discord.Embed(description=f"`Score: `{score}\n```\n{p}\n```")
+                    await ctx.send(embed=embed)
 
     @assistant.command(name="dynamicembedding")
     async def toggle_dynamic_embeddings(self, ctx: commands.Context):
