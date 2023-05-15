@@ -59,7 +59,7 @@ class API(MixinMeta):
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
-        query_embedding = get_embedding(text=message, key=conf.api_key)
+        query_embedding = get_embedding(text=message, api_key=conf.api_key)
         embeddings = conf.get_related_embeddings(query_embedding)
         if embeddings:
             initial_prompt += "\nContext:\n"
