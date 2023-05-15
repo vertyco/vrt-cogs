@@ -21,7 +21,8 @@ class GuildSettings(BaseModel):
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
     embeddings: Dict[str, Embedding] = {}
     top_n: int = 3
-    min_relatedness: float = 0.6
+    min_relatedness: float = 0.75
+    dynamic_embedding: bool = True
     channel_id: int = 0
     api_key: str = ""
     endswith_questionmark: bool = False

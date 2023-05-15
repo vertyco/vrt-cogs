@@ -44,20 +44,21 @@ class Admin(MixinMeta):
         system_tokens = num_tokens_from_string(conf.system_prompt)
         prompt_tokens = num_tokens_from_string(conf.prompt)
         desc = (
-            f"`Enabled:          `{conf.enabled}\n"
-            f"`Channel:          `{channel}\n"
-            f"`? Required:       `{conf.endswith_questionmark}\n"
-            f"`Mentions:         `{conf.mention}\n"
-            f"`Max Retention:    `{conf.max_retention}\n"
-            f"`Retention Expire: `{conf.max_retention_time}s\n"
-            f"`Max Tokens:       `{conf.max_tokens}\n"
-            f"`Min Length:       `{conf.min_length}\n"
-            f"`System Message:   `{humanize_number(system_tokens)} tokens\n"
-            f"`Initial Prompt:   `{humanize_number(prompt_tokens)} tokens\n"
-            f"`Model:            `{conf.model}\n"
-            f"`Embeddings:       `{humanize_number(len(conf.embeddings))}\n"
-            f"`Top N Embeddings: `{conf.top_n}\n"
-            f"`Min Relatedness:  `{conf.min_relatedness}"
+            f"`Enabled:           `{conf.enabled}\n"
+            f"`Channel:           `{channel}\n"
+            f"`? Required:        `{conf.endswith_questionmark}\n"
+            f"`Mentions:          `{conf.mention}\n"
+            f"`Max Retention:     `{conf.max_retention}\n"
+            f"`Retention Expire:  `{conf.max_retention_time}s\n"
+            f"`Max Tokens:        `{conf.max_tokens}\n"
+            f"`Min Length:        `{conf.min_length}\n"
+            f"`System Message:    `{humanize_number(system_tokens)} tokens\n"
+            f"`Initial Prompt:    `{humanize_number(prompt_tokens)} tokens\n"
+            f"`Model:             `{conf.model}\n"
+            f"`Embeddings:        `{humanize_number(len(conf.embeddings))}\n"
+            f"`Top N Embeddings:  `{conf.top_n}\n"
+            f"`Min Relatedness:   `{conf.min_relatedness}\n"
+            f"`Dynamic Embedding: `{conf.dynamic_embedding}"
         )
         system_file = (
             discord.File(
@@ -512,4 +513,46 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.min_relatedness = mimimum_relatedness
         await ctx.tick()
+        await self.save_conf()
+
+    @assistant.command(name="embeddingtest", aliases=["etest"])
+    async def test_embedding_response(self, ctx: commands.Context, *, question: str):
+        """
+        Fetch related embeddings according to the current settings along with their scores
+
+        You can use this to fine-tune the minimum relatedness for your assistant
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.embeddings:
+            return await ctx.send("You do not have any embeddings configured!")
+        async with ctx.typing():
+            query = await get_embedding_async(question, conf.api_key)
+            if not query:
+                return await ctx.send("Failed to get embedding for your query")
+            embeddings = conf.get_related_embeddings(query)
+            if not embeddings:
+                return await ctx.send(
+                    "No embeddings could be related to this query with the current settings"
+                )
+            for em, score in embeddings:
+                await ctx.send(f"`Score: `{score}\n```\n{em}\n```")
+
+    @assistant.command(name="dynamicembedding")
+    async def toggle_dynamic_embeddings(self, ctx: commands.Context):
+        """
+        Toggle whether embeddings are dynamic
+
+        Dynamic embeddings mean that the embeddings pulled are dynamically appended to the initial prompt for each individual question.
+        When each time the user asks a question, the previous embedding is replaced with embeddings pulled from the current question, this reduces token usage significantly
+
+        Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings.
+        Turning this off will instead append the embedding context in front of the user's question, thus retaining all pulled embeddings during the conversation.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.dynamic_embedding:
+            conf.dynamic_embedding = False
+            await ctx.send("Dynamic embedding is now **Disabled**")
+        else:
+            conf.dynamic_embedding = True
+            await ctx.send("Dynamic embedding is now **Enabled**")
         await self.save_conf()
