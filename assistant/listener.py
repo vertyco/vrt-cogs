@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 import discord
@@ -57,32 +56,20 @@ class AssistantListener(MixinMeta):
         async with channel.typing():
             await self.try_replying(message, content, conf)
 
-    async def try_replying(
-        self, message: discord.Message, content: str, conf: GuildSettings
-    ):
-        tries = 1
-        while tries <= 3:
-            try:
-                reply = await self.get_chat_response(
-                    content, message.author, conf
-                )
-                parts = [p for p in pagify(reply, page_length=2000)]
-                for index, p in enumerate(parts):
-                    if not index:
-                        await message.reply(p, mention_author=conf.mention)
-                    else:
-                        await message.channel.send(p)
-                return
-            except InvalidRequestError as e:
-                if error := e.error and tries == 3:
-                    await message.reply(
-                        error["message"], mention_author=conf.mention
-                    )
-                elif tries == 3:
-                    log.error("Invalid Request Error", exc_info=e)
-            except Exception as e:
-                if tries == 3:
-                    await message.channel.send(f"**Error**\n```py\n{e}\n```")
-                    log.error("Listener Reply Error", exc_info=e)
-            tries += 1
-            await asyncio.sleep(2)
+    async def try_replying(self, message: discord.Message, content: str, conf: GuildSettings):
+        try:
+            reply = await self.get_chat_response(content, message.author, conf)
+            parts = [p for p in pagify(reply, page_length=2000)]
+            for index, p in enumerate(parts):
+                if not index:
+                    await message.reply(p, mention_author=conf.mention)
+                else:
+                    await message.channel.send(p)
+            return
+        except InvalidRequestError as e:
+            if error := e.error:
+                await message.reply(error["message"], mention_author=conf.mention)
+            log.error("Invalid Request Error", exc_info=e)
+        except Exception as e:
+            await message.channel.send(f"**Error**\n```py\n{e}\n```")
+            log.error("Listener Reply Error", exc_info=e)
