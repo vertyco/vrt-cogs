@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2022-12-20 20:47-0500\n"
-"PO-Revision-Date: 2023-01-07 20:09\n"
+"POT-Creation-Date: 2023-05-12 11:14-0400\n"
+"PO-Revision-Date: 2023-05-12 16:07\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,104 +17,104 @@ msgstr ""
 "X-Crowdin-File-ID: 19\n"
 "Language: es_ES\n"
 
-#: utils\formatter.py:82
+#: utils\formatter.py:87
 msgid "None"
 msgstr ""
 
-#: utils\formatter.py:85
+#: utils\formatter.py:90
 msgid " second"
 msgstr ""
 
-#: utils\formatter.py:87
+#: utils\formatter.py:92
 msgid " seconds"
 msgstr ""
 
-#: utils\formatter.py:90
+#: utils\formatter.py:95
 msgid " minute"
 msgstr ""
 
-#: utils\formatter.py:92
+#: utils\formatter.py:97
 msgid " minutes"
 msgstr ""
 
-#: utils\formatter.py:109
+#: utils\formatter.py:114
 #, docstring
 msgid "Get all attachments from context"
 msgstr ""
 
-#: utils\formatter.py:128
+#: utils\formatter.py:134
 msgid "Weekly "
 msgstr ""
 
-#: utils\formatter.py:131
+#: utils\formatter.py:137
 msgid "LevelUp "
 msgstr ""
 
-#: utils\formatter.py:141
+#: utils\formatter.py:151
 msgid "Voice Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:143
+#: utils\formatter.py:153
 msgid "Voicetime"
 msgstr ""
 
-#: utils\formatter.py:148
+#: utils\formatter.py:160
 msgid "Message Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:150
+#: utils\formatter.py:162
 msgid "Messages"
 msgstr ""
 
-#: utils\formatter.py:155
+#: utils\formatter.py:169
 msgid "Star Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:157
+#: utils\formatter.py:171
 msgid "Stars"
 msgstr ""
 
-#: utils\formatter.py:162
+#: utils\formatter.py:178
 msgid "Exp Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:164
+#: utils\formatter.py:180
 msgid "Exp"
 msgstr ""
 
-#: utils\formatter.py:170
+#: utils\formatter.py:186
 msgid "Total "
 msgstr ""
 
-#: utils\formatter.py:171
+#: utils\formatter.py:187
 msgid "Last Reset: "
 msgstr ""
 
-#: utils\formatter.py:174
+#: utils\formatter.py:190
 msgid "Next Reset: "
 msgstr ""
 
-#: utils\formatter.py:176
+#: utils\formatter.py:192
 msgid "Total"
 msgstr ""
 
-#: utils\formatter.py:185
+#: utils\formatter.py:201
 msgid "There is no data for the weekly "
 msgstr ""
 
-#: utils\formatter.py:187 utils\formatter.py:193
+#: utils\formatter.py:203 utils\formatter.py:209
 msgid " leaderboard yet"
 msgstr ""
 
-#: utils\formatter.py:191
+#: utils\formatter.py:207
 msgid "There is no data for the "
 msgstr ""
 
-#: utils\formatter.py:200
+#: utils\formatter.py:217
 msgid "You: "
 msgstr ""
 
-#: utils\formatter.py:255 utils\formatter.py:257
+#: utils\formatter.py:277 utils\formatter.py:279
 msgid "Pages "
 msgstr ""
 
