@@ -173,12 +173,12 @@ class EmbeddingMenu(discord.ui.View):
         modal = EmbeddingModal(title="Edit embedding", name=name, text=embedding.text)
         await interaction.response.send_modal(modal)
         await modal.wait()
-        if not modal.nick or not modal.text:
+        if not modal.name or not modal.text:
             return
         async with self.ctx.typing():
             embedding = await get_embedding_async(modal.text, self.conf.api_key)
-        self.conf.embeddings[modal.nick] = Embedding(
-            nickname=modal.nick, text=modal.text, embedding=embedding
+        self.conf.embeddings[modal.name] = Embedding(
+            nickname=modal.name, text=modal.text, embedding=embedding
         )
         await interaction.followup.send("Your embedding has been modified!", ephemeral=True)
         await self.save()
