@@ -37,6 +37,18 @@ class API(MixinMeta):
         date = datetime.now().astimezone().strftime("%B %d, %Y")
         time = datetime.now().astimezone().strftime("%I:%M %p %Z")
         roles = [role.name for role in author.roles]
+
+        query_embedding = get_embedding(text=message, api_key=conf.api_key)
+        if not query_embedding:
+            log.info(f"Could not get embedding for message: {message}")
+
+        embeddings = conf.get_related_embeddings(query_embedding)
+        if embeddings:
+            new_message = "Context:\n"
+            for i in embeddings:
+                new_message += f"{i[0]}\n"
+            message = f"{new_message}\n{message}"
+
         params = {
             "botname": self.bot.user.name,
             "timestamp": timestamp,
@@ -58,16 +70,6 @@ class API(MixinMeta):
 
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
-
-        query_embedding = get_embedding(text=message, api_key=conf.api_key)
-        if not query_embedding:
-            log.info(f"Could not get embedding for message: {message}")
-
-        embeddings = conf.get_related_embeddings(query_embedding)
-        if embeddings:
-            initial_prompt += "\nContext:\n"
-            for i in embeddings:
-                initial_prompt += f"{i[0]}\n"
 
         conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
