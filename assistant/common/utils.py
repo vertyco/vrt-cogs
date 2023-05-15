@@ -4,8 +4,9 @@ import math
 from typing import Dict, List, Union
 
 import discord
+import openai
 import tiktoken
-from openai.embeddings_utils import get_embedding
+from retry import retry
 
 log = logging.getLogger("red.vrt.assistant.utils")
 encoding = tiktoken.get_encoding("cl100k_base")
@@ -92,18 +93,6 @@ def token_pagify(text: str, max_tokens: int = 2000):
     return text_chunks
 
 
-async def get_embedding_async(text: str) -> List[float]:
-    tries = 0
-    while tries < 3:
-        try:
-            embedding = await asyncio.to_thread(get_embedding, text, "text-embedding-ada-002")
-            return embedding
-        except Exception as e:
-            log.error("Failed to fetch embeddings", exc_info=e)
-        tries += 1
-    return []
-
-
 def embedding_embeds(embeddings: Dict[str, dict], place: int):
     embeddings = sorted(embeddings.items(), key=lambda x: x[0])
     embeds = []
@@ -136,3 +125,25 @@ def embedding_embeds(embeddings: Dict[str, dict], place: int):
             )
         )
     return embeds
+
+
+async def get_embedding_async(text: str, key: str) -> List[float]:
+    return await asyncio.to_thread(get_embedding, text, key)
+
+
+@retry(tries=3, delay=2)
+def get_embedding(text: str, api_key: str) -> List[float]:
+    response = openai.Embedding.create(input=text, model="text-embedding-ada-002", api_key=api_key)
+    return response["data"][0]["embedding"]
+
+
+async def get_chat_async(model: str, messages: list, api_key: str, temperature: float = 0) -> str:
+    return await asyncio.to_thread(get_chat, model, messages, temperature, api_key)
+
+
+@retry(tries=3, delay=3)
+def get_chat(model: str, messages: list, api_key: str, temperature: float = 0) -> str:
+    response = openai.ChatCompletion.create(
+        model=model, messages=messages, temperature=temperature, api_key=api_key
+    )
+    return response["choices"][0]["message"]["content"]
