@@ -34,12 +34,14 @@ class API(MixinMeta):
     ) -> str:
         timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
         created = f"<t:{round(author.guild.created_at.timestamp())}:F>"
+        day = datetime.now().astimezone().strftime("%A")
         date = datetime.now().astimezone().strftime("%B %d, %Y")
         time = datetime.now().astimezone().strftime("%I:%M %p %Z")
         roles = [role.name for role in author.roles]
         params = {
             "botname": self.bot.user.name,
             "timestamp": timestamp,
+            "day": day,
             "date": date,
             "time": time,
             "members": author.guild.member_count,
