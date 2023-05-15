@@ -127,8 +127,8 @@ def embedding_embeds(embeddings: Dict[str, dict], place: int):
     return embeds
 
 
-async def get_embedding_async(text: str, key: str) -> List[float]:
-    return await asyncio.to_thread(get_embedding, text, key)
+async def get_embedding_async(text: str, api_key: str) -> List[float]:
+    return await asyncio.to_thread(get_embedding, text, api_key)
 
 
 @retry(tries=3, delay=2)
