@@ -131,6 +131,7 @@ class EmbeddingMenu(discord.ui.View):
         self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         self.pages = self.get_pages()
         await self.message.edit(embed=self.pages[self.page])
+        await self.ctx.send(f"Your embedding labeled `{name}` has been processed!")
         await self.save()
 
     async def start(self):
@@ -174,7 +175,8 @@ class EmbeddingMenu(discord.ui.View):
         await modal.wait()
         if not modal.nick or not modal.text:
             return
-        embedding = await get_embedding_async(modal.text, self.conf.api_key)
+        async with self.ctx.typing():
+            embedding = await get_embedding_async(modal.text, self.conf.api_key)
         self.conf.embeddings[modal.nick] = Embedding(
             nickname=modal.nick, text=modal.text, embedding=embedding
         )
