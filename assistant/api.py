@@ -43,13 +43,6 @@ class API(MixinMeta):
         if not query_embedding:
             log.info(f"Could not get embedding for message: {message}")
 
-        embeddings = conf.get_related_embeddings(query_embedding)
-        if embeddings:
-            new_message = "Context:\n"
-            for i in embeddings:
-                new_message += f"{i[0]}\n"
-            message = f"{new_message}\n{message}"
-
         params = {
             "botname": self.bot.user.name,
             "timestamp": timestamp,
@@ -69,9 +62,20 @@ class API(MixinMeta):
             "retention": conf.max_retention,
             "retentiontime": conf.max_retention_time,
         }
-
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
+
+        embeddings = conf.get_related_embeddings(query_embedding)
+        if embeddings:
+            for em, score in embeddings:
+                print(f"Score: {score}/{em}\n")
+            context = "\nContext:\n"
+            for i in embeddings:
+                context += f"{i[0]}\n"
+            if conf.dynamic_embedding:
+                initial_prompt += context
+            else:
+                message = f"{context}\n\n{message}"
 
         conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
