@@ -157,7 +157,7 @@ class Admin(MixinMeta):
                     if content := extract_message_content(message):
                         text += content
                         key = f"{channel.name}-{message.id}"
-                        embedding = await get_embedding_async(text)
+                        embedding = await get_embedding_async(text, conf.api_key)
                         conf.embeddings[key] = Embedding(text, embedding)
                         created += 1
 

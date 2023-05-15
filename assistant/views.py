@@ -111,16 +111,17 @@ class EmbeddingMenu(discord.ui.View):
         for row in df.values:
             name = row[0]
             text = row[1]
-            embedding = await get_embedding_async(text)
+            embedding = await get_embedding_async(text, self.conf.api_key)
             if not embedding:
                 log.warning(f"Failed to process {name} embedding")
             self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         await self.ctx.send("Your embeddings upload has finished processing!")
         self.pages = self.get_pages()
+        await self.message.edit(embed=self.pages[self.page])
         await self.save()
 
     async def add_embedding(self, name: str, text: str):
-        embedding = await get_embedding_async(text)
+        embedding = await get_embedding_async(text, self.conf.api_key)
         if not embedding:
             return await self.ctx.send(
                 f"Failed to process embedding `{name}`\nContent: ```\n{text}\n```"
@@ -128,6 +129,8 @@ class EmbeddingMenu(discord.ui.View):
         if name in self.conf.embeddings:
             return await self.ctx.send(f"An embedding with the name `{name}` already exists!")
         self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+        self.pages = self.get_pages()
+        await self.message.edit(embed=self.pages[self.page])
         await self.save()
 
     async def start(self):
@@ -171,7 +174,7 @@ class EmbeddingMenu(discord.ui.View):
         await modal.wait()
         if not modal.nick or not modal.text:
             return
-        embedding = await get_embedding_async(modal.text)
+        embedding = await get_embedding_async(modal.text, self.conf.api_key)
         self.conf.embeddings[modal.nick] = Embedding(
             nickname=modal.nick, text=modal.text, embedding=embedding
         )

@@ -3,12 +3,11 @@ import logging
 from datetime import datetime
 
 import discord
-import openai
 from aiocache import cached
-from openai.embeddings_utils import get_embedding
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
+from .common.utils import get_chat, get_embedding
 from .models import Conversation, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
@@ -25,18 +24,6 @@ class API(MixinMeta):
         finally:
             conversation.cleanup(conf)
         return reply
-
-    async def get_training_response(self, prompt: str, conf: GuildSettings) -> tuple:
-        messages = [
-            {"role": "user", "content": prompt},
-        ]
-        response = await asyncio.to_thread(self.call_openai, conf, messages, 0.01)
-        try:
-            reply = response["choices"][0]["message"]["content"]
-            usage = response["usage"]["total_tokens"]
-            return reply, usage
-        except KeyError:
-            return None, None
 
     def prepare_call(
         self,
@@ -81,23 +68,6 @@ class API(MixinMeta):
 
         conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
-
-        response = self.call_openai(conf, messages)
-        try:
-            reply = response["choices"][0]["message"]["content"]
-            # usage = response["usage"]
-            # total = usage['total_tokens']
-        except KeyError:
-            reply = str(response)
-            # usage = None
+        reply = get_chat(model=conf.model, messages=messages, temperature=0, api_key=conf.api_key)
         conversation.update_messages(conf, reply, "assistant")
         return reply
-
-    def call_openai(self, conf: GuildSettings, messages: dict, temperature: float = 0) -> dict:
-        response = openai.ChatCompletion.create(
-            model=conf.model,
-            messages=messages,
-            temperature=temperature,
-            api_key=conf.api_key,
-        )
-        return response

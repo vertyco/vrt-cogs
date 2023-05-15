@@ -23,7 +23,8 @@
     "orjson",
     "tiktoken",
     "scipy",
-    "scikit-learn"
+    "scikit-learn",
+    "retry"
   ],
   "short": "Another GPT Cog",
   "tags": [
