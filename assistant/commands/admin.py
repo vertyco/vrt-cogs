@@ -147,12 +147,14 @@ class Admin(MixinMeta):
             msg = await ctx.send(embed=embed)
             created = 0
             for channel in channels:
-                messages = [i for i in channel.pins]
+                messages = []
                 for i in await fetch_channel_history(channel, oldest=False, limit=50):
                     messages.append(i)
                 text = f"Channel name: {channel.name}\nChannel mention: {channel.mention}\n"
                 if isinstance(channel, discord.TextChannel):
                     text += f"Channel topic: {channel.topic}\n"
+                    for pin in channel.pins():
+                        messages.append(pin)
                 for message in messages:
                     if content := extract_message_content(message):
                         text += content
