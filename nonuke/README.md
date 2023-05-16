@@ -14,11 +14,6 @@ Anti-Nuke System for lazy server owners!<br/><br/>Monitors the following events:
 
 Toggle whether the bot sends the user a DM when a kick or ban action is performed
 
-## nonuke logchannel
- - Usage: `[p]nonuke logchannel <channel> `
-
-Set the log channel for Anti-Nuke kicks
-
 ## nonuke view
  - Usage: `[p]nonuke view `
 
@@ -53,4 +48,9 @@ Enable/Disable the NoNuke system
  - Usage: `[p]nonuke cooldown <cooldown> `
 
 Cooldown (in seconds) for NoNuke to trigger
+
+## nonuke logchannel
+ - Usage: `[p]nonuke logchannel <channel> `
+
+Set the log channel for Anti-Nuke kicks
 

@@ -24,21 +24,6 @@ Start a Pixl game!<br/>Guess the image as it is slowly revealed
 
 Configure the Pixl game
 
-## pixlset participants
- - Usage: `[p]pixlset participants <amount> `
-
-Set the minimum amount of participants for the game to reward users credits
-
-## pixlset ratio
- - Usage: `[p]pixlset ratio <ratio> `
-
-Set the point to credit conversion ratio (points x ratio = credit reward)<br/>Points are calculated based on how many hidden blocks are left at the end of the game<br/><br/>Ratio can be a decimal<br/>Set to 0 to disable credit rewards
-
-## pixlset useglobal
- - Usage: `[p]pixlset useglobal `
-
-(Toggle) Whether to use global images in this server
-
 ## pixlset blocks
  - Usage: `[p]pixlset blocks <amount> `
 
@@ -70,20 +55,15 @@ View the current settings
 
 (Toggle) Showing the answer after a game over
 
+## pixlset useglobal
+ - Usage: `[p]pixlset useglobal `
+
+(Toggle) Whether to use global images in this server
+
 ## pixlset image
  - Usage: `[p]pixlset image `
 
 Add/Remove images
-
-### pixlset image viewglobal
- - Usage: `[p]pixlset image viewglobal `
-
-View the global images
-
-### pixlset image add
- - Usage: `[p]pixlset image add <url> <answers> `
-
-Add an image for your server to use<br/><br/>**Arguments**<br/>url:     the url of the image<br/>answers: a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: url, answer, answer, answer...<br/><br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>
 
 ### pixlset image viewdefault
  - Usage: `[p]pixlset image viewdefault `
@@ -101,6 +81,11 @@ Test the server images to ensure they are valid urls
 
 Add a global image for all servers to use<br/><br/>**Arguments**<br/>url:     the url of the image<br/>answers: a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: url, answer, answer, answer...<br/><br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>
 
+### pixlset image add
+ - Usage: `[p]pixlset image add <url> <answers> `
+
+Add an image for your server to use<br/><br/>**Arguments**<br/>url:     the url of the image<br/>answers: a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: url, answer, answer, answer...<br/><br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>
+
 ### pixlset image testglobal
  - Usage: `[p]pixlset image testglobal `
  - Restricted to: `BOT_OWNER`
@@ -111,4 +96,19 @@ Test the global images to ensure they are valid urls
  - Usage: `[p]pixlset image view `
 
 View the server images
+
+### pixlset image viewglobal
+ - Usage: `[p]pixlset image viewglobal `
+
+View the global images
+
+## pixlset participants
+ - Usage: `[p]pixlset participants <amount> `
+
+Set the minimum amount of participants for the game to reward users credits
+
+## pixlset ratio
+ - Usage: `[p]pixlset ratio <ratio> `
+
+Set the point to credit conversion ratio (points x ratio = credit reward)<br/>Points are calculated based on how many hidden blocks are left at the end of the game<br/><br/>Ratio can be a decimal<br/>Set to 0 to disable credit rewards
 

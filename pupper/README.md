@@ -10,15 +10,15 @@ Pet the doggo!
 
 Manage your pet.
 
-## pets delete
- - Usage: `[p]pets delete [amount=0] `
-
-Set how long to wait before deleting the thanks message.<br/>To leave the thanks message with no deletion, use 0 as the amount.<br/>10 is the default.<br/>Max is 5 minutes (300).
-
 ## pets thanks
  - Usage: `[p]pets thanks [message] `
 
 Set the pet thanks message.
+
+## pets delete
+ - Usage: `[p]pets delete [amount=0] `
+
+Set how long to wait before deleting the thanks message.<br/>To leave the thanks message with no deletion, use 0 as the amount.<br/>10 is the default.<br/>Max is 5 minutes (300).
 
 ## pets hello
  - Usage: `[p]pets hello [message] `
@@ -42,15 +42,15 @@ Channel management for pet appearance.
 
 Add a text channel for pets.
 
-### pets channel remove
- - Usage: `[p]pets channel remove <channel> `
-
-Remove a text channel from petting.
-
 ### pets channel addall
  - Usage: `[p]pets channel addall `
 
 Add all valid channels for the server that the bot can speak in.
+
+### pets channel remove
+ - Usage: `[p]pets channel remove <channel> `
+
+Remove a text channel from petting.
 
 ### pets channel removeall
  - Usage: `[p]pets channel removeall `

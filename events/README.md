@@ -21,21 +21,6 @@ Enter an event if one exists
 
 Create, manage and view events
 
-## events notifyrole
- - Usage: `[p]events notifyrole <role> `
-
-Add/Remove notify roles<br/><br/>These roles will be pinged on event start and completion
-
-## events delete
- - Usage: `[p]events delete `
-
-Delete an event outright
-
-## events create
- - Usage: `[p]events create `
-
-Create a new event
-
 ## events staffrole
  - Usage: `[p]events staffrole <role> `
 
@@ -66,10 +51,10 @@ End an event early, counting votes/announcing the winner<br/><br/>This will also
 
 Shorten the runtime of an event<br/><br/>**Examples**<br/>10d - 10 days<br/>7d4h - 7 days 4 hours
 
-## events emoji
- - Usage: `[p]events emoji <emoji> `
+## events notifyrole
+ - Usage: `[p]events notifyrole <role> `
 
-Set the default emoji for votes<br/><br/>Changing the vote emoji only affects events created after this is changed.<br/>Existing events will still use the previous emoji for votes
+Add/Remove notify roles<br/><br/>These roles will be pinged on event start and completion
 
 ## events extend
  - Usage: `[p]events extend <time_string> `
@@ -81,18 +66,33 @@ Extend the runtime of an event<br/><br/>**Examples**<br/>10d - 10 days<br/>7d4h 
 
 (Toggle) Auto delete events from config when they complete<br/><br/>If auto delete is enabled, the messages in the event channel will need to be cleaned up manually
 
-## events view
- - Usage: `[p]events view `
+## events delete
+ - Usage: `[p]events delete `
 
-View the current events and settings
+Delete an event outright
 
 ## events pingstaff
  - Usage: `[p]events pingstaff `
 
 (Toggle) Ping staff on event completion
 
+## events emoji
+ - Usage: `[p]events emoji <emoji> `
+
+Set the default emoji for votes<br/><br/>Changing the vote emoji only affects events created after this is changed.<br/>Existing events will still use the previous emoji for votes
+
 ## events blacklistrole
  - Usage: `[p]events blacklistrole <role> `
 
 Add/Remove blacklisted roles<br/><br/>These roles are not allowed to enter events, but can still vote on them
+
+## events view
+ - Usage: `[p]events view `
+
+View the current events and settings
+
+## events create
+ - Usage: `[p]events create `
+
+Create a new event
 
