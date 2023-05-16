@@ -148,23 +148,26 @@ class Admin(MixinMeta):
             msg = await ctx.send(embed=embed)
             created = 0
             for channel in channels:
-                messages = []
-                for i in await fetch_channel_history(channel, oldest=False, limit=50):
-                    messages.append(i)
-                text = f"Channel name: {channel.name}\nChannel mention: {channel.mention}\n"
-                if isinstance(channel, discord.TextChannel):
-                    text += f"Channel topic: {channel.topic}\n"
-                    for pin in await channel.pins():
-                        messages.append(pin)
-                for message in messages:
-                    if content := extract_message_content(message):
-                        text += content
-                        key = f"{channel.name}-{message.id}"
-                        embedding = await get_embedding_async(text, conf.api_key)
-                        if not embedding:
-                            continue
-                        conf.embeddings[key] = Embedding(text=text, embedding=embedding)
-                        created += 1
+                try:
+                    messages = []
+                    for i in await fetch_channel_history(channel, oldest=False, limit=50):
+                        messages.append(i)
+                    text = f"Channel name: {channel.name}\nChannel mention: {channel.mention}\n"
+                    if isinstance(channel, discord.TextChannel):
+                        text += f"Channel topic: {channel.topic}\n"
+                        for pin in await channel.pins():
+                            messages.append(pin)
+                    for message in messages:
+                        if content := extract_message_content(message):
+                            text += content
+                            key = f"{channel.name}-{message.id}"
+                            embedding = await get_embedding_async(text, conf.api_key)
+                            if not embedding:
+                                continue
+                            conf.embeddings[key] = Embedding(text=text, embedding=embedding)
+                            created += 1
+                except discord.Forbidden:
+                    await ctx.send(f"I dont have access to {channel.mention}")
 
             if not created:
                 embed.description = "No content found!"
