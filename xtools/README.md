@@ -8,6 +8,16 @@ Cool Tools for Xbox
 
 Set up the XTools cog
 
+## apiset help
+ - Usage: `[p]apiset help `
+
+Tutorial for getting your ClientID and Secret
+
+## apiset reset
+ - Usage: `[p]apiset reset `
+
+Reset the all token data
+
 ## apiset auth
  - Usage: `[p]apiset auth `
 
@@ -17,16 +27,6 @@ Set up the XTools cog
  - Usage: `[p]apiset tokens <client_id> <client_secret> `
 
 Set Client ID and Secret
-
-## apiset reset
- - Usage: `[p]apiset reset `
-
-Reset the all token data
-
-## apiset help
- - Usage: `[p]apiset help `
-
-Tutorial for getting your ClientID and Secret
 
 # xstatuschannel
  - Usage: `[p]xstatuschannel <channel> `

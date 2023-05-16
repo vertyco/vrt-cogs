@@ -10,15 +10,21 @@ Track your economy's total balance over time
 
 Configure EconomyTrack
 
-## economytrack timezone
- - Usage: `[p]economytrack timezone [timezone=None] `
-
-Set your desired timezone for the graph<br/><br/>**Arguments**<br/><timezone> A string representing a valid timezone<br/><br/>Use this command without the argument to get a huge list of valid timezones.
-
 ## economytrack view
  - Usage: `[p]economytrack view `
 
 View EconomyTrack Settings
+
+## economytrack maxpoints
+ - Usage: `[p]economytrack maxpoints <max_points> `
+ - Restricted to: `BOT_OWNER`
+
+Set the max amount of data points the bot will store<br/><br/>**Arguments**<br/><max_points> Maximum amount of data points to store<br/><br/>The loop runs every minute, so 1440 points equals 1 day<br/>The default is 43200 (30 days)<br/>Set to 0 to store data indefinitely (Not Recommended)
+
+## economytrack timezone
+ - Usage: `[p]economytrack timezone [timezone=None] `
+
+Set your desired timezone for the graph<br/><br/>**Arguments**<br/><timezone> A string representing a valid timezone<br/><br/>Use this command without the argument to get a huge list of valid timezones.
 
 ## economytrack toggle
  - Usage: `[p]economytrack toggle `
@@ -26,12 +32,6 @@ View EconomyTrack Settings
  - Checks: `server_only`
 
 Enable/Disable economy tracking for this server
-
-## economytrack maxpoints
- - Usage: `[p]economytrack maxpoints <max_points> `
- - Restricted to: `BOT_OWNER`
-
-Set the max amount of data points the bot will store<br/><br/>**Arguments**<br/><max_points> Maximum amount of data points to store<br/><br/>The loop runs every minute, so 1440 points equals 1 day<br/>The default is 43200 (30 days)<br/>Set to 0 to store data indefinitely (Not Recommended)
 
 # remoutliers
  - Usage: `[p]remoutliers <max_value> `
