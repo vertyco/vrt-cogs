@@ -7,7 +7,7 @@ from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
 from .common.utils import get_attachments
-from .models import GuildSettings
+from .models import READ_EXTENSIONS, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.listener")
 
@@ -54,7 +54,7 @@ class AssistantListener(MixinMeta):
             return
         if attachments := get_attachments(message):
             for i in attachments:
-                if not i.filename.endswith(".txt"):
+                if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS):
                     continue
                 text = await i.read()
                 content += f"\n\nUploaded [{i.filename}]: {text.decode()}"

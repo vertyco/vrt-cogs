@@ -6,6 +6,7 @@ from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
 from ..common.utils import get_attachments
+from ..models import READ_EXTENSIONS
 
 log = logging.getLogger("red.vrt.assistant.base")
 
@@ -20,7 +21,7 @@ class Base(MixinMeta):
         async with ctx.typing():
             if attachments := get_attachments(ctx.message):
                 for i in attachments:
-                    if not i.filename.endswith(".txt"):
+                    if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS):
                         continue
                     text = await i.read()
                     question += f"\n\nUploaded [{i.filename}]: {text.decode()}"
