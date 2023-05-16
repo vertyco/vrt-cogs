@@ -71,9 +71,9 @@ class API(MixinMeta):
             for i in embeddings:
                 context += f"{i[0]}\n---\n"
             if conf.dynamic_embedding:
-                initial_prompt += context
+                initial_prompt += context.format(**params)
             else:
-                message = f"{context}\n\n{message}"
+                message = f"{context.format(**params)}\n\n{message}"
 
         conversation.update_messages(conf, message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
