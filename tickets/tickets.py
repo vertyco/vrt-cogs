@@ -18,23 +18,17 @@ _ = Translator("Tickets", __file__)
 
 # redgettext -D tickets.py commands/base.py commands/admin.py views.py menu.py utils.py
 @cog_i18n(_)
-class Tickets(
-    TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass
-):
+class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass):
     """
     Support ticket system with multi-panel functionality
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.15.6"
+    __version__ = "1.15.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
-        info = (
-            f"{helpcmd}\n"
-            f"Cog Version: {self.__version__}\n"
-            f"Author: {self.__author__}\n"
-        )
+        info = f"{helpcmd}\n" f"Cog Version: {self.__version__}\n" f"Author: {self.__author__}\n"
         return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
@@ -164,9 +158,7 @@ class Tickets(
                 except discord.NotFound:
                     continue
                 except discord.Forbidden:
-                    log.info(
-                        f"I can no longer see a set panel channel in {guild.name}"
-                    )
+                    log.info(f"I can no longer see a set panel channel in {guild.name}")
                     continue
 
                 # v1.3.10 schema update (Modals)
@@ -211,9 +203,7 @@ class Tickets(
             try:
                 for panels in to_deploy.values():
                     sorted_panels = sorted(panels, key=lambda x: x["priority"])
-                    panelview = PanelView(
-                        self.bot, guild, self.config, sorted_panels
-                    )
+                    panelview = PanelView(self.bot, guild, self.config, sorted_panels)
                     await panelview.start()
                     self.views.append(panelview)
             except discord.NotFound:
@@ -225,9 +215,7 @@ class Tickets(
                 if not member:
                     continue
                 for ticket_channel_id, ticket_info in opened_tickets.items():
-                    ticket_channel = guild.get_channel_or_thread(
-                        int(ticket_channel_id)
-                    )
+                    ticket_channel = guild.get_channel_or_thread(int(ticket_channel_id))
                     if not ticket_channel:
                         continue
                     if not ticket_info["logmsg"]:
@@ -245,13 +233,9 @@ class Tickets(
                         )
                         continue
                     try:
-                        logmsg = await log_channel.fetch_message(
-                            ticket_info["logmsg"]
-                        )
+                        logmsg = await log_channel.fetch_message(ticket_info["logmsg"])
                     except discord.NotFound:
-                        log.warning(
-                            f"Failed to get log channel message in {guild.name}"
-                        )
+                        log.warning(f"Failed to get log channel message in {guild.name}")
                         continue
                     if not logmsg:
                         continue
@@ -259,9 +243,7 @@ class Tickets(
                     try:
                         await logmsg.edit(view=view)
                     except discord.NotFound:
-                        log.warning(
-                            f"Failed to refresh log views in {guild.name}"
-                        )
+                        log.warning(f"Failed to refresh log views in {guild.name}")
 
     @tasks.loop(minutes=20)
     async def auto_close(self):
@@ -294,12 +276,8 @@ class Tickets(
                     if not channel:
                         continue
                     now = datetime.datetime.now()
-                    opened_on = datetime.datetime.fromisoformat(
-                        ticket["opened"]
-                    )
-                    hastyped = await self.ticket_owner_hastyped(
-                        channel, member
-                    )
+                    opened_on = datetime.datetime.fromisoformat(ticket["opened"])
+                    hastyped = await self.ticket_owner_hastyped(channel, member)
                     if hastyped and channel_id not in self.valid:
                         self.valid.append(channel_id)
                         continue
@@ -323,9 +301,7 @@ class Tickets(
                             guild,
                             channel,
                             conf,
-                            _(
-                                "(Auto-Close) Opened ticket with no response for "
-                            )
+                            _("(Auto-Close) Opened ticket with no response for ")
                             + f"{inactive} {time}",
                             self.bot.user.name,
                         )
@@ -399,15 +375,11 @@ class Tickets(
                     if log_channel_id and log_message_id:
                         log_channel = guild.get_channel(log_channel_id)
                         try:
-                            log_message = await log_channel.fetch_message(
-                                log_message_id
-                            )
+                            log_message = await log_channel.fetch_message(log_message_id)
                             await log_message.delete()
                         except discord.NotFound:
                             pass
 
                     del conf["opened"][user_id][channel_id]
-                    log.info(
-                        f"Removed {thread.name} thread from config in {guild.name}"
-                    )
+                    log.info(f"Removed {thread.name} thread from config in {guild.name}")
                     return
