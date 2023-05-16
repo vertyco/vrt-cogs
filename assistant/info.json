@@ -25,7 +25,8 @@
     "scipy",
     "scikit-learn",
     "retry",
-    "matplotlib"
+    "matplotlib",
+    "plotly"
   ],
   "short": "Another GPT Cog",
   "tags": [
