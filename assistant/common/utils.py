@@ -105,6 +105,7 @@ def embedding_embeds(embeddings: Dict[str, dict], place: int):
         embed.set_footer(text=f"Page {page + 1}/{pages}")
         num = 0
         for i in range(start, stop):
+            # pos = min(place, stop - start - 1)
             em = embeddings[i]
             text = em[1]["text"]
             token_length = num_tokens_from_string(text)
