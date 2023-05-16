@@ -27,7 +27,7 @@
     "retry",
     "matplotlib",
     "plotly",
-    "plotly-express"
+    "pandas"
   ],
   "short": "Another GPT Cog",
   "tags": [
