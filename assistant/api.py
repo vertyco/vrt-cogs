@@ -67,8 +67,6 @@ class API(MixinMeta):
 
         embeddings = conf.get_related_embeddings(query_embedding)
         if embeddings:
-            for em, score in embeddings:
-                print(f"Score: {score}/{em}\n")
             context = "\nContext:\n"
             for i in embeddings:
                 context += f"{i[0]}\n"
