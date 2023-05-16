@@ -82,7 +82,7 @@ class MenuButton(Button):
         self,
         emoji: str,
         style: ButtonStyle,
-        row: Optional[int] = 1,
+        row: Optional[int] = None,
         label: Optional[str] = None,
     ):
         super().__init__(style=style, emoji=emoji, row=row, label=label)
