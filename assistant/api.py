@@ -69,7 +69,7 @@ class API(MixinMeta):
         if embeddings:
             context = "\nContext:\n"
             for i in embeddings:
-                context += f"{i[0]}\n"
+                context += f"{i[0]}\n---\n"
             if conf.dynamic_embedding:
                 initial_prompt += context
             else:
