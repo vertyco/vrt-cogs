@@ -5,6 +5,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
+from ..common.utils import get_attachments
 
 log = logging.getLogger("red.vrt.assistant.base")
 
@@ -17,10 +18,14 @@ class Base(MixinMeta):
         """Ask [botname] a question!"""
         conf = self.db.get_conf(ctx.guild)
         async with ctx.typing():
+            if attachments := get_attachments(ctx.message):
+                for i in attachments:
+                    if not i.filename.endswith(".txt"):
+                        continue
+                    text = await i.read()
+                    question += f"\n\nUploaded [{i.filename}]: {text.decode()}"
             try:
-                reply = await self.get_chat_response(
-                    question, ctx.author, conf
-                )
+                reply = await self.get_chat_response(question, ctx.author, conf)
                 parts = [p for p in pagify(reply, page_length=2000)]
                 for index, p in enumerate(parts):
                     if not index:
@@ -33,9 +38,7 @@ class Base(MixinMeta):
 
     @commands.command(name="convostats")
     @commands.guild_only()
-    async def token_count(
-        self, ctx: commands.Context, *, user: discord.Member = None
-    ):
+    async def token_count(self, ctx: commands.Context, *, user: discord.Member = None):
         """Check the token and message count of yourself or another user's conversation"""
         if not user:
             user = ctx.author
