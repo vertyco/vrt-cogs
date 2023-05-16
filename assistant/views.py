@@ -87,6 +87,7 @@ class EmbeddingMenu(discord.ui.View):
         self.conf = conf
         self.save = save_func
 
+        self.has_skip = True
         self.place = 0
         self.page = 0
         self.pages = self.get_pages()
@@ -106,9 +107,18 @@ class EmbeddingMenu(discord.ui.View):
         return await super().on_timeout()
 
     def get_pages(self) -> List[discord.Embed]:
-        return embedding_embeds(
+        pages = embedding_embeds(
             embeddings={k: v.dict() for k, v in self.conf.embeddings.items()}, place=self.place
         )
+        if len(pages) > 30 and not self.has_skip:
+            self.add_item(self.left10)
+            self.add_item(self.right10)
+            self.has_skip = True
+        elif len(pages) <= 30 and self.has_skip:
+            self.remove_item(self.left10)
+            self.remove_item(self.right10)
+            self.has_skip = False
+        return pages
 
     async def process_embeddings(self, df: pd.DataFrame):
         for row in df.values:
@@ -160,7 +170,7 @@ class EmbeddingMenu(discord.ui.View):
     )
     async def up(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        if fields := self.message.embeds[0].fields:
+        if fields := self.pages[self.page].fields:
             self.place -= 1
             self.place %= len(fields)
             self.pages = self.get_pages()
@@ -204,6 +214,7 @@ class EmbeddingMenu(discord.ui.View):
         await interaction.response.defer()
         self.page -= 1
         self.page %= len(self.pages)
+        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="\N{CROSS MARK}", row=1)
@@ -223,6 +234,7 @@ class EmbeddingMenu(discord.ui.View):
         await interaction.response.defer()
         self.page += 1
         self.page %= len(self.pages)
+        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{SQUARED NEW}", row=2)
@@ -244,7 +256,7 @@ class EmbeddingMenu(discord.ui.View):
     )
     async def down(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        if fields := self.message.embeds[0].fields:
+        if fields := self.pages[self.page].fields:
             self.place += 1
             self.place %= len(fields)
             self.pages = self.get_pages()
@@ -342,3 +354,27 @@ class EmbeddingMenu(discord.ui.View):
         await interaction.response.send_message(
             "Here is your embeddings export!", file=file, ephemeral=True
         )
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.secondary,
+        emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}",
+        row=4,
+    )
+    async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page -= 10
+        self.page %= len(self.pages)
+        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
+        await self.message.edit(embed=self.pages[self.page], view=self)
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.secondary,
+        emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}",
+        row=4,
+    )
+    async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page += 10
+        self.page %= len(self.pages)
+        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
+        await self.message.edit(embed=self.pages[self.page], view=self)
