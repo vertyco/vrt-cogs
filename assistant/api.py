@@ -78,7 +78,7 @@ class API(MixinMeta):
                 conversation.update_messages(message, "user")
 
         conversation.update_messages(message, "user")
-        messages = conversation.prepare_chat(conf, system_prompt, initial_prompt, context)
+        messages = conversation.prepare_chat(conf, system_prompt, initial_prompt)
         reply = get_chat(model=conf.model, messages=messages, temperature=0, api_key=conf.api_key)
         conversation.update_messages(reply, "assistant")
         return reply
