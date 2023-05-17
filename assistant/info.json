@@ -27,7 +27,8 @@
     "retry",
     "matplotlib",
     "plotly",
-    "pandas"
+    "pandas",
+    "rapidfuzz"
   ],
   "short": "Another GPT Cog",
   "tags": [
