@@ -28,7 +28,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.5.0"
+    __version__ = "0.5.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -53,12 +53,16 @@ class AutoDocs(commands.Cog):
         include_hidden: bool,
         privilege_level: str,
     ) -> Tuple[str, pd.DataFrame]:
-        docs = f"# {cog.qualified_name} {HELP}\n\n"
+        columns = [_("name"), _("text")]
+        rows = []
+        cog_name = cog.qualified_name
+        docs = f"# {cog_name} {HELP}\n\n"
         cog_help = cog.help.replace("\n", "<br/>") if cog.help else None
         if cog_help:
             docs += f"{cog_help}\n\n"
-        columns = [_("name"), _("text")]
-        rows = []
+            entry_name = _("{} cog description").format(cog_name)
+            rows.append([entry_name, f"{entry_name}\n{cog_help}"])
+
         for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(
                 self.bot,
@@ -72,7 +76,8 @@ class AutoDocs(commands.Cog):
             if not doc:
                 continue
             docs += doc
-            rows.append([f"{c.name} command", doc])
+            csv_name = f"{c.name} command for {cog_name} cog"
+            rows.append([csv_name, f"{csv_name}\n{doc}"])
 
         ignored = []
         for cmd in cog.walk_commands():
@@ -98,7 +103,8 @@ class AutoDocs(commands.Cog):
             if skip:
                 continue
             docs += doc
-            rows.append([f"{c.name} command", doc])
+            csv_name = f"{c.name} command for {cog_name} cog"
+            rows.append([csv_name, f"{csv_name}\n{doc}"])
         df = pd.DataFrame(rows, columns=columns)
         return docs, df
 
