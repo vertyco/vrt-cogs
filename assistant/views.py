@@ -361,7 +361,7 @@ class EmbeddingMenu(discord.ui.View):
                 asyncio.create_task(self.process_embeddings(df, attachment.filename))
             )
             await interaction.followup.send(
-                f"**{attachment.filename}** has been imported and are processing in the background, come back later to view them!",
+                f"**{attachment.filename}** has been imported and is processing in the background, come back later to view them!",
                 ephemeral=True,
             )
 
