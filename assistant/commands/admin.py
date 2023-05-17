@@ -566,6 +566,8 @@ class Admin(MixinMeta):
         You can enter a search query with this command to bring up the menu and go directly to that embedding selection.
         """
         conf = self.db.get_conf(ctx.guild)
+        if not conf.api_key:
+            return await ctx.send(f"No API key! Use `{ctx.prefix}assistant openaikey` to set your OpenAI key!")
         view = EmbeddingMenu(ctx, conf, self.save_conf)
         if not query:
             return await view.start()
