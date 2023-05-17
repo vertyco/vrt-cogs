@@ -401,18 +401,6 @@ class EmbeddingMenu(discord.ui.View):
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
-        emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}",
-        row=4,
-    )
-    async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        self.page += 10
-        self.page %= len(self.pages)
-        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
-        await self.message.edit(embed=self.pages[self.page], view=self)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.secondary,
         emoji="\N{LEFT-POINTING MAGNIFYING GLASS}",
         row=4,
     )
@@ -448,3 +436,15 @@ class EmbeddingMenu(discord.ui.View):
                 break
         self.pages = self.get_pages()
         self.message = await self.message.edit(embed=self.pages[self.page], view=self)
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.secondary,
+        emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}",
+        row=4,
+    )
+    async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page += 10
+        self.page %= len(self.pages)
+        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
+        await self.message.edit(embed=self.pages[self.page], view=self)
