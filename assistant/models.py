@@ -6,7 +6,7 @@ import orjson
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 
-from .common.utils import num_tokens_from_string
+from .common.utils import num_tokens_from_string, token_pagify
 
 MODELS = ["gpt-3.5-turbo", "gpt-4", "gpt-4-32k"]
 READ_EXTENSIONS = [".txt", ".py", ".json", ".xml", ".html", ".ini", ".css"]
@@ -74,8 +74,8 @@ class Conversation(BaseModel):
             messages = ""
         return num_tokens_from_string(messages)
 
-    def token_count(self, conf: GuildSettings, message: str) -> int:
-        initial = conf.system_prompt + conf.prompt + message
+    def conversation_token_count(self, conf: GuildSettings) -> int:
+        initial = conf.system_prompt + conf.prompt
         return num_tokens_from_string(initial) + self.user_token_count()
 
     def is_expired(self, conf: GuildSettings):
@@ -83,7 +83,7 @@ class Conversation(BaseModel):
             return False
         return (datetime.now().timestamp() - self.last_updated) > conf.max_retention_time
 
-    def cleanup(self, conf: GuildSettings, message: str = ""):
+    def cleanup(self, conf: GuildSettings):
         clear = [
             self.is_expired(conf),
             not conf.max_retention,
@@ -92,34 +92,43 @@ class Conversation(BaseModel):
             self.messages.clear()
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
-        # 4096 is max tokens for 3.5
-        while self.token_count(conf, message) > conf.max_tokens * 0.9 and self.messages:
-            self.messages.pop(0)
+
 
     def reset(self):
         self.last_updated = datetime.now().timestamp()
         self.messages.clear()
 
-    def update_messages(self, conf: GuildSettings, message: str, role: str) -> None:
+    def update_messages(self, message: str, role: str) -> None:
         """Update conversation cache
 
         Args:
-            conf (GuildSettings): guild settings
             message (str): the message
             role (str): 'system', 'user' or 'assistant'
             name (str): the name of the bot or user
         """
-        self.cleanup(conf, message)
         self.messages.append({"role": role, "content": message})
         self.last_updated = datetime.now().timestamp()
 
-    def prepare_chat(self, system_prompt: str = "", initial_prompt: str = "") -> List[dict]:
+    def prepare_chat(
+        self,
+        conf: GuildSettings,
+        system_prompt: str = "",
+        initial_prompt: str = "",
+        ) -> List[dict]:
         prepared = []
         if system_prompt:
             prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt:
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
+        # 4096 is max tokens for 3.5
+        while self.conversation_token_count(conf) > conf.max_tokens * 0.95 and len(self.messages) > 1:
+            self.messages.pop(0)
+        if self.conversation_token_count(conf) > conf.max_tokens * 0.95:
+            chunks = [
+                p for p in token_pagify(self.messages[0]["content"], max_tokens=round(conf.max_tokens * 0.9))
+                ]
+            self.messages[0]["content"] = chunks[0]
         return prepared
 
 
