@@ -93,7 +93,7 @@ class Conversation(BaseModel):
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
         # 4096 is max tokens for 3.5
-        while self.token_count(conf, message) > conf.max_tokens and self.messages:
+        while self.token_count(conf, message) > conf.max_tokens * 0.9 and self.messages:
             self.messages.pop(0)
 
     def reset(self):
