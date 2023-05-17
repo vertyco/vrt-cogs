@@ -102,7 +102,7 @@ class EmbeddingSearch(discord.ui.Modal):
 
 class EmbeddingMenu(discord.ui.View):
     def __init__(self, ctx: commands.Context, conf: GuildSettings, save_func: Callable):
-        super().__init__(timeout=1800)
+        super().__init__(timeout=600)
         self.ctx = ctx
         self.conf = conf
         self.save = save_func
@@ -121,7 +121,7 @@ class EmbeddingMenu(discord.ui.View):
         return True
 
     async def on_timeout(self):
-        with suppress(discord.NotFound):
+        with suppress(discord.HTTPException):
             await self.message.edit(view=None)
         for task in self.tasks:
             await task
