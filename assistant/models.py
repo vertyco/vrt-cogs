@@ -68,10 +68,11 @@ class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
-    def user_token_count(self) -> int:
+    def user_token_count(self, message: str = "") -> int:
         messages = "".join(message["content"] for message in self.messages)
         if not self.messages:
             messages = ""
+        messages += message
         return num_tokens_from_string(messages)
 
     def conversation_token_count(self, conf: GuildSettings) -> int:
