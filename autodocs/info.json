@@ -17,7 +17,8 @@
   "required_cogs": {},
   "requirements": [
     "ujson",
-    "msgpack"
+    "msgpack",
+    "pandas"
   ],
   "short": "EZ Cog Doc Generation",
   "tags": [
