@@ -109,7 +109,7 @@ class EmbeddingMenu(discord.ui.View):
         self.has_skip = True
         self.place = 0
         self.page = 0
-        self.pages = self.get_pages()
+        self.pages: List[discord.Embed] = self.get_pages()
         self.message: discord.Message = None
         self.tasks: List[asyncio.Task] = []
 
@@ -178,13 +178,14 @@ class EmbeddingMenu(discord.ui.View):
         emoji="\N{PRINTER}\N{VARIATION SELECTOR-16}",
     )
     async def view(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.message.embeds[0].fields:
+        if not self.pages[self.page].fields:
             return await interaction.response.send_message(
                 "No embeddings to inspect!", ephemeral=True
             )
-        name = self.message.embeds[0].fields[self.place].name.replace("➣ ", "", 1)
+        await interaction.response.defer()
+        name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
         embedding = self.conf.embeddings[name]
-        await interaction.response.send_message(f"```\n{embedding.text}\n```", ephemeral=True)
+        await interaction.followup.send(f"```\n{embedding.text}\n```", ephemeral=True)
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
@@ -200,11 +201,11 @@ class EmbeddingMenu(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.primary, emoji="\N{MEMO}")
     async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.message.embeds[0].fields:
+        if not self.pages[self.page].fields:
             return await interaction.response.send_message(
                 "No embeddings to edit!", ephemeral=True
             )
-        name = self.message.embeds[0].fields[self.place].name.replace("➣ ", "", 1)
+        name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
         embedding_obj = self.conf.embeddings[name]
         modal = EmbeddingModal(title="Edit embedding", name=name, text=embedding_obj.text)
         await interaction.response.send_modal(modal)
@@ -288,11 +289,11 @@ class EmbeddingMenu(discord.ui.View):
         style=discord.ButtonStyle.danger, emoji="\N{WASTEBASKET}\N{VARIATION SELECTOR-16}", row=2
     )
     async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.message.embeds[0].fields:
+        if not self.pages[self.page].fields:
             return await interaction.response.send_message(
                 "No embeddings to delete!", ephemeral=True
             )
-        name = self.message.embeds[0].fields[self.place].name.replace("➣ ", "", 1)
+        name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
         await interaction.response.send_message(f"Deleted `{name}` embedding.", ephemeral=True)
         del self.conf.embeddings[name]
         self.pages = self.get_pages()
@@ -368,6 +369,7 @@ class EmbeddingMenu(discord.ui.View):
         row=3,
     )
     async def download(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
         rows = [[name, em.text] for name, em in self.conf.embeddings.items()]
         df = pd.DataFrame(rows, columns=["name", "text"])
         buffer = BytesIO()
@@ -375,10 +377,10 @@ class EmbeddingMenu(discord.ui.View):
         buffer.seek(0)
         file = discord.File(buffer, filename="embeddings.csv")
         if file.__sizeof__() > interaction.guild.filesize_limit:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 "File size is too large to send to discord!", ephemeral=True
             )
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "Here is your embeddings export!", file=file, ephemeral=True
         )
 
