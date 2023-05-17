@@ -72,7 +72,7 @@ class API(MixinMeta):
             context = "\nContext:\n"
             for i in embeddings:
                 context += f"{i[0]}\n---\n"
-                if num_tokens_from_string(context) + current_token_count > conf.max_tokens * 0.95:
+                if num_tokens_from_string(context) + current_token_count > conf.max_tokens * 0.85:
                     break
             if conf.dynamic_embedding:
                 initial_prompt += context.format(**params)
