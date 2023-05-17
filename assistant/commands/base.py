@@ -18,6 +18,8 @@ class Base(MixinMeta):
     async def ask_question(self, ctx: commands.Context, *, question: str):
         """Ask [botname] a question!"""
         conf = self.db.get_conf(ctx.guild)
+        if not conf.api_key:
+            return await ctx.send("This command requires an API key from OpenAI to be configured!")
         async with ctx.typing():
             if attachments := get_attachments(ctx.message):
                 for i in attachments:
