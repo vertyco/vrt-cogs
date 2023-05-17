@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import logging
 from time import perf_counter
 
@@ -55,6 +56,7 @@ class Assistant(
 
     async def save_conf(self):
         start = perf_counter()
-        data = await asyncio.to_thread(self.db.dict)
+        dump = copy.deepcopy(self.db)
+        data = await asyncio.to_thread(dump)
         await self.config.db.set(data)
         log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")
