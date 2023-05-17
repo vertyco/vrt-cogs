@@ -58,7 +58,7 @@ class API(MixinMeta):
             "servercreated": created,
             "server": author.guild.name,
             "messages": len(conversation.messages),
-            "tokens": conversation.token_count(conf, message),
+            "tokens": conversation.user_token_count(message=message),
             "retention": conf.max_retention,
             "retentiontime": conf.max_retention_time,
         }
