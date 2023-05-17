@@ -66,6 +66,7 @@ class API(MixinMeta):
         initial_prompt = conf.prompt.format(**params)
 
         embeddings = conf.get_related_embeddings(query_embedding)
+        context = ""
         if embeddings:
             context = "\nContext:\n"
             for i in embeddings:
@@ -74,9 +75,10 @@ class API(MixinMeta):
                 initial_prompt += context.format(**params)
             else:
                 message = f"{context}\n\n{message}".strip()
+                conversation.update_messages(message, "user")
 
-        conversation.update_messages(conf, message, "user")
-        messages = conversation.prepare_chat(system_prompt, initial_prompt)
+        conversation.update_messages(message, "user")
+        messages = conversation.prepare_chat(conf, system_prompt, initial_prompt, context)
         reply = get_chat(model=conf.model, messages=messages, temperature=0, api_key=conf.api_key)
-        conversation.update_messages(conf, reply, "assistant")
+        conversation.update_messages(reply, "assistant")
         return reply
