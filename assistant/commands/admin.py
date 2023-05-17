@@ -478,7 +478,7 @@ class Admin(MixinMeta):
     @assistant.command(name="topn")
     async def set_topn(self, ctx: commands.Context, top_n: int):
         """
-        Set the embedding inclusion about
+        Set the embedding inclusion amout
 
         Top N is the amount of embeddings to include with the initial prompt
         """
