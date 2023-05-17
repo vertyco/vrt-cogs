@@ -8,6 +8,7 @@ import discord
 import pandas as pd
 from rapidfuzz import fuzz
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import pagify
 
 from .common.utils import embedding_embeds, get_attachments, get_embedding_async
 from .models import Embedding, GuildSettings
@@ -185,7 +186,9 @@ class EmbeddingMenu(discord.ui.View):
         await interaction.response.defer()
         name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
         embedding = self.conf.embeddings[name]
-        await interaction.followup.send(f"```\n{embedding.text}\n```", ephemeral=True)
+        for p in pagify(embedding.text, page_length=4000):
+            embed = discord.Embed(description=p)
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
