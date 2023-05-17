@@ -120,15 +120,18 @@ class Conversation(BaseModel):
             prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt:
             prepared.append({"role": "user", "content": initial_prompt})
-        prepared.extend(self.messages)
+
         # 4096 is max tokens for 3.5
         while self.conversation_token_count(conf) > conf.max_tokens * 0.95 and len(self.messages) > 1:
             self.messages.pop(0)
-        if self.conversation_token_count(conf) > conf.max_tokens * 0.95:
-            chunks = [
-                p for p in token_pagify(self.messages[0]["content"], max_tokens=round(conf.max_tokens * 0.9))
-                ]
+
+        if self.conversation_token_count(conf) > conf.max_tokens * 0.9:
+            current_tokens = num_tokens_from_string(system_prompt) + num_tokens_from_string(initial_prompt)
+            max_tokens = round((conf.max_tokens - current_tokens) * 0.9)
+            chunks = [p for p in token_pagify(self.messages[0]["content"], max_tokens=max_tokens)]
             self.messages[0]["content"] = chunks[0]
+
+        prepared.extend(self.messages)
         return prepared
 
 
