@@ -55,7 +55,5 @@ class Assistant(
 
     async def save_conf(self):
         start = perf_counter()
-        dump = self.db.copy()
-        data = await asyncio.to_thread(dump.dict)
-        await self.config.db.set(data)
+        await self.config.db.set(self.db.dict())
         log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")
