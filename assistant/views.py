@@ -393,9 +393,12 @@ class EmbeddingMenu(discord.ui.View):
             return await interaction.followup.send(
                 "File size is too large to send to discord!", ephemeral=True
             )
-        await interaction.followup.send(
-            "Here is your embeddings export!", file=file, ephemeral=True
-        )
+        try:
+            await interaction.followup.send(
+                "Here is your embeddings export!", file=file, ephemeral=True
+            )
+        except discord.HTTPException:
+            await interaction.followup.send("Export file too large to send!", ephemeral=True)
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
