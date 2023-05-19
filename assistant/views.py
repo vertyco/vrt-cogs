@@ -143,6 +143,8 @@ class EmbeddingMenu(discord.ui.View):
 
     async def process_embeddings(self, df: pd.DataFrame, filename: str):
         for row in df.values:
+            if pd.isna(row[0]) or pd.isna(row[1]):
+                continue
             name = str(row[0])
             if name in self.conf.embeddings:
                 continue
