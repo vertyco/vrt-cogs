@@ -144,8 +144,17 @@ class EmbeddingMenu(discord.ui.View):
     async def process_embeddings(self, df: pd.DataFrame, filename: str):
         for row in df.values:
             name = str(row[0])
+            if name in self.conf.embeddings:
+                continue
             text = str(row[1])
-            embedding = await get_embedding_async(text, self.conf.api_key)
+            embedding = None
+            if len(row) == 3:
+                try:
+                    embedding = list(row[2])
+                except TypeError:
+                    pass
+            else:
+                embedding = await get_embedding_async(text, self.conf.api_key)
             if not embedding:
                 await self.ctx.send(f"Failed to process {name} embedding")
                 continue
@@ -372,8 +381,8 @@ class EmbeddingMenu(discord.ui.View):
     )
     async def download(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        rows = [[name, em.text] for name, em in self.conf.embeddings.items()]
-        df = pd.DataFrame(rows, columns=["name", "text"])
+        rows = [[name, em.text, em.embedding] for name, em in self.conf.embeddings.items()]
+        df = pd.DataFrame(rows, columns=["name", "text", "embedding"])
         buffer = BytesIO()
         df.to_csv(buffer, index=False)
         buffer.seek(0)
