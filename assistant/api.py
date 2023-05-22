@@ -76,8 +76,8 @@ class API(MixinMeta):
         embedding_context = ""
         has_context = False
         for i in conf.get_related_embeddings(query_embedding):
-            if num_tokens_from_string(f"\nContext:\n{i[0]}\n\n") + total_tokens < max_usage:
-                embedding_context += f"{i[0]}\n\n"
+            if num_tokens_from_string(f"\nContext:\n{i[1]}\n\n") + total_tokens < max_usage:
+                embedding_context += f"{i[1]}\n\n"
                 has_context = True
 
         if has_context and conf.dynamic_embedding:

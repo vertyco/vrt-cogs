@@ -534,9 +534,9 @@ class Admin(MixinMeta):
                 return await ctx.send(
                     "No embeddings could be related to this query with the current settings"
                 )
-            for em, score in embeddings:
+            for name, em, score in embeddings:
                 for p in pagify(em, page_length=4000):
-                    embed = discord.Embed(description=f"`Score: `{score}\n```\n{p}\n```")
+                    embed = discord.Embed(description=f"`Name: `{name}\nScore: `{score}\n{box(p)}")
                     await ctx.send(embed=embed)
 
     @assistant.command(name="dynamicembedding")
