@@ -254,7 +254,7 @@ class SupportButton(Button):
             await m.wait()
 
             if not m.fields:
-                return await interaction.response.defer()
+                return
 
             for submission_info in m.fields.values():
                 question = submission_info["question"]
