@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from redbot.core import app_commands, commands
 from redbot.core.utils.chat_formatting import (
     box,
+    escape,
     humanize_list,
     humanize_number,
     pagify,
@@ -538,7 +539,7 @@ class Admin(MixinMeta):
                 )
             for name, em, score in embeddings:
                 for p in pagify(em, page_length=4000):
-                    embed = discord.Embed(description=f"`Name: `{name}\nScore: `{score}\n{box(p)}")
+                    embed = discord.Embed(description=f"`Name: `{name}\n`Score: `{score}\n{box(escape(p))}")
                     await ctx.send(embed=embed)
 
     @assistant.command(name="dynamicembedding")
