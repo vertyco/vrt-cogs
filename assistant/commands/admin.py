@@ -565,7 +565,6 @@ class Admin(MixinMeta):
 
         Args:
             overwrite (bool): overwrite embeddings with existing entry names
-            include_embeddings (bool): import embedding weight values (if they exist)
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.api_key:
@@ -625,9 +624,6 @@ class Admin(MixinMeta):
     @assistant.command(name="export")
     async def export_embeddings(self, ctx: commands.Context):
         """Export embeddings to a .csv file
-
-        Args:
-            include_embeddings (bool): include embedding weight values for each entry in the csv
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.embeddings:
