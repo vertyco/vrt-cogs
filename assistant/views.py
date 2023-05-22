@@ -1,16 +1,14 @@
 import asyncio
 import logging
 from contextlib import suppress
-from io import BytesIO
 from typing import Callable, List
 
 import discord
-import pandas as pd
 from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 
-from .common.utils import embedding_embeds, get_attachments, get_embedding_async
+from .common.utils import embedding_embeds, get_embedding_async
 from .models import Embedding, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.views")
@@ -140,32 +138,6 @@ class EmbeddingMenu(discord.ui.View):
             self.remove_item(self.right10)
             self.has_skip = False
         return pages
-
-    async def process_embeddings(self, df: pd.DataFrame, filename: str):
-        for row in df.values:
-            if pd.isna(row[0]) or pd.isna(row[1]):
-                continue
-            name = str(row[0])
-            if name in self.conf.embeddings:
-                continue
-            text = str(row[1])
-            embedding = None
-            if len(row) == 3:
-                try:
-                    embedding = list(row[2])
-                except TypeError:
-                    pass
-            else:
-                embedding = await get_embedding_async(text, self.conf.api_key)
-            if not embedding:
-                await self.ctx.send(f"Failed to process {name} embedding")
-                continue
-            self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
-        await self.ctx.send(f"**{filename}** has finished processing!")
-        self.pages = self.get_pages()
-        with suppress(discord.NotFound):
-            self.message = await self.message.edit(embed=self.pages[self.page], view=self)
-        await self.save()
 
     async def add_embedding(self, name: str, text: str):
         embedding = await get_embedding_async(text, self.conf.api_key)
@@ -316,94 +288,8 @@ class EmbeddingMenu(discord.ui.View):
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
-        label="Import",
-        emoji="\N{OUTBOX TRAY}",
-        row=3,
-    )
-    async def upload(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(
-            "Upload your **.csv** files containing embeddings", ephemeral=True
-        )
-
-        def check(message: discord.Message):
-            return message.author == self.ctx.author and message.channel == self.ctx.channel
-
-        try:
-            reply = await self.ctx.bot.wait_for("message", timeout=60, check=check)
-        except asyncio.TimeoutError:
-            return await interaction.followup.send("Embedding upload cancelled", ephemeral=True)
-
-        if reply.content == "cancel":
-            return await interaction.followup.send("Import cancelled.", ephemeral=True)
-
-        attachments = get_attachments(reply)
-        if not attachments:
-            return await interaction.followup.send(
-                "You must attach a **.csv** file to your message, or reply to the message that has it!",
-                ephemeral=True,
-            )
-
-        for attachment in attachments:
-            if not attachment.filename.endswith(".csv"):
-                await interaction.followup.send(
-                    f"**{attachment.filename}** is a .csv file!",
-                    ephemeral=True,
-                )
-                continue
-            file_bytes = await attachment.read()
-            try:
-                df = pd.read_csv(BytesIO(file_bytes))
-            except Exception as e:
-                log.error("Error reading uploaded file", exc_info=e)
-                await interaction.followup.send(
-                    f"Error reading **{attachment.filename}**: ```\n{e}\n```", ephemeral=True
-                )
-                continue
-
-            invalid = ["name" not in df.columns, "text" not in df.columns]
-            if any(invalid):
-                await interaction.followup.send(
-                    f"**{attachment.filename}** contains invalid formatting, columns must be ['name', 'text']",
-                    ephemeral=True,
-                )
-                continue
-            self.tasks.append(
-                asyncio.create_task(self.process_embeddings(df, attachment.filename))
-            )
-            await interaction.followup.send(
-                f"**{attachment.filename}** has been imported and is processing in the background, come back later to view them!",
-                ephemeral=True,
-            )
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.secondary,
-        label="Export",
-        emoji="\N{INBOX TRAY}",
-        row=3,
-    )
-    async def download(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        rows = [[name, em.text, em.embedding] for name, em in self.conf.embeddings.items()]
-        df = pd.DataFrame(rows, columns=["name", "text", "embedding"])
-        buffer = BytesIO()
-        df.to_csv(buffer, index=False)
-        buffer.seek(0)
-        file = discord.File(buffer, filename="embeddings.csv")
-        if file.__sizeof__() > interaction.guild.filesize_limit:
-            return await interaction.followup.send(
-                "File size is too large to send to discord!", ephemeral=True
-            )
-        try:
-            await interaction.followup.send(
-                "Here is your embeddings export!", file=file, ephemeral=True
-            )
-        except discord.HTTPException:
-            await interaction.followup.send("Export file too large to send!", ephemeral=True)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.secondary,
         emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}",
-        row=4,
+        row=3,
     )
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
@@ -415,7 +301,7 @@ class EmbeddingMenu(discord.ui.View):
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
         emoji="\N{LEFT-POINTING MAGNIFYING GLASS}",
-        row=4,
+        row=3,
     )
     async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.conf.embeddings:
@@ -453,7 +339,7 @@ class EmbeddingMenu(discord.ui.View):
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
         emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}",
-        row=4,
+        row=3,
     )
     async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()

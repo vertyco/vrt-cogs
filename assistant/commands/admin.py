@@ -1,10 +1,18 @@
+import asyncio
 import logging
 from io import BytesIO
 from typing import Union
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
+import pandas as pd
 from redbot.core import app_commands, commands
-from redbot.core.utils.chat_formatting import humanize_list, humanize_number, pagify
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_list,
+    humanize_number,
+    pagify,
+)
 
 from ..abc import MixinMeta
 from ..common.utils import (
@@ -550,6 +558,123 @@ class Admin(MixinMeta):
             conf.dynamic_embedding = True
             await ctx.send("Dynamic embedding is now **Enabled**")
         await self.save_conf()
+
+    @assistant.command(name="import")
+    async def import_embeddings(self, ctx: commands.Context, overwrite: bool, include_embeddings: bool):
+        """Import embeddings to use with the assistant
+
+        Args:
+            overwrite (bool): overwrite embeddings with existing entry names
+            include_embeddings (bool): import embedding weight values (if they exist)
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.api_key:
+            return await ctx.send("No API key set!")
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send("You must attach **.csv** files to this command or reference a message that has them!")
+        frames = []
+        files = []
+        for attachment in attachments:
+            file_bytes = await attachment.read()
+            try:
+                df = pd.read_csv(BytesIO(file_bytes))
+            except Exception as e:
+                log.error("Error reading uploaded file", exc_info=e)
+                await ctx.send(f"Error reading **{attachment.filename}**: {box(str(e))}")
+                continue
+            invalid = ["name" not in df.columns, "text" not in df.columns]
+            if any(invalid):
+                await ctx.send(
+                    f"**{attachment.filename}** contains invalid formatting, columns must be ['name', 'text']",
+                )
+                continue
+            frames.append(df)
+            files.append(attachment.filename)
+
+        if not frames:
+            return await ctx.send("There are no valid files to import!")
+
+        message_text = f"Processing the following files in the background\n{box(humanize_list(files))}"
+        message = await ctx.send(message_text)
+
+        df = await asyncio.to_thread(pd.concat, frames)
+        for index, row in enumerate(df.values):
+            if pd.isna(row[0]) or pd.isna(row[1]):
+                continue
+            name = str(row[0])
+            if name in conf.embeddings:
+                continue
+            text = str(row[1])
+
+            if index and (index + 1) % 5 == 0:
+                await message.edit(content=f"{message_text}\n`Currently processing: `**{name}** ({index + 1}/{len(df)})")
+            embedding = None
+            if len(row) >= 3 and include_embeddings:
+                try:
+                    embedding = list(row[2])
+                except TypeError:
+                    pass
+            else:
+                embedding = await get_embedding_async(text, conf.api_key)
+            if not embedding:
+                await ctx.send(f"Failed to process embedding: `{name}`")
+                continue
+            if name in conf.embeddings and not overwrite:
+                continue
+
+            conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+
+        await ctx.send("Your files have finished importing!")
+        await self.save_conf()
+
+    @assistant.command(name="export")
+    async def export_embeddings(self, ctx: commands.Context, include_embeddings: bool):
+        """Export embeddings to a .csv file
+
+        Args:
+            include_embeddings (bool): include embedding weight values for each entry in the csv
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.embeddings:
+            return await ctx.send("There are no embeddings to export!")
+        columns = ["name", "text"]
+        if include_embeddings:
+            columns.append("embedding")
+        rows = []
+        for name, em in conf.embeddings.items():
+            if include_embeddings:
+                rows.append([name, em.text, em.embedding])
+            else:
+                rows.append([name, em.text])
+        df = pd.DataFrame(rows, columns=columns)
+        df_buffer = BytesIO()
+        df.to_csv(df_buffer, index=False)
+        df_buffer.seek(0)
+        file = discord.File(df_buffer, filename="embeddings_export.csv")
+
+        try:
+            await ctx.send("Here is your embeddings export!", file=file)
+            return
+        except discord.HTTPException:
+            await ctx.send("File too large, attempting to compress...")
+
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+            arc.writestr(
+                file.filename,
+                df_buffer.getvalue(),
+                compress_type=ZIP_DEFLATED,
+                compresslevel=9
+            )
+        zip_buffer.seek(0)
+        file = discord.File(zip_buffer, filename="embeddings_export.zip")
+
+        try:
+            await ctx.send("Here is your embeddings export!", file=file)
+            return
+        except discord.HTTPException:
+            await ctx.send("File is still too large even with compression!")
 
     @commands.hybrid_command(name="embeddings", aliases=["emenu"])
     @app_commands.describe(query="Name of the embedding entry")

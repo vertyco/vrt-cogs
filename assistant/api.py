@@ -65,20 +65,25 @@ class API(MixinMeta):
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
-        embeddings = conf.get_related_embeddings(query_embedding)
-        context = ""
-        if embeddings:
-            current_token_count = conversation.conversation_token_count(conf)
-            context = "\nContext:\n"
-            for i in embeddings:
-                context += f"{i[0]}\n---\n"
-                if num_tokens_from_string(context) + current_token_count > conf.max_tokens * 0.85:
-                    break
-            if conf.dynamic_embedding:
-                initial_prompt += context.format(**params)
-            else:
-                message = f"{context}\n\n{message}".strip()
-                conversation.update_messages(message, "user")
+        # Dynamically clean up the conversation to prevent going over token limit
+        max_usage = round(conf.max_tokens * 0.9)
+        prompt_tokens = num_tokens_from_string(system_prompt + initial_prompt)
+        while (conversation.token_count() + prompt_tokens) > max_usage:
+            conversation.messages.pop(0)
+
+        total_tokens = conversation.token_count() + prompt_tokens + num_tokens_from_string(message)
+
+        embedding_context = ""
+        has_context = False
+        for i in conf.get_related_embeddings(query_embedding):
+            if num_tokens_from_string(f"\nContext:\n{i[0]}\n\n") + total_tokens < max_usage:
+                embedding_context += f"{i[0]}\n\n"
+                has_context = True
+
+        if has_context and conf.dynamic_embedding:
+            initial_prompt += f"\nContext:\n{embedding_context}"
+        elif has_context and not conf.dynamic_embedding:
+            message = f"Context:\n{embedding_context}\n\n{author.display_name}: {message}"
 
         conversation.update_messages(message, "user")
         messages = conversation.prepare_chat(conf, system_prompt, initial_prompt)
