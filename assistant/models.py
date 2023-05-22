@@ -39,13 +39,13 @@ class GuildSettings(BaseModel):
         if not self.top_n or not query_embedding or not self.embeddings:
             return []
         strings_and_relatedness = [
-            (i.text, cosine_similarity(query_embedding, i.embedding))
-            for i in self.embeddings.values()
+            (name, i.text, cosine_similarity(query_embedding, i.embedding))
+            for name, i in self.embeddings.items()
         ]
         strings_and_relatedness = [
-            i for i in strings_and_relatedness if i[1] >= self.min_relatedness
+            i for i in strings_and_relatedness if i[2] >= self.min_relatedness
         ]
-        strings_and_relatedness.sort(key=lambda x: x[1], reverse=True)
+        strings_and_relatedness.sort(key=lambda x: x[2], reverse=True)
         return strings_and_relatedness[: self.top_n]
 
 
