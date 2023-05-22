@@ -26,7 +26,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "1.7.2"
+    __version__ = "1.8.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

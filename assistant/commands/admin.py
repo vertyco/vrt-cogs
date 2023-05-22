@@ -5,7 +5,9 @@ from typing import Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
+import orjson
 import pandas as pd
+from pydantic import ValidationError
 from redbot.core import app_commands, commands
 from redbot.core.utils.chat_formatting import (
     box,
@@ -559,8 +561,8 @@ class Admin(MixinMeta):
             await ctx.send("Dynamic embedding is now **Enabled**")
         await self.save_conf()
 
-    @assistant.command(name="import")
-    async def import_embeddings(self, ctx: commands.Context, overwrite: bool):
+    @assistant.command(name="importcsv")
+    async def import_embeddings_csv(self, ctx: commands.Context, overwrite: bool):
         """Import embeddings to use with the assistant
 
         Args:
@@ -621,9 +623,49 @@ class Admin(MixinMeta):
         await ctx.send(f"Successfully imported {humanize_number(imported)} embeddings!")
         await self.save_conf()
 
-    @assistant.command(name="export")
-    async def export_embeddings(self, ctx: commands.Context):
+
+    @assistant.command(name="importjson")
+    async def import_embeddings_json(self, ctx: commands.Context, overwrite: bool):
+        """Import embeddings to use with the assistant
+
+        Args:
+            overwrite (bool): overwrite embeddings with existing entry names
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.api_key:
+            return await ctx.send("No API key set!")
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send("You must attach **.json** files to this command or reference a message that has them!")
+
+        imported = 0
+        files = []
+        async with ctx.typing():
+            for attachment in attachments:
+                file_bytes: bytes = await attachment.read()
+                try:
+                    embeddings = orjson.loads(file_bytes)
+                except Exception as e:
+                    log.error("Error reading uploaded file", exc_info=e)
+                    await ctx.send(f"Error reading **{attachment.filename}**: {box(str(e))}")
+                    continue
+                try:
+                    for name, em in embeddings.items():
+                        if not overwrite and name in conf.embeddings:
+                            continue
+                        conf.embeddings[name] = Embedding.parse_obj(em)
+                        imported += 1
+                except ValidationError:
+                    await ctx.send(f"Failed to import **{attachment.filename}** because it contains invalid formatting!")
+                    continue
+                files.append(attachment.filename)
+            await ctx.send(f"Imported the following files: `{humanize_list(files)}`\n{humanize_number(imported)} embeddings imported")
+
+    @assistant.command(name="exportcsv")
+    async def export_embeddings_csv(self, ctx: commands.Context):
         """Export embeddings to a .csv file
+
+        **Note:** csv exports do not include the embedding values
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.embeddings:
@@ -655,7 +697,46 @@ class Admin(MixinMeta):
                         compresslevel=9
                     )
                 zip_buffer.seek(0)
-                file = discord.File(zip_buffer, filename="embeddings_export.zip")
+                file = discord.File(zip_buffer, filename="embeddings_csv_export.zip")
+                return file
+
+            file = await asyncio.to_thread(zip_file)
+            try:
+                await ctx.send("Here is your embeddings export!", file=file)
+                return
+            except discord.HTTPException:
+                await ctx.send("File is still too large even with compression!")
+
+    @assistant.command(name="exportjson")
+    async def export_embeddings_json(self, ctx: commands.Context):
+        """Export embeddings to a json file
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.embeddings:
+            return await ctx.send("There are no embeddings to export!")
+
+        async with ctx.typing():
+            dump = {name: em.dict() for name, em in conf.embeddings.items()}
+            json_buffer = BytesIO(orjson.dumps(dump))
+            file = discord.File(json_buffer, filename="embeddings_export.json")
+
+            try:
+                await ctx.send("Here is your embeddings export!", file=file)
+                return
+            except discord.HTTPException:
+                await ctx.send("File too large, attempting to compress...")
+
+            def zip_file() -> discord.File:
+                zip_buffer = BytesIO()
+                with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+                    arc.writestr(
+                        "embeddings_export.json",
+                        json_buffer.getvalue(),
+                        compress_type=ZIP_DEFLATED,
+                        compresslevel=9
+                    )
+                zip_buffer.seek(0)
+                file = discord.File(zip_buffer, filename="embeddings_json_export.zip")
                 return file
 
             file = await asyncio.to_thread(zip_file)
