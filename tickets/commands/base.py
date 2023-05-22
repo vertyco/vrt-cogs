@@ -151,7 +151,7 @@ class BaseCommands(MixinMeta):
             if td := parse_timedelta(timestring):
 
                 def check(m: discord.Message):
-                    return m.channel.id == ctx.channel.id
+                    return m.channel.id == ctx.channel.id and not m.author.bot
 
                 reason = reason.replace(timestring, "")
                 if not reason.strip():
