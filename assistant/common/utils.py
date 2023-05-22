@@ -137,7 +137,7 @@ async def get_embedding_async(text: str, api_key: str) -> List[float]:
     return await asyncio.to_thread(get_embedding, text, api_key)
 
 
-@retry(tries=3, delay=2)
+@retry(tries=4, delay=4)
 def get_embedding(text: str, api_key: str) -> List[float]:
     response = openai.Embedding.create(input=text, model="text-embedding-ada-002", api_key=api_key)
     return response["data"][0]["embedding"]

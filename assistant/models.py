@@ -6,7 +6,7 @@ import orjson
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 
-from .common.utils import num_tokens_from_string, token_pagify
+from .common.utils import num_tokens_from_string
 
 MODELS = ["gpt-3.5-turbo", "gpt-4", "gpt-4-32k"]
 READ_EXTENSIONS = [".txt", ".py", ".json", ".xml", ".html", ".ini", ".css"]
@@ -68,6 +68,9 @@ class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
+    def token_count(self) -> int:
+        return num_tokens_from_string("".join(message["content"] for message in self.messages))
+
     def user_token_count(self, message: str = "") -> int:
         messages = "".join(message["content"] for message in self.messages)
         if not self.messages:
@@ -121,16 +124,6 @@ class Conversation(BaseModel):
             prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt:
             prepared.append({"role": "user", "content": initial_prompt})
-
-        # 4096 is max tokens for 3.5
-        while self.conversation_token_count(conf) > conf.max_tokens * 0.95 and len(self.messages) > 1:
-            self.messages.pop(0)
-
-        if self.conversation_token_count(conf) > conf.max_tokens * 0.9:
-            current_tokens = num_tokens_from_string(system_prompt) + num_tokens_from_string(initial_prompt)
-            max_tokens = round((conf.max_tokens - current_tokens) * 0.9)
-            chunks = [p for p in token_pagify(self.messages[0]["content"], max_tokens=max_tokens)]
-            self.messages[0]["content"] = chunks[0]
 
         prepared.extend(self.messages)
         return prepared
