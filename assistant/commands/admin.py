@@ -560,7 +560,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="import")
-    async def import_embeddings(self, ctx: commands.Context, overwrite: bool, include_embeddings: bool):
+    async def import_embeddings(self, ctx: commands.Context, overwrite: bool):
         """Import embeddings to use with the assistant
 
         Args:
@@ -604,24 +604,16 @@ class Admin(MixinMeta):
             if pd.isna(row[0]) or pd.isna(row[1]):
                 continue
             name = str(row[0])
-            if name in conf.embeddings:
+            if name in conf.embeddings and not overwrite:
                 continue
             text = str(row[1])
 
             if index and (index + 1) % 5 == 0:
                 await message.edit(content=f"{message_text}\n`Currently processing: `**{name}** ({index + 1}/{len(df)})")
-            embedding = None
-            if len(row) >= 3 and include_embeddings:
-                try:
-                    embedding = list(row[2])
-                except TypeError:
-                    pass
-            else:
-                embedding = await get_embedding_async(text, conf.api_key)
+
+            embedding = await get_embedding_async(text, conf.api_key)
             if not embedding:
                 await ctx.send(f"Failed to process embedding: `{name}`")
-                continue
-            if name in conf.embeddings and not overwrite:
                 continue
 
             conf.embeddings[name] = Embedding(text=text, embedding=embedding)
@@ -631,7 +623,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="export")
-    async def export_embeddings(self, ctx: commands.Context, include_embeddings: bool):
+    async def export_embeddings(self, ctx: commands.Context):
         """Export embeddings to a .csv file
 
         Args:
@@ -642,14 +634,9 @@ class Admin(MixinMeta):
             return await ctx.send("There are no embeddings to export!")
         async with ctx.typing():
             columns = ["name", "text"]
-            if include_embeddings:
-                columns.append("embedding")
             rows = []
             for name, em in conf.embeddings.items():
-                if include_embeddings:
-                    rows.append([name, em.text, em.embedding])
-                else:
-                    rows.append([name, em.text])
+                rows.append([name, em.text])
             df = pd.DataFrame(rows, columns=columns)
             df_buffer = BytesIO()
             df.to_csv(df_buffer, index=False)
