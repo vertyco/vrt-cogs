@@ -26,7 +26,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "1.7.0"
+    __version__ = "1.7.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -42,9 +42,6 @@ class Assistant(
 
     async def cog_load(self) -> None:
         asyncio.create_task(self.init_cog())
-
-    async def cog_unload(self) -> None:
-        await self.save_conf()
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()

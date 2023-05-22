@@ -599,6 +599,7 @@ class Admin(MixinMeta):
         message = await ctx.send(message_text)
 
         df = await asyncio.to_thread(pd.concat, frames)
+        imported = 0
         for index, row in enumerate(df.values):
             if pd.isna(row[0]) or pd.isna(row[1]):
                 continue
@@ -624,8 +625,9 @@ class Admin(MixinMeta):
                 continue
 
             conf.embeddings[name] = Embedding(text=text, embedding=embedding)
-
-        await ctx.send("Your files have finished importing!")
+            imported += 1
+        await message.edit(content=f"{message_text}\n**COMPLETE**")
+        await ctx.send(f"Successfully imported {humanize_number(imported)} embeddings!")
         await self.save_conf()
 
     @assistant.command(name="export")
@@ -638,43 +640,47 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.embeddings:
             return await ctx.send("There are no embeddings to export!")
-        columns = ["name", "text"]
-        if include_embeddings:
-            columns.append("embedding")
-        rows = []
-        for name, em in conf.embeddings.items():
+        async with ctx.typing():
+            columns = ["name", "text"]
             if include_embeddings:
-                rows.append([name, em.text, em.embedding])
-            else:
-                rows.append([name, em.text])
-        df = pd.DataFrame(rows, columns=columns)
-        df_buffer = BytesIO()
-        df.to_csv(df_buffer, index=False)
-        df_buffer.seek(0)
-        file = discord.File(df_buffer, filename="embeddings_export.csv")
+                columns.append("embedding")
+            rows = []
+            for name, em in conf.embeddings.items():
+                if include_embeddings:
+                    rows.append([name, em.text, em.embedding])
+                else:
+                    rows.append([name, em.text])
+            df = pd.DataFrame(rows, columns=columns)
+            df_buffer = BytesIO()
+            df.to_csv(df_buffer, index=False)
+            df_buffer.seek(0)
+            file = discord.File(df_buffer, filename="embeddings_export.csv")
 
-        try:
-            await ctx.send("Here is your embeddings export!", file=file)
-            return
-        except discord.HTTPException:
-            await ctx.send("File too large, attempting to compress...")
+            try:
+                await ctx.send("Here is your embeddings export!", file=file)
+                return
+            except discord.HTTPException:
+                await ctx.send("File too large, attempting to compress...")
 
-        zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
-            arc.writestr(
-                file.filename,
-                df_buffer.getvalue(),
-                compress_type=ZIP_DEFLATED,
-                compresslevel=9
-            )
-        zip_buffer.seek(0)
-        file = discord.File(zip_buffer, filename="embeddings_export.zip")
+            def zip_file() -> discord.File:
+                zip_buffer = BytesIO()
+                with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+                    arc.writestr(
+                        "embeddings_export.csv",
+                        df_buffer.getvalue(),
+                        compress_type=ZIP_DEFLATED,
+                        compresslevel=9
+                    )
+                zip_buffer.seek(0)
+                file = discord.File(zip_buffer, filename="embeddings_export.zip")
+                return file
 
-        try:
-            await ctx.send("Here is your embeddings export!", file=file)
-            return
-        except discord.HTTPException:
-            await ctx.send("File is still too large even with compression!")
+            file = await asyncio.to_thread(zip_file)
+            try:
+                await ctx.send("Here is your embeddings export!", file=file)
+                return
+            except discord.HTTPException:
+                await ctx.send("File is still too large even with compression!")
 
     @commands.hybrid_command(name="embeddings", aliases=["emenu"])
     @app_commands.describe(query="Name of the embedding entry")
