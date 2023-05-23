@@ -81,5 +81,3 @@ If you are interested in contributing to translations for my cogs, [Click Here](
 # Feature Requests
 
 I am open to ideas or suggestions for new cogs and features!
-
-![visitors](https://visitor-badge.glitch.me/badge?page_id=Vertyco/Vrt-Cogs)
