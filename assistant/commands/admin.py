@@ -539,7 +539,9 @@ class Admin(MixinMeta):
                 )
             for name, em, score in embeddings:
                 for p in pagify(em, page_length=4000):
-                    embed = discord.Embed(description=f"`Name: `{name}\n`Score: `{score}\n{box(escape(p))}")
+                    embed = discord.Embed(
+                        description=f"`Name: `{name}\n`Score: `{score}\n{box(escape(p))}"
+                    )
                     await ctx.send(embed=embed)
 
     @assistant.command(name="dynamicembedding")
@@ -574,7 +576,9 @@ class Admin(MixinMeta):
             return await ctx.send("No API key set!")
         attachments = get_attachments(ctx.message)
         if not attachments:
-            return await ctx.send("You must attach **.csv** files to this command or reference a message that has them!")
+            return await ctx.send(
+                "You must attach **.csv** files to this command or reference a message that has them!"
+            )
         frames = []
         files = []
         for attachment in attachments:
@@ -597,7 +601,9 @@ class Admin(MixinMeta):
         if not frames:
             return await ctx.send("There are no valid files to import!")
 
-        message_text = f"Processing the following files in the background\n{box(humanize_list(files))}"
+        message_text = (
+            f"Processing the following files in the background\n{box(humanize_list(files))}"
+        )
         message = await ctx.send(message_text)
 
         df = await asyncio.to_thread(pd.concat, frames)
@@ -611,7 +617,9 @@ class Admin(MixinMeta):
             text = str(row[1])
 
             if index and (index + 1) % 5 == 0:
-                await message.edit(content=f"{message_text}\n`Currently processing: `**{name}** ({index + 1}/{len(df)})")
+                await message.edit(
+                    content=f"{message_text}\n`Currently processing: `**{name}** ({index + 1}/{len(df)})"
+                )
 
             embedding = await get_embedding_async(text, conf.api_key)
             if not embedding:
@@ -623,7 +631,6 @@ class Admin(MixinMeta):
         await message.edit(content=f"{message_text}\n**COMPLETE**")
         await ctx.send(f"Successfully imported {humanize_number(imported)} embeddings!")
         await self.save_conf()
-
 
     @assistant.command(name="importjson")
     async def import_embeddings_json(self, ctx: commands.Context, overwrite: bool):
@@ -637,7 +644,9 @@ class Admin(MixinMeta):
             return await ctx.send("No API key set!")
         attachments = get_attachments(ctx.message)
         if not attachments:
-            return await ctx.send("You must attach **.json** files to this command or reference a message that has them!")
+            return await ctx.send(
+                "You must attach **.json** files to this command or reference a message that has them!"
+            )
 
         imported = 0
         files = []
@@ -657,10 +666,14 @@ class Admin(MixinMeta):
                         conf.embeddings[name] = Embedding.parse_obj(em)
                         imported += 1
                 except ValidationError:
-                    await ctx.send(f"Failed to import **{attachment.filename}** because it contains invalid formatting!")
+                    await ctx.send(
+                        f"Failed to import **{attachment.filename}** because it contains invalid formatting!"
+                    )
                     continue
                 files.append(attachment.filename)
-            await ctx.send(f"Imported the following files: `{humanize_list(files)}`\n{humanize_number(imported)} embeddings imported")
+            await ctx.send(
+                f"Imported the following files: `{humanize_list(files)}`\n{humanize_number(imported)} embeddings imported"
+            )
 
     @assistant.command(name="exportcsv")
     async def export_embeddings_csv(self, ctx: commands.Context):
@@ -695,7 +708,7 @@ class Admin(MixinMeta):
                         "embeddings_export.csv",
                         df_buffer.getvalue(),
                         compress_type=ZIP_DEFLATED,
-                        compresslevel=9
+                        compresslevel=9,
                     )
                 zip_buffer.seek(0)
                 file = discord.File(zip_buffer, filename="embeddings_csv_export.zip")
@@ -710,8 +723,7 @@ class Admin(MixinMeta):
 
     @assistant.command(name="exportjson")
     async def export_embeddings_json(self, ctx: commands.Context):
-        """Export embeddings to a json file
-        """
+        """Export embeddings to a json file"""
         conf = self.db.get_conf(ctx.guild)
         if not conf.embeddings:
             return await ctx.send("There are no embeddings to export!")
@@ -734,7 +746,7 @@ class Admin(MixinMeta):
                         "embeddings_export.json",
                         json_buffer.getvalue(),
                         compress_type=ZIP_DEFLATED,
-                        compresslevel=9
+                        compresslevel=9,
                     )
                 zip_buffer.seek(0)
                 file = discord.File(zip_buffer, filename="embeddings_json_export.zip")
@@ -763,25 +775,31 @@ class Admin(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.api_key:
-            return await ctx.send(f"No API key! Use `{ctx.prefix}assistant openaikey` to set your OpenAI key!")
+            return await ctx.send(
+                f"No API key! Use `{ctx.prefix}assistant openaikey` to set your OpenAI key!"
+            )
+
         view = EmbeddingMenu(ctx, conf, self.save_conf)
+        await view.get_pages()
         if not query:
             return await view.start()
+
         if ctx.interaction:
             await ctx.interaction.response.defer()
+
         for page_index, embed in enumerate(view.pages):
             found = False
             for place_index, field in enumerate(embed.fields):
                 name = field.name.replace("➣ ", "", 1)
                 if name != query:
                     continue
+                view.change_place(place_index)
                 view.page = page_index
-                view.place = place_index
-                view.pages = view.get_pages()
                 found = True
                 break
             if found:
                 break
+
         await view.start()
 
     @embeddings.autocomplete("query")

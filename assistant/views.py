@@ -108,7 +108,7 @@ class EmbeddingMenu(discord.ui.View):
         self.has_skip = True
         self.place = 0
         self.page = 0
-        self.pages: List[discord.Embed] = self.get_pages()
+        self.pages: List[discord.Embed] = []
         self.message: discord.Message = None
         self.tasks: List[asyncio.Task] = []
 
@@ -125,19 +125,18 @@ class EmbeddingMenu(discord.ui.View):
             await task
         return await super().on_timeout()
 
-    def get_pages(self) -> List[discord.Embed]:
-        pages = embedding_embeds(
-            embeddings={k: v.dict() for k, v in self.conf.embeddings.items()}, place=self.place
-        )
-        if len(pages) > 30 and not self.has_skip:
+    async def get_pages(self) -> None:
+        self.pages = await asyncio.to_thread(embedding_embeds, self.conf.embeddings, self.place)
+        # mapping = {k: v.dict() for k, v in self.conf.embeddings.items()}
+        # pages = embedding_embeds(embeddings=mapping, place=self.place)
+        if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)
             self.has_skip = True
-        elif len(pages) <= 30 and self.has_skip:
+        elif len(self.pages) <= 30 and self.has_skip:
             self.remove_item(self.left10)
             self.remove_item(self.right10)
             self.has_skip = False
-        return pages
 
     def change_place(self, inc: int):
         current = self.pages[self.page]
@@ -173,7 +172,7 @@ class EmbeddingMenu(discord.ui.View):
         if name in self.conf.embeddings:
             return await self.ctx.send(f"An embedding with the name `{name}` already exists!")
         self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
-        self.pages = self.get_pages()
+        await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
         await self.ctx.send(f"Your embedding labeled `{name}` has been processed!")
@@ -231,7 +230,7 @@ class EmbeddingMenu(discord.ui.View):
         )
         if modal.name != name:
             del self.conf.embeddings[name]
-        self.pages = self.get_pages()
+        await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await interaction.followup.send("Your embedding has been modified!", ephemeral=True)
         await self.save()
@@ -306,7 +305,7 @@ class EmbeddingMenu(discord.ui.View):
         name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
         await interaction.response.send_message(f"Deleted `{name}` embedding.", ephemeral=True)
         del self.conf.embeddings[name]
-        self.pages = self.get_pages()
+        await self.get_pages()
         self.page %= len(self.pages)
         self.message = await self.message.edit(embed=self.pages[self.page], view=self)
         await self.save()
@@ -358,7 +357,7 @@ class EmbeddingMenu(discord.ui.View):
                     break
             if found:
                 break
-        self.pages = self.get_pages()
+        await self.get_pages()
         self.message = await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(

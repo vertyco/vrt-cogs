@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import math
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import discord
 import openai
@@ -100,7 +100,7 @@ def token_pagify(text: str, max_tokens: int = 2000):
     return text_chunks
 
 
-def embedding_embeds(embeddings: Dict[str, dict], place: int):
+def embedding_embeds(embeddings: Dict[str, Any], place: int):
     embeddings = sorted(embeddings.items(), key=lambda x: x[0])
     embeds = []
     pages = math.ceil(len(embeddings) / 5)
@@ -113,7 +113,7 @@ def embedding_embeds(embeddings: Dict[str, dict], place: int):
         num = 0
         for i in range(start, stop):
             em = embeddings[i]
-            text = em[1]["text"]
+            text = em[1].text
             token_length = num_tokens_from_string(text)
             val = f"`Tokens: `{token_length}\n```\n{text[:30]}...\n```"
             embed.add_field(
