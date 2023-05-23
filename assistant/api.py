@@ -32,12 +32,7 @@ class API(MixinMeta):
         conf: GuildSettings,
         conversation: Conversation,
     ) -> str:
-        timestamp = f"<t:{round(datetime.now().timestamp())}:F>"
-        created = f"<t:{round(author.guild.created_at.timestamp())}:F>"
-        day = datetime.now().astimezone().strftime("%A")
-        date = datetime.now().astimezone().strftime("%B %d, %Y")
-        time = datetime.now().astimezone().strftime("%I:%M %p %Z")
-        roles = [role.name for role in author.roles]
+        now = datetime.now().astimezone()
 
         query_embedding = get_embedding(text=message, api_key=conf.api_key)
         if not query_embedding:
@@ -45,17 +40,17 @@ class API(MixinMeta):
 
         params = {
             "botname": self.bot.user.name,
-            "timestamp": timestamp,
-            "day": day,
-            "date": date,
-            "time": time,
+            "timestamp": f"<t:{round(now.timestamp())}:F>",
+            "day": now.strftime("%A"),
+            "date": now.strftime("%B %d, %Y"),
+            "time": now.strftime("%I:%M %p %Z"),
             "members": author.guild.member_count,
             "user": author.display_name,
             "datetime": str(datetime.now()),
-            "roles": humanize_list(roles),
+            "roles": humanize_list([role.name for role in author.roles]),
             "avatar": author.avatar.url if author.avatar else "",
             "owner": author.guild.owner,
-            "servercreated": created,
+            "servercreated": f"<t:{round(author.guild.created_at.timestamp())}:F>",
             "server": author.guild.name,
             "messages": len(conversation.messages),
             "tokens": conversation.user_token_count(message=message),
