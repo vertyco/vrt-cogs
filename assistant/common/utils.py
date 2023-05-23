@@ -13,6 +13,7 @@ from retry import retry
 log = logging.getLogger("red.vrt.assistant.utils")
 encoding = tiktoken.get_encoding("cl100k_base")
 
+
 @cached(ttl=120)
 async def get_embedding_names(embeddings: List[str], current: str) -> List[Choice]:
     return [Choice(name=i, value=i) for i in embeddings if current.lower() in i.lower()]
@@ -133,6 +134,7 @@ def embedding_embeds(embeddings: Dict[str, dict], place: int):
     return embeds
 
 
+@cached(ttl=7200)
 async def get_embedding_async(text: str, api_key: str) -> List[float]:
     return await asyncio.to_thread(get_embedding, text, api_key)
 
