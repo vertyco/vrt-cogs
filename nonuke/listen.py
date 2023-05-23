@@ -70,7 +70,7 @@ class Listen:
         action = self.settings[guild.id]["action"]
         log.info(f"Action '{action}' called on {member} in {guild}")
         if discord.__version__ > "1.7.3":
-            pfp = member.avatar.url if member.avatar else None
+            pfp = member.display_avatar.url
         else:
             pfp = member.avatar_url
 

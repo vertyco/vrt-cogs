@@ -77,7 +77,7 @@ def guild_icon(guild: discord.guild) -> Optional[str]:
 
 def profile_icon(user: discord.Member) -> Optional[str]:
     if DPY2:
-        icon = user.avatar.url if user.avatar else None
+        icon = user.display_avatar.url
     else:
         icon = user.avatar_url
     return icon

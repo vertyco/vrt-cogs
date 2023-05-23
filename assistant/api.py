@@ -48,7 +48,7 @@ class API(MixinMeta):
             "user": author.display_name,
             "datetime": str(datetime.now()),
             "roles": humanize_list([role.name for role in author.roles]),
-            "avatar": author.avatar.url if author.avatar else "",
+            "avatar": author.display_avatar.url,
             "owner": author.guild.owner,
             "servercreated": f"<t:{round(author.guild.created_at.timestamp())}:F>",
             "server": author.guild.name,

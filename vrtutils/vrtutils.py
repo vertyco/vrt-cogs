@@ -74,9 +74,7 @@ class VrtUtils(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.path = cog_data_path(self)
-        self.threadpool = ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix="vrt_utils"
-        )
+        self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vrt_utils")
 
     # -/-/-/-/-/-/-/-/FORMATTING-/-/-/-/-/-/-/-/
     @staticmethod
@@ -108,9 +106,9 @@ class VrtUtils(commands.Cog):
         cmd = f"{executable} -m {command}"
 
         def exe():
-            results = subprocess.run(
-                cmd, stdout=subprocess.PIPE, shell=True
-            ).stdout.decode("utf-8")
+            results = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode(
+                "utf-8"
+            )
             return results
 
         res = await self.bot.loop.run_in_executor(self.threadpool, exe)
@@ -167,13 +165,8 @@ class VrtUtils(commands.Cog):
         """
 
         def diskembed(data: dict) -> discord.Embed:
-            if (
-                data["write5"] != "Waiting..."
-                and data["write5"] != "Running..."
-            ):
-                embed = discord.Embed(
-                    title="Disk I/O", color=discord.Color.green()
-                )
+            if data["write5"] != "Waiting..." and data["write5"] != "Running...":
+                embed = discord.Embed(title="Disk I/O", color=discord.Color.green())
                 embed.description = "Disk Speed Check COMPLETE"
             else:
                 embed = discord.Embed(title="Disk I/O", color=ctx.author.color)
@@ -244,9 +237,7 @@ class VrtUtils(commands.Cog):
             elif stage == 6:
                 count = 256
                 size = 4194304
-            res = await self.run_disk_speed(
-                block_count=count, block_size=size, passes=3
-            )
+            res = await self.run_disk_speed(block_count=count, block_size=size, passes=3)
             write = f"{humanize_number(round(res['write'], 2))}MB/s"
             read = f"{humanize_number(round(res['read'], 2))}MB/s"
             results[f"write{stage}"] = write
@@ -274,9 +265,7 @@ class VrtUtils(commands.Cog):
             embeds = []
             page = 1
             for p in pagify(res):
-                embed = discord.Embed(
-                    title="Pip Command Results", description=box(p)
-                )
+                embed = discord.Embed(title="Pip Command Results", description=box(p))
                 embed.set_footer(text=f"Page {page}")
                 page += 1
                 embeds.append(embed)
@@ -298,9 +287,7 @@ class VrtUtils(commands.Cog):
             embeds = []
             page = 1
             for p in pagify(res):
-                embed = discord.Embed(
-                    title="Shell Command Results", description=box(p)
-                )
+                embed = discord.Embed(title="Shell Command Results", description=box(p))
                 embed.set_footer(text=f"Page {page}")
                 page += 1
                 embeds.append(embed)
@@ -341,9 +328,7 @@ class VrtUtils(commands.Cog):
             )  # List of floats
             cpu_freq = psutil.cpu_freq(percpu=True)  # List of Objects
             cpu_info = cpuinfo.get_cpu_info()  # Dict
-            cpu_type = (
-                cpu_info["brand_raw"] if "brand_raw" in cpu_info else "Unknown"
-            )
+            cpu_type = cpu_info["brand_raw"] if "brand_raw" in cpu_info else "Unknown"
 
             # -/-/-/MEM-/-/-/
             ram = psutil.virtual_memory()  # Obj
@@ -355,15 +340,11 @@ class VrtUtils(commands.Cog):
 
             p = psutil.Process()
             io_counters = p.io_counters()
-            disk_usage_process = (
-                io_counters[2] + io_counters[3]
-            )  # read_bytes + write_bytes
+            disk_usage_process = io_counters[2] + io_counters[3]  # read_bytes + write_bytes
             # Disk load
             disk_io_counter = psutil.disk_io_counters()
             if disk_io_counter:
-                disk_io_total = (
-                    disk_io_counter[2] + disk_io_counter[3]
-                )  # read_bytes + write_bytes
+                disk_io_total = disk_io_counter[2] + disk_io_counter[3]  # read_bytes + write_bytes
                 disk_usage = (disk_usage_process / disk_io_total) * 100
             else:
                 disk_usage = 0
@@ -377,9 +358,7 @@ class VrtUtils(commands.Cog):
             ostype = "Unknown"
             if os.name == "nt":
                 osdat = platform.uname()
-                ostype = (
-                    f"{osdat.system} {osdat.release} (version {osdat.version})"
-                )
+                ostype = f"{osdat.system} {osdat.release} (version {osdat.version})"
             elif sys.platform == "darwin":
                 osdat = platform.mac_ver()
                 ostype = f"Mac OS {osdat[0]} {osdat[1]}"
@@ -388,18 +367,14 @@ class VrtUtils(commands.Cog):
 
                 ostype = f"{distro.name()} {distro.version()}"
 
-            td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(
-                psutil.boot_time()
-            )
+            td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(psutil.boot_time())
             sys_uptime = humanize_timedelta(timedelta=td)
 
             # -/-/-/BOT-/-/-/
             servers = "{:,}".format(len(self.bot.guilds))
             shards = self.bot.shard_count
             users = "{:,}".format(len(self.bot.users))
-            channels = "{:,}".format(
-                sum(len(guild.channels) for guild in self.bot.guilds)
-            )
+            channels = "{:,}".format(sum(len(guild.channels) for guild in self.bot.guilds))
             emojis = "{:,}".format(len(self.bot.emojis))
             cogs = "{:,}".format(len(self.bot.cogs))
             commandcount = 0
@@ -445,9 +420,7 @@ class VrtUtils(commands.Cog):
             else:
                 for i, obj in enumerate(cpu_freq):
                     maxfreq = f"/{round(obj.max, 2)}" if obj.max else ""
-                    cpustats += (
-                        f"Core {i}: {round(obj.current, 2)}{maxfreq} Mhz\n"
-                    )
+                    cpustats += f"Core {i}: {round(obj.current, 2)}{maxfreq} Mhz\n"
             if isinstance(cpu_perc, list):
                 for i, perc in enumerate(cpu_perc):
                     space = " "
@@ -491,7 +464,7 @@ class VrtUtils(commands.Cog):
                 inline=False,
             )
 
-            bot_icon = self.bot.user.avatar.url.format("png")
+            bot_icon = self.bot.user.display_avatar.url
             embed.set_thumbnail(url=bot_icon)
             embed.set_footer(text=f"System: {ostype}\nUptime: {sys_uptime}")
             await ctx.send(embed=embed)
@@ -503,26 +476,25 @@ class VrtUtils(commands.Cog):
             try:
                 member = await self.bot.get_or_fetch_user(int(user_id))
             except discord.NotFound:
-                return await ctx.send(
-                    f"I could not find any users with the ID `{user_id}`"
-                )
+                return await ctx.send(f"I could not find any users with the ID `{user_id}`")
         else:
             try:
                 member = await self.bot.get_or_fetch_user(user_id.id)
             except discord.NotFound:
-                return await ctx.send(
-                    f"I could not find any users with the ID `{user_id.id}`"
-                )
-        since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-        user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+                return await ctx.send(f"I could not find any users with the ID `{user_id.id}`")
+        since_created = (
+            f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+        )
+        user_created = (
+            f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+        )
         created_on = f"Joined Discord on {user_created}\n({since_created})"
         embed = discord.Embed(
             title=f"{member.name} - {member.id}",
             description=created_on,
             color=await ctx.embed_color(),
         )
-        if member.avatar:
-            embed.set_image(url=member.avatar.url)
+        embed.set_image(url=member.display_avatar.url)
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -539,9 +511,7 @@ class VrtUtils(commands.Cog):
                 await ctx.author.send(embed=embed)
                 await ctx.tick()
             except discord.Forbidden:
-                await ctx.send(
-                    "Your DMs appear to be disabled, please enable them and try again."
-                )
+                await ctx.send("Your DMs appear to be disabled, please enable them and try again.")
 
     @commands.command()
     @commands.is_owner()
@@ -553,9 +523,7 @@ class VrtUtils(commands.Cog):
         iofile = StringIO(json.dumps(members))
         filename = "users.json"
         file = discord.File(iofile, filename=filename)
-        await ctx.send(
-            "Here are all usernames and their ID's for this guild", file=file
-        )
+        await ctx.send("Here are all usernames and their ID's for this guild", file=file)
 
     @commands.command()
     @commands.is_owner()
@@ -588,36 +556,33 @@ class VrtUtils(commands.Cog):
                 page = i
             guild_splash = guild.splash.url if guild.splash else None
             guild_icon = guild.icon.url if guild.icon else None
-            created = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-            time_elapsed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            created = (
+                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            )
+            time_elapsed = (
+                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            )
             try:
                 joined_at = guild.me.joined_at
             except AttributeError:
                 joined_at = datetime.datetime.utcnow()
-            bot_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-            since_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            bot_joined = (
+                f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            )
+            since_joined = (
+                f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            )
 
             humans = sum(1 for x in guild.members if not x.bot)
             bots = sum(1 for x in guild.members if x.bot)
-            idle = sum(
-                1 for x in guild.members if x.status is discord.Status.idle
-            )
-            online = sum(
-                1 for x in guild.members if x.status is discord.Status.online
-            )
-            dnd = sum(
-                1
-                for x in guild.members
-                if x.status is discord.Status.do_not_disturb
-            )
-            offline = sum(
-                1 for x in guild.members if x.status is discord.Status.offline
-            )
+            idle = sum(1 for x in guild.members if x.status is discord.Status.idle)
+            online = sum(1 for x in guild.members if x.status is discord.Status.online)
+            dnd = sum(1 for x in guild.members if x.status is discord.Status.do_not_disturb)
+            offline = sum(1 for x in guild.members if x.status is discord.Status.offline)
             streaming = sum(
                 1
                 for x in guild.members
-                if x.activity is not None
-                and x.activity.type is discord.ActivityType.streaming
+                if x.activity is not None and x.activity.type is discord.ActivityType.streaming
             )
 
             desc = (
@@ -643,9 +608,7 @@ class VrtUtils(commands.Cog):
                 em.set_thumbnail(url=guild_icon)
 
             owner = (
-                guild.owner
-                if guild.owner
-                else await self.bot.get_or_fetch_user(guild.owner_id)
+                guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
             )
             verlevel = guild.verification_level
             nitro = guild.premium_tier
@@ -666,9 +629,7 @@ class VrtUtils(commands.Cog):
             em.add_field(name="Details", value=field)
 
             text_channels = len(guild.text_channels)
-            nsfw_channels = len(
-                [c for c in guild.text_channels if c.is_nsfw()]
-            )
+            nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
             voice_channels = len(guild.voice_channels)
             field = (
                 f"`Text:  `{text_channels}\n"
@@ -685,9 +646,7 @@ class VrtUtils(commands.Cog):
             normal_roles = [
                 r
                 for r in guild.roles
-                if not any(
-                    [p[0] in elevated_perms for p in r.permissions if p[1]]
-                )
+                if not any([p[0] in elevated_perms for p in r.permissions if p[1]])
             ]
             field = (
                 f"`Elevated: `{len(elevated_roles)}\n"
@@ -712,9 +671,7 @@ class VrtUtils(commands.Cog):
         data = instance.pages[instance.page].title.split("--")
         guildname = data[0].strip()
         guildid = data[1].strip()
-        msg = await ctx.send(
-            f"Are you sure you want me to leave **{guildname}**?"
-        )
+        msg = await ctx.send(f"Are you sure you want me to leave **{guildname}**?")
         yes = await confirm(ctx, msg)
         await msg.delete()
         if yes is None:
@@ -769,9 +726,7 @@ class VrtUtils(commands.Cog):
         if invite:
             await instance.respond(interaction, str(invite))
         else:
-            await instance.respond(
-                interaction, "I could not get an invite for that server!"
-            )
+            await instance.respond(interaction, "I could not get an invite for that server!")
         await menu(
             ctx,
             instance.pages,
@@ -787,9 +742,7 @@ class VrtUtils(commands.Cog):
         """See which channel is the oldest"""
         async with ctx.typing():
             channels = [
-                c
-                for c in ctx.guild.channels
-                if not isinstance(c, discord.CategoryChannel)
+                c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)
             ]
             c_sort = sorted(channels, key=lambda x: x.created_at)
             txt = "\n".join(
@@ -872,16 +825,12 @@ class VrtUtils(commands.Cog):
     async def rolemembers(self, ctx, role: discord.Role):
         """View all members that have a specific role"""
         members = []
-        async for member in AsyncIter(
-            ctx.guild.members, steps=500, delay=0.001
-        ):
+        async for member in AsyncIter(ctx.guild.members, steps=500, delay=0.001):
             if role.id in [r.id for r in member.roles]:
                 members.append(member)
 
         if not members:
-            return await ctx.send(
-                f"There are no members with the {role.mention} role"
-            )
+            return await ctx.send(f"There are no members with the {role.mention} role")
 
         members = sorted(members, key=lambda x: x.name)
         start = 0
@@ -925,9 +874,7 @@ class VrtUtils(commands.Cog):
             return await msg.edit(content="Not deleting all VC's")
         perm = ctx.guild.me.guild_permissions.manage_channels
         if not perm:
-            return await msg.edit(
-                content="I dont have perms to manage channels"
-            )
+            return await msg.edit(content="I dont have perms to manage channels")
         deleted = 0
         for chan in ctx.guild.channels:
             if isinstance(chan, discord.TextChannel):
@@ -949,9 +896,7 @@ class VrtUtils(commands.Cog):
         """
         Clear all threads from a server
         """
-        msg = await ctx.send(
-            "Are you sure you want to clear **ALL** threads from this server?"
-        )
+        msg = await ctx.send("Are you sure you want to clear **ALL** threads from this server?")
         yes = await confirm(ctx, msg)
         if yes is None:
             return
@@ -959,9 +904,7 @@ class VrtUtils(commands.Cog):
             return await msg.edit(content="Not deleting all threads")
         perm = ctx.guild.me.guild_permissions.manage_threads
         if not perm:
-            return await msg.edit(
-                content="I dont have perms to manage threads"
-            )
+            return await msg.edit(content="I dont have perms to manage threads")
         deleted = 0
         for thread in ctx.guild.threads:
             await thread.delete()
