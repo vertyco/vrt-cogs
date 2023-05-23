@@ -1,4 +1,4 @@
-import functools
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
@@ -36,10 +36,7 @@ class TranslateManager:
     async def google(self, text: str, target_lang: str) -> Optional[Result]:
         translator = googletrans.Translator()
         try:
-            res = await self.bot.loop.run_in_executor(
-                self.threadpool,
-                functools.partial(translator.translate, text, target_lang),
-            )
+            res = await asyncio.to_thread(translator.translate, text, target_lang)
             result = Result(text=res.text, src=res.src, dest=res.dest)
             return result
         except AttributeError:

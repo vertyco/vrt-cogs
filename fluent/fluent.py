@@ -4,7 +4,8 @@ from typing import Optional
 
 import discord
 import googletrans
-from aiocache import SimpleMemoryCache, cached
+from aiocache import cached
+from discord import app_commands
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import pagify
@@ -13,6 +14,7 @@ from .api import TranslateManager
 
 translator = googletrans.Translator()
 log = logging.getLogger("red.vrt.fluent")
+fail_embed = discord.Embed(description="❌ API seems to be down at the moment.")
 
 
 # Inspired by Obi-Wan3#0003's translation cog.
@@ -24,9 +26,9 @@ class Fluent(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.2.7"
+    __version__ = "1.3.0"
 
-    def format_help_for_context(self, ctx):
+    def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
         return f"{helpcmd}\nCog Version: {self.__version__}\nAuthor: {self.__author__}"
 
@@ -46,24 +48,69 @@ class Fluent(commands.Cog):
         for key, value in googletrans.LANGUAGES.items():
             if language == "chinese":
                 language = "chinese (simplified)"
-            if language == value:
+            if language == value or language == key:
                 return key
 
     # Cached for two days to minimize api use as much as possible
-    @cached(ttl=172800, cache=SimpleMemoryCache)
+    @cached(ttl=1800)
     async def translate(self, msg: str, dest: str):
         return await self.translator.translate(msg, dest)
 
+    @commands.hybrid_command(name="translate")
+    @app_commands.describe(to_language="Translate to this language")
+    async def translate_command(
+        self, ctx: commands.Context, to_language: str, *, message: Optional[str] = None
+    ):
+        """Translate a message"""
+        lang = await self.converter(to_language.lower())
+        if not lang:
+            return await ctx.send(f"The `{to_language}` was not found")
+
+        if not message and hasattr(ctx.message, "reference"):
+            try:
+                message = ctx.message.reference.resolved.content
+            except AttributeError:
+                pass
+        if not message:
+            return await ctx.send("Could not find any content to translate!")
+        try:
+            trans = await self.translate(message, lang)
+        except Exception as e:
+            await ctx.send(f"Translation failed: `{e}`")
+            log.error("Translation failed", exc_info=e)
+            return
+        if trans is None:
+            return await ctx.send(embed=fail_embed)
+
+        embed = discord.Embed(description=trans.text, color=ctx.author.color)
+        embed.set_footer(text=f"{trans.src} -> {lang}")
+        try:
+            await ctx.reply(embed=embed, mention_author=False)
+        except (discord.NotFound, AttributeError):
+            await ctx.send(embed=embed)
+
+    @translate_command.autocomplete("to_language")
+    async def translate_autocomplete(self, interaction: discord.Interaction, current: str):
+        return await self.get_langs(current)
+
+    @cached(ttl=60)
+    async def get_langs(self, current: str):
+        return [
+            app_commands.Choice(name=i, value=i)
+            for i in googletrans.LANGUAGES.values()
+            if current.lower() in i.lower()
+        ][:45]
+
     @commands.group()
     @commands.mod()
-    async def fluent(self, ctx):
+    async def fluent(self, ctx: commands.Context):
         """Base command"""
         pass
 
     @fluent.command()
     async def add(
         self,
-        ctx,
+        ctx: commands.Context,
         language1: str,
         language2: str,
         channel: Optional[discord.TextChannel],
@@ -94,13 +141,11 @@ class Fluent(commands.Cog):
                 channels[cid] = {"lang1": language1, "lang2": language2}
                 color = discord.Color.green()
                 return await ctx.send(
-                    embed=discord.Embed(
-                        description="✅ Fluent channel has been set!", color=color
-                    )
+                    embed=discord.Embed(description="✅ Fluent channel has been set!", color=color)
                 )
 
     @fluent.command(aliases=["delete", "del", "rem"])
-    async def remove(self, ctx, channel: Optional[discord.TextChannel]):
+    async def remove(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
         """Remove a channel from Fluent"""
         if not channel:
             channel = ctx.channel
@@ -114,13 +159,11 @@ class Fluent(commands.Cog):
                 )
                 await ctx.send(embed=embed)
             else:
-                embed = discord.Embed(
-                    description=f"❌ {channel.mention} isn't a fluent channel."
-                )
+                embed = discord.Embed(description=f"❌ {channel.mention} isn't a fluent channel.")
                 await ctx.send(embed=embed)
 
     @fluent.command()
-    async def view(self, ctx):
+    async def view(self, ctx: commands.Context):
         """View all fluent channels"""
         channels = await self.config.guild(ctx.guild).channels()
         msg = ""
@@ -163,7 +206,6 @@ class Fluent(commands.Cog):
         except Exception:
             log.error(f"Initial translation failed: {traceback.format_exc()}")
             return
-        fail_embed = discord.Embed(description="❌ API seems to be down at the moment.")
         if trans is None:
             return await channel.send(embed=fail_embed)
         # If the source language is also language1, translate into language2
