@@ -29,12 +29,12 @@ class Base(MixinMeta):
                     question += f"\n\nUploaded [{i.filename}]: {text.decode()}"
             try:
                 reply = await self.get_chat_response(question, ctx.author, conf)
-                parts = [p for p in pagify(reply, page_length=2000)]
-                for index, p in enumerate(parts):
-                    if not index:
-                        await ctx.reply(p, mention_author=conf.mention)
-                    else:
-                        await ctx.send(p)
+                if len(reply) < 2000:
+                    return await ctx.reply(reply, mention_author=conf.mention)
+
+                embeds = [discord.Embed(description=p) for p in pagify(reply, page_length=4000)]
+                await ctx.reply(embeds=embeds, mention_author=conf.mention)
+
             except Exception as e:
                 await ctx.send(f"**Error**\n```py\n{e}\n```")
                 log.error("Chat command failed", exc_info=e)

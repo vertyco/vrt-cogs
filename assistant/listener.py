@@ -67,13 +67,10 @@ class AssistantListener(MixinMeta):
     async def try_replying(self, message: discord.Message, content: str, conf: GuildSettings):
         try:
             reply = await self.get_chat_response(content, message.author, conf)
-            parts = [p for p in pagify(reply, page_length=2000)]
-            for index, p in enumerate(parts):
-                if not index:
-                    await message.reply(p, mention_author=conf.mention)
-                else:
-                    await message.channel.send(p)
-            return
+            if len(reply) < 2000:
+                return await message.reply(reply, mention_author=conf.mention)
+            embeds = [discord.Embed(description=p) for p in pagify(reply, page_length=4000)]
+            await message.reply(embeds=embeds, mention_author=conf.mention)
         except InvalidRequestError as e:
             if error := e.error:
                 await message.reply(error["message"], mention_author=conf.mention)
