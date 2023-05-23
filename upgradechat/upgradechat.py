@@ -187,7 +187,7 @@ class UpgradeChat(commands.Cog):
 
             em = discord.Embed(description=desc)
             if user and user.avatar:
-                em.set_thumbnail(url=user.avatar.url)
+                em.set_thumbnail(url=user.display_avatar.url)
             embeds.append(em)
         for ind, i in enumerate(embeds):
             i.set_footer(text=f"Page {ind + 1}/{len(list(users.keys()))}")
@@ -373,7 +373,7 @@ class UpgradeChat(commands.Cog):
                 color=ctx.author.color,
             )
             if DPY2:
-                pfp = ctx.author.avatar.url if ctx.author.avatar else None
+                pfp = ctx.author.display_avatar.url
             else:
                 pfp = ctx.author.avatar_url
 

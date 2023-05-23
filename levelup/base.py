@@ -235,7 +235,7 @@ class UserCommands(MixinMeta, ABC):
         if uid in conf:
             font = conf[uid]["font"]
         if DPY2:
-            pfp = user.avatar.url if user.avatar else None
+            pfp = user.display_avatar.url
         else:
             pfp = user.avatar_url
         args = {
@@ -805,7 +805,7 @@ class UserCommands(MixinMeta, ABC):
         currency_name = await bank.get_currency_name(ctx.guild)
 
         if DPY2:
-            pfp = user.avatar.url if user.avatar else None
+            pfp = user.display_avatar.url
             role_icon = user.top_role.display_icon
         else:
             pfp = user.avatar_url

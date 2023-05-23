@@ -66,6 +66,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
             "channel_id": 0,  # <Required>
             "message_id": 0,  # <Required>
             "alt_channel": 0,  # (Optional) Open tickets from another channel/category
+            "required_roles": [],  # (Optional) list of role IDs, empty list if anyone can open
             # Button settings
             "button_text": "Open a Ticket",  # (Optional)
             "button_color": "blue",  # (Optional)

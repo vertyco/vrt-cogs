@@ -245,7 +245,7 @@ class Pixl(commands.Cog):
         att = f"attachment://{final.filename}"
         thumb = None
         if winner:  # Chicken dinner
-            thumb = (winner.avatar.url if winner.avatar else None) if dpy2 else winner.avatar_url
+            thumb = (winner.display_avatar.url) if dpy2 else winner.avatar_url
             title = "Winner!"
             desc = (
                 f"{winner.name} guessed correctly after {shown} blocks!\n"

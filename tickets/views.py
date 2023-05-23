@@ -246,7 +246,7 @@ class SupportButton(Button):
             title = _("Submission Info")
             form_embed = discord.Embed(color=user.color)
             if user.avatar:
-                form_embed.set_author(name=title, icon_url=user.avatar.url)
+                form_embed.set_author(name=title, icon_url=user.display_avatar.url)
             else:
                 form_embed.set_author(name=title)
             m = TicketModal(self.panel_name, modal)
@@ -438,7 +438,7 @@ class SupportButton(Button):
         else:
             em = discord.Embed(description=default_message, color=user.color)
             if user.avatar:
-                em.set_thumbnail(url=user.avatar.url)
+                em.set_thumbnail(url=user.display_avatar.url)
             msg = await channel_or_thread.send(
                 content=content, embed=em, allowed_mentions=allowed_mentions
             )
@@ -479,7 +479,7 @@ class SupportButton(Button):
                 color=discord.Color.red(),
             )
             if user.avatar:
-                em.set_thumbnail(url=user.avatar.url)
+                em.set_thumbnail(url=user.display_avatar.url)
 
             for question, answer in answers.items():
                 em.add_field(
@@ -498,7 +498,7 @@ class SupportButton(Button):
             conf["opened"][uid][str(channel_or_thread.id)] = {
                 "panel": self.panel_name,
                 "opened": now.isoformat(),
-                "pfp": str(user.avatar.url) if user.avatar else None,
+                "pfp": str(user.display_avatar.url) if user.avatar else None,
                 "logmsg": log_message.id if log_message else None,
                 "answers": answers,
                 "has_response": has_response,
