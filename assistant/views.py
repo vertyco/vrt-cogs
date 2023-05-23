@@ -69,7 +69,7 @@ class EmbeddingModal(discord.ui.Modal):
         self.text_field = discord.ui.TextInput(
             label="Training context",
             style=discord.TextStyle.paragraph,
-            default=text,
+            default=text[:4000],
             required=True,
         )
         self.add_item(self.text_field)
