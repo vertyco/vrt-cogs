@@ -139,6 +139,29 @@ class EmbeddingMenu(discord.ui.View):
             self.has_skip = False
         return pages
 
+    def change_place(self, inc: int):
+        current = self.pages[self.page]
+        old_place = self.place
+        self.place += inc
+        self.place %= len(current.fields)
+        for embed in self.pages:
+            # Cleanup old place
+            if len(embed.fields) > old_place:
+                embed.set_field_at(
+                    old_place,
+                    name=embed.fields[old_place].name.replace("➣ ", "", 1),
+                    value=embed.fields[old_place].value,
+                    inline=False,
+                )
+            # Add new place
+            if len(embed.fields) > self.place:
+                embed.set_field_at(
+                    self.place,
+                    name="➣ " + embed.fields[self.place].name,
+                    value=embed.fields[self.place].value,
+                    inline=False,
+                )
+
     async def add_embedding(self, name: str, text: str):
         embedding = await get_embedding_async(text, self.conf.api_key)
         if not embedding:
@@ -179,10 +202,8 @@ class EmbeddingMenu(discord.ui.View):
     )
     async def up(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        if fields := self.pages[self.page].fields:
-            self.place -= 1
-            self.place %= len(fields)
-            self.pages = self.get_pages()
+        if self.pages[self.page].fields:
+            self.change_place(-1)
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.primary, emoji="\N{MEMO}")
@@ -264,10 +285,8 @@ class EmbeddingMenu(discord.ui.View):
     )
     async def down(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        if fields := self.pages[self.page].fields:
-            self.place += 1
-            self.place %= len(fields)
-            self.pages = self.get_pages()
+        if self.pages[self.page].fields:
+            self.change_place(1)
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(
