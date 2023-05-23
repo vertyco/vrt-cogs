@@ -141,6 +141,8 @@ class EmbeddingMenu(discord.ui.View):
 
     def change_place(self, inc: int):
         current = self.pages[self.page]
+        if not current.fields:
+            return
         old_place = self.place
         self.place += inc
         self.place %= len(current.fields)
@@ -157,7 +159,7 @@ class EmbeddingMenu(discord.ui.View):
             if len(embed.fields) > self.place:
                 embed.set_field_at(
                     self.place,
-                    name="➣ " + embed.fields[self.place].name,
+                    name="➣ " + embed.fields[self.place].name.replace("➣ ", "", 1),
                     value=embed.fields[self.place].value,
                     inline=False,
                 )
@@ -243,7 +245,9 @@ class EmbeddingMenu(discord.ui.View):
         await interaction.response.defer()
         self.page -= 1
         self.page %= len(self.pages)
-        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
+        new_place = min(self.place, len(self.pages[self.page].fields) - 1)
+        if place_change := self.place - new_place:
+            self.change_place(-place_change)
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="\N{CROSS MARK}", row=1)
@@ -263,7 +267,9 @@ class EmbeddingMenu(discord.ui.View):
         await interaction.response.defer()
         self.page += 1
         self.page %= len(self.pages)
-        self.place = min(self.place, len(self.pages[self.page].fields) - 1)
+        new_place = min(self.place, len(self.pages[self.page].fields) - 1)
+        if place_change := self.place - new_place:
+            self.change_place(-place_change)
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{SQUARED NEW}", row=2)
