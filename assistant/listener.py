@@ -78,3 +78,10 @@ class AssistantListener(MixinMeta):
         except Exception as e:
             await message.channel.send(f"**Error**\n```py\n{e}\n```")
             log.error("Listener Reply Error", exc_info=e)
+
+    @commands.Cog.listener("on_guild_remove")
+    async def cleanup(self, guild: discord.Guild):
+        if guild.id in self.db.configs:
+            log.info(f"Bot removed from {guild.name}, cleaning up...")
+            del self.db.configs[guild.id]
+            await self.save_conf()
