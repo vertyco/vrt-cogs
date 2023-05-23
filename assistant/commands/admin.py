@@ -614,7 +614,7 @@ class Admin(MixinMeta):
             name = str(row[0])
             if name in conf.embeddings and not overwrite:
                 continue
-            text = str(row[1])
+            text = str(row[1])[:4000]
 
             if index and (index + 1) % 5 == 0:
                 await message.edit(
@@ -664,6 +664,7 @@ class Admin(MixinMeta):
                         if not overwrite and name in conf.embeddings:
                             continue
                         conf.embeddings[name] = Embedding.parse_obj(em)
+                        conf.embeddings[name].text = conf.embeddings[name].text[:4000]
                         imported += 1
                 except ValidationError:
                     await ctx.send(
