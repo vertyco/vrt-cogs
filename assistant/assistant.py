@@ -26,7 +26,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "1.8.2"
+    __version__ = "1.8.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -40,6 +40,8 @@ class Assistant(
         self.db: DB = DB()
         self.chats: Conversations = Conversations()
 
+        self.saving = False
+
     async def cog_load(self) -> None:
         asyncio.create_task(self.init_cog())
 
@@ -51,7 +53,15 @@ class Assistant(
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
 
     async def save_conf(self):
-        start = perf_counter()
-        dump = await asyncio.to_thread(self.db.dict)
-        await self.config.db.set(dump)
-        log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")
+        if self.saving:
+            return
+        try:
+            self.saving = True
+            start = perf_counter()
+            dump = await asyncio.to_thread(self.db.dict)
+            await self.config.db.set(dump)
+            log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")
+        except Exception as e:
+            log.error("Failed to save config", exc_info=e)
+        finally:
+            self.saving = False
