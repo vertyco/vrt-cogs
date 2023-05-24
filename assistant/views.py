@@ -127,8 +127,6 @@ class EmbeddingMenu(discord.ui.View):
 
     async def get_pages(self) -> None:
         self.pages = await asyncio.to_thread(embedding_embeds, self.conf.embeddings, self.place)
-        # mapping = {k: v.dict() for k, v in self.conf.embeddings.items()}
-        # pages = embedding_embeds(embeddings=mapping, place=self.place)
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)
