@@ -24,7 +24,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.15.9"
+    __version__ = "1.17.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -78,6 +78,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
             "ticket_name": None,  # (Optional) Name format for the ticket channel
             "log_channel": 0,  # (Optional) Log open/closed tickets
             "modal": {},  # (Optional) Modal fields to fill out before ticket is opened
+            "modal_title": "",  # (Optional) Modal title
             "threads": False,  # Whether this panel makes a thread or channel
             "roles": [],  # Sub-support roles
             # Ticker
