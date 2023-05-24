@@ -63,7 +63,7 @@ class API(MixinMeta):
             "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
             "dpy": discord.__version__,
             "red": version_info,
-            "cogs": humanize_list([cog.qualified_name for cog in self.bot.cogs]),
+            "cogs": humanize_list([self.bot.get_cog(cog).qualified_name for cog in self.bot.cogs]),
         }
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
