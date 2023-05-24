@@ -7,16 +7,10 @@ import discord
 import openai
 import tiktoken
 from aiocache import cached
-from discord.app_commands import Choice
 from retry import retry
 
 log = logging.getLogger("red.vrt.assistant.utils")
 encoding = tiktoken.get_encoding("cl100k_base")
-
-
-@cached(ttl=45)
-async def get_embedding_names(embeddings: List[str], current: str) -> List[Choice]:
-    return [Choice(name=i, value=i) for i in embeddings if current.lower() in i.lower()][:45]
 
 
 def get_attachments(message: discord.Message) -> List[discord.Attachment]:

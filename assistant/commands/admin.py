@@ -2,13 +2,15 @@ import asyncio
 import logging
 from datetime import datetime
 from io import BytesIO
-from typing import Union
+from typing import List, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
 import orjson
 import pandas as pd
 import pytz
+from aiocache import cached
+from discord.app_commands import Choice
 from pydantic import ValidationError
 from rapidfuzz import fuzz
 from redbot.core import app_commands, commands
@@ -26,7 +28,6 @@ from ..common.utils import (
     fetch_channel_history,
     get_attachments,
     get_embedding_async,
-    get_embedding_names,
     num_tokens_from_string,
 )
 from ..models import MODELS, Embedding
@@ -828,5 +829,11 @@ class Admin(MixinMeta):
 
     @embeddings.autocomplete("query")
     async def embeddings_complete(self, interaction: discord.Interaction, current: str):
-        conf = self.db.get_conf(interaction.guild)
-        return await get_embedding_names(conf.embeddings.keys(), current)
+        return await self.get_entries(interaction.guild_id, current)
+
+    @cached(ttl=30)
+    async def get_entries(self, guild_id: int, current: str) -> List[Choice]:
+        conf = self.db.get_conf(guild_id)
+        return await [
+            Choice(name=i, value=i) for i in conf.embeddings if current.lower() in i.lower()
+        ][:25]
