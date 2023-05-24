@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 from io import BytesIO
 from typing import Union
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -7,7 +8,9 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import discord
 import orjson
 import pandas as pd
+import pytz
 from pydantic import ValidationError
+from rapidfuzz import fuzz
 from redbot.core import app_commands, commands
 from redbot.core.utils.chat_formatting import (
     box,
@@ -57,6 +60,7 @@ class Admin(MixinMeta):
         prompt_tokens = num_tokens_from_string(conf.prompt)
         desc = (
             f"`Enabled:           `{conf.enabled}\n"
+            f"`Timezone:          `{conf.timezone}\n"
             f"`Channel:           `{channel}\n"
             f"`? Required:        `{conf.endswith_questionmark}\n"
             f"`Mentions:          `{conf.mention}\n"
@@ -126,6 +130,23 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.api_key = key
         await msg.edit(content="OpenAI key has been set!", embed=None, view=None)
+        await self.save_conf()
+
+    @assistant.command(name="timezone")
+    async def set_timezone(self, ctx: commands.Context, timezone: str):
+        """Set the timezone used for prompt placeholders"""
+        timezone = timezone.lower()
+        try:
+            tz = pytz.timezone(timezone)
+        except pytz.UnknownTimeZoneError:
+            likely_match = sorted(
+                pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True
+            )[0]
+            return await ctx.send(f"Invalid Timezone, did you mean `{likely_match}`?")
+        time = datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
+        await ctx.send(f"Timezone set to **{timezone}** (Time: `{time}`)")
+        conf = self.db.get_conf(ctx.guild)
+        conf.timezone = timezone
         await self.save_conf()
 
     @assistant.command(name="train")
