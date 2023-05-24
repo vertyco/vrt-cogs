@@ -829,11 +829,13 @@ class Admin(MixinMeta):
 
     @embeddings.autocomplete("query")
     async def embeddings_complete(self, interaction: discord.Interaction, current: str):
-        return await self.get_entries(interaction.guild_id, current)
+        return await self.get_matches(interaction.guild_id, current)
+
+    @cached(ttl=120)
+    async def get_embedding_entries(self, guild_id: int) -> List[str]:
+        return list(self.db.get_conf(guild_id).embeddings.keys())
 
     @cached(ttl=30)
-    async def get_entries(self, guild_id: int, current: str) -> List[Choice]:
-        conf = self.db.get_conf(guild_id)
-        return await [
-            Choice(name=i, value=i) for i in conf.embeddings if current.lower() in i.lower()
-        ][:25]
+    async def get_matches(self, guild_id: int, current: str) -> List[Choice]:
+        entries = await self.get_embedding_entries(guild_id)
+        return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
