@@ -1,10 +1,12 @@
 import asyncio
 import logging
+import sys
 from datetime import datetime
 
 import discord
 import pytz
 from aiocache import cached
+from redbot.core import version_info
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
@@ -58,6 +60,10 @@ class API(MixinMeta):
             "tokens": conversation.user_token_count(message=message),
             "retention": conf.max_retention,
             "retentiontime": conf.max_retention_time,
+            "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+            "dpy": discord.__version__,
+            "red": version_info,
+            "cogs": humanize_list([cog.qualified_name for cog in self.bot.cogs]),
         }
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)

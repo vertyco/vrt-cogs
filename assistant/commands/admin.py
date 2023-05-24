@@ -224,7 +224,8 @@ class Admin(MixinMeta):
         `timestamp` - the current time in Discord's timestamp format
         `day` - the current day of the week
         `date` - todays date (Month, Day, Year)
-        `time` - current time in 12hr format (HH:MM AM/PM Timezone)
+        `time` - current time in 12hr format (HH:MM AM/PM)
+        `timetz` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
         `user` - the current user asking the question
         `roles` - the names of the user's roles
@@ -236,6 +237,10 @@ class Admin(MixinMeta):
         `tokens` - the token count of the current conversation
         `retention` - max retention number
         `retentiontime` - max retention time seconds
+        `py` - python version
+        `dpy` - discord.py version
+        `red` - red version
+        `cogs` - list of currently loaded cogs
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -292,7 +297,8 @@ class Admin(MixinMeta):
         `timestamp` - the current time in Discord's timestamp format
         `day` - the current day of the week
         `date` - todays date (Month, Day, Year)
-        `time` - current time in 12hr format (HH:MM AM/PM Timezone)
+        `time` - current time in 12hr format (HH:MM AM/PM)
+        `timetz` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
         `user` - the current user asking the question
         `roles` - the names of the user's roles
@@ -304,6 +310,10 @@ class Admin(MixinMeta):
         `tokens` - the token count of the current conversation
         `retention` - max retention number
         `retentiontime` - max retention time seconds
+        `py` - python version
+        `dpy` - discord.py version
+        `red` - red version
+        `cogs` - list of currently loaded cogs
         """
         attachments = get_attachments(ctx.message)
         if attachments:
