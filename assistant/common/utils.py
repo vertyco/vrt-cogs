@@ -14,7 +14,7 @@ log = logging.getLogger("red.vrt.assistant.utils")
 encoding = tiktoken.get_encoding("cl100k_base")
 
 
-@cached(ttl=120)
+@cached(ttl=45)
 async def get_embedding_names(embeddings: List[str], current: str) -> List[Choice]:
     return [Choice(name=i, value=i) for i in embeddings if current.lower() in i.lower()][:45]
 

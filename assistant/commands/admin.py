@@ -633,15 +633,17 @@ class Admin(MixinMeta):
             if pd.isna(row[0]) or pd.isna(row[1]):
                 continue
             name = str(row[0])
-            if name in conf.embeddings and not overwrite:
-                continue
+            proc = "processing"
+            if name in conf.embeddings:
+                proc = "overwriting"
+                if row[1] == conf.embeddings[name].text or not overwrite:
+                    continue
             text = str(row[1])[:4000]
 
             if index and (index + 1) % 5 == 0:
                 await message.edit(
-                    content=f"{message_text}\n`Currently processing: `**{name}** ({index + 1}/{len(df)})"
+                    content=f"{message_text}\n`Currently {proc}: `**{name}** ({index + 1}/{len(df)})"
                 )
-
             embedding = await get_embedding_async(text, conf.api_key)
             if not embedding:
                 await ctx.send(f"Failed to process embedding: `{name}`")
@@ -827,4 +829,4 @@ class Admin(MixinMeta):
     @embeddings.autocomplete("query")
     async def embeddings_complete(self, interaction: discord.Interaction, current: str):
         conf = self.db.get_conf(interaction.guild)
-        return await get_embedding_names(list(conf.embeddings.keys()), current)
+        return await get_embedding_names(conf.embeddings.keys(), current)
