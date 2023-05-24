@@ -79,7 +79,10 @@ class AssistantListener(MixinMeta):
             reply = await self.get_chat_response(content, message.author, conf)
             if len(reply) < 2000:
                 return await message.reply(reply, mention_author=conf.mention)
-            embeds = [discord.Embed(description=p) for p in pagify(reply, page_length=4000)]
+            embeds = [
+                discord.Embed(description=p)
+                for p in pagify(reply, page_length=4000, delims=("```", "\n"))
+            ]
             await message.reply(embeds=embeds, mention_author=conf.mention)
         except InvalidRequestError as e:
             if error := e.error:

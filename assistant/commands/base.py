@@ -32,7 +32,10 @@ class Base(MixinMeta):
                 if len(reply) < 2000:
                     return await ctx.reply(reply, mention_author=conf.mention)
 
-                embeds = [discord.Embed(description=p) for p in pagify(reply, page_length=4000)]
+                embeds = [
+                    discord.Embed(description=p)
+                    for p in pagify(reply, page_length=4000, delims=("```", "\n"))
+                ]
                 await ctx.reply(embeds=embeds, mention_author=conf.mention)
 
             except Exception as e:
