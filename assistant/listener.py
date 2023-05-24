@@ -44,6 +44,16 @@ class AssistantListener(MixinMeta):
         channel = message.channel
         if channel.id != conf.channel_id:
             return
+
+        for mention in message.mentions:
+            message.content = message.content.replace(
+                f"<@{mention.id}>", f"@{mention.display_name}"
+            )
+        for mention in message.channel_mentions:
+            message.content = message.content.replace(f"<#{mention.id}>", f"#{mention.name}")
+        for mention in message.role_mentions:
+            message.content = message.content.replace(f"<@&{mention.id}>", f"@{mention.name}")
+
         content = message.content
         mentions = [member.id for member in message.mentions]
         if (
