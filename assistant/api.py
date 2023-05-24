@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 
 import discord
+import pytz
 from aiocache import cached
 from redbot.core.utils.chat_formatting import humanize_list
 
@@ -32,7 +33,7 @@ class API(MixinMeta):
         conf: GuildSettings,
         conversation: Conversation,
     ) -> str:
-        now = datetime.now().astimezone()
+        now = datetime.now().astimezone(pytz.timezone(conf.timezone))
 
         query_embedding = get_embedding(text=message, api_key=conf.api_key)
         if not query_embedding:
@@ -43,7 +44,8 @@ class API(MixinMeta):
             "timestamp": f"<t:{round(now.timestamp())}:F>",
             "day": now.strftime("%A"),
             "date": now.strftime("%B %d, %Y"),
-            "time": now.strftime("%I:%M %p %Z"),
+            "time": now.strftime("%I:%M %p"),
+            "timetz": now.strftime("%I:%M %p %Z"),
             "members": author.guild.member_count,
             "user": author.display_name,
             "datetime": str(datetime.now()),

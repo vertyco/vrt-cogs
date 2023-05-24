@@ -34,6 +34,7 @@ class GuildSettings(BaseModel):
     mention: bool = False
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
+    timezone: str = "UTC"
 
     def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, float]]:
         if not self.top_n or not query_embedding or not self.embeddings:
@@ -97,7 +98,6 @@ class Conversation(BaseModel):
         elif conf.max_retention:
             self.messages = self.messages[-conf.max_retention :]
 
-
     def reset(self):
         self.last_updated = datetime.now().timestamp()
         self.messages.clear()
@@ -118,7 +118,7 @@ class Conversation(BaseModel):
         conf: GuildSettings,
         system_prompt: str = "",
         initial_prompt: str = "",
-        ) -> List[dict]:
+    ) -> List[dict]:
         prepared = []
         if system_prompt:
             prepared.append({"role": "system", "content": system_prompt})
