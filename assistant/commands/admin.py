@@ -803,14 +803,13 @@ class Admin(MixinMeta):
             return await ctx.send(
                 f"No API key! Use `{ctx.prefix}assistant openaikey` to set your OpenAI key!"
             )
+        if ctx.interaction:
+            await ctx.interaction.response.defer()
 
         view = EmbeddingMenu(ctx, conf, self.save_conf)
         await view.get_pages()
         if not query:
             return await view.start()
-
-        if ctx.interaction:
-            await ctx.interaction.response.defer()
 
         for page_index, embed in enumerate(view.pages):
             found = False
