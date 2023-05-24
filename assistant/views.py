@@ -69,7 +69,7 @@ class EmbeddingModal(discord.ui.Modal):
         self.text_field = discord.ui.TextInput(
             label="Training context",
             style=discord.TextStyle.paragraph,
-            default=text[:4000],
+            default=text,
             required=True,
         )
         self.add_item(self.text_field)
@@ -215,7 +215,7 @@ class EmbeddingMenu(discord.ui.View):
             )
         name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
         embedding_obj = self.conf.embeddings[name]
-        modal = EmbeddingModal(title="Edit embedding", name=name, text=embedding_obj.text)
+        modal = EmbeddingModal(title="Edit embedding", name=name, text=embedding_obj.text[:4000])
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.name or not modal.text:
