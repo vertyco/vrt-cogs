@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import discord
 import orjson
@@ -57,12 +57,14 @@ class DB(BaseModel):
         json_loads = orjson.loads
         json_dumps = orjson.dumps
 
-    def get_conf(self, guild: discord.Guild) -> GuildSettings:
-        if guild.id in self.configs:
-            return self.configs[guild.id]
+    def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
+        gid = guild if isinstance(guild, int) else guild.id
 
-        self.configs[guild.id] = GuildSettings()
-        return self.configs[guild.id]
+        if gid in self.configs:
+            return self.configs[gid]
+
+        self.configs[gid] = GuildSettings()
+        return self.configs[gid]
 
 
 class Conversation(BaseModel):
