@@ -9,7 +9,12 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
 from .commands import TicketCommands
-from .utils import Utils, update_active_overview
+from .utils import (
+    close_ticket,
+    prune_invalid_tickets,
+    ticket_owner_hastyped,
+    update_active_overview,
+)
 from .views import LogView, PanelView
 
 log = logging.getLogger("red.vrt.tickets")
@@ -18,13 +23,13 @@ _ = Translator("Tickets", __file__)
 
 # redgettext -D tickets.py commands/base.py commands/admin.py views.py menu.py utils.py
 @cog_i18n(_)
-class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass):
+class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
     Support ticket system with multi-panel functionality
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.17.0"
+    __version__ = "1.18.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -67,6 +72,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
             "message_id": 0,  # <Required>
             "alt_channel": 0,  # (Optional) Open tickets from another channel/category
             "required_roles": [],  # (Optional) list of role IDs, empty list if anyone can open
+            "close_reason": True,  # Throw a modal for closing reason on the ticket close button
             # Button settings
             "button_text": "Open a Ticket",  # (Optional)
             "button_color": "blue",  # (Optional)
@@ -123,7 +129,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
             guild = self.bot.get_guild(gid)
             if not guild:
                 continue
-            pruned = await self.prune_invalid_tickets(guild, data)
+            pruned = await prune_invalid_tickets(guild, data, self.config)
             if pruned:
                 data = await self.config.guild(guild).all()
             # Refresh overview panel
@@ -279,7 +285,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
                         continue
                     now = datetime.datetime.now()
                     opened_on = datetime.datetime.fromisoformat(ticket["opened"])
-                    hastyped = await self.ticket_owner_hastyped(channel, member)
+                    hastyped = await ticket_owner_hastyped(channel, member)
                     if hastyped and channel_id not in self.valid:
                         self.valid.append(channel_id)
                         continue
@@ -298,7 +304,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
 
                     time = "hours" if inactive != 1 else "hour"
                     try:
-                        await self.close_ticket(
+                        await close_ticket(
                             member,
                             guild,
                             channel,
@@ -306,6 +312,7 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
                             _("(Auto-Close) Opened ticket with no response for ")
                             + f"{inactive} {time}",
                             self.bot.user.name,
+                            self.config,
                         )
                         log.info(
                             f"Ticket opened by {member.name} has been auto-closed.\n"
@@ -346,13 +353,14 @@ class Tickets(TicketCommands, Utils, commands.Cog, metaclass=CompositeMetaClass)
             if not chan:
                 continue
             try:
-                await self.close_ticket(
-                    member,
-                    guild,
-                    chan,
-                    conf,
-                    _("User left guild(Auto-Close)"),
-                    self.bot.user.display_name,
+                await close_ticket(
+                    member=member,
+                    guild=guild,
+                    channel=chan,
+                    conf=conf,
+                    reason=_("User left guild(Auto-Close)"),
+                    closedby=self.bot.user.display_name,
+                    config=self.config,
                 )
             except Exception as e:
                 log.error(

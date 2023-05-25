@@ -5,277 +5,276 @@ from typing import List, Optional, Union
 
 import discord
 from discord.utils import escape_markdown
-from redbot.core import commands
+from redbot.core import Config, commands
+from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
-
-from .abc import MixinMeta
+from redbot.core.utils.mod import is_admin_or_superior
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
 _ = Translator("Tickets", __file__)
 
 
-class Utils(MixinMeta):
-    async def close_ticket(
-        self,
-        member: Union[discord.Member, discord.User],
-        guild: discord.Guild,
-        channel: discord.TextChannel,
-        conf: dict,
-        reason: str,
-        closedby: str,
-    ) -> None:
-        opened = conf["opened"]
-        if not opened:
-            return
-        uid = str(member.id)
-        cid = str(channel.id)
-        if uid not in opened:
-            return
-        if cid not in opened[uid]:
-            return
+async def can_close(
+    bot: Red,
+    guild: discord.Guild,
+    channel: Union[discord.TextChannel, discord.Thread],
+    author: discord.Member,
+    owner_id: str,
+    conf: dict,
+):
+    panel_name = conf["opened"][str(owner_id)][str(channel.id)]["panel"]
+    panel_roles = conf["panels"][panel_name]["roles"]
+    user_roles = [r.id for r in author.roles]
 
-        ticket = opened[uid][cid]
-        pfp = ticket["pfp"]
-        panel_name = ticket["panel"]
-        panel = conf["panels"][panel_name]
-        threads = panel.get("threads")
+    support_roles = [i[0] for i in conf["support_roles"]]
+    support_roles.extend([i[0] for i in panel_roles])
 
-        if (
-            not channel.permissions_for(guild.me).manage_channels
-            and not threads
-        ):
-            return await channel.send(
-                _(
-                    "I am missing the `Manage Channels` permission to close this ticket!"
-                )
-            )
-        if not channel.permissions_for(guild.me).manage_threads and threads:
-            return await channel.send(
-                _(
-                    "I am missing the `Manage Threads` permission to close this ticket!"
-                )
-            )
+    can_close = False
+    if any(i in support_roles for i in user_roles):
+        can_close = True
+    elif author.id == guild.owner_id:
+        can_close = True
+    elif await is_admin_or_superior(bot, author):
+        can_close = True
+    elif owner_id == str(author.id) and conf["user_can_close"]:
+        can_close = True
+    return can_close
 
-        opened = int(datetime.fromisoformat(ticket["opened"]).timestamp())
-        closed = int(datetime.now().timestamp())
-        closer_name = escape_markdown(closedby)
 
-        desc = _(
-            "Ticket created by **{}-{}** has been closed.\n"
-            "`PanelType: `{}\n"
-            "`Opened on: `<t:{}:F>\n"
-            "`Closed on: `<t:{}:F>\n"
-            "`Closed by: `{}\n"
-            "`Reason:    `{}\n"
-        ).format(
-            member.display_name,
-            member.id,
-            panel_name,
-            opened,
-            closed,
-            closer_name,
-            str(reason),
+async def fetch_channel_history(
+    channel: discord.TextChannel, limit: int = None
+) -> List[discord.Message]:
+    history = []
+    async for msg in channel.history(oldest_first=True, limit=limit):
+        history.append(msg)
+    return history
+
+
+async def ticket_owner_hastyped(channel: discord.TextChannel, user: discord.Member) -> bool:
+    async for msg in channel.history(limit=50, oldest_first=True):
+        if msg.author.id == user.id:
+            return True
+    return False
+
+
+def get_ticket_owner(opened: dict, channel_id: str) -> Optional[str]:
+    for uid, tickets in opened.items():
+        if channel_id in tickets:
+            return uid
+
+
+async def close_ticket(
+    member: Union[discord.Member, discord.User],
+    guild: discord.Guild,
+    channel: discord.TextChannel,
+    conf: dict,
+    reason: str,
+    closedby: str,
+    config: Config,
+) -> None:
+    opened = conf["opened"]
+    if not opened:
+        return
+    uid = str(member.id)
+    cid = str(channel.id)
+    if uid not in opened:
+        return
+    if cid not in opened[uid]:
+        return
+
+    ticket = opened[uid][cid]
+    pfp = ticket["pfp"]
+    panel_name = ticket["panel"]
+    panel = conf["panels"][panel_name]
+    threads = panel.get("threads")
+
+    if not channel.permissions_for(guild.me).manage_channels and not threads:
+        return await channel.send(
+            _("I am missing the `Manage Channels` permission to close this ticket!")
+        )
+    if not channel.permissions_for(guild.me).manage_threads and threads:
+        return await channel.send(
+            _("I am missing the `Manage Threads` permission to close this ticket!")
         )
 
-        embed = discord.Embed(
-            title=_("Ticket Closed"),
-            description=desc,
-            color=discord.Color.green(),
+    opened = int(datetime.fromisoformat(ticket["opened"]).timestamp())
+    closed = int(datetime.now().timestamp())
+    closer_name = escape_markdown(closedby)
+
+    desc = _(
+        "Ticket created by **{}-{}** has been closed.\n"
+        "`PanelType: `{}\n"
+        "`Opened on: `<t:{}:F>\n"
+        "`Closed on: `<t:{}:F>\n"
+        "`Closed by: `{}\n"
+        "`Reason:    `{}\n"
+    ).format(
+        member.display_name,
+        member.id,
+        panel_name,
+        opened,
+        closed,
+        closer_name,
+        str(reason),
+    )
+
+    embed = discord.Embed(
+        title=_("Ticket Closed"),
+        description=desc,
+        color=discord.Color.green(),
+    )
+    embed.set_thumbnail(url=pfp)
+    log_chan = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
+    text = ""
+    filename = f"{member.name}-{member.id}.txt"
+    filename = filename.replace("/", "")
+    if conf["transcript"]:
+        em = discord.Embed(
+            description=_("Archiving channel..."),
+            color=discord.Color.magenta(),
         )
-        embed.set_thumbnail(url=pfp)
-        log_chan = (
-            self.bot.get_channel(panel["log_channel"])
-            if panel["log_channel"]
-            else None
-        )
-        text = ""
-        filename = f"{member.name}-{member.id}.txt"
-        filename = filename.replace("/", "")
-        if conf["transcript"]:
-            em = discord.Embed(
-                description=_("Archiving channel..."),
-                color=discord.Color.magenta(),
+        em.set_footer(text=_("This channel will be deleted once complete"))
+        em.set_thumbnail(url=LOADING)
+        temp_message = await channel.send(embed=em)
+        answers = ticket.get("answers")
+        if answers:
+            for q, a in answers.items():
+                text += _("Question: {}\nResponse: {}\n").format(q, a)
+        history = await fetch_channel_history(channel)
+        for msg in history:
+            if msg.author.bot:
+                continue
+            if not msg:
+                continue
+            att = [a.filename for a in msg.attachments]
+            if msg.content:
+                text += f"{msg.author.name}: {msg.content}\n"
+            if att:
+                text += _("Files uploaded: ") + humanize_list(att) + "\n"
+        await temp_message.delete()
+    else:
+        history = await fetch_channel_history(channel, limit=1)
+
+    # Send off new messages
+    view = None
+    if history and isinstance(channel, discord.Thread) and conf["thread_close"]:
+        jump_url = history[0].jump_url
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label="View Thread",
+                style=discord.ButtonStyle.link,
+                url=jump_url,
             )
-            em.set_footer(text=_("This channel will be deleted once complete"))
-            em.set_thumbnail(url=LOADING)
-            temp_message = await channel.send(embed=em)
-            answers = ticket.get("answers")
-            if answers:
-                r = _("Response")
-                for q, a in answers.items():
-                    text += (
-                        f"{self.bot.user.display_name}: {q}\n" f"{r}: {a}\n"
-                    )
-            history = await self.fetch_channel_history(channel)
-            for msg in history:
-                if msg.author.id == self.bot.user.id:
-                    continue
-                if not msg:
-                    continue
-                att = [a.filename for a in msg.attachments]
-                if msg.content:
-                    text += f"{msg.author.name}: {msg.content}\n"
-                if att:
-                    text += _("Files uploaded: ") + humanize_list(att) + "\n"
-            await temp_message.delete()
+        )
+    if log_chan and ticket["logmsg"]:
+        if text:
+            file = discord.File(BytesIO(text.encode()), filename=filename)
+            await log_chan.send(embed=embed, file=file, view=view)
         else:
-            history = await self.fetch_channel_history(channel, limit=1)
+            await log_chan.send(embed=embed, view=view)
 
-        # Send off new messages
-        view = None
-        if (
-            history
-            and isinstance(channel, discord.Thread)
-            and conf["thread_close"]
-        ):
-            jump_url = history[0].jump_url
-            view = discord.ui.View()
-            view.add_item(
-                discord.ui.Button(
-                    label="View Thread",
-                    style=discord.ButtonStyle.link,
-                    url=jump_url,
-                )
-            )
-        if log_chan and ticket["logmsg"]:
+        # Delete old log msg
+        log_msg_id = ticket["logmsg"]
+        try:
+            log_msg = await log_chan.fetch_message(log_msg_id)
+        except discord.HTTPException:
+            log.warning("Failed to get log channel message")
+            log_msg = None
+        if log_msg:
+            try:
+                await log_msg.delete()
+            except Exception as e:
+                log.warning(f"Failed to auto-delete log message: {e}")
+
+    if conf["dm"]:
+        try:
             if text:
                 file = discord.File(BytesIO(text.encode()), filename=filename)
-                await log_chan.send(embed=embed, file=file, view=view)
+                await member.send(embed=embed, file=file)
             else:
-                await log_chan.send(embed=embed, view=view)
+                await member.send(embed=embed)
+        except discord.Forbidden:
+            pass
 
-            # Delete old log msg
-            log_msg_id = ticket["logmsg"]
-            try:
-                log_msg = await log_chan.fetch_message(log_msg_id)
-            except discord.HTTPException:
-                log.warning("Failed to get log channel message")
-                log_msg = None
-            if log_msg:
-                try:
-                    await log_msg.delete()
-                except Exception as e:
-                    log.warning(f"Failed to auto-delete log message: {e}")
+    # Delete/close ticket channel
+    if isinstance(channel, discord.Thread) and conf["thread_close"]:
+        try:
+            await channel.edit(archived=True, locked=True)
+        except Exception as e:
+            log.error("Failed to archive thread ticket", exc_info=e)
+    else:
+        try:
+            await channel.delete()
+        except Exception as e:
+            log.error("Failed to delete ticket channel", exc_info=e)
 
-        if conf["dm"]:
-            try:
-                if text:
-                    file = discord.File(
-                        BytesIO(text.encode()), filename=filename
-                    )
-                    await member.send(embed=embed, file=file)
-                else:
-                    await member.send(embed=embed)
-            except discord.Forbidden:
-                pass
+    async with config.guild(guild).all() as conf:
+        tickets = conf["opened"]
+        if uid not in tickets:
+            return
+        if cid not in tickets[uid]:
+            return
+        del tickets[uid][cid]
 
-        # Delete/close ticket channel
-        if isinstance(channel, discord.Thread) and conf["thread_close"]:
-            try:
-                await channel.edit(archived=True, locked=True)
-            except Exception as e:
-                log.error("Failed to archive thread ticket", exc_info=e)
-        else:
-            try:
-                await channel.delete()
-            except Exception as e:
-                log.error("Failed to delete ticket channel", exc_info=e)
+        new_id = await update_active_overview(guild, conf)
+        if new_id:
+            conf["overview_msg"] = new_id
 
-        async with self.config.guild(guild).all() as conf:
-            tickets = conf["opened"]
-            if uid not in tickets:
-                return
-            if cid not in tickets[uid]:
-                return
-            del tickets[uid][cid]
 
-            new_id = await update_active_overview(guild, conf)
-            if new_id:
-                conf["overview_msg"] = new_id
-
-    @staticmethod
-    async def fetch_channel_history(
-        channel: discord.TextChannel, limit: int = None
-    ) -> List[discord.Message]:
-        history = []
-        async for msg in channel.history(oldest_first=True, limit=limit):
-            history.append(msg)
-        return history
-
-    @staticmethod
-    async def ticket_owner_hastyped(
-        channel: discord.TextChannel, user: discord.Member
-    ) -> bool:
-        async for msg in channel.history(limit=50, oldest_first=True):
-            if msg.author.id == user.id:
-                return True
+async def prune_invalid_tickets(
+    guild: discord.Guild,
+    conf: dict,
+    config: Config,
+    ctx: Optional[commands.Context] = None,
+) -> bool:
+    opened_tickets = conf["opened"]
+    if not opened_tickets:
+        if ctx:
+            await ctx.send(_("There are no tickets stored in the database."))
         return False
 
-    @staticmethod
-    def get_ticket_owner(opened: dict, channel_id: str) -> Optional[str]:
-        for uid, tickets in opened.items():
-            if channel_id in tickets:
-                return uid
+    member_ids = {m.id for m in guild.members}
+    channel_ids = [c.id for c in guild.channels]
+    channel_ids.extend([c.id for c in guild.threads])
 
-    async def prune_invalid_tickets(
-        self,
-        guild: discord.Guild,
-        conf: dict,
-        ctx: Optional[commands.Context] = None,
-    ) -> bool:
-        opened_tickets = conf["opened"]
-        if not opened_tickets:
-            if ctx:
-                await ctx.send(
-                    _("There are no tickets stored in the database.")
-                )
-            return False
+    valid_opened_tickets = {}
+    count = 0
+    for user_id, tickets in opened_tickets.items():
+        if int(user_id) not in member_ids:
+            count += len(list(tickets.keys()))
+            log.info(f"Cleaning up user {user_id}'s tickets for leaving")
+            continue
 
-        member_ids = {m.id for m in guild.members}
-        channel_ids = [c.id for c in guild.channels]
-        channel_ids.extend([c.id for c in guild.threads])
-
-        valid_opened_tickets = {}
-        count = 0
-        for user_id, tickets in opened_tickets.items():
-            if int(user_id) not in member_ids:
-                count += len(list(tickets.keys()))
-                log.info(f"Cleaning up user {user_id}'s tickets for leaving")
+        valid_user_tickets = {}
+        for channel_id, ticket in tickets.items():
+            if int(channel_id) in channel_ids:
+                valid_user_tickets[channel_id] = ticket
                 continue
+            count += 1
+            log.info(f"Ticket channel {channel_id} no longer exists for user {user_id}")
 
-            valid_user_tickets = {}
-            for channel_id, ticket in tickets.items():
-                if int(channel_id) in channel_ids:
-                    valid_user_tickets[channel_id] = ticket
-                    continue
-                count += 1
-                log.info(
-                    f"Ticket channel {channel_id} no longer exists for user {user_id}"
-                )
+        if valid_user_tickets:
+            valid_opened_tickets[user_id] = valid_user_tickets
 
-            if valid_user_tickets:
-                valid_opened_tickets[user_id] = valid_user_tickets
+    if valid_opened_tickets and count:
+        await config.guild(guild).opened.set(valid_opened_tickets)
 
-        if valid_opened_tickets and count:
-            await self.config.guild(guild).opened.set(valid_opened_tickets)
+    if count and ctx:
+        grammar = _("ticket") if count == 1 else _("tickets")
+        txt = _("Pruned `{}` invalid {}").format(count, grammar)
+        await ctx.send(txt)
+    elif not count and ctx:
+        await ctx.send(_("There are no tickets to prune"))
+    elif count and not ctx:
+        log.info(f"{count} tickets pruned from {guild.name}")
 
-        if count and ctx:
-            grammar = _("ticket") if count == 1 else _("tickets")
-            txt = _("Pruned `{}` invalid {}").format(count, grammar)
-            await ctx.send(txt)
-        elif not count and ctx:
-            await ctx.send(_("There are no tickets to prune"))
-        elif count and not ctx:
-            log.info(f"{count} tickets pruned from {guild.name}")
-
-        return True if count else False
+    return True if count else False
 
 
-def prep_overview_embeds(
-    guild: discord.Guild, opened: dict
-) -> List[discord.Embed]:
+def prep_overview_embeds(guild: discord.Guild, opened: dict) -> List[discord.Embed]:
     title = _("Ticket Overview")
     active = []
     for uid, opened_tickets in opened.items():
@@ -329,9 +328,7 @@ def prep_overview_embeds(
     return embeds
 
 
-async def update_active_overview(
-    guild: discord.Guild, conf: dict
-) -> Optional[int]:
+async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[int]:
     """Update active ticket overview
 
     Args:
