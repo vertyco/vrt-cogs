@@ -29,7 +29,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.1.1"
+    __version__ = "2.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -103,15 +103,17 @@ class Assistant(
     async def get_chat(
         self,
         message: str,
-        author: discord.Member,
-        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+        author: Union[discord.Member, int],
+        guild: discord.Guild,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
     ) -> str:
         """Method for other cogs to call the chat API
 
         Args:
             message (str): content of question or chat message
-            author (discord.Member): user asking the question
-            channel (Union[discord.TextChannel, discord.Thread, discord.ForumChannel]): used for context
+            author (Union[discord.Member, int]): user asking the question
+            guild (discord.Guild): guild associated with the chat
+            channel (Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int]): used for context
 
         Raises:
             NoAPIKey: If the specified guild has no api key associated with it
@@ -119,7 +121,7 @@ class Assistant(
         Returns:
             str: the reply from ChatGPT (may need to be pagified)
         """
-        conf = self.db.get_conf(author.guild)
+        conf = self.db.get_conf(guild)
         if not conf.api_key:
             raise NoAPIKey("OpenAI key has not been set for this server!")
-        return await self.get_chat_response(message, author, channel, conf)
+        return await self.chat_async(message, author, guild, channel, conf)
