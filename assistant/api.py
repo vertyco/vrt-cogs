@@ -112,17 +112,23 @@ class API(MixinMeta):
 
         total_tokens = conversation.token_count() + prompt_tokens + num_tokens_from_string(message)
 
-        embedding_context = ""
-        has_context = False
+        embeddings = []
         for i in conf.get_related_embeddings(query_embedding):
             if num_tokens_from_string(f"\nContext:\n{i[1]}\n\n") + total_tokens < max_usage:
-                embedding_context += f"{i[1]}\n\n"
-                has_context = True
+                embeddings.append(f"{i[1]}")
 
-        if has_context and conf.dynamic_embedding:
-            initial_prompt += f"\nContext:\n{embedding_context}"
-        elif has_context and not conf.dynamic_embedding:
-            message = f"Context:\n{embedding_context}\n\nChat: {message}"
+        if embeddings:
+            joined = "\n".join(embeddings)
+            if conf.embed_method == "static":
+                message = f"Context:\n{joined}\n\nChat: {message}"
+            elif conf.embed_method == "dynamic":
+                initial_prompt += f"\nContext:\n{joined}"
+            elif conf.embed_method == "hybrid" and len(embeddings) > 1:
+                initial_prompt += f"\nContext:\n{embeddings[0]}"
+                joined = "\n".join(embeddings[1:])
+                message = f"Context:\n{joined}\n\nChat: {message}"
+            else:
+                initial_prompt += f"\nContext:\n{embeddings[0]}"
 
         conversation.update_messages(message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
