@@ -2,7 +2,7 @@ import asyncio
 import logging
 import sys
 from datetime import datetime
-from typing import Union
+from typing import Optional, Union
 
 import discord
 import pytz
@@ -22,14 +22,24 @@ class API(MixinMeta):
     async def chat_async(
         self,
         message: str,
-        author: discord.Member,
-        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+        author: Union[discord.Member, int],
+        guild: discord.Guild,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         conf: GuildSettings,
-    ) -> str:
-        conversation = self.chats.get_conversation(author, channel)
+    ):
+        """Call the API asynchronously"""
+        conversation = self.chats.get_conversation(
+            author if isinstance(author, int) else author.id,
+            channel if isinstance(channel, int) else channel.id,
+            guild.id,
+        )
+        if isinstance(author, int):
+            author = guild.get_member(author)
+        if isinstance(channel, int):
+            channel = guild.get_channel(channel)
         try:
             reply = await asyncio.to_thread(
-                self.prepare_call, message, author, channel, conf, conversation
+                self.prepare_call, message, guild, conf, conversation, author, channel
             )
         finally:
             conversation.cleanup(conf)
@@ -38,11 +48,25 @@ class API(MixinMeta):
     def prepare_call(
         self,
         message: str,
-        author: discord.Member,
-        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+        guild: discord.Guild,
         conf: GuildSettings,
         conversation: Conversation,
+        author: Optional[discord.Member],
+        channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
     ) -> str:
+        """Prepare content for calling the GPT API
+
+        Args:
+            message (str): question or chat message
+            guild (discord.Guild): guild associated with the chat
+            conf (GuildSettings): config data
+            conversation (Conversation): user's conversation object for chat history
+            author (Optional[discord.Member]): user chatting with the bot
+            channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): channel for context
+
+        Returns:
+            str: the response from ChatGPT
+        """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
 
         query_embedding = get_embedding(text=message, api_key=conf.api_key)
@@ -56,14 +80,15 @@ class API(MixinMeta):
             "date": now.strftime("%B %d, %Y"),
             "time": now.strftime("%I:%M %p"),
             "timetz": now.strftime("%I:%M %p %Z"),
-            "members": author.guild.member_count,
-            "user": author.display_name,
+            "members": guild.member_count,
+            "username": author.name if author else "",
+            "user": author.display_name if author else "",
             "datetime": str(datetime.now()),
-            "roles": humanize_list([role.name for role in author.roles]),
-            "avatar": author.display_avatar.url,
-            "owner": author.guild.owner,
-            "servercreated": f"<t:{round(author.guild.created_at.timestamp())}:F>",
-            "server": author.guild.name,
+            "roles": humanize_list([role.name for role in author.roles]) if author else "",
+            "avatar": author.display_avatar.url if author else "",
+            "owner": guild.owner,
+            "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",
+            "server": guild.name,
             "messages": len(conversation.messages),
             "tokens": conversation.user_token_count(message=message),
             "retention": conf.max_retention,
@@ -72,9 +97,9 @@ class API(MixinMeta):
             "dpy": discord.__version__,
             "red": version_info,
             "cogs": humanize_list([self.bot.get_cog(cog).qualified_name for cog in self.bot.cogs]),
-            "channelname": channel.name,
-            "channelmention": channel.mention,
-            "topic": channel.topic if isinstance(channel, discord.TextChannel) else "",
+            "channelname": channel.name if channel else "",
+            "channelmention": channel.mention if channel else "",
+            "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
         }
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
@@ -97,7 +122,7 @@ class API(MixinMeta):
         if has_context and conf.dynamic_embedding:
             initial_prompt += f"\nContext:\n{embedding_context}"
         elif has_context and not conf.dynamic_embedding:
-            message = f"Context:\n{embedding_context}\n\n{author.display_name}: {message}"
+            message = f"Context:\n{embedding_context}\n\nChat: {message}"
 
         conversation.update_messages(message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)

@@ -23,12 +23,23 @@ class MixinMeta(metaclass=ABCMeta):
     async def chat_async(
         self,
         message: str,
-        author: discord.Member,
-        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+        author: Union[discord.Member, int],
+        guild: discord.Guild,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         conf: GuildSettings,
     ) -> str:
         raise NotImplementedError
 
     @abstractmethod
     async def save_conf(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_chat(
+        self,
+        message: str,
+        author: Union[discord.Member, int],
+        guild: discord.Guild,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
+    ) -> str:
         raise NotImplementedError

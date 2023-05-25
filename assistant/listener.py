@@ -76,7 +76,9 @@ class AssistantListener(MixinMeta):
 
     async def try_replying(self, message: discord.Message, content: str, conf: GuildSettings):
         try:
-            reply = await self.chat_async(content, message.author, message.channel, conf)
+            reply = await self.chat_async(
+                content, message.author, message.author.guild, message.channel, conf
+            )
             if len(reply) < 2000:
                 return await message.reply(reply, mention_author=conf.mention)
             embeds = [

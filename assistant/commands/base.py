@@ -32,7 +32,7 @@ class Base(MixinMeta):
                     text = await i.read()
                     question += f"\n\nUploaded [{i.filename}]: {text.decode()}"
             try:
-                reply = await self.chat_async(question, ctx.author, ctx.channel, conf)
+                reply = await self.chat_async(question, ctx.author, ctx.guild, ctx.channel, conf)
                 if len(reply) < 2000:
                     return await ctx.reply(reply, mention_author=conf.mention)
 
@@ -57,7 +57,7 @@ class Base(MixinMeta):
         if not user:
             user = ctx.author
         conf = self.db.get_conf(ctx.guild)
-        conversation = self.chats.get_conversation(user, ctx.channel)
+        conversation = self.chats.get_conversation(user.id, ctx.channel.id, ctx.guild.id)
         messages = len(conversation.messages)
         embed = discord.Embed(
             description=(
@@ -78,6 +78,6 @@ class Base(MixinMeta):
 
         This will clear all message history between you and the bot for this channel
         """
-        conversation = self.chats.get_conversation(ctx.author, ctx.channel)
+        conversation = self.chats.get_conversation(ctx.author.id, ctx.channel.id, ctx.guild.id)
         conversation.reset()
         await ctx.tick()

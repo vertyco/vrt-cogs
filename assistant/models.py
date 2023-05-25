@@ -146,10 +146,11 @@ class Conversations(BaseModel):
 
     def get_conversation(
         self,
-        member: discord.Member,
-        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+        member_id: int,
+        channel_id: int,
+        guild_id: int,
     ) -> Conversation:
-        key = f"{member.id}-{channel.id}-{member.guild.id}"
+        key = f"{member_id}-{channel_id}-{guild_id}"
         if key in self.conversations:
             return self.conversations[key]
 
