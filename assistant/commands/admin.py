@@ -241,6 +241,9 @@ class Admin(MixinMeta):
         `dpy` - discord.py version
         `red` - red version
         `cogs` - list of currently loaded cogs
+        `channelname` - name of the channel the conversation is taking place in
+        `channelmention` - current channel mention
+        `topic` - topic of current channel (if not forum or thread)
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -314,6 +317,9 @@ class Admin(MixinMeta):
         `dpy` - discord.py version
         `red` - red version
         `cogs` - list of currently loaded cogs
+        `channelname` - name of the channel the conversation is taking place in
+        `channelmention` - current channel mention
+        `topic` - topic of current channel (if not forum or thread)
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -495,7 +501,7 @@ class Admin(MixinMeta):
         """
         Set the GPT model to use
 
-        Valid models are `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k
+        Valid models are `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k`
         """
         if model not in MODELS:
             return await ctx.send("Invalid model type!")

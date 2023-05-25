@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 from datetime import datetime
+from typing import Union
 
 import discord
 import pytz
@@ -17,13 +18,19 @@ log = logging.getLogger("red.vrt.assistant.api")
 
 
 class API(MixinMeta):
-    @cached(ttl=120)
+    @cached(ttl=30)
     async def get_chat_response(
-        self, message: str, author: discord.Member, conf: GuildSettings
+        self,
+        message: str,
+        author: discord.Member,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+        conf: GuildSettings,
     ) -> str:
         conversation = self.chats.get_conversation(author)
         try:
-            reply = await asyncio.to_thread(self.prepare_call, message, author, conf, conversation)
+            reply = await asyncio.to_thread(
+                self.prepare_call, message, author, channel, conf, conversation
+            )
         finally:
             conversation.cleanup(conf)
         return reply
@@ -32,6 +39,7 @@ class API(MixinMeta):
         self,
         message: str,
         author: discord.Member,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
         conf: GuildSettings,
         conversation: Conversation,
     ) -> str:
@@ -64,6 +72,9 @@ class API(MixinMeta):
             "dpy": discord.__version__,
             "red": version_info,
             "cogs": humanize_list([self.bot.get_cog(cog).qualified_name for cog in self.bot.cogs]),
+            "channelname": channel.name,
+            "channelmention": channel.mention,
+            "topic": channel.topic if isinstance(channel, discord.TextChannel) else "",
         }
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
@@ -89,7 +100,7 @@ class API(MixinMeta):
             message = f"Context:\n{embedding_context}\n\n{author.display_name}: {message}"
 
         conversation.update_messages(message, "user")
-        messages = conversation.prepare_chat(conf, system_prompt, initial_prompt)
+        messages = conversation.prepare_chat(system_prompt, initial_prompt)
         reply = get_chat(model=conf.model, messages=messages, temperature=0, api_key=conf.api_key)
         conversation.update_messages(reply, "assistant")
         return reply

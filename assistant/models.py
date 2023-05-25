@@ -13,6 +13,8 @@ READ_EXTENSIONS = [".txt", ".py", ".json", ".xml", ".html", ".ini", ".css"]
 
 
 class Embedding(BaseModel):
+    """Text embeddings for search&ask efficient prompt training"""
+
     text: str
     embedding: List[float]
 
@@ -51,6 +53,8 @@ class GuildSettings(BaseModel):
 
 
 class DB(BaseModel):
+    """Fully cached config on load"""
+
     configs: dict[int, GuildSettings] = {}
 
     class Config:
@@ -68,6 +72,8 @@ class DB(BaseModel):
 
 
 class Conversation(BaseModel):
+    """Stored conversation between bot and user"""
+
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
@@ -117,7 +123,6 @@ class Conversation(BaseModel):
 
     def prepare_chat(
         self,
-        conf: GuildSettings,
         system_prompt: str = "",
         initial_prompt: str = "",
     ) -> List[dict]:
@@ -126,18 +131,25 @@ class Conversation(BaseModel):
             prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt:
             prepared.append({"role": "user", "content": initial_prompt})
-
         prepared.extend(self.messages)
         return prepared
 
 
 class Conversations(BaseModel):
-    """Temporary conversation cache"""
+    """
+    Temporary conversation cache
+
+    Unique per member/channel/guild
+    """
 
     conversations: dict[int, Conversation] = {}
 
-    def get_conversation(self, member: discord.Member) -> Conversation:
-        key = f"{member.id}{member.guild.id}"
+    def get_conversation(
+        self,
+        member: discord.Member,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+    ) -> Conversation:
+        key = f"{member.id}-{channel.id}-{member.guild.id}"
         if key in self.conversations:
             return self.conversations[key]
 

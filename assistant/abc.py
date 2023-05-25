@@ -19,9 +19,7 @@ class MixinMeta(metaclass=ABCMeta):
     chats: Conversations
 
     @abstractmethod
-    async def get_chat_response(
-        self, message: str, author: discord.Member, conf: GuildSettings
-    ) -> str:
+    async def get_chat_response(self, message: discord.Message, conf: GuildSettings) -> str:
         raise NotImplementedError
 
     @abstractmethod
