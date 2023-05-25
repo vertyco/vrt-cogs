@@ -25,7 +25,7 @@ class GuildSettings(BaseModel):
     embeddings: Dict[str, Embedding] = {}
     top_n: int = 3
     min_relatedness: float = 0.75
-    embed_method: Literal["dynamic", "static", "hybrid"]
+    embed_method: Literal["dynamic", "static", "hybrid"] = "dynamic"
     channel_id: int = 0
     api_key: str = ""
     endswith_questionmark: bool = False
