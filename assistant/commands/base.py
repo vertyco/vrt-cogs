@@ -32,7 +32,7 @@ class Base(MixinMeta):
                     text = await i.read()
                     question += f"\n\nUploaded [{i.filename}]: {text.decode()}"
             try:
-                reply = await self.get_chat_response(question, ctx.author, ctx.channel, conf)
+                reply = await self.chat_async(question, ctx.author, ctx.channel, conf)
                 if len(reply) < 2000:
                     return await ctx.reply(reply, mention_author=conf.mention)
 

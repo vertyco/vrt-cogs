@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from time import perf_counter
+from typing import Union
 
 import discord
 from redbot.core import Config, commands
@@ -28,7 +29,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.1.0"
+    __version__ = "2.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -98,3 +99,27 @@ class Assistant(
         conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         asyncio.create_task(self.save_conf())
         return True
+
+    async def get_chat(
+        self,
+        message: str,
+        author: discord.Member,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+    ) -> str:
+        """Method for other cogs to call the chat API
+
+        Args:
+            message (str): content of question or chat message
+            author (discord.Member): user asking the question
+            channel (Union[discord.TextChannel, discord.Thread, discord.ForumChannel]): used for context
+
+        Raises:
+            NoAPIKey: If the specified guild has no api key associated with it
+
+        Returns:
+            str: the reply from ChatGPT (may need to be pagified)
+        """
+        conf = self.db.get_conf(author.guild)
+        if not conf.api_key:
+            raise NoAPIKey("OpenAI key has not been set for this server!")
+        return await self.get_chat_response(message, author, channel, conf)

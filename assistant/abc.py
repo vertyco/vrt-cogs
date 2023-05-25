@@ -20,7 +20,7 @@ class MixinMeta(metaclass=ABCMeta):
     chats: Conversations
 
     @abstractmethod
-    async def get_chat_response(
+    async def chat_async(
         self,
         message: str,
         author: discord.Member,
