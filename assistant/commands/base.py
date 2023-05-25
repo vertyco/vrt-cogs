@@ -52,8 +52,8 @@ class Base(MixinMeta):
         conversation = self.chats.get_conversation(user)
         messages = len(conversation.messages)
         embed = discord.Embed(
-            title="Token Usage",
             description=(
+                f"**Conversation stats for {ctx.channel.mention}**\n"
                 f"`Messages: `{messages}\n"
                 f"`Tokens:   `{conversation.user_token_count()}\n"
                 f"`Expired:  `{conversation.is_expired(conf)}"
