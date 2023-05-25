@@ -75,7 +75,7 @@ class Admin(MixinMeta):
             f"`Embeddings:        `{humanize_number(len(conf.embeddings))}\n"
             f"`Top N Embeddings:  `{conf.top_n}\n"
             f"`Min Relatedness:   `{conf.min_relatedness}\n"
-            f"`Dynamic Embedding: `{conf.dynamic_embedding}"
+            f"`Embedding Method:  `{conf.embed_method}"
         )
         system_file = (
             discord.File(
@@ -582,24 +582,30 @@ class Admin(MixinMeta):
                     )
                     await ctx.send(embed=embed)
 
-    @assistant.command(name="dynamicembedding")
-    async def toggle_dynamic_embeddings(self, ctx: commands.Context):
+    @assistant.command(name="embedtype")
+    async def toggle_embedding_type(self, ctx: commands.Context):
         """
-        Toggle whether embeddings are dynamic
+        Cycle between embedding methods
 
-        Dynamic embeddings mean that the embeddings pulled are dynamically appended to the initial prompt for each individual question.
+        **Dynamic** embeddings mean that the embeddings pulled are dynamically appended to the initial prompt for each individual question.
         When each time the user asks a question, the previous embedding is replaced with embeddings pulled from the current question, this reduces token usage significantly
 
-        Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings.
-        Turning this off will instead append the embedding context in front of the user's question, thus retaining all pulled embeddings during the conversation.
+        **Static** embeddings are applied in front of each user message and get stored with the conversation instead of being replaced with each question.
+
+        **Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage
+
+        Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground
         """
         conf = self.db.get_conf(ctx.guild)
-        if conf.dynamic_embedding:
-            conf.dynamic_embedding = False
-            await ctx.send("Dynamic embedding is now **Disabled**")
-        else:
-            conf.dynamic_embedding = True
-            await ctx.send("Dynamic embedding is now **Enabled**")
+        if conf.embed_method == "dynamic":
+            conf.embed_method = "static"
+            await ctx.send("Embedding method has been set to **Static**")
+        elif conf.embed_method == "static":
+            conf.embed_method = "hybrid"
+            await ctx.send("Embedding method has been set to **Hybrid**")
+        else:  # Conf is hybrid
+            conf.embed_method = "dynamic"
+            await ctx.send("Embedding method has been set to **Dynamic**")
         await self.save_conf()
 
     @assistant.command(name="importcsv")

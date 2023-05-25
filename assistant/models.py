@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Literal, Tuple, Union
 
 import discord
 import orjson
@@ -25,7 +25,7 @@ class GuildSettings(BaseModel):
     embeddings: Dict[str, Embedding] = {}
     top_n: int = 3
     min_relatedness: float = 0.75
-    dynamic_embedding: bool = True
+    embed_method: Literal["dynamic", "static", "hybrid"]
     channel_id: int = 0
     api_key: str = ""
     endswith_questionmark: bool = False
