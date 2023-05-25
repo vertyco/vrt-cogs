@@ -5,6 +5,7 @@ import logging
 import math
 import os
 import platform
+import random
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -61,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.2"
+    __version__ = "1.6.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -936,3 +937,11 @@ class VrtUtils(commands.Cog):
             await ctx.send(text)
         except ValueError:
             await ctx.send("I could not convert that binary string to text :(")
+
+    @commands.command(name="randomnum", aliases=["rnum"])
+    async def random_number(self, ctx: commands.Context, minimum: int = 1, maximum: int = 100):
+        """Generate a random number between the numbers specified"""
+        if minimum >= maximum:
+            return await ctx.send("Minimum needs to be lower than maximum!")
+        num = random.randint(minimum, maximum)
+        await ctx.send(f"Result: `{num}`")
