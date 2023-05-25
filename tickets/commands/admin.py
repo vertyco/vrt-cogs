@@ -9,7 +9,7 @@ from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
 from ..menu import SMALL_CONTROLS, MenuButton, menu
-from ..utils import update_active_overview
+from ..utils import prune_invalid_tickets, update_active_overview
 from ..views import TestButton, confirm, wait_reply
 
 log = logging.getLogger("red.vrt.admincommands")
@@ -302,6 +302,26 @@ class AdminCommands(MixinMeta):
             else:
                 panels[panel_name]["threads"] = True
                 await ctx.send(_("The {} panel will now use threads").format(panel_name))
+        await self.initialize(ctx.guild)
+
+    @tickets.command()
+    async def closemodal(self, ctx: commands.Context, panel_name: str):
+        """Throw a modal when the close button is clicked to enter a reason"""
+        panel_name = panel_name.lower()
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if "close_reason" not in panels[panel_name]:
+                panels[panel_name]["close_reason"] = True
+            toggle = panels[panel_name]["close_reason"]
+            if toggle:
+                panels[panel_name]["close_reason"] = False
+                await ctx.send(
+                    _("The {} panel will no longer show a close reason modal").format(panel_name)
+                )
+            else:
+                panels[panel_name]["close_reason"] = True
+                await ctx.send(
+                    _("The {} panel will now show a close reason modal").format(panel_name)
+                )
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -816,6 +836,11 @@ class AdminCommands(MixinMeta):
         for panel_name, info in panels.items():
             cat = self.bot.get_channel(info["category_id"]) if info["category_id"] else "None"
             channel = self.bot.get_channel(info["channel_id"]) if info["channel_id"] else "None"
+            extra = ""
+            if alt := info.get("alt_channel"):
+                if alt := self.bot.get_channel(alt):
+                    channel = alt
+                    extra = _("(alt)")
             logchannel = (
                 self.bot.get_channel(info["log_channel"]) if info["log_channel"] else "None"
             )
@@ -835,7 +860,7 @@ class AdminCommands(MixinMeta):
                 open_roles += f"{role.mention}\n"
 
             desc = _("`Category:       `") + f"{cat}\n"
-            desc += _("`Channel:        `") + f"{channel}\n"
+            desc += _("`Channel:        `") + f"{channel}{extra}\n"
             desc += _("`MessageID:      `") + f"{info['message_id']}\n"
             desc += _("`ButtonText:     `") + f"{info['button_text']}\n"
             desc += _("`ButtonColor:    `") + f"{info['button_color']}\n"
@@ -848,7 +873,8 @@ class AdminCommands(MixinMeta):
             desc += _("`Modal Title:    `") + f"{info.get('modal_title', 'None')}\n"
             desc += _("`LogChannel:     `") + f"{logchannel}\n"
             desc += _("`Priority:       `") + f"{info.get('priority', 1)}\n"
-            desc += _("`Button Row:     `") + f"{info.get('row')}"
+            desc += _("`Button Row:     `") + f"{info.get('row')}\n"
+            desc += _("`Reason Modal:   `") + f"{info.get('close_reason', False)}"
 
             em = Embed(
                 title=_("Panel: ") + panel_name,
@@ -944,8 +970,8 @@ class AdminCommands(MixinMeta):
         await self.config.guild(ctx.guild).max_tickets.set(amount)
         await ctx.tick()
 
-    @tickets.command(name="supportrole")
-    async def set_support_role(
+    @tickets.command()
+    async def supportrole(
         self,
         ctx: commands.Context,
         role: discord.Role,
@@ -969,8 +995,8 @@ class AdminCommands(MixinMeta):
                 await ctx.send(role.name + _(" has been added to support roles"))
         await self.initialize(ctx.guild)
 
-    @tickets.command(name="panelrole")
-    async def set_panel_role(
+    @tickets.command()
+    async def panelrole(
         self,
         ctx: commands.Context,
         panel_name: str,
@@ -1010,8 +1036,8 @@ class AdminCommands(MixinMeta):
                 )
         await self.initialize(ctx.guild)
 
-    @tickets.command(name="openrole")
-    async def set_open_role(self, ctx: commands.Context, panel_name: str, *, role: discord.Role):
+    @tickets.command()
+    async def openrole(self, ctx: commands.Context, panel_name: str, *, role: discord.Role):
         """
         Add/Remove roles required to open a ticket for a specific panel
 
@@ -1039,8 +1065,8 @@ class AdminCommands(MixinMeta):
                 )
             await self.initialize(ctx.guild)
 
-    @tickets.command(name="altchannel")
-    async def set_alt_channel(
+    @tickets.command()
+    async def altchannel(
         self,
         ctx: commands.Context,
         panel_name: str,
@@ -1069,8 +1095,8 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("Alt channel has been set to {}!").format(channel.name))
         await self.initialize(ctx.guild)
 
-    @tickets.command(name="priority")
-    async def set_priority(self, ctx: commands.Context, panel_name: str, priority: int):
+    @tickets.command()
+    async def priority(self, ctx: commands.Context, panel_name: str, priority: int):
         """Set the priority order of a panel's button"""
         if priority < 1 or priority > 25:
             return await ctx.send(_("Priority needs to be between 1 and 25"))
@@ -1082,8 +1108,8 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("Priority for this panel has been set to {}!").format(priority))
         await self.initialize(ctx.guild)
 
-    @tickets.command(name="row")
-    async def set_row(self, ctx: commands.Context, panel_name: str, row: int):
+    @tickets.command()
+    async def row(self, ctx: commands.Context, panel_name: str, row: int):
         """Set the row of a panel's button (0 - 4)"""
         if row < 0 or row > 4:
             return await ctx.send(_("Row needs to be between 0 and 4"))
@@ -1114,8 +1140,8 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("The row number for this panel has been set to {}!").format(row))
         await self.initialize(ctx.guild)
 
-    @tickets.command(name="blacklist")
-    async def set_blacklist(
+    @tickets.command()
+    async def blacklist(
         self,
         ctx: commands.Context,
         *,
@@ -1134,8 +1160,8 @@ class AdminCommands(MixinMeta):
                 bl.append(user_or_role.id)
                 await ctx.send(user_or_role.name + _(" has been added to the blacklist"))
 
-    @tickets.command(name="noresponse")
-    async def no_response_close(self, ctx: commands.Context, hours: int):
+    @tickets.command()
+    async def noresponse(self, ctx: commands.Context, hours: int):
         """
         Auto-close ticket if opener doesn't say anything after X hours of opening
 
@@ -1144,8 +1170,8 @@ class AdminCommands(MixinMeta):
         await self.config.guild(ctx.guild).inactive.set(hours)
         await ctx.tick()
 
-    @tickets.command(name="overview")
-    async def set_active_channel(
+    @tickets.command()
+    async def overview(
         self,
         ctx: commands.Context,
         *,
@@ -1167,16 +1193,16 @@ class AdminCommands(MixinMeta):
             if new_id:
                 await self.config.guild(ctx.guild).overview_msg.set(new_id)
 
-    @tickets.command(name="cleanup")
-    async def cleanup_tickets(self, ctx: commands.Context):
+    @tickets.command()
+    async def cleanup(self, ctx: commands.Context):
         """Cleanup tickets that no longer exist"""
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
-            await self.prune_invalid_tickets(ctx.guild, conf, ctx)
+            await prune_invalid_tickets(ctx.guild, conf, self.config, ctx)
 
     # TOGGLES --------------------------------------------------------------------------------
-    @tickets.command(name="dm")
-    async def toggle_dms(self, ctx: commands.Context):
+    @tickets.command()
+    async def dm(self, ctx: commands.Context):
         """(Toggle) The bot sending DM's for ticket alerts"""
         toggle = await self.config.guild(ctx.guild).dm()
         if toggle:
@@ -1186,8 +1212,8 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).dm.set(True)
             await ctx.send(_("DM alerts have been **Enabled**"))
 
-    @tickets.command(name="threadclose")
-    async def toggle_thread_closing(self, ctx: commands.Context):
+    @tickets.command()
+    async def threadclose(self, ctx: commands.Context):
         """(Toggle) Thread tickets being closed & archived instead of deleted"""
         toggle = await self.config.guild(ctx.guild).thread_close()
         if toggle:
@@ -1197,8 +1223,8 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).thread_close.set(True)
             await ctx.send(_("Closed ticket threads will be **Closed & Archived**"))
 
-    @tickets.command(name="selfrename")
-    async def toggle_rename(self, ctx: commands.Context):
+    @tickets.command()
+    async def selfrename(self, ctx: commands.Context):
         """(Toggle) If users can rename their own tickets"""
         toggle = await self.config.guild(ctx.guild).user_can_rename()
         if toggle:
@@ -1208,8 +1234,8 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).user_can_rename.set(True)
             await ctx.send(_("User can now rename their support channel"))
 
-    @tickets.command(name="selfclose")
-    async def toggle_selfclose(self, ctx: commands.Context):
+    @tickets.command()
+    async def selfclose(self, ctx: commands.Context):
         """(Toggle) If users can close their own tickets"""
         toggle = await self.config.guild(ctx.guild).user_can_close()
         if toggle:
@@ -1219,8 +1245,8 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).user_can_close.set(True)
             await ctx.send(_("User can now close their support ticket channel"))
 
-    @tickets.command(name="selfmanage")
-    async def toggle_selfmanage(self, ctx: commands.Context):
+    @tickets.command()
+    async def selfmanage(self, ctx: commands.Context):
         """
         (Toggle) If users can manage their own tickets
 
@@ -1234,8 +1260,8 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).user_can_manage.set(True)
             await ctx.send(_("User can now manage their support ticket channel"))
 
-    @tickets.command(name="autoadd")
-    async def toggle_autoadd(self, ctx: commands.Context):
+    @tickets.command()
+    async def autoadd(self, ctx: commands.Context):
         """
         (Toggle) Auto-add support and panel roles to thread tickets
 
@@ -1251,8 +1277,8 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).auto_add.set(True)
             await ctx.send(_("Support and panel roles will be auto-added to thread tickets"))
 
-    @tickets.command(name="transcript")
-    async def toggle_transcript(self, ctx: commands.Context):
+    @tickets.command()
+    async def transcript(self, ctx: commands.Context):
         """
         (Toggle) Ticket transcripts
 
@@ -1266,8 +1292,8 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).transcript.set(True)
             await ctx.send(_("Transcripts of closed tickets will now be saved"))
 
-    @tickets.command(name="updatemessage")
-    async def update_message(
+    @tickets.command()
+    async def updatemessage(
         self,
         ctx: commands.Context,
         source: discord.Message,
@@ -1281,8 +1307,8 @@ class AdminCommands(MixinMeta):
         )
         await ctx.tick()
 
-    @tickets.command(name="embed")
-    async def make_panel_message(
+    @tickets.command()
+    async def embed(
         self,
         ctx: commands.Context,
         color: Optional[discord.Color],

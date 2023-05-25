@@ -14,7 +14,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
-from .utils import update_active_overview
+from .utils import can_close, close_ticket, update_active_overview
 
 _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
@@ -121,6 +121,73 @@ class TestButton(View):
         style = get_color(style)
         butt = discord.ui.Button(label=label, style=style, emoji=emoji)
         self.add_item(butt)
+
+
+class CloseReasonModal(Modal):
+    def __init__(self):
+        self.reason = None
+        super().__init__(title=_("Closing your ticket"), timeout=120)
+        self.field = TextInput(
+            label=_("Reason for closing"),
+            style=TextStyle.short,
+            required=True,
+        )
+        self.add_item(self.field)
+
+    async def on_submit(self, interaction: Interaction):
+        self.reason = self.field.value
+        await interaction.response.defer()
+        self.stop()
+
+
+class CloseView(View):
+    def __init__(
+        self,
+        bot: Red,
+        config: Config,
+        owner_id: int,
+        channel: Union[discord.TextChannel, discord.Thread],
+    ):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.config = config
+        self.owner_id = owner_id
+        self.channel = channel
+
+    @discord.ui.button(label="Close", style=ButtonStyle.danger)
+    async def close_ticket(self, interaction: Interaction, button: Button):
+        conf = await self.config.guild(interaction.guild).all()
+        if not await can_close(
+            self.bot, interaction.guild, interaction.channel, interaction.user, self.owner_id, conf
+        ):
+            return await interaction.response.send_message(
+                _("You do not have permissions to close this ticket"), ephemeral=True
+            )
+        panel_name = conf["opened"][str(self.owner_id)][str(self.channel.id)]["panel"]
+        requires_reason = conf["panels"][panel_name].get("close_reason", True)
+        reason = None
+        if requires_reason:
+            modal = CloseReasonModal()
+            await interaction.response.send_modal(modal)
+            await modal.wait()
+            if modal.reason is None:
+                return
+            reason = modal.reason
+            await interaction.followup.send(_("Closing..."), ephemeral=True)
+        else:
+            await interaction.response.send_message(_("Closing..."), ephemeral=True)
+        owner = self.channel.guild.get_member(int(self.owner_id))
+        if not owner:
+            owner = await self.bot.fetch_user(int(self.owner_id))
+        await close_ticket(
+            member=owner,
+            guild=self.channel.guild,
+            channel=self.channel,
+            conf=conf,
+            reason=reason,
+            closedby=interaction.user.display_name,
+            config=self.config,
+        )
 
 
 class TicketModal(Modal):
@@ -383,6 +450,12 @@ class SupportButton(Button):
             content = humanize_list(support_mentions)
 
         allowed_mentions = discord.AllowedMentions(roles=True)
+        close_view = CloseView(
+            self.view.bot,
+            self.view.config,
+            user.id,
+            channel_or_thread,
+        )
         if messages:
             embeds = []
             for einfo in messages:
@@ -396,16 +469,14 @@ class SupportButton(Button):
                 embeds.append(em)
 
             msg = await channel_or_thread.send(
-                content=content,
-                embeds=embeds,
-                allowed_mentions=allowed_mentions,
+                content=content, embeds=embeds, allowed_mentions=allowed_mentions, view=close_view
             )
         else:
             em = discord.Embed(description=default_message, color=user.color)
             if user.avatar:
                 em.set_thumbnail(url=user.display_avatar.url)
             msg = await channel_or_thread.send(
-                content=content, embed=em, allowed_mentions=allowed_mentions
+                content=content, embed=em, allowed_mentions=allowed_mentions, view=close_view
             )
 
         if len(form_embed.fields) > 0:
