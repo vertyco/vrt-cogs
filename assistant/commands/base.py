@@ -49,11 +49,11 @@ class Base(MixinMeta):
         if not user:
             user = ctx.author
         conf = self.db.get_conf(ctx.guild)
-        conversation = self.chats.get_conversation(user)
+        conversation = self.chats.get_conversation(user, ctx.channel)
         messages = len(conversation.messages)
         embed = discord.Embed(
             description=(
-                f"**Conversation stats for {ctx.channel.mention}**\n"
+                f"**Conversation stats for {user.mention} in {ctx.channel.mention}**\n"
                 f"`Messages: `{messages}\n"
                 f"`Tokens:   `{conversation.user_token_count()}\n"
                 f"`Expired:  `{conversation.is_expired(conf)}"
