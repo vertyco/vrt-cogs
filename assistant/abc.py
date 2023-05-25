@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from typing import Union
 
 import discord
 from discord.ext.commands.cog import CogMeta
@@ -19,7 +20,13 @@ class MixinMeta(metaclass=ABCMeta):
     chats: Conversations
 
     @abstractmethod
-    async def get_chat_response(self, message: discord.Message, conf: GuildSettings) -> str:
+    async def get_chat_response(
+        self,
+        message: str,
+        author: discord.Member,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
+        conf: GuildSettings,
+    ) -> str:
         raise NotImplementedError
 
     @abstractmethod
