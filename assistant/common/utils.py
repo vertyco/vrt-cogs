@@ -139,10 +139,6 @@ def get_embedding(text: str, api_key: str) -> List[float]:
     return response["data"][0]["embedding"]
 
 
-async def get_chat_async(model: str, messages: list, api_key: str, temperature: float = 0) -> str:
-    return await asyncio.to_thread(get_chat, model, messages, temperature, api_key)
-
-
 @retry(tries=3, delay=3)
 def get_chat(model: str, messages: list, api_key: str, temperature: float = 0) -> str:
     response = openai.ChatCompletion.create(

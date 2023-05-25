@@ -19,7 +19,7 @@ log = logging.getLogger("red.vrt.assistant.api")
 
 class API(MixinMeta):
     @cached(ttl=30)
-    async def get_chat_response(
+    async def chat_async(
         self,
         message: str,
         author: discord.Member,
