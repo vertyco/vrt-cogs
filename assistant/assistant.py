@@ -2,14 +2,16 @@ import asyncio
 import logging
 from time import perf_counter
 
+import discord
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
 from .abc import CompositeMetaClass
 from .api import API
 from .commands import AssistantCommands
+from .common.utils import get_embedding_async
 from .listener import AssistantListener
-from .models import DB, Conversations
+from .models import DB, Conversations, Embedding, EmbeddingEntryExists, NoAPIKey
 
 log = logging.getLogger("red.vrt.assistant")
 
@@ -26,7 +28,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.0.1"
+    __version__ = "2.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -65,3 +67,33 @@ class Assistant(
             log.error("Failed to save config", exc_info=e)
         finally:
             self.saving = False
+
+    async def add_embedding(
+        self, guild: discord.Guild, name: str, text: str, overwrite: bool = False
+    ) -> bool:
+        """
+        Method for other cogs to access and add embeddings
+
+        Args:
+            guild (discord.Guild): guild to pull config for
+            name (str): the entry name for the embedding
+            text (str): the text to be embedded
+            overwrite (bool): whether to overwrite if entry exists
+
+        Raises:
+            NoAPIKey: If the specified guild has no api key associated with it
+            EmbeddingEntryExists: If overwrite is false and entry name exists
+
+        Returns:
+            bool: whether the embed was successfully added
+        """
+        conf = self.db.get_conf(guild)
+        if not conf.api_key:
+            raise NoAPIKey("OpenAI key has not been set for this server!")
+        if name in conf.embeddings and not overwrite:
+            raise EmbeddingEntryExists(f"The entry name '{name}' already exists!")
+        embedding = await get_embedding_async(text, conf.api_key)
+        if not embedding:
+            return False
+        conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+        return True

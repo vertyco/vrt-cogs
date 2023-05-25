@@ -155,3 +155,11 @@ class Conversations(BaseModel):
 
         self.conversations[key] = Conversation()
         return self.conversations[key]
+
+
+class NoAPIKey(Exception):
+    """OpenAI Key no set"""
+
+
+class EmbeddingEntryExists(Exception):
+    """Entry name for embedding exits"""
