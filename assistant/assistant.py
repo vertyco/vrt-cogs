@@ -96,4 +96,5 @@ class Assistant(
         if not embedding:
             return False
         conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+        asyncio.create_task(self.save_conf())
         return True
