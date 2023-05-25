@@ -582,8 +582,8 @@ class Admin(MixinMeta):
                     )
                     await ctx.send(embed=embed)
 
-    @assistant.command(name="embedtype")
-    async def toggle_embedding_type(self, ctx: commands.Context):
+    @assistant.command(name="embedmethod")
+    async def toggle_embedding_method(self, ctx: commands.Context):
         """
         Cycle between embedding methods
 
