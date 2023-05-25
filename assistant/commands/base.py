@@ -16,7 +16,11 @@ class Base(MixinMeta):
     @commands.guild_only()
     @commands.cooldown(1, 6, commands.BucketType.user)
     async def ask_question(self, ctx: commands.Context, *, question: str):
-        """Ask [botname] a question!"""
+        """
+        Chat with [botname]!
+
+        Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel
+        """
         conf = self.db.get_conf(ctx.guild)
         if not conf.api_key:
             return await ctx.send("This command requires an API key from OpenAI to be configured!")
@@ -45,7 +49,11 @@ class Base(MixinMeta):
     @commands.command(name="convostats")
     @commands.guild_only()
     async def token_count(self, ctx: commands.Context, *, user: discord.Member = None):
-        """Check the token and message count of yourself or another user's conversation"""
+        """
+        Check the token and message count of yourself or another user's conversation for this channel
+
+        Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel
+        """
         if not user:
             user = ctx.author
         conf = self.db.get_conf(ctx.guild)
@@ -65,7 +73,11 @@ class Base(MixinMeta):
     @commands.command(name="clearconvo")
     @commands.guild_only()
     async def clear_convo(self, ctx: commands.Context):
-        """Reset your conversation"""
-        conversation = self.chats.get_conversation(ctx.author)
+        """
+        Reset your conversation
+
+        This will clear all message history between you and the bot for this channel
+        """
+        conversation = self.chats.get_conversation(ctx.author, ctx.channel)
         conversation.reset()
         await ctx.tick()
