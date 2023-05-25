@@ -26,7 +26,7 @@ class API(MixinMeta):
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
         conf: GuildSettings,
     ) -> str:
-        conversation = self.chats.get_conversation(author)
+        conversation = self.chats.get_conversation(author, channel)
         try:
             reply = await asyncio.to_thread(
                 self.prepare_call, message, author, channel, conf, conversation
