@@ -22,7 +22,7 @@ class Assistant(
     metaclass=CompositeMetaClass,
 ):
     """
-    Set up a helpful assistant for your Discord server, powered by the ChatGPT API
+    Advanced full featured Chat GPT integration, with all the tools needed to configure a knowledgable Q&A or chat bot!
     """
 
     __author__ = "Vertyco#0117"
