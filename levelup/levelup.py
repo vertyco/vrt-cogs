@@ -19,7 +19,7 @@ import tabulate
 from aiohttp import ClientSession
 from discord.ext import tasks
 from redbot.core import Config, commands
-from redbot.core.data_manager import bundled_data_path
+from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.24.0"
+    __version__ = "2.24.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1463,11 +1463,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         """
         if not i_agree:
             return await ctx.send(_("Not importing levels"))
-        leveler = self.bot.get_cog("Leveler")
-        if not leveler:
-            return await ctx.send(
-                _("Malarne's Leveler is not loaded, please load it and try again!")
-            )
+        path = cog_data_path(self).parent / "UserProfile" / "settings.json"
+        if not path.exists():
+            return await ctx.send(_("No config found for Malarne's Leveler cog!"))
+
+        data = json.loads(path.read_text())["1099710897114110101"]["MEMBER"]
         imported = 0
         async with ctx.typing():
             for guild in self.bot.guilds:
@@ -1475,36 +1475,40 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     continue
                 base = self.data[guild.id]["base"]
                 exp = self.data[guild.id]["exp"]
-                source_profiles = await leveler.profiles.data.all_members(guild)
-                print(source_profiles)
+                source_profiles = data.get(str(guild.id))
+                if not source_profiles:
+                    continue
                 for user_id, data in source_profiles.items():
-                    uid = str(user_id)
-                    user = guild.get_member(user_id)
+                    user = guild.get_member(int(user_id))
                     if not user:
                         continue
-                    if uid not in self.data[guild.id]["users"]:
-                        self.init_user(guild.id, uid)
+                    if user_id not in self.data[guild.id]["users"]:
+                        self.init_user(guild.id, user_id)
 
                     old_level = data.get("level", 0)
                     old_exp = data.get("exp", 0)
                     if replace:
                         if "l" in import_by.lower():
-                            self.data[guild.id]["users"][uid]["level"] = old_level
+                            self.data[guild.id]["users"][user_id]["level"] = old_level
                             new_xp = get_xp(old_level, base, exp)
-                            self.data[guild.id]["users"][uid]["xp"] = new_xp
+                            self.data[guild.id]["users"][user_id]["xp"] = new_xp
                         else:
-                            self.data[guild.id]["users"][uid]["xp"] = old_exp
+                            self.data[guild.id]["users"][user_id]["xp"] = old_exp
                             new_lvl = get_level(old_exp, base, exp)
-                            self.data[guild.id]["users"][uid]["level"] = new_lvl
+                            self.data[guild.id]["users"][user_id]["level"] = new_lvl
                     else:
                         if "l" in import_by.lower():
-                            self.data[guild.id]["users"][uid]["level"] += old_level
-                            new_xp = get_xp(self.data[guild.id]["users"][uid]["level"], base, exp)
-                            self.data[guild.id]["users"][uid]["xp"] = new_xp
+                            self.data[guild.id]["users"][user_id]["level"] += old_level
+                            new_xp = get_xp(
+                                self.data[guild.id]["users"][user_id]["level"], base, exp
+                            )
+                            self.data[guild.id]["users"][user_id]["xp"] = new_xp
                         else:
-                            self.data[guild.id]["users"][uid]["xp"] += old_exp
-                            new_lvl = get_level(self.data[guild.id]["users"][uid]["xp"], base, exp)
-                            self.data[guild.id]["users"][uid]["level"] = new_lvl
+                            self.data[guild.id]["users"][user_id]["xp"] += old_exp
+                            new_lvl = get_level(
+                                self.data[guild.id]["users"][user_id]["xp"], base, exp
+                            )
+                            self.data[guild.id]["users"][user_id]["level"] = new_lvl
                     imported += 1
         if not imported:
             return await ctx.send(_("There were no profiles to import"))
