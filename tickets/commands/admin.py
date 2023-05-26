@@ -310,7 +310,7 @@ class AdminCommands(MixinMeta):
         panel_name = panel_name.lower()
         async with self.config.guild(ctx.guild).panels() as panels:
             if "close_reason" not in panels[panel_name]:
-                panels[panel_name]["close_reason"] = True
+                panels[panel_name]["close_reason"] = False
             toggle = panels[panel_name]["close_reason"]
             if toggle:
                 panels[panel_name]["close_reason"] = False
