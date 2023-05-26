@@ -145,7 +145,7 @@ class Admin(MixinMeta):
             )[0]
             return await ctx.send(f"Invalid Timezone, did you mean `{likely_match}`?")
         time = datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
-        await ctx.send(f"Timezone set to **{timezone}** (Time: `{time}`)")
+        await ctx.send(f"Timezone set to **{timezone}** (`{time}`)")
         conf = self.db.get_conf(ctx.guild)
         conf.timezone = timezone
         await self.save_conf()
