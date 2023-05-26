@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.23.1"
+    __version__ = "2.24.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1442,6 +1442,75 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.save_cache()
         await ctx.send(_("Config restored from backup file!"))
 
+    @admin_group.command(name="importmalarne")
+    @commands.is_owner()
+    async def import_from_malarne(
+        self,
+        ctx: commands.Context,
+        import_by: str,
+        replace: bool,
+        i_agree: bool,
+    ):
+        """
+        Import levels and exp from Malarne's Leveler cog
+
+        **Arguments**
+        `export_by` - which stat to prioritize (`level` or `exp`)
+        If exp is entered, it will import their experience and base their new level off of that.
+        If level is entered, it will import their level and calculate their exp based off of that.
+        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it
+        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
+        """
+        if not i_agree:
+            return await ctx.send(_("Not importing levels"))
+        leveler = self.bot.get_cog("Leveler")
+        if not leveler:
+            return await ctx.send(
+                _("Malarne's Leveler is not loaded, please load it and try again!")
+            )
+        imported = 0
+        async with ctx.typing():
+            for guild in self.bot.guilds:
+                if guild.id not in self.data:
+                    continue
+                base = self.data[guild.id]["base"]
+                exp = self.data[guild.id]["exp"]
+                source_profiles = await leveler.profiles.data.all_members(guild)
+                print(source_profiles)
+                for user_id, data in source_profiles.items():
+                    uid = str(user_id)
+                    user = guild.get_member(user_id)
+                    if not user:
+                        continue
+                    if uid not in self.data[guild.id]["users"]:
+                        self.init_user(guild.id, uid)
+
+                    old_level = data.get("level", 0)
+                    old_exp = data.get("exp", 0)
+                    if replace:
+                        if "l" in import_by.lower():
+                            self.data[guild.id]["users"][uid]["level"] = old_level
+                            new_xp = get_xp(old_level, base, exp)
+                            self.data[guild.id]["users"][uid]["xp"] = new_xp
+                        else:
+                            self.data[guild.id]["users"][uid]["xp"] = old_exp
+                            new_lvl = get_level(old_exp, base, exp)
+                            self.data[guild.id]["users"][uid]["level"] = new_lvl
+                    else:
+                        if "l" in import_by.lower():
+                            self.data[guild.id]["users"][uid]["level"] += old_level
+                            new_xp = get_xp(self.data[guild.id]["users"][uid]["level"], base, exp)
+                            self.data[guild.id]["users"][uid]["xp"] = new_xp
+                        else:
+                            self.data[guild.id]["users"][uid]["xp"] += old_exp
+                            new_lvl = get_level(self.data[guild.id]["users"][uid]["xp"], base, exp)
+                            self.data[guild.id]["users"][uid]["level"] = new_lvl
+                    imported += 1
+        if not imported:
+            return await ctx.send(_("There were no profiles to import"))
+        txt = _("Imported {} profile(s)").format(imported)
+        await ctx.send(txt)
+
     @admin_group.command(name="importmee6")
     @commands.guildowner()
     async def import_from_mee6(
@@ -1547,9 +1616,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     txt += f" ({failed} " + _("failed") + ")"
                 await ctx.send(txt)
 
-    @admin_group.command(name="importleveler")
+    @admin_group.command(name="importfixator")
     @commands.is_owner()
-    async def import_from_leveler(self, ctx: commands.Context, yes_or_no: str):
+    async def import_from_fixator(self, ctx: commands.Context, yes_or_no: str):
         """
         Import data from Fixator's Leveler cog
 
