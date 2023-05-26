@@ -53,6 +53,8 @@ class Base(MixinMeta):
         Check the token and message count of yourself or another user's conversation for this channel
 
         Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel
+
+        Conversations are only stored in memory until the bot restarts or the cog reloads,
         """
         if not user:
             user = ctx.author
