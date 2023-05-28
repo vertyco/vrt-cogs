@@ -38,7 +38,7 @@ async def can_close(
         can_close = True
     elif await is_admin_or_superior(bot, author):
         can_close = True
-    elif owner_id == str(author.id) and conf["user_can_close"]:
+    elif str(owner_id) == str(author.id) and conf["user_can_close"]:
         can_close = True
     return can_close
 
