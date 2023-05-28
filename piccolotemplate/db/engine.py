@@ -14,6 +14,7 @@ log = logging.getLogger("red.vrt.piccolotemplate")
 
 
 def acquire_db_engine(config: dict) -> PostgresEngine:
+    """This is ran in executor since it blocks if connection info is bad"""
     return PostgresEngine(config=config)
 
 
@@ -62,6 +63,19 @@ async def create_database_and_tables(
 
 
 async def run_migrations(cog: Cog, config: dict):
+    """
+    Run any existing migrations programatically.
+
+    There might be a better way to do this that subprocess, but haven't tested yet.
+
+    Args:
+        cog (Cog): Cog instance
+        config (dict): Database connection info
+
+    Returns:
+        str: Results of the migration
+    """
+
     def run():
         root = Path(inspect.getfile(cog.__class__)).parent
         env = os.environ.copy()
@@ -101,6 +115,16 @@ async def run_migrations(cog: Cog, config: dict):
 async def register_cog(
     cog: Cog, config: dict, tables: List[Type[Table]]
 ) -> Tuple[PostgresEngine, str]:
+    """Registers a cog by creating a database for it and initializing any tables it has
+
+    Args:
+        cog (Cog): Cog instance
+        config (dict): database connection info
+        tables (List[Type[Table]]): list of piccolo table subclasses
+
+    Returns:
+        Tuple[PostgresEngine, str]: Postgres Engine instance, migration results
+    """
     engine = await create_database_and_tables(cog, config, tables)
     result = await run_migrations(cog, config)
     return engine, result
