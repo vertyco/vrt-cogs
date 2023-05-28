@@ -21,7 +21,7 @@ log = logging.getLogger("red.vrt.assistant.api")
 
 
 class API(MixinMeta):
-    async def chat_async(
+    async def get_chat_response(
         self,
         message: str,
         author: Union[discord.Member, int],
