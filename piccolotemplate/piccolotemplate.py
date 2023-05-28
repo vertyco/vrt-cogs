@@ -14,7 +14,9 @@ log = logging.getLogger("red.vrt.piccolotemplate")
 
 
 class PiccoloTemplate(commands.Cog):
-    """this cog is a template for using Piccolo/Postgresql with Red"""
+    """
+    This cog is a template for using Piccolo/Postgresql with Red
+    """
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
