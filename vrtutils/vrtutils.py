@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.3"
+    __version__ = "1.6.4"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -107,10 +107,10 @@ class VrtUtils(commands.Cog):
         cmd = f"{executable} -m {command}"
 
         def exe():
-            results = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode(
-                "utf-8"
+            results = subprocess.run(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
             )
-            return results
+            return results.stdout.decode("utf-8") or results.stderr.decode("utf-8")
 
         res = await self.bot.loop.run_in_executor(self.threadpool, exe)
         return res
