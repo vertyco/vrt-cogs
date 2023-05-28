@@ -2,23 +2,25 @@ import asyncio
 import logging
 import sys
 from datetime import datetime
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import discord
 import pytz
-from aiocache import cached
 from redbot.core import version_info
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
-from .common.utils import get_chat, get_embedding, num_tokens_from_string
+from .common.utils import (
+    num_tokens_from_string,
+    request_chat_response,
+    request_embedding,
+)
 from .models import Conversation, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
 
 
 class API(MixinMeta):
-    @cached(ttl=30)
     async def chat_async(
         self,
         message: str,
@@ -38,14 +40,31 @@ class API(MixinMeta):
         if isinstance(channel, int):
             channel = guild.get_channel(channel)
         try:
-            reply = await asyncio.to_thread(
-                self.prepare_call, message, guild, conf, conversation, author, channel
+            query_embedding = await request_embedding(text=message, api_key=conf.api_key)
+            if not query_embedding:
+                log.info(f"Could not get embedding for message: {message}")
+            messages = await asyncio.to_thread(
+                self.prepare_messages,
+                message,
+                guild,
+                conf,
+                conversation,
+                author,
+                channel,
+                query_embedding,
             )
+            reply = await request_chat_response(
+                model=conf.model,
+                messages=messages,
+                temperature=conf.temperature,
+                api_key=conf.api_key,
+            )
+            conversation.update_messages(reply, "assistant")
         finally:
             conversation.cleanup(conf)
         return reply
 
-    def prepare_call(
+    def prepare_messages(
         self,
         message: str,
         guild: discord.Guild,
@@ -53,6 +72,7 @@ class API(MixinMeta):
         conversation: Conversation,
         author: Optional[discord.Member],
         channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
+        query_embedding: List[float],
     ) -> str:
         """Prepare content for calling the GPT API
 
@@ -68,10 +88,6 @@ class API(MixinMeta):
             str: the response from ChatGPT
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
-
-        query_embedding = get_embedding(text=message, api_key=conf.api_key)
-        if not query_embedding:
-            log.info(f"Could not get embedding for message: {message}")
 
         params = {
             "botname": self.bot.user.name,
@@ -132,6 +148,4 @@ class API(MixinMeta):
 
         conversation.update_messages(message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
-        reply = get_chat(model=conf.model, messages=messages, temperature=0, api_key=conf.api_key)
-        conversation.update_messages(reply, "assistant")
-        return reply
+        return messages

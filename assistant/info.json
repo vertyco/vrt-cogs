@@ -24,7 +24,7 @@
     "tiktoken",
     "scipy",
     "scikit-learn",
-    "retry",
+    "tenacity",
     "matplotlib",
     "plotly",
     "pandas",

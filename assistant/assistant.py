@@ -10,7 +10,7 @@ from redbot.core.bot import Red
 from .abc import CompositeMetaClass
 from .api import API
 from .commands import AssistantCommands
-from .common.utils import get_embedding_async
+from .common.utils import request_embedding
 from .listener import AssistantListener
 from .models import DB, Conversations, Embedding, EmbeddingEntryExists, NoAPIKey
 
@@ -29,7 +29,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.3.0"
+    __version__ = "2.3.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -93,7 +93,7 @@ class Assistant(
             raise NoAPIKey("OpenAI key has not been set for this server!")
         if name in conf.embeddings and not overwrite:
             raise EmbeddingEntryExists(f"The entry name '{name}' already exists!")
-        embedding = await get_embedding_async(text, conf.api_key)
+        embedding = await request_embedding(text, conf.api_key)
         if not embedding:
             return False
         conf.embeddings[name] = Embedding(text=text, embedding=embedding)

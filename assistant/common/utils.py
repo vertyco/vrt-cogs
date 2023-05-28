@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import math
 from typing import Any, Dict, List, Union
@@ -7,7 +6,13 @@ import discord
 import openai
 import tiktoken
 from aiocache import cached
-from retry import retry
+from openai.error import APIConnectionError, RateLimitError, Timeout
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_delay,
+    wait_random_exponential,
+)
 
 log = logging.getLogger("red.vrt.assistant.utils")
 encoding = tiktoken.get_encoding("cl100k_base")
@@ -128,20 +133,30 @@ def embedding_embeds(embeddings: Dict[str, Any], place: int):
     return embeds
 
 
-@cached(ttl=7200)
-async def get_embedding_async(text: str, api_key: str) -> List[float]:
-    return await asyncio.to_thread(get_embedding, text, api_key)
-
-
-@retry(tries=4, delay=4)
-def get_embedding(text: str, api_key: str) -> List[float]:
-    response = openai.Embedding.create(input=text, model="text-embedding-ada-002", api_key=api_key)
+@retry(
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    wait=wait_random_exponential(min=1, max=5),
+    stop=stop_after_delay(120),
+    reraise=True,
+)
+@cached(ttl=1800)
+async def request_embedding(text: str, api_key: str) -> List[float]:
+    response = await openai.Embedding.acreate(
+        input=text, model="text-embedding-ada-002", api_key=api_key, timeout=30
+    )
     return response["data"][0]["embedding"]
 
 
-@retry(tries=3, delay=3)
-def get_chat(model: str, messages: list, api_key: str, temperature: float = 0) -> str:
-    response = openai.ChatCompletion.create(
-        model=model, messages=messages, temperature=temperature, api_key=api_key
+@retry(
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    wait=wait_random_exponential(min=1, max=5),
+    stop=stop_after_delay(120),
+    reraise=True,
+)
+async def request_chat_response(
+    model: str, messages: List[dict], api_key: str, temperature: float = 0.0
+) -> str:
+    response = await openai.ChatCompletion.acreate(
+        model=model, messages=messages, temperature=temperature, api_key=api_key, timeout=30
     )
     return response["choices"][0]["message"]["content"]
