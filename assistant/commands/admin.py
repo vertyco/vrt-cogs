@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 from datetime import datetime
 from io import BytesIO
@@ -27,8 +28,8 @@ from ..common.utils import (
     extract_message_content,
     fetch_channel_history,
     get_attachments,
-    get_embedding_async,
     num_tokens_from_string,
+    request_embedding,
 )
 from ..models import MODELS, Embedding
 from ..views import EmbeddingMenu, SetAPI
@@ -195,7 +196,7 @@ class Admin(MixinMeta):
                         if content := extract_message_content(message):
                             text += content
                             key = f"{channel.name}-{message.id}"
-                            embedding = await get_embedding_async(text, conf.api_key)
+                            embedding = await request_embedding(text, conf.api_key)
                             if not embedding:
                                 continue
                             conf.embeddings[key] = Embedding(text=text, embedding=embedding)
@@ -567,7 +568,7 @@ class Admin(MixinMeta):
         if not conf.embeddings:
             return await ctx.send("You do not have any embeddings configured!")
         async with ctx.typing():
-            query = await get_embedding_async(question, conf.api_key)
+            query = await request_embedding(question, conf.api_key)
             if not query:
                 return await ctx.send("Failed to get embedding for your query")
             embeddings = conf.get_related_embeddings(query)
@@ -664,10 +665,11 @@ class Admin(MixinMeta):
             text = str(row[1])[:4000]
 
             if index and (index + 1) % 5 == 0:
-                await message.edit(
-                    content=f"{message_text}\n`Currently {proc}: `**{name}** ({index + 1}/{len(df)})"
-                )
-            embedding = await get_embedding_async(text, conf.api_key)
+                with contextlib.suppress(discord.DiscordServerError):
+                    await message.edit(
+                        content=f"{message_text}\n`Currently {proc}: `**{name}** ({index + 1}/{len(df)})"
+                    )
+            embedding = await request_embedding(text, conf.api_key)
             if not embedding:
                 await ctx.send(f"Failed to process embedding: `{name}`")
                 continue

@@ -37,6 +37,7 @@ class GuildSettings(BaseModel):
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
     timezone: str = "UTC"
+    temperature: float = 0.0
 
     def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, float]]:
         if not self.top_n or not query_embedding or not self.embeddings:

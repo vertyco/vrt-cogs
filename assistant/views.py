@@ -8,7 +8,7 @@ from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 
-from .common.utils import embedding_embeds, get_embedding_async
+from .common.utils import embedding_embeds, request_embedding
 from .models import Embedding, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.views")
@@ -162,7 +162,7 @@ class EmbeddingMenu(discord.ui.View):
                 )
 
     async def add_embedding(self, name: str, text: str):
-        embedding = await get_embedding_async(text, self.conf.api_key)
+        embedding = await request_embedding(text, self.conf.api_key)
         if not embedding:
             return await self.ctx.send(
                 f"Failed to process embedding `{name}`\nContent: ```\n{text}\n```"
@@ -218,7 +218,7 @@ class EmbeddingMenu(discord.ui.View):
         await modal.wait()
         if not modal.name or not modal.text:
             return
-        embedding = await get_embedding_async(modal.text, self.conf.api_key)
+        embedding = await request_embedding(modal.text, self.conf.api_key)
         if not embedding:
             return await interaction.followup.send(
                 "Failed to edit that embedding, please try again later", ephemeral=True
