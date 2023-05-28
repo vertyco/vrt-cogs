@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from time import perf_counter
-from typing import Union
+from typing import List, Optional, Union
 
 import discord
 from redbot.core import Config, commands
@@ -71,7 +71,7 @@ class Assistant(
 
     async def add_embedding(
         self, guild: discord.Guild, name: str, text: str, overwrite: bool = False
-    ) -> bool:
+    ) -> Optional[List[float]]:
         """
         Method for other cogs to access and add embeddings
 
@@ -86,8 +86,9 @@ class Assistant(
             EmbeddingEntryExists: If overwrite is false and entry name exists
 
         Returns:
-            bool: whether the embed was successfully added
+            Optional[List[float]]: List of embedding weights if successfully generated
         """
+
         conf = self.db.get_conf(guild)
         if not conf.api_key:
             raise NoAPIKey("OpenAI key has not been set for this server!")
@@ -95,10 +96,10 @@ class Assistant(
             raise EmbeddingEntryExists(f"The entry name '{name}' already exists!")
         embedding = await request_embedding(text, conf.api_key)
         if not embedding:
-            return False
+            return None
         conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         asyncio.create_task(self.save_conf())
-        return True
+        return embedding
 
     async def get_chat(
         self,
@@ -124,4 +125,4 @@ class Assistant(
         conf = self.db.get_conf(guild)
         if not conf.api_key:
             raise NoAPIKey("OpenAI key has not been set for this server!")
-        return await self.chat_async(message, author, guild, channel, conf)
+        return await self.get_chat_response(message, author, guild, channel, conf)
