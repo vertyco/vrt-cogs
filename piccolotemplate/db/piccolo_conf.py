@@ -1,3 +1,4 @@
+# This file is just here for migrations and to satisfy piccolo being annoying about it
 import os
 
 from piccolo.conf.apps import AppRegistry
