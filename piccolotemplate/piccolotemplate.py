@@ -64,7 +64,7 @@ class PiccoloTemplate(commands.Cog):
     async def get_db_connection_test(self, ctx: commands.Context):
         """Refresh database connection"""
         current = await self.bot.get_shared_api_tokens("piccolo")
-        self.db = await create_database_and_tables(self, current, [MyTable])
+        self.db = await create_database_and_tables(self, current, [MyTable], max_size=20)
         await ctx.send(f"Running postgres version {await self.db.get_version()}")
 
     @commands.command(name="migrate")
