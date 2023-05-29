@@ -245,7 +245,7 @@ class EconomyTrackCommands(MixinMeta):
         embed.set_image(url="attachment://plot.png")
         embed.set_footer(text=f"Timezone: {timezone}")
         async with ctx.typing():
-            file = await self.get_plot(df)
+            file = await self.get_plot(df, "Total Economy Credits")
         await ctx.send(embed=embed, file=file)
 
     @commands.command(aliases=["memgraph"])
@@ -333,5 +333,5 @@ class EconomyTrackCommands(MixinMeta):
         embed.set_image(url="attachment://plot.png")
         embed.set_footer(text=f"Timezone: {timezone}")
         async with ctx.typing():
-            file = await self.get_plot(df)
+            file = await self.get_plot(df, "Member Count")
         await ctx.send(embed=embed, file=file)

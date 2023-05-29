@@ -21,16 +21,14 @@ class PlotGraph(MixinMeta):
         )
 
     async def get_plot(self, df: pd.DataFrame) -> discord.File:
-        return await self.bot.loop.run_in_executor(
-            self.executor, lambda: self.make_plot(df)
-        )
+        return await self.bot.loop.run_in_executor(self.executor, lambda: self.make_plot(df))
 
     @staticmethod
-    def make_plot(df: pd.DataFrame) -> discord.File:
+    def make_plot(df: pd.DataFrame, y_label: str) -> discord.File:
         fig = px.line(
             df,
             template="plotly_dark",
-            labels={"ts": _("Date"), "value": _("Total Economy Credits")},
+            labels={"ts": _("Date"), "value": y_label},
         )
         fig.update_xaxes(tickformat="%I:%M %p\n%b %d %Y")
         fig.update_layout(
