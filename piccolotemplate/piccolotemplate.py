@@ -3,10 +3,10 @@ import logging
 
 import discord
 from piccolo.engine.postgres import PostgresEngine
+from red_postgres import create_database_and_tables, register_cog, run_migrations
 from redbot.core import commands
 from redbot.core.bot import Red
 
-from .db.engine import create_database_and_tables, register_cog, run_migrations
 from .db.tables import MyTable
 from .views.api_modal import SetConnectionView
 

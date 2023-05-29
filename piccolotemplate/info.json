@@ -6,9 +6,10 @@
   "hidden": true,
   "install_msg": "This is a template cog for piccolo/postgres with Red. It does not do anything.",
   "min_bot_version": "3.5.0",
+  "min_python_version": [3, 11, 0],
   "permissions": [],
   "required_cogs": {},
-  "requirements": ["piccolo[postgres]"],
+  "requirements": ["piccolo[postgres]", "red-postgres>=0.0.8"],
   "short": "Template cog for piccolo/postgres with Red",
   "tags": [],
   "type": "COG"
