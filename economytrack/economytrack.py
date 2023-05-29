@@ -20,21 +20,19 @@ log = logging.getLogger("red.vrt.economytrack")
 # Vex-Cogs - https://github.com/Vexed01/Vex-Cogs - (StatTrack)
 
 
-class EconomyTrack(
-    commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=CompositeMetaClass
-):
-    """Track your economy's total balance over time"""
+class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=CompositeMetaClass):
+    """
+    Track your economy's total balance over time
+
+    Also track you server's member count!
+    """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.5"
+    __version__ = "0.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
-        info = (
-            f"{helpcmd}\n"
-            f"Cog Version: {self.__version__}\n"
-            f"Author: {self.__author__}\n"
-        )
+        info = f"{helpcmd}\n" f"Cog Version: {self.__version__}\n" f"Author: {self.__author__}\n"
         return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
@@ -45,7 +43,13 @@ class EconomyTrack(
         self.bot = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
         default_global = {"max_points": 43200, "data": []}
-        default_guild = {"timezone": "UTC", "data": [], "enabled": False}
+        default_guild = {
+            "timezone": "UTC",
+            "data": [],
+            "enabled": False,
+            "member_data": [],
+            "member_tracking": False,
+        }
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
         self.looptime = None
@@ -77,6 +81,16 @@ class EconomyTrack(
                     data.append((now, total))
                     if len(data) > max_points:
                         del data[0 : len(data) - max_points]
+
+        async for guild in AsyncIter(self.bot.guilds):
+            if not await self.config.guild(guild).member_tracking():
+                continue
+            members = guild.member_count
+            async with self.config.guild(guild).member_data() as data:
+                data.append((now, members))
+                if len(data) > max_points:
+                    del data[0 : len(data) - max_points]
+
         iter_time = round((monotonic() - start) * 1000)
         avg_iter = self.looptime
         if avg_iter is None:
