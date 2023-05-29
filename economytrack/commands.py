@@ -4,15 +4,10 @@ import discord
 import pandas as pd
 import pytz
 from discord.ext.commands.cooldowns import BucketType
+from rapidfuzz import fuzz
 from redbot.core import bank, commands
 from redbot.core.commands import parse_timedelta
-from redbot.core.utils.chat_formatting import (
-    box,
-    humanize_number,
-    humanize_timedelta,
-    pagify,
-)
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
+from redbot.core.utils.chat_formatting import box, humanize_number, humanize_timedelta
 
 from economytrack.abc import MixinMeta
 
@@ -27,7 +22,7 @@ class EconomyTrackCommands(MixinMeta):
     @economytrack.command()
     @commands.guildowner()
     @commands.guild_only()
-    async def toggle(self, ctx: commands.Context):
+    async def togglebanktrack(self, ctx: commands.Context):
         """Enable/Disable economy tracking for this server"""
         async with self.config.guild(ctx.guild).all() as conf:
             if conf["enabled"]:
@@ -36,6 +31,19 @@ class EconomyTrackCommands(MixinMeta):
             else:
                 conf["enabled"] = True
                 await ctx.send("Economy tracking has been **Enabled**")
+
+    @economytrack.command()
+    @commands.guildowner()
+    @commands.guild_only()
+    async def togglemembertrack(self, ctx: commands.Context):
+        """Enable/Disable member tracking for this server"""
+        async with self.config.guild(ctx.guild).all() as conf:
+            if conf["member_tracking"]:
+                conf["member_tracking"] = False
+                await ctx.send("Member tracking has been **Disabled**")
+            else:
+                conf["member_tracking"] = True
+                await ctx.send("Member tracking has been **Enabled**")
 
     @economytrack.command()
     @commands.is_owner()
@@ -54,38 +62,28 @@ class EconomyTrackCommands(MixinMeta):
         await ctx.tick()
 
     @economytrack.command()
-    async def timezone(self, ctx: commands.Context, timezone: str = None):
+    async def timezone(self, ctx: commands.Context, timezone: str):
         """
         Set your desired timezone for the graph
 
         **Arguments**
         `<timezone>` A string representing a valid timezone
 
+        **Example:** `[p]ecotrack timezone US/Eastern`
+
         Use this command without the argument to get a huge list of valid timezones.
         """
-        tzs = pytz.common_timezones
-        timezones = "\n".join([t for t in tzs])
-        command = f"`{ctx.prefix}ecotrack timezone US/Eastern`"
-        text = f"Use one of these timezones with this command\nExample: {command}"
-        embeds = []
-        if not timezone or timezone not in tzs:
-            if not timezone:
-                title = "Valid Timezones"
-            else:
-                title = "Invalid Arg, Here are Valid Timezones"
-            for p in pagify(timezones, page_length=500):
-                em = discord.Embed(
-                    title=title, description=f"{text}\n{box(p)}", color=ctx.author.color
-                )
-                embeds.append(em)
-
-        if embeds:
-            for i, em in enumerate(embeds):
-                em.set_footer(text=f"Page {i + 1}/{len(embeds)}")
-            return await menu(ctx, embeds, DEFAULT_CONTROLS)
-
+        timezone = timezone.lower()
+        try:
+            tz = pytz.timezone(timezone)
+        except pytz.UnknownTimeZoneError:
+            likely_match = sorted(
+                pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True
+            )[0]
+            return await ctx.send(f"Invalid Timezone, did you mean `{likely_match}`?")
+        time = datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
+        await ctx.send(f"Timezone set to **{timezone}** (`{time}`)")
         await self.config.guild(ctx.guild).timezone.set(timezone)
-        await ctx.tick()
 
     @economytrack.command()
     async def view(self, ctx: commands.Context):
@@ -113,6 +111,15 @@ class EconomyTrackCommands(MixinMeta):
         )
         embed = discord.Embed(
             title="EconomyTrack Settings", description=desc, color=ctx.author.color
+        )
+        memtime = humanize_timedelta(seconds=len(conf["member_data"]) * 60)
+        embed.add_field(
+            name="Member Tracking",
+            value=(
+                f"`Enabled:   `{conf['member_tracking']}\n"
+                f"`Collected: `{humanize_number(len(conf['member_data']))} ({memtime if memtime else 'None'})"
+            ),
+            inline=False,
         )
         await ctx.send(embed=embed)
 
@@ -183,9 +190,7 @@ class EconomyTrackCommands(MixinMeta):
         columns = ["ts", "total"]
         rows = [i for i in data]
         for i in rows:
-            i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(
-                tz=pytz.timezone(timezone)
-            )
+            i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
         df = pd.DataFrame(rows, columns=columns)
         df = df.set_index(["ts"])
         df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
@@ -217,6 +222,94 @@ class EconomyTrackCommands(MixinMeta):
             f"`BankName:   `{bank_name}\n"
             f"`Currency:   `{currency_name}"
         )
+
+        field = (
+            f"`Current: `{humanize_number(current)}\n"
+            f"`Average: `{humanize_number(round(avg))}\n"
+            f"`Highest: `{humanize_number(highest)}\n"
+            f"`Lowest:  `{humanize_number(lowest)}\n"
+            f"`Diff:    `{humanize_number(highest - lowest)}"
+        )
+
+        first = df.values[0][0]
+        diff = "+" if current > first else "-"
+        field2 = f"{diff} {humanize_number(abs(current - first))}"
+
+        embed = discord.Embed(title=title, description=desc, color=ctx.author.color)
+        embed.add_field(name="Statistics", value=field)
+        embed.add_field(
+            name="Change",
+            value=f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field2, 'diff')}",
+        )
+
+        embed.set_image(url="attachment://plot.png")
+        embed.set_footer(text=f"Timezone: {timezone}")
+        async with ctx.typing():
+            file = await self.get_plot(df)
+        await ctx.send(embed=embed, file=file)
+
+    @commands.command(aliases=["memgraph"])
+    @commands.cooldown(5, 60.0, BucketType.user)
+    @commands.guild_only()
+    async def membergraph(self, ctx: commands.Context, timespan: str = "1d"):
+        """
+        View member count over a period of time.
+        **Arguments**
+        `<timespan>` How long to look for, or `all` for all-time data. Defaults to 1 day.
+        Must be at least 1 hour.
+        **Examples:**
+            - `[p]membergraph 3w2d`
+            - `[p]membergraph 5d`
+            - `[p]membergraph all`
+        """
+        if timespan.lower() == "all":
+            delta = datetime.timedelta(days=36500)
+        else:
+            delta = parse_timedelta(timespan, minimum=datetime.timedelta(hours=1))
+            if delta is None:
+                delta = datetime.timedelta(hours=1)
+
+        data = await self.config.guild(ctx.guild).member_data()
+        if len(data) < 10:
+            embed = discord.Embed(
+                description="There is not enough data collected to generate a graph right now. Try again later.",
+                color=discord.Color.red(),
+            )
+            return await ctx.send(embed=embed)
+        timezone = await self.config.guild(ctx.guild).timezone()
+        now = datetime.datetime.now().astimezone(tz=pytz.timezone(timezone))
+        start = now - delta
+        columns = ["ts", "total"]
+        rows = [i for i in data]
+        for i in rows:
+            i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
+        df = pd.DataFrame(rows, columns=columns)
+        df = df.set_index(["ts"])
+        df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
+        mask = (df.index > start) & (df.index <= now)
+        df = df.loc[mask]
+        df = pd.DataFrame(df)
+
+        if df.empty or len(df.values) < 10:  # In case there is data but it is old
+            embed = discord.Embed(
+                description="There is not enough data collected to generate a graph right now. Try again later.",
+                color=discord.Color.red(),
+            )
+            return await ctx.send(embed=embed)
+
+        if timespan.lower() == "all":
+            alltime = humanize_timedelta(seconds=len(data) * 60)
+            title = f"Total member count for all time ({alltime})"
+        else:
+            delta: datetime.timedelta = df.index[-1] - df.index[0]
+            title = f"Total member count over the last {humanize_timedelta(timedelta=delta)}"
+
+        lowest = df.min().total
+        highest = df.max().total
+        avg = df.mean().total
+        current = df.values[-1][0]
+
+        desc = f"`DataPoints: `{humanize_number(len(df.values))}"
 
         field = (
             f"`Current: `{humanize_number(current)}\n"
