@@ -54,8 +54,8 @@ async def fetch_channel_history(
 
 def extract_message_content(message: discord.Message):
     content = ""
-    if message.content:
-        content += f"{content}\n"
+    if txt := message.content.strip():
+        content += f"{txt}\n"
     if message.embeds:
         content += f"{extract_embed_content(message.embeds)}\n"
     return content.strip()
