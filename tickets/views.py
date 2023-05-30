@@ -480,7 +480,8 @@ class SupportButton(Button):
             )
 
         if len(form_embed.fields) > 0:
-            await channel_or_thread.send(embed=form_embed)
+            form_msg = await channel_or_thread.send(embed=form_embed)
+            await form_msg.pin(reason=_("Ticket form questions"))
 
         desc = _("Your ticket channel has been created, **[CLICK HERE]({})**").format(msg.jump_url)
         em = discord.Embed(description=desc, color=user.color)
