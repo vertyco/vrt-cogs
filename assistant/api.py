@@ -121,16 +121,18 @@ class API(MixinMeta):
         initial_prompt = conf.prompt.format(**params)
 
         # Dynamically clean up the conversation to prevent going over token limit
-        max_usage = round(conf.max_tokens * 0.9)
         prompt_tokens = num_tokens_from_string(system_prompt + initial_prompt)
-        while (conversation.token_count() + prompt_tokens) > max_usage:
+        while (conversation.token_count() + prompt_tokens) > conf.max_tokens * 0.9:
             conversation.messages.pop(0)
 
         total_tokens = conversation.token_count() + prompt_tokens + num_tokens_from_string(message)
 
         embeddings = []
         for i in conf.get_related_embeddings(query_embedding):
-            if num_tokens_from_string(f"\nContext:\n{i[1]}\n\n") + total_tokens < max_usage:
+            if (
+                num_tokens_from_string(f"\nContext:\n{i[1]}\n\n") + total_tokens
+                < conf.max_tokens * 0.8
+            ):
                 embeddings.append(f"{i[1]}")
 
         if embeddings:
