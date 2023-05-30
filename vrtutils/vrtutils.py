@@ -9,7 +9,7 @@ import random
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from io import StringIO
+from io import BytesIO
 from sys import executable
 from typing import Optional, Union
 
@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.4"
+    __version__ = "1.6.5"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -518,12 +518,11 @@ class VrtUtils(commands.Cog):
     @commands.is_owner()
     async def usersjson(self, ctx: commands.Context):
         """Get a json file containing all usernames/ID's in this guild"""
-        members = {}
-        for member in ctx.guild.members:
-            members[str(member.id)] = member.name
-        iofile = StringIO(json.dumps(members))
-        filename = "users.json"
-        file = discord.File(iofile, filename=filename)
+        members = {str(member.id): member.name for member in ctx.guild.members}
+        buffer = BytesIO(json.dump(members).encode())
+        buffer.name = "users.json"
+        buffer.seek(0)
+        file = discord.File(buffer)
         await ctx.send("Here are all usernames and their ID's for this guild", file=file)
 
     @commands.command()
