@@ -519,7 +519,7 @@ class VrtUtils(commands.Cog):
     async def usersjson(self, ctx: commands.Context):
         """Get a json file containing all usernames/ID's in this guild"""
         members = {str(member.id): member.name for member in ctx.guild.members}
-        buffer = BytesIO(json.dump(members).encode())
+        buffer = BytesIO(json.dumps(members).encode())
         buffer.name = "users.json"
         buffer.seek(0)
         file = discord.File(buffer)
