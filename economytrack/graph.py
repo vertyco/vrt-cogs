@@ -1,5 +1,4 @@
-import os
-from concurrent.futures.thread import ThreadPoolExecutor
+import asyncio
 from io import BytesIO
 
 import discord
@@ -14,14 +13,8 @@ _ = Translator("EconomyTrackCommands", __file__)
 
 @cog_i18n(_)
 class PlotGraph(MixinMeta):
-    def __init__(self):
-        self.executor = ThreadPoolExecutor(
-            max_workers=os.cpu_count() if os.cpu_count() else 4,
-            thread_name_prefix="economytrack_plot",
-        )
-
-    async def get_plot(self, df: pd.DataFrame) -> discord.File:
-        return await self.bot.loop.run_in_executor(self.executor, lambda: self.make_plot(df))
+    async def get_plot(self, df: pd.DataFrame, y_label: str) -> discord.File:
+        return await asyncio.to_thread(self.make_plot, df, y_label)
 
     @staticmethod
     def make_plot(df: pd.DataFrame, y_label: str) -> discord.File:
