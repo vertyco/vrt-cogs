@@ -20,5 +20,6 @@ class MixinMeta(ABC):
     executor: ThreadPoolExecutor
 
     @abstractmethod
-    async def get_plot(self, df: pd.DataFrame, y_label: str) -> discord.File:
+    @staticmethod
+    async def get_plot(df: pd.DataFrame, y_label: str) -> discord.File:
         raise NotImplementedError
