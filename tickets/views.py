@@ -262,7 +262,7 @@ class SupportButton(Button):
             if not any(r.id in required_roles for r in user.roles):
                 roles = [guild.get_role(i).mention for i in required_roles if guild.get_role(i)]
                 em = discord.Embed(
-                    description=_("You must have one of the following roles to open a ticket: ")
+                    description=_("You must have one of the following roles to open this ticket: ")
                     + humanize_list(roles),
                     color=discord.Color.red(),
                 )
