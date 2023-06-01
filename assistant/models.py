@@ -21,6 +21,22 @@ READ_EXTENSIONS = [
     ".md",
     ".ini",
     ".conf",
+    ".go",
+    ".cfg",
+    ".java",
+    ".c",
+    ".php",
+    ".swift",
+    ".vb",
+    ".xhtml",
+    ".rss",
+    ".css",
+    ".asp",
+    ".js",
+    ".ts",
+    ".cs",
+    ".c++",
+    ".cc",
 ]
 
 
