@@ -72,6 +72,7 @@ class CustomCmdFmt:
         replace_botname: bool,
         extended_info: bool,
         privilege_level: str,
+        embedding_style: bool = False,
     ):
         self.bot = bot
         self.cmd = cmd
@@ -79,6 +80,7 @@ class CustomCmdFmt:
         self.replace_botname = replace_botname
         self.extended_info = extended_info
         self.privilege_level = privilege_level
+        self.embedding_style = embedding_style
 
         self.is_slash: bool = isinstance(cmd, SlashCommand)
         self.is_hybrid: bool = any(
@@ -101,18 +103,12 @@ class CustomCmdFmt:
 
         if self.is_slash:
             self.options = cmd.to_dict()["options"]
-            self.desc: str = cmd.description.replace("\n", "<br/>").replace(
-                "`", ""
-            )
+            self.desc: str = cmd.description
         else:
             try:
-                self.desc: str = cmd.help.replace("\n", "<br/>").replace(
-                    "`", ""
-                )
+                self.desc: str = cmd.help
             except AttributeError:
-                self.desc: str = cmd.description.replace(
-                    "\n", "<br/>"
-                ).replace("`", "")
+                self.desc: str = cmd.description
             try:
                 self.perms = self.cmd.requires
                 cd = cmd.cooldown
@@ -128,6 +124,9 @@ class CustomCmdFmt:
             )
             self.aliases: str = humanize_list(aliases) if aliases else ""
 
+        if not self.embedding_style:
+            self.desc = self.desc.replace("\n", "<br/>").replace("`", "")
+
     def get_doc(self) -> Optional[str]:
         # Get header of command
         if self.is_slash:
@@ -136,6 +135,9 @@ class CustomCmdFmt:
             doc = f"{self.hashes} {self.name} ({HYBRID} {COMMAND})\n"
         else:
             doc = f"{self.hashes} {self.name}\n"
+
+        if self.embedding_style:
+            doc = doc.replace("#", "").strip() + "\n"
 
         # Get command usage info
         if self.is_slash:
@@ -213,28 +215,23 @@ class CustomCmdFmt:
                     cls = CLASSCONVERTER.get(p.type, "")
 
                     if not docstring and not cls:
-                        err = _(
-                            "Could not get docstring or class for {} converter"
-                        ).format(str(p))
+                        err = _("Could not get docstring or class for {} converter").format(str(p))
                         log.warning(err)
                         continue
                     elif not docstring:
-                        err = _(
-                            "Could not get docstring for {} converter"
-                        ).format(str(p))
+                        err = _("Could not get docstring for {} converter").format(str(p))
                         log.warning(err)
                         continue
                     elif not cls:
-                        err = _("Could not get class for {} converter").format(
-                            str(p)
-                        )
+                        err = _("Could not get class for {} converter").format(str(p))
                         log.warning(err)
                         continue
 
-                    cstring = (
-                        str(cls).replace("<class '", "").replace("'>", "")
-                    )
-                    ext += f"> ### {p.name}: {cstring}\n"
+                    cstring = str(cls).replace("<class '", "").replace("'>", "")
+                    if self.embedding_style:
+                        ext += f"> {p.name}: {cstring}\n"
+                    else:
+                        ext += f"> ### {p.name}: {cstring}\n"
                     ext += f"> - {AUTOCOMPLETE}: {autocomplete}\n"
 
                     if not required:
@@ -270,9 +267,9 @@ class CustomCmdFmt:
                     try:
                         docstring = CONVERTERS.get(converter)
                     except TypeError:
-                        err = _(
-                            "Could not find {} for the {} argument of the {} command"
-                        ).format(p, arg, self.name)
+                        err = _("Could not find {} for the {} argument of the {} command").format(
+                            p, arg, self.name
+                        )
                         log.warning(err)
                         docstring = None
 
@@ -280,13 +277,14 @@ class CustomCmdFmt:
                         docstring = CONVERTERS.get(converter.__args__[0])
 
                     if not docstring:
-                        err = _(
-                            "Could not get docstring for {} converter"
-                        ).format(str(p))
+                        err = _("Could not get docstring for {} converter").format(str(p))
                         log.warning(err)
                         continue
 
-                    ext += f"> ### {p}\n"
+                    if self.embedding_style:
+                        ext += f"> {p}\n"
+                    else:
+                        ext += f"> ### {p}\n"
 
                     if p.description:
                         ext += f"> {p.description}\n"
