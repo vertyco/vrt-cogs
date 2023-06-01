@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+import re
 from datetime import datetime
 from io import BytesIO
 from typing import List, Union
@@ -103,6 +104,12 @@ class Admin(MixinMeta):
                 value=conf.api_key if conf.api_key else "Not Set",
                 inline=False,
             )
+
+        if conf.regex_blacklist:
+            joined = "\n".join(conf.regex_blacklist)
+            for p in pagify(joined, page_length=1000):
+                embed.add_field(name="Regex Blacklist", value=box(p), inline=False)
+
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
         files = []
         if system_file:
@@ -555,6 +562,22 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.min_relatedness = mimimum_relatedness
         await ctx.tick()
+        await self.save_conf()
+
+    @assistant.command(name="regexblacklist")
+    async def regex_blacklist(self, ctx: commands.Context, *, regex: str):
+        """Remove certain words/phrases in the bot's responses"""
+        try:
+            re.compile(regex)
+        except re.error:
+            return await ctx.send("That regex is invalid")
+        conf = self.db.get_conf(ctx.guild)
+        if regex in conf.regex_blacklist:
+            conf.regex_blacklist.remove(regex)
+            await ctx.send(f"`{regex}` has been **Removed** from the blacklist")
+        else:
+            conf.regex_blacklist.append(regex)
+            await ctx.send(f"`{regex}` has been **Added** to the blacklist")
         await self.save_conf()
 
     @assistant.command(name="embeddingtest", aliases=["etest"])
