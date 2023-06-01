@@ -615,6 +615,8 @@ class Admin(MixinMeta):
 
         Args:
             overwrite (bool): overwrite embeddings with existing entry names
+
+        This will read excel files too
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.api_key:
@@ -629,7 +631,10 @@ class Admin(MixinMeta):
         for attachment in attachments:
             file_bytes = await attachment.read()
             try:
-                df = pd.read_csv(BytesIO(file_bytes))
+                if attachment.filename.lower().endswith(".csv"):
+                    df = pd.read_csv(BytesIO(file_bytes))
+                else:
+                    df = pd.read_excel(BytesIO(file_bytes))
             except Exception as e:
                 log.error("Error reading uploaded file", exc_info=e)
                 await ctx.send(f"Error reading **{attachment.filename}**: {box(str(e))}")
