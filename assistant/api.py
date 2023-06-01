@@ -122,7 +122,7 @@ class API(MixinMeta):
 
         # Dynamically clean up the conversation to prevent going over token limit
         prompt_tokens = num_tokens_from_string(system_prompt + initial_prompt)
-        while (conversation.token_count() + prompt_tokens) > conf.max_tokens * 0.9:
+        while (conversation.token_count() + prompt_tokens) > conf.max_tokens * 0.85:
             conversation.messages.pop(0)
 
         total_tokens = conversation.token_count() + prompt_tokens + num_tokens_from_string(message)
@@ -130,23 +130,23 @@ class API(MixinMeta):
         embeddings = []
         for i in conf.get_related_embeddings(query_embedding):
             if (
-                num_tokens_from_string(f"\nContext:\n{i[1]}\n\n") + total_tokens
+                num_tokens_from_string(f"\n\nContext:\n{i[1]}\n\n") + total_tokens
                 < conf.max_tokens * 0.8
             ):
                 embeddings.append(f"{i[1]}")
 
         if embeddings:
             joined = "\n".join(embeddings)
+
             if conf.embed_method == "static":
-                message = f"Context:\n{joined}\n\nChat: {message}"
+                message = f"{joined}\n\nChat: {message}"
+
             elif conf.embed_method == "dynamic":
-                initial_prompt += f"\nContext:\n{joined}"
+                initial_prompt += f"\n\nContext:\n{joined}"
+
             elif conf.embed_method == "hybrid" and len(embeddings) > 1:
-                initial_prompt += f"\nContext:\n{embeddings[0]}"
-                joined = "\n".join(embeddings[1:])
-                message = f"Context:\n{joined}\n\nChat: {message}"
-            else:
-                initial_prompt += f"\nContext:\n{embeddings[0]}"
+                initial_prompt += f"\n\nContext:\n{embeddings[1:]}"
+                message = f"{embeddings[0]}\n\nChat: {message}"
 
         conversation.update_messages(message, "user")
         messages = conversation.prepare_chat(system_prompt, initial_prompt)
