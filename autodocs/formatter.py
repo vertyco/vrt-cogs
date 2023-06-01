@@ -168,15 +168,18 @@ class CustomCmdFmt:
                 doc += f" - {CHECKS}: `{humanize_list(checks)}\n"
         else:
             usage = f"[p]{self.name} "
-            for k, v in self.cmd.clean_params.items():
-                arg = v.name
+            try:
+                for k, v in self.cmd.clean_params.items():
+                    arg = v.name
 
-                if v.required:
-                    usage += f"<{arg}> "
-                elif v.kind == v.KEYWORD_ONLY:
-                    usage += f"[{arg}] "
-                else:
-                    usage += f"[{arg}={v.default}] "
+                    if v.required:
+                        usage += f"<{arg}> "
+                    elif v.kind == v.KEYWORD_ONLY:
+                        usage += f"[{arg}] "
+                    else:
+                        usage += f"[{arg}={v.default}] "
+            except AttributeError:
+                pass
 
             doc += f" - {USAGE}: `{usage}`\n"
             if self.is_hybrid:
