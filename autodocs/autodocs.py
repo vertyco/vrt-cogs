@@ -28,7 +28,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.5.2"
+    __version__ = "0.5.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -178,18 +178,20 @@ class AutoDocs(commands.Cog):
                         )
                         docs, df = await self.bot.loop.run_in_executor(None, partial_func)
                         filename = f"{folder_name}/{cog.qualified_name}.md"
-                        arc.writestr(
-                            filename,
-                            docs,
-                            compress_type=ZIP_DEFLATED,
-                            compresslevel=9,
-                        )
+
                         if csv_export:
                             tmp = BytesIO()
                             df.to_csv(tmp, index=False)
                             arc.writestr(
                                 filename.replace(".md", ".csv"),
                                 tmp.getvalue(),
+                                compress_type=ZIP_DEFLATED,
+                                compresslevel=9,
+                            )
+                        else:
+                            arc.writestr(
+                                filename,
+                                docs,
                                 compress_type=ZIP_DEFLATED,
                                 compresslevel=9,
                             )
