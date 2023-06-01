@@ -66,6 +66,7 @@ class GuildSettings(BaseModel):
     model: str = "gpt-3.5-turbo"
     timezone: str = "UTC"
     temperature: float = 0.0
+    regex_blacklist: List[str] = [r"^As an AI language model,"]
 
     def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, float]]:
         if not self.top_n or not query_embedding or not self.embeddings:

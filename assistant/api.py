@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import sys
 from datetime import datetime
 from typing import List, Optional, Union
@@ -59,6 +60,8 @@ class API(MixinMeta):
                 temperature=conf.temperature,
                 api_key=conf.api_key,
             )
+            for regex in conf.regex_blacklist:
+                reply = re.sub(regex, "", reply).strip()
             conversation.update_messages(reply, "assistant")
         finally:
             conversation.cleanup(conf)
