@@ -265,44 +265,47 @@ class CustomCmdFmt:
                             line = line.replace(">", "")
                         ext += f"> {line}\n"
             else:
-                for arg, p in self.cmd.clean_params.items():
-                    converter = p.converter
-                    try:
-                        docstring = CONVERTERS.get(converter)
-                    except TypeError:
-                        err = _("Could not find {} for the {} argument of the {} command").format(
-                            p, arg, self.name
-                        )
-                        log.warning(err)
-                        docstring = None
+                try:
+                    for arg, p in self.cmd.clean_params.items():
+                        converter = p.converter
+                        try:
+                            docstring = CONVERTERS.get(converter)
+                        except TypeError:
+                            err = _(
+                                "Could not find {} for the {} argument of the {} command"
+                            ).format(p, arg, self.name)
+                            log.warning(err)
+                            docstring = None
 
-                    if not docstring and hasattr(converter, "__args__"):
-                        docstring = CONVERTERS.get(converter.__args__[0])
+                        if not docstring and hasattr(converter, "__args__"):
+                            docstring = CONVERTERS.get(converter.__args__[0])
 
-                    if not docstring:
-                        err = _("Could not get docstring for {} converter").format(str(p))
-                        log.warning(err)
-                        continue
+                        if not docstring:
+                            err = _("Could not get docstring for {} converter").format(str(p))
+                            log.warning(err)
+                            continue
 
-                    if self.embedding_style:
-                        ext += f"> {p}\n"
-                    else:
-                        ext += f"> ### {p}\n"
+                        if self.embedding_style:
+                            ext += f"> {p}\n"
+                        else:
+                            ext += f"> ### {p}\n"
 
-                    if p.description:
-                        ext += f"> {p.description}\n"
+                        if p.description:
+                            ext += f"> {p.description}\n"
 
-                    if ".." in docstring:
-                        docstring = docstring.split("..")[0]
+                        if ".." in docstring:
+                            docstring = docstring.split("..")[0]
 
-                    split_by = "The lookup strategy is as follows (in order):"
-                    if split_by in docstring:
-                        docstring = docstring.split(split_by)[1]
+                        split_by = "The lookup strategy is as follows (in order):"
+                        if split_by in docstring:
+                            docstring = docstring.split(split_by)[1]
 
-                    for line in docstring.split("\n"):
-                        if line.strip().startswith(">"):
-                            line = line.replace(">", "")
-                        ext += f"> {line}\n"
+                        for line in docstring.split("\n"):
+                            if line.strip().startswith(">"):
+                                line = line.replace(">", "")
+                            ext += f"> {line}\n"
+                except AttributeError:
+                    pass
 
             if ext:
                 doc += _("Extended Arg Info\n") + ext
