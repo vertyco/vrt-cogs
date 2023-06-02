@@ -159,3 +159,5 @@ makereqs.py
 requirements.txt
 __pycache__/
 scratch.py
+template/
+migrate.py
