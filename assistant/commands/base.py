@@ -27,10 +27,18 @@ class Base(MixinMeta):
         async with ctx.typing():
             if attachments := get_attachments(ctx.message):
                 for i in attachments:
-                    if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS):
+                    has_extension = i.filename.count(".") > 0
+                    if (
+                        not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS)
+                        and has_extension
+                    ):
                         continue
-                    text = await i.read()
-                    question += f"\n\nUploaded [{i.filename}]: {text.decode()}"
+                    file_bytes = await i.read()
+                    if has_extension:
+                        text = file_bytes.decode()
+                    else:
+                        text = file_bytes
+                    question += f"\n\nUploaded [{i.filename}]: {text}"
             try:
                 reply = await self.get_chat_response(
                     question, ctx.author, ctx.guild, ctx.channel, conf
@@ -38,10 +46,7 @@ class Base(MixinMeta):
                 if len(reply) < 2000:
                     return await ctx.reply(reply, mention_author=conf.mention)
 
-                embeds = [
-                    discord.Embed(description=p)
-                    for p in pagify(reply, page_length=4000, delims=("```", "\n"))
-                ]
+                embeds = [discord.Embed(description=p) for p in pagify(reply, page_length=4000)]
                 await ctx.reply(embeds=embeds, mention_author=conf.mention)
 
             except Exception as e:
