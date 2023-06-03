@@ -481,7 +481,14 @@ class SupportButton(Button):
 
         if len(form_embed.fields) > 0:
             form_msg = await channel_or_thread.send(embed=form_embed)
-            await form_msg.pin(reason=_("Ticket form questions"))
+            try:
+                await form_msg.pin(reason=_("Ticket form questions"))
+            except discord.Forbidden:
+                await channel_or_thread.send(
+                    _(
+                        "I tried to pin the response message but don't have the manage messages permissions!"
+                    )
+                )
 
         desc = _("Your ticket channel has been created, **[CLICK HERE]({})**").format(msg.jump_url)
         em = discord.Embed(description=desc, color=user.color)
