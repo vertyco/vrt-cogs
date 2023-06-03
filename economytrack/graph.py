@@ -20,7 +20,7 @@ class PlotGraph(MixinMeta):
             labels={"ts": "Date", "value": y_label},
         )
         fig.update_xaxes(tickformat="%I:%M %p\n%b %d %Y")
-        fig.update_yaxes(tickformat=".1f")
+        fig.update_yaxes(tickformat="si")
         fig.update_layout(
             showlegend=False,
         )
