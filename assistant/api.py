@@ -146,9 +146,11 @@ class API(MixinMeta):
                         )
         else:
             if len(content) <= 2000:
-                return await message.send(content, files=files)
+                return await message.channel.send(content, files=files)
             elif len(content) <= 4000:
-                return await message.send(embed=discord.Embed(description=content), files=files)
+                return await message.channel.send(
+                    embed=discord.Embed(description=content), files=files
+                )
             embeds = [
                 p
                 for p in pagify(
@@ -161,16 +163,16 @@ class API(MixinMeta):
                 )
             ]
             try:
-                await message.send(embeds=embeds, files=files)
+                await message.channel.send(embeds=embeds, files=files)
             except discord.HTTPException:
                 for index, p in enumerate(embeds):
                     if index == 0:
-                        await message.send(
+                        await message.channel.send(
                             embed=discord.Embed(description=p),
                             files=files,
                         )
                     else:
-                        await message.send(embed=discord.Embed(description=p))
+                        await message.channel.send(embed=discord.Embed(description=p))
 
     async def get_chat_response(
         self,
