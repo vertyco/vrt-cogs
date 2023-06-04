@@ -29,7 +29,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.4.0"
+    __version__ = "2.5.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -54,6 +54,7 @@ class Assistant(
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.parse_obj, data)
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
+        logging.getLogger("openai").setLevel(logging.WARNING)
 
     async def save_conf(self):
         if self.saving:

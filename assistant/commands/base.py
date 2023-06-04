@@ -2,11 +2,8 @@ import logging
 
 import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
-from ..common.utils import get_attachments
-from ..models import READ_EXTENSIONS
 
 log = logging.getLogger("red.vrt.assistant.base")
 
@@ -20,38 +17,22 @@ class Base(MixinMeta):
         Chat with [botname]!
 
         Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel
+
+        **Optional Arguments**
+        `--outputfile <filename>` - uploads a file with the reply instead
+        `--extract` - extracts code blocks from the reply
+
+        **Example**
+        `[p]chat write a python script that prints "Hello World!"`
+        - Including `--outputfile hello.py` will output a file containing the whole response.
+        - Including `--outputfile hello.py --extract` will output a file containing just the code blocks and send the rest as text.
+        - Including `--extract` will send the code separately from the reply
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.api_key:
             return await ctx.send("This command requires an API key from OpenAI to be configured!")
         async with ctx.typing():
-            if attachments := get_attachments(ctx.message):
-                for i in attachments:
-                    has_extension = i.filename.count(".") > 0
-                    if (
-                        not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS)
-                        and has_extension
-                    ):
-                        continue
-                    file_bytes = await i.read()
-                    if has_extension:
-                        text = file_bytes.decode()
-                    else:
-                        text = file_bytes
-                    question += f"\n\nUploaded [{i.filename}]: {text}"
-            try:
-                reply = await self.get_chat_response(
-                    question, ctx.author, ctx.guild, ctx.channel, conf
-                )
-                if len(reply) < 2000:
-                    return await ctx.reply(reply, mention_author=conf.mention)
-
-                embeds = [discord.Embed(description=p) for p in pagify(reply, page_length=4000)]
-                await ctx.reply(embeds=embeds, mention_author=conf.mention)
-
-            except Exception as e:
-                await ctx.send(f"**Error**\n```py\n{e}\n```")
-                log.error("Chat command failed", exc_info=e)
+            await self.handle_message(ctx.message, question, conf)
 
     @commands.command(name="convostats")
     @commands.guild_only()
