@@ -43,3 +43,9 @@ class MixinMeta(metaclass=ABCMeta):
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
     ) -> str:
         raise NotImplementedError
+
+    @abstractmethod
+    async def handle_message(
+        self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
+    ) -> str:
+        raise NotImplementedError

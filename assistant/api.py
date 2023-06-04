@@ -1,27 +1,144 @@
+import argparse
 import asyncio
 import logging
 import re
+import shlex
 import sys
 from datetime import datetime
+from io import BytesIO
 from typing import List, Optional, Union
 
 import discord
 import pytz
+from openai.error import InvalidRequestError
 from redbot.core import version_info
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
 from .abc import MixinMeta
 from .common.utils import (
+    extract_code_blocks,
+    extract_code_blocks_with_lang,
+    get_attachments,
     num_tokens_from_string,
+    remove_code_blocks,
     request_chat_response,
     request_embedding,
 )
-from .models import Conversation, GuildSettings
+from .models import READ_EXTENSIONS, Conversation, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
 
 
 class API(MixinMeta):
+    async def handle_message(
+        self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
+    ) -> str:
+        parser = argparse.ArgumentParser(description="Parse optional arguments")
+        parser.add_argument("--outputfile", type=str, help="Output response to a file")
+        parser.add_argument("--extract", action="store_true", help="Extract code blocks")
+        args, unknown = parser.parse_known_args(shlex.split(question))
+        question = " ".join(unknown)
+
+        for mention in message.mentions:
+            question = question.replace(f"<@{mention.id}>", f"@{mention.display_name}")
+        for mention in message.channel_mentions:
+            question = question.replace(f"<#{mention.id}>", f"#{mention.name}")
+        for mention in message.role_mentions:
+            question = question.replace(f"<@&{mention.id}>", f"@{mention.name}")
+        for i in get_attachments(message):
+            has_extension = i.filename.count(".") > 0
+            if (
+                not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS)
+                and has_extension
+            ):
+                continue
+            file_bytes = await i.read()
+            if has_extension:
+                text = file_bytes.decode()
+            else:
+                text = file_bytes
+            question += f'\n\nUploaded File ({i.filename})\n"""\n{text}\n"""\n'
+
+        try:
+            reply = await self.get_chat_response(
+                question, message.author, message.guild, message.channel, conf
+            )
+        except InvalidRequestError as e:
+            if error := e.error:
+                await message.reply(error["message"], mention_author=conf.mention)
+            log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
+            return
+        except Exception as e:
+            await message.channel.send(f"**API Error**\n{box(str(e), 'py')}")
+            log.error(f"API Error (From listener: {listener})", exc_info=e)
+            return
+
+        files = None
+        to_send = []
+        if args.outputfile and not args.extract:
+            # Everything to file
+            file = discord.File(BytesIO(reply.encode()), filename=args.outputfile)
+            return await message.reply(file=file, mention_author=conf.mention)
+        elif args.outputfile and args.extract:
+            # Code to files and text to discord
+            codes = extract_code_blocks(reply)
+            files = [
+                discord.File(BytesIO(code.encode()), filename=f"{index}_{args.outputfile}")
+                for index, code in enumerate(codes)
+            ]
+            to_send.append(remove_code_blocks(reply))
+        elif not args.outputfile and args.extract:
+            # Everything to discord but code blocks separated
+            to_send.append(remove_code_blocks(reply))
+            for lang, code in extract_code_blocks_with_lang(reply):
+                to_send.append(box(code, lang))
+        else:
+            # Everything to discord
+            to_send.append(reply)
+
+        for index, text in enumerate(to_send):
+            if index == 0:
+                await self.send_reply(message, text, conf, files)
+            else:
+                await self.send_reply(message, text, conf, None)
+
+    async def send_reply(
+        self,
+        message: discord.Message,
+        content: str,
+        conf: GuildSettings,
+        files: Optional[List[discord.File]],
+    ):
+        if len(content) <= 2000:
+            return await message.reply(content, files=files, mention_author=conf.mention)
+        elif len(content) <= 4000:
+            return await message.reply(
+                embed=discord.Embed(description=content), files=files, mention_author=conf.mention
+            )
+        embeds = [
+            p
+            for p in pagify(
+                content,
+                page_length=3950,
+                delims=(
+                    "```",
+                    "\n",
+                ),
+            )
+        ]
+        try:
+            await message.reply(embeds=embeds, files=files, mention_author=conf.mention)
+        except discord.HTTPException:
+            for index, p in enumerate(embeds):
+                if index == 0:
+                    await message.reply(
+                        embed=discord.Embed(description=p),
+                        files=files,
+                        mention_author=conf.mention,
+                    )
+                else:
+                    await message.reply(embed=discord.Embed(description=p))
+
     async def get_chat_response(
         self,
         message: str,
