@@ -36,16 +36,22 @@ def get_attachments(message: discord.Message) -> List[discord.Attachment]:
 
 def extract_code_blocks(content: str) -> List[str]:
     code_blocks = re.findall(r"```(?:\w+)(.*?)```", content, re.DOTALL)
+    if not code_blocks:
+        code_blocks = re.findall(r"```(.*?)```", content, re.DOTALL)
     return [block.strip() for block in code_blocks]
 
 
 def extract_code_blocks_with_lang(content: str) -> List[Tuple[str, str]]:
     code_blocks = re.findall(r"```(\w+)(.*?)```", content, re.DOTALL)
+    if not code_blocks:
+        code_blocks = re.findall(r"```(.*?)```", content, re.DOTALL)
+        return [("", block.strip()) for block in code_blocks]
     return [(block[0], block[1].strip()) for block in code_blocks]
 
 
 def remove_code_blocks(content: str) -> str:
-    return re.sub(r"```(?:\w+)(.*?)```", "[Code Removed]", content, flags=re.DOTALL).strip()
+    content = re.sub(r"```(?:\w+)(.*?)```", "[Code Removed]", content, flags=re.DOTALL).strip()
+    return re.sub(r"```(.*?)```", "[Code Removed]", content, flags=re.DOTALL).strip()
 
 
 def num_tokens_from_string(string: str) -> int:
