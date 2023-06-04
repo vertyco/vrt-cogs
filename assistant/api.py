@@ -83,7 +83,7 @@ class API(MixinMeta):
             # Code to files and text to discord
             codes = extract_code_blocks(reply)
             files = [
-                discord.File(BytesIO(code.encode()), filename=f"{index}_{args.outputfile}")
+                discord.File(BytesIO(code.encode()), filename=f"{index + 1}_{args.outputfile}")
                 for index, code in enumerate(codes)
             ]
             to_send.append(remove_code_blocks(reply))
