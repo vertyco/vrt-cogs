@@ -98,9 +98,9 @@ class API(MixinMeta):
 
         for index, text in enumerate(to_send):
             if index == 0:
-                await self.send_reply(message, text, conf, files)
+                await self.send_reply(message, text, conf, files, True)
             else:
-                await self.send_reply(message, text, conf, None)
+                await self.send_reply(message, text, conf, None, False)
 
     async def send_reply(
         self,
@@ -108,36 +108,69 @@ class API(MixinMeta):
         content: str,
         conf: GuildSettings,
         files: Optional[List[discord.File]],
+        reply: bool = False,
     ):
-        if len(content) <= 2000:
-            return await message.reply(content, files=files, mention_author=conf.mention)
-        elif len(content) <= 4000:
-            return await message.reply(
-                embed=discord.Embed(description=content), files=files, mention_author=conf.mention
-            )
-        embeds = [
-            p
-            for p in pagify(
-                content,
-                page_length=3950,
-                delims=(
-                    "```",
-                    "\n",
-                ),
-            )
-        ]
-        try:
-            await message.reply(embeds=embeds, files=files, mention_author=conf.mention)
-        except discord.HTTPException:
-            for index, p in enumerate(embeds):
-                if index == 0:
-                    await message.reply(
-                        embed=discord.Embed(description=p),
-                        files=files,
-                        mention_author=conf.mention,
-                    )
-                else:
-                    await message.reply(embed=discord.Embed(description=p))
+        if reply:
+            if len(content) <= 2000:
+                return await message.reply(content, files=files, mention_author=conf.mention)
+            elif len(content) <= 4000:
+                return await message.reply(
+                    embed=discord.Embed(description=content),
+                    files=files,
+                    mention_author=conf.mention,
+                )
+            embeds = [
+                p
+                for p in pagify(
+                    content,
+                    page_length=3950,
+                    delims=(
+                        "```",
+                        "\n",
+                    ),
+                )
+            ]
+            try:
+                await message.reply(embeds=embeds, files=files, mention_author=conf.mention)
+            except discord.HTTPException:
+                for index, p in enumerate(embeds):
+                    if index == 0:
+                        await message.reply(
+                            embed=discord.Embed(description=p),
+                            files=files,
+                            mention_author=conf.mention,
+                        )
+                    else:
+                        await message.reply(
+                            embed=discord.Embed(description=p), mention_author=conf.mention
+                        )
+        else:
+            if len(content) <= 2000:
+                return await message.send(content, files=files)
+            elif len(content) <= 4000:
+                return await message.send(embed=discord.Embed(description=content), files=files)
+            embeds = [
+                p
+                for p in pagify(
+                    content,
+                    page_length=3950,
+                    delims=(
+                        "```",
+                        "\n",
+                    ),
+                )
+            ]
+            try:
+                await message.send(embeds=embeds, files=files)
+            except discord.HTTPException:
+                for index, p in enumerate(embeds):
+                    if index == 0:
+                        await message.send(
+                            embed=discord.Embed(description=p),
+                            files=files,
+                        )
+                    else:
+                        await message.send(embed=discord.Embed(description=p))
 
     async def get_chat_response(
         self,
