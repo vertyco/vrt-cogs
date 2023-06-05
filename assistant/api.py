@@ -36,7 +36,8 @@ class API(MixinMeta):
         parser = argparse.ArgumentParser(description="Parse optional arguments")
         parser.add_argument("--outputfile", type=str, help="Output response to a file")
         parser.add_argument("--extract", action="store_true", help="Extract code blocks")
-        args, unknown = parser.parse_known_args(shlex.split(question))
+        escaped = shlex.quote(question)
+        args, unknown = parser.parse_known_args(shlex.split(escaped))
         question = " ".join(unknown)
 
         for mention in message.mentions:
