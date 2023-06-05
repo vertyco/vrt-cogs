@@ -41,8 +41,6 @@ READ_EXTENSIONS = [
 
 
 class Embedding(BaseModel):
-    """Text embeddings for search&ask efficient prompt training"""
-
     text: str
     embedding: List[float]
 
@@ -82,28 +80,7 @@ class GuildSettings(BaseModel):
         return strings_and_relatedness[: self.top_n]
 
 
-class DB(BaseModel):
-    """Fully cached config on load"""
-
-    configs: dict[int, GuildSettings] = {}
-
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson.dumps
-
-    def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
-        gid = guild if isinstance(guild, int) else guild.id
-
-        if gid in self.configs:
-            return self.configs[gid]
-
-        self.configs[gid] = GuildSettings()
-        return self.configs[gid]
-
-
 class Conversation(BaseModel):
-    """Stored conversation between bot and user"""
-
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
@@ -166,12 +143,6 @@ class Conversation(BaseModel):
 
 
 class Conversations(BaseModel):
-    """
-    Temporary conversation cache
-
-    Unique per member/channel/guild
-    """
-
     conversations: dict[int, Conversation] = {}
 
     def get_conversation(
@@ -186,6 +157,25 @@ class Conversations(BaseModel):
 
         self.conversations[key] = Conversation()
         return self.conversations[key]
+
+
+class DB(BaseModel):
+    configs: dict[int, GuildSettings] = {}
+    conversations: Conversations = {}
+    persistent_conversations: bool = False
+
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson.dumps
+
+    def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
+        gid = guild if isinstance(guild, int) else guild.id
+
+        if gid in self.configs:
+            return self.configs[gid]
+
+        self.configs[gid] = GuildSettings()
+        return self.configs[gid]
 
 
 class NoAPIKey(Exception):
