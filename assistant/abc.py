@@ -5,7 +5,7 @@ import discord
 from discord.ext.commands.cog import CogMeta
 from redbot.core.bot import Red
 
-from .models import DB, Conversations, GuildSettings
+from .models import DB, GuildSettings
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -17,7 +17,6 @@ class MixinMeta(metaclass=ABCMeta):
 
     bot: Red
     db: DB
-    chats: Conversations
 
     @abstractmethod
     async def get_chat_response(

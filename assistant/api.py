@@ -184,7 +184,7 @@ class API(MixinMeta):
         conf: GuildSettings,
     ):
         """Call the API asynchronously"""
-        conversation = self.chats.get_conversation(
+        conversation = self.db.get_conversation(
             author if isinstance(author, int) else author.id,
             channel if isinstance(channel, int) else channel.id,
             guild.id,

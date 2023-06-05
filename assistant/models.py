@@ -146,26 +146,9 @@ class Conversation(BaseModel):
         return prepared
 
 
-class Conversations(BaseModel):
-    conversations: dict[int, Conversation] = {}
-
-    def get_conversation(
-        self,
-        member_id: int,
-        channel_id: int,
-        guild_id: int,
-    ) -> Conversation:
-        key = f"{member_id}-{channel_id}-{guild_id}"
-        if key in self.conversations:
-            return self.conversations[key]
-
-        self.conversations[key] = Conversation()
-        return self.conversations[key]
-
-
 class DB(BaseModel):
     configs: dict[int, GuildSettings] = {}
-    conversations: Conversations = {}
+    conversations: dict[int, Conversation] = {}
     persistent_conversations: bool = False
 
     class Config:
@@ -180,6 +163,19 @@ class DB(BaseModel):
 
         self.configs[gid] = GuildSettings()
         return self.configs[gid]
+
+    def get_conversation(
+        self,
+        member_id: int,
+        channel_id: int,
+        guild_id: int,
+    ) -> Conversation:
+        key = f"{member_id}-{channel_id}-{guild_id}"
+        if key in self.conversations:
+            return self.conversations[key]
+
+        self.conversations[key] = Conversation()
+        return self.conversations[key]
 
 
 class NoAPIKey(Exception):
