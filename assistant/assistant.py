@@ -13,7 +13,7 @@ from .api import API
 from .commands import AssistantCommands
 from .common.utils import request_embedding
 from .listener import AssistantListener
-from .models import DB, Conversations, Embedding, EmbeddingEntryExists, NoAPIKey
+from .models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 
 log = logging.getLogger("red.vrt.assistant")
 
@@ -30,7 +30,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.5.6"
+    __version__ = "2.5.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -42,7 +42,6 @@ class Assistant(
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         self.config.register_global(db={})
         self.db: DB = DB()
-        self.chats: Conversations = Conversations()
 
         self.saving = False
         self.first_run = True
@@ -60,7 +59,6 @@ class Assistant(
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.parse_obj, data)
         if self.db.persistent_conversations and not self.save_loop.is_running():
-            self.chats = self.db.conversations
             self.save_loop.start()
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         logging.getLogger("openai").setLevel(logging.WARNING)
@@ -71,7 +69,8 @@ class Assistant(
         try:
             self.saving = True
             start = perf_counter()
-            self.db.conversations = self.chats if self.db.persistent_conversations else {}
+            if not self.db.persistent_conversations:
+                self.db.conversations.clear()
             dump = await asyncio.to_thread(self.db.dict)
             await self.config.db.set(dump)
             if self.first_run:
