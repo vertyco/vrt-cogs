@@ -37,6 +37,10 @@ READ_EXTENSIONS = [
     ".cs",
     ".c++",
     ".cc",
+    ".ps1",
+    ".bat",
+    ".batch",
+    ".shell",
 ]
 
 
