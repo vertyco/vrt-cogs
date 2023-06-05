@@ -53,6 +53,8 @@ class Assistant(
         start = perf_counter()
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.parse_obj, data)
+        if self.db.persistent_conversations:
+            self.chats = self.db.conversations
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         logging.getLogger("openai").setLevel(logging.WARNING)
 
@@ -62,6 +64,7 @@ class Assistant(
         try:
             self.saving = True
             start = perf_counter()
+            self.db.conversations = self.chats if self.db.persistent_conversations else {}
             dump = await asyncio.to_thread(self.db.dict)
             await self.config.db.set(dump)
             log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")

@@ -70,4 +70,4 @@ class Base(MixinMeta):
         """
         conversation = self.chats.get_conversation(ctx.author.id, ctx.channel.id, ctx.guild.id)
         conversation.reset()
-        await ctx.tick()
+        await ctx.send("Your conversation in this channel has been reset!")

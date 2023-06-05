@@ -110,6 +110,13 @@ class Admin(MixinMeta):
             for p in pagify(joined, page_length=1000):
                 embed.add_field(name="Regex Blacklist", value=box(p), inline=False)
 
+        persist = (
+            "Conversations are stored persistently"
+            if self.db.persistent_conversations
+            else "conversations are stored in memory until reboot or reload"
+        )
+        embed.add_field(name="Persistent Conversations", value=persist, inline=False)
+
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
         files = []
         if system_file:
@@ -156,6 +163,18 @@ class Admin(MixinMeta):
         await ctx.send(f"Timezone set to **{timezone}** (`{time}`)")
         conf = self.db.get_conf(ctx.guild)
         conf.timezone = timezone
+        await self.save_conf()
+
+    @assistant.command(name="persist")
+    @commands.is_owner()
+    async def toggle_persistent_conversations(self, ctx: commands.Context):
+        """Toggle persistent conversations"""
+        if self.db.persistent_conversations:
+            self.db.persistent_conversations = False
+            await ctx.send("Persistent conversations have been **Disabled**")
+        else:
+            self.db.persistent_conversations = True
+            await ctx.send("Persistent conversations have been **Enabled**")
         await self.save_conf()
 
     @assistant.command(name="train")
