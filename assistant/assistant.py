@@ -4,6 +4,7 @@ from time import perf_counter
 from typing import List, Optional, Union
 
 import discord
+from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
@@ -29,7 +30,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.5.4"
+    __version__ = "2.5.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -44,17 +45,23 @@ class Assistant(
         self.chats: Conversations = Conversations()
 
         self.saving = False
+        self.first_run = True
 
     async def cog_load(self) -> None:
         asyncio.create_task(self.init_cog())
+
+    async def cog_unload(self):
+        if self.db.persistent_conversations and self.save_loop.is_running():
+            self.save_loop.cancel()
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
         start = perf_counter()
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.parse_obj, data)
-        if self.db.persistent_conversations:
+        if self.db.persistent_conversations and not self.save_loop.is_running():
             self.chats = self.db.conversations
+            self.save_loop.start()
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         logging.getLogger("openai").setLevel(logging.WARNING)
 
@@ -67,11 +74,19 @@ class Assistant(
             self.db.conversations = self.chats if self.db.persistent_conversations else {}
             dump = await asyncio.to_thread(self.db.dict)
             await self.config.db.set(dump)
-            log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")
+            if self.first_run:
+                log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")
+                self.first_run = False
         except Exception as e:
             log.error("Failed to save config", exc_info=e)
         finally:
             self.saving = False
+        if not self.db.persistent_conversations and self.save_loop.is_running():
+            self.save_loop.cancel()
+
+    @tasks.loop(minutes=2)
+    async def save_loop(self):
+        await self.save_conf()
 
     async def add_embedding(
         self, guild: discord.Guild, name: str, text: str, overwrite: bool = False
