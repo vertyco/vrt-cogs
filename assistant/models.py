@@ -160,7 +160,7 @@ class Conversation(BaseModel):
 
 class DB(BaseModel):
     configs: dict[int, GuildSettings] = {}
-    conversations: dict[int, Conversation] = {}
+    conversations: dict[str, Conversation] = {}
     persistent_conversations: bool = False
 
     class Config:
