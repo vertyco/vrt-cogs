@@ -231,7 +231,8 @@ class API(MixinMeta):
                     temperature=conf.temperature,
                     api_key=conf.api_key,
                 )
-                reply = reply.replace("Assistant:", "").replace("System:", "").strip()
+                for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
+                    reply = reply.replace(i, "").strip()
 
             for regex in conf.regex_blacklist:
                 reply = re.sub(regex, "", reply).strip()
