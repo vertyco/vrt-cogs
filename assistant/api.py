@@ -195,6 +195,7 @@ class API(MixinMeta):
             channel if isinstance(channel, int) else channel.id,
             guild.id,
         )
+        conversation.cleanup(conf)
         if isinstance(author, int):
             author = guild.get_member(author)
         if isinstance(channel, int):
