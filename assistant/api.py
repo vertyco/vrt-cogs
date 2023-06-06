@@ -282,7 +282,7 @@ class API(MixinMeta):
             str: the response from ChatGPT
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
-
+        roles = [role for role in author.roles if "everyone" not in role.name] if author else []
         params = {
             "botname": self.bot.user.name,
             "timestamp": f"<t:{round(now.timestamp())}:F>",
@@ -294,7 +294,8 @@ class API(MixinMeta):
             "username": author.name if author else "",
             "user": author.display_name if author else "",
             "datetime": str(datetime.now()),
-            "roles": humanize_list([role.name for role in author.roles]) if author else "",
+            "roles": humanize_list([role.name for role in roles]),
+            "rolementions": humanize_list([role.mention for role in roles]),
             "avatar": author.display_avatar.url if author else "",
             "owner": guild.owner,
             "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",

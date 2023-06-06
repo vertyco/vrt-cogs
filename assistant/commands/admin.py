@@ -258,6 +258,7 @@ class Admin(MixinMeta):
         `members` - current member count of the server
         `user` - the current user asking the question
         `roles` - the names of the user's roles
+        `rolementions` - the mentions of the user's roles
         `avatar` - the user's avatar url
         `owner` - the owner of the server
         `servercreated` - the create date/time of the server
@@ -334,6 +335,7 @@ class Admin(MixinMeta):
         `members` - current member count of the server
         `user` - the current user asking the question
         `roles` - the names of the user's roles
+        `rolementions` - the mentions of the user's roles
         `avatar` - the user's avatar url
         `owner` - the owner of the server
         `servercreated` - the create date/time of the server
