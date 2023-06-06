@@ -29,10 +29,11 @@ from ..common.utils import (
     extract_message_content,
     fetch_channel_history,
     get_attachments,
+    get_models,
     num_tokens_from_string,
     request_embedding,
 )
-from ..models import MODELS, Embedding
+from ..models import CHAT, COMPLETION, Embedding
 from ..views import EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -489,6 +490,20 @@ class Admin(MixinMeta):
             await ctx.tick()
         await self.save_conf()
 
+    @assistant.command(name="temperature")
+    async def set_temperature(self, ctx: commands.Context, temperature: float):
+        """
+        Set the temperature for the model (0.0 - 1.0)
+
+        Closer to 0 is more concise and accurate while closer to 1 is more imaginative
+        """
+        if not 0 <= temperature <= 1:
+            return await ctx.send("Temperature must be between 0.0 and 1.0")
+        conf = self.db.get_conf(ctx.guild)
+        conf.temperature = temperature
+        await self.save_conf()
+        await ctx.tick()
+
     @assistant.command(name="minlength")
     async def min_length(self, ctx: commands.Context, min_question_length: int):
         """
@@ -524,14 +539,28 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="model")
-    async def set_model(self, ctx: commands.Context, model: str):
+    async def set_model(self, ctx: commands.Context, model: str = None):
         """
         Set the GPT model to use
 
-        Valid models are `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k`
+        Valid models and their context info:
+        `Model-Name`: MaxTokens, ModelType
+        `gpt-3.5-turbo`: 4096, chat
+        `gpt-4`: 8192, chat
+        `gpt-4-32k`: 32768, chat
+        `code-davinci-002`: 8001, chat
+        `text-davinci-003`: 4097, completion
+        `text-davinci-002`: 4097, completion
+        `text-curie-001`: 2049, completion
+        `text-babbage-001`: 2049, completion
+        `text-ada-001`: 2049, completion
         """
-        if model not in MODELS:
-            return await ctx.send("Invalid model type!")
+        valid = humanize_list(CHAT + COMPLETION)
+        if not model:
+            return await ctx.send(f"Valid models are `{valid}`")
+        model = model.lower().strip()
+        if model not in CHAT + COMPLETION:
+            return await ctx.send(f"Invalid model type! Valid model types are `{valid}`")
         conf = self.db.get_conf(ctx.guild)
         conf.model = model
         await ctx.send(f"The {model} model will now be used")
@@ -921,3 +950,15 @@ class Admin(MixinMeta):
         self.db.persistent_conversations = False
         await self.save_conf()
         await ctx.send("Cog has been wiped!")
+
+    @assistant.command(name="printmodels", hidden=True)
+    @commands.is_owner()
+    async def print_models(self, ctx: commands.Context):
+        """Print out models"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.api_key:
+            return await ctx.send(
+                f"No API key! Use `{ctx.prefix}assistant openaikey` to set your OpenAI key!"
+            )
+        models = await get_models(conf.api_key)
+        print(models)
