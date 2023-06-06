@@ -159,7 +159,7 @@ class API(MixinMeta):
                     embed=discord.Embed(description=content), files=files
                 )
             embeds = [
-                p
+                discord.Embed(description=p)
                 for p in pagify(
                     content,
                     page_length=3950,
