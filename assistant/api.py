@@ -14,15 +14,18 @@ from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
 from .abc import MixinMeta
 from .common.utils import (
+    compile_messages,
     extract_code_blocks,
     extract_code_blocks_with_lang,
     get_attachments,
     num_tokens_from_string,
     remove_code_blocks,
     request_chat_response,
+    request_completion_response,
     request_embedding,
+    token_cut,
 )
-from .models import READ_EXTENSIONS, Conversation, GuildSettings
+from .models import CHAT, MODELS, READ_EXTENSIONS, Conversation, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
 
@@ -212,12 +215,24 @@ class API(MixinMeta):
                 channel,
                 query_embedding,
             )
-            reply = await request_chat_response(
-                model=conf.model,
-                messages=messages,
-                temperature=conf.temperature,
-                api_key=conf.api_key,
-            )
+            if conf.model in CHAT:
+                reply = await request_chat_response(
+                    model=conf.model,
+                    messages=messages,
+                    temperature=conf.temperature,
+                    api_key=conf.api_key,
+                )
+            else:
+                compiled = compile_messages(messages)
+                cut_message = token_cut(compiled, min(conf.max_tokens, MODELS[conf.model] - 100))
+                reply = await request_completion_response(
+                    model=conf.model,
+                    message=cut_message,
+                    temperature=conf.temperature,
+                    api_key=conf.api_key,
+                )
+                reply = reply.replace("Assistant:", "").replace("System:", "").strip()
+
             for regex in conf.regex_blacklist:
                 reply = re.sub(regex, "", reply).strip()
             conversation.update_messages(reply, "assistant")
@@ -281,9 +296,11 @@ class API(MixinMeta):
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
+        max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+
         # Dynamically clean up the conversation to prevent going over token limit
         prompt_tokens = num_tokens_from_string(system_prompt + initial_prompt)
-        while (conversation.token_count() + prompt_tokens) > conf.max_tokens * 0.85:
+        while (conversation.token_count() + prompt_tokens) > max_tokens * 0.85:
             conversation.messages.pop(0)
 
         total_tokens = conversation.token_count() + prompt_tokens + num_tokens_from_string(message)
@@ -292,7 +309,7 @@ class API(MixinMeta):
         for i in conf.get_related_embeddings(query_embedding):
             if (
                 num_tokens_from_string(f"\n\nContext:\n{i[1]}\n\n") + total_tokens
-                < conf.max_tokens * 0.8
+                < max_tokens * 0.8
             ):
                 embeddings.append(f"{i[1]}")
 

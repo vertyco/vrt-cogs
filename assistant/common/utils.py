@@ -120,6 +120,22 @@ def token_pagify(text: str, max_tokens: int = 2000):
     return text_chunks
 
 
+def token_cut(message: str, max_tokens: int):
+    cut_tokens = encoding.encode(message)[:max_tokens]
+    return encoding.decode(cut_tokens)
+
+
+def compile_messages(messages: List[dict]) -> str:
+    """Compile messages list into a single string"""
+    text = ""
+    for message in messages:
+        role = message["role"]
+        content = message["content"]
+        text += f"{role}: {content}\n"
+    text += "Assistant: "
+    return text
+
+
 def embedding_embeds(embeddings: Dict[str, Any], place: int):
     embeddings = sorted(embeddings.items(), key=lambda x: x[0])
     embeds = []
@@ -178,6 +194,25 @@ async def request_chat_response(
     model: str, messages: List[dict], api_key: str, temperature: float = 0.0
 ) -> str:
     response = await openai.ChatCompletion.acreate(
-        model=model, messages=messages, temperature=temperature, api_key=api_key, timeout=30
+        model=model, messages=messages, temperature=temperature, api_key=api_key, timeout=60
     )
     return response["choices"][0]["message"]["content"]
+
+
+@retry(
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    wait=wait_random_exponential(min=1, max=5),
+    stop=stop_after_delay(120),
+    reraise=True,
+)
+async def request_completion_response(
+    model: str, message: str, api_key: str, temperature: float = 0.0
+) -> str:
+    response = await openai.Completion.acreate(
+        model=model, prompt=message, temperature=temperature, api_key=api_key
+    )
+    return response["choices"][0]["text"]
+
+
+async def get_models(api_key: str):
+    return await openai.Model.alist(api_key=api_key)
