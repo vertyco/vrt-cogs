@@ -30,7 +30,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.5.11"
+    __version__ = "2.5.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -50,18 +50,16 @@ class Assistant(
         asyncio.create_task(self.init_cog())
 
     async def cog_unload(self):
-        if self.db.persistent_conversations and self.save_loop.is_running():
-            self.save_loop.cancel()
+        self.save_loop.cancel()
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
         start = perf_counter()
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.parse_obj, data)
-        if self.db.persistent_conversations and not self.save_loop.is_running():
-            self.save_loop.start()
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         logging.getLogger("openai").setLevel(logging.WARNING)
+        self.save_loop.start()
 
     async def save_conf(self):
         if self.saving:
@@ -85,6 +83,8 @@ class Assistant(
 
     @tasks.loop(minutes=2)
     async def save_loop(self):
+        if not self.db.persistent_conversations:
+            return
         await self.save_conf()
 
     async def add_embedding(
