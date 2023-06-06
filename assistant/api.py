@@ -127,7 +127,7 @@ class API(MixinMeta):
                     mention_author=conf.mention,
                 )
             embeds = [
-                p
+                discord.Embed(description=p)
                 for p in pagify(
                     content,
                     page_length=3950,
