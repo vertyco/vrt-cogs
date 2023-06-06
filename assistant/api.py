@@ -36,10 +36,12 @@ class API(MixinMeta):
     ) -> str:
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
+        get_last_message_pattern = r"--last"
 
         # Extract the optional arguments and their values
         outputfile_match = re.search(outputfile_pattern, question)
         extract_match = re.search(extract_pattern, question)
+        get_last_message_match = re.search(get_last_message_pattern, question)
 
         # Remove the optional arguments from the input string to obtain the question variable
         question = re.sub(outputfile_pattern, "", question)
@@ -48,6 +50,7 @@ class API(MixinMeta):
         # Check if the optional arguments were present and set the corresponding variables
         outputfile = outputfile_match.group(1) if outputfile_match else None
         extract = bool(extract_match)
+        get_last_message = bool(get_last_message_match)
 
         for mention in message.mentions:
             question = question.replace(f"<@{mention.id}>", f"@{mention.display_name}")
@@ -69,19 +72,29 @@ class API(MixinMeta):
                 text = file_bytes
             question += f'\n\nUploaded File ({i.filename})\n"""\n{text}\n"""\n'
 
-        try:
-            reply = await self.get_chat_response(
-                question, message.author, message.guild, message.channel, conf
+        if get_last_message:
+            conversation = self.db.get_conversation(
+                message.author.id, message.channel.id, message.guild.id
             )
-        except InvalidRequestError as e:
-            if error := e.error:
-                await message.reply(error["message"], mention_author=conf.mention)
-            log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
-            return
-        except Exception as e:
-            await message.channel.send(f"**API Error**\n{box(str(e), 'py')}")
-            log.error(f"API Error (From listener: {listener})", exc_info=e)
-            return
+            reply = (
+                conversation.messages[-1]["content"]
+                if conversation.messages
+                else "No message history!"
+            )
+        else:
+            try:
+                reply = await self.get_chat_response(
+                    question, message.author, message.guild, message.channel, conf
+                )
+            except InvalidRequestError as e:
+                if error := e.error:
+                    await message.reply(error["message"], mention_author=conf.mention)
+                log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
+                return
+            except Exception as e:
+                await message.channel.send(f"**API Error**\n{box(str(e), 'py')}")
+                log.error(f"API Error (From listener: {listener})", exc_info=e)
+                return
 
         files = None
         to_send = []
