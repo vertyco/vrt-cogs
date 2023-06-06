@@ -909,3 +909,15 @@ class Admin(MixinMeta):
     async def get_matches(self, guild_id: int, current: str) -> List[Choice]:
         entries = await self.get_embedding_entries(guild_id)
         return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
+
+    @assistant.command(name="wipecog")
+    @commands.is_owner()
+    async def wipe_cog(self, ctx: commands.Context, confirm: bool):
+        """Wipe all settings and data for entire cog"""
+        if not confirm:
+            return await ctx.send("Not wiping cog")
+        self.db.configs.clear()
+        self.db.conversations.clear()
+        self.db.persistent_conversations = False
+        await self.save_conf()
+        await ctx.send("Cog has been wiped!")

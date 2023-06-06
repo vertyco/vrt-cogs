@@ -48,6 +48,10 @@ class Embedding(BaseModel):
     text: str
     embedding: List[float]
 
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson.dumps
+
 
 class GuildSettings(BaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
@@ -70,6 +74,10 @@ class GuildSettings(BaseModel):
     temperature: float = 0.0
     regex_blacklist: List[str] = [r"^As an AI language model,"]
 
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson.dumps
+
     def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, float]]:
         if not self.top_n or not query_embedding or not self.embeddings:
             return []
@@ -87,6 +95,10 @@ class GuildSettings(BaseModel):
 class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
+
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson.dumps
 
     def token_count(self) -> int:
         return num_tokens_from_string("".join(message["content"] for message in self.messages))
