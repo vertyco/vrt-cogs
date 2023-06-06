@@ -1,8 +1,6 @@
-import argparse
 import asyncio
 import logging
 import re
-import shlex
 import sys
 from datetime import datetime
 from io import BytesIO
@@ -33,12 +31,20 @@ class API(MixinMeta):
     async def handle_message(
         self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
     ) -> str:
-        parser = argparse.ArgumentParser(description="Parse optional arguments")
-        parser.add_argument("--outputfile", type=str, help="Output response to a file")
-        parser.add_argument("--extract", action="store_true", help="Extract code blocks")
-        escaped = shlex.quote(question)
-        args, unknown = parser.parse_known_args(shlex.split(escaped))
-        question = " ".join(unknown)
+        outputfile_pattern = r"--outputfile\s+([^\s]+)"
+        extract_pattern = r"--extract"
+
+        # Extract the optional arguments and their values
+        outputfile_match = re.search(outputfile_pattern, question)
+        extract_match = re.search(extract_pattern, question)
+
+        # Remove the optional arguments from the input string to obtain the question variable
+        question = re.sub(outputfile_pattern, "", question)
+        question = re.sub(extract_pattern, "", question)
+
+        # Check if the optional arguments were present and set the corresponding variables
+        outputfile = outputfile_match.group(1) if outputfile_match else None
+        extract = bool(extract_match)
 
         for mention in message.mentions:
             question = question.replace(f"<@{mention.id}>", f"@{mention.display_name}")
@@ -76,23 +82,23 @@ class API(MixinMeta):
 
         files = None
         to_send = []
-        if args.outputfile and not args.extract:
+        if outputfile and not extract:
             # Everything to file
-            file = discord.File(BytesIO(reply.encode()), filename=args.outputfile)
+            file = discord.File(BytesIO(reply.encode()), filename=outputfile)
             return await message.reply(file=file, mention_author=conf.mention)
-        elif args.outputfile and args.extract:
+        elif outputfile and extract:
             # Code to files and text to discord
             codes = extract_code_blocks(reply)
             files = [
-                discord.File(BytesIO(code.encode()), filename=f"{index + 1}_{args.outputfile}")
+                discord.File(BytesIO(code.encode()), filename=f"{index + 1}_{outputfile}")
                 for index, code in enumerate(codes)
             ]
             to_send.append(remove_code_blocks(reply))
-        elif not args.outputfile and args.extract:
+        elif not outputfile and extract:
             # Everything to discord but code blocks separated
+            codes = [box(code, lang) for lang, code in extract_code_blocks_with_lang(reply)]
             to_send.append(remove_code_blocks(reply))
-            for lang, code in extract_code_blocks_with_lang(reply):
-                to_send.append(box(code, lang))
+            to_send.extend(codes)
         else:
             # Everything to discord
             to_send.append(reply)
