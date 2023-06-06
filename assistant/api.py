@@ -226,12 +226,13 @@ class API(MixinMeta):
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 compiled = compile_messages(messages)
                 cut_message = token_cut(compiled, max_tokens)
+                tokens_to_use = round((max_tokens - num_tokens_from_string(cut_message)) * 0.8)
                 reply = await request_completion_response(
                     model=conf.model,
                     message=cut_message,
                     temperature=conf.temperature,
                     api_key=conf.api_key,
-                    max_tokens=max_tokens,
+                    max_tokens=tokens_to_use,
                 )
                 for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
                     reply = reply.replace(i, "").strip()
