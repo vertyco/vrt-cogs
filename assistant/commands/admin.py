@@ -72,6 +72,7 @@ class Admin(MixinMeta):
             f"`Retention Expire:  `{conf.max_retention_time}s\n"
             f"`Max Tokens:        `{conf.max_tokens}\n"
             f"`Min Length:        `{conf.min_length}\n"
+            f"`Temperature:       `{conf.temperature}\n"
             f"`System Message:    `{humanize_number(system_tokens)} tokens\n"
             f"`Initial Prompt:    `{humanize_number(prompt_tokens)} tokens\n"
             f"`Model:             `{conf.model}\n"

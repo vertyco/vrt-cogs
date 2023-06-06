@@ -191,7 +191,7 @@ async def request_embedding(text: str, api_key: str) -> List[float]:
     reraise=True,
 )
 async def request_chat_response(
-    model: str, messages: List[dict], api_key: str, temperature: float = 0.0
+    model: str, messages: List[dict], api_key: str, temperature: float
 ) -> str:
     response = await openai.ChatCompletion.acreate(
         model=model, messages=messages, temperature=temperature, api_key=api_key, timeout=60
@@ -206,10 +206,14 @@ async def request_chat_response(
     reraise=True,
 )
 async def request_completion_response(
-    model: str, message: str, api_key: str, temperature: float = 0.0
+    model: str, message: str, api_key: str, temperature: float, max_tokens: int
 ) -> str:
     response = await openai.Completion.acreate(
-        model=model, prompt=message, temperature=temperature, api_key=api_key
+        model=model,
+        prompt=message,
+        temperature=temperature,
+        api_key=api_key,
+        max_tokens=max_tokens,
     )
     return response["choices"][0]["text"]
 
