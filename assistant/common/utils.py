@@ -132,7 +132,7 @@ def compile_messages(messages: List[dict]) -> str:
         role = message["role"]
         content = message["content"]
         text += f"{role}: {content}\n"
-    text += "Assistant: "
+    text += "\n"
     return text
 
 
