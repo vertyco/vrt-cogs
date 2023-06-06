@@ -140,17 +140,15 @@ class API(MixinMeta):
             try:
                 await message.reply(embeds=embeds, files=files, mention_author=conf.mention)
             except discord.HTTPException:
-                for index, p in enumerate(embeds):
+                for index, embed in enumerate(embeds):
                     if index == 0:
                         await message.reply(
-                            embed=discord.Embed(description=p),
+                            embed=embed,
                             files=files,
                             mention_author=conf.mention,
                         )
                     else:
-                        await message.reply(
-                            embed=discord.Embed(description=p), mention_author=conf.mention
-                        )
+                        await message.reply(embed=embed, mention_author=conf.mention)
         else:
             if len(content) <= 2000:
                 return await message.channel.send(content, files=files)
@@ -172,14 +170,14 @@ class API(MixinMeta):
             try:
                 await message.channel.send(embeds=embeds, files=files)
             except discord.HTTPException:
-                for index, p in enumerate(embeds):
+                for index, embed in enumerate(embeds):
                     if index == 0:
                         await message.channel.send(
-                            embed=discord.Embed(description=p),
+                            embed=embed,
                             files=files,
                         )
                     else:
-                        await message.channel.send(embed=discord.Embed(description=p))
+                        await message.channel.send(embed=embed)
 
     async def get_chat_response(
         self,
