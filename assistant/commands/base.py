@@ -19,7 +19,7 @@ class Base(MixinMeta):
         Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel
 
         **Optional Arguments**
-        `--outputfile <filename>` - uploads a file with the reply instead
+        `--outputfile <filename>` - uploads a file with the reply instead (no spaces)
         `--extract` - extracts code blocks from the reply
 
         **Example**
