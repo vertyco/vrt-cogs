@@ -46,6 +46,7 @@ class API(MixinMeta):
         # Remove the optional arguments from the input string to obtain the question variable
         question = re.sub(outputfile_pattern, "", question)
         question = re.sub(extract_pattern, "", question)
+        question = re.sub(get_last_message_pattern, "", question)
 
         # Check if the optional arguments were present and set the corresponding variables
         outputfile = outputfile_match.group(1) if outputfile_match else None
