@@ -458,12 +458,14 @@ class SupportButton(Button):
         )
         if messages:
             embeds = []
-            for einfo in messages:
+            for index, einfo in enumerate(messages):
                 em = discord.Embed(
                     title=einfo["title"].format(**params) if einfo["title"] else None,
                     description=einfo["desc"].format(**params),
                     color=user.color,
                 )
+                if index == 0:
+                    em.set_thumbnail(url=user.display_avatar.url)
                 if einfo["footer"]:
                     em.set_footer(text=einfo["footer"].format(**params))
                 embeds.append(em)
@@ -472,9 +474,9 @@ class SupportButton(Button):
                 content=content, embeds=embeds, allowed_mentions=allowed_mentions, view=close_view
             )
         else:
+            # Default message
             em = discord.Embed(description=default_message, color=user.color)
-            if user.avatar:
-                em.set_thumbnail(url=user.display_avatar.url)
+            em.set_thumbnail(url=user.display_avatar.url)
             msg = await channel_or_thread.send(
                 content=content, embed=em, allowed_mentions=allowed_mentions, view=close_view
             )
