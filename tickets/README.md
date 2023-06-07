@@ -64,7 +64,7 @@ Set a channel for the live overview message<br/><br/>The overview message shows 
 ## tickets altchannel
  - Usage: `[p]tickets altchannel <panel_name> <channel> `
 
-Set an alternate channel that tickets will be opened under for a panel<br/><br/>If the panel uses threads, this needs to be a normal text channel.<br/>If the panel uses channels, this needs to be a category.<br/><br/>If the panel is a channel type and a channel is used, the bot will use the category associated wit the channel.<br/><br/>To remove the alt channel, specify the existing one
+Set an alternate channel that tickets will be opened under for a panel<br/><br/>If the panel uses threads, this needs to be a normal text channel.<br/>If the panel uses channels, this needs to be a category.<br/><br/>If the panel is a channel type and a channel is used, the bot will use the category associated with the channel.<br/><br/>To remove the alt channel, specify the existing one
 
 ## tickets updatemessage
  - Usage: `[p]tickets updatemessage <source> <target> `
