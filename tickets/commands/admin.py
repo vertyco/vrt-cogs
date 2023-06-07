@@ -990,6 +990,7 @@ class AdminCommands(MixinMeta):
                 if i[0] == role.id:
                     roles.remove(i)
                     await ctx.send(_("{} has been removed from support roles").format(role.name))
+                    break
             else:
                 roles.append(entry)
                 await ctx.send(role.name + _(" has been added to support roles"))
