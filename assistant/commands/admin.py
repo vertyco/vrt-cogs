@@ -973,7 +973,12 @@ class Admin(MixinMeta):
         ctx: commands.Context,
         *,
         channel_role_member: Union[
-            discord.Member, discord.Role, discord.TextChannel, discord.CategoryChannel
+            discord.Member,
+            discord.Role,
+            discord.TextChannel,
+            discord.CategoryChannel,
+            discord.Thread,
+            discord.ForumChannel,
         ],
     ):
         """
