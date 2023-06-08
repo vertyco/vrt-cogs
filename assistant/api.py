@@ -136,13 +136,21 @@ class API(MixinMeta):
     ):
         if reply:
             if len(content) <= 2000:
-                return await message.reply(content, files=files, mention_author=conf.mention)
+                try:
+                    return await message.reply(content, files=files, mention_author=conf.mention)
+                except discord.HTTPException:
+                    return await message.channel.send(content, files=files)
             elif len(content) <= 4000:
-                return await message.reply(
-                    embed=discord.Embed(description=content),
-                    files=files,
-                    mention_author=conf.mention,
-                )
+                try:
+                    return await message.reply(
+                        embed=discord.Embed(description=content),
+                        files=files,
+                        mention_author=conf.mention,
+                    )
+                except discord.HTTPException:
+                    return await message.channel.send(
+                        embed=discord.Embed(description=content), files=files
+                    )
             embeds = [
                 discord.Embed(description=p)
                 for p in pagify(
@@ -157,15 +165,22 @@ class API(MixinMeta):
             try:
                 await message.reply(embeds=embeds, files=files, mention_author=conf.mention)
             except discord.HTTPException:
-                for index, embed in enumerate(embeds):
-                    if index == 0:
-                        await message.reply(
-                            embed=embed,
-                            files=files,
-                            mention_author=conf.mention,
-                        )
-                    else:
-                        await message.reply(embed=embed, mention_author=conf.mention)
+                try:
+                    for index, embed in enumerate(embeds):
+                        if index == 0:
+                            await message.reply(
+                                embed=embed,
+                                files=files,
+                                mention_author=conf.mention,
+                            )
+                        else:
+                            await message.reply(embed=embed, mention_author=conf.mention)
+                except discord.HTTPException:
+                    for index, embed in enumerate(embeds):
+                        if index == 0:
+                            await message.channel.send(embed=embed, files=files)
+                        else:
+                            await message.channel.send(embed=embed)
         else:
             if len(content) <= 2000:
                 return await message.channel.send(content, files=files)
