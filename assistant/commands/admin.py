@@ -986,6 +986,6 @@ class Admin(MixinMeta):
             conf.blacklist.remove(channel_role_member.id)
             await ctx.send(f"{channel_role_member.name} has been removed from the blacklist")
         else:
-            conf.blacklist.append(channel_role_member)
+            conf.blacklist.append(channel_role_member.id)
             await ctx.send(f"{channel_role_member.name} has been added to the blacklist")
         await self.save_conf()
