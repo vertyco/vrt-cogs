@@ -1,7 +1,7 @@
 import logging
 import math
 import re
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 import openai
@@ -32,6 +32,29 @@ def get_attachments(message: discord.Message) -> List[discord.Attachment]:
         except AttributeError:
             pass
     return attachments
+
+
+async def can_use(message: discord.Message, blacklist: list, respond: bool = True) -> bool:
+    allowed = True
+    if message.author.id in blacklist:
+        if respond:
+            await message.channel.send("You have been blacklisted from using this command!")
+        allowed = False
+    elif any(role.id in blacklist for role in message.author.roles):
+        if respond:
+            await message.channel.send("You have a blacklisted role and cannot use this command!")
+        allowed = False
+    elif message.channel.id in blacklist:
+        if respond:
+            await message.channel.send("You cannot use that command in this channel!")
+        allowed = False
+    elif message.channel.category_id in blacklist:
+        if respond:
+            await message.channel.send(
+                "You cannot use that command in any channels under this category"
+            )
+        allowed = False
+    return allowed
 
 
 def extract_code_blocks(content: str) -> List[str]:
@@ -218,5 +241,42 @@ async def request_completion_response(
     return response["choices"][0]["text"]
 
 
-async def get_models(api_key: str):
-    return await openai.Model.alist(api_key=api_key)
+@retry(
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    wait=wait_random_exponential(min=1, max=5),
+    stop=stop_after_delay(120),
+    reraise=True,
+)
+async def request_image_create(prompt: str, api_key: str, size: str, user_id: str) -> str:
+    response = await openai.Image.acreate(api_key=api_key, prompt=prompt, size=size, user=user_id)
+    return response["data"][0]["url"]
+
+
+@retry(
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    wait=wait_random_exponential(min=1, max=5),
+    stop=stop_after_delay(120),
+    reraise=True,
+)
+async def request_image_edit(
+    prompt: str, api_key: str, size: str, user_id: str, image: bytes, mask: Optional[bytes]
+) -> str:
+    response = await openai.Image.create_edit(
+        api_key=api_key, prompt=prompt, size=size, user=user_id, image=image, mask=mask
+    )
+    return response["data"][0]["url"]
+
+
+@retry(
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    wait=wait_random_exponential(min=1, max=5),
+    stop=stop_after_delay(120),
+    reraise=True,
+)
+async def request_image_variant(
+    prompt: str, api_key: str, size: str, user_id: str, image: bytes
+) -> str:
+    response = await openai.Image.create_variation(
+        api_key=api_key, prompt=prompt, size=size, user=user_id, image=image
+    )
+    return response["data"][0]["url"]

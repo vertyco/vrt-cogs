@@ -4,6 +4,7 @@ import discord
 from redbot.core import commands
 
 from .abc import MixinMeta
+from .common.utils import can_use
 
 log = logging.getLogger("red.vrt.assistant.listener")
 
@@ -40,7 +41,8 @@ class AssistantListener(MixinMeta):
         channel = message.channel
         if channel.id != conf.channel_id:
             return
-
+        if not await can_use(message, conf.blacklist, respond=False):
+            return
         mentions = [member.id for member in message.mentions]
         if (
             not message.content.endswith("?")

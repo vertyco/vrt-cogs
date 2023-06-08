@@ -96,6 +96,9 @@ class GuildSettings(BaseModel):
     timezone: str = "UTC"
     temperature: float = 0.0
     regex_blacklist: List[str] = [r"^As an AI language model,"]
+    blacklist: List[int] = []  # Channel/Role/User IDs
+    image_tools: bool = True
+    image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
 
     class Config:
         json_loads = orjson.loads

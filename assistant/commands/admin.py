@@ -29,7 +29,6 @@ from ..common.utils import (
     extract_message_content,
     fetch_channel_history,
     get_attachments,
-    get_models,
     num_tokens_from_string,
     request_embedding,
 )
@@ -118,6 +117,20 @@ class Admin(MixinMeta):
             else "conversations are stored in memory until reboot or reload"
         )
         embed.add_field(name="Persistent Conversations", value=persist, inline=False)
+
+        blacklist = []
+        for object_id in conf.blacklist:
+            discord_obj = (
+                ctx.guild.get_role(object_id)
+                or ctx.guild.get_member(object_id)
+                or ctx.guild.get_channel_or_thread(object_id)
+            )
+            if discord_obj:
+                blacklist.append(discord_obj.mention)
+            else:
+                blacklist.append(f"{object_id}?")
+        if blacklist:
+            embed.add_field(name="Blacklist", value=humanize_list(blacklist), inline=False)
 
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
         files = []
@@ -954,14 +967,25 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send("Cog has been wiped!")
 
-    @assistant.command(name="printmodels", hidden=True)
-    @commands.is_owner()
-    async def print_models(self, ctx: commands.Context):
-        """Print out models"""
+    @assistant.command(name="blacklist")
+    async def blacklist_settings(
+        self,
+        ctx: commands.Context,
+        *,
+        channel_role_member: Union[
+            discord.Member, discord.Role, discord.TextChannel, discord.CategoryChannel
+        ],
+    ):
+        """
+        Add/Remove items from the blacklist
+
+        `channel_role_member` can be a member, role, channel, or category channel
+        """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key:
-            return await ctx.send(
-                f"No API key! Use `{ctx.prefix}assistant openaikey` to set your OpenAI key!"
-            )
-        models = await get_models(conf.api_key)
-        print(models)
+        if channel_role_member.id in conf.blacklist:
+            conf.blacklist.remove(channel_role_member.id)
+            await ctx.send(f"{channel_role_member.name} has been removed from the blacklist")
+        else:
+            conf.blacklist.append(channel_role_member)
+            await ctx.send(f"{channel_role_member.name} has been added to the blacklist")
+        await self.save_conf()

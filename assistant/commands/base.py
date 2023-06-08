@@ -4,12 +4,13 @@ import discord
 from redbot.core import commands
 
 from ..abc import MixinMeta
+from ..common.utils import can_use
 
 log = logging.getLogger("red.vrt.assistant.base")
 
 
 class Base(MixinMeta):
-    @commands.command(name="chat")
+    @commands.command(name="chat", aliases=["ask"])
     @commands.guild_only()
     @commands.cooldown(1, 6, commands.BucketType.user)
     async def ask_question(self, ctx: commands.Context, *, question: str):
@@ -31,6 +32,8 @@ class Base(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.api_key:
             return await ctx.send("This command requires an API key from OpenAI to be configured!")
+        if not await can_use(ctx.message, conf.blacklist):
+            return
         async with ctx.typing():
             await self.handle_message(ctx.message, question, conf)
 
