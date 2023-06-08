@@ -168,16 +168,17 @@ class Conversation(BaseModel):
         self.last_updated = datetime.now().timestamp()
 
     def prepare_chat(
-        self,
-        system_prompt: str = "",
-        initial_prompt: str = "",
+        self, user_message: str, initial_prompt: str, system_prompt: str
     ) -> List[dict]:
         prepared = []
-        if system_prompt:
-            prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt:
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
+        if system_prompt:
+            prepared.append({"role": "system", "content": system_prompt})
+        user_message = {"role": "user", "content": user_message}
+        prepared.append(user_message)
+        self.messages.append(user_message)
         return prepared
 
 

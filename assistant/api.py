@@ -283,6 +283,7 @@ class API(MixinMeta):
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
         roles = [role for role in author.roles if "everyone" not in role.name] if author else []
+        display_name = author.display_name if author else ""
         params = {
             "botname": self.bot.user.name,
             "timestamp": f"<t:{round(now.timestamp())}:F>",
@@ -292,7 +293,7 @@ class API(MixinMeta):
             "timetz": now.strftime("%I:%M %p %Z"),
             "members": guild.member_count,
             "username": author.name if author else "",
-            "user": author.display_name if author else "",
+            "user": display_name,
             "datetime": str(datetime.now()),
             "roles": humanize_list([role.name for role in roles]),
             "rolementions": humanize_list([role.mention for role in roles]),
@@ -334,17 +335,19 @@ class API(MixinMeta):
 
         if embeddings:
             joined = "\n".join(embeddings)
+            prefix = display_name if display_name else "Chat"
+            if "{author}" in conf.prompt or "{author}" in conf.system_prompt:
+                prefix = "Chat"
 
             if conf.embed_method == "static":
-                message = f"{joined}\n\nChat: {message}"
+                message = f"Context:\n{joined}\n\n{prefix}: {message}"
 
             elif conf.embed_method == "dynamic":
                 initial_prompt += f"\n\nContext:\n{joined}"
 
             elif conf.embed_method == "hybrid" and len(embeddings) > 1:
                 initial_prompt += f"\n\nContext:\n{embeddings[1:]}"
-                message = f"{embeddings[0]}\n\nChat: {message}"
+                message = f"Context:\n{embeddings[0]}\n\n{prefix}: {message}"
 
-        conversation.update_messages(message, "user")
-        messages = conversation.prepare_chat(system_prompt, initial_prompt)
+        messages = conversation.prepare_chat(message, system_prompt, initial_prompt)
         return messages
