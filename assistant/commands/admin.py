@@ -547,8 +547,8 @@ class Admin(MixinMeta):
 
         Using more than the model can handle will raise exceptions.
         """
-        if max_tokens < 1000:
-            return await ctx.send("Use at least 1000 tokens for the model")
+        if max_tokens < 100:
+            return await ctx.send("Use at least 100 tokens for the model")
         conf = self.db.get_conf(ctx.guild)
         conf.max_tokens = max_tokens
         await ctx.send(f"The max tokens the current model will use is {max_tokens}")
