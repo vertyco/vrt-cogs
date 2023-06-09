@@ -238,6 +238,7 @@ class SupportButton(Button):
     async def create_ticket(self, interaction: Interaction):
         guild = interaction.guild
         user = interaction.user
+        channel = interaction.channel
         roles = [r.id for r in user.roles]
         conf = await self.view.config.guild(guild).all()
         blacklist = conf["blacklist"]
@@ -333,10 +334,19 @@ class SupportButton(Button):
                     )
 
         can_read_send = discord.PermissionOverwrite(
-            read_messages=True, send_messages=True, attach_files=True
+            read_messages=True,
+            read_message_history=True,
+            send_messages=True,
+            attach_files=True,
+            embed_links=True,
+            use_application_commands=True,
         )
         read_and_manage = discord.PermissionOverwrite(
-            read_messages=True, send_messages=True, manage_channels=True
+            read_messages=True,
+            send_messages=True,
+            attach_files=True,
+            embed_links=True,
+            manage_channels=True,
         )
 
         support_roles = []
@@ -384,7 +394,6 @@ class SupportButton(Button):
         channel_name = name_fmt.format(**params) if name_fmt else user.name
         try:
             if panel.get("threads"):
-                channel = interaction.channel
                 if alt_cid := panel.get("alt_channel"):
                     alt_channel = guild.get_channel(alt_cid)
                     if alt_channel and isinstance(alt_channel, discord.TextChannel):
