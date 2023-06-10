@@ -308,7 +308,7 @@ class API(MixinMeta):
             "timetz": now.strftime("%I:%M %p %Z"),
             "members": guild.member_count,
             "username": author.name if author else "",
-            "user": display_name,
+            "displayname": display_name,
             "datetime": str(datetime.now()),
             "roles": humanize_list([role.name for role in roles]),
             "rolementions": humanize_list([role.mention for role in roles]),
