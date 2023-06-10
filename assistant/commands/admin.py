@@ -269,7 +269,8 @@ class Admin(MixinMeta):
         `time` - current time in 12hr format (HH:MM AM/PM)
         `timetz` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
-        `user` - the current user asking the question
+        `username` - username of the person chatting
+        `displayname` - display name of the person chatting
         `roles` - the names of the user's roles
         `rolementions` - the mentions of the user's roles
         `avatar` - the user's avatar url
@@ -346,7 +347,8 @@ class Admin(MixinMeta):
         `time` - current time in 12hr format (HH:MM AM/PM)
         `timetz` - current time in 12hr format (HH:MM AM/PM Timezone)
         `members` - current member count of the server
-        `user` - the current user asking the question
+        `username` - username of the person chatting
+        `displayname` - display name of the person chatting
         `roles` - the names of the user's roles
         `rolementions` - the mentions of the user's roles
         `avatar` - the user's avatar url
