@@ -92,8 +92,13 @@ class API(MixinMeta):
                     await message.reply(error["message"], mention_author=conf.mention)
                 log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
                 return
+            except KeyError as e:
+                await message.channel.send(
+                    f"**KeyError in prompt or system message**\n{box(str(e), 'py')}"
+                )
+                return
             except Exception as e:
-                await message.channel.send(f"**API Error**\n{box(str(e), 'py')}")
+                await message.channel.send(f"**Error**\n{box(str(e), 'py')}")
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
                 return
 
@@ -308,6 +313,7 @@ class API(MixinMeta):
             "timetz": now.strftime("%I:%M %p %Z"),
             "members": guild.member_count,
             "username": author.name if author else "",
+            "user": author.name if author else "",
             "displayname": display_name,
             "datetime": str(datetime.now()),
             "roles": humanize_list([role.name for role in roles]),
