@@ -313,7 +313,7 @@ class API(MixinMeta):
             "roles": humanize_list([role.name for role in roles]),
             "rolementions": humanize_list([role.mention for role in roles]),
             "avatar": author.display_avatar.url if author else "",
-            "owner": guild.owner,
+            "owner": guild.owner.name,
             "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",
             "server": guild.name,
             "messages": len(conversation.messages),
