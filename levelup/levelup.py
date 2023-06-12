@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.24.2"
+    __version__ = "2.24.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -133,7 +133,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             "notifydm": False,  # Toggle notify member of level up in DMs
             "mention": False,  # Toggle whether to mention the user
             "notifylog": None,  # Notify member of level up in a set channel
-            "notify": True,  # Toggle whether to notify member of levelups if notify log channel is not set,
+            "notify": False,  # Toggle whether to notify member of levelups if notify log channel is not set,
             "showbal": True,  # Show economy balance
             "weekly": {  # Weekly tracking
                 "users": {},  # Wiped weekly
@@ -2117,9 +2117,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if p not in prestige_data:
             return await ctx.send(_("That prestige level isn't set!"))
         emoji = prestige_data[p]["emoji"]
-        self.data["users"][uid]["prestige"] = int(prestige)
-        self.data["users"][uid]["emoji"] = emoji
+        self.data[ctx.guild.id]["users"][uid]["prestige"] = int(prestige)
+        self.data[ctx.guild.id]["users"][uid]["emoji"] = emoji
         await ctx.tick()
+        await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="algorithm")
     async def algo_edit(self, ctx: commands.Context):
