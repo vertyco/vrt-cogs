@@ -134,7 +134,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             "mention": False,  # Toggle whether to mention the user
             "notifylog": None,  # Notify member of level up in a set channel
             "notify": False,  # Toggle whether to notify member of levelups if notify log channel is not set,
-            "showbal": True,  # Show economy balance
+            "showbal": False,  # Show economy balance
             "weekly": {  # Weekly tracking
                 "users": {},  # Wiped weekly
                 "on": False,  # Weekly stats are being tracked for this guild or not
