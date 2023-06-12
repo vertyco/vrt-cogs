@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.24.1"
+    __version__ = "2.24.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2429,12 +2429,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                                     await user.remove_roles(r)
                                     roles_removed += 1
                     highest_prestige = ""
-                    for plvl, prole in prestiges.items():
+                    for plvl in prestiges:
                         if int(plvl) <= int(prestige_level):
                             highest_prestige = plvl
                     if highest_prestige:
-                        role = prestiges[highest_prestige]
-                        role = guild.get_role(int(role))
+                        role = guild.get_role(int(prestiges[highest_prestige]["role"]))
                         if role:
                             await user.add_roles(role)
                             roles_added += 1
@@ -2444,8 +2443,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                         if role and int(lvl) <= int(user_level):
                             await user.add_roles(role)
                             roles_added += 1
-                    for lvl, role_id in prestiges.items():
-                        role = guild.get_role(int(role_id))
+                    for lvl, prestige in prestiges.items():
+                        role = guild.get_role(int(prestige["role"]))
                         if role and int(lvl) <= int(prestige_level):
                             await user.add_roles(role)
                             roles_added += 1
