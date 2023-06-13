@@ -7,7 +7,7 @@ import discord
 import openai
 import tiktoken
 from aiocache import cached
-from openai.error import APIConnectionError, RateLimitError, Timeout
+from openai.error import APIConnectionError, APIError, RateLimitError, Timeout
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -208,7 +208,7 @@ async def request_embedding(text: str, api_key: str) -> List[float]:
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -223,7 +223,7 @@ async def request_chat_response(
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -242,7 +242,7 @@ async def request_completion_response(
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -253,7 +253,7 @@ async def request_image_create(prompt: str, api_key: str, size: str, user_id: st
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -268,7 +268,7 @@ async def request_image_edit(
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
