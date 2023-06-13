@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.24.3"
+    __version__ = "2.24.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2403,12 +2403,14 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         embed.set_thumbnail(url=self.loading)
         msg = await ctx.send(embed=embed)
         async with ctx.typing():
-            conf = self.data[ctx.guild.id].copy()
+            conf = self.data[ctx.guild.id]
             level_roles = conf["levelroles"]
             prestiges = conf["prestigedata"]
             autoremove = conf["autoremove"]
-            users = conf["users"]
-            for user_id, data in users.items():
+
+            users = [i for i in conf["users"]]
+            for user_id in users:
+                data = conf["users"][user_id]
                 user = guild.get_member(int(user_id))
                 if not user:
                     continue
