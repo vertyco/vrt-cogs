@@ -340,11 +340,11 @@ class API(MixinMeta):
         max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
 
         # Dynamically clean up the conversation to prevent going over token limit
-        prompt_tokens = num_tokens_from_string(system_prompt + initial_prompt)
-        while (conversation.token_count() + prompt_tokens) > max_tokens * 0.85:
+        current_tokens = num_tokens_from_string(system_prompt + initial_prompt + message)
+        while (conversation.token_count() + current_tokens) > max_tokens:
             conversation.messages.pop(0)
 
-        total_tokens = conversation.token_count() + prompt_tokens + num_tokens_from_string(message)
+        total_tokens = conversation.token_count() + current_tokens
 
         embeddings = []
         for i in conf.get_related_embeddings(query_embedding):
