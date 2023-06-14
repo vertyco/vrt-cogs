@@ -277,7 +277,12 @@ class API(MixinMeta):
                     reply = response["content"]
                     if response.get("function_call"):
                         params = {
-                            "user": guild.get_member(author) if isinstance(author, int) else author
+                            "user": guild.get_member(author)
+                            if isinstance(author, int)
+                            else author,
+                            "guild": guild,
+                            "channel": channel,
+                            "conf": conf,
                         }
                         function_name = response["function_call"]["name"]
                         if function_name not in mapping:
