@@ -12,7 +12,6 @@ import pytz
 from openai.error import InvalidRequestError
 from redbot.core import version_info
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
-from redbot.core.utils.mod import is_mod_or_superior
 
 from .abc import MixinMeta
 from .common.callables import FUNCTION_MAP, FUNCTIONS
@@ -102,7 +101,7 @@ class API(MixinMeta):
                 return
             except Exception as e:
                 if (
-                    await is_mod_or_superior(self.bot, message)
+                    message.author.id in self.bot.owner_ids
                     and message.channel.permissions_for(message.guild.me).attach_files
                 ):
                     content = BytesIO(str(traceback.format_exc()).encode())
