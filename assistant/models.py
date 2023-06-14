@@ -46,6 +46,8 @@ READ_EXTENSIONS = [
     ".txt",
     ".py",
     ".json",
+    ".yml",
+    ".yaml",
     ".xml",
     ".html",
     ".ini",
