@@ -4,7 +4,7 @@ import re
 import sys
 from datetime import datetime
 from io import BytesIO
-from typing import List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import pytz
@@ -13,6 +13,7 @@ from redbot.core import version_info
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
 from .abc import MixinMeta
+from .common.callables import FUNCTION_MAP, FUNCTIONS
 from .common.utils import (
     compile_messages,
     extract_code_blocks,
@@ -223,6 +224,8 @@ class API(MixinMeta):
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         conf: GuildSettings,
+        functions: Optional[List[dict]] = [],
+        function_map: Optional[Dict[str, Callable]] = {},
     ):
         """Call the API asynchronously"""
         conversation = self.db.get_conversation(
@@ -250,12 +253,43 @@ class API(MixinMeta):
                 query_embedding,
             )
             if conf.model in CHAT:
-                reply = await request_chat_response(
-                    model=conf.model,
-                    messages=messages,
-                    temperature=conf.temperature,
-                    api_key=conf.api_key,
-                )
+                calls = 0
+                while calls < conf.max_function_calls:
+                    calls += 1
+                    function_calls = (FUNCTIONS if conf.use_function_calls else []) + functions
+                    mapping = {**FUNCTION_MAP, **function_map}
+                    response = await request_chat_response(
+                        model=conf.model,
+                        messages=messages,
+                        temperature=conf.temperature,
+                        api_key=conf.api_key,
+                        functions=function_calls + functions,
+                    )
+                    reply = response["content"]
+                    if response.get("function_call"):
+                        params = {
+                            "user": guild.get_member(author) if isinstance(author, int) else author
+                        }
+                        function_name = response["function_call"]["name"]
+                        if function_name not in mapping:
+                            break
+                        result = await mapping[function_name](**params)
+                        conversation.update_messages(result, "function", function_name)
+                        messages.append(
+                            {"role": "function", "name": function_name, "content": result}
+                        )
+                        max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+                        while conversation.conversation_token_count(conf, result) >= max_tokens:
+                            conversation.messages.pop(0)
+                            if conf.system_prompt and conf.prompt:
+                                messages.pop(2)
+                            elif conf.system_prompt or conf.prompt:
+                                messages.pop(1)
+                            else:
+                                messages.pop(0)
+
+                    else:
+                        break
             else:
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 compiled = compile_messages(messages)
@@ -287,7 +321,7 @@ class API(MixinMeta):
         author: Optional[discord.Member],
         channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
         query_embedding: List[float],
-    ) -> str:
+    ) -> List[dict]:
         """Prepare content for calling the GPT API
 
         Args:
@@ -297,9 +331,10 @@ class API(MixinMeta):
             conversation (Conversation): user's conversation object for chat history
             author (Optional[discord.Member]): user chatting with the bot
             channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): channel for context
+            query_embedding List[float]: message embedding weights
 
         Returns:
-            str: the response from ChatGPT
+            List[dict]: list of messages prepped for api
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
         roles = [role for role in author.roles if "everyone" not in role.name] if author else []

@@ -10,8 +10,12 @@ from .common.utils import num_tokens_from_string
 
 MODELS = {
     "gpt-3.5-turbo": 4096,
+    "gpt-3.5-turbo-0613": 4096,
+    "gpt-3.5-turbo-16k": 16384,
+    "gpt-3.5-turbo-16k-0613": 16384,
     "gpt-4": 8192,
     "gpt-4-32k": 32768,
+    "gpt-4-32k-0613": 32768,
     "code-davinci-002": 8001,
     "text-davinci-003": 4097,
     "text-davinci-002": 4097,
@@ -21,8 +25,12 @@ MODELS = {
 }
 CHAT = [
     "gpt-3.5-turbo",
+    "gpt-3.5-turbo-0613",
+    "gpt-3.5-turbo-16k",
+    "gpt-3.5-turbo-16k-0613",
     "gpt-4",
     "gpt-4-32k",
+    "gpt-4-32k-0613",
     "code-davinci-002",
 ]
 COMPLETION = [
@@ -99,6 +107,8 @@ class GuildSettings(BaseModel):
     blacklist: List[int] = []  # Channel/Role/User IDs
     image_tools: bool = True
     image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
+    use_function_calls: bool = True
+    max_function_calls: int = 10  # Max calls in a row
 
     class Config:
         json_loads = orjson.loads
@@ -136,9 +146,9 @@ class Conversation(BaseModel):
         messages += message
         return num_tokens_from_string(messages)
 
-    def conversation_token_count(self, conf: GuildSettings) -> int:
+    def conversation_token_count(self, conf: GuildSettings, message: str = "") -> int:
         initial = conf.system_prompt + conf.prompt
-        return num_tokens_from_string(initial) + self.user_token_count()
+        return num_tokens_from_string(initial) + self.user_token_count(message)
 
     def is_expired(self, conf: GuildSettings):
         if not conf.max_retention_time:
@@ -159,7 +169,7 @@ class Conversation(BaseModel):
         self.last_updated = datetime.now().timestamp()
         self.messages.clear()
 
-    def update_messages(self, message: str, role: str) -> None:
+    def update_messages(self, message: str, role: str, name: str = None) -> None:
         """Update conversation cache
 
         Args:
@@ -167,7 +177,10 @@ class Conversation(BaseModel):
             role (str): 'system', 'user' or 'assistant'
             name (str): the name of the bot or user
         """
-        self.messages.append({"role": role, "content": message})
+        message = {"role": role, "content": message}
+        if name:
+            message["name"] = name
+        self.messages.append(message)
         self.last_updated = datetime.now().timestamp()
 
     def prepare_chat(

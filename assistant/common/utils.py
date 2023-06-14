@@ -8,6 +8,7 @@ import openai
 import tiktoken
 from aiocache import cached
 from openai.error import APIConnectionError, APIError, RateLimitError, Timeout
+from openai.version import VERSION
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -214,12 +215,47 @@ async def request_embedding(text: str, api_key: str) -> List[float]:
     reraise=True,
 )
 async def request_chat_response(
-    model: str, messages: List[dict], api_key: str, temperature: float
-) -> str:
-    response = await openai.ChatCompletion.acreate(
-        model=model, messages=messages, temperature=temperature, api_key=api_key, timeout=60
+    model: str,
+    messages: List[dict],
+    api_key: str,
+    temperature: float,
+    functions: Optional[List[dict]] = [],
+) -> dict:
+    # response = await asyncio.to_thread(_chat, model, messages, api_key, temperature, functions)
+    if VERSION >= "0.27.7" and model in ["gpt-3.5-turbo-0613", "gpt-4-32k-0613"]:
+        response = await openai.ChatCompletion.acreate(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            api_key=api_key,
+            timeout=60,
+            functions=functions,
+            function_call="auto" if functions else "none",
+        )
+    else:
+        response = await openai.ChatCompletion.acreate(
+            model=model, messages=messages, temperature=temperature, api_key=api_key, timeout=60
+        )
+    return response["choices"][0]["message"]
+
+
+def _chat(
+    model: str,
+    messages: List[dict],
+    api_key: str,
+    temperature: float,
+    functions: Optional[List[dict]] = [],
+):
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        api_key=api_key,
+        timeout=60,
+        functions=functions,
+        function_call="auto" if functions else "none",
     )
-    return response["choices"][0]["message"]["content"]
+    return response["choices"][0]["message"]
 
 
 @retry(

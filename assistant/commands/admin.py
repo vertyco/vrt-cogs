@@ -562,16 +562,19 @@ class Admin(MixinMeta):
         Set the GPT model to use
 
         Valid models and their context info:
-        `Model-Name`: MaxTokens, ModelType
-        `gpt-3.5-turbo`: 4096, chat
-        `gpt-4`: 8192, chat
-        `gpt-4-32k`: 32768, chat
-        `code-davinci-002`: 8001, chat
-        `text-davinci-003`: 4097, completion
-        `text-davinci-002`: 4097, completion
-        `text-curie-001`: 2049, completion
-        `text-babbage-001`: 2049, completion
-        `text-ada-001`: 2049, completion
+        - Model-Name: MaxTokens, ModelType
+        - gpt-3.5-turbo: 4096, chat
+        - gpt-3.5-turbo-16k: 16384, chat
+        - gpt-4: 8192, chat
+        - gpt-4-32k: 32768, chat
+        - code-davinci-002: 8001, chat
+        - text-davinci-003: 4097, completion
+        - text-davinci-002: 4097, completion
+        - text-curie-001: 2049, completion
+        - text-babbage-001: 2049, completion
+        - text-ada-001: 2049, completion
+
+        Other sub-models are also included
         """
         valid = humanize_list(CHAT + COMPLETION)
         if not model:
@@ -596,6 +599,51 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.embeddings = {}
         await ctx.send("All embedding data has been wiped!")
+        await self.save_conf()
+
+    @assistant.command(name="resetglobalembeddings")
+    @commands.is_owner()
+    async def wipe_global_embeddings(self, ctx: commands.Context, yes_or_no: bool):
+        """
+        Wipe saved embeddings for all servers
+
+        This will delete any and all saved embedding training data for the assistant.
+        """
+        if not yes_or_no:
+            return await ctx.send("Not wiping embedding data")
+        for conf in self.db.configs.values():
+            conf.embeddings = {}
+        await ctx.send("All embedding data has been wiped for all servers!")
+        await self.save_conf()
+
+    @assistant.command(name="resetconversations")
+    async def wipe_conversations(self, ctx: commands.Context, yes_or_no: bool):
+        """
+        Wipe saved conversations for the assistant in this server
+
+        This will delete any and all saved conversations for the assistant.
+        """
+        if not yes_or_no:
+            return await ctx.send("Not wiping conversations")
+        for key, convo in self.db.conversations.items():
+            if ctx.guild.id == int(key.split("-")[2]):
+                convo.messages.clear()
+        await ctx.send("Conversations have been wiped in this server!")
+        await self.save_conf()
+
+    @assistant.command(name="resetglobalconversations")
+    @commands.is_owner()
+    async def wipe_global_conversations(self, ctx: commands.Context, yes_or_no: bool):
+        """
+        Wipe saved conversations for the assistant in all servers
+
+        This will delete any and all saved conversations for the assistant.
+        """
+        if not yes_or_no:
+            return await ctx.send("Not wiping conversations")
+        for convo in self.db.conversations.values():
+            convo.messages.clear()
+        await ctx.send("Conversations have been wiped for all servers!")
         await self.save_conf()
 
     @assistant.command(name="topn")
