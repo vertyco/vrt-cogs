@@ -135,8 +135,8 @@ class Assistant(
             author (Union[discord.Member, int]): user asking the question
             guild (discord.Guild): guild associated with the chat
             channel (Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int]): used for context
-            functions (Optional[List[dict]]): custom functions that the api can call
-            function_map (Optional[Dict[str, Callable]]): mappings for custom functions
+            functions (Optional[List[dict]]): custom functions that the api can call (see https://platform.openai.com/docs/guides/gpt/function-calling)
+            function_map (Optional[Dict[str, Callable]]): mappings for custom functions {"FunctionName": Callable}
 
         Raises:
             NoAPIKey: If the specified guild has no api key associated with it
