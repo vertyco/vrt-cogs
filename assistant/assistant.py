@@ -30,7 +30,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.8.8"
+    __version__ = "2.8.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -125,7 +125,7 @@ class Assistant(
         author: Union[discord.Member, int],
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
-        functions: Optional[List[dict]] = [],
+        function_calls: Optional[List[dict]] = [],
         function_map: Optional[Dict[str, Callable]] = {},
     ) -> str:
         """Method for other cogs to call the chat API
@@ -148,5 +148,5 @@ class Assistant(
         if not conf.api_key:
             raise NoAPIKey("OpenAI key has not been set for this server!")
         return await self.get_chat_response(
-            message, author, guild, channel, conf, functions, function_map
+            message, author, guild, channel, conf, function_calls, function_map
         )

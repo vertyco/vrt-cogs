@@ -4,6 +4,7 @@ import re
 import sys
 import traceback
 from datetime import datetime
+from inspect import iscoroutinefunction
 from io import BytesIO
 from typing import Callable, Dict, List, Optional, Union
 
@@ -14,7 +15,6 @@ from redbot.core import version_info
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
 from .abc import MixinMeta
-from .common.callables import FUNCTION_MAP, FUNCTIONS
 from .common.utils import (
     compile_messages,
     extract_code_blocks,
@@ -86,8 +86,20 @@ class API(MixinMeta):
             )
         else:
             try:
+                if conf.use_function_calls:
+                    function_calls = self.db.get_function_calls()
+                    function_map = self.db.get_functions()
+                else:
+                    function_calls = []
+                    function_map = {}
                 reply = await self.get_chat_response(
-                    question, message.author, message.guild, message.channel, conf
+                    question,
+                    message.author,
+                    message.guild,
+                    message.channel,
+                    conf,
+                    function_calls,
+                    function_map,
                 )
             except InvalidRequestError as e:
                 if error := e.error:
@@ -110,6 +122,7 @@ class API(MixinMeta):
                     file = None
                 await message.channel.send(f"**Error**\n{box(str(e))}", file=file)
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()
                 return
 
         files = None
@@ -233,7 +246,7 @@ class API(MixinMeta):
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         conf: GuildSettings,
-        functions: Optional[List[dict]] = [],
+        function_calls: Optional[List[dict]] = [],
         function_map: Optional[Dict[str, Callable]] = {},
     ):
         """Call the API asynchronously"""
@@ -265,29 +278,32 @@ class API(MixinMeta):
                 calls = 0
                 while calls < conf.max_function_calls:
                     calls += 1
-                    function_calls = (FUNCTIONS if conf.use_function_calls else []) + functions
-                    mapping = {**FUNCTION_MAP, **function_map}
                     response = await request_chat_response(
                         model=conf.model,
                         messages=messages,
                         temperature=conf.temperature,
                         api_key=conf.api_key,
-                        functions=function_calls + functions,
+                        functions=function_calls,
                     )
                     reply = response["content"]
-                    if response.get("function_call"):
-                        params = {
-                            "user": guild.get_member(author)
+                    if function := response.get("function_call"):
+                        function_name = function["name"]
+                        kwargs = function.get("arguments", {})
+                        if function_name not in function_map:
+                            break
+                        extras = {
+                            "member": guild.get_member(author)
                             if isinstance(author, int)
                             else author,
                             "guild": guild,
-                            "channel": channel,
-                            "conf": conf,
+                            "bot": self.bot,
                         }
-                        function_name = response["function_call"]["name"]
-                        if function_name not in mapping:
-                            break
-                        result = await mapping[function_name](**params)
+                        kwargs.update(extras)
+                        func = function_map[function_name]
+                        if iscoroutinefunction(func):
+                            result = await func(**kwargs)
+                        else:
+                            result = await asyncio.to_thread(func, **kwargs)
                         conversation.update_messages(result, "function", function_name)
                         messages.append(
                             {"role": "function", "name": function_name, "content": result}
