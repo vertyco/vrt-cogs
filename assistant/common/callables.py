@@ -3,7 +3,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 
 async def get_user_role_names(user: discord.Member, *args, **kwargs) -> str:
-    return humanize_list([role.name for role in user.roles])
+    return humanize_list([role.name for role in user.roles if "everyone" not in role.name])
 
 
 FUNCTIONS = [
