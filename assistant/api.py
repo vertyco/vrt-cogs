@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 import sys
+import traceback
 from datetime import datetime
 from io import BytesIO
 from typing import Callable, Dict, List, Optional, Union
@@ -99,7 +100,9 @@ class API(MixinMeta):
                 )
                 return
             except Exception as e:
-                await message.channel.send(f"**Error**\n{box(str(e), 'py')}")
+                content = BytesIO(str(traceback.format_exc()).encode())
+                file = discord.File(content, filename="error.txt")
+                await message.channel.send("Assistant encountered an error", file=file)
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
                 return
 
