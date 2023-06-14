@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Literal, Tuple, Union
+from typing import Callable, Dict, List, Literal, Tuple, Union
 
 import discord
 import orjson
@@ -86,6 +86,15 @@ class Embedding(BaseModel):
         json_dumps = orjson.dumps
 
 
+class CustomFunction(BaseModel):
+    code: str
+    schema: dict
+
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson.dumps
+
+
 class GuildSettings(BaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
@@ -107,9 +116,10 @@ class GuildSettings(BaseModel):
     temperature: float = 0.0
     regex_blacklist: List[str] = [r"^As an AI language model,"]
     blacklist: List[int] = []  # Channel/Role/User IDs
+
     image_tools: bool = True
     image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
-    use_function_calls: bool = True
+    use_function_calls: bool = False
     max_function_calls: int = 10  # Max calls in a row
 
     class Config:
@@ -204,6 +214,7 @@ class DB(BaseModel):
     configs: dict[int, GuildSettings] = {}
     conversations: dict[str, Conversation] = {}
     persistent_conversations: bool = False
+    functions: Dict[str, CustomFunction] = {}
 
     class Config:
         json_loads = orjson.loads
@@ -230,6 +241,16 @@ class DB(BaseModel):
 
         self.conversations[key] = Conversation()
         return self.conversations[key]
+
+    def get_function_calls(self) -> List[dict]:
+        return [i.schema for i in self.functions.values()]
+
+    def get_function_map(self) -> Dict[str, Callable]:
+        functions = {}
+        for function_name, function in self.functions.items():
+            exec(function.code, globals())
+            functions[function_name] = globals()[function_name]
+        return functions
 
 
 class NoAPIKey(Exception):
