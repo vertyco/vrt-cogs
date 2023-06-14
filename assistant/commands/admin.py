@@ -78,7 +78,8 @@ class Admin(MixinMeta):
             f"`Embeddings:        `{humanize_number(len(conf.embeddings))}\n"
             f"`Top N Embeddings:  `{conf.top_n}\n"
             f"`Min Relatedness:   `{conf.min_relatedness}\n"
-            f"`Embedding Method:  `{conf.embed_method}"
+            f"`Embedding Method:  `{conf.embed_method}\n"
+            f"`Function Calling:  `{conf.use_function_calls}"
         )
         system_file = (
             discord.File(
@@ -521,6 +522,23 @@ class Admin(MixinMeta):
         conf.temperature = temperature
         await self.save_conf()
         await ctx.tick()
+
+    @assistant.command(name="functioncalls")
+    async def toggle_function_calls(self, ctx: commands.Context):
+        """Toggle whether GPT can call functions
+
+        Only the following models can call functions at the moment
+        - gpt-3.5-turbo-0613
+        - gpt-4-0613
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_function_calls:
+            conf.use_function_calls = False
+            await ctx.send("Assistant will not call functions")
+        else:
+            conf.use_function_calls = True
+            await ctx.send("Assistant will now call functions as needed")
+        await self.save_conf()
 
     @assistant.command(name="minlength")
     async def min_length(self, ctx: commands.Context, min_question_length: int):
