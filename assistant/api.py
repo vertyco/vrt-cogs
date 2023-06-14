@@ -101,7 +101,10 @@ class API(MixinMeta):
                 )
                 return
             except Exception as e:
-                if await is_mod_or_superior(self.bot, message):
+                if (
+                    await is_mod_or_superior(self.bot, message)
+                    and message.channel.permissions_for(message.guild.me).attach_files
+                ):
                     content = BytesIO(str(traceback.format_exc()).encode())
                     file = discord.File(content, filename="full_error.txt")
                 else:
