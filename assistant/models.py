@@ -88,7 +88,7 @@ class Embedding(BaseModel):
 
 class CustomFunction(BaseModel):
     code: str
-    schema: dict
+    jsonschema: dict
 
     class Config:
         json_loads = orjson.loads
@@ -243,7 +243,7 @@ class DB(BaseModel):
         return self.conversations[key]
 
     def get_function_calls(self) -> List[dict]:
-        return [i.schema for i in self.functions.values()]
+        return [i.jsonschema for i in self.functions.values()]
 
     def get_function_map(self) -> Dict[str, Callable]:
         functions = {}
