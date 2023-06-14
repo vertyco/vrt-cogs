@@ -12,6 +12,7 @@ import pytz
 from openai.error import InvalidRequestError
 from redbot.core import version_info
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
+from redbot.core.utils.mod import is_mod_or_superior
 
 from .abc import MixinMeta
 from .common.callables import FUNCTION_MAP, FUNCTIONS
@@ -100,9 +101,12 @@ class API(MixinMeta):
                 )
                 return
             except Exception as e:
-                content = BytesIO(str(traceback.format_exc()).encode())
-                file = discord.File(content, filename="error.txt")
-                await message.channel.send("Assistant encountered an error", file=file)
+                if await is_mod_or_superior(self.bot, message):
+                    content = BytesIO(str(traceback.format_exc()).encode())
+                    file = discord.File(content, filename="full_error.txt")
+                else:
+                    file = None
+                await message.channel.send(f"**Error**\n{box(str(e))}", file=file)
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
                 return
 
