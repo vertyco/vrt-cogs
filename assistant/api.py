@@ -88,7 +88,7 @@ class API(MixinMeta):
             try:
                 if conf.use_function_calls:
                     function_calls = self.db.get_function_calls()
-                    function_map = self.db.get_functions()
+                    function_map = self.db.get_function_map()
                 else:
                     function_calls = []
                     function_map = {}
