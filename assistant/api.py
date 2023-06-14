@@ -281,9 +281,9 @@ class API(MixinMeta):
                         max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                         while conversation.conversation_token_count(conf, result) >= max_tokens:
                             conversation.messages.pop(0)
-                            if conf.system_prompt and conf.prompt:
+                            if conf.system_prompt and conf.prompt and len(messages) >= 3:
                                 messages.pop(2)
-                            elif conf.system_prompt or conf.prompt:
+                            elif conf.system_prompt or conf.prompt and len(messages) >= 2:
                                 messages.pop(1)
                             else:
                                 messages.pop(0)
