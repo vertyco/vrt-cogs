@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from time import perf_counter
-from typing import List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import discord
 from discord.ext import tasks
@@ -30,7 +30,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.7.5"
+    __version__ = "2.8.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -125,6 +125,8 @@ class Assistant(
         author: Union[discord.Member, int],
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
+        functions: Optional[List[dict]] = [],
+        function_map: Optional[Dict[str, Callable]] = {},
     ) -> str:
         """Method for other cogs to call the chat API
 
@@ -133,6 +135,8 @@ class Assistant(
             author (Union[discord.Member, int]): user asking the question
             guild (discord.Guild): guild associated with the chat
             channel (Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int]): used for context
+            functions (Optional[List[dict]]): custom functions that the api can call
+            function_map (Optional[Dict[str, Callable]]): mappings for custom functions
 
         Raises:
             NoAPIKey: If the specified guild has no api key associated with it
@@ -143,4 +147,6 @@ class Assistant(
         conf = self.db.get_conf(guild)
         if not conf.api_key:
             raise NoAPIKey("OpenAI key has not been set for this server!")
-        return await self.get_chat_response(message, author, guild, channel, conf)
+        return await self.get_chat_response(
+            message, author, guild, channel, conf, functions, function_map
+        )
