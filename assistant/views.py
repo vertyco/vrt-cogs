@@ -1,15 +1,25 @@
 import asyncio
+import json
 import logging
+import re
 from contextlib import suppress
+from io import BytesIO
 from typing import Callable, List
 
 import discord
 from rapidfuzz import fuzz
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import box, pagify
 
-from .common.utils import embedding_embeds, request_embedding
-from .models import Embedding, GuildSettings
+from .common.utils import (
+    embedding_embeds,
+    extract_code_blocks,
+    function_embeds,
+    get_attachments,
+    request_embedding,
+    wait_message,
+)
+from .models import DB, CustomFunction, Embedding, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.views")
 
@@ -369,3 +379,198 @@ class EmbeddingMenu(discord.ui.View):
         self.page %= len(self.pages)
         self.place = min(self.place, len(self.pages[self.page].fields) - 1)
         await self.message.edit(embed=self.pages[self.page], view=self)
+
+
+class CodeModal(discord.ui.Modal):
+    def __init__(self, title: str, schema: str = None, code: str = None):
+        super().__init__(title=title, timeout=None)
+
+        self.schema = ""
+        self.code = ""
+
+        self.schema_field = discord.ui.TextInput(
+            label="JSON Schema",
+            style=discord.TextStyle.paragraph,
+            default=schema,
+            required=True,
+        )
+        self.add_item(self.schema_field)
+        self.code_field = discord.ui.TextInput(
+            label="Code",
+            style=discord.TextStyle.paragraph,
+            default=code,
+            required=True,
+        )
+        self.add_item(self.code_field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.schema = self.schema_field.value
+        self.code = self.code_field.value
+        await interaction.response.defer()
+        self.stop()
+
+
+class CodeMenu(discord.ui.View):
+    def __init__(self, ctx: commands.Context, db: DB, save_func: Callable):
+        super().__init__(timeout=600)
+        self.ctx = ctx
+        self.db = db
+        self.save = save_func
+
+        self.has_skip = True
+
+        self.page = 0
+        self.pages: List[discord.Embed] = []
+        self.message: discord.Message = None
+
+        if ctx.author.id not in ctx.bot.owner_ids:
+            self.remove_item(self.new_function)
+            self.remove_item(self.delete)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message("This isn't your menu!", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self):
+        with suppress(discord.HTTPException):
+            await self.message.edit(view=None)
+        for task in self.tasks:
+            await task
+        return await super().on_timeout()
+
+    async def get_pages(self) -> None:
+        self.pages = await asyncio.to_thread(function_embeds, self.db.functions)
+        if len(self.pages) > 30 and not self.has_skip:
+            self.add_item(self.left10)
+            self.add_item(self.right10)
+            self.close.row = 2
+            self.has_skip = True
+        elif len(self.pages) <= 30 and self.has_skip:
+            self.remove_item(self.left10)
+            self.remove_item(self.right10)
+            self.close.row = 0
+            self.has_skip = False
+
+    async def start(self):
+        self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.secondary, emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}"
+    )
+    async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page -= 10
+        self.page %= len(self.pages)
+        await self.message.edit(embed=self.pages[self.page], view=self)
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.secondary,
+        emoji="\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
+    )
+    async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page -= 1
+        self.page %= len(self.pages)
+        await self.message.edit(embed=self.pages[self.page], view=self)
+
+    @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="\N{CROSS MARK}")
+    async def close(self, interaction: discord.Interaction, button: discord.Button):
+        await interaction.response.defer()
+        await self.message.delete()
+        self.stop()
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.secondary,
+        emoji="\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}",
+    )
+    async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page += 1
+        self.page %= len(self.pages)
+        await self.message.edit(embed=self.pages[self.page], view=self)
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.secondary, emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}"
+    )
+    async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page += 10
+        self.page %= len(self.pages)
+        await self.message.edit(embed=self.pages[self.page], view=self)
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.primary, emoji="\N{PRINTER}\N{VARIATION SELECTOR-16}", row=1
+    )
+    async def view(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.pages[self.page].fields:
+            return await interaction.response.send_message("No code to inspect!", ephemeral=True)
+        function_name = self.pages[self.page].description
+        entry = self.db.functions[function_name]
+        files = [
+            discord.File(
+                BytesIO(json.dumps(entry.jsonschema, indent=2).encode()),
+                filename=f"{function_name}.json",
+            ),
+            discord.File(BytesIO(entry.code.encode()), filename=f"{function_name}.py"),
+        ]
+        await interaction.response.send_message("Here are your custom functions", files=files)
+
+    @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{SQUARED NEW}", row=1)
+    async def new_function(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(
+            "Reply to this message with the json schema for your function"
+        )
+        message = await wait_message(self.ctx)
+        if not message:
+            return
+        attachments = get_attachments(message)
+        try:
+            if attachments:
+                text = (await attachments[0].read()).decode()
+            else:
+                text = message.content.strip()
+            if extracted := extract_code_blocks(text):
+                schema = json.loads(extracted[0])
+            else:
+                schema = json.loads(text)
+        except json.JSONDecodeError:
+            return await self.ctx.send("Invalid json schema!")
+        except Exception as e:
+            return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
+
+        await self.ctx.send("Reply to this message with the custom code")
+        message = await wait_message(self.ctx)
+        if not message:
+            return
+        attachments = get_attachments(message)
+        if attachments:
+            code = (await attachments[0].read()).decode()
+        else:
+            code = message.content.strip()
+        if extracted := extract_code_blocks(code):
+            code = extracted[0]
+        match = re.search(r"(def|async def)\s+(\w+)", code)
+        function_name = match.group(2) if match else None
+        if not function_name:
+            return await self.ctx.send("Could not validate code and extract function name!")
+
+        entry = CustomFunction(code=code, jsonschema=schema)
+        self.db.functions[function_name] = entry
+        await self.ctx.send(f"{function_name} has been created!")
+        await self.get_pages()
+        await self.message.edit(embed=self.pages[self.page], view=self)
+        await self.save()
+
+    @discord.ui.button(
+        style=discord.ButtonStyle.danger, emoji="\N{WASTEBASKET}\N{VARIATION SELECTOR-16}", row=1
+    )
+    async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.pages[self.page].fields:
+            return await interaction.response.send_message("No code to inspect!", ephemeral=True)
+        await interaction.response.defer()
+        function_name = self.pages[self.page].description
+        del self.db.functions[function_name]
+        await interaction.response.send_message(f"{function_name} has been deleted!")
+        await self.save()
