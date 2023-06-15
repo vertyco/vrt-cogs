@@ -254,7 +254,7 @@ class API(MixinMeta):
         conf: GuildSettings,
         function_calls: Optional[List[dict]] = [],
         function_map: Optional[Dict[str, Callable]] = {},
-    ):
+    ) -> str:
         """Call the API asynchronously"""
         conversation = self.db.get_conversation(
             author if isinstance(author, int) else author.id,
@@ -306,7 +306,6 @@ class API(MixinMeta):
                     reply = response["content"]
                     if function := response.get("function_call"):
                         function_name = function["name"]
-                        log.debug(f"Calling function {function}")
                         kwargs = orjson.loads(function.get("arguments", "{}"))
                         if function_name not in function_map:
                             break
@@ -324,7 +323,9 @@ class API(MixinMeta):
                             result = await func(**kwargs)
                         else:
                             result = await asyncio.to_thread(func, **kwargs)
-                        log.debug(f"Function result: {result}")
+                        log.info(
+                            f"Called function {function_name}\nParams: {kwargs}\nResult: {result}"
+                        )
                         conversation.update_messages(result, "function", function_name)
                         messages.append(
                             {"role": "function", "name": function_name, "content": result}
