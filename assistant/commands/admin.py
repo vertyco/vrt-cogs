@@ -284,7 +284,7 @@ class Admin(MixinMeta):
         - **channelmention**: current channel mention
         - **topic**: topic of current channel (if not forum or thread)
         - **banktype**: whether the bank is global or not
-        - **Currency**: currency name
+        - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
         """
@@ -357,7 +357,7 @@ class Admin(MixinMeta):
         - **channelmention**: current channel mention
         - **topic**: topic of current channel (if not forum or thread)
         - **banktype**: whether the bank is global or not
-        - **Currency**: currency name
+        - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
         """
