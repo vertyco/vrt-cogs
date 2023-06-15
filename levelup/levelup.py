@@ -915,7 +915,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     async def before_cache_dumper(self):
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(300)
-        log.info("Cache dumber ready")
+        log.info("Cache dumper ready")
 
     @tasks.loop(minutes=15)
     async def weekly_checker(self):
