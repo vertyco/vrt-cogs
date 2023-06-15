@@ -1010,10 +1010,10 @@ class Admin(MixinMeta):
     @commands.guildowner()
     async def custom_functions(self, ctx: commands.Context):
         """
-        Custom function calls
+        Add custom function calls for Assistant to use
 
-        Please see the following resources for creating callable functions
-        - [Docs](https://platform.openai.com/docs/guides/gpt/function-calling)
+        **READ**
+        - [Function Call Docs](https://platform.openai.com/docs/guides/gpt/function-calling)
         - [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_for_knowledge_retrieval.ipynb)
         - [JSON Schema Reference](https://json-schema.org/understanding-json-schema/)
 
@@ -1021,20 +1021,18 @@ class Admin(MixinMeta):
         - gpt-3.5-turbo-0613
         - gpt-4-0613
 
-        The following objects are passed by default as keyword arguments, they don't need to be included in the json schema.
+        The following objects are passed by default as keyword arguments.
         - **user**: the user currently chatting with the bot (discord.Member)
         - **channel**: channel the user is chatting in (TextChannel|Thread|ForumChannel)
         - **guild**: current guild (discord.Guild)
         - **bot**: the bot object (Red)
         - **conf**: the config model for Assistant (GuildSettings)
-        - All functions **MUST** include `*args, **kwargs` in the params, and return a string
+        - All functions **MUST** include `*args, **kwargs` in the params and return a string
         ```python
         # Can be either sync or async
         async def func(*args, **kwargs) -> str:
-            ...
         ```
-
-        *Only bot owner can manage this, guild owners can see descriptions but not code*
+        Only bot owner can manage this, guild owners can see descriptions but not code
         """
         if ctx.interaction:
             await ctx.interaction.response.defer()
