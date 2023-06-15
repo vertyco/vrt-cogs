@@ -12,7 +12,7 @@ import discord
 import orjson
 import pytz
 from openai.error import InvalidRequestError
-from redbot.core import version_info
+from redbot.core import bank, version_info
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
 from .abc import MixinMeta
@@ -265,6 +265,15 @@ class API(MixinMeta):
             query_embedding = await request_embedding(text=message, api_key=conf.api_key)
             if not query_embedding:
                 log.info(f"Could not get embedding for message: {message}")
+
+            params = {
+                "banktype": "global bank" if await bank.is_global() else "local bank",
+                "currency": await bank.get_currency_name(guild),
+                "bank": await bank.get_bank_name(guild),
+                "balance": await bank.get_balance(
+                    guild.get_member(author) if isinstance(author, int) else author,
+                ),
+            }
             messages = await asyncio.to_thread(
                 self.prepare_messages,
                 message,
@@ -274,6 +283,7 @@ class API(MixinMeta):
                 author,
                 channel,
                 query_embedding,
+                params,
             )
             if conf.model in CHAT:
                 calls = 0
@@ -354,6 +364,7 @@ class API(MixinMeta):
         author: Optional[discord.Member],
         channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
         query_embedding: List[float],
+        params: dict,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -372,7 +383,9 @@ class API(MixinMeta):
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
         roles = [role for role in author.roles if "everyone" not in role.name] if author else []
         display_name = author.display_name if author else ""
+
         params = {
+            **params,
             "botname": self.bot.user.name,
             "timestamp": f"<t:{round(now.timestamp())}:F>",
             "day": now.strftime("%A"),

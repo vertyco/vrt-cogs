@@ -441,7 +441,8 @@ class CodeMenu(discord.ui.View):
         return await super().on_timeout()
 
     async def get_pages(self) -> None:
-        self.pages = await asyncio.to_thread(function_embeds, self.db.functions)
+        owner = self.ctx.author.id in self.ctx.bot.owner_ids
+        self.pages = await asyncio.to_thread(function_embeds, self.db.functions, owner)
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)

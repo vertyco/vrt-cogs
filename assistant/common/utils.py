@@ -178,7 +178,7 @@ def compile_messages(messages: List[dict]) -> str:
     return text
 
 
-def function_embeds(functions: Dict[str, Any]) -> List[discord.Embed]:
+def function_embeds(functions: Dict[str, Any], owner: bool) -> List[discord.Embed]:
     embeds = []
     pages = math.ceil(len(functions))
     for index, function_name in enumerate(list(functions)):
@@ -186,14 +186,21 @@ def function_embeds(functions: Dict[str, Any]) -> List[discord.Embed]:
         embed = discord.Embed(
             title="Custom Functions", description=function_name, color=discord.Color.blue()
         )
-        schema = json.dumps(function.jsonschema, indent=2)
-        if len(schema) > 1000:
-            schema = f"{schema[:1000]}..."
-        embed.add_field(name="Schema", value=box(schema, "json"), inline=False)
-        code = box(function.code, "py")
-        if len(function.code) > 1000:
-            code = f"{box(function.code[:1000], 'py')}..."
-        embed.add_field(name="Code", value=code, inline=False)
+
+        if owner:
+            schema = json.dumps(function.jsonschema, indent=2)
+            if len(schema) > 1000:
+                schema = f"{schema[:1000]}..."
+            embed.add_field(name="Schema", value=box(schema, "json"), inline=False)
+            code = box(function.code, "py")
+            if len(function.code) > 1000:
+                code = f"{box(function.code[:1000], 'py')}..."
+            embed.add_field(name="Code", value=code, inline=False)
+        else:
+            embed.add_field(
+                name="Schema", value=box(function.jsonschema["description"], "json"), inline=False
+            )
+            embed.add_field(name="Code", value=box("Hidden..."), inline=False)
         embed.set_footer(text=f"Page {index + 1}/{pages}")
         embeds.append(embed)
     if not embeds:
