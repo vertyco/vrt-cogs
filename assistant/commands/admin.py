@@ -13,6 +13,7 @@ import pandas as pd
 import pytz
 from aiocache import cached
 from discord.app_commands import Choice
+from openai.version import VERSION
 from pydantic import ValidationError
 from rapidfuzz import fuzz
 from redbot.core import app_commands, commands
@@ -532,6 +533,10 @@ class Admin(MixinMeta):
             conf.use_function_calls = True
             await ctx.send("Assistant will now call functions as needed")
         await self.save_conf()
+        if VERSION < "0.27.7":
+            await ctx.send(
+                f"You should update your OpenAI library version!\nCurrent version: `{VERSION}`"
+            )
 
     @assistant.command(name="minlength")
     async def min_length(self, ctx: commands.Context, min_question_length: int):
