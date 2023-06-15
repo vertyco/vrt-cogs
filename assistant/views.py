@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import Callable, List
 
 import discord
+import json5
 from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
@@ -538,13 +539,11 @@ class CodeMenu(discord.ui.View):
             if attachments:
                 text = (await attachments[0].read()).decode()
             else:
-                text = message.content.strip()
+                text = message.content
             if extracted := extract_code_blocks(text):
-                schema = json.loads(extracted[0])
+                schema = json5.loads(extracted[0].strip())
             else:
-                schema = json.loads(text)
-        except json.JSONDecodeError:
-            return await self.ctx.send("Invalid json schema!")
+                schema = json5.loads(text.strip())
         except Exception as e:
             return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
         function_name = schema["name"]
@@ -586,9 +585,7 @@ class CodeMenu(discord.ui.View):
             return
         text = modal.schema
         try:
-            schema = json.loads(text)
-        except json.JSONDecodeError:
-            return await self.ctx.send("Invalid json schema!")
+            schema = json5.loads(text.strip())
         except Exception as e:
             return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
         new_name = schema["name"]

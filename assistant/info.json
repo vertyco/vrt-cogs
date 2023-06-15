@@ -21,6 +21,7 @@
     "aiohttp",
     "pydantic",
     "orjson",
+    "json5",
     "tiktoken",
     "scipy",
     "scikit-learn",
