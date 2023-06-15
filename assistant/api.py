@@ -345,6 +345,8 @@ class API(MixinMeta):
 
                     else:
                         break
+                if calls > 1:
+                    log.info(f"Made {calls} function calls in a row")
             else:
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 compiled = compile_messages(messages)
