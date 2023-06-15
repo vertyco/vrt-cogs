@@ -466,6 +466,21 @@ class CodeMenu(discord.ui.View):
         except SyntaxError:
             return False
 
+    def schema_valid(self, schema: dict) -> str:
+        missing = ""
+        if "name" not in schema:
+            missing += "- `name`\n"
+        if "description" not in schema:
+            missing += "- `description`\n"
+        if "parameters" not in schema:
+            missing += "- `parameters`\n"
+        if "parameters" in schema:
+            if "type" not in schema["parameters"]:
+                missing += "- `type` in **parameters**\n"
+            if "properties" not in schema["parameters"]:
+                missing = "- `properties` in **parameters**\n"
+        return missing
+
     @discord.ui.button(
         style=discord.ButtonStyle.secondary, emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}"
     )
@@ -547,6 +562,9 @@ class CodeMenu(discord.ui.View):
                 schema = json5.loads(text.strip())
         except Exception as e:
             return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
+        if missing := self.schema_valid(schema):
+            return await self.ctx.send(f"Invalid schema!\n**Missing**\n{missing}")
+
         function_name = schema["name"]
 
         await self.ctx.send("Reply to this message with the custom code")
@@ -598,6 +616,8 @@ class CodeMenu(discord.ui.View):
             schema = json5.loads(text.strip())
         except Exception as e:
             return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
+        if missing := self.schema_valid(schema):
+            return await self.ctx.send(f"Invalid schema!\n**Missing**\n{missing}")
         new_name = schema["name"]
 
         code = modal.code
