@@ -306,7 +306,7 @@ class API(MixinMeta):
                     reply = response["content"]
                     if function := response.get("function_call"):
                         function_name = function["name"]
-                        kwargs = orjson.loads(function.get("arguments", "{}"))
+                        params = orjson.loads(function.get("arguments", "{}"))
                         if function_name not in function_map:
                             break
                         extras = {
@@ -317,14 +317,14 @@ class API(MixinMeta):
                             "bot": self.bot,
                             "conf": conf,
                         }
-                        kwargs.update(extras)
+                        kwargs = {**params, **extras}
                         func = function_map[function_name]
                         if iscoroutinefunction(func):
                             result = await func(**kwargs)
                         else:
                             result = await asyncio.to_thread(func, **kwargs)
                         log.info(
-                            f"Called function {function_name}\nParams: {kwargs}\nResult: {result}"
+                            f"Called function {function_name}\nParams: {params}\nResult: {result}"
                         )
                         conversation.update_messages(result, "function", function_name)
                         messages.append(
