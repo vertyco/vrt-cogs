@@ -33,7 +33,7 @@ from ..common.utils import (
     request_embedding,
 )
 from ..models import CHAT, COMPLETION, Embedding
-from ..views import EmbeddingMenu, SetAPI
+from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
 
@@ -1009,6 +1009,44 @@ class Admin(MixinMeta):
                 break
 
         await view.start()
+
+    @commands.hybrid_command(name="customfunctions")
+    @commands.guild_only()
+    @commands.guildowner()
+    async def custom_functions(self, ctx: commands.Context):
+        """
+        Custom function calls
+
+        Please see the following resources for creating callable functions
+        - [Docs](https://platform.openai.com/docs/guides/gpt/function-calling)
+        - [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_for_knowledge_retrieval.ipynb)
+
+        Only these two models can use function calls as of now:
+        - gpt-3.5-turbo-0613
+        - gpt-4-0613
+
+        The following objects are passed by default as keyword arguments, they don't need to be included in the json schema.
+        - **user**: the user currently chatting with the bot (discord.Member)
+        - **guild**: current guild (discord.Guild)
+        - **bot**: the bot object (Red)
+        - **conf**: the config model for Assistant (GuildSettings)
+        - All functions **MUST** include `*args, **kwargs` in the params, and return a string
+        ```python
+        # Can be either sync or async
+        async def func(*args, **kwargs) -> str:
+            ...
+        ```
+
+        The OpenAI resources above will be key to making decent functions
+
+        *Only bot owner can manage custom function calls, but guild owners can still view them*
+        """
+        if ctx.interaction:
+            await ctx.interaction.response.defer()
+
+        view = CodeMenu(ctx, self.db, self.save_conf)
+        await view.get_pages()
+        return await view.start()
 
     @embeddings.autocomplete("query")
     async def embeddings_complete(self, interaction: discord.Interaction, current: str):

@@ -1,3 +1,5 @@
+import asyncio
+import json
 import logging
 import math
 import re
@@ -9,6 +11,8 @@ import tiktoken
 from aiocache import cached
 from openai.error import APIConnectionError, APIError, RateLimitError, Timeout
 from openai.version import VERSION
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import box
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -33,6 +37,20 @@ def get_attachments(message: discord.Message) -> List[discord.Attachment]:
         except AttributeError:
             pass
     return attachments
+
+
+async def wait_message(ctx: commands.Context) -> Optional[discord.Message]:
+    def check(message: discord.Message):
+        return message.author == ctx.author and message.channel == ctx.channel
+
+    try:
+        message = await ctx.bot.wait_for("message", timeout=600, check=check)
+        if message.content == "cancel":
+            await ctx.send("Canceled")
+            return None
+        return message
+    except asyncio.TimeoutError:
+        return None
 
 
 async def can_use(message: discord.Message, blacklist: list, respond: bool = True) -> bool:
@@ -160,7 +178,34 @@ def compile_messages(messages: List[dict]) -> str:
     return text
 
 
-def embedding_embeds(embeddings: Dict[str, Any], place: int):
+def function_embeds(functions: Dict[str, Any]) -> List[discord.Embed]:
+    embeds = []
+    pages = math.ceil(len(functions))
+    for index, function_name in enumerate(list(functions)):
+        function = functions[function_name]
+        embed = discord.Embed(
+            title="Custom Functions", description=function_name, color=discord.Color.blue()
+        )
+        schema = json.dumps(function.jsonschema, indent=2)
+        if len(schema) > 1000:
+            schema = f"{schema[:1000]}..."
+        embed.add_field(name="Schema", value=box(schema, "json"), inline=False)
+        code = box(function.code, "py")
+        if len(function.code) > 1000:
+            code = f"{box(function.code[:1000], 'py')}..."
+        embed.add_field(name="Code", value=code, inline=False)
+        embed.set_footer(text=f"Page {index + 1}/{pages}")
+        embeds.append(embed)
+    if not embeds:
+        embeds.append(
+            discord.Embed(
+                description="No custom code has been added yet!", color=discord.Color.purple()
+            )
+        )
+    return embeds
+
+
+def embedding_embeds(embeddings: Dict[str, Any], place: int) -> List[discord.Embed]:
     embeddings = sorted(embeddings.items(), key=lambda x: x[0])
     embeds = []
     pages = math.ceil(len(embeddings) / 5)

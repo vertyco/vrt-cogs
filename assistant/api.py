@@ -9,6 +9,7 @@ from io import BytesIO
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
+import orjson
 import pytz
 from openai.error import InvalidRequestError
 from redbot.core import version_info
@@ -288,15 +289,17 @@ class API(MixinMeta):
                     reply = response["content"]
                     if function := response.get("function_call"):
                         function_name = function["name"]
-                        kwargs = function.get("arguments", {})
+                        log.debug(f"Calling function {function}")
+                        kwargs = orjson.loads(function.get("arguments", "{}"))
                         if function_name not in function_map:
                             break
                         extras = {
-                            "member": guild.get_member(author)
+                            "user": guild.get_member(author)
                             if isinstance(author, int)
                             else author,
                             "guild": guild,
                             "bot": self.bot,
+                            "conf": conf,
                         }
                         kwargs.update(extras)
                         func = function_map[function_name]
