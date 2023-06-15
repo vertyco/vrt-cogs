@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import re
 from contextlib import suppress
 from io import BytesIO
 from typing import Callable, List
@@ -382,8 +381,8 @@ class EmbeddingMenu(discord.ui.View):
 
 
 class CodeModal(discord.ui.Modal):
-    def __init__(self, title: str, schema: str = None, code: str = None):
-        super().__init__(title=title, timeout=None)
+    def __init__(self, schema: str, code: str):
+        super().__init__(title="Function Edit", timeout=None)
 
         self.schema = ""
         self.code = ""
@@ -426,6 +425,7 @@ class CodeMenu(discord.ui.View):
         if ctx.author.id not in ctx.bot.owner_ids:
             self.remove_item(self.new_function)
             self.remove_item(self.delete)
+            self.remove_item(self.edit)
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
@@ -455,6 +455,13 @@ class CodeMenu(discord.ui.View):
 
     async def start(self):
         self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
+
+    def test_func(self, function_string: str) -> bool:
+        try:
+            compile(function_string, "<string>", "exec")
+            return True
+        except SyntaxError:
+            return False
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary, emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}"
@@ -539,6 +546,7 @@ class CodeMenu(discord.ui.View):
             return await self.ctx.send("Invalid json schema!")
         except Exception as e:
             return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
+        function_name = schema["name"]
 
         await self.ctx.send("Reply to this message with the custom code")
         message = await wait_message(self.ctx)
@@ -551,24 +559,60 @@ class CodeMenu(discord.ui.View):
             code = message.content.strip()
         if extracted := extract_code_blocks(code):
             code = extracted[0]
-        match = re.search(r"(def|async def)\s+(\w+)", code)
-        function_name = match.group(2) if match else None
-        if not function_name:
-            return await self.ctx.send("Could not validate code and extract function name!")
+        if not self.test_func(code):
+            return await self.ctx.send("Invalid function")
 
         entry = CustomFunction(code=code, jsonschema=schema)
+        if function_name in self.db.functions:
+            await self.ctx.send(f"{function_name} has been overwritten!")
+        else:
+            await self.ctx.send(f"{function_name} has been created!")
         self.db.functions[function_name] = entry
-        await self.ctx.send(f"{function_name} has been created!")
+        await self.get_pages()
+        await self.message.edit(embed=self.pages[self.page], view=self)
+        await self.save()
+
+    @discord.ui.button(style=discord.ButtonStyle.primary, emoji="\N{MEMO}")
+    async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.pages[self.page].fields:
+            return await interaction.response.send_message("No code to edit!", ephemeral=True)
+        function_name = self.pages[self.page].description
+        entry = self.db.functions[function_name]
+        modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if not modal.schema or not modal.code:
+            return
+        text = modal.schema
+        try:
+            schema = json.loads(text)
+        except json.JSONDecodeError:
+            return await self.ctx.send("Invalid json schema!")
+        except Exception as e:
+            return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
+        new_name = schema["name"]
+
+        code = modal.code
+        if not self.test_func(code):
+            return await self.ctx.send("Invalid function")
+
+        if function_name != new_name:
+            self.db.functions[new_name] = CustomFunction(code=code, jsonschema=schema)
+            del self.db.functions[function_name]
+        else:
+            self.db.functions[function_name].code = code
+            self.db.functions[function_name].jsonschema = schema
+        await self.ctx.send(f"{function_name} function updated!")
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await self.save()
 
     @discord.ui.button(
-        style=discord.ButtonStyle.danger, emoji="\N{WASTEBASKET}\N{VARIATION SELECTOR-16}", row=1
+        style=discord.ButtonStyle.danger, emoji="\N{WASTEBASKET}\N{VARIATION SELECTOR-16}", row=2
     )
     async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.pages[self.page].fields:
-            return await interaction.response.send_message("No code to inspect!", ephemeral=True)
+            return await interaction.response.send_message("No code to delete!", ephemeral=True)
         await interaction.response.defer()
         function_name = self.pages[self.page].description
         del self.db.functions[function_name]
