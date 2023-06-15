@@ -260,28 +260,22 @@ class Admin(MixinMeta):
         """
         Set the initial prompt for GPT to use
 
-        **Tips**
-        You can use the following placeholders in your prompt for real-time info
-        To use a place holder simply format your prompt as "`some {placeholder} with text`"
-        - **botname**: The bots display name
-        - **timestamp**: the current time in Discord's timestamp format
-        - **day**: the current day of the week
-        - **date**: todays date (Month, Day, Year)
-        - **time**: current time in 12hr format (HH:MM AM/PM)
-        - **timetz**: current time in 12hr format (HH:MM AM/PM Timezone)
-        - **members**: current member count of the server
-        - **username**: username of the person chatting
-        - **displayname**: display name of the person chatting
+        **Placeholders**
+        - **botname**: [botname]
+        - **timestamp**: discord timestamp
+        - **day**: Mon-Sun
+        - **date**: MM-DD-YYYY
+        - **time**: HH:MM AM/PM
+        - **timetz**: HH:MM AM/PM Timezone
+        - **members**: server member count
+        - **username**: user's name
+        - **displayname**: user's display name
         - **roles**: the names of the user's roles
         - **rolementions**: the mentions of the user's roles
         - **avatar**: the user's avatar url
         - **owner**: the owner of the server
         - **servercreated**: the create date/time of the server
         - **server**: the name of the server
-        - **messages**: count of messages between the user and bot
-        - **tokens**: the token count of the current conversation
-        - **retention**: max retention number
-        - **retentiontime**: max retention time seconds
         - **py**: python version
         - **dpy**: discord.py version
         - **red**: red version
@@ -292,7 +286,7 @@ class Admin(MixinMeta):
         - **banktype**: whether the bank is global or not
         - **Currency**: currency name
         - **bank**: bank name
-        - **balance**: the users current balance
+        - **balance**: the user's current balance
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -339,31 +333,22 @@ class Admin(MixinMeta):
         """
         Set the system prompt for GPT to use
 
-        **Note**
-        The current GPT-3.5-Turbo model doesn't really listen to the system prompt very well.
-
-        **Tips**
-        You can use the following placeholders in your prompt for real-time info
-        To use a place holder simply format your prompt as "`some {placeholder} with text`"
-        - **botname**: The bots display name
-        - **timestamp**: the current time in Discord's timestamp format
-        - **day**: the current day of the week
-        - **date**: todays date (Month, Day, Year)
-        - **time**: current time in 12hr format (HH:MM AM/PM)
-        - **timetz**: current time in 12hr format (HH:MM AM/PM Timezone)
-        - **members**: current member count of the server
-        - **username**: username of the person chatting
-        - **displayname**: display name of the person chatting
+        **Placeholders**
+        - **botname**: [botname]
+        - **timestamp**: discord timestamp
+        - **day**: Mon-Sun
+        - **date**: MM-DD-YYYY
+        - **time**: HH:MM AM/PM
+        - **timetz**: HH:MM AM/PM Timezone
+        - **members**: server member count
+        - **username**: user's name
+        - **displayname**: user's display name
         - **roles**: the names of the user's roles
         - **rolementions**: the mentions of the user's roles
         - **avatar**: the user's avatar url
         - **owner**: the owner of the server
         - **servercreated**: the create date/time of the server
         - **server**: the name of the server
-        - **messages**: count of messages between the user and bot
-        - **tokens**: the token count of the current conversation
-        - **retention**: max retention number
-        - **retentiontime**: max retention time seconds
         - **py**: python version
         - **dpy**: discord.py version
         - **red**: red version
@@ -374,7 +359,7 @@ class Admin(MixinMeta):
         - **banktype**: whether the bank is global or not
         - **Currency**: currency name
         - **bank**: bank name
-        - **balance**: the users current balance
+        - **balance**: the user's current balance
         """
         attachments = get_attachments(ctx.message)
         if attachments:
