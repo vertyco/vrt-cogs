@@ -13,7 +13,12 @@ import orjson
 import pytz
 from openai.error import InvalidRequestError
 from redbot.core import bank, version_info
-from redbot.core.utils.chat_formatting import box, humanize_list, pagify
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_list,
+    humanize_number,
+    pagify,
+)
 
 from .abc import MixinMeta
 from .common.utils import (
@@ -270,8 +275,10 @@ class API(MixinMeta):
                 "banktype": "global bank" if await bank.is_global() else "local bank",
                 "currency": await bank.get_currency_name(guild),
                 "bank": await bank.get_bank_name(guild),
-                "balance": await bank.get_balance(
-                    guild.get_member(author) if isinstance(author, int) else author,
+                "balance": humanize_number(
+                    await bank.get_balance(
+                        guild.get_member(author) if isinstance(author, int) else author,
+                    )
                 ),
             }
             messages = await asyncio.to_thread(
@@ -317,12 +324,16 @@ class API(MixinMeta):
                             result = await func(**kwargs)
                         else:
                             result = await asyncio.to_thread(func, **kwargs)
+                        log.debug(f"Function result: {result}")
                         conversation.update_messages(result, "function", function_name)
                         messages.append(
                             {"role": "function", "name": function_name, "content": result}
                         )
                         max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
-                        while conversation.conversation_token_count(conf, result) >= max_tokens:
+                        while (
+                            conversation.conversation_token_count(conf, result) >= max_tokens
+                            and messages
+                        ):
                             conversation.messages.pop(0)
                             if conf.system_prompt and conf.prompt and len(messages) >= 3:
                                 messages.pop(2)

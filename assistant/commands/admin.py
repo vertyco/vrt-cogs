@@ -1003,7 +1003,7 @@ class Admin(MixinMeta):
 
         await view.start()
 
-    @commands.hybrid_command(name="customfunctions")
+    @commands.hybrid_command(name="customfunctions", aliases=["customfunction", "customfunc"])
     @commands.guild_only()
     @commands.guildowner()
     async def custom_functions(self, ctx: commands.Context):
