@@ -263,32 +263,36 @@ class Admin(MixinMeta):
         **Tips**
         You can use the following placeholders in your prompt for real-time info
         To use a place holder simply format your prompt as "`some {placeholder} with text`"
-        `botname` - The bots display name
-        `timestamp` - the current time in Discord's timestamp format
-        `day` - the current day of the week
-        `date` - todays date (Month, Day, Year)
-        `time` - current time in 12hr format (HH:MM AM/PM)
-        `timetz` - current time in 12hr format (HH:MM AM/PM Timezone)
-        `members` - current member count of the server
-        `username` - username of the person chatting
-        `displayname` - display name of the person chatting
-        `roles` - the names of the user's roles
-        `rolementions` - the mentions of the user's roles
-        `avatar` - the user's avatar url
-        `owner` - the owner of the server
-        `servercreated` - the create date/time of the server
-        `server` - the name of the server
-        `messages` - count of messages between the user and bot
-        `tokens` - the token count of the current conversation
-        `retention` - max retention number
-        `retentiontime` - max retention time seconds
-        `py` - python version
-        `dpy` - discord.py version
-        `red` - red version
-        `cogs` - list of currently loaded cogs
-        `channelname` - name of the channel the conversation is taking place in
-        `channelmention` - current channel mention
-        `topic` - topic of current channel (if not forum or thread)
+        - **botname**: The bots display name
+        - **timestamp**: the current time in Discord's timestamp format
+        - **day**: the current day of the week
+        - **date**: todays date (Month, Day, Year)
+        - **time**: current time in 12hr format (HH:MM AM/PM)
+        - **timetz**: current time in 12hr format (HH:MM AM/PM Timezone)
+        - **members**: current member count of the server
+        - **username**: username of the person chatting
+        - **displayname**: display name of the person chatting
+        - **roles**: the names of the user's roles
+        - **rolementions**: the mentions of the user's roles
+        - **avatar**: the user's avatar url
+        - **owner**: the owner of the server
+        - **servercreated**: the create date/time of the server
+        - **server**: the name of the server
+        - **messages**: count of messages between the user and bot
+        - **tokens**: the token count of the current conversation
+        - **retention**: max retention number
+        - **retentiontime**: max retention time seconds
+        - **py**: python version
+        - **dpy**: discord.py version
+        - **red**: red version
+        - **cogs**: list of currently loaded cogs
+        - **channelname**: name of the channel the conversation is taking place in
+        - **channelmention**: current channel mention
+        - **topic**: topic of current channel (if not forum or thread)
+        - **banktype**: whether the bank is global or not
+        - **Currency**: currency name
+        - **bank**: bank name
+        - **balance**: the users current balance
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -341,32 +345,36 @@ class Admin(MixinMeta):
         **Tips**
         You can use the following placeholders in your prompt for real-time info
         To use a place holder simply format your prompt as "`some {placeholder} with text`"
-        `botname` - The bots display name
-        `timestamp` - the current time in Discord's timestamp format
-        `day` - the current day of the week
-        `date` - todays date (Month, Day, Year)
-        `time` - current time in 12hr format (HH:MM AM/PM)
-        `timetz` - current time in 12hr format (HH:MM AM/PM Timezone)
-        `members` - current member count of the server
-        `username` - username of the person chatting
-        `displayname` - display name of the person chatting
-        `roles` - the names of the user's roles
-        `rolementions` - the mentions of the user's roles
-        `avatar` - the user's avatar url
-        `owner` - the owner of the server
-        `servercreated` - the create date/time of the server
-        `server` - the name of the server
-        `messages` - count of messages between the user and bot
-        `tokens` - the token count of the current conversation
-        `retention` - max retention number
-        `retentiontime` - max retention time seconds
-        `py` - python version
-        `dpy` - discord.py version
-        `red` - red version
-        `cogs` - list of currently loaded cogs
-        `channelname` - name of the channel the conversation is taking place in
-        `channelmention` - current channel mention
-        `topic` - topic of current channel (if not forum or thread)
+        - **botname**: The bots display name
+        - **timestamp**: the current time in Discord's timestamp format
+        - **day**: the current day of the week
+        - **date**: todays date (Month, Day, Year)
+        - **time**: current time in 12hr format (HH:MM AM/PM)
+        - **timetz**: current time in 12hr format (HH:MM AM/PM Timezone)
+        - **members**: current member count of the server
+        - **username**: username of the person chatting
+        - **displayname**: display name of the person chatting
+        - **roles**: the names of the user's roles
+        - **rolementions**: the mentions of the user's roles
+        - **avatar**: the user's avatar url
+        - **owner**: the owner of the server
+        - **servercreated**: the create date/time of the server
+        - **server**: the name of the server
+        - **messages**: count of messages between the user and bot
+        - **tokens**: the token count of the current conversation
+        - **retention**: max retention number
+        - **retentiontime**: max retention time seconds
+        - **py**: python version
+        - **dpy**: discord.py version
+        - **red**: red version
+        - **cogs**: list of currently loaded cogs
+        - **channelname**: name of the channel the conversation is taking place in
+        - **channelmention**: current channel mention
+        - **topic**: topic of current channel (if not forum or thread)
+        - **banktype**: whether the bank is global or not
+        - **Currency**: currency name
+        - **bank**: bank name
+        - **balance**: the users current balance
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -1039,7 +1047,7 @@ class Admin(MixinMeta):
 
         The OpenAI resources above will be key to making decent functions
 
-        *Only bot owner can manage custom function calls, but guild owners can still view them*
+        *Only bot owner can manage this, guild owners can see descriptions but not code*
         """
         if ctx.interaction:
             await ctx.interaction.response.defer()
