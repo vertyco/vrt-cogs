@@ -578,6 +578,15 @@ class CodeMenu(discord.ui.View):
             return await interaction.response.send_message("No code to edit!", ephemeral=True)
         function_name = self.pages[self.page].description
         entry = self.db.functions[function_name]
+        if len(json.dumps(entry.jsonschema, indent=2)) > 4000:
+            return await self.ctx.send(
+                "The json schema for this function is too long, you'll need to re-upload it to modify"
+            )
+        if len(entry.code) > 4000:
+            return await self.ctx.send(
+                "The code for this function is too long, you'll need to re-upload it to modify"
+            )
+
         modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code)
         await interaction.response.send_modal(modal)
         await modal.wait()
