@@ -427,6 +427,7 @@ class CodeMenu(discord.ui.View):
             self.remove_item(self.new_function)
             self.remove_item(self.delete)
             self.remove_item(self.edit)
+            self.remove_item(self.view_function)
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
@@ -512,7 +513,7 @@ class CodeMenu(discord.ui.View):
     @discord.ui.button(
         style=discord.ButtonStyle.primary, emoji="\N{PRINTER}\N{VARIATION SELECTOR-16}", row=1
     )
-    async def view(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def view_function(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.pages[self.page].fields:
             return await interaction.response.send_message("No code to inspect!", ephemeral=True)
         function_name = self.pages[self.page].description
