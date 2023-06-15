@@ -274,7 +274,7 @@ async def request_chat_response(
     functions: Optional[List[dict]] = [],
 ) -> dict:
     # response = await asyncio.to_thread(_chat, model, messages, api_key, temperature, functions)
-    if VERSION >= "0.27.7" and model in ["gpt-3.5-turbo-0613", "gpt-4-32k-0613"]:
+    if VERSION >= "0.27.6" and model in ["gpt-3.5-turbo-0613", "gpt-4-32k-0613"]:
         response = await openai.ChatCompletion.acreate(
             model=model,
             messages=messages,
