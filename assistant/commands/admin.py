@@ -1022,6 +1022,7 @@ class Admin(MixinMeta):
 
         The following objects are passed by default as keyword arguments, they don't need to be included in the json schema.
         - **user**: the user currently chatting with the bot (discord.Member)
+        - **channel**: channel the user is chatting in (TextChannel|Thread|ForumChannel)
         - **guild**: current guild (discord.Guild)
         - **bot**: the bot object (Red)
         - **conf**: the config model for Assistant (GuildSettings)
@@ -1031,8 +1032,6 @@ class Admin(MixinMeta):
         async def func(*args, **kwargs) -> str:
             ...
         ```
-
-        The OpenAI resources above will be key to making decent functions
 
         *Only bot owner can manage this, guild owners can see descriptions but not code*
         """
