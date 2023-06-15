@@ -583,9 +583,9 @@ class CodeMenu(discord.ui.View):
 
         entry = CustomFunction(code=code, jsonschema=schema)
         if function_name in self.db.functions:
-            await self.ctx.send(f"{function_name} has been overwritten!")
+            await self.ctx.send(f"`{function_name}` has been overwritten!")
         else:
-            await self.ctx.send(f"{function_name} has been created!")
+            await self.ctx.send(f"`{function_name}` has been created!")
         self.db.functions[function_name] = entry
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
@@ -630,7 +630,7 @@ class CodeMenu(discord.ui.View):
         else:
             self.db.functions[function_name].code = code
             self.db.functions[function_name].jsonschema = schema
-        await self.ctx.send(f"{function_name} function updated!")
+        await self.ctx.send(f"`{function_name}` function updated!")
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await self.save()
@@ -644,5 +644,5 @@ class CodeMenu(discord.ui.View):
         await interaction.response.defer()
         function_name = self.pages[self.page].description
         del self.db.functions[function_name]
-        await interaction.response.send_message(f"{function_name} has been deleted!")
+        await interaction.response.send_message(f"`{function_name}` has been deleted!")
         await self.save()
