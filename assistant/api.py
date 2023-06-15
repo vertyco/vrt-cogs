@@ -313,6 +313,9 @@ class API(MixinMeta):
                             "user": guild.get_member(author)
                             if isinstance(author, int)
                             else author,
+                            "channel": guild.get_channel_or_thread(channel)
+                            if isinstance(channel, int)
+                            else channel,
                             "guild": guild,
                             "bot": self.bot,
                             "conf": conf,
