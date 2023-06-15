@@ -63,6 +63,7 @@ class Admin(MixinMeta):
         system_tokens = num_tokens_from_string(conf.system_prompt)
         prompt_tokens = num_tokens_from_string(conf.prompt)
         desc = (
+            f"`OpenAI Version:    `{VERSION}\n"
             f"`Enabled:           `{conf.enabled}\n"
             f"`Timezone:          `{conf.timezone}\n"
             f"`Channel:           `{channel}\n"
@@ -533,10 +534,6 @@ class Admin(MixinMeta):
             conf.use_function_calls = True
             await ctx.send("Assistant will now call functions as needed")
         await self.save_conf()
-        if VERSION < "0.27.7":
-            await ctx.send(
-                f"You should update your OpenAI library version!\nCurrent version: `{VERSION}`"
-            )
 
     @assistant.command(name="minlength")
     async def min_length(self, ctx: commands.Context, min_question_length: int):
