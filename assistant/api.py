@@ -322,15 +322,19 @@ class API(MixinMeta):
                         )
                         reply = f"Tried to call function `{function_name}` and failed. Owner has been notified in logs."
                         break
+
+                    content = str(result)
                     log.info(
-                        f"Called function {function_name}\nParams: {params}\nResult: {result}"
+                        f"Called function {function_name}\nParams: {params}\nResult: {content}"
                     )
 
-                    conversation.update_messages(result, "function", function_name)
-                    messages.append({"role": "function", "name": function_name, "content": result})
+                    conversation.update_messages(content, "function", function_name)
+                    messages.append(
+                        {"role": "function", "name": function_name, "content": content}
+                    )
                     max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                     while (
-                        conversation.conversation_token_count(conf, result) >= max_tokens
+                        conversation.conversation_token_count(conf, content) >= max_tokens
                         and messages
                     ):
                         conversation.messages.pop(0)
