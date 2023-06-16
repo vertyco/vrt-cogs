@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import multiprocessing as mp
 import re
 import sys
 import traceback
@@ -338,7 +337,7 @@ class API(MixinMeta):
         for regex in conf.regex_blacklist:
             try:
                 reply = await safe_regex(regex, reply)
-            except (mp.TimeoutError, asyncio.TimeoutError):
+            except asyncio.TimeoutError:
                 log.error(f"Regex {regex} in {guild.name} took too long to process. Skipping...")
                 if conf.block_failed_regex:
                     block = True
