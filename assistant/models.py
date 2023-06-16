@@ -155,21 +155,18 @@ class Conversation(BaseModel):
         return num_tokens_from_string("".join(message["content"] for message in self.messages))
 
     def user_token_count(self, message: str = "") -> int:
-        content = [message["content"] for message in self.messages]
-        if not content:
+        if not self.messages and not message:
             return 0
+        content = [m["content"] for m in self.messages]
         messages = "".join(content)
-        if not self.messages:
-            messages = ""
         messages += message
+        if not messages:
+            return 0
         return num_tokens_from_string(messages)
 
     def conversation_token_count(self, conf: GuildSettings, message: str = "") -> int:
-        initial = conf.system_prompt + conf.prompt
-        message_tokens = 0
-        if message:
-            message_tokens = self.user_token_count(message)
-        return num_tokens_from_string(initial) + message_tokens
+        initial = conf.system_prompt + conf.prompt + message
+        return num_tokens_from_string(initial) + self.user_token_count(message)
 
     def is_expired(self, conf: GuildSettings):
         if not conf.max_retention_time:
