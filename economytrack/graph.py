@@ -28,5 +28,4 @@ class PlotGraph(MixinMeta):
         buffer = BytesIO(bytefile)
         buffer.seek(0)
         file = discord.File(buffer, filename="plot.png")
-        buffer.close()
         return file

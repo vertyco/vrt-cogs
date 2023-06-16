@@ -37,7 +37,7 @@ class Fluent(commands.Cog):
 
     def __init__(self, bot: Red):
         self.bot = bot
-        self.translator = TranslateManager(bot)
+        self.translator = TranslateManager()
         self.config = Config.get_conf(self, identifier=11701170)
         default_guild = {"channels": {}}
         self.config.register_guild(**default_guild)
@@ -58,6 +58,7 @@ class Fluent(commands.Cog):
 
     @commands.hybrid_command(name="translate")
     @app_commands.describe(to_language="Translate to this language")
+    @commands.bot_has_permissions(embed_links=True)
     async def translate_command(
         self, ctx: commands.Context, to_language: str, *, message: Optional[str] = None
     ):
@@ -108,6 +109,7 @@ class Fluent(commands.Cog):
         pass
 
     @fluent.command()
+    @commands.bot_has_permissions(embed_links=True)
     async def add(
         self,
         ctx: commands.Context,
@@ -145,6 +147,7 @@ class Fluent(commands.Cog):
                 )
 
     @fluent.command(aliases=["delete", "del", "rem"])
+    @commands.bot_has_permissions(embed_links=True)
     async def remove(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
         """Remove a channel from Fluent"""
         if not channel:
@@ -223,8 +226,14 @@ class Fluent(commands.Cog):
         if trans.text.lower() == message.content.lower():
             return
 
-        embed = discord.Embed(description=trans.text, color=message.author.color)
-        try:
-            await message.reply(embed=embed, mention_author=False)
-        except (discord.NotFound, AttributeError):
-            await channel.send(embed=embed)
+        if message.channel.permissions_for(message.guild.me).embed_links:
+            embed = discord.Embed(description=trans.text, color=message.author.color)
+            try:
+                await message.reply(embed=embed, mention_author=False)
+            except (discord.NotFound, AttributeError):
+                await channel.send(embed=embed)
+        else:
+            try:
+                await message.reply(trans.text, mention_author=False)
+            except (discord.NotFound, AttributeError):
+                await channel.send(trans.text)

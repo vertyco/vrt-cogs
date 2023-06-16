@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 from time import monotonic
-from typing import List, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 import discord
 import matplotlib
@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import tabulate
 from aiohttp import ClientSession
 from discord.ext import tasks
-from redbot.core import Config, commands
+from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.24.4"
+    __version__ = "3.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -84,7 +84,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         deleted = False
-        for gid, data in self.data.copy().items():
+        for gid in self.data.copy().keys():
             if str(user_id) in self.data[gid]["users"]:
                 del self.data[gid]["users"][user_id]
                 deleted = True
@@ -213,7 +213,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         # Constants
         self.loading = "https://i.imgur.com/l3p6EMX.gif"
-        self.dpy2 = True if discord.__version__ > "1.7.3" else False
+        self.dpy2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
         self.daymap = {
             0: _("Monday"),
             1: _("Tuesday"),
@@ -491,7 +491,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 cleaned.append("updated profile emoji url")
         return cleaned, data
 
-    async def save_cache(self, target_guild: discord.guild = None):
+    async def save_cache(self, target_guild: discord.Guild = None):
         if not target_guild:
             await self.config.ignored_guilds.set(self.ignored_guilds)
             await self.config.cache_seconds.set(self.cache_seconds)
@@ -678,7 +678,13 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     if not role:
                         continue
                     if role not in member.roles:
-                        await member.add_roles(role)
+                        try:
+                            await member.add_roles(role)
+                        except discord.Forbidden:
+                            log.warning(
+                                f"Failed to give {role.name} role to {member.display_name} in {guild.name}"
+                            )
+
         else:  # No stacking so add role and remove the others below that level
             role_applied = False
             if str(new_level) in levelroles:
@@ -696,7 +702,12 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                             continue
                         if int(level) >= new_level:
                             continue
-                        await member.remove_roles(role)
+                        try:
+                            await member.remove_roles(role)
+                        except discord.Forbidden:
+                            log.warning(
+                                f"Failed to remove {role.name} role from {member.display_name} in {guild.name}"
+                            )
 
         t = int((monotonic() - t1) * 1000)
         loop = self.looptimes["lvlassignavg"]
@@ -994,8 +1005,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if ctx:
             guild = ctx.guild
         if self.dpy2:
-            if guild.icon:
-                em.set_thumbnail(url=guild.icon.url)
+            em.set_thumbnail(url=guild.icon)
         else:
             em.set_thumbnail(url=guild.icon_url)
 
@@ -1063,13 +1073,14 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.save_cache(guild)
 
     @commands.group(name="lvlset", aliases=["lset", "levelup"])
-    @commands.admin()
+    @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def lvl_group(self, ctx: commands.Context):
         """Access LevelUp setting commands"""
         pass
 
     @lvl_group.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context):
         """View all LevelUP settings"""
         conf = self.data[ctx.guild.id]
@@ -1233,6 +1244,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @lvl_group.group(name="admin")
     @commands.guildowner()
+    @commands.bot_has_permissions(embed_links=True)
     async def admin_group(self, ctx: commands.Context):
         """
         Cog admin commands
@@ -1369,6 +1381,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @admin_group.command(name="globalbackup")
     @commands.is_owner()
+    @commands.bot_has_permissions(attach_files=True)
     async def backup_cog(self, ctx):
         """Create a backup of the LevelUp config"""
         buffer = BytesIO(json.dumps(self.data).encode())
@@ -1379,6 +1392,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @admin_group.command(name="guildbackup")
     @commands.is_owner()
+    @commands.bot_has_permissions(attach_files=True)
     async def backup_guild(self, ctx):
         """Create a backup of the LevelUp config"""
         buffer = BytesIO(json.dumps(self.data[ctx.guild.id]).encode())
@@ -1444,6 +1458,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @admin_group.command(name="importmalarne")
     @commands.is_owner()
+    @commands.bot_has_permissions(embed_links=True)
     async def import_from_malarne(
         self,
         ctx: commands.Context,
@@ -1517,6 +1532,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @admin_group.command(name="importmee6")
     @commands.guildowner()
+    @commands.bot_has_permissions(embed_links=True)
     async def import_from_mee6(
         self,
         ctx: commands.Context,
@@ -1622,6 +1638,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @admin_group.command(name="importfixator")
     @commands.is_owner()
+    @commands.bot_has_permissions(embed_links=True)
     async def import_from_fixator(self, ctx: commands.Context, yes_or_no: str):
         """
         Import data from Fixator's Leveler cog
@@ -2184,6 +2201,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="seelevels")
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def see_levels(self, ctx: commands.Context):
         """
         Test the level algorithm
@@ -2379,10 +2397,12 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="roles")
+    @commands.admin_or_permissions(manage_roles=True)
     async def level_roles(self, ctx: commands.Context):
         """Level role assignment"""
 
     @level_roles.command(name="initialize")
+    @commands.bot_has_permissions(manage_roles=True, embed_links=True)
     async def init_roles(self, ctx: commands.Context):
         """
         Initialize level roles
@@ -2402,55 +2422,77 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         )
         embed.set_thumbnail(url=self.loading)
         msg = await ctx.send(embed=embed)
-        async with ctx.typing():
-            conf = self.data[ctx.guild.id]
-            level_roles = conf["levelroles"]
-            prestiges = conf["prestigedata"]
-            autoremove = conf["autoremove"]
 
-            users = [i for i in conf["users"]]
-            for user_id in users:
-                data = conf["users"][user_id]
-                user = guild.get_member(int(user_id))
-                if not user:
-                    continue
-                user_level = data["level"]
-                prestige_level = data["prestige"]
-                if autoremove:
-                    highest_level = ""
-                    for lvl, role_id in level_roles.items():
-                        if int(lvl) <= int(user_level):
-                            highest_level = lvl
-                    if highest_level:
-                        role = level_roles[highest_level]
-                        role = guild.get_role(int(role))
-                        if role:
-                            await user.add_roles(role)
-                            roles_added += 1
-                            for r in user.roles:
-                                if r.id in level_roles.values() and r.id != role.id:
-                                    await user.remove_roles(r)
-                                    roles_removed += 1
-                    highest_prestige = ""
-                    for plvl in prestiges:
-                        if int(plvl) <= int(prestige_level):
-                            highest_prestige = plvl
-                    if highest_prestige:
-                        role = guild.get_role(int(prestiges[highest_prestige]["role"]))
-                        if role:
-                            await user.add_roles(role)
-                            roles_added += 1
-                else:
-                    for lvl, role_id in level_roles.items():
-                        role = guild.get_role(int(role_id))
-                        if role and int(lvl) <= int(user_level):
-                            await user.add_roles(role)
-                            roles_added += 1
-                    for lvl, prestige in prestiges.items():
-                        role = guild.get_role(int(prestige["role"]))
-                        if role and int(lvl) <= int(prestige_level):
-                            await user.add_roles(role)
-                            roles_added += 1
+        to_add: Dict[discord.Member, Set[int]] = {}
+        to_remove: Dict[discord.Member, Set[int]] = {}
+
+        conf = self.data[ctx.guild.id]
+        level_roles = conf["levelroles"]
+        prestiges = conf["prestigedata"]
+        autoremove = conf["autoremove"]
+        users = [i for i in conf["users"]]
+        for user_id in users:
+            user = guild.get_member(int(user_id))
+            if not user:
+                continue
+            to_add[user] = set()
+            to_remove[user] = set()
+
+            data = conf["users"][user_id]
+            user_level = data["level"]
+            prestige_level = data["prestige"]
+            if autoremove:
+                highest_level = ""
+                for lvl, role_id in level_roles.items():
+                    if int(lvl) <= int(user_level):
+                        highest_level = lvl
+                if highest_level:
+                    if role := guild.get_role(int(level_roles[highest_level])):
+                        to_add[user].add(role)
+                        for r in user.roles:
+                            if r.id in level_roles.values() and r.id != role.id:
+                                to_remove[user].add(r)
+                highest_prestige = ""
+                for plvl in prestiges:
+                    if int(plvl) <= int(prestige_level):
+                        highest_prestige = plvl
+                if highest_prestige:
+                    if role := guild.get_role(int(prestiges[highest_prestige]["role"])):
+                        to_add[user].add(role)
+            else:
+                for lvl, role_id in level_roles.items():
+                    role = guild.get_role(int(role_id))
+                    if role and int(lvl) <= int(user_level):
+                        to_add[user].add(role)
+                for lvl, prestige in prestiges.items():
+                    role = guild.get_role(int(prestige["role"]))
+                    if role and int(lvl) <= int(prestige_level):
+                        to_add[user].add(role)
+
+        async with ctx.typing():
+            for user, adding in to_add.items():
+                removing = to_remove[user]
+                for role in removing:
+                    if role in adding and role in user.roles:
+                        adding.discard(role)
+                for role in adding:
+                    if role in removing and role not in user.roles:
+                        removing.discard(role)
+                try:
+                    await user.add_roles(*adding)
+                    roles_added += len(adding)
+                except discord.Forbidden:
+                    log.warning(
+                        f"Failed to assign the following roles to {user} in {guild}: {humanize_list([r.name for r in adding])}"
+                    )
+                try:
+                    await user.add_roles(*removing)
+                    roles_removed += len(removing)
+                except discord.Forbidden:
+                    log.warning(
+                        f"Failed to remove the following roles from {user} in {guild}: {humanize_list([r.name for r in adding])}"
+                    )
+
         desc = (
             _("Initialization complete! Added ")
             + str(roles_added)
@@ -2661,13 +2703,14 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.save_cache(ctx.guild)
 
     @commands.group(name="weeklyset", aliases=["wset"])
-    @commands.admin()
+    @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def weekly_set(self, ctx: commands.Context):
         """Access the weekly settings for levelUp"""
         pass
 
     @weekly_set.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def weekly_settings(self, ctx: commands.Context):
         """View the current weekly settings"""
         weekly = self.data[ctx.guild.id]["weekly"]
@@ -2711,6 +2754,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await ctx.send(embed=em)
 
     @weekly_set.command(name="reset")
+    @commands.bot_has_permissions(embed_links=True)
     async def reset_weekly(self, ctx: commands.Context, yes_or_no: bool):
         """Reset the weekly leaderboard manually and announce winners"""
         if not yes_or_no:

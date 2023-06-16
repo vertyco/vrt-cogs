@@ -19,7 +19,7 @@ _ = Translator("TicketsCommands", __file__)
 class AdminCommands(MixinMeta):
     @commands.group(aliases=["tset"])
     @commands.guild_only()
-    @commands.admin()
+    @commands.admin_or_permissions(administrator=True)
     async def tickets(self, ctx: commands.Context):
         """Base support ticket settings"""
         pass
@@ -121,7 +121,7 @@ class AdminCommands(MixinMeta):
                 _("I need the `manage channels` permission to set this category")
             )
         if not category.permissions_for(ctx.me).manage_permissions:
-            return await ctx.send(_("I need the `manage roles` permission to set this category"))
+            return await ctx.send(_("I need `manage permissions` enabled in this category"))
         if not category.permissions_for(ctx.me).attach_files:
             return await ctx.send(_("I need the `attach files` permission to set this category"))
         if not category.permissions_for(ctx.me).view_channel:
@@ -155,7 +155,7 @@ class AdminCommands(MixinMeta):
             await ctx.tick()
 
     @tickets.command()
-    async def panelmessage(self, ctx: commands.Context, panel_name: str, message: int):
+    async def panelmessage(self, ctx: commands.Context, panel_name: str, message: discord.Message):
         """
         Set the message ID of a ticket panel
         Run this command in the same channel as the ticket panel message
@@ -166,23 +166,10 @@ class AdminCommands(MixinMeta):
                 return await ctx.send(_("Panel does not exist!"))
             if not panels[panel_name]["category_id"]:
                 return await ctx.send(_("Category ID must be set for this panel first!"))
+
+            panels[panel_name]["message_id"] = message.id
             if not panels[panel_name]["channel_id"]:
-                return await ctx.send(_("Channel ID must be set for this panel first!"))
-            channel: discord.TextChannel = self.bot.get_channel(panels[panel_name]["channel_id"])
-            if not channel:
-                return await ctx.send(
-                    _(
-                        "Cannot find channel associated with this panel, "
-                        "make sure to set the channel for the panel message first!"
-                    )
-                )
-            try:
-                found = await channel.fetch_message(message)
-            except discord.NotFound:
-                return await ctx.send(_("I cannot find that message!"))
-            if found.author.id != self.bot.user.id:
-                return await ctx.send(_("I can only add buttons to my own messages!"))
-            panels[panel_name]["message_id"] = found.id
+                panels[panel_name]["channel_id"] = message.channel.id
             await ctx.tick()
         await self.initialize(ctx.guild)
 
@@ -341,6 +328,8 @@ class AdminCommands(MixinMeta):
             return await ctx.send(_("I cannot send messages in that channel!"))
         if not channel.permissions_for(ctx.guild.me).embed_links:
             return await ctx.send(_("I cannot embed links in that channel!"))
+        if not channel.permissions_for(ctx.guild.me).attach_files:
+            return await ctx.send(_("I cannot attach files in that channel!"))
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))

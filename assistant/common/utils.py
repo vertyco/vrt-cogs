@@ -104,41 +104,6 @@ def num_tokens_from_string(string: str) -> int:
     return num_tokens
 
 
-async def fetch_channel_history(
-    channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
-    limit: int = 50,
-    oldest: bool = True,
-) -> List[discord.Message]:
-    history = []
-    async for msg in channel.history(oldest_first=oldest, limit=limit):
-        history.append(msg)
-    return history
-
-
-def extract_message_content(message: discord.Message):
-    content = ""
-    if txt := message.content.strip():
-        content += f"{txt}\n"
-    if message.embeds:
-        content += f"{extract_embed_content(message.embeds)}\n"
-    return content.strip()
-
-
-def extract_embed_content(embeds: List[discord.Embed]) -> str:
-    content = ""
-    for embed in embeds:
-        if title := embed.title:
-            content += f"{title}\n"
-        if desc := embed.description:
-            content += f"{desc}\n"
-        if fields := embed.fields:
-            for field in fields:
-                content += f"{field.name}\n{field.value}\n"
-        if foot := embed.footer:
-            content += f"{foot.text}\n"
-    return content.strip()
-
-
 def token_pagify(text: str, max_tokens: int = 2000):
     """Pagify a long string by tokens rather than characters"""
     token_chunks = []
@@ -176,6 +141,10 @@ def compile_messages(messages: List[dict]) -> str:
         text += f"{role}: {content}\n"
     text += "\n"
     return text
+
+
+def safe_regex(regex: str, reply: str) -> str:
+    return re.sub(regex, "", reply).strip()
 
 
 def function_embeds(functions: Dict[str, Any], owner: bool) -> List[discord.Embed]:

@@ -16,7 +16,7 @@ class Pupper(commands.Cog):
     """Pet the doggo!"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -53,12 +53,24 @@ class Pupper(commands.Cog):
 
         self.cache = {}
 
-    async def initialize(self, target: discord.guild = None):
-        for guild in self.bot.guilds:
-            gid = guild.id
-            if target and target.id != gid:
+    async def initialize(self, target: discord.Guild = None):
+        if target:
+            data = await self.config.guild(target).all()
+
+            # Some cleanup for new schema, using timestamps not isoformat
+            if isinstance(data["last_pet"], str):
+                await self.config.guild(target).last_pet.set(0)
+                data["last_pat"] = 0
+
+            self.cache[target.id] = data
+            self.pets[target.id] = False
+            return
+
+        configs = await self.config.all_guilds()
+        for gid, data in configs.items():
+            guild = self.bot.get_guild(gid)
+            if not guild:
                 continue
-            data = await self.config.guild(guild).all()
 
             # Some cleanup for new schema, using timestamps not isoformat
             if isinstance(data["last_pet"], str):
@@ -94,9 +106,7 @@ class Pupper(commands.Cog):
             space = "\N{EN SPACE}"
             toggle = "Active" if guild_data["toggle"] else "Inactive"
             delete_after = (
-                "No deletion"
-                if not guild_data["delete_after"]
-                else guild_data["delete_after"]
+                "No deletion" if not guild_data["delete_after"] else guild_data["delete_after"]
             )
 
             msg = f"[Channels]:       {humanize_list(channel_names)}\n"
@@ -138,11 +148,7 @@ class Pupper(commands.Cog):
 
         set_amount = None if amount == 0 else amount
         await self.config.guild(ctx.guild).delete_after.set(set_amount)
-        msg = (
-            f"Timer set to {amount}."
-            if set_amount
-            else "Delete timer has been turned off."
-        )
+        msg = f"Timer set to {amount}." if set_amount else "Delete timer has been turned off."
         await ctx.send(msg)
         await self.initialize(ctx.guild)
 
@@ -180,9 +186,7 @@ class Pupper(commands.Cog):
                 f"Current greeting message: `{hello}`\nUse this command with the message you would like to set."
             )
         if len(message) > 1000:
-            return await ctx.send(
-                "That dog sure likes to talk a lot. Try a shorter message."
-            )
+            return await ctx.send("That dog sure likes to talk a lot. Try a shorter message.")
         await self.config.guild(ctx.guild).hello_msg.set(message)
         await ctx.send(f"Pet hello message set to: `{message}`.")
         await self.initialize(ctx.guild)
@@ -196,9 +200,7 @@ class Pupper(commands.Cog):
                 f"Current thanks message: `{bye}`\nUse this command with the message you would like to set."
             )
         if len(message) > 1000:
-            return await ctx.send(
-                "That dog sure likes to talk a lot. Try a shorter message."
-            )
+            return await ctx.send("That dog sure likes to talk a lot. Try a shorter message.")
         await self.config.guild(ctx.guild).borf_msg.set(message)
         await ctx.send(f"Pet thanks message set to: `{message}`.")
         await self.initialize(ctx.guild)
@@ -228,9 +230,7 @@ class Pupper(commands.Cog):
             await ctx.send(f"{channel.mention} added to the valid petting channels.")
             await self.initialize(ctx.guild)
         else:
-            await ctx.send(
-                f"{channel.mention} is already in the list of petting channels."
-            )
+            await ctx.send(f"{channel.mention} is already in the list of petting channels.")
 
     @channel.command()
     async def addall(self, ctx):
@@ -256,9 +256,13 @@ class Pupper(commands.Cog):
         second_msg = ""
         await self.config.guild(ctx.guild).channel.set(channel_list)
         if len(channels_appended) > 0:
-            first_msg = f"{humanize_list(channels_appended)} added to the valid petting channels.\n"
+            first_msg = (
+                f"{humanize_list(channels_appended)} added to the valid petting channels.\n"
+            )
         if len(channels_in_list) > 0:
-            second_msg = f"{humanize_list(channels_in_list)}: already in the list of petting channels."
+            second_msg = (
+                f"{humanize_list(channels_in_list)}: already in the list of petting channels."
+            )
         txt = f"{first_msg}\n{second_msg}"
         for p in pagify(txt, page_length=2000):
             await ctx.send(p)
@@ -280,9 +284,7 @@ class Pupper(commands.Cog):
     async def removeall(self, ctx):
         """Remove all petting channels from the list."""
         await self.config.guild(ctx.guild).channel.set([])
-        await ctx.send(
-            "All channels have been removed from the list of petting channels."
-        )
+        await ctx.send("All channels have been removed from the list of petting channels.")
         await self.initialize(ctx.guild)
 
     @commands.Cog.listener()
@@ -357,9 +359,7 @@ class Pupper(commands.Cog):
 
             if str(reaction.emoji) in emojis:
                 await borf_msg.delete()
-                deposit = random.randint(
-                    guild_data["credits"][0], guild_data["credits"][1]
-                )
+                deposit = random.randint(guild_data["credits"][0], guild_data["credits"][1])
                 try:
                     large_bank = False
                     await bank.deposit_credits(user, deposit)
@@ -372,9 +372,7 @@ class Pupper(commands.Cog):
                     if not large_bank
                     else guild_data["borf_msg"]
                 )
-                await rando_channel_obj.send(
-                    content=msg, delete_after=guild_data["delete_after"]
-                )
+                await rando_channel_obj.send(content=msg, delete_after=guild_data["delete_after"])
             else:
                 pass
             self.cache[message.guild.id]["last_pet"] = int(now.timestamp())

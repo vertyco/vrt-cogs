@@ -17,7 +17,7 @@ class EmojiTracker(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.1"
+    __version__ = "0.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -36,7 +36,7 @@ class EmojiTracker(commands.Cog):
         self.reacted = {}
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         # Ignore reactions added by the bot
         if payload.user_id == self.bot.user.id:
             return
@@ -59,22 +59,10 @@ class EmojiTracker(commands.Cog):
         chan = guild.get_channel(payload.channel_id)
         if not chan:
             return
-        try:
-            msg = await chan.fetch_message(payload.message_id)
-            if not msg:
-                return
-        except (discord.NotFound, discord.Forbidden):
-            return
-        # Ignore reactions added to a message that a bot sent
-        if msg.author.bot:
-            return
-        # Ignore people adding reactions to their own messages
-        if msg.author.id == user.id:
-            return
 
         emoji = str(payload.emoji)
         uid = str(user.id)
-        mid = str(msg.id)
+        mid = str(payload.message_id)
 
         # Only allow one reaction count per emoji on a message so users cant unreact and add the same emoji
         # This may eat up cache over time for bots with a long ass uptime and in massive servers
@@ -113,6 +101,7 @@ class EmojiTracker(commands.Cog):
 
     @commands.command(name="viewblacklist")
     @commands.is_owner()
+    @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx):
         """View EmojiTracker Blacklist"""
         bl = await self.config.blacklist()
@@ -128,7 +117,7 @@ class EmojiTracker(commands.Cog):
 
     @commands.command(name="resetreacts")
     @commands.guild_only()
-    @commands.admin()
+    @commands.has_permissions(manage_messages=True)
     async def reset_reactions(self, ctx):
         """Reset reaction data for this guild"""
         await self.config.guild(ctx.guild).clear()
@@ -136,6 +125,7 @@ class EmojiTracker(commands.Cog):
 
     @commands.command(name="emojilb")
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def emoji_lb(self, ctx):
         """View the emoji leaderboard"""
         users = await self.config.guild(ctx.guild).users()
@@ -177,6 +167,7 @@ class EmojiTracker(commands.Cog):
 
     @commands.command(name="reactlb")
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def reaction_lb(self, ctx):
         """View user leaderboard for most emojis added"""
         users = await self.config.guild(ctx.guild).users()

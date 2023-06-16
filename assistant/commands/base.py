@@ -34,6 +34,7 @@ class Base(MixinMeta):
             return await ctx.send("This command requires an API key from OpenAI to be configured!")
         if not await can_use(ctx.message, conf.blacklist):
             return
+        # embed_links perm handled in following functions
         async with ctx.typing():
             await self.handle_message(ctx.message, question, conf)
 

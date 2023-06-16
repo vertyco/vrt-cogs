@@ -1,18 +1,16 @@
 import asyncio
-import json
-from pathlib import Path
 
-import discord
+from redbot.core import VersionInfo, version_info
+from redbot.core.utils import get_end_user_data_statement
 
 from .nonuke import NoNuke
 
-with open(Path(__file__).parent / "info.json") as fp:
-    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
+__red_end_user_data_statement__ = get_end_user_data_statement(__file__)
 
 
 async def setup(bot):
     cog = NoNuke(bot)
-    if discord.__version__ > "1.7.3":
+    if version_info >= VersionInfo.from_str("3.5.0"):
         await bot.add_cog(cog)
     else:
         bot.add_cog(cog)

@@ -4,13 +4,13 @@ import logging
 from typing import Optional, Union
 
 import discord
-from aiocache import SimpleMemoryCache, cached
+from aiocache import cached
 from aiohttp import ClientSession
-from redbot.core import commands
+from redbot.core import VersionInfo, commands, version_info
 from redbot.core.utils.chat_formatting import humanize_list
 
 log = logging.getLogger("red.vrt.events")
-DPY2 = True if discord.__version__ > "1.7.3" else False
+DPY2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
 
 
 class GetReply:
@@ -31,9 +31,7 @@ class GetReply:
         return any(conditions)
 
     async def __aenter__(self) -> Optional[discord.Message]:
-        tasks = [
-            asyncio.ensure_future(self.ctx.bot.wait_for("message", check=self.check))
-        ]
+        tasks = [asyncio.ensure_future(self.ctx.bot.wait_for("message", check=self.check))]
         done, pending = await asyncio.wait(tasks, timeout=self.timeout)
         [task.cancel() for task in pending]
         self.reply = done.pop().result() if len(done) > 0 else None
@@ -67,7 +65,7 @@ def get_place(num: int):
     return f"{num}{suf}"
 
 
-def guild_icon(guild: discord.guild) -> Optional[str]:
+def guild_icon(guild: discord.Guild) -> Optional[str]:
     if DPY2:
         icon = guild.icon.url if guild.icon else None
     else:
@@ -116,9 +114,7 @@ async def select_event(
         days_in_server = info["days_in_server"]
         if days_in_server:
             grammar = "days" if days_in_server > 1 else "day"
-            field += (
-                f"• Must be in the server for at least {days_in_server} {grammar}\n"
-            )
+            field += f"• Must be in the server for at least {days_in_server} {grammar}\n"
 
         roles = [
             ctx.guild.get_role(rid).mention
@@ -130,9 +126,7 @@ async def select_event(
         elif not info["need_all_roles"] and roles:
             field += f"• Need at least one role: {humanize_list(roles)}"
 
-        embed.add_field(
-            name=f"#{index + 1}. {info['event_name']}", value=field, inline=False
-        )
+        embed.add_field(name=f"#{index + 1}. {info['event_name']}", value=field, inline=False)
         selectable[str(index + 1)] = info
 
     if not selectable:
@@ -152,9 +146,7 @@ async def select_event(
             await msg.edit(content="That's not a number!", embed=None)
             return None
         if reply.content not in selectable:
-            await msg.edit(
-                content="That number doesn't correspond to an event!", embed=None
-            )
+            await msg.edit(content="That number doesn't correspond to an event!", embed=None)
             return None
         key = reply.content
     return {"event": selectable[key], "msg": msg}
@@ -175,7 +167,7 @@ def get_attachments(message: discord.Message) -> list:
     return content
 
 
-@cached(ttl=3600, cache=SimpleMemoryCache)
+@cached(ttl=3600)
 async def get_content_from_url(url: str):
     try:
         async with ClientSession() as session:

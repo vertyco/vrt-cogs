@@ -84,9 +84,7 @@ class API:
                         try:
                             data = await res.json(content_type=None)
                             wait = data.get("Retry-After", 15)
-                            log.warning(
-                                f"We are being rate-limited, waiting {wait} seconds..."
-                            )
+                            log.warning(f"We are being rate-limited, waiting {wait} seconds...")
                         except json.decoder.JSONDecodeError:
                             wait = 15
                         await asyncio.sleep(wait)

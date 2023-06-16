@@ -41,7 +41,7 @@ class Pixl(commands.Cog):
     """Guess pictures for points"""
 
     __author__ = "Vertyco"
-    __version__ = "0.2.20"
+    __version__ = "0.3.0"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -71,6 +71,7 @@ class Pixl(commands.Cog):
 
     @commands.command(name="pixlboard", aliases=["pixlb", "pixelb", "pixlelb", "pixleaderboard"])
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def pixl_leaderboard(self, ctx: commands.Context, show_global: Optional[bool]):
         """View the Pixl leaderboard!
 
@@ -150,6 +151,7 @@ class Pixl(commands.Cog):
 
     @commands.command(name="pixl", aliases=["pixle", "pixlguess", "pixelguess", "pixleguess"])
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def pixl(self, ctx: commands.Context):
         """
         Start a Pixl game!
@@ -301,12 +303,13 @@ class Pixl(commands.Cog):
 
     @commands.group(name="pixlset", aliases=["pixelset", "pixleset"])
     @commands.guild_only()
-    @commands.admin()
+    @commands.has_permissions(manage_messages=True)
     async def pixlset(self, ctx: commands.Context):
         """Configure the Pixl game"""
         pass
 
     @pixlset.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context):
         """View the current settings"""
         conf = await self.config.guild(ctx.guild).all()
@@ -431,11 +434,13 @@ class Pixl(commands.Cog):
         pass
 
     @image.command(name="viewdefault")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_default_images(self, ctx: commands.Context):
         """View the default images"""
         await self.image_menu(ctx, defaults, "Default Images")
 
     @image.command(name="viewglobal")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_global_images(self, ctx: commands.Context):
         """View the global images"""
         images = await self.config.images()
@@ -444,6 +449,7 @@ class Pixl(commands.Cog):
         await self.image_menu(ctx, images, "Global Images")
 
     @image.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_images(self, ctx: commands.Context):
         """View the guild images"""
         images = await self.config.guild(ctx.guild).images()
@@ -487,6 +493,7 @@ class Pixl(commands.Cog):
 
     @image.command(name="addglobal")
     @commands.is_owner()
+    @commands.bot_has_permissions(embed_links=True)
     async def add_global_image(
         self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]
     ):
@@ -581,6 +588,7 @@ class Pixl(commands.Cog):
                 await ctx.send(embed=embed)
 
     @image.command(name="add")
+    @commands.bot_has_permissions(embed_links=True)
     async def add_image(
         self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]
     ):

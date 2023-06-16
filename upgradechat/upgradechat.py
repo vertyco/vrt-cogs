@@ -2,7 +2,7 @@ from datetime import datetime
 
 import discord
 from discord.ext.commands.cooldowns import BucketType
-from redbot.core import Config, bank, commands
+from redbot.core import Config, VersionInfo, bank, commands, version_info
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box
@@ -10,7 +10,7 @@ from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from .api import API
 
-DPY2 = True if discord.__version__ > "1.7.3" else False
+DPY2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
 
 
 class UpgradeChat(commands.Cog):
@@ -122,21 +122,16 @@ class UpgradeChat(commands.Cog):
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
             if not conf["id"] or not conf["secret"]:
-                return await ctx.send(
-                    "UpgradeChat API credentials have not been set yet!"
-                )
+                return await ctx.send("UpgradeChat API credentials have not been set yet!")
             status, results, newtoken = await API().get_product(conf, uuid)
             if status != 200:
                 return await ctx.send(
-                    f"I could not find any products with that UUID!\n"
-                    f"`status {status}`"
+                    f"I could not find any products with that UUID!\n" f"`status {status}`"
                 )
             product = results["data"]
             async with self.config.guild(ctx.guild).products() as products:
                 products[uuid] = product
-            await ctx.send(
-                f"Your product with the title `{product['name']}` has been added!"
-            )
+            await ctx.send(f"Your product with the title `{product['name']}` has been added!")
             await ctx.tick()
             if newtoken:
                 await self.config.guild(ctx.guild).bearer_token.set(newtoken)
@@ -154,9 +149,7 @@ class UpgradeChat(commands.Cog):
                         "UUID not found in existing products. Here are the current products you have set.\n"
                         f"{text}"
                     )
-                await ctx.send(
-                    f"Product with title `{products[uuid]['name']}` has been deleted!"
-                )
+                await ctx.send(f"Product with title `{products[uuid]['name']}` has been deleted!")
                 del products[uuid]
 
     @upgradechat.command()
@@ -173,11 +166,7 @@ class UpgradeChat(commands.Cog):
 
         embeds = []
         for uid, purchases in users.items():
-            user = (
-                ctx.guild.get_member(int(uid))
-                if ctx.guild.get_member(int(uid))
-                else None
-            )
+            user = ctx.guild.get_member(int(uid)) if ctx.guild.get_member(int(uid)) else None
 
             desc = f"**Purchases from {user if user else uid}**\n"
             for transaction_id, purchase in purchases.items():
@@ -202,10 +191,7 @@ class UpgradeChat(commands.Cog):
         conf = await self.config.guild(ctx.guild).all()
         users = conf["users"]
         total = sum(
-            [
-                sum([p["price"] for p in purchases.values()])
-                for purchases in users.values()
-            ]
+            [sum([p["price"] for p in purchases.values()]) for purchases in users.values()]
         )
         purchases = sum([len(purchases) for purchases in users.values()])
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -266,22 +252,14 @@ class UpgradeChat(commands.Cog):
                 return await ctx.send(
                     "The owner of this guild has not set up their API tokens for Upgrade.Chat yet!"
                 )
-            status, purchases, newtoken = await API().get_user_purchases(
-                conf, ctx.author.id
-            )
+            status, purchases, newtoken = await API().get_user_purchases(conf, ctx.author.id)
             if newtoken:
                 await self.config.guild(ctx.guild).bearer_token.set(newtoken)
-                await self.config.guild(ctx.guild).last_refreshed.set(
-                    datetime.now().isoformat()
-                )
+                await self.config.guild(ctx.guild).last_refreshed.set(datetime.now().isoformat())
             if status != 200:
-                return await ctx.send(
-                    "I could not find any users associated with your ID!"
-                )
+                return await ctx.send("I could not find any users associated with your ID!")
             if not purchases:
-                return await ctx.send(
-                    "I could not find any valid purchases for your account!"
-                )
+                return await ctx.send("I could not find any valid purchases for your account!")
 
             products = conf["products"]
             users = conf["users"]
@@ -303,9 +281,7 @@ class UpgradeChat(commands.Cog):
                     valid_purchases += 1
 
             if not valid_purchases:
-                return await ctx.send(
-                    "I could not find any valid purchases for your account!"
-                )
+                return await ctx.send("I could not find any valid purchases for your account!")
 
             async with self.config.guild(ctx.guild).users() as users:
                 if uid not in users:
@@ -340,9 +316,7 @@ class UpgradeChat(commands.Cog):
                 }
                 desc = claim_msg.format(**params)
 
-            em = discord.Embed(
-                title=title, description=desc, color=discord.Color.green()
-            )
+            em = discord.Embed(title=title, description=desc, color=discord.Color.green())
             bal = await bank.get_balance(ctx.author)
             em.set_footer(text=f"Your new balance is {'{:,}'.format(bal)}!")
             await ctx.send(embed=em)
