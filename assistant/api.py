@@ -334,6 +334,7 @@ class API(MixinMeta):
             for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
                 reply = reply.replace(i, "").strip()
 
+        block = False
         for regex in conf.regex_blacklist:
             with Pool(processes=1) as pool:
                 try:
@@ -343,10 +344,14 @@ class API(MixinMeta):
                     log.error(
                         f"Regex {regex} in {guild.name} took too long to process. Skipping..."
                     )
+                    if conf.block_failed_regex:
+                        block = True
                     continue
 
         conversation.update_messages(reply, "assistant")
         conversation.cleanup(conf)
+        if block:
+            reply = "Response failed due to invalid regex, check logs for more info."
         return reply
 
     def prepare_messages(

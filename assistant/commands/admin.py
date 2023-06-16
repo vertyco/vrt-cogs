@@ -109,6 +109,11 @@ class Admin(MixinMeta):
             joined = "\n".join(conf.regex_blacklist)
             for p in pagify(joined, page_length=1000):
                 embed.add_field(name="Regex Blacklist", value=box(p), inline=False)
+            embed.add_field(
+                name="Regex Failure Blocking",
+                value=f"Block reply if regex replacement fails: {conf.block_failed_regex}",
+                inline=False,
+            )
 
         persist = (
             "Conversations are stored persistently"
@@ -650,6 +655,23 @@ class Admin(MixinMeta):
         else:
             conf.regex_blacklist.append(regex)
             await ctx.send(f"`{regex}` has been **Added** to the blacklist")
+        await self.save_conf()
+
+    @assistant.command(name="regexfailblock")
+    @commands.is_owner()
+    async def toggle_regex_fail_blocking(self, ctx: commands.Context):
+        """
+        Toggle whether failed regex blocks the assistant's reply
+
+        Some regexes can cause [catastrophically backtracking](https://www.rexegg.com/regex-explosive-quantifiers.html)
+        The bot can safely handle if this happens and will either continue on, or block the response.
+        """
+        if self.db.block_failed_regex:
+            self.db.block_failed_regex = False
+            await ctx.send("If a regex blacklist fails, the bots reply will be blocked")
+        else:
+            self.db.block_failed_regex = True
+            await ctx.send("If a reges blacklist failes, the bot will still reply")
         await self.save_conf()
 
     @assistant.command(name="embeddingtest", aliases=["etest"])
