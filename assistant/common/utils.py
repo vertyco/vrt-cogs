@@ -148,8 +148,8 @@ async def safe_regex(regex: str, reply: str):
     def run_safe_regex():
         pool = mp.Pool(processes=1)
         try:
-            process = pool.apply_async(func=re.sub, args=(regex, "", reply))
-            return process.get(timeout=2)
+            result = pool.apply(func=re.sub, args=(regex, "", reply))
+            return result
         finally:
             pool.close()
 
