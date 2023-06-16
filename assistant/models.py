@@ -118,6 +118,7 @@ class GuildSettings(BaseModel):
     temperature: float = 0.0
     regex_blacklist: List[str] = [r"^As an AI language model,"]
     blacklist: List[int] = []  # Channel/Role/User IDs
+    block_failed_regex: bool = False
 
     image_tools: bool = True
     image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
