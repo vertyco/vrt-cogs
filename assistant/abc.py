@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from multiprocessing.pool import Pool
 from typing import Union
 
 import discord
@@ -17,6 +18,7 @@ class MixinMeta(metaclass=ABCMeta):
 
     bot: Red
     db: DB
+    re_pool: Pool
 
     @abstractmethod
     async def get_chat_response(
