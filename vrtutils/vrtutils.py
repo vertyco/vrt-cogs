@@ -519,7 +519,7 @@ class VrtUtils(commands.Cog):
     async def usersjson(self, ctx: commands.Context):
         """Get a json file containing all usernames/ID's in this guild"""
         members = {str(member.id): member.name for member in ctx.guild.members}
-        file = text_to_file(json.dumps(members).encode())
+        file = text_to_file(json.dumps(members))
         await ctx.send("Here are all usernames and their ID's for this guild", file=file)
 
     @commands.command()
