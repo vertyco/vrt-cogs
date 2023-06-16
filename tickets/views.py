@@ -554,6 +554,7 @@ class SupportButton(Button):
                 "logmsg": log_message.id if log_message else None,
                 "answers": answers,
                 "has_response": has_response,
+                "message_id": msg.id,
             }
 
             new_id = await update_active_overview(guild, conf)
