@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-01-08 17:41-0500\n"
-"PO-Revision-Date: 2023-01-08 22:42\n"
+"POT-Creation-Date: 2023-06-15 21:24-0400\n"
+"PO-Revision-Date: 2023-06-16 01:26\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 25\n"
 "Language: hr_HR\n"
 
-#: autodocs.py:23
+#: autodocs.py:24
 #, docstring
 msgid "\n"
 "    Document your cogs with ease!\n\n"
@@ -25,50 +25,62 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: autodocs.py:34
+#: autodocs.py:35
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: autodocs.py:40
+#: autodocs.py:41
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: autodocs.py:64
-msgid "Could not fetch docs for slash command {}"
+#: autodocs.py:57
+msgid "name"
 msgstr ""
 
-#: autodocs.py:77
-msgid "Could not fetch docs for command {}"
+#: autodocs.py:57
+msgid "text"
 msgstr ""
 
-#: autodocs.py:86
+#: autodocs.py:66
+msgid "{} cog description"
+msgstr ""
+
+#: autodocs.py:116
 msgid "Create docs for a cog"
 msgstr ""
 
-#: autodocs.py:88
+#: autodocs.py:118
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr ""
 
-#: autodocs.py:89
+#: autodocs.py:119
 msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr ""
 
-#: autodocs.py:90
+#: autodocs.py:120
 msgid "Replace all occurrences of [botname] with the bots name"
 msgstr ""
 
-#: autodocs.py:91
+#: autodocs.py:121
 msgid "Include extra info like converters and their docstrings"
 msgstr ""
 
-#: autodocs.py:92
+#: autodocs.py:122
 msgid "Include hidden commands"
 msgstr ""
 
-#: autodocs.py:104
+#: autodocs.py:123
+msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
+msgstr ""
+
+#: autodocs.py:126
+msgid "Include a csv with each command isolated per row"
+msgstr ""
+
+#: autodocs.py:141
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
@@ -77,25 +89,28 @@ msgid "\n"
 "        `replace_prefix:     `(bool) If True, replaces the `prefix` placeholder with the bots prefix\n"
 "        `replace_botname:    `(bool) If True, replaces the `botname` placeholder with the bots name\n"
 "        `extended_info:      `(bool) If True, include extra info like converters and their docstrings\n"
-"        `include_hidden:     `(bool) If True, includes hidden commands\n\n"
-"        **Note**\n"
-"        If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for them and sent in a zip file\n"
+"        `include_hidden:     `(bool) If True, includes hidden commands\n"
+"        `privilege_level:    `(str) Hide commands above specified privilege level\n"
+"        - (user, mod, admin, guildowner, botowner)\n"
+"        `csv_export:         `(bool) Include a csv with each command isolated per row for use as embeddings\n\n"
+"        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
+"        them and sent in a zip file\n"
 "        "
 msgstr ""
 
-#: autodocs.py:125
+#: autodocs.py:163
 msgid "AllCogDocs"
 msgstr ""
 
-#: autodocs.py:151
+#: autodocs.py:203
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr ""
 
-#: autodocs.py:156
+#: autodocs.py:207
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr ""
 
-#: autodocs.py:171
+#: autodocs.py:229
 msgid "Here are your docs for {}!"
 msgstr ""
 
@@ -192,23 +207,23 @@ msgstr ""
 msgid "Formats documentation for a single command"
 msgstr ""
 
-#: formatter.py:191
+#: formatter.py:221
 msgid "Could not get docstring or class for {} converter"
 msgstr ""
 
-#: formatter.py:197 formatter.py:254
+#: formatter.py:225 formatter.py:284
 msgid "Could not get docstring for {} converter"
 msgstr ""
 
-#: formatter.py:203
+#: formatter.py:229
 msgid "Could not get class for {} converter"
 msgstr ""
 
-#: formatter.py:244
+#: formatter.py:274
 msgid "Could not find {} for the {} argument of the {} command"
 msgstr ""
 
-#: formatter.py:278
+#: formatter.py:311
 msgid "Extended Arg Info\n"
 msgstr ""
 
