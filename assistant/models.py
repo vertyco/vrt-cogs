@@ -163,7 +163,10 @@ class Conversation(BaseModel):
 
     def conversation_token_count(self, conf: GuildSettings, message: str = "") -> int:
         initial = conf.system_prompt + conf.prompt
-        return num_tokens_from_string(initial) + self.user_token_count(message)
+        message_tokens = 0
+        if message:
+            message_tokens = self.user_token_count(message)
+        return num_tokens_from_string(initial) + message_tokens
 
     def is_expired(self, conf: GuildSettings):
         if not conf.max_retention_time:
