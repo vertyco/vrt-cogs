@@ -672,7 +672,7 @@ class Admin(MixinMeta):
             await ctx.send("If a regex blacklist fails, the bots reply will be blocked")
         else:
             conf.block_failed_regex = True
-            await ctx.send("If a reges blacklist failes, the bot will still reply")
+            await ctx.send("If a reges blacklist fails, the bot will still reply")
         await self.save_conf()
 
     @assistant.command(name="embeddingtest", aliases=["etest"])
