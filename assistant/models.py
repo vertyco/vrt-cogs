@@ -155,7 +155,10 @@ class Conversation(BaseModel):
         return num_tokens_from_string("".join(message["content"] for message in self.messages))
 
     def user_token_count(self, message: str = "") -> int:
-        messages = "".join(message["content"] for message in self.messages)
+        content = [message["content"] for message in self.messages]
+        if not content:
+            return 0
+        messages = "".join(content)
         if not self.messages:
             messages = ""
         messages += message
