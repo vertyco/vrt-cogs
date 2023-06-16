@@ -265,7 +265,7 @@ class API(MixinMeta):
             params,
         )
         if conf.model in CHAT:
-            reply = ""
+            reply = "Could not get reply!"
             calls = 0
             while calls < conf.max_function_calls:
                 calls += 1
@@ -277,10 +277,27 @@ class API(MixinMeta):
                     functions=function_calls,
                 )
                 reply = response["content"]
-                if function := response.get("function_call"):
-                    function_name = function["name"]
-                    params = orjson.loads(function.get("arguments", "{}"))
+                function_call = response.get("function_call")
+                if reply and not function_call:
+                    break
+                elif function_call:
+                    if reply:
+                        conversation.update_messages(reply, "assistant")
+                        messages.append({"role": "assistant", "content": reply})
+
+                    function_name = function_call["name"]
+                    arguments = function_call.get("arguments", "{}")
+                    try:
+                        params = orjson.loads(arguments)
+                    except orjson.JSONDecodeError:
+                        params = {}
+                        log.error(
+                            f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}"
+                        )
+                    # Try continuing anyway
                     if function_name not in function_map:
+                        log.error(f"GPT suggested a function not provided: {function_name}")
+                        reply = "Tried to call a function that doesnt exist, owner has been notified in logs."
                         break
                     extras = {
                         "user": guild.get_member(author) if isinstance(author, int) else author,
@@ -293,13 +310,22 @@ class API(MixinMeta):
                     }
                     kwargs = {**params, **extras}
                     func = function_map[function_name]
-                    if iscoroutinefunction(func):
-                        result = await func(**kwargs)
-                    else:
-                        result = await asyncio.to_thread(func, **kwargs)
+                    try:
+                        if iscoroutinefunction(func):
+                            result = await func(**kwargs)
+                        else:
+                            result = await asyncio.to_thread(func, **kwargs)
+                    except Exception as e:
+                        log.error(
+                            f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
+                            exc_info=e,
+                        )
+                        reply = f"Tried to call function `{function_name}` and failed. Owner has been notified in logs."
+                        break
                     log.info(
                         f"Called function {function_name}\nParams: {params}\nResult: {result}"
                     )
+
                     conversation.update_messages(result, "function", function_name)
                     messages.append({"role": "function", "name": function_name, "content": result})
                     max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
@@ -314,7 +340,6 @@ class API(MixinMeta):
                             messages.pop(1)
                         else:
                             messages.pop(0)
-
                 else:
                     break
             if calls > 1:
