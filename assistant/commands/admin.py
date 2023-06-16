@@ -111,7 +111,7 @@ class Admin(MixinMeta):
                 embed.add_field(name="Regex Blacklist", value=box(p), inline=False)
             embed.add_field(
                 name="Regex Failure Blocking",
-                value=f"Block reply if regex replacement fails: {conf.block_failed_regex}",
+                value=f"Block reply if regex replacement fails: **{conf.block_failed_regex}**",
                 inline=False,
             )
 

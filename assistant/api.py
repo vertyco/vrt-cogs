@@ -1,12 +1,12 @@
 import asyncio
 import logging
+import multiprocessing as mp
 import re
 import sys
 import traceback
 from datetime import datetime
 from inspect import iscoroutinefunction
 from io import BytesIO
-from multiprocessing import Pool, TimeoutError
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
@@ -336,17 +336,13 @@ class API(MixinMeta):
 
         block = False
         for regex in conf.regex_blacklist:
-            with Pool(processes=1) as pool:
-                try:
-                    result = pool.apply_async(safe_regex, (regex, reply))
-                    reply = result.get(timeout=2)
-                except TimeoutError:
-                    log.error(
-                        f"Regex {regex} in {guild.name} took too long to process. Skipping..."
-                    )
-                    if conf.block_failed_regex:
-                        block = True
-                    continue
+            try:
+                reply = await safe_regex(regex, reply)
+            except (mp.TimeoutError, asyncio.TimeoutError):
+                log.error(f"Regex {regex} in {guild.name} took too long to process. Skipping...")
+                if conf.block_failed_regex:
+                    block = True
+                continue
 
         conversation.update_messages(reply, "assistant")
         conversation.cleanup(conf)
