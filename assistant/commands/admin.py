@@ -666,11 +666,12 @@ class Admin(MixinMeta):
         Some regexes can cause [catastrophically backtracking](https://www.rexegg.com/regex-explosive-quantifiers.html)
         The bot can safely handle if this happens and will either continue on, or block the response.
         """
-        if self.db.block_failed_regex:
-            self.db.block_failed_regex = False
+        conf = self.db.get_conf(ctx.guild)
+        if conf.block_failed_regex:
+            conf.block_failed_regex = False
             await ctx.send("If a regex blacklist fails, the bots reply will be blocked")
         else:
-            self.db.block_failed_regex = True
+            conf.block_failed_regex = True
             await ctx.send("If a reges blacklist failes, the bot will still reply")
         await self.save_conf()
 
