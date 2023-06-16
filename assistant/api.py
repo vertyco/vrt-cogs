@@ -1,5 +1,7 @@
 import asyncio
+import functools
 import logging
+import multiprocessing as mp
 import re
 import sys
 import traceback
@@ -31,7 +33,6 @@ from .common.utils import (
     request_chat_response,
     request_completion_response,
     request_embedding,
-    safe_regex,
     token_cut,
 )
 from .models import CHAT, MODELS, READ_EXTENSIONS, Conversation, GuildSettings
@@ -336,8 +337,9 @@ class API(MixinMeta):
         block = False
         for regex in conf.regex_blacklist:
             try:
-                reply = await safe_regex(regex, reply)
-            except asyncio.TimeoutError:
+                # reply = re.sub(regex, "", reply).strip()
+                reply = await self.safe_regex(regex, reply)
+            except (asyncio.TimeoutError, mp.TimeoutError):
                 log.error(f"Regex {regex} in {guild.name} took too long to process. Skipping...")
                 if conf.block_failed_regex:
                     block = True
@@ -348,6 +350,21 @@ class API(MixinMeta):
         if block:
             reply = "Response failed due to invalid regex, check logs for more info."
         return reply
+
+    async def safe_regex(self, regex: str, content: str):
+        process = self.re_pool.apply_async(
+            re.sub,
+            args=(
+                regex,
+                "",
+                content,
+            ),
+        )
+        task = functools.partial(process.get, timeout=2)
+        loop = asyncio.get_running_loop()
+        new_task = loop.run_in_executor(None, task)
+        subbed = await asyncio.wait_for(new_task, timeout=5)
+        return subbed
 
     def prepare_messages(
         self,

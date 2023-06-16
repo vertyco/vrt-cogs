@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from multiprocessing.pool import Pool
 from time import perf_counter
 from typing import Callable, Dict, List, Optional, Union
 
@@ -42,6 +43,7 @@ class Assistant(
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         self.config.register_global(db={})
         self.db: DB = DB()
+        self.re_pool = Pool()
 
         self.saving = False
         self.first_run = True
@@ -51,6 +53,7 @@ class Assistant(
 
     async def cog_unload(self):
         self.save_loop.cancel()
+        self.re_pool.close()
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()

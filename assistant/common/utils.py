@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import json
 import logging
 import math
@@ -142,13 +141,6 @@ def compile_messages(messages: List[dict]) -> str:
         text += f"{role}: {content}\n"
     text += "\n"
     return text
-
-
-async def safe_regex(regex: str, reply: str):
-    loop = asyncio.get_running_loop()
-    func = functools.partial(re.sub, regex, "", reply)
-    task = loop.run_in_executor(None, func)
-    return await asyncio.wait_for(task, timeout=2)
 
 
 def function_embeds(functions: Dict[str, Any], owner: bool) -> List[discord.Embed]:
