@@ -8,6 +8,11 @@
   "hidden": false,
   "install_msg": "Thank you for installing Support! type `[p]help GuildLog` to see all commands.",
   "min_bot_version": "3.4.0",
+  "min_python_version": [
+    3,
+    9,
+    1
+  ],
   "permissions": [
     "send_messages"
   ],

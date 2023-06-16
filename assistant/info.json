@@ -8,6 +8,11 @@
   "hidden": false,
   "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys\n\n**Warning**\nIt is not recommended to run this cog on a public bot as embeddings can use up a lot of space over time!",
   "min_bot_version": "3.5.0",
+  "min_python_version": [
+    3,
+    9,
+    1
+  ],
   "permissions": [
     "read_messages",
     "send_messages"

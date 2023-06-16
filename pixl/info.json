@@ -8,6 +8,11 @@
   "hidden": false,
   "install_msg": "Thank you for installing!",
   "min_bot_version": "3.4.17",
+  "min_python_version": [
+    3,
+    9,
+    1
+  ],
   "permissions": [
     "read_messages",
     "send_messages",
