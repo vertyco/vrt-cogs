@@ -147,8 +147,11 @@ def compile_messages(messages: List[dict]) -> str:
 async def safe_regex(regex: str, reply: str):
     def run_safe_regex():
         pool = mp.Pool(processes=1)
-        process = pool.apply_async(func=re.sub, args=(regex, "", reply))
-        return process.get(timeout=2)
+        try:
+            process = pool.apply_async(func=re.sub, args=(regex, "", reply))
+            return process.get(timeout=2)
+        finally:
+            pool.close()
 
     loop = asyncio.get_running_loop()
     task = loop.run_in_executor(None, run_safe_regex)
