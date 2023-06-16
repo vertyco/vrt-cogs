@@ -9,7 +9,6 @@ import random
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from io import BytesIO
 from sys import executable
 from typing import Optional, Union
 
@@ -27,6 +26,7 @@ from redbot.core.utils.chat_formatting import (
     humanize_number,
     humanize_timedelta,
     pagify,
+    text_to_file,
 )
 
 from .diskspeed import get_disk_speed
@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.5"
+    __version__ = "1.6.6"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -146,7 +146,6 @@ class VrtUtils(commands.Cog):
     @commands.is_owner()
     async def update_cog(self, ctx, *cogs: InstalledCog):
         """Auto update & reload cogs"""
-        ctx.assume_yes = True
         cog_update_command = ctx.bot.get_command("cog update")
         if cog_update_command is None:
             return await ctx.send(
@@ -516,13 +515,11 @@ class VrtUtils(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
+    @commands.bot_has_permissions(attach_files=True)
     async def usersjson(self, ctx: commands.Context):
         """Get a json file containing all usernames/ID's in this guild"""
         members = {str(member.id): member.name for member in ctx.guild.members}
-        buffer = BytesIO(json.dumps(members).encode())
-        buffer.name = "users.json"
-        buffer.seek(0)
-        file = discord.File(buffer)
+        file = text_to_file(json.dumps(members).encode())
         await ctx.send("Here are all usernames and their ID's for this guild", file=file)
 
     @commands.command()
@@ -565,7 +562,7 @@ class VrtUtils(commands.Cog):
             try:
                 joined_at = guild.me.joined_at
             except AttributeError:
-                joined_at = datetime.datetime.utcnow()
+                joined_at = discord.utils.utcnow()
             bot_joined = (
                 f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
             )

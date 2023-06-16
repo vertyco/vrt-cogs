@@ -18,7 +18,7 @@ class NoBot(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.0.6"
+    __version__ = "1.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -43,7 +43,7 @@ class NoBot(commands.Cog):
         self.cache = await self.config.all_guilds()
 
     @commands.group(name="nobot")
-    @commands.admin()
+    @commands.has_permissions(manage_messages=True)
     async def nobot_settings(self, ctx):
         """Main setup command for NoBot"""
         pass
@@ -87,6 +87,7 @@ class NoBot(commands.Cog):
         self.initialize()
 
     @nobot_settings.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def no_bot_view(self, ctx):
         """View NoBot settings"""
         config = await self.config.guild(ctx.guild).all()
@@ -107,6 +108,7 @@ class NoBot(commands.Cog):
         await ctx.send(embed=embed)
 
     @nobot_settings.command(name="delfilter")
+    @commands.bot_has_permissions(embed_links=True)
     async def delete_filter(self, ctx):
         """Delete a filter"""
         async with self.config.guild(ctx.guild).content() as content:
@@ -132,17 +134,11 @@ class NoBot(commands.Cog):
                 )
 
             if reply.content.lower() == "cancel":
-                return await msg.edit(
-                    embed=discord.Embed(description="Selection canceled.")
-                )
+                return await msg.edit(embed=discord.Embed(description="Selection canceled."))
             elif not reply.content.isdigit():
-                return await msg.edit(
-                    embed=discord.Embed(description="That's not a number")
-                )
+                return await msg.edit(embed=discord.Embed(description="That's not a number"))
             elif int(reply.content) > len(content):
-                return await msg.edit(
-                    embed=discord.Embed(description="That's not a valid number")
-                )
+                return await msg.edit(embed=discord.Embed(description="That's not a valid number"))
             else:
                 i = int(reply.content) - 1
                 content.pop(i)
@@ -178,9 +174,7 @@ class NoBot(commands.Cog):
         # Get perms
         allowed = message.channel.permissions_for(message.guild.me).manage_messages
         if not allowed:
-            log.warning(
-                f"Insufficient permissions to delete message: {message.content}"
-            )
+            log.warning(f"Insufficient permissions to delete message: {message.content}")
             return
         asyncio.create_task(self.handle_message(config, message))
 

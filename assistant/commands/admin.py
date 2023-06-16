@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import logging
 import re
+import traceback
 from datetime import datetime
 from io import BytesIO
 from typing import List, Union
@@ -26,13 +27,7 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.utils import (
-    extract_message_content,
-    fetch_channel_history,
-    get_attachments,
-    num_tokens_from_string,
-    request_embedding,
-)
+from ..common.utils import get_attachments, num_tokens_from_string, request_embedding
 from ..models import CHAT, COMPLETION, Embedding
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
@@ -41,7 +36,7 @@ log = logging.getLogger("red.vrt.assistant.admin")
 
 class Admin(MixinMeta):
     @commands.group(name="assistant", aliases=["ass"])
-    @commands.admin()
+    @commands.admin_or_permissions(administrator=True)
     @commands.guild_only()
     async def assistant(self, ctx: commands.Context):
         """
@@ -52,6 +47,7 @@ class Admin(MixinMeta):
         pass
 
     @assistant.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context, private: bool = True):
         """
         View current settings
@@ -152,6 +148,7 @@ class Admin(MixinMeta):
             await ctx.send(embed=embed, files=files)
 
     @assistant.command(name="openaikey", aliases=["key"])
+    @commands.bot_has_permissions(embed_links=True)
     async def set_openai_key(self, ctx: commands.Context):
         """Set your OpenAI key"""
         view = SetAPI(ctx.author)
@@ -195,68 +192,6 @@ class Admin(MixinMeta):
             await ctx.send("Persistent conversations have been **Enabled**")
         await self.save_conf()
 
-    @assistant.command(name="train")
-    async def create_training_prompt(
-        self,
-        ctx: commands.Context,
-        *channels: Union[discord.TextChannel, discord.Thread, discord.ForumChannel],
-    ):
-        """
-        Automatically create embedding data to train your assistant
-
-        **How to Use**
-        Include channels that give helpful info about your server, NOT normal chat channels.
-        The bot will scan all pinned messages in addition to the most recent 50 messages.
-        The idea is to have the bot compile the information, condense it and provide a usable training embeddings for your Q&A channel.
-
-        **Note:** This just meant to get you headed in the right direction, creating quality training data takes trial and error.
-        """
-        if not channels:
-            return await ctx.send_help()
-        conf = self.db.get_conf(ctx.guild)
-        loading = "https://i.imgur.com/l3p6EMX.gif"
-        color = ctx.author.color
-        channel_list = humanize_list([c.mention for c in channels])
-        embed = discord.Embed(
-            description="Scanning channels shortly, please wait...",
-            color=color,
-        )
-        embed.set_thumbnail(url=loading)
-        embed.add_field(name="Channels being trained", value=channel_list)
-        async with ctx.typing():
-            msg = await ctx.send(embed=embed)
-            created = 0
-            for channel in channels:
-                try:
-                    messages = []
-                    for i in await fetch_channel_history(channel, oldest=False, limit=50):
-                        messages.append(i)
-                    text = f"Channel name: {channel.name}\nChannel mention: {channel.mention}\n"
-                    if isinstance(channel, discord.TextChannel):
-                        text += f"Channel topic: {channel.topic}\n"
-                        for pin in await channel.pins():
-                            messages.append(pin)
-                    for message in messages:
-                        if content := extract_message_content(message):
-                            text += content
-                            key = f"{channel.name}-{message.id}"
-                            embedding = await request_embedding(text, conf.api_key)
-                            if not embedding:
-                                continue
-                            conf.embeddings[key] = Embedding(text=text, embedding=embedding)
-                            created += 1
-                except discord.Forbidden:
-                    await ctx.send(f"I dont have access to {channel.mention}")
-
-            if not created:
-                embed.description = "No content found!"
-                embed.clear_fields()
-                return await msg.edit(embed=embed)
-            embed.description = f"Training finished, {created} embedding entries created!"
-            embed.clear_fields()
-            await msg.edit(embed=embed)
-            await self.save_conf()
-
     @assistant.command(name="prompt", aliases=["pre"])
     async def set_initial_prompt(self, ctx: commands.Context, *, prompt: str = ""):
         """
@@ -295,7 +230,12 @@ class Admin(MixinMeta):
             try:
                 prompt = (await attachments[0].read()).decode()
             except Exception as e:
-                return await ctx.send(f"Error:```py\n{e}\n```")
+                await ctx.send(
+                    f"Failed to read `{attachments[0].filename}`, bot owner can use `{ctx.prefix}traceback` for more information"
+                )
+                log.error("Failed to parse initial prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()
+                return
 
         conf = self.db.get_conf(ctx.guild)
 
@@ -368,7 +308,12 @@ class Admin(MixinMeta):
             try:
                 system_prompt = (await attachments[0].read()).decode()
             except Exception as e:
-                return await ctx.send(f"Error:```py\n{e}\n```")
+                await ctx.send(
+                    f"Failed to read `{attachments[0].filename}`, bot owner can use `{ctx.prefix}traceback` for more information"
+                )
+                log.error("Failed to parse initial prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()
+                return
 
         conf = self.db.get_conf(ctx.guild)
 
@@ -708,6 +653,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="embeddingtest", aliases=["etest"])
+    @commands.bot_has_permissions(embed_links=True)
     async def test_embedding_response(self, ctx: commands.Context, *, question: str):
         """
         Fetch related embeddings according to the current settings along with their scores
@@ -880,6 +826,7 @@ class Admin(MixinMeta):
             )
 
     @assistant.command(name="exportcsv")
+    @commands.bot_has_permissions(attach_files=True)
     async def export_embeddings_csv(self, ctx: commands.Context):
         """Export embeddings to a .csv file
 
@@ -926,6 +873,7 @@ class Admin(MixinMeta):
                 await ctx.send("File is still too large even with compression!")
 
     @assistant.command(name="exportjson")
+    @commands.bot_has_permissions(attach_files=True)
     async def export_embeddings_json(self, ctx: commands.Context):
         """Export embeddings to a json file"""
         conf = self.db.get_conf(ctx.guild)
@@ -966,7 +914,7 @@ class Admin(MixinMeta):
     @commands.hybrid_command(name="embeddings", aliases=["emenu"])
     @app_commands.describe(query="Name of the embedding entry")
     @commands.guild_only()
-    @commands.admin()
+    @commands.admin_or_permissions(administrator=True)
     async def embeddings(self, ctx: commands.Context, *, query: str = ""):
         """Manage embeddings for training
 

@@ -46,7 +46,7 @@ class GuildLog(commands.Cog):
             guild = self.bot.get_guild(int(guild_id))
             if not guild:
                 continue
-            channel = guild.get_channel(int(data["channel"]))
+            channel: discord.TextChannel = guild.get_channel(int(data["channel"]))
             if not channel:
                 continue
             perms = channel.permissions_for(guild.me).send_messages
@@ -73,7 +73,7 @@ class GuildLog(commands.Cog):
                     "members": users,
                 }
                 msg = msg.format(**params)
-            if embeds:
+            if embeds and channel.permissions_for(channel.guild.me).embed_links:
                 color = data["join"].get("color", 56865)
                 embed = discord.Embed(description=msg, color=color)
                 await channel.send(embed=embed)
@@ -135,6 +135,7 @@ class GuildLog(commands.Cog):
         pass
 
     @gset.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx):
         """View GuildLog Settings"""
         conf = await self.config.guild(ctx.guild).all()
@@ -152,14 +153,10 @@ class GuildLog(commands.Cog):
         embed = discord.Embed(title="Guild Log Settings", description=msg)
         jcolor = conf["join"]["color"]
         jmsg = conf["join"]["msg"]
-        embed.add_field(
-            name=f"Join Msg (color: {jcolor})", value=box(jmsg), inline=False
-        )
+        embed.add_field(name=f"Join Msg (color: {jcolor})", value=box(jmsg), inline=False)
         lcolor = conf["leave"]["color"]
         lmsg = conf["leave"]["msg"]
-        embed.add_field(
-            name=f"Leave Msg (color: {lcolor})", value=box(lmsg), inline=False
-        )
+        embed.add_field(name=f"Leave Msg (color: {lcolor})", value=box(lmsg), inline=False)
         await ctx.send(embed=embed)
 
     @gset.command(name="channel")
@@ -206,6 +203,7 @@ class GuildLog(commands.Cog):
         await ctx.tick()
 
     @jset.command(name="color")
+    @commands.bot_has_permissions(embed_links=True)
     async def join_color(self, ctx, color: int):
         """
         Set the color of the guild join embed
@@ -246,6 +244,7 @@ class GuildLog(commands.Cog):
         await ctx.tick()
 
     @lset.command(name="color")
+    @commands.bot_has_permissions(embed_links=True)
     async def leave_color(self, ctx, color: int):
         """
         Set the color of the guild leave embed

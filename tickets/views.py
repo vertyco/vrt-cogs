@@ -511,21 +511,22 @@ class SupportButton(Button):
 
         if logchannel:
             ts = int(now.timestamp())
+            kwargs = {
+                "user": str(user),
+                "userid": user.id,
+                "timestamp": f"<t:{ts}:R>",
+                "channelname": channel_name,
+                "panelname": self.panel_name,
+                "jumpurl": msg.jump_url,
+            }
             desc = _(
-                "`Created By: `{}\n"
-                "`User ID:    `{}\n"
-                "`Opened:     `{}\n"
-                "`Ticket:     `{}\n"
-                "`Panel Name: `{}\n"
-                "**[Click to Jump!]({})**"
-            ).format(
-                str(user),
-                user.id,
-                f"<t:{ts}:R>",
-                channel_name,
-                self.panel_name,
-                msg.jump_url,
-            )
+                "`Created By: `{user}\n"
+                "`User ID:    `{userid}\n"
+                "`Opened:     `{timestamp}\n"
+                "`Ticket:     `{channelname}\n"
+                "`Panel Name: `{panelname}\n"
+                "**[Click to Jump!]({jumpurl})**"
+            ).format(**kwargs)
             em = discord.Embed(
                 title=_("Ticket Opened"),
                 description=desc,

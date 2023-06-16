@@ -119,7 +119,9 @@ async def close_ticket(
         closer_name,
         str(reason),
     )
-
+    backup_text = _(
+        "Ticket Closed\n{}\nCurrently missing permissions to send embeds to this channel!"
+    ).format(desc)
     embed = discord.Embed(
         title=_("Ticket Closed"),
         description=desc,
@@ -170,11 +172,20 @@ async def close_ticket(
             )
         )
     if log_chan and ticket["logmsg"]:
+        file = None
         if text:
             file = discord.File(BytesIO(text.encode()), filename=filename)
+
+        perms = [
+            log_chan.permissions_for(guild.me).embed_links,
+            log_chan.permissions_for(guild.me).attach_files,
+        ]
+        if all(perms):
             await log_chan.send(embed=embed, file=file, view=view)
-        else:
+        elif perms[0]:
             await log_chan.send(embed=embed, view=view)
+        elif perms[1]:
+            await log_chan.send(backup_text, file=file, view=view)
 
         # Delete old log msg
         log_msg_id = ticket["logmsg"]

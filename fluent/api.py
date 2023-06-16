@@ -1,5 +1,4 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import googletrans
@@ -9,7 +8,6 @@ from aiohttp import (
     ClientSession,
     ClientTimeout,
 )
-from redbot.core.bot import Red
 
 
 class Result:
@@ -23,10 +21,6 @@ class Result:
 
 
 class TranslateManager:
-    def __init__(self, bot: Red):
-        self.bot = bot
-        self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="fluent")
-
     async def translate(self, text: str, target_lang: str) -> Optional[Result]:
         res = await self.google(text, target_lang)
         if res is None or res.text == text:

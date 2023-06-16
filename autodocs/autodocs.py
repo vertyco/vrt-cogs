@@ -28,7 +28,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.5.5"
+    __version__ = "0.6.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -126,6 +126,7 @@ class AutoDocs(commands.Cog):
         csv_export=_("Include a csv with each command isolated per row"),
     )
     @commands.is_owner()
+    @commands.bot_has_permissions(attach_files=True)
     async def makedocs(
         self,
         ctx: commands.Context,
@@ -226,8 +227,10 @@ class AutoDocs(commands.Cog):
                     buffer.seek(0)
                 file = discord.File(buffer)
                 txt = _("Here are your docs for {}!").format(cog.qualified_name)
-
-            await ctx.send(txt, file=file)
+            if file.__sizeof__() > ctx.guild.filesize_limit:
+                await ctx.send("File size too large!")
+            else:
+                await ctx.send(txt, file=file)
 
     @cached(ttl=8)
     async def get_coglist(self, string: str) -> List[app_commands.Choice]:

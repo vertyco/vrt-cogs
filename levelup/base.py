@@ -14,8 +14,8 @@ from typing import Optional, Union
 import discord
 import tabulate
 import validators
-from aiocache import SimpleMemoryCache, cached
-from redbot.core import bank, commands
+from aiocache import cached
+from redbot.core import VersionInfo, bank, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
 
@@ -35,7 +35,7 @@ from .abc import MixinMeta
 
 # from .generator import Generator
 
-if discord.__version__ > "1.7.3":
+if version_info >= VersionInfo.from_str("3.5.0"):
     from .dpymenu import DEFAULT_CONTROLS, menu
 
     DPY2 = True
@@ -160,7 +160,7 @@ class UserCommands(MixinMeta, ABC):
         return discord.File(buffer, filename=buffer.name)
 
     # Hacky way to get user banner
-    @cached(ttl=7200, cache=SimpleMemoryCache)
+    @cached(ttl=7200)
     async def get_banner(self, user: discord.Member) -> str:
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
         banner_id = req["banner"]
@@ -255,6 +255,7 @@ class UserCommands(MixinMeta, ABC):
 
     @commands.group(name="myprofile", aliases=["mypf", "pfset"])
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def set_profile(self, ctx: commands.Context):
         """
         Customize your profile colors
@@ -431,6 +432,7 @@ class UserCommands(MixinMeta, ABC):
 
     @set_profile.command(name="backgrounds")
     @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.bot_has_permissions(attach_files=True)
     async def view_default_backgrounds(self, ctx: commands.Context):
         """View the default backgrounds"""
         if not self.data[ctx.guild.id]["usepics"]:
@@ -461,6 +463,7 @@ class UserCommands(MixinMeta, ABC):
 
     @set_profile.command(name="fonts")
     @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.bot_has_permissions(attach_files=True)
     async def view_fonts(self, ctx: commands.Context):
         """View available fonts to use"""
         if not self.data[ctx.guild.id]["usepics"]:
@@ -515,6 +518,7 @@ class UserCommands(MixinMeta, ABC):
         await ctx.tick()
 
     @set_profile.command(name="namecolor", aliases=["name"])
+    @commands.bot_has_permissions(embed_links=True)
     async def set_name_color(self, ctx: commands.Context, hex_color: str):
         """
         Set a hex color for your username
@@ -559,6 +563,7 @@ class UserCommands(MixinMeta, ABC):
         await ctx.tick()
 
     @set_profile.command(name="statcolor", aliases=["stat"])
+    @commands.bot_has_permissions(embed_links=True)
     async def set_stat_color(self, ctx: commands.Context, hex_color: str):
         """
         Set a hex color for your server stats
@@ -604,6 +609,7 @@ class UserCommands(MixinMeta, ABC):
         await ctx.tick()
 
     @set_profile.command(name="levelbar", aliases=["lvlbar", "bar"])
+    @commands.bot_has_permissions(embed_links=True)
     async def set_levelbar_color(self, ctx: commands.Context, hex_color: str):
         """
         Set a hex color for your level bar
@@ -929,6 +935,7 @@ class UserCommands(MixinMeta, ABC):
 
     @commands.command(name="prestige")
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def prestige_user(self, ctx: commands.Context):
         """
         Prestige your rank!
@@ -1005,6 +1012,7 @@ class UserCommands(MixinMeta, ABC):
 
     @commands.command(name="lvltop", aliases=["topstats", "membertop", "topranks"])
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def leaderboard(self, ctx: commands.Context, stat: Optional[str]):
         """
         View the Leaderboard
@@ -1035,6 +1043,7 @@ class UserCommands(MixinMeta, ABC):
 
     @commands.command(name="startop", aliases=["starlb"])
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def star_leaderboard(self, ctx: commands.Context):
         """View the star leaderboard"""
         conf = self.data[ctx.guild.id]
@@ -1111,6 +1120,7 @@ class UserCommands(MixinMeta, ABC):
 
     @commands.command(name="weekly")
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def weekly_lb(self, ctx: commands.Context, stat: Optional[str]):
         """
         View the weekly leaderboard
@@ -1142,6 +1152,7 @@ class UserCommands(MixinMeta, ABC):
 
     @commands.command(name="lastweekly")
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def last_weekly(self, ctx: commands.Context):
         """View the last weekly embed"""
         conf = self.data[ctx.guild.id]

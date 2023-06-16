@@ -7,7 +7,7 @@ from typing import Optional
 
 import discord
 from discord.ext import tasks
-from redbot.core import Config, bank, commands
+from redbot.core import Config, VersionInfo, bank, commands, version_info
 from redbot.core.commands import parse_timedelta
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import (
@@ -29,7 +29,7 @@ from .utils import (
 )
 
 log = logging.getLogger("red.vrt.events")
-DPY2 = True if discord.__version__ > "1.7.3" else False
+DPY2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
 DEFAULT_EMOJI = "👍"
 
 
@@ -42,7 +42,7 @@ class Events(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.4"
+    __version__ = "0.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -138,6 +138,7 @@ class Events(commands.Cog):
 
     @commands.command(name="enter")
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def enter_event(self, ctx: commands.Context):
         """Enter an event if one exists"""
         if ctx.author.id in self._lock:
@@ -350,11 +351,12 @@ class Events(commands.Cog):
 
     @commands.group(name="events")
     @commands.guild_only()
-    @commands.admin()
+    @commands.has_permissions(manage_messages=True)
     async def events_group(self, ctx: commands.Context):
         """Create, manage and view events"""
 
     @events_group.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context):
         """View the current events and settings"""
         conf = await self.config.guild(ctx.guild).all()
@@ -796,6 +798,7 @@ class Events(commands.Cog):
         )
 
     @events_group.command(name="create")
+    @commands.bot_has_permissions(embed_links=True)
     async def create_event(self, ctx: commands.Context):
         """Create a new event"""
 

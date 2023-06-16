@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional, Union
 
 import discord
-from redbot.core import commands
+from redbot.core import VersionInfo, commands, version_info
 from redbot.core.utils.mod import get_audit_reason
 
 log = logging.getLogger("red.vrt.antinuke")
@@ -69,17 +69,17 @@ class Listen:
         cooldown = self.settings[guild.id]["cooldown"]
         action = self.settings[guild.id]["action"]
         log.info(f"Action '{action}' called on {member} in {guild}")
-        if discord.__version__ > "1.7.3":
+        if version_info >= VersionInfo.from_str("3.5.0"):
             pfp = member.display_avatar.url
         else:
             pfp = member.avatar_url
 
-        logchan = (
-            self.settings[guild.id]["log"] if self.settings[guild.id]["log"] else None
-        )
+        logchan = self.settings[guild.id]["log"] if self.settings[guild.id]["log"] else None
         logchan = guild.get_channel(logchan) if logchan else None
 
-        userwarn = f"Slow down there! You have exceeded {overload} mod actions in {cooldown} seconds."
+        userwarn = (
+            f"Slow down there! You have exceeded {overload} mod actions in {cooldown} seconds."
+        )
         failwarn = None
         success = None
         if action == "ban":
@@ -152,12 +152,12 @@ class Listen:
                 else:
                     failed = True
         except Exception as e:
-            log.warning(
-                f"Could not kick {member.name} from {guild.name}!\nException: {e}"
-            )
+            log.warning(f"Could not kick {member.name} from {guild.name}!\nException: {e}")
             failed = True
 
         if not logchan:
+            return
+        if not logchan.permissions_for(guild.me).embed_links:
             return
         if action == "notify":
             em = discord.Embed(
@@ -210,9 +210,7 @@ class Listen:
             self.bans[guild.id] = [member.id]
         else:
             self.bans[guild.id].append(member.id)
-        user = await self.get_audit_log_reason(
-            guild, member, discord.AuditLogAction.ban
-        )
+        user = await self.get_audit_log_reason(guild, member, discord.AuditLogAction.ban)
         if user:
             await self.action_cooldown(guild, user)
 
@@ -222,9 +220,7 @@ class Listen:
         await asyncio.sleep(1)
         if guild.id in self.bans and member.id in self.bans[guild.id]:
             return
-        user = await self.get_audit_log_reason(
-            guild, member, discord.AuditLogAction.kick
-        )
+        user = await self.get_audit_log_reason(guild, member, discord.AuditLogAction.kick)
         if user:
             await self.action_cooldown(guild, user)
 
@@ -260,26 +256,20 @@ class Listen:
     @commands.Cog.listener()
     async def on_guild_role_create(self, role: discord.Role):
         guild = role.guild
-        user = await self.get_audit_log_reason(
-            guild, role, discord.AuditLogAction.role_create
-        )
+        user = await self.get_audit_log_reason(guild, role, discord.AuditLogAction.role_create)
         if user:
             await self.action_cooldown(guild, user)
 
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role: discord.Role):
         guild = role.guild
-        user = await self.get_audit_log_reason(
-            guild, role, discord.AuditLogAction.role_delete
-        )
+        user = await self.get_audit_log_reason(guild, role, discord.AuditLogAction.role_delete)
         if user:
             await self.action_cooldown(guild, user)
 
     @commands.Cog.listener()
     async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
         guild = before.guild
-        user = await self.get_audit_log_reason(
-            guild, before, discord.AuditLogAction.role_update
-        )
+        user = await self.get_audit_log_reason(guild, before, discord.AuditLogAction.role_update)
         if user:
             await self.action_cooldown(guild, user)

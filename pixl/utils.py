@@ -12,16 +12,14 @@ from aiocache import cached
 from aiohttp import ClientSession, ClientTimeout
 from PIL import Image
 from rapidfuzz import fuzz
-from redbot.core import commands
+from redbot.core import VersionInfo, commands, version_info
 
 log = logging.getLogger("red.vrt.pixl.generator")
-dpy2 = True if discord.version_info.major >= 2 else False
+dpy2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
 
 
 @cached(ttl=240)
-async def get_content_from_url(
-    url: str, timeout: Optional[int] = 60
-) -> Optional[bytes]:
+async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
     try:
         async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
             async with session.get(url) as res:
@@ -36,9 +34,7 @@ async def exe(*args):
 
 
 async def delete(message: discord.Message):
-    with contextlib.suppress(
-        discord.Forbidden, discord.NotFound, discord.HTTPException
-    ):
+    with contextlib.suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
         await message.delete()
 
 
@@ -85,6 +81,7 @@ class PixlGrids:
         self.winner = None
         self.data = {"in_progress": True, "responses": [], "participants": set()}
         self.to_chop = []
+        self.task: asyncio.Task = None
         # Make solid blank canvas to paste image pieces on
         self.blank = Image.new("RGBA", image.size, (0, 0, 0, 256))
 
@@ -93,11 +90,12 @@ class PixlGrids:
         return self
 
     async def __anext__(self) -> discord.File:
+        if self.task:
+            self.task.cancel()
         end_conditions = [
             len(self.to_chop) <= 0,  # Image is fully revealed
             self.have_winner(),  # Someone guessed it right
-            (datetime.now() - self.start).total_seconds()
-            > self.time_limit,  # Time is up
+            (datetime.now() - self.start).total_seconds() > self.time_limit,  # Time is up
         ]
         if any(end_conditions):
             self.data["in_progress"] = False
@@ -133,7 +131,7 @@ class PixlGrids:
                 bbox = (round(x1), round(y1), round(x2), round(y2))
                 self.to_chop.append(bbox)
         # Start the message listener
-        asyncio.create_task(listener(self.ctx, self.data))
+        self.task = asyncio.create_task(listener(self.ctx, self.data))
 
     async def get_result(self) -> discord.File:
         buffer = BytesIO()
@@ -143,9 +141,7 @@ class PixlGrids:
         return discord.File(buffer, filename=buffer.name)
 
     def have_winner(self) -> bool:
-        responses = sorted(
-            self.data["responses"].copy(), key=lambda x: x[2], reverse=False
-        )
+        responses = sorted(self.data["responses"].copy(), key=lambda x: x[2], reverse=False)
         self.data["responses"].clear()
         for author, answer, _ in responses:
             if any([fuzz.ratio(answer, a) > 92 for a in self.answers]):

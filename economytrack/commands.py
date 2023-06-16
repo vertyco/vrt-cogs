@@ -14,7 +14,7 @@ from economytrack.abc import MixinMeta
 
 class EconomyTrackCommands(MixinMeta):
     @commands.group(aliases=["ecotrack"])
-    @commands.admin()
+    @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def economytrack(self, ctx: commands.Context):
         """Configure EconomyTrack"""
@@ -86,6 +86,7 @@ class EconomyTrackCommands(MixinMeta):
         await self.config.guild(ctx.guild).timezone.set(timezone)
 
     @economytrack.command()
+    @commands.bot_has_permissions(embed_links=True)
     async def view(self, ctx: commands.Context):
         """View EconomyTrack Settings"""
         max_points = await self.config.max_points()
@@ -126,6 +127,7 @@ class EconomyTrackCommands(MixinMeta):
     @commands.command()
     @commands.guildowner()
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     async def remoutliers(self, ctx: commands.Context, max_value: int):
         """Cleanup data above a certain total economy balance"""
         is_global = await bank.is_global()
@@ -154,6 +156,7 @@ class EconomyTrackCommands(MixinMeta):
     @commands.command(aliases=["bgraph"])
     @commands.cooldown(5, 60.0, BucketType.user)
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def bankgraph(self, ctx: commands.Context, timespan: str = "1d"):
         """
         View bank status over a period of time.
@@ -251,6 +254,7 @@ class EconomyTrackCommands(MixinMeta):
     @commands.command(aliases=["memgraph"])
     @commands.cooldown(5, 60.0, BucketType.user)
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def membergraph(self, ctx: commands.Context, timespan: str = "1d"):
         """
         View member count over a period of time.

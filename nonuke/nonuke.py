@@ -23,7 +23,7 @@ class NoNuke(Listen, commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.4"
+    __version__ = "0.2.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -125,21 +125,23 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def logchannel(self, ctx, channel: discord.TextChannel):
+    async def logchannel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set the log channel for Anti-Nuke kicks"""
+        if not channel.permissions_for(ctx.me).embed_links:
+            return await ctx.send("I dont have permission to send embeds in that channel!")
         await self.config.guild(ctx.guild).log.set(channel.id)
         await ctx.tick()
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def cooldown(self, ctx, cooldown: int):
+    async def cooldown(self, ctx: commands.Context, cooldown: int):
         """Cooldown (in seconds) for NoNuke to trigger"""
         await self.config.guild(ctx.guild).cooldown.set(cooldown)
         await ctx.tick()
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def overload(self, ctx, overload: int):
+    async def overload(self, ctx: commands.Context, overload: int):
         """How many mod actions can be done within the set cooldown
 
         **Mod actions include:**
@@ -166,7 +168,7 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def action(self, ctx, action: str):
+    async def action(self, ctx: commands.Context, action: str):
         """
         Set the action for the bot to take when NoNuke is triggered
 
@@ -198,7 +200,7 @@ class NoNuke(Listen, commands.Cog):
         await self.initialize(ctx.guild)
 
     @nonuke.command()
-    async def whitelist(self, ctx, user: discord.Member):
+    async def whitelist(self, ctx: commands.Context, user: discord.Member):
         """Add/Remove users from the whitelist"""
         async with self.config.guild(ctx.guild).whitelist() as whitelist:
             if user.id in whitelist:
@@ -209,6 +211,7 @@ class NoNuke(Listen, commands.Cog):
                 await ctx.send(f"{user} has been added to the whitelist!")
 
     @nonuke.command()
+    @commands.bot_has_permissions(embed_links=True)
     async def view(self, ctx):
         """View the NoNuke settings"""
         conf = await self.config.guild(ctx.guild).all()
