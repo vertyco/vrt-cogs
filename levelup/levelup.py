@@ -70,7 +70,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.0.0"
+    __version__ = "3.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2517,6 +2517,12 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     @level_roles.command(name="add")
     async def add_level_role(self, ctx: commands.Context, level: str, role: discord.Role):
         """Assign a role to a level"""
+        if role >= ctx.author.top_role:
+            return await ctx.send(
+                "The role you are trying to set is higher than the one you currently have!"
+            )
+        if role >= ctx.me.top_role:
+            return await ctx.send("I cannot assign roles higher than my own!")
         perms = ctx.guild.me.guild_permissions.manage_roles
         if not perms:
             return await ctx.send(_("I do not have permission to manage roles"))
