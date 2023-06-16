@@ -1,8 +1,8 @@
 import asyncio
+import functools
 import json
 import logging
 import math
-import multiprocessing as mp
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -145,17 +145,10 @@ def compile_messages(messages: List[dict]) -> str:
 
 
 async def safe_regex(regex: str, reply: str):
-    def run_safe_regex():
-        pool = mp.Pool(processes=1)
-        try:
-            result = pool.apply(func=re.sub, args=(regex, "", reply))
-            return result
-        finally:
-            pool.close()
-
     loop = asyncio.get_running_loop()
-    task = loop.run_in_executor(None, run_safe_regex)
-    return await asyncio.wait_for(task, timeout=6)
+    func = functools.partial(re.sub, regex, "", reply)
+    task = loop.run_in_executor(None, func)
+    return await asyncio.wait_for(task, timeout=2)
 
 
 def function_embeds(functions: Dict[str, Any], owner: bool) -> List[discord.Embed]:
