@@ -165,7 +165,7 @@ class Conversation(BaseModel):
         return num_tokens_from_string(messages)
 
     def conversation_token_count(self, conf: GuildSettings, message: str = "") -> int:
-        initial = conf.system_prompt + conf.prompt + message
+        initial = conf.system_prompt + conf.prompt + (message if isinstance(message, str) else "")
         return num_tokens_from_string(initial) + self.user_token_count(message)
 
     def is_expired(self, conf: GuildSettings):
