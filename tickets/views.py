@@ -347,6 +347,7 @@ class SupportButton(Button):
             attach_files=True,
             embed_links=True,
             manage_channels=True,
+            manage_messages=True,
         )
 
         support_roles = []
