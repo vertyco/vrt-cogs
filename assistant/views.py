@@ -544,9 +544,14 @@ class CodeMenu(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{SQUARED NEW}", row=1)
     async def new_function(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(
-            "Reply to this message with the json schema for your function"
+        embed = discord.Embed(
+            description=(
+                "Reply to this message with the json schema for your function\n"
+                "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
+            ),
+            color=discord.Color.blue(),
         )
+        await interaction.response.send_message(embed=embed)
         message = await wait_message(self.ctx)
         if not message:
             return
@@ -566,8 +571,11 @@ class CodeMenu(discord.ui.View):
             return await self.ctx.send(f"Invalid schema!\n**Missing**\n{missing}")
 
         function_name = schema["name"]
-
-        await self.ctx.send("Reply to this message with the custom code")
+        embed = discord.Embed(
+            description="Reply to this message with the custom code",
+            color=discord.Color.blue(),
+        )
+        await self.ctx.send(embed=embed)
         message = await wait_message(self.ctx)
         if not message:
             return
