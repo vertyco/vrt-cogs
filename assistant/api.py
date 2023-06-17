@@ -325,6 +325,8 @@ class API(MixinMeta):
 
                     if isinstance(result, bytes):
                         result = result.decode()
+                    elif not isinstance(result, str):
+                        result = str(result)
 
                     log.info(
                         f"Called function {function_name}\nParams: {params}\nResult: {result}"
