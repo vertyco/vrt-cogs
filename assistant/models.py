@@ -124,6 +124,7 @@ class GuildSettings(BaseModel):
     image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
     use_function_calls: bool = False
     max_function_calls: int = 10  # Max calls in a row
+    disabled_functions: List[str] = []
 
     class Config:
         json_loads = orjson.loads
@@ -248,8 +249,12 @@ class DB(BaseModel):
         self.conversations[key] = Conversation()
         return self.conversations[key]
 
-    def get_function_calls(self) -> List[dict]:
-        return [i.jsonschema for i in self.functions.values()]
+    def get_function_calls(self, conf: GuildSettings) -> List[dict]:
+        return [
+            i.jsonschema
+            for i in self.functions.values()
+            if i.jsonschema["name"] not in conf.disabled_functions
+        ]
 
     def get_function_map(self) -> Dict[str, Callable]:
         functions = {}

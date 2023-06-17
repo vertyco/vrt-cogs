@@ -22,6 +22,8 @@ from .common.utils import (
 from .models import DB, CustomFunction, Embedding, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.views")
+ON_EMOJI = "\N{ON WITH EXCLAMATION MARK WITH LEFT RIGHT ARROW ABOVE}"
+OFF_EMOJI = "\N{MOBILE PHONE OFF}"
 
 
 class APIModal(discord.ui.Modal):
@@ -415,6 +417,7 @@ class CodeMenu(discord.ui.View):
         super().__init__(timeout=600)
         self.ctx = ctx
         self.db = db
+        self.conf = db.get_conf(ctx.guild)
         self.save = save_func
 
         self.has_skip = True
@@ -458,6 +461,7 @@ class CodeMenu(discord.ui.View):
 
     async def start(self):
         self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
+        self.update_button()
 
     def test_func(self, function_string: str) -> bool:
         try:
@@ -481,6 +485,17 @@ class CodeMenu(discord.ui.View):
                 missing = "- `properties` in **parameters**\n"
         return missing
 
+    def update_button(self):
+        if not self.pages[self.page].fields:
+            return
+        function_name = self.pages[self.page].description
+        if function_name in self.conf.disabled_functions:
+            self.toggle.emoji = OFF_EMOJI
+            self.toggle.style = discord.ButtonStyle.secondary
+        else:
+            self.toggle.emoji = ON_EMOJI
+            self.toggle.style = discord.ButtonStyle.success
+
     @discord.ui.button(
         style=discord.ButtonStyle.secondary, emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}"
     )
@@ -488,6 +503,7 @@ class CodeMenu(discord.ui.View):
         await interaction.response.defer()
         self.page -= 10
         self.page %= len(self.pages)
+        self.update_button()
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(
@@ -498,6 +514,7 @@ class CodeMenu(discord.ui.View):
         await interaction.response.defer()
         self.page -= 1
         self.page %= len(self.pages)
+        self.update_button()
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="\N{CROSS MARK}")
@@ -514,6 +531,7 @@ class CodeMenu(discord.ui.View):
         await interaction.response.defer()
         self.page += 1
         self.page %= len(self.pages)
+        self.update_button()
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(
@@ -523,6 +541,7 @@ class CodeMenu(discord.ui.View):
         await interaction.response.defer()
         self.page += 10
         self.page %= len(self.pages)
+        self.update_button()
         await self.message.edit(embed=self.pages[self.page], view=self)
 
     @discord.ui.button(
@@ -596,6 +615,8 @@ class CodeMenu(discord.ui.View):
             await self.ctx.send(f"`{function_name}` has been created!")
         self.db.functions[function_name] = entry
         await self.get_pages()
+        self.page = len(self.pages) - 1
+        self.update_button()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await self.save()
 
@@ -652,5 +673,23 @@ class CodeMenu(discord.ui.View):
         await interaction.response.defer()
         function_name = self.pages[self.page].description
         del self.db.functions[function_name]
+        await self.get_pages()
+        self.page %= len(self.pages)
+        self.update_button()
+        await self.message.edit(embed=self.pages[self.page], view=self)
         await interaction.response.send_message(f"`{function_name}` has been deleted!")
+        await self.save()
+
+    @discord.ui.button(style=discord.ButtonStyle.success, emoji=ON_EMOJI, row=2)
+    async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.pages[self.page].fields:
+            return await interaction.response.send_message("No code to toggle!", ephemeral=True)
+        await interaction.response.defer()
+        function_name = self.pages[self.page].description
+        if function_name in self.conf.disabled_functions:
+            self.conf.disabled_functions.remove(function_name)
+        else:
+            self.conf.disabled_functions.append(function_name)
+        self.update_button()
+        await self.message.edit(view=self)
         await self.save()
