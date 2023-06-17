@@ -1,7 +1,9 @@
 # Check player level/stats
+import json
+
 import discord
-import orjson
 from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
 
 
 async def get_user_profile(bot: Red, user: discord.Member, *args, **kwargs):
@@ -14,14 +16,14 @@ async def get_user_profile(bot: Red, user: discord.Member, *args, **kwargs):
     user_data = cog.data[user.guild.id]["users"][str(user.id)].copy()
     extracted = {
         "experience points": user_data["xp"],
-        "voice seconds": user_data["voice"],
-        "message count": user_data["messages"],
+        "voice time": humanize_timedelta(seconds=int(user_data["voice"])),
+        "message count": humanize_number(user_data["messages"]),
         "user level": user_data["level"],
         "prestige level": user_data["prestige"],
         "profile emoji": user_data["emoji"],
-        "good noodle stars": user_data["stars"],
+        "good noodle stars": humanize_number(user_data["stars"]),
     }
-    return orjson.dumps(extracted)
+    return json.dumps(extracted)
 
 
 schema = {
