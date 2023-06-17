@@ -95,7 +95,7 @@ class API(MixinMeta):
         else:
             try:
                 if conf.use_function_calls:
-                    function_calls = self.db.get_function_calls()
+                    function_calls = self.db.get_function_calls(conf)
                     function_map = self.db.get_function_map()
                 else:
                     function_calls = []
