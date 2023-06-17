@@ -985,7 +985,7 @@ class Admin(MixinMeta):
 
         **READ**
         - [Function Call Docs](https://platform.openai.com/docs/guides/gpt/function-calling)
-        - [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_for_knowledge_retrieval.ipynb)
+        - [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_with_chat_models.ipynb)
         - [JSON Schema Reference](https://json-schema.org/understanding-json-schema/)
 
         Only these two models can use function calls as of now:
