@@ -960,6 +960,7 @@ class Admin(MixinMeta):
     @app_commands.describe(query="Name of the embedding entry")
     @commands.guild_only()
     @commands.admin_or_permissions(administrator=True)
+    @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def embeddings(self, ctx: commands.Context, *, query: str = ""):
         """Manage embeddings for training
 
@@ -1000,7 +1001,7 @@ class Admin(MixinMeta):
 
     @commands.hybrid_command(name="customfunctions", aliases=["customfunction", "customfunc"])
     @commands.guild_only()
-    @commands.guildowner()
+    @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def custom_functions(self, ctx: commands.Context):
         """
         Add custom function calls for Assistant to use
