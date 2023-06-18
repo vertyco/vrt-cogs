@@ -279,79 +279,77 @@ class API(MixinMeta):
                 function_call = response.get("function_call")
                 if reply and not function_call:
                     break
-                elif function_call:
-                    calls += 1
-                    if reply:
-                        conversation.update_messages(reply, "assistant")
-                        messages.append({"role": "assistant", "content": reply})
+                if not function_call:
+                    continue
+                calls += 1
+                if reply:
+                    conversation.update_messages(reply, "assistant")
+                    messages.append({"role": "assistant", "content": reply})
 
-                    function_name = function_call["name"]
-                    arguments = function_call.get("arguments", "{}")
-                    try:
-                        params = json.loads(arguments)
-                    except json.JSONDecodeError:
-                        params = {}
-                        log.error(
-                            f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}"
-                        )
-                    # Try continuing anyway
-                    if function_name not in function_map:
-                        log.error(f"GPT suggested a function not provided: {function_name}")
-                        reply = "Tried to call a function that doesnt exist, owner has been notified in logs."
-                        break
-                    extras = {
-                        "user": guild.get_member(author) if isinstance(author, int) else author,
-                        "channel": guild.get_channel_or_thread(channel)
-                        if isinstance(channel, int)
-                        else channel,
-                        "guild": guild,
-                        "bot": self.bot,
-                        "conf": conf,
-                    }
-                    kwargs = {**params, **extras}
-                    func = function_map[function_name]
-                    try:
-                        if iscoroutinefunction(func):
-                            result = await func(**kwargs)
-                        else:
-                            result = await asyncio.to_thread(func, **kwargs)
-                    except Exception as e:
-                        log.error(
-                            f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
-                            exc_info=e,
-                        )
-                        reply = f"Tried to call function `{function_name}` and failed. Owner has been notified in logs."
-                        break
-
-                    if isinstance(result, bytes):
-                        result = result.decode()
-                    elif not isinstance(result, str):
-                        result = str(result)
-
-                    max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
-                    # Ensure response isnt too large
-                    result = token_cut(result, max_tokens)
-
-                    log.info(
-                        f"Called function {function_name}\nParams: {params}\nResult: {result}"
+                function_name = function_call["name"]
+                arguments = function_call.get("arguments", "{}")
+                try:
+                    params = json.loads(arguments)
+                except json.JSONDecodeError:
+                    params = {}
+                    log.error(
+                        f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}"
                     )
-
-                    conversation.update_messages(result, "function", function_name)
-                    messages.append({"role": "function", "name": function_name, "content": result})
-
-                    while (
-                        conversation.conversation_token_count(conf, result) >= max_tokens
-                        and len(messages) > 1
-                    ):
-                        conversation.messages.pop(0)
-                        if conf.system_prompt and conf.prompt and len(messages) >= 3:
-                            messages.pop(2)
-                        elif conf.system_prompt or conf.prompt and len(messages) >= 2:
-                            messages.pop(1)
-                        else:
-                            messages.pop(0)
-                else:
+                # Try continuing anyway
+                if function_name not in function_map:
+                    log.error(f"GPT suggested a function not provided: {function_name}")
+                    reply = "Tried to call a function that doesnt exist, owner has been notified in logs."
+                    continue
+                extras = {
+                    "user": guild.get_member(author) if isinstance(author, int) else author,
+                    "channel": guild.get_channel_or_thread(channel)
+                    if isinstance(channel, int)
+                    else channel,
+                    "guild": guild,
+                    "bot": self.bot,
+                    "conf": conf,
+                }
+                kwargs = {**params, **extras}
+                func = function_map[function_name]
+                try:
+                    if iscoroutinefunction(func):
+                        result = await func(**kwargs)
+                    else:
+                        result = await asyncio.to_thread(func, **kwargs)
+                except Exception as e:
+                    log.error(
+                        f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
+                        exc_info=e,
+                    )
+                    reply = f"Tried to call function `{function_name}` and failed. Owner has been notified in logs."
                     break
+
+                if isinstance(result, bytes):
+                    result = result.decode()
+                elif not isinstance(result, str):
+                    result = str(result)
+
+                max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+                # Ensure response isnt too large
+                result = token_cut(result, max_tokens)
+
+                log.info(f"Called function {function_name}\nParams: {params}\nResult: {result}")
+
+                conversation.update_messages(result, "function", function_name)
+                messages.append({"role": "function", "name": function_name, "content": result})
+
+                while (
+                    conversation.conversation_token_count(conf, result) >= max_tokens
+                    and len(messages) > 1
+                ):
+                    conversation.messages.pop(0)
+                    if conf.system_prompt and conf.prompt and len(messages) >= 3:
+                        messages.pop(2)
+                    elif conf.system_prompt or conf.prompt and len(messages) >= 2:
+                        messages.pop(1)
+                    else:
+                        messages.pop(0)
+
             if calls > 1:
                 log.info(f"Made {calls} function calls in a row")
         else:
