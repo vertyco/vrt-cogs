@@ -441,6 +441,10 @@ class CodeMenu(discord.ui.View):
             self.remove_item(self.edit)
             self.remove_item(self.view_function)
 
+            # Let users see but not touch
+            if not ctx.author.guild_permissions.manage_guild:
+                self.remove_item(self.toggle)
+
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
             await interaction.response.send_message("This isn't your menu!", ephemeral=True)
