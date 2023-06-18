@@ -299,3 +299,50 @@ async def get_member_balance(guild: discord.Guild, name: str, *args, **kwargs) -
   }
 }
 ```
+
+# 3rd Party Cog Support
+3rd party cogs can register their own functions easily by using a custom listener.
+#### Step 1: Create the listener
+The code below is used in my Fluent cog for example.
+```python
+    @commands.Cog.listener()
+    async def on_assistant_cog_load(self, cog: commands.Cog):
+        # This function could also be a string, and can be async OR sync
+        async def get_translation(
+            bot: Red, message: str, to_language: str, *args, **kwargs
+        ) -> str:
+            # All functions MUST take *args, **kwargs as params
+            cog = bot.get_cog("Fluent")
+            if not cog:
+                return "Cog not loaded!"
+            lang = await cog.converter(to_language)
+            if not lang:
+                return "Invalid target language"
+            try:
+                translation = await cog.translate(message, lang)
+                return f"{translation.text}\n({translation.src} -> {lang})"
+            except Exception as e:
+                return f"Error: {e}"
+
+        schema = {
+            "name": "get_translation",
+            "description": "Use this function to translate text",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string", "description": "the text to translate"},
+                    "to_language": {
+                        "type": "string",
+                        "description": "the target language to translate to",
+                    },
+                },
+                "required": ["message", "to_language"],
+            },
+        }
+        await cog.register_function(self, schema, get_translation)
+```
+When the assistant cog is loaded, the Fluent cog can now inject its custom function into the registry to be used by the chat model.
+Additionally, if the Fluent cog was loaded *after* the Assistant cog, it will detect if the cog has the `on_assistant_cog_load` listener and execute it.
+- Assistant will automatically unregister cogs when they are unloaded
+- If a cog tries to register a function whos name already exists, an error will be logged and the function will not register
+- All functions **MUST** take `*args, **kwargs` as parameters
