@@ -3,7 +3,7 @@ import json
 import logging
 from contextlib import suppress
 from io import BytesIO
-from typing import Callable, List
+from typing import Callable, Dict, List
 
 import discord
 import json5
@@ -12,10 +12,12 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 
 from .common.utils import (
+    code_string_valid,
     embedding_embeds,
     extract_code_blocks,
     function_embeds,
     get_attachments,
+    json_schema_invalid,
     request_embedding,
     wait_message,
 )
@@ -413,11 +415,18 @@ class CodeModal(discord.ui.Modal):
 
 
 class CodeMenu(discord.ui.View):
-    def __init__(self, ctx: commands.Context, db: DB, save_func: Callable):
+    def __init__(
+        self,
+        ctx: commands.Context,
+        db: DB,
+        registry: Dict[commands.Cog, Dict[str, CustomFunction]],
+        save_func: Callable,
+    ):
         super().__init__(timeout=600)
         self.ctx = ctx
         self.db = db
         self.conf = db.get_conf(ctx.guild)
+        self.registry = registry
         self.save = save_func
 
         self.has_skip = True
@@ -441,13 +450,13 @@ class CodeMenu(discord.ui.View):
     async def on_timeout(self):
         with suppress(discord.HTTPException):
             await self.message.edit(view=None)
-        for task in self.tasks:
-            await task
         return await super().on_timeout()
 
     async def get_pages(self) -> None:
         owner = self.ctx.author.id in self.ctx.bot.owner_ids
-        self.pages = await asyncio.to_thread(function_embeds, self.db.functions, owner)
+        self.pages = await asyncio.to_thread(
+            function_embeds, self.db.functions, self.registry, owner
+        )
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)
@@ -551,7 +560,15 @@ class CodeMenu(discord.ui.View):
         if not self.pages[self.page].fields:
             return await interaction.response.send_message("No code to inspect!", ephemeral=True)
         function_name = self.pages[self.page].description
-        entry = self.db.functions[function_name]
+        if function_name in self.db.functions:
+            entry = self.db.functions[function_name]
+        else:
+            for functions in self.registry.values():
+                if function_name in functions:
+                    entry = functions[function_name]
+                    break
+            else:
+                return await interaction.response.send_message("Cannot find function!")
         files = [
             discord.File(
                 BytesIO(json.dumps(entry.jsonschema, indent=2).encode()),
@@ -585,16 +602,17 @@ class CodeMenu(discord.ui.View):
             else:
                 schema = json5.loads(text.strip())
         except Exception as e:
-            return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
-        if missing := self.schema_valid(schema):
-            return await self.ctx.send(f"Invalid schema!\n**Missing**\n{missing}")
+            return await interaction.followup.send(f"SchemaError\n{box(str(e), 'py')}")
+
+        if missing := json_schema_invalid(schema):
+            return await interaction.followup.send(f"Invalid schema!\n**Missing**\n{missing}")
 
         function_name = schema["name"]
         embed = discord.Embed(
             description="Reply to this message with the custom code",
             color=discord.Color.blue(),
         )
-        await self.ctx.send(embed=embed)
+        await interaction.followup.send(embed=embed)
         message = await wait_message(self.ctx)
         if not message:
             return
@@ -605,14 +623,14 @@ class CodeMenu(discord.ui.View):
             code = message.content.strip()
         if extracted := extract_code_blocks(code):
             code = extracted[0]
-        if not self.test_func(code):
-            return await self.ctx.send("Invalid function")
+        if not code_string_valid(code):
+            return await interaction.followup.send("Invalid function")
 
         entry = CustomFunction(code=code, jsonschema=schema)
         if function_name in self.db.functions:
-            await self.ctx.send(f"`{function_name}` has been overwritten!")
+            await interaction.followup.send(f"`{function_name}` has been overwritten!")
         else:
-            await self.ctx.send(f"`{function_name}` has been created!")
+            await interaction.followup.send(f"`{function_name}` has been created!")
         self.db.functions[function_name] = entry
         await self.get_pages()
         self.page = len(self.pages) - 1
@@ -624,15 +642,30 @@ class CodeMenu(discord.ui.View):
     async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.pages[self.page].fields:
             return await interaction.response.send_message("No code to edit!", ephemeral=True)
+
         function_name = self.pages[self.page].description
+        if function_name not in self.db.functions:
+            for cog, functions in self.registry.items():
+                if function_name in functions:
+                    break
+            else:
+                return await interaction.response.send_message(
+                    "Could not find function!", ephemeral=True
+                )
+            return await interaction.response.send_message(
+                f"This function is managed by the `{cog.qualified_name}` cog and cannot be edited",
+                ephemeral=True,
+            )
         entry = self.db.functions[function_name]
         if len(json.dumps(entry.jsonschema, indent=2)) > 4000:
-            return await self.ctx.send(
-                "The json schema for this function is too long, you'll need to re-upload it to modify"
+            return await interaction.response.send_message(
+                "The json schema for this function is too long, you'll need to re-upload it to modify",
+                ephemeral=True,
             )
         if len(entry.code) > 4000:
-            return await self.ctx.send(
-                "The code for this function is too long, you'll need to re-upload it to modify"
+            return await interaction.response.send_message(
+                "The code for this function is too long, you'll need to re-upload it to modify",
+                ephemeral=True,
             )
 
         modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code)
@@ -644,14 +677,18 @@ class CodeMenu(discord.ui.View):
         try:
             schema = json5.loads(text.strip())
         except Exception as e:
-            return await self.ctx.send(f"SchemaError\n{box(str(e), 'py')}")
-        if missing := self.schema_valid(schema):
-            return await self.ctx.send(f"Invalid schema!\n**Missing**\n{missing}")
+            return await interaction.followup.send(
+                f"SchemaError\n{box(str(e), 'py')}", ephemeral=True
+            )
+        if missing := json_schema_invalid(schema):
+            return await interaction.followup.send(
+                f"Invalid schema!\n**Missing**\n{missing}", ephemeral=True
+            )
         new_name = schema["name"]
 
         code = modal.code
-        if not self.test_func(code):
-            return await self.ctx.send("Invalid function")
+        if not code_string_valid(code):
+            return await interaction.followup.send("Invalid function", ephemeral=True)
 
         if function_name != new_name:
             self.db.functions[new_name] = CustomFunction(code=code, jsonschema=schema)
@@ -659,7 +696,7 @@ class CodeMenu(discord.ui.View):
         else:
             self.db.functions[function_name].code = code
             self.db.functions[function_name].jsonschema = schema
-        await self.ctx.send(f"`{function_name}` function updated!")
+        await interaction.followup.send(f"`{function_name}` function updated!", ephemeral=True)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await self.save()
@@ -670,14 +707,27 @@ class CodeMenu(discord.ui.View):
     async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.pages[self.page].fields:
             return await interaction.response.send_message("No code to delete!", ephemeral=True)
-        await interaction.response.defer()
         function_name = self.pages[self.page].description
+        if function_name not in self.db.functions:
+            for cog, functions in self.registry.items():
+                if function_name in functions:
+                    break
+            else:
+                return await interaction.response.send_message(
+                    "Could not find function!", ephemeral=True
+                )
+            return await interaction.response.send_message(
+                f"This function is managed by the `{cog.qualified_name}` cog and cannot be deleted",
+                ephemeral=True,
+            )
         del self.db.functions[function_name]
         await self.get_pages()
         self.page %= len(self.pages)
         self.update_button()
+        await interaction.response.send_message(
+            f"`{function_name}` has been deleted!", ephemeral=True
+        )
         await self.message.edit(embed=self.pages[self.page], view=self)
-        await interaction.response.send_message(f"`{function_name}` has been deleted!")
         await self.save()
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji=ON_EMOJI, row=2)

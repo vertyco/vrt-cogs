@@ -3,7 +3,7 @@ import json
 import logging
 import math
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import discord
 import openai
@@ -96,6 +96,37 @@ def remove_code_blocks(content: str) -> str:
     return re.sub(r"```(.*?)```", "[Code Removed]", content, flags=re.DOTALL).strip()
 
 
+def code_string_valid(code: str) -> bool:
+    # True if function is good
+    try:
+        compile(code, "<string>", "exec")
+        return True
+    except SyntaxError:
+        return False
+
+
+def compile_function(function_name: str, code: str) -> Callable:
+    exec(code, globals())
+    return globals()[function_name]
+
+
+def json_schema_invalid(schema: dict) -> str:
+    # String will be empty if funciton is good
+    missing = ""
+    if "name" not in schema:
+        missing += "- `name`\n"
+    if "description" not in schema:
+        missing += "- `description`\n"
+    if "parameters" not in schema:
+        missing += "- `parameters`\n"
+    if "parameters" in schema:
+        if "type" not in schema["parameters"]:
+            missing += "- `type` in **parameters**\n"
+        if "properties" not in schema["parameters"]:
+            missing = "- `properties` in **parameters**\n"
+    return missing
+
+
 def num_tokens_from_string(string: str) -> int:
     """Returns the number of tokens in a text string."""
     if not string:
@@ -143,31 +174,46 @@ def compile_messages(messages: List[dict]) -> str:
     return text
 
 
-def function_embeds(functions: Dict[str, Any], owner: bool) -> List[discord.Embed]:
+def function_embeds(
+    functions: Dict[str, Any], registry: Dict[commands.Cog, Dict[str, Any]], owner: bool
+) -> List[discord.Embed]:
+    main = {"Assistant": functions}
+    for cog, funcs in registry.items():
+        main[cog.qualified_name] = funcs
+    pages = sum(len(v) for v in main.values())
+    page = 1
     embeds = []
-    pages = math.ceil(len(functions))
-    for index, function_name in enumerate(list(functions)):
-        function = functions[function_name]
-        embed = discord.Embed(
-            title="Custom Functions", description=function_name, color=discord.Color.blue()
-        )
-
-        if owner:
-            schema = json.dumps(function.jsonschema, indent=2)
-            if len(schema) > 1000:
-                schema = f"{schema[:1000]}..."
-            embed.add_field(name="Schema", value=box(schema, "json"), inline=False)
-            code = box(function.code, "py")
-            if len(function.code) > 1000:
-                code = f"{box(function.code[:1000], 'py')}..."
-            embed.add_field(name="Code", value=code, inline=False)
-        else:
-            embed.add_field(
-                name="Schema", value=box(function.jsonschema["description"], "json"), inline=False
+    for cog_name, functions in main.items():
+        for function_name, function in functions.items():
+            embed = discord.Embed(
+                title="Custom Functions", description=function_name, color=discord.Color.blue()
             )
-            embed.add_field(name="Code", value=box("Hidden..."), inline=False)
-        embed.set_footer(text=f"Page {index + 1}/{pages}")
-        embeds.append(embed)
+            if cog_name != "Assistant":
+                embed.add_field(
+                    name="3rd Party",
+                    value=f"This function is managed by the `{cog_name}` cog",
+                    inline=False,
+                )
+            if owner:
+                schema = json.dumps(function.jsonschema, indent=2)
+                if len(schema) > 1000:
+                    schema = f"{schema[:1000]}..."
+                embed.add_field(name="Schema", value=box(schema, "json"), inline=False)
+                code = box(function.code, "py")
+                if len(function.code) > 1000:
+                    code = f"{box(function.code[:1000], 'py')}..."
+                embed.add_field(name="Code", value=code, inline=False)
+            else:
+                embed.add_field(
+                    name="Schema",
+                    value=box(function.jsonschema["description"], "json"),
+                    inline=False,
+                )
+                embed.add_field(name="Code", value=box("Hidden..."), inline=False)
+            embed.set_footer(text=f"Page {page}/{pages}")
+            embeds.append(embed)
+            page += 1
+
     if not embeds:
         embeds.append(
             discord.Embed(

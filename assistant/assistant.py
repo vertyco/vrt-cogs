@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import logging
 from multiprocessing.pool import Pool
 from time import perf_counter
@@ -12,9 +13,9 @@ from redbot.core.bot import Red
 from .abc import CompositeMetaClass
 from .api import API
 from .commands import AssistantCommands
-from .common.utils import request_embedding
+from .common.utils import json_schema_invalid, request_embedding
 from .listener import AssistantListener
-from .models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
+from .models import DB, CustomFunction, Embedding, EmbeddingEntryExists, NoAPIKey
 
 log = logging.getLogger("red.vrt.assistant")
 
@@ -31,7 +32,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.1.1"
+    __version__ = "3.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -44,6 +45,7 @@ class Assistant(
         self.config.register_global(db={})
         self.db: DB = DB()
         self.re_pool = Pool()
+        self.registry: Dict[commands.Cog, Dict[str, CustomFunction]] = {}
 
         self.saving = False
         self.first_run = True
@@ -54,6 +56,7 @@ class Assistant(
     async def cog_unload(self):
         self.save_loop.cancel()
         self.re_pool.close()
+        self.bot.dispatch("assistant_cog_unload")
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
@@ -62,6 +65,7 @@ class Assistant(
         self.db = await asyncio.to_thread(DB.parse_obj, data)
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         logging.getLogger("openai").setLevel(logging.WARNING)
+        self.bot.dispatch("assistant_cog_load", cog=self)
         self.save_loop.start()
 
     async def save_conf(self):
@@ -131,7 +135,10 @@ class Assistant(
         function_calls: Optional[List[dict]] = [],
         function_map: Optional[Dict[str, Callable]] = {},
     ) -> str:
-        """Method for other cogs to call the chat API
+        """
+        Method for other cogs to call the chat API
+
+        This function uses the assistant's current configuration to respond
 
         Args:
             message (str): content of question or chat message
@@ -153,3 +160,97 @@ class Assistant(
         return await self.get_chat_response(
             message, author, guild, channel, conf, function_calls, function_map
         )
+
+    async def register_functions(self, cog: commands.Cog, payload: List[dict]) -> None:
+        """Quick way to register multiple functions for a cog
+
+        Args:
+            cog (commands.Cog)
+            payload (List[dict]): List of dicts representing the json schema and function call or string
+
+        Example:
+            payload = [{"schema": {ValidJsonSchema}, "function": CallableOrString}, {...}, {...}]
+        """
+        for i in payload:
+            await self.register_function(cog, i["schema"], i["function"])
+
+    async def register_function(
+        self, cog: commands.Cog, schema: dict, function: Union[str, Callable]
+    ) -> bool:
+        """Allow 3rd party cogs to register their functions for the model to use
+
+        Args:
+            cog (commands.Cog): the cog registering its commands
+            schema (dict): JSON schema representation of the command (see https://json-schema.org/understanding-json-schema/)
+            function (Union[str, Callable]): either the raw code string or the actual callable function
+
+        Returns:
+            bool: True if function was successfully registered
+        """
+
+        def fail(reason: str):
+            return f"Function registry failed for {cog.qualified_name}: {reason}"
+
+        if not schema or not function:
+            log.info(fail("Schema or Function not supplied"))
+            return False
+        if cog not in self.registry:
+            self.registry[cog] = {}
+        missing = json_schema_invalid(schema)
+        if missing:
+            log.info(fail(f"Invalid json schema. Reasons:\n{missing}"))
+            return False
+        function_name = schema["name"]
+        for registered_cog, registered_functions in self.registry.items():
+            if registered_cog == cog:
+                continue
+            if function_name in registered_functions:
+                err = f"{registered_cog.qualified_name} already registered the function {function_name}"
+                log.info(fail(err))
+                return False
+        if not isinstance(function, str):
+            function = inspect.getsource(function)
+        elif function.__name__ != function_name:
+            log.info(fail("Function name from json schema does not match function name from code"))
+        self.registry[cog][function_name] = CustomFunction(code=function, jsonschema=schema)
+        log.info(f"The {cog.qualified_name} cog registered a function: {function_name}")
+        return True
+
+    async def unregister_cog(self, cog: commands.Cog) -> None:
+        """Remove a cog from the registry
+
+        Args:
+            cog (commands.Cog)
+        """
+        if cog not in self.registry:
+            return
+        del self.registry[cog]
+        log.info(f"{cog.qualified_name} cog removed from registry")
+
+    async def unregister_function(self, cog: commands.Cog, function_name: str) -> None:
+        """Remove a specific cog's function from the registry
+
+        Args:
+            cog (commands.Cog)
+            function_name (str)
+        """
+        if cog not in self.registry:
+            return
+        if function_name not in self.registry[cog]:
+            return
+        del self.registry[cog][function_name]
+        log.info(
+            f"{cog.qualified_name} cog removed the function {function_name} from the registry"
+        )
+
+    @commands.Cog.listener()
+    async def on_cog_add(self, cog: commands.Cog):
+        event = "on_assistant_cog_load"
+        funcs = [listener[1] for listener in cog.get_listeners() if listener[0] == event]
+        for func in funcs:
+            # Thanks AAA3A for pointing out custom listeners!
+            self.bot._schedule_event(coro=func, event_name=event, cog=self)
+
+    @commands.Cog.listener()
+    async def on_cog_remove(self, cog: commands.Cog):
+        await self.unregister_cog(cog)
