@@ -328,16 +328,20 @@ class API(MixinMeta):
                     elif not isinstance(result, str):
                         result = str(result)
 
+                    max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+                    # Ensure response isnt too large
+                    result = token_cut(result, max_tokens)
+
                     log.info(
                         f"Called function {function_name}\nParams: {params}\nResult: {result}"
                     )
 
                     conversation.update_messages(result, "function", function_name)
                     messages.append({"role": "function", "name": function_name, "content": result})
-                    max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+
                     while (
                         conversation.conversation_token_count(conf, result) >= max_tokens
-                        and messages
+                        and len(messages) > 1
                     ):
                         conversation.messages.pop(0)
                         if conf.system_prompt and conf.prompt and len(messages) >= 3:
