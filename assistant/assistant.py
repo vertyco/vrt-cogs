@@ -245,7 +245,7 @@ class Assistant(
 
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
-        event = "on_assistant_cog_load"
+        event = "on_assistant_cog_add"
         funcs = [listener[1] for listener in cog.get_listeners() if listener[0] == event]
         for func in funcs:
             # Thanks AAA3A for pointing out custom listeners!

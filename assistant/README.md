@@ -314,7 +314,7 @@ The code below is used in my Fluent cog for example.
 
 ```python
     @commands.Cog.listener()
-    async def on_assistant_cog_load(self, cog: commands.Cog):
+    async def on_assistant_cog_add(self, cog: commands.Cog):
         # This function could also be a string, and can be async OR sync
         async def get_translation(
             bot: Red, message: str, to_language: str, *args, **kwargs
@@ -351,7 +351,7 @@ The code below is used in my Fluent cog for example.
 ```
 
 When the assistant cog is loaded, the Fluent cog can now inject its custom function into the registry to be used by the chat model.
-Additionally, if the Fluent cog was loaded _after_ the Assistant cog, it will detect if the cog has the `on_assistant_cog_load` listener and execute it.
+Additionally, if the Fluent cog was loaded _after_ the Assistant cog, it will detect if the cog has the `on_assistant_cog_add` listener and execute it.
 
 - Assistant will automatically unregister cogs when they are unloaded
 - If a cog tries to register a function whos name already exists, an error will be logged and the function will not register
