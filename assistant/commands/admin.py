@@ -1008,7 +1008,7 @@ class Admin(MixinMeta):
         if ctx.interaction:
             await ctx.interaction.response.defer()
 
-        view = CodeMenu(ctx, self.db, self.save_conf)
+        view = CodeMenu(ctx, self.db, self.registry, self.save_conf)
         await view.get_pages()
         return await view.start()
 

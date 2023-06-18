@@ -24,6 +24,7 @@ from redbot.core.utils.chat_formatting import (
 
 from .abc import MixinMeta
 from .common.utils import (
+    compile_function,
     compile_messages,
     extract_code_blocks,
     extract_code_blocks_with_lang,
@@ -97,6 +98,13 @@ class API(MixinMeta):
                 if conf.use_function_calls:
                     function_calls = self.db.get_function_calls(conf)
                     function_map = self.db.get_function_map()
+                    for cog_functions in self.registry.values():
+                        function_calls.extend(cog_functions)
+                        for function_name, function in cog_functions.items():
+                            function_map[function_name] = compile_function(
+                                function_name, function.code
+                            )
+
                 else:
                     function_calls = []
                     function_map = {}

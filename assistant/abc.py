@@ -1,12 +1,13 @@
 from abc import ABCMeta, abstractmethod
 from multiprocessing.pool import Pool
-from typing import Union
+from typing import Dict, Union
 
 import discord
 from discord.ext.commands.cog import CogMeta
+from redbot.core import commands
 from redbot.core.bot import Red
 
-from .models import DB, GuildSettings
+from .models import DB, CustomFunction, GuildSettings
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -19,6 +20,7 @@ class MixinMeta(metaclass=ABCMeta):
     bot: Red
     db: DB
     re_pool: Pool
+    registry: Dict[commands.Cog, Dict[str, CustomFunction]]
 
     @abstractmethod
     async def get_chat_response(

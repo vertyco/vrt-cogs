@@ -6,7 +6,7 @@ import orjson
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 
-from .common.utils import num_tokens_from_string
+from .common.utils import compile_function, num_tokens_from_string
 
 MODELS = {
     "gpt-3.5-turbo": 4096,
@@ -259,8 +259,7 @@ class DB(BaseModel):
     def get_function_map(self) -> Dict[str, Callable]:
         functions = {}
         for function_name, function in self.functions.items():
-            exec(function.code, globals())
-            functions[function_name] = globals()[function_name]
+            functions[function_name] = compile_function(function_name, function.code)
         return functions
 
 
