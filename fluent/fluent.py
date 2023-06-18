@@ -239,7 +239,7 @@ class Fluent(commands.Cog):
                 await channel.send(trans.text)
 
     @commands.Cog.listener()
-    async def on_assistant_cog_load(self, cog: commands.Cog):
+    async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access translations"""
 
         async def get_translation(
