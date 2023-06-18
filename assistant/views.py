@@ -603,6 +603,8 @@ class CodeMenu(discord.ui.View):
                 schema = json5.loads(text.strip())
         except Exception as e:
             return await interaction.followup.send(f"SchemaError\n{box(str(e), 'py')}")
+        if not schema:
+            return await interaction.followup.send("Empty schema!")
 
         if missing := json_schema_invalid(schema):
             return await interaction.followup.send(f"Invalid schema!\n**Missing**\n{missing}")
@@ -680,6 +682,8 @@ class CodeMenu(discord.ui.View):
             return await interaction.followup.send(
                 f"SchemaError\n{box(str(e), 'py')}", ephemeral=True
             )
+        if not schema:
+            return await interaction.followup.send("Empty schema!")
         if missing := json_schema_invalid(schema):
             return await interaction.followup.send(
                 f"Invalid schema!\n**Missing**\n{missing}", ephemeral=True
