@@ -125,7 +125,7 @@ class CustomCmdFmt:
             self.aliases: str = humanize_list(aliases) if aliases else ""
 
         if not self.embedding_style:
-            self.desc = self.desc.replace("\n", "<br/>").replace("`", "")
+            self.desc = self.desc.replace("\n", "<br/>")
 
     def get_doc(self) -> Optional[str]:
         # Get header of command
