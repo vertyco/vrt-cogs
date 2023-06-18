@@ -275,7 +275,7 @@ class AutoDocs(commands.Cog):
                 return "Cog not loaded!"
             command = bot.get_command(command_name)
             if not command:
-                return "Command not found, try a different command."
+                return "Command not found, try running the get_command_names function to get valid commands"
             doc = await cog.get_command_doc(guild, command)
             if not doc:
                 return "Failed to fetch info for that command!"
