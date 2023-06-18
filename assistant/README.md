@@ -1,6 +1,6 @@
 # Assistant Help
 
-Advanced full featured Chat GPT integration, with all the tools needed to configure a knowledgable Q&A or chat bot!
+Advanced Chat GPT integration, with all the tools needed to configure a knowledgable Q&A or chat bot!
 
 # chat
 
@@ -34,12 +34,154 @@ Reset your conversation<br/><br/>This will clear all message history between you
 
 Setup the assistant<br/><br/>You will need an api key to use the assistant. https://platform.openai.com/account/api-keys
 
-## assistant prompt
+## assistant embedmethod
 
-- Usage: `[p]assistant prompt [prompt] `
-- Aliases: `pre`
+- Usage: `[p]assistant embedmethod `
 
-Set the initial prompt for GPT to use<br/><br/>**Placeholders**<br/>- **botname**: [botname]<br/>- **timestamp**: discord timestamp<br/>- **day**: Mon-Sun<br/>- **date**: MM-DD-YYYY<br/>- **time**: HH:MM AM/PM<br/>- **timetz**: HH:MM AM/PM Timezone<br/>- **members**: server member count<br/>- **username**: user's name<br/>- **displayname**: user's display name<br/>- **roles**: the names of the user's roles<br/>- **rolementions**: the mentions of the user's roles<br/>- **avatar**: the user's avatar url<br/>- **owner**: the owner of the server<br/>- **servercreated**: the create date/time of the server<br/>- **server**: the name of the server<br/>- **py**: python version<br/>- **dpy**: discord.py version<br/>- **red**: red version<br/>- **cogs**: list of currently loaded cogs<br/>- **channelname**: name of the channel the conversation is taking place in<br/>- **channelmention**: current channel mention<br/>- **topic**: topic of current channel (if not forum or thread)<br/>- **banktype**: whether the bank is global or not<br/>- **currency**: currency name<br/>- **bank**: bank name<br/>- **balance**: the user's current balance
+Cycle between embedding methods<br/><br/>**Dynamic** embeddings mean that the embeddings pulled are dynamically appended to the initial prompt for each individual question.<br/>When each time the user asks a question, the previous embedding is replaced with embeddings pulled from the current question, this reduces token usage significantly<br/><br/>**Static** embeddings are applied in front of each user message and get stored with the conversation instead of being replaced with each question.<br/><br/>**Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage<br/><br/>Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground
+
+## assistant maxretention
+
+- Usage: `[p]assistant maxretention <max_retention> `
+
+Set the max messages for a conversation<br/><br/>Conversation retention is cached and gets reset when the bot restarts or the cog reloads.<br/><br/>Regardless of this number, the initial prompt and internal system message are always included,<br/>this only applies to any conversation between the user and bot after that.<br/><br/>Set to 0 to disable conversation retention
+
+## assistant model
+
+- Usage: `[p]assistant model [model=None] `
+
+Set the GPT model to use<br/><br/>Valid models and their context info:<br/>- Model-Name: MaxTokens, ModelType<br/>- gpt-3.5-turbo: 4096, chat<br/>- gpt-3.5-turbo-16k: 16384, chat<br/>- gpt-4: 8192, chat<br/>- gpt-4-32k: 32768, chat<br/>- code-davinci-002: 8001, chat<br/>- text-davinci-003: 4097, completion<br/>- text-davinci-002: 4097, completion<br/>- text-curie-001: 2049, completion<br/>- text-babbage-001: 2049, completion<br/>- text-ada-001: 2049, completion<br/><br/>Other sub-models are also included
+
+## assistant regexblacklist
+
+- Usage: `[p]assistant regexblacklist <regex> `
+
+Remove certain words/phrases in the bot's responses
+
+## assistant exportjson
+
+- Usage: `[p]assistant exportjson `
+
+Export embeddings to a json file
+
+## assistant maxtime
+
+- Usage: `[p]assistant maxtime <retention_time> `
+
+Set the conversation expiration time<br/><br/>Regardless of this number, the initial prompt and internal system message are always included,<br/>this only applies to any conversation between the user and bot after that.<br/><br/>Set to 0 to store conversations indefinitely or until the bot restarts or cog is reloaded
+
+## assistant resetconversations
+
+- Usage: `[p]assistant resetconversations <yes_or_no> `
+
+Wipe saved conversations for the assistant in this server<br/><br/>This will delete any and all saved conversations for the assistant.
+
+## assistant relatedness
+
+- Usage: `[p]assistant relatedness <mimimum_relatedness> `
+
+Set the minimum relatedness an embedding must be to include with the prompt<br/><br/>Relatedness threshold between 0 and 1 to include in embeddings during chat<br/><br/>Questions are converted to embeddings and compared against stored embeddings to pull the most relevant, this is the score that is derived from that comparison<br/><br/>**Hint**: The closer to 1 you get, the more deterministic and accurate the results may be, just don't be _too_ strict or there wont be any results.
+
+## assistant timezone
+
+- Usage: `[p]assistant timezone <timezone> `
+
+Set the timezone used for prompt placeholders
+
+## assistant importcsv
+
+- Usage: `[p]assistant importcsv <overwrite> `
+
+Import embeddings to use with the assistant<br/><br/>Args:<br/> overwrite (bool): overwrite embeddings with existing entry names<br/><br/>This will read excel files too
+
+## assistant resetglobalembeddings
+
+- Usage: `[p]assistant resetglobalembeddings <yes_or_no> `
+- Restricted to: `BOT_OWNER`
+
+Wipe saved embeddings for all servers<br/><br/>This will delete any and all saved embedding training data for the assistant.
+
+## assistant toggle
+
+- Usage: `[p]assistant toggle `
+
+Toggle the assistant on or off
+
+## assistant wipecog
+
+- Usage: `[p]assistant wipecog <confirm> `
+- Restricted to: `BOT_OWNER`
+
+Wipe all settings and data for entire cog
+
+## assistant channel
+
+- Usage: `[p]assistant channel <channel> `
+
+Set the channel for the assistant
+
+## assistant mention
+
+- Usage: `[p]assistant mention `
+
+Toggle whether to ping the user on replies
+
+## assistant maxtokens
+
+- Usage: `[p]assistant maxtokens <max_tokens> `
+
+Set the max tokens the model can use at once<br/><br/>For GPT3.5 use 4000 or less.<br/>For GPT4 user 8000 or less (if 8k version).<br/><br/>Using more than the model can handle will raise exceptions.
+
+## assistant system
+
+- Usage: `[p]assistant system [system_prompt] `
+- Aliases: `sys`
+
+Set the system prompt for GPT to use<br/><br/>**Placeholders**<br/>- **botname**: [botname]<br/>- **timestamp**: discord timestamp<br/>- **day**: Mon-Sun<br/>- **date**: MM-DD-YYYY<br/>- **time**: HH:MM AM/PM<br/>- **timetz**: HH:MM AM/PM Timezone<br/>- **members**: server member count<br/>- **username**: user's name<br/>- **displayname**: user's display name<br/>- **roles**: the names of the user's roles<br/>- **rolementions**: the mentions of the user's roles<br/>- **avatar**: the user's avatar url<br/>- **owner**: the owner of the server<br/>- **servercreated**: the create date/time of the server<br/>- **server**: the name of the server<br/>- **py**: python version<br/>- **dpy**: discord.py version<br/>- **red**: red version<br/>- **cogs**: list of currently loaded cogs<br/>- **channelname**: name of the channel the conversation is taking place in<br/>- **channelmention**: current channel mention<br/>- **topic**: topic of current channel (if not forum or thread)<br/>- **banktype**: whether the bank is global or not<br/>- **currency**: currency name<br/>- **bank**: bank name<br/>- **balance**: the user's current balance
+
+## assistant resetglobalconversations
+
+- Usage: `[p]assistant resetglobalconversations <yes_or_no> `
+- Restricted to: `BOT_OWNER`
+
+Wipe saved conversations for the assistant in all servers<br/><br/>This will delete any and all saved conversations for the assistant.
+
+## assistant view
+
+- Usage: `[p]assistant view [private=True] `
+
+View current settings<br/><br/>To send in current channel, use [p]assistant view false
+
+## assistant regexfailblock
+
+- Usage: `[p]assistant regexfailblock `
+- Restricted to: `BOT_OWNER`
+
+Toggle whether failed regex blocks the assistant's reply<br/><br/>Some regexes can cause [catastrophically backtracking](https://www.rexegg.com/regex-explosive-quantifiers.html)<br/>The bot can safely handle if this happens and will either continue on, or block the response.
+
+## assistant temperature
+
+- Usage: `[p]assistant temperature <temperature> `
+
+Set the temperature for the model (0.0 - 1.0)<br/><br/>Closer to 0 is more concise and accurate while closer to 1 is more imaginative
+
+## assistant importjson
+
+- Usage: `[p]assistant importjson <overwrite> `
+
+Import embeddings to use with the assistant<br/><br/>Args:<br/> overwrite (bool): overwrite embeddings with existing entry names
+
+## assistant topn
+
+- Usage: `[p]assistant topn <top_n> `
+
+Set the embedding inclusion amout<br/><br/>Top N is the amount of embeddings to include with the initial prompt
+
+## assistant maxrecursion
+
+- Usage: `[p]assistant maxrecursion <recursion> `
+
+Set the maximum function calls allowed in a row<br/><br/>This sets how many times the model can call functions in a row<br/><br/>Only the following models can call functions at the moment<br/>- gpt-3.5-turbo-0613<br/>- gpt-3.5-turbo-16k-0613<br/>- gpt-4-0613
 
 ## assistant minlength
 
@@ -47,11 +189,19 @@ Set the initial prompt for GPT to use<br/><br/>**Placeholders**<br/>- **botname*
 
 set min character length for questions<br/><br/>Set to 0 to respond to anything
 
-## assistant regexblacklist
+## assistant prompt
 
-- Usage: `[p]assistant regexblacklist <regex> `
+- Usage: `[p]assistant prompt [prompt] `
+- Aliases: `pre`
 
-Remove certain words/phrases in the bot's responses
+Set the initial prompt for GPT to use<br/><br/>**Placeholders**<br/>- **botname**: [botname]<br/>- **timestamp**: discord timestamp<br/>- **day**: Mon-Sun<br/>- **date**: MM-DD-YYYY<br/>- **time**: HH:MM AM/PM<br/>- **timetz**: HH:MM AM/PM Timezone<br/>- **members**: server member count<br/>- **username**: user's name<br/>- **displayname**: user's display name<br/>- **roles**: the names of the user's roles<br/>- **rolementions**: the mentions of the user's roles<br/>- **avatar**: the user's avatar url<br/>- **owner**: the owner of the server<br/>- **servercreated**: the create date/time of the server<br/>- **server**: the name of the server<br/>- **py**: python version<br/>- **dpy**: discord.py version<br/>- **red**: red version<br/>- **cogs**: list of currently loaded cogs<br/>- **channelname**: name of the channel the conversation is taking place in<br/>- **channelmention**: current channel mention<br/>- **topic**: topic of current channel (if not forum or thread)<br/>- **banktype**: whether the bank is global or not<br/>- **currency**: currency name<br/>- **bank**: bank name<br/>- **balance**: the user's current balance
+
+## assistant openaikey
+
+- Usage: `[p]assistant openaikey `
+- Aliases: `key`
+
+Set your OpenAI key
 
 ## assistant persist
 
@@ -66,24 +216,12 @@ Toggle persistent conversations
 
 Export embeddings to a .csv file<br/><br/>**Note:** csv exports do not include the embedding values
 
-## assistant resetconversations
+## assistant embeddingtest
 
-- Usage: `[p]assistant resetconversations <yes_or_no> `
+- Usage: `[p]assistant embeddingtest <question> `
+- Aliases: `etest`
 
-Wipe saved conversations for the assistant in this server<br/><br/>This will delete any and all saved conversations for the assistant.
-
-## assistant openaikey
-
-- Usage: `[p]assistant openaikey `
-- Aliases: `key`
-
-Set your OpenAI key
-
-## assistant maxretention
-
-- Usage: `[p]assistant maxretention <max_retention> `
-
-Set the max messages for a conversation<br/><br/>Conversation retention is cached and gets reset when the bot restarts or the cog reloads.<br/><br/>Regardless of this number, the initial prompt and internal system message are always included,<br/>this only applies to any conversation between the user and bot after that.<br/><br/>Set to 0 to disable conversation retention
+Fetch related embeddings according to the current settings along with their scores<br/><br/>You can use this to fine-tune the minimum relatedness for your assistant
 
 ## assistant blacklist
 
@@ -97,148 +235,17 @@ Add/Remove items from the blacklist<br/><br/>channel_role_member can be a member
 
 Toggle whether questions need to end with \***\*?\*\***
 
-## assistant resetglobalembeddings
-
-- Usage: `[p]assistant resetglobalembeddings <yes_or_no> `
-- Restricted to: `BOT_OWNER`
-
-Wipe saved embeddings for all servers<br/><br/>This will delete any and all saved embedding training data for the assistant.
-
-## assistant system
-
-- Usage: `[p]assistant system [system_prompt] `
-- Aliases: `sys`
-
-Set the system prompt for GPT to use<br/><br/>**Placeholders**<br/>- **botname**: [botname]<br/>- **timestamp**: discord timestamp<br/>- **day**: Mon-Sun<br/>- **date**: MM-DD-YYYY<br/>- **time**: HH:MM AM/PM<br/>- **timetz**: HH:MM AM/PM Timezone<br/>- **members**: server member count<br/>- **username**: user's name<br/>- **displayname**: user's display name<br/>- **roles**: the names of the user's roles<br/>- **rolementions**: the mentions of the user's roles<br/>- **avatar**: the user's avatar url<br/>- **owner**: the owner of the server<br/>- **servercreated**: the create date/time of the server<br/>- **server**: the name of the server<br/>- **py**: python version<br/>- **dpy**: discord.py version<br/>- **red**: red version<br/>- **cogs**: list of currently loaded cogs<br/>- **channelname**: name of the channel the conversation is taking place in<br/>- **channelmention**: current channel mention<br/>- **topic**: topic of current channel (if not forum or thread)<br/>- **banktype**: whether the bank is global or not<br/>- **currency**: currency name<br/>- **bank**: bank name<br/>- **balance**: the user's current balance
-
-## assistant maxtokens
-
-- Usage: `[p]assistant maxtokens <max_tokens> `
-
-Set the max tokens the model can use at once<br/><br/>For GPT3.5 use 4000 or less.<br/>For GPT4 user 8000 or less (if 8k version).<br/><br/>Using more than the model can handle will raise exceptions.
-
-## assistant importcsv
-
-- Usage: `[p]assistant importcsv <overwrite> `
-
-Import embeddings to use with the assistant<br/><br/>Args:<br/> overwrite (bool): overwrite embeddings with existing entry names<br/><br/>This will read excel files too
-
-## assistant timezone
-
-- Usage: `[p]assistant timezone <timezone> `
-
-Set the timezone used for prompt placeholders
-
-## assistant exportjson
-
-- Usage: `[p]assistant exportjson `
-
-Export embeddings to a json file
-
-## assistant view
-
-- Usage: `[p]assistant view [private=True] `
-
-View current settings<br/><br/>To send in current channel, use [p]assistant view false
-
-## assistant channel
-
-- Usage: `[p]assistant channel <channel> `
-
-Set the channel for the assistant
-
-## assistant maxtime
-
-- Usage: `[p]assistant maxtime <retention_time> `
-
-Set the conversation expiration time<br/><br/>Regardless of this number, the initial prompt and internal system message are always included,<br/>this only applies to any conversation between the user and bot after that.<br/><br/>Set to 0 to store conversations indefinitely or until the bot restarts or cog is reloaded
-
-## assistant resetglobalconversations
-
-- Usage: `[p]assistant resetglobalconversations <yes_or_no> `
-- Restricted to: `BOT_OWNER`
-
-Wipe saved conversations for the assistant in all servers<br/><br/>This will delete any and all saved conversations for the assistant.
-
-## assistant embeddingtest
-
-- Usage: `[p]assistant embeddingtest <question> `
-- Aliases: `etest`
-
-Fetch related embeddings according to the current settings along with their scores<br/><br/>You can use this to fine-tune the minimum relatedness for your assistant
-
-## assistant model
-
-- Usage: `[p]assistant model [model=None] `
-
-Set the GPT model to use<br/><br/>Valid models and their context info:<br/>- Model-Name: MaxTokens, ModelType<br/>- gpt-3.5-turbo: 4096, chat<br/>- gpt-3.5-turbo-16k: 16384, chat<br/>- gpt-4: 8192, chat<br/>- gpt-4-32k: 32768, chat<br/>- code-davinci-002: 8001, chat<br/>- text-davinci-003: 4097, completion<br/>- text-davinci-002: 4097, completion<br/>- text-curie-001: 2049, completion<br/>- text-babbage-001: 2049, completion<br/>- text-ada-001: 2049, completion<br/><br/>Other sub-models are also included
-
-## assistant embedmethod
-
-- Usage: `[p]assistant embedmethod `
-
-Cycle between embedding methods<br/><br/>**Dynamic** embeddings mean that the embeddings pulled are dynamically appended to the initial prompt for each individual question.<br/>When each time the user asks a question, the previous embedding is replaced with embeddings pulled from the current question, this reduces token usage significantly<br/><br/>**Static** embeddings are applied in front of each user message and get stored with the conversation instead of being replaced with each question.<br/><br/>**Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage<br/><br/>Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground
-
-## assistant topn
-
-- Usage: `[p]assistant topn <top_n> `
-
-Set the embedding inclusion amout<br/><br/>Top N is the amount of embeddings to include with the initial prompt
-
-## assistant temperature
-
-- Usage: `[p]assistant temperature <temperature> `
-
-Set the temperature for the model (0.0 - 1.0)<br/><br/>Closer to 0 is more concise and accurate while closer to 1 is more imaginative
-
-## assistant train
-
-- Usage: `[p]assistant train <channels> `
-
-Automatically create embedding data to train your assistant<br/><br/>**How to Use**<br/>Include channels that give helpful info about your server, NOT normal chat channels.<br/>The bot will scan all pinned messages in addition to the most recent 50 messages.<br/>The idea is to have the bot compile the information, condense it and provide a usable training embeddings for your Q&A channel.<br/><br/>**Note:** This just meant to get you headed in the right direction, creating quality training data takes trial and error.
-
 ## assistant resetembeddings
 
 - Usage: `[p]assistant resetembeddings <yes_or_no> `
 
 Wipe saved embeddings for the assistant<br/><br/>This will delete any and all saved embedding training data for the assistant.
 
-## assistant wipecog
-
-- Usage: `[p]assistant wipecog <confirm> `
-- Restricted to: `BOT_OWNER`
-
-Wipe all settings and data for entire cog
-
-## assistant toggle
-
-- Usage: `[p]assistant toggle `
-
-Toggle the assistant on or off
-
 ## assistant functioncalls
 
 - Usage: `[p]assistant functioncalls `
 
-Toggle whether GPT can call functions<br/><br/>Only the following models can call functions at the moment<br/>- gpt-3.5-turbo-0613<br/>- gpt-4-0613
-
-## assistant relatedness
-
-- Usage: `[p]assistant relatedness <mimimum_relatedness> `
-
-Set the minimum relatedness an embedding must be to include with the prompt<br/><br/>Relatedness threshold between 0 and 1 to include in embeddings during chat<br/><br/>Questions are converted to embeddings and compared against stored embeddings to pull the most relevant, this is the score that is derived from that comparison<br/><br/>**Hint**: The closer to 1 you get, the more deterministic and accurate the results may be, just don't be _too_ strict or there wont be any results.
-
-## assistant importjson
-
-- Usage: `[p]assistant importjson <overwrite> `
-
-Import embeddings to use with the assistant<br/><br/>Args:<br/> overwrite (bool): overwrite embeddings with existing entry names
-
-## assistant mention
-
-- Usage: `[p]assistant mention `
-
-Toggle whether to ping the user on replies
+Toggle whether GPT can call functions<br/><br/>Only the following models can call functions at the moment<br/>- gpt-3.5-turbo-0613<br/>- gpt-3.5-turbo-16k-0613<br/>- gpt-4-0613
 
 # embeddings (Hybrid Command)
 
@@ -258,15 +265,14 @@ Manage embeddings for training<br/><br/>Embeddings are used to optimize training
 - Aliases: `customfunction and customfunc`
 - Checks: `server_only`
 
-Custom function calls<br/><br/>Please see the following resources for creating callable functions<br/>- [Docs](https://platform.openai.com/docs/guides/gpt/function-calling)<br/>- [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_for_knowledge_retrieval.ipynb)<br/><br/>Only these two models can use function calls as of now:<br/>- gpt-3.5-turbo-0613<br/>- gpt-4-0613<br/><br/>The following objects are passed by default as keyword arguments, they don't need to be included in the json schema.<br/>- **user**: the user currently chatting with the bot (discord.Member)<br/>- **server**: current server (discord.Guild)<br/>- **bot**: the bot object (Red)<br/>- **conf**: the config model for Assistant (GuildSettings)<br/>- All functions **MUST** include \*args, \*\*kwargs in the params, and return a string<br/>
+Add custom function calls for Assistant to use<br/><br/>**READ**<br/>- [Function Call Docs](https://platform.openai.com/docs/guides/gpt/function-calling)<br/>- [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_with_chat_models.ipynb)<br/>- [JSON Schema Reference](https://json-schema.org/understanding-json-schema/)<br/><br/>Only these two models can use function calls as of now:<br/>- gpt-3.5-turbo-0613<br/>- gpt-4-0613<br/><br/>The following objects are passed by default as keyword arguments.<br/>- **user**: the user currently chatting with the bot (discord.Member)<br/>- **channel**: channel the user is chatting in (TextChannel|Thread|ForumChannel)<br/>- **server**: current server (discord.Guild)<br/>- **bot**: the bot object (Red)<br/>- **conf**: the config model for Assistant (GuildSettings)<br/>- All functions **MUST** include \*args, \*\*kwargs in the params and return a string<br/>
 
 ```python
 # Can be either sync or async
 async def func(*args, **kwargs) -> str:
-    ...
 ```
 
-The OpenAI resources above will be key to making decent functions<br/><br/>_Only bot owner can manage this, server owners can see descriptions but not code_
+<br/>Only bot owner can manage this, server owners can see descriptions but not code
 
 ## Function Example
 
@@ -301,9 +307,11 @@ async def get_member_balance(guild: discord.Guild, name: str, *args, **kwargs) -
 ```
 
 # 3rd Party Cog Support
+
 3rd party cogs can register their own functions easily by using a custom listener.
-#### Step 1: Create the listener
+
 The code below is used in my Fluent cog for example.
+
 ```python
     @commands.Cog.listener()
     async def on_assistant_cog_load(self, cog: commands.Cog):
@@ -341,8 +349,10 @@ The code below is used in my Fluent cog for example.
         }
         await cog.register_function(self, schema, get_translation)
 ```
+
 When the assistant cog is loaded, the Fluent cog can now inject its custom function into the registry to be used by the chat model.
-Additionally, if the Fluent cog was loaded *after* the Assistant cog, it will detect if the cog has the `on_assistant_cog_load` listener and execute it.
+Additionally, if the Fluent cog was loaded _after_ the Assistant cog, it will detect if the cog has the `on_assistant_cog_load` listener and execute it.
+
 - Assistant will automatically unregister cogs when they are unloaded
 - If a cog tries to register a function whos name already exists, an error will be logged and the function will not register
 - All functions **MUST** take `*args, **kwargs` as parameters
