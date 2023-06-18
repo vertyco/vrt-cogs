@@ -275,8 +275,10 @@ class API(MixinMeta):
         if conf.model in CHAT:
             reply = "Could not get reply!"
             calls = 0
-            while calls < conf.max_function_calls:
+            while True:
                 calls += 1
+                if calls >= conf.max_function_calls:
+                    function_calls = []
                 response = await request_chat_response(
                     model=conf.model,
                     messages=messages,

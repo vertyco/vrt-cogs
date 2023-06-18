@@ -77,7 +77,8 @@ class Admin(MixinMeta):
             f"`Top N Embeddings:  `{conf.top_n}\n"
             f"`Min Relatedness:   `{conf.min_relatedness}\n"
             f"`Embedding Method:  `{conf.embed_method}\n"
-            f"`Function Calling:  `{conf.use_function_calls}"
+            f"`Function Calling:  `{conf.use_function_calls}\n"
+            f"`Maximum Recursion: `{conf.max_function_calls}"
         )
         system_file = (
             discord.File(
@@ -474,6 +475,7 @@ class Admin(MixinMeta):
 
         Only the following models can call functions at the moment
         - gpt-3.5-turbo-0613
+        - gpt-3.5-turbo-16k-0613
         - gpt-4-0613
         """
         conf = self.db.get_conf(ctx.guild)
@@ -484,6 +486,26 @@ class Admin(MixinMeta):
             conf.use_function_calls = True
             await ctx.send("Assistant will now call functions as needed")
         await self.save_conf()
+
+    @assistant.command(name="maxrecursion")
+    async def set_max_recursion(self, ctx: commands.Context, recursion: int):
+        """Set the maximum function calls allowed in a row
+
+        This sets how many times the model can call functions in a row
+
+        Only the following models can call functions at the moment
+        - gpt-3.5-turbo-0613
+        - gpt-3.5-turbo-16k-0613
+        - gpt-4-0613
+        """
+        conf = self.db.get_conf(ctx.guild)
+        recursion = max(0, recursion)
+        if recursion == 0:
+            await ctx.send("Function calls will not be used since recursion is 0")
+        await ctx.send(
+            f"The model can now call various functions up to {recursion} times before returning a response"
+        )
+        conf.max_function_calls = recursion
 
     @assistant.command(name="minlength")
     async def min_length(self, ctx: commands.Context, min_question_length: int):
