@@ -275,24 +275,39 @@ class AutoDocs(commands.Cog):
                 return "Cog not loaded!"
             command = bot.get_command(command_name)
             if not command:
-                return "Failed to get command!"
+                return "Command with that name not found!"
             doc = await cog.get_command_doc(guild, command)
             if not doc:
-                return "Failed to fetch info for command"
+                return "Failed to fetch info for that command!"
             return doc
 
         schema = {
             "name": "get_command_info",
-            "description": "Get info about a given discord bot command from a cog that is currently loaded",
+            "description": "Get info about a specific discord bot command",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command_name": {
                         "type": "string",
-                        "description": "the name of the bot command",
+                        "description": "the name of the command",
                     },
                 },
                 "required": ["command_name"],
             },
         }
+
         await cog.register_function(self, schema, get_command_info)
+
+        async def get_command_names(bot: Red, *args, **kwargs):
+            from redbot.core.utils.chat_formatting import humanize_list
+
+            names = [cmd.qualified_name for cmd in bot.walk_commands()]
+            return humanize_list(names)
+
+        schema = {
+            "name": "get_command_names",
+            "description": "Get a list of available discord bot commands",
+            "parameters": {"type": "object", "properties": {}},
+        }
+
+        await cog.register_function(self, schema, get_command_names)
