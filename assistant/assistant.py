@@ -134,6 +134,7 @@ class Assistant(
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         function_calls: Optional[List[dict]] = [],
         function_map: Optional[Dict[str, Callable]] = {},
+        extend_function_calls: bool = True,
     ) -> str:
         """
         Method for other cogs to call the chat API
@@ -147,6 +148,7 @@ class Assistant(
             channel (Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int]): used for context
             functions (Optional[List[dict]]): custom functions that the api can call (see https://platform.openai.com/docs/guides/gpt/function-calling)
             function_map (Optional[Dict[str, Callable]]): mappings for custom functions {"FunctionName": Callable}
+            extend_function_calls (bool=[False]): If True, configured functions are used in addition to the ones provided
 
         Raises:
             NoAPIKey: If the specified guild has no api key associated with it
@@ -158,7 +160,14 @@ class Assistant(
         if not conf.api_key:
             raise NoAPIKey("OpenAI key has not been set for this server!")
         return await self.get_chat_response(
-            message, author, guild, channel, conf, function_calls, function_map
+            message,
+            author,
+            guild,
+            channel,
+            conf,
+            function_calls,
+            function_map,
+            extend_function_calls,
         )
 
     async def register_functions(self, cog: commands.Cog, payload: List[dict]) -> None:
@@ -212,7 +221,10 @@ class Assistant(
             function = inspect.getsource(function)
         elif function.__name__ != function_name:
             log.info(fail("Function name from json schema does not match function name from code"))
-        self.registry[cog][function_name] = CustomFunction(code=function, jsonschema=schema)
+            return False
+        self.registry[cog][function_name] = CustomFunction(
+            code=function.strip(), jsonschema=schema
+        )
         log.info(f"The {cog.qualified_name} cog registered a function: {function_name}")
         return True
 

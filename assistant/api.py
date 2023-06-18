@@ -95,27 +95,8 @@ class API(MixinMeta):
             )
         else:
             try:
-                if conf.use_function_calls:
-                    function_calls = self.db.get_function_calls(conf)
-                    function_map = self.db.get_function_map()
-                    for cog_functions in self.registry.values():
-                        function_calls.extend(cog_functions)
-                        for function_name, function in cog_functions.items():
-                            function_map[function_name] = compile_function(
-                                function_name, function.code
-                            )
-
-                else:
-                    function_calls = []
-                    function_map = {}
                 reply = await self.get_chat_response(
-                    question,
-                    message.author,
-                    message.guild,
-                    message.channel,
-                    conf,
-                    function_calls,
-                    function_map,
+                    question, message.author, message.guild, message.channel, conf
                 )
             except InvalidRequestError as e:
                 if error := e.error:
@@ -232,10 +213,19 @@ class API(MixinMeta):
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         conf: GuildSettings,
-        function_calls: Optional[List[dict]] = [],
+        function_calls: List[dict] = [],
         function_map: Dict[str, Callable] = {},
+        extend_function_calls: bool = True,
     ) -> str:
         """Call the API asynchronously"""
+        if conf.use_function_calls and extend_function_calls:
+            function_calls.extend(self.db.get_function_calls(conf))
+            function_map.update(self.db.get_function_map())
+            for cog_functions in self.registry.values():
+                for function_name, function in cog_functions.items():
+                    function_calls.append(function.jsonschema)
+                    function_map[function_name] = compile_function(function_name, function.code)
+
         conversation = self.db.get_conversation(
             author if isinstance(author, int) else author.id,
             channel if isinstance(channel, int) else channel.id,
@@ -276,7 +266,6 @@ class API(MixinMeta):
             reply = "Could not get reply!"
             calls = 0
             while True:
-                calls += 1
                 if calls >= conf.max_function_calls:
                     function_calls = []
                 response = await request_chat_response(
@@ -291,6 +280,7 @@ class API(MixinMeta):
                 if reply and not function_call:
                     break
                 elif function_call:
+                    calls += 1
                     if reply:
                         conversation.update_messages(reply, "assistant")
                         messages.append({"role": "assistant", "content": reply})

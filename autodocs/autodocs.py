@@ -1,15 +1,18 @@
 import functools
 import logging
 from io import BytesIO
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
 import pandas as pd
 from aiocache import cached
 from discord import app_commands
+from discord.app_commands.commands import Command as SlashCommand
+from discord.ext.commands.hybrid import HybridAppCommand
 from redbot.core import commands
 from redbot.core.bot import Red
+from redbot.core.commands.commands import HybridCommand, HybridGroup
 from redbot.core.i18n import Translator, cog_i18n
 
 from .formatter import HELP, IGNORE, CustomCmdFmt
@@ -244,3 +247,52 @@ class AutoDocs(commands.Cog):
     @makedocs.autocomplete("cog_name")
     async def get_cog_names(self, inter: discord.Interaction, current: str):
         return await self.get_coglist(current)
+
+    async def get_command_doc(
+        self,
+        guild: discord.Guild,
+        command: Union[
+            HybridGroup,
+            HybridCommand,
+            HybridAppCommand,
+            SlashCommand,
+            commands.Command,
+        ],
+    ):
+        prefixes = await self.bot.get_valid_prefixes(guild)
+        c = CustomCmdFmt(self.bot, command, prefixes[0], True, False, "guildowner", True)
+        return c.get_doc()
+
+    @commands.Cog.listener()
+    async def on_assistant_cog_add(self, cog: commands.Cog):
+        """Registers a command with Assistant enabling it to access to command docs"""
+
+        async def get_command_info(
+            bot: Red, guild: discord.Guild, command_name: str, *args, **kwargs
+        ) -> str:
+            cog = bot.get_cog("AutoDocs")
+            if not cog:
+                return "Cog not loaded!"
+            command = bot.get_command(command_name)
+            if not command:
+                return "Failed to get command!"
+            doc = await cog.get_command_doc(guild, command)
+            if not doc:
+                return "Failed to fetch info for command"
+            return doc
+
+        schema = {
+            "name": "get_command_info",
+            "description": "Get info about a given discord bot command from a cog that is currently loaded",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command_name": {
+                        "type": "string",
+                        "description": "the name of the bot command",
+                    },
+                },
+                "required": ["command_name"],
+            },
+        }
+        await cog.register_function(self, schema, get_command_info)
