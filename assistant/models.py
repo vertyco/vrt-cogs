@@ -155,6 +155,11 @@ class Conversation(BaseModel):
     def token_count(self) -> int:
         return num_tokens_from_string("".join(message["content"] for message in self.messages))
 
+    def function_count(self) -> int:
+        if not self.messages:
+            return 0
+        return sum(i["role"] == "function" for i in self.messages)
+
     def user_token_count(self, message: str = "") -> int:
         if not self.messages and not message:
             return 0

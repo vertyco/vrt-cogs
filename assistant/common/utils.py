@@ -135,6 +135,14 @@ def num_tokens_from_string(string: str) -> int:
     return num_tokens
 
 
+def function_list_tokens(functions: List[dict]) -> int:
+    if not functions:
+        return 0
+    dumps = [json.dumps(i) for i in functions]
+    joined = "".join(dumps)
+    return len(encoding.encode(joined))
+
+
 def token_pagify(text: str, max_tokens: int = 2000):
     """Pagify a long string by tokens rather than characters"""
     token_chunks = []
@@ -285,7 +293,13 @@ async def request_chat_response(
     functions: Optional[List[dict]] = [],
 ) -> dict:
     # response = await asyncio.to_thread(_chat, model, messages, api_key, temperature, functions)
-    if VERSION >= "0.27.6" and model in ["gpt-3.5-turbo-0613", "gpt-4-32k-0613"] and functions:
+    function_able_models = [
+        "gpt-3.5-turbo-0613",
+        "gpt-3.5-turbo-16k-0613",
+        "gpt-4-0613",
+        "gpt-4-32k-0613",
+    ]
+    if VERSION >= "0.27.6" and model in function_able_models and functions:
         response = await openai.ChatCompletion.acreate(
             model=model,
             messages=messages,
