@@ -283,13 +283,13 @@ class AutoDocs(commands.Cog):
 
         schema = {
             "name": "get_command_info",
-            "description": "Get info about a specific discord bot command",
+            "description": "Get info about a specific discord bot command (Hint: Use the get_command_names function first to fetch valid commands for a cog)",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command_name": {
                         "type": "string",
-                        "description": "the name of the command (Hint: Use the get_command_names function first to fetch valid names)",
+                        "description": "the name of the command",
                     },
                 },
                 "required": ["command_name"],
@@ -298,31 +298,31 @@ class AutoDocs(commands.Cog):
 
         await cog.register_function(self, schema, get_command_info)
 
-        async def get_command_names(bot, cog_name: str = None, *args, **kwargs):
+        async def get_command_names(bot, cog_name: str, *args, **kwargs):
             from redbot.core.utils.chat_formatting import humanize_list
 
-            if cog_name:
-                cog = bot.get_cog(cog_name)
-                if not cog:
-                    return "Could not find that cog, try searching a different cog or not including a cog name when searching"
-                names = [i.qualified_name for i in cog.walk_app_commands()] + [
-                    i.qualified_name for i in cog.walk_commands()
-                ]
-            else:
-                names = [i.qualified_name for i in bot.walk_commands()]
+            cog = bot.get_cog(cog_name)
+            if not cog:
+                return (
+                    "Could not find that cog, use the get_cog_list function to get avaiable cogs"
+                )
+            names = [i.qualified_name for i in cog.walk_app_commands()] + [
+                i.qualified_name for i in cog.walk_commands()
+            ]
             return humanize_list(names)
 
         schema = {
             "name": "get_command_names",
-            "description": "Get a list of available discord bot commands, (Hint: Use this before using the get_command_info function)",
+            "description": "Get a list of available discord bot commands (Hint: Use the get_cog_list function first to fetch valid cog names)",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "cog_name": {
                         "type": "string",
-                        "description": "the name of the cog, case sensitive (Hint: Use the get_cog_list function to get valid cog names)",
+                        "description": "the name of the cog, case sensitive",
                     }
                 },
+                "required": ["cog_name"],
             },
         }
 
