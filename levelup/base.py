@@ -852,7 +852,7 @@ class UserCommands(MixinMeta, ABC):
                 msg += f"⭐｜{humanize_number(stars)}" + _(" stars\n")
                 msg += f"💬｜{humanize_number(messages)}" + _(" messages sent\n")
                 msg += f"🎙｜{time_formatter(voice)}" + _(" in voice\n")
-                msg += f"💡｜{humanize_number(xp)}/{humanize_number(xp_needed)} Exp\n"
+                msg += f"💡｜{humanize_number(user_xp_progress)}/{humanize_number(next_xp_diff)} Exp ({humanize_number(xp)} total)\n"
                 if showbal:
                     msg += f"💰｜{humanize_number(bal)} {currency_name}"
                 em = discord.Embed(description=msg, color=user.color)

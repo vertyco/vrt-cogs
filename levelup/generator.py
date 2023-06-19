@@ -212,7 +212,10 @@ class Generator(MixinMeta, ABC):
         # Stat strings
         rank = _("Rank: #") + str(user_position)
         leveltxt = _("Level: ") + str(level)
-        exp = _("Exp: ") + f"{humanize_number(user_xp)}/{humanize_number(next_xp)}"
+        exp = (
+            _("Exp: ")
+            + f"{humanize_number(user_xp_progress)}/{humanize_number(next_xp_diff)}({humanize_number(user_xp)} total)"
+        )
         message_count = _("Messages: ") + messages
         voice = _("Voice: ") + voice
         stars = str(stars)
@@ -606,6 +609,9 @@ class Generator(MixinMeta, ABC):
         # Draw
         draw = ImageDraw.Draw(card)
 
+        user_xp_progress = user_xp - prev_xp
+        next_xp_diff = next_xp - prev_xp
+
         # Editing stuff here
         # ======== Fonts to use =============
         def get_str(xp):
@@ -613,7 +619,7 @@ class Generator(MixinMeta, ABC):
 
         rank = _("Rank: #") + str(user_position)
         level = _("Level: ") + str(level)
-        exp = f"Exp: {get_str(user_xp)}/{get_str(next_xp)}"
+        exp = f"Exp: {get_str(user_xp_progress)}/{get_str(next_xp_diff)}({get_str(user_xp)} total)"
         messages = _("Messages: ") + str(messages)
         voice = _("Voice Time: ") + str(voice)
         name = user_name
@@ -716,8 +722,6 @@ class Generator(MixinMeta, ABC):
             outline=lvlbarcolor,
         )
 
-        user_xp_progress = user_xp - prev_xp
-        next_xp_diff = next_xp - prev_xp
         xp_ratio = user_xp_progress / next_xp_diff
         end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + bar_start
 
