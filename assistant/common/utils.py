@@ -176,7 +176,7 @@ def safe_message_prep(
         return messages
 
     iters = 0
-    while count(messages) >= max_tokens and len(messages) > 1:
+    while count(messages) >= max_tokens and len(messages) > 2:
         iters += 1
         # First try popping first user message
         if count(messages, "user") > 1:
