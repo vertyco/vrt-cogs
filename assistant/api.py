@@ -360,7 +360,7 @@ class API(MixinMeta):
                     funcs = function_list_tokens(function_calls)
                     return convo + funcs
 
-                while convo_count() >= max_tokens and len(messages) > 1:
+                while convo_count() >= max_tokens and len(conversation.messages) > 1:
                     conversation.messages.pop(0)
                     if conf.system_prompt and conf.prompt and len(messages) >= 3:
                         messages.pop(2)
