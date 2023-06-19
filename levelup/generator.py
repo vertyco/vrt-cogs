@@ -214,7 +214,7 @@ class Generator(MixinMeta, ABC):
         leveltxt = _("Level: ") + str(level)
         exp = (
             _("Exp: ")
-            + f"{humanize_number(user_xp_progress)}/{humanize_number(next_xp_diff)}({humanize_number(user_xp)} total)"
+            + f"{humanize_number(user_xp_progress)}/{humanize_number(next_xp_diff)} ({humanize_number(user_xp)} total)"
         )
         message_count = _("Messages: ") + messages
         voice = _("Voice: ") + voice
@@ -619,7 +619,9 @@ class Generator(MixinMeta, ABC):
 
         rank = _("Rank: #") + str(user_position)
         level = _("Level: ") + str(level)
-        exp = f"Exp: {get_str(user_xp_progress)}/{get_str(next_xp_diff)}({get_str(user_xp)} total)"
+        exp = (
+            f"Exp: {get_str(user_xp_progress)}/{get_str(next_xp_diff)} ({get_str(user_xp)} total)"
+        )
         messages = _("Messages: ") + str(messages)
         voice = _("Voice Time: ") + str(voice)
         name = user_name
