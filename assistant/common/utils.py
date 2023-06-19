@@ -197,6 +197,8 @@ def safe_message_prep(
             # Eh
             return messages
 
+    return messages
+
 
 def token_pagify(text: str, max_tokens: int = 2000):
     """Pagify a long string by tokens rather than characters"""
