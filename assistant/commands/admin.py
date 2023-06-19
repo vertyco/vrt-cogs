@@ -40,7 +40,7 @@ log = logging.getLogger("red.vrt.assistant.admin")
 
 
 class Admin(MixinMeta):
-    @commands.group(name="assistant", aliases=["ass"])
+    @commands.group(name="assistant", aliases=["assist"])
     @commands.admin_or_permissions(administrator=True)
     @commands.guild_only()
     async def assistant(self, ctx: commands.Context):
