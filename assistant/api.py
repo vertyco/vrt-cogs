@@ -359,7 +359,10 @@ class API(MixinMeta):
 
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 # Ensure response isnt too large
-                result = token_cut(result, max_tokens)
+                result = token_cut(
+                    result,
+                    round(max_tokens - conversation.conversation_token_count(conf, message)),
+                )
 
                 log.info(f"Called function {function_name}\nParams: {params}\nResult: {result}")
                 messages.append({"role": "function", "name": function_name, "content": result})
