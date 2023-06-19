@@ -268,7 +268,7 @@ class AutoDocs(commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
 
         async def get_command_info(
-            bot, guild: discord.Guild, command_name: str, *args, **kwargs
+            bot: Red, guild: discord.Guild, command_name: str, *args, **kwargs
         ) -> str:
             cog = bot.get_cog("AutoDocs")
             if not cog:
@@ -279,7 +279,7 @@ class AutoDocs(commands.Cog):
             doc = await cog.get_command_doc(guild, command)
             if not doc:
                 return "Failed to fetch info for that command!"
-            return f"Cog name: {cog.qualified_name}\nCommand:\n{doc}"
+            return f"Cog name: {command.cog.qualified_name}\nCommand:\n{doc}"
 
         schema = {
             "name": "get_command_info",
