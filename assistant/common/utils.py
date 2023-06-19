@@ -184,9 +184,10 @@ def safe_message_prep(
             if count(messages) <= max_tokens:
                 return messages
         # Try popping first assistant message
-        pop_first("assistant")
-        if count(messages) <= max_tokens:
-            return messages
+        if count(messages, "assistant") > 1:
+            pop_first("assistant")
+            if count(messages) <= max_tokens:
+                return messages
         # Try popping first function response
         pop_first("function")
         if count(messages) <= max_tokens:
