@@ -275,6 +275,7 @@ class API(MixinMeta):
         if conf.model in CHAT:
             reply = "Could not get reply!"
             calls = 0
+            repeats = 0
             while True:
                 if calls >= conf.max_function_calls or conversation.function_count() >= 64:
                     function_calls = []
@@ -363,8 +364,12 @@ class API(MixinMeta):
 
                 # Calling the same function and getting the same result repeatedly is just insanity GPT
                 if function_name == last_function and result == last_function_response:
-                    pop_schema(function_name)
-                    continue
+                    repeats += 1
+                    if repeats > 3:
+                        pop_schema(function_name)
+                        continue
+                else:
+                    repeats = 0
 
                 last_function = function_name
                 last_function_response = result

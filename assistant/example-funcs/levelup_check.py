@@ -28,7 +28,7 @@ async def get_user_profile(bot: Red, user: discord.Member, *args, **kwargs):
 
 schema = {
     "name": "get_user_profile",
-    "description": "Use this function to get a user's level, xp, voice time and other stats about their profile.",
+    "description": "Use this function to get a user's discord level, xp, voice time and other stats about their LevelUp profile.",
     "parameters": {
         "type": "object",
         "properties": {},
