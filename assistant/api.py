@@ -28,6 +28,7 @@ from .common.utils import (
     compile_messages,
     extract_code_blocks,
     extract_code_blocks_with_lang,
+    function_list_tokens,
     get_attachments,
     num_tokens_from_string,
     remove_code_blocks,
@@ -251,6 +252,13 @@ class API(MixinMeta):
                 )
             ),
         }
+
+        def pop_schema(name: str):
+            for func in function_calls:
+                if func["name"] == name:
+                    function_calls.remove(func)
+                    break
+
         messages = await asyncio.to_thread(
             self.prepare_messages,
             message,
@@ -262,11 +270,13 @@ class API(MixinMeta):
             query_embedding,
             params,
         )
+        last_function_response = ""
+        last_function = ""
         if conf.model in CHAT:
             reply = "Could not get reply!"
             calls = 0
             while True:
-                if calls >= conf.max_function_calls:
+                if calls >= conf.max_function_calls or conversation.function_count() >= 64:
                     function_calls = []
                 response = await request_chat_response(
                     model=conf.model,
@@ -298,7 +308,7 @@ class API(MixinMeta):
                 # Try continuing anyway
                 if function_name not in function_map:
                     log.error(f"GPT suggested a function not provided: {function_name}")
-                    reply = "Tried to call a function that doesnt exist, owner has been notified in logs."
+                    pop_schema(function_name)
                     continue
                 extras = {
                     "user": guild.get_member(author) if isinstance(author, int) else author,
@@ -321,13 +331,20 @@ class API(MixinMeta):
                         f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
                         exc_info=e,
                     )
-                    reply = f"Tried to call function `{function_name}` and failed. Owner has been notified in logs."
-                    break
+                    pop_schema(function_name)
+                    continue
 
                 if isinstance(result, bytes):
                     result = result.decode()
                 elif not isinstance(result, str):
                     result = str(result)
+
+                if function_name == last_function and result == last_function_response:
+                    pop_schema(function_name)
+                    continue
+
+                last_function = function_name
+                last_function_response = result
 
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 # Ensure response isnt too large
@@ -338,10 +355,12 @@ class API(MixinMeta):
                 conversation.update_messages(result, "function", function_name)
                 messages.append({"role": "function", "name": function_name, "content": result})
 
-                while (
-                    conversation.conversation_token_count(conf, result) >= max_tokens
-                    and len(messages) > 1
-                ):
+                def convo_count() -> int:
+                    convo = conversation.conversation_token_count(conf, result)
+                    funcs = function_list_tokens(function_calls)
+                    return convo + funcs
+
+                while convo_count() >= max_tokens and len(messages) > 1:
                     conversation.messages.pop(0)
                     if conf.system_prompt and conf.prompt and len(messages) >= 3:
                         messages.pop(2)
@@ -379,7 +398,6 @@ class API(MixinMeta):
                 continue
 
         conversation.update_messages(reply, "assistant")
-        conversation.cleanup(conf)
         if block:
             reply = "Response failed due to invalid regex, check logs for more info."
         return reply
