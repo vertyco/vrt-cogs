@@ -282,14 +282,24 @@ class API(MixinMeta):
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 if len(messages) > 2:
                     messages = safe_message_prep(messages, function_calls, max_tokens)
-
-                response = await request_chat_response(
-                    model=conf.model,
-                    messages=messages,
-                    temperature=conf.temperature,
-                    api_key=conf.api_key,
-                    functions=function_calls,
-                )
+                try:
+                    response = await request_chat_response(
+                        model=conf.model,
+                        messages=messages,
+                        temperature=conf.temperature,
+                        api_key=conf.api_key,
+                        functions=function_calls[:64],
+                    )
+                except InvalidRequestError as e:
+                    log.warning(
+                        f"Funciton response failed. functions: {len(function_calls)}", exc_info=e
+                    )
+                    response = await request_chat_response(
+                        model=conf.model,
+                        messages=messages,
+                        temperature=conf.temperature,
+                        api_key=conf.api_key,
+                    )
                 reply = response["content"]
                 function_call = response.get("function_call")
                 if reply and not function_call:
