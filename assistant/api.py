@@ -280,7 +280,7 @@ class API(MixinMeta):
                     function_calls = []
                 # Safely prep messages
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
-                messages = safe_message_prep(messages, max_tokens)
+                messages = safe_message_prep(messages, function_calls, max_tokens)
                 response = await request_chat_response(
                     model=conf.model,
                     messages=messages,
