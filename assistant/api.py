@@ -317,6 +317,11 @@ class API(MixinMeta):
                     messages.append({"role": "assistant", "content": reply})
 
                 function_name = function_call["name"]
+                if function_name not in function_map:
+                    log.error(f"GPT suggested a function not provided: {function_name}")
+                    pop_schema(function_name)  # Just in case
+                    continue
+
                 arguments = function_call.get("arguments", "{}")
                 try:
                     params = json.loads(arguments)
@@ -326,10 +331,7 @@ class API(MixinMeta):
                         f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}"
                     )
                 # Try continuing anyway
-                if function_name not in function_map:
-                    log.error(f"GPT suggested a function not provided: {function_name}")
-                    pop_schema(function_name)
-                    continue
+
                 extras = {
                     "user": guild.get_member(author) if isinstance(author, int) else author,
                     "channel": guild.get_channel_or_thread(channel)
