@@ -280,7 +280,8 @@ class API(MixinMeta):
                     function_calls = []
                 # Safely prep messages
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
-                messages = safe_message_prep(messages, function_calls, max_tokens)
+                if len(messages) > 1:
+                    messages = safe_message_prep(messages, function_calls, max_tokens)
                 response = await request_chat_response(
                     model=conf.model,
                     messages=messages,
@@ -291,6 +292,11 @@ class API(MixinMeta):
                 reply = response["content"]
                 function_call = response.get("function_call")
                 if reply and not function_call:
+                    if last_function_response:
+                        # Only keep most recent function response in convo
+                        conversation.update_messages(
+                            last_function_response, "function", last_function
+                        )
                     break
                 if not function_call:
                     continue
@@ -355,8 +361,6 @@ class API(MixinMeta):
                 result = token_cut(result, max_tokens)
 
                 log.info(f"Called function {function_name}\nParams: {params}\nResult: {result}")
-
-                conversation.update_messages(result, "function", function_name)
                 messages.append({"role": "function", "name": function_name, "content": result})
 
             if calls > 1:
