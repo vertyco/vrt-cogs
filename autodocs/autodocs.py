@@ -283,7 +283,7 @@ class AutoDocs(commands.Cog):
 
         schema = {
             "name": "get_command_info",
-            "description": "Get info about a specific discord bot command (Hint: Use the get_command_names function first to fetch valid commands for a cog)",
+            "description": "Get info about a specific discord bot command",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -313,7 +313,7 @@ class AutoDocs(commands.Cog):
 
         schema = {
             "name": "get_command_names",
-            "description": "Get a list of available discord bot commands (Hint: Use the get_cog_list function first to fetch valid cog names)",
+            "description": "Get a list of available discord bot commands",
             "parameters": {
                 "type": "object",
                 "properties": {
