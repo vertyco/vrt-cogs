@@ -299,7 +299,6 @@ class AutoDocs(commands.Cog):
         await cog.register_function(self, schema, get_command_info)
 
         async def get_command_names(bot, cog_name: str, *args, **kwargs):
-            from redbot.core.utils.chat_formatting import humanize_list
 
             cog = bot.get_cog(cog_name)
             if not cog:
@@ -309,7 +308,8 @@ class AutoDocs(commands.Cog):
             names = [i.qualified_name for i in cog.walk_app_commands()] + [
                 i.qualified_name for i in cog.walk_commands()
             ]
-            return humanize_list(names)
+            joined = "\n".join(names)
+            return f"Command Names:\n{joined}"
 
         schema = {
             "name": "get_command_names",
@@ -329,13 +329,12 @@ class AutoDocs(commands.Cog):
         await cog.register_function(self, schema, get_command_names)
 
         async def get_cog_list(bot, *args, **kwargs):
-            from redbot.core.utils.chat_formatting import humanize_list
-
-            return humanize_list([i for i in bot.cogs])
+            joined = "\n".join([i for i in bot.cogs])
+            return f"Cog Names:\n{joined}"
 
         schema = {
             "name": "get_cog_list",
-            "description": "Get a list of currently loaded cogs, use this to help search for commands",
+            "description": "Gets a list of currently loaded cog names",
             "parameters": {
                 "type": "object",
                 "properties": {},
