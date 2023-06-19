@@ -361,7 +361,7 @@ async def request_chat_response(
             temperature=temperature,
             api_key=api_key,
             timeout=60,
-            functions=functions,
+            functions=functions if functions else [],
             function_call="auto" if functions else "none",
         )
     else:
