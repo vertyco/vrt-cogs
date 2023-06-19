@@ -140,7 +140,60 @@ def function_list_tokens(functions: List[dict]) -> int:
         return 0
     dumps = [json.dumps(i) for i in functions]
     joined = "".join(dumps)
-    return len(encoding.encode(joined))
+    return num_tokens_from_string(joined)
+
+
+def safe_message_prep(
+    messages: List[dict], function_list: List[dict], max_tokens: int
+) -> List[dict]:
+    """
+    Dynamically prevent sending too many tokens to a model
+
+    This can still not be enough if theres a big system prompt and a lot of functions
+    """
+
+    def count(role: str = None):
+        func_tokens = function_list_tokens(function_list)
+        if not role:
+            return sum(num_tokens_from_string(i["content"]) for i in messages) + func_tokens
+        return (
+            sum(num_tokens_from_string(i["content"]) for i in messages if i["role"] == role)
+            + func_tokens
+        )
+
+    def pop_first(role: str = None):
+        if not messages:
+            return
+        if not role:
+            messages.pop(0)
+        for i in messages:
+            if i["role"] == role:
+                messages.remove(i)
+                break
+
+    # If conversation is okay then just return
+    if count() <= max_tokens:
+        return messages
+
+    iters = 0
+    while count() >= max_tokens:
+        iters += 1
+        # First try popping first user message
+        pop_first("user")
+        if count() <= max_tokens:
+            return messages
+        # Try popping first assistant message
+        pop_first("assistant")
+        if count() <= max_tokens:
+            return messages
+        # Try popping first function response
+        pop_first("function")
+        if count() <= max_tokens:
+            return messages
+
+        if iters > 100:
+            # Eh
+            return messages
 
 
 def token_pagify(text: str, max_tokens: int = 2000):

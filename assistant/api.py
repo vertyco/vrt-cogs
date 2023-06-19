@@ -28,13 +28,13 @@ from .common.utils import (
     compile_messages,
     extract_code_blocks,
     extract_code_blocks_with_lang,
-    function_list_tokens,
     get_attachments,
     num_tokens_from_string,
     remove_code_blocks,
     request_chat_response,
     request_completion_response,
     request_embedding,
+    safe_message_prep,
     token_cut,
 )
 from .models import CHAT, MODELS, READ_EXTENSIONS, Conversation, GuildSettings
@@ -278,6 +278,9 @@ class API(MixinMeta):
             while True:
                 if calls >= conf.max_function_calls or conversation.function_count() >= 64:
                     function_calls = []
+                # Safely prep messages
+                max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+                messages = safe_message_prep(messages, max_tokens)
                 response = await request_chat_response(
                     model=conf.model,
                     messages=messages,
@@ -339,6 +342,7 @@ class API(MixinMeta):
                 elif not isinstance(result, str):
                     result = str(result)
 
+                # Calling the same function and getting the same result repeatedly is just insanity GPT
                 if function_name == last_function and result == last_function_response:
                     pop_schema(function_name)
                     continue
@@ -354,20 +358,6 @@ class API(MixinMeta):
 
                 conversation.update_messages(result, "function", function_name)
                 messages.append({"role": "function", "name": function_name, "content": result})
-
-                def convo_count() -> int:
-                    convo = conversation.conversation_token_count(conf, result)
-                    funcs = function_list_tokens(function_calls)
-                    return convo + funcs
-
-                while convo_count() >= max_tokens and len(conversation.messages) > 1:
-                    conversation.messages.pop(0)
-                    if conf.system_prompt and conf.prompt and len(messages) >= 3:
-                        messages.pop(2)
-                    elif conf.system_prompt or conf.prompt and len(messages) >= 2:
-                        messages.pop(1)
-                    else:
-                        messages.pop(0)
 
             if calls > 1:
                 log.info(f"Made {calls} function calls in a row")
