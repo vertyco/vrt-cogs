@@ -268,7 +268,7 @@ class AutoDocs(commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
 
         async def get_command_info(
-            bot: Red, guild: discord.Guild, command_name: str, *args, **kwargs
+            bot, guild: discord.Guild, command_name: str, *args, **kwargs
         ) -> str:
             cog = bot.get_cog("AutoDocs")
             if not cog:
@@ -298,7 +298,7 @@ class AutoDocs(commands.Cog):
 
         await cog.register_function(self, schema, get_command_info)
 
-        async def get_command_names(bot: Red, cog_name: str = None, *args, **kwargs):
+        async def get_command_names(bot, cog_name: str = None, *args, **kwargs):
             from redbot.core.utils.chat_formatting import humanize_list
 
             if cog_name:
@@ -328,7 +328,7 @@ class AutoDocs(commands.Cog):
 
         await cog.register_function(self, schema, get_command_names)
 
-        async def get_cog_list(bot: Red, *args, **kwargs):
+        async def get_cog_list(bot, *args, **kwargs):
             from redbot.core.utils.chat_formatting import humanize_list
 
             return humanize_list([i for i in bot.cogs])
