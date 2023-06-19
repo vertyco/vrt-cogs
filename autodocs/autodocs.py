@@ -279,7 +279,7 @@ class AutoDocs(commands.Cog):
             doc = await cog.get_command_doc(guild, command)
             if not doc:
                 return "Failed to fetch info for that command!"
-            return doc
+            return f"Cog name: {cog.qualified_name}\nCommand:\n{doc}"
 
         schema = {
             "name": "get_command_info",
