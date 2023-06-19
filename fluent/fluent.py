@@ -242,9 +242,7 @@ class Fluent(commands.Cog):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access translations"""
 
-        async def get_translation(
-            bot: Red, message: str, to_language: str, *args, **kwargs
-        ) -> str:
+        async def get_translation(bot, message: str, to_language: str, *args, **kwargs) -> str:
             cog = bot.get_cog("Fluent")
             if not cog:
                 return "Cog not loaded!"
