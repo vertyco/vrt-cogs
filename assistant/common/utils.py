@@ -152,12 +152,12 @@ def safe_message_prep(
     This can still not be enough if theres a big system prompt and a lot of functions
     """
 
-    def count(role: str = None):
+    def count(msgs: List[dict], role: str = None):
         func_tokens = function_list_tokens(function_list)
         if not role:
-            return sum(num_tokens_from_string(i["content"]) for i in messages) + func_tokens
+            return sum(num_tokens_from_string(i["content"]) for i in msgs) + func_tokens
         return (
-            sum(num_tokens_from_string(i["content"]) for i in messages if i["role"] == role)
+            sum(num_tokens_from_string(i["content"]) for i in msgs if i["role"] == role)
             + func_tokens
         )
 
@@ -172,23 +172,24 @@ def safe_message_prep(
                 break
 
     # If conversation is okay then just return
-    if count() <= max_tokens:
+    if count(messages) <= max_tokens:
         return messages
 
     iters = 0
-    while count() >= max_tokens:
+    while count(messages) >= max_tokens and len(messages) > 1:
         iters += 1
         # First try popping first user message
-        pop_first("user")
-        if count() <= max_tokens:
-            return messages
+        if count(messages, "user") > 1:
+            pop_first("user")
+            if count(messages) <= max_tokens:
+                return messages
         # Try popping first assistant message
         pop_first("assistant")
-        if count() <= max_tokens:
+        if count(messages) <= max_tokens:
             return messages
         # Try popping first function response
         pop_first("function")
-        if count() <= max_tokens:
+        if count(messages) <= max_tokens:
             return messages
 
         if iters > 100:
