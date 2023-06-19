@@ -27,7 +27,12 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.utils import get_attachments, num_tokens_from_string, request_embedding
+from ..common.utils import (
+    function_list_tokens,
+    get_attachments,
+    num_tokens_from_string,
+    request_embedding,
+)
 from ..models import CHAT, COMPLETION, Embedding
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
@@ -58,6 +63,7 @@ class Admin(MixinMeta):
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
         system_tokens = num_tokens_from_string(conf.system_prompt)
         prompt_tokens = num_tokens_from_string(conf.prompt)
+        func_tokens = function_list_tokens(self.db.get_function_calls(conf))
         desc = (
             f"`OpenAI Version:    `{VERSION}\n"
             f"`Enabled:           `{conf.enabled}\n"
@@ -78,7 +84,8 @@ class Admin(MixinMeta):
             f"`Min Relatedness:   `{conf.min_relatedness}\n"
             f"`Embedding Method:  `{conf.embed_method}\n"
             f"`Function Calling:  `{conf.use_function_calls}\n"
-            f"`Maximum Recursion: `{conf.max_function_calls}"
+            f"`Maximum Recursion: `{conf.max_function_calls}\n"
+            f"`Function Tokens:   `{humanize_number(func_tokens)}"
         )
         system_file = (
             discord.File(
