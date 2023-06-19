@@ -316,9 +316,10 @@ The code below is used in my Fluent cog for example.
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
         # This function could also be a string, and can be async OR sync
-        async def get_translation(
-            bot: Red, message: str, to_language: str, *args, **kwargs
-        ) -> str:
+        async def get_translation(bot, message: str, to_language: str, *args, **kwargs) -> str:
+            # If something needs to be imported to use a function, then do it inside the function
+            # from some_package import some_class_or_method
+
             # All functions MUST take *args, **kwargs as params
             cog = bot.get_cog("Fluent")
             if not cog:
@@ -356,3 +357,4 @@ Additionally, if the Fluent cog was loaded _after_ the Assistant cog, it will de
 - Assistant will automatically unregister cogs when they are unloaded
 - If a cog tries to register a function whos name already exists, an error will be logged and the function will not register
 - All functions **MUST** take `*args, **kwargs` as parameters
+- When importing actual function objects in your cogs, make sure to import librries `inside` of the function
