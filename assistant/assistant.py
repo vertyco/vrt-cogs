@@ -217,13 +217,19 @@ class Assistant(
                 err = f"{registered_cog.qualified_name} already registered the function {function_name}"
                 log.info(fail(err))
                 return False
+
         if not isinstance(function, str):
-            function = inspect.getsource(function)
-        elif function.__name__ != function_name:
-            log.info(fail("Function name from json schema does not match function name from code"))
-            return False
+            function_string = inspect.getsource(function)
+            if function.__name__ != function_name:
+                log.info(
+                    fail("Function name from json schema does not match function name from code")
+                )
+                return False
+        else:
+            function_string = function
+
         self.registry[cog][function_name] = CustomFunction(
-            code=function.strip(), jsonschema=schema
+            code=function_string.strip(), jsonschema=schema
         )
         log.info(f"The {cog.qualified_name} cog registered a function: {function_name}")
         return True
