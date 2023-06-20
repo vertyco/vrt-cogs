@@ -330,6 +330,13 @@ class API(MixinMeta):
                 if function_name not in function_map:
                     log.error(f"GPT suggested a function not provided: {function_name}")
                     pop_schema(function_name)  # Just in case
+                    messages.append(
+                        {
+                            "role": "function",
+                            "content": "this function doesnt exist, use something else.",
+                            "name": function_name,
+                        }
+                    )
                     continue
 
                 arguments = function_call.get("arguments", "{}")
