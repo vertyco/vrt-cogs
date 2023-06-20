@@ -53,14 +53,29 @@ class Base(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conversation = self.db.get_conversation(user.id, ctx.channel.id, ctx.guild.id)
         messages = len(conversation.messages)
+
+        if messages > conf.max_retention * 0.9:
+            color = discord.Color.red()
+        elif messages > conf.max_retention * 0.7:
+            color = discord.Color.dark_orange()
+        elif messages > conf.max_retention * 0.5:
+            color = discord.Color.gold()
+        elif messages > conf.max_retention * 0.3:
+            color = discord.Color.yellow()
+        else:
+            color = discord.Color.from_rgb(255, 255, 255)
+
         embed = discord.Embed(
             description=(
-                f"**Conversation stats for {user.mention} in {ctx.channel.mention}**\n"
-                f"`Messages: `{messages}\n"
+                f"{ctx.channel.mention}**\n"
+                f"`Messages: `{messages}/{conf.max_retention}\n"
                 f"`Tokens:   `{conversation.user_token_count()}\n"
                 f"`Expired:  `{conversation.is_expired(conf)}"
             ),
-            color=user.color,
+            color=color,
+        )
+        embed.set_author(
+            name=f"Conversation stats for {user.display_name}", icon_url=user.display_avatar
         )
         await ctx.send(embed=embed)
 
@@ -68,7 +83,7 @@ class Base(MixinMeta):
     @commands.guild_only()
     async def clear_convo(self, ctx: commands.Context):
         """
-        Reset your conversation
+        Reset your conversation with the bot
 
         This will clear all message history between you and the bot for this channel
         """

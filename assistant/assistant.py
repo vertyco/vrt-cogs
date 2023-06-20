@@ -33,7 +33,14 @@ class Assistant(
     metaclass=CompositeMetaClass,
 ):
     """
-    Advanced Chat GPT integration, with all the tools needed to configure a knowledgable Q&A or chat bot!
+    Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.
+
+    Features include configurable prompt injection, dynamic embeddings, custom function calling, and more!
+
+    - **[p]assistant**: base command for setting up the assistant
+    - **[p]chat**: talk with the assistant
+    - **[p]convostats**: view a user's token usage/conversation message count for the channel
+    - **[p]clearconvo**: reset your conversation with the assistant in the channel
     """
 
     __author__ = "Vertyco#0117"
