@@ -219,12 +219,12 @@ class Assistant(
                 return False
 
         if not isinstance(function, str):
-            function_string = inspect.getsource(function)
             if function.__name__ != function_name:
                 log.info(
                     fail("Function name from json schema does not match function name from code")
                 )
                 return False
+            function_string = inspect.getsource(function)
         else:
             function_string = function
 
