@@ -288,7 +288,7 @@ class API(MixinMeta):
                         messages=messages,
                         temperature=conf.temperature,
                         api_key=conf.api_key,
-                        functions=function_calls[:64],
+                        functions=function_calls,
                     )
                 except InvalidRequestError as e:
                     log.warning(
