@@ -128,8 +128,8 @@ def json_schema_invalid(schema: dict) -> str:
             missing += "- `type` in **parameters**\n"
         if "properties" not in schema["parameters"]:
             missing = "- `properties` in **parameters**\n"
-        if "required" in schema["parameters"]:
-            missing += "- `required` key needs to be outside of parameters!\n"
+        if "required" in schema["parameters"].get("properties", []):
+            missing += "- `required` key needs to be outside of properties!\n"
     return missing
 
 
