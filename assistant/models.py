@@ -244,6 +244,7 @@ class Conversation(BaseModel):
         user_message = {"role": "user", "content": user_message}
         prepared.append(user_message)
         self.messages.append(user_message)
+        self.last_updated = datetime.now().timestamp()
         return prepared
 
 
