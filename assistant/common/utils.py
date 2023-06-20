@@ -12,6 +12,7 @@ from aiocache import cached
 from openai.error import APIConnectionError, APIError, RateLimitError, Timeout
 from openai.version import VERSION
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
 from tenacity import (
     retry,
@@ -106,6 +107,7 @@ def code_string_valid(code: str) -> bool:
 
 
 def compile_function(function_name: str, code: str) -> Callable:
+    globals().update({"Red": Red, "discord": discord})
     exec(code, globals())
     return globals()[function_name]
 
