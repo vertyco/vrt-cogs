@@ -2,11 +2,11 @@
   "author": [
     "Vertyco"
   ],
-  "description": "Full featured GPT assistant (or chat) cog with configurable prompt injection, dynamic embeddings, and custom function calling",
+  "description": "Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models, with configurable prompt injection, dynamic embeddings, custom function calling, and more",
   "disabled": false,
   "end_user_data_statement": "This cog stores prompts and OpenAI API keys on a per server basis. If enabled, conversations with the bot are also persistently stored",
   "hidden": false,
-  "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys\n\n**Warning**\nIt is not recommended to run this cog on a public bot as embeddings can use up a lot of space over time!",
+  "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys\n\n**Warning**\nIt is not recommended to run this cog on a public bot as embeddings can use up a lot of space over time.",
   "min_bot_version": "3.5.0",
   "min_python_version": [
     3,
@@ -19,7 +19,7 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "openai>=0.27.8",
+    "openai>=0.27.6",
     "aiocache",
     "ujson",
     "msgpack",
@@ -37,7 +37,7 @@
     "rapidfuzz",
     "pytz"
   ],
-  "short": "Another GPT Cog",
+  "short": "Another Chat GPT Cog",
   "tags": [
     "utility",
     "assistant",
