@@ -102,7 +102,8 @@ class CustomFunction(BaseModel):
         json_dumps = orjson.dumps
 
     def dict(self, *args, **kwargs):
-        return super().dict(exclude=["func"], *args, **kwargs)
+        kwargs["exclude"] = {"call": True}
+        return super().dict(*args, **kwargs)
 
     @classmethod
     def parse_obj(cls, obj: Any):
