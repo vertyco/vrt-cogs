@@ -99,6 +99,8 @@ def remove_code_blocks(content: str) -> str:
 
 def code_string_valid(code: str) -> bool:
     # True if function is good
+    if "*args, **kwargs" not in code:
+        return False
     try:
         compile(code, "<string>", "exec")
         return True

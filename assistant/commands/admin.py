@@ -1008,9 +1008,10 @@ class Admin(MixinMeta):
         await view.start()
 
     @commands.hybrid_command(name="customfunctions", aliases=["customfunction", "customfunc"])
+    @app_commands.describe(function_name="Name of the custom function")
     @commands.guild_only()
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
-    async def custom_functions(self, ctx: commands.Context):
+    async def custom_functions(self, ctx: commands.Context, function_name: str = None):
         """
         Add custom function calls for Assistant to use
 
@@ -1041,7 +1042,20 @@ class Admin(MixinMeta):
 
         view = CodeMenu(ctx, self.db, self.registry, self.save_conf)
         await view.get_pages()
-        return await view.start()
+        if not function_name:
+            return await view.start()
+
+        for page_index, embed in enumerate(view.pages):
+            name = embed.description
+            if name != function_name:
+                continue
+            view.page = page_index
+            break
+        await view.start()
+
+    @custom_functions.autocomplete("function_name")
+    async def custom_func_complete(self, interaction: discord.Interaction, current: str):
+        return await self.get_function_matches(current)
 
     @embeddings.autocomplete("query")
     async def embeddings_complete(self, interaction: discord.Interaction, current: str):
@@ -1054,6 +1068,14 @@ class Admin(MixinMeta):
     @cached(ttl=30)
     async def get_matches(self, guild_id: int, current: str) -> List[Choice]:
         entries = await self.get_embedding_entries(guild_id)
+        return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
+
+    @cached(ttl=30)
+    async def get_function_matches(self, current: str) -> List[Choice]:
+        entries = [key for key in self.db.functions]
+        for functions in self.registry.values():
+            for key in functions:
+                entries.append(key)
         return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
 
     @assistant.command(name="wipecog")
