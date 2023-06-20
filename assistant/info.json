@@ -2,7 +2,7 @@
   "author": [
     "Vertyco"
   ],
-  "description": "Full featured Chat GPT assistant(or chat) cog with configurable prompt injection, dynamic embeddings, and custom function calling",
+  "description": "Full featured GPT assistant (or chat) cog with configurable prompt injection, dynamic embeddings, and custom function calling",
   "disabled": false,
   "end_user_data_statement": "This cog stores prompts and OpenAI API keys on a per server basis. If enabled, conversations with the bot are also persistently stored",
   "hidden": false,
