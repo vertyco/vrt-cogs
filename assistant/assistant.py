@@ -65,7 +65,7 @@ class Assistant(
         self.db = await asyncio.to_thread(DB.parse_obj, data)
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         logging.getLogger("openai").setLevel(logging.WARNING)
-        self.bot.dispatch("assistant_cog_add", cog=self)
+        self.bot.dispatch("assistant_cog_add", self)
         self.save_loop.start()
 
     async def save_conf(self):
