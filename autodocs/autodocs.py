@@ -268,7 +268,7 @@ class AutoDocs(commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
 
         async def get_command_info(
-            bot: Red, guild: discord.Guild, command_name: str, *args, **kwargs
+            bot, guild: discord.Guild, command_name: str, *args, **kwargs
         ) -> str:
             cog = bot.get_cog("AutoDocs")
             if not cog:
