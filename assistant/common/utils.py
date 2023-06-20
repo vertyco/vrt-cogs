@@ -344,6 +344,7 @@ async def request_embedding(text: str, api_key: str) -> List[float]:
     stop=stop_after_delay(120),
     reraise=True,
 )
+@cached(ttl=30)
 async def request_chat_response(
     model: str,
     messages: List[dict],
@@ -399,6 +400,7 @@ def _chat(
     stop=stop_after_delay(120),
     reraise=True,
 )
+@cached(ttl=30)
 async def request_completion_response(
     model: str, message: str, api_key: str, temperature: float, max_tokens: int
 ) -> str:
