@@ -15,7 +15,9 @@
   ],
   "permissions": [
     "read_messages",
-    "send_messages"
+    "send_messages",
+    "embed_links",
+    "attach_files"
   ],
   "required_cogs": {},
   "requirements": [
