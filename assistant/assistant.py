@@ -13,7 +13,12 @@ from redbot.core.bot import Red
 from .abc import CompositeMetaClass
 from .api import API
 from .commands import AssistantCommands
-from .common.utils import json_schema_invalid, request_embedding
+from .common.utils import (
+    code_string_valid,
+    compile_function,
+    json_schema_invalid,
+    request_embedding,
+)
 from .listener import AssistantListener
 from .models import DB, CustomFunction, Embedding, EmbeddingEntryExists, NoAPIKey
 
@@ -32,7 +37,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.3.8"
+    __version__ = "3.4.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -66,6 +71,7 @@ class Assistant(
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         logging.getLogger("openai").setLevel(logging.WARNING)
         self.bot.dispatch("assistant_cog_add", self)
+        await asyncio.sleep(10)
         self.save_loop.start()
 
     async def save_conf(self):
@@ -218,20 +224,25 @@ class Assistant(
                 log.info(fail(err))
                 return False
 
-        if not isinstance(function, str):
+        if isinstance(function, str):
+            if not code_string_valid(function):
+                log.info(fail("Code string is invalid!"))
+                return False
+            function_string = function
+            function = compile_function(function_name, function)
+            log.info(f"The {cog.qualified_name} cog registered a function string: {function_name}")
+        else:
             if function.__name__ != function_name:
                 log.info(
                     fail("Function name from json schema does not match function name from code")
                 )
                 return False
             function_string = inspect.getsource(function)
-        else:
-            function_string = function
+            log.info(f"The {cog.qualified_name} cog registered a function object: {function_name}")
 
         self.registry[cog][function_name] = CustomFunction(
-            code=function_string.strip(), jsonschema=schema
+            code=function_string.strip(), jsonschema=schema, call=function
         )
-        log.info(f"The {cog.qualified_name} cog registered a function: {function_name}")
         return True
 
     async def unregister_cog(self, cog: commands.Cog) -> None:

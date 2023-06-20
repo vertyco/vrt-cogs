@@ -1,5 +1,6 @@
+import logging
 from datetime import datetime
-from typing import Callable, Dict, List, Literal, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Tuple, Union
 
 import discord
 import orjson
@@ -7,6 +8,8 @@ from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 
 from .common.utils import compile_function, num_tokens_from_string
+
+log = logging.getLogger("red.vrt.assistant.models")
 
 MODELS = {
     "gpt-3.5-turbo": 4096,
@@ -91,10 +94,31 @@ class Embedding(BaseModel):
 class CustomFunction(BaseModel):
     code: str
     jsonschema: dict
+    call: Callable = None
 
     class Config:
+        arbitrary_types_allowed = True
         json_loads = orjson.loads
         json_dumps = orjson.dumps
+
+    def dict(self, *args, **kwargs):
+        return super().dict(exclude=["func"], *args, **kwargs)
+
+    @classmethod
+    def parse_obj(cls, obj: Any):
+        name = obj["jsonschema"]["name"]
+        try:
+            obj["call"] = compile_function(name, obj["code"])
+        except Exception as e:
+            log.error(f"Failed to compile saved function: {name}", exc_info=e)
+        return super().parse_obj(obj)
+
+    def refresh(self):
+        name = self.jsonschema["name"]
+        try:
+            self.call = compile_function(name, self.code)
+        except Exception as e:
+            log.error(f"Failed to compile saved function: {name}", exc_info=e)
 
 
 class GuildSettings(BaseModel):
@@ -232,6 +256,14 @@ class DB(BaseModel):
         json_loads = orjson.loads
         json_dumps = orjson.dumps
 
+    @classmethod
+    def parse_obj(cls, obj: Any):
+        if "functions" in obj:
+            obj["functions"] = {
+                k: CustomFunction.parse_obj(v) for k, v in obj["functions"].items()
+            }
+        return super().parse_obj(obj)
+
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
 
@@ -258,13 +290,16 @@ class DB(BaseModel):
         return [
             i.jsonschema
             for i in self.functions.values()
-            if i.jsonschema["name"] not in conf.disabled_functions
+            if i.jsonschema["name"] not in conf.disabled_functions and i.call is not None
         ]
 
     def get_function_map(self) -> Dict[str, Callable]:
         functions = {}
         for function_name, function in self.functions.items():
-            functions[function_name] = compile_function(function_name, function.code)
+            if not function.call:
+                log.warning(f"No call for {function_name}")
+                continue
+            functions[function_name] = function.call
         return functions
 
 
