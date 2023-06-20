@@ -222,10 +222,19 @@ class API(MixinMeta):
         if conf.use_function_calls and extend_function_calls:
             function_calls.extend(self.db.get_function_calls(conf))
             function_map.update(self.db.get_function_map())
-            for cog_functions in self.registry.values():
+            for cog, cog_functions in self.registry.items():
                 for function_name, function in cog_functions.items():
-                    function_calls.append(function.jsonschema)
-                    function_map[function_name] = compile_function(function_name, function.code)
+                    try:
+                        function_calls.append(function.jsonschema)
+                        function_map[function_name] = compile_function(
+                            function_name, function.code
+                        )
+                    except Exception as e:
+                        log.warning(
+                            f"Failed to compile custom function {function_name} from {cog.qualified_name} cog",
+                            exc_info=e,
+                        )
+                        continue
 
         conversation = self.db.get_conversation(
             author if isinstance(author, int) else author.id,

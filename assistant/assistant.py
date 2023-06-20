@@ -56,7 +56,7 @@ class Assistant(
     async def cog_unload(self):
         self.save_loop.cancel()
         self.re_pool.close()
-        self.bot.dispatch("assistant_cog_unload")
+        self.bot.dispatch("assistant_cog_remove")
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
