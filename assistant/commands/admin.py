@@ -63,7 +63,15 @@ class Admin(MixinMeta):
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
         system_tokens = num_tokens_from_string(conf.system_prompt)
         prompt_tokens = num_tokens_from_string(conf.prompt)
-        func_tokens = function_list_tokens(self.db.get_function_calls(conf))
+        third_party_funcs = [
+            i.jsonschema
+            for sublist in self.registry.values()
+            for i in sublist.values()
+            if i.jsonschema["name"] not in conf.disabled_functions
+        ]
+        func_tokens = function_list_tokens(
+            self.db.get_function_calls(conf)
+        ) + function_list_tokens(third_party_funcs)
         desc = (
             f"`OpenAI Version:    `{VERSION}\n"
             f"`Enabled:           `{conf.enabled}\n"
