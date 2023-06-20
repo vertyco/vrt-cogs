@@ -32,7 +32,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.3.6"
+    __version__ = "3.3.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -261,7 +261,7 @@ class Assistant(
         funcs = [listener[1] for listener in cog.get_listeners() if listener[0] == event]
         for func in funcs:
             # Thanks AAA3A for pointing out custom listeners!
-            self.bot._schedule_event(coro=func, event_name=event, cog=self)
+            self.bot._schedule_event(func, event, self)
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog):
