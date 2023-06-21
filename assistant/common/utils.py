@@ -153,9 +153,11 @@ def safe_message_prep(
     messages: List[dict], function_list: List[dict], max_tokens: int
 ) -> List[dict]:
     """
-    Dynamically prevent sending too many tokens to a model
+    Iteratively decay the conversation until within token limit
 
-    This can still not be enough if theres a big system prompt and a lot of functions
+    This can still not be enough if there is a big system prompt and a lot of functions loaded
+
+    *It's also run in executor under normal since theres so much iteration*
     """
 
     def count(msgs: List[dict], role: str = None):
@@ -181,28 +183,27 @@ def safe_message_prep(
     if count(messages) <= max_tokens:
         return messages
 
-    iters = 0
-    while count(messages) >= max_tokens and len(messages) > 2:
-        iters += 1
-        # First try popping first user message
-        if count(messages, "user") > 1:
-            pop_first("user")
-            if count(messages) <= max_tokens:
-                return messages
-        # Try popping first assistant message
-        if count(messages, "assistant") > 1:
-            pop_first("assistant")
-            if count(messages) <= max_tokens:
-                return messages
-        # Try popping first function response
-        pop_first("function")
-        if count(messages) <= max_tokens:
-            return messages
+    # Define roles to pop in order
+    roles_to_pop = ["function", "assistant", "user"]
 
-        if iters > 100:
-            # Eh
-            return messages
-
+    # Iteratively degrade the conversation until tokens are just under specified limit
+    for _ in range(100):
+        for role in roles_to_pop:
+            if count(messages, role) > 1:
+                pop_first(role)
+                if count(messages) <= max_tokens:
+                    return messages
+        # If no role to pop, cut tokens from the first message
+        if count(messages) > max_tokens and messages:
+            for index, msg in enumerate(messages):
+                if len(msg) < 10:
+                    continue
+                diff = count(messages) - num_tokens_from_string(msg["content"])
+                cut_by = max(10, max_tokens - diff)
+                messages[index]["content"] = token_cut(msg["content"], cut_by)
+                if count(messages) <= max_tokens:
+                    return messages
+    # If conversation isnt sufficient by now then idk
     return messages
 
 
