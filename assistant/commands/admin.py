@@ -440,16 +440,8 @@ class Admin(MixinMeta):
         if max_retention == 0:
             await ctx.send("Conversation retention has been disabled")
         else:
-            await ctx.tick()
+            await ctx.send(f"Conversation can now retain up to **{max_retention}** messages")
         await self.save_conf()
-
-        if max_retention > 15:
-            await ctx.send(
-                (
-                    "**NOTE:** Setting message retention too high may result in going over the token limit, "
-                    "if this happens the bot may not respond until the retention is lowered."
-                )
-            )
 
     @assistant.command(name="maxtime")
     async def max_retention_time(self, ctx: commands.Context, retention_time: int):
@@ -470,7 +462,9 @@ class Admin(MixinMeta):
                 "Conversations will be stored until the bot restarts or the cog is reloaded"
             )
         else:
-            await ctx.tick()
+            await ctx.send(
+                f"Conversations will be considered active for **{retention_time}** seconds"
+            )
         await self.save_conf()
 
     @assistant.command(name="temperature")
@@ -481,11 +475,12 @@ class Admin(MixinMeta):
         Closer to 0 is more concise and accurate while closer to 1 is more imaginative
         """
         if not 0 <= temperature <= 1:
-            return await ctx.send("Temperature must be between 0.0 and 1.0")
+            return await ctx.send("Temperature must be between **0.0** and **1.0**")
+        temperature = round(temperature, 2)
         conf = self.db.get_conf(ctx.guild)
         conf.temperature = temperature
         await self.save_conf()
-        await ctx.tick()
+        await ctx.send(f"Temperature has been set to **{temperature}**")
 
     @assistant.command(name="functioncalls")
     async def toggle_function_calls(self, ctx: commands.Context):
@@ -540,7 +535,9 @@ class Admin(MixinMeta):
         if min_question_length == 0:
             await ctx.send(f"{ctx.bot.user.name} will respond regardless of message length")
         else:
-            await ctx.tick()
+            await ctx.send(
+                f"{ctx.bot.user.name} will respond to messages with more than **{min_question_length}** characters"
+            )
         await self.save_conf()
 
     @assistant.command(name="maxtokens")
@@ -671,7 +668,10 @@ class Admin(MixinMeta):
             return await ctx.send("Top N must be between 0 and 10")
         conf = self.db.get_conf(ctx.guild)
         conf.top_n = top_n
-        await ctx.tick()
+        if not top_n:
+            await ctx.send("Embeddings will not be pulled during conversations")
+        else:
+            await ctx.send(f"Up to **{top_n}** embeddings will be pulled for each interaction")
         await self.save_conf()
 
     @assistant.command(name="relatedness")
@@ -689,7 +689,7 @@ class Admin(MixinMeta):
             return await ctx.send("Minimum relatedness must be between 0 and 1")
         conf = self.db.get_conf(ctx.guild)
         conf.min_relatedness = mimimum_relatedness
-        await ctx.tick()
+        await ctx.send(f"Minimum relatedness has been set to **{mimimum_relatedness}**")
         await self.save_conf()
 
     @assistant.command(name="regexblacklist")
