@@ -201,7 +201,9 @@ def safe_message_prep(
                     continue
                 diff = count(messages) - num_tokens_from_string(msg["content"])
                 cut_by = max(10, max_tokens - diff)
-                messages[index]["content"] = token_cut(msg["content"], cut_by)
+                messages[index]["content"] = token_cut(
+                    msg["content"], min(cut_by, round(num_tokens_from_string(msg["content"]) / 2))
+                )
                 if count(messages) <= max_tokens:
                     return messages
     # If conversation isnt sufficient by now then idk
