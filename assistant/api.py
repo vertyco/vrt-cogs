@@ -195,9 +195,13 @@ class API(MixinMeta):
         elif embed_perms:
             embeds = [
                 discord.Embed(description=p)
-                for p in pagify(content, page_length=3900, delims=delims)
+                for p in pagify(content, page_length=3950, delims=delims)
             ]
-            await send(embeds=embeds, files=files, mention=conf.mention)
+            for index, embed in enumerate(embeds):
+                if index == 0:
+                    await send(embed=embed, files=files, mention=conf.mention)
+                else:
+                    await send(embed=embed)
         else:
             pages = [p for p in pagify(content, page_length=2000, delims=delims)]
             for index, p in enumerate(pages):
