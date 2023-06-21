@@ -180,6 +180,9 @@ def safe_message_prep(
                 del messages[i]
                 return
 
+    def sigmoid(x: float) -> float:
+        return 1 / (1 + math.exp(-x))
+
     # If conversation is okay then just return
     token_count = count()
     if token_count <= max_tokens:
@@ -209,6 +212,24 @@ def safe_message_prep(
                 if token_count <= max_tokens:
                     return messages, function_list
 
+    for try_num in range(50):
+        if token_count > max_tokens and messages:
+            for index, msg in enumerate(messages):
+                # Never degrade system message
+                if msg["role"] == "system":
+                    continue
+                if len(msg["content"]) < 10:
+                    continue
+
+                x = (index / (len(messages) - 1)) * 10 - 5
+                ratio = 0.5 * sigmoid(x) + 0.5
+
+                char_slice = round(len(msg["content"]) * ratio)
+                messages[index]["content"] = msg["content"][:char_slice]
+                token_count = count()
+                if token_count <= max_tokens:
+                    return messages, function_list
+
         for role in roles_to_pop:
             if count(role) > 1:
                 pop_first(role)
@@ -216,9 +237,9 @@ def safe_message_prep(
                 if token_count <= max_tokens:
                     return messages, function_list
 
-    for _ in range(5):
-        if len(function_list) > 5:
-            function_list.pop(0)
+        if len(function_list) > 0 and try_num > 10:
+            popped = function_list.pop(0)
+            log.info(f"Popping function {popped['name']}")
             token_count = count()
             if token_count <= max_tokens:
                 return messages, function_list
