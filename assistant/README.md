@@ -357,5 +357,5 @@ Additionally, if the Fluent cog was loaded _after_ the Assistant cog, it will de
 - Assistant will automatically unregister cogs when they are unloaded
 - If a cog tries to register a function whos name already exists, an error will be logged and the function will not register
 - All functions **MUST** take `*args, **kwargs` as parameters
-- When importing functiona as strings, make sure to include any imports
+- When importing actual function objects in your cogs, make sure to import librries `inside` of the function
 - The function name in your schema must match the function name itself exactly
