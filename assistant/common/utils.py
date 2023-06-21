@@ -174,8 +174,11 @@ def safe_message_prep(
             return
         if not role:
             messages.pop(0)
-        else:
-            messages.remove(next((i for i in messages if i["role"] == role), None))
+            return
+        for i in range(len(messages)):
+            if messages[i]["role"] == role:
+                del messages[i]
+                return
 
     # If conversation is okay then just return
     token_count = count()
