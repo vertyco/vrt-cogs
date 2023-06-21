@@ -215,14 +215,15 @@ def safe_message_prep(
     for try_num in range(50):
         if token_count > max_tokens and messages:
             for index, msg in enumerate(messages):
+                place = index + 1
                 # Never degrade system message
                 if msg["role"] == "system":
                     continue
                 if len(msg["content"]) < 10:
                     continue
 
-                x = (index / (len(messages) - 1)) * 10 - 5
-                ratio = 0.5 * sigmoid(x) + 0.5
+                x = (place / (len(messages) - 1)) * 10 - 5
+                ratio = 0.3 * sigmoid(x) + 0.7
 
                 char_slice = round(len(msg["content"]) * ratio)
                 messages[index]["content"] = msg["content"][:char_slice]
@@ -230,16 +231,17 @@ def safe_message_prep(
                 if token_count <= max_tokens:
                     return messages, function_list
 
-        for role in roles_to_pop:
-            if count(role) > 1:
-                pop_first(role)
-                token_count = count()
-                if token_count <= max_tokens:
-                    return messages, function_list
+        if token_count > max_tokens and messages:
+            for role in roles_to_pop:
+                if count(role) > 1:
+                    pop_first(role)
+                    token_count = count()
+                    if token_count <= max_tokens:
+                        return messages, function_list
 
-        if len(function_list) > 0 and try_num > 10:
+        if len(function_list) > 0 and try_num > 10 and token_count > max_tokens:
             popped = function_list.pop(0)
-            log.info(f"Popping function {popped['name']}")
+            log.info(f"Popping function {popped['name']} to fit tokens")
             token_count = count()
             if token_count <= max_tokens:
                 return messages, function_list
