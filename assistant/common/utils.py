@@ -170,17 +170,16 @@ def safe_message_prep(
         )
 
     def pop_first(role: str = None):
-        if not messages:
+        if len(messages) <= 1:
             return
         if not role:
             messages.pop(0)
-        for i in messages:
-            if i["role"] == role:
-                messages.remove(i)
-                break
+        else:
+            messages.remove(next((i for i in messages if i["role"] == role), None))
 
     # If conversation is okay then just return
-    if count(messages) <= max_tokens:
+    token_count = count(messages)
+    if token_count <= max_tokens:
         return messages
 
     log.info("Compressing convo...")
@@ -189,24 +188,31 @@ def safe_message_prep(
 
     # Iteratively degrade the conversation until tokens are just under specified limit
     for _ in range(100):
-        for role in roles_to_pop:
-            if count(messages, role) > 1:
-                pop_first(role)
-                if count(messages) <= max_tokens:
-                    return messages
-        # If no role to pop, cut tokens from the first message
-        if count(messages) > max_tokens and messages:
+        if token_count > max_tokens and messages:
             for index, msg in enumerate(messages):
                 if len(msg) < 10:
                     continue
-                diff = count(messages) - num_tokens_from_string(msg["content"])
-                cut_by = max(10, max_tokens - diff)
-                messages[index]["content"] = token_cut(
-                    msg["content"], min(cut_by, round(num_tokens_from_string(msg["content"]) / 2))
-                )
-                if count(messages) <= max_tokens:
+                if msg["role"] == "function":
+                    ratio = 0.7
+                elif msg["role"] == "assistant":
+                    ratio = 0.8
+                elif msg["role"] == "user":
+                    ratio = 0.9
+                else:
+                    ratio = 0.95
+                token_lim = round(num_tokens_from_string(msg["content"]) * ratio)
+                messages[index]["content"] = token_cut(msg["content"], token_lim)
+                token_count = count(messages)
+                if token_count <= max_tokens:
                     return messages
-    # If conversation isnt sufficient by now then idk
+
+        for role in roles_to_pop:
+            if count(messages, role) > 1:
+                pop_first(role)
+                token_count = count(messages)
+                if token_count <= max_tokens:
+                    return messages
+    # If conversation isn't sufficient by now then idk
     return messages
 
 
