@@ -430,6 +430,8 @@ class Admin(MixinMeta):
         this only applies to any conversation between the user and bot after that.
 
         Set to 0 to disable conversation retention
+
+        **Note:** *actual message count may exceed the max retention during an API call*
         """
         if max_retention < 0:
             return await ctx.send("Max retention needs to be at least 0 or higher")
