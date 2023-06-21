@@ -241,9 +241,13 @@ class API(MixinMeta):
         if isinstance(channel, int):
             channel = guild.get_channel(channel)
 
-        query_embedding = await request_embedding(text=message, api_key=conf.api_key)
-        if not query_embedding:
-            log.info(f"Could not get embedding for message: {message}")
+        query_embedding = []
+        if conf.top_n:
+            # Save on tokens by only getting embeddings if theyre enabled
+            try:
+                query_embedding = await request_embedding(text=message, api_key=conf.api_key)
+            except Exception:
+                log.warning(f"Failed to get embedding for message in {guild.name}: {message}")
 
         params = {
             "banktype": "global bank" if await bank.is_global() else "local bank",
