@@ -231,7 +231,6 @@ class API(MixinMeta):
             channel if isinstance(channel, int) else channel.id,
             guild.id,
         )
-        conversation.cleanup(conf)
         if isinstance(author, int):
             author = guild.get_member(author)
         if isinstance(channel, int):
@@ -421,6 +420,7 @@ class API(MixinMeta):
         conversation.update_messages(reply, "assistant")
         if block:
             reply = "Response failed due to invalid regex, check logs for more info."
+        conversation.cleanup(conf)
         return reply
 
     async def safe_regex(self, regex: str, content: str):
