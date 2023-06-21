@@ -284,7 +284,9 @@ class API(MixinMeta):
                 # Safely prep messages
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 if len(messages) > 2:
-                    messages = safe_message_prep(messages, function_calls, max_tokens)
+                    messages, function_calls = safe_message_prep(
+                        messages, function_calls, max_tokens
+                    )
                 if not messages:
                     log.error("Messages got pruned too aggressively, increase token limit!")
                     break
@@ -298,7 +300,7 @@ class API(MixinMeta):
                     )
                 except InvalidRequestError as e:
                     log.warning(
-                        f"Funciton response failed. functions: {len(function_calls)}", exc_info=e
+                        f"Function response failed. functions: {len(function_calls)}", exc_info=e
                     )
                     response = await request_chat_response(
                         model=conf.model,

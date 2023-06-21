@@ -115,7 +115,7 @@ def compile_function(function_name: str, code: str) -> Callable:
 
 
 def json_schema_invalid(schema: dict) -> str:
-    # String will be empty if funciton is good
+    # String will be empty if function is good
     missing = ""
     if "name" not in schema:
         missing += "- `name`\n"
@@ -151,7 +151,7 @@ def function_list_tokens(functions: List[dict]) -> int:
 
 def safe_message_prep(
     messages: List[dict], function_list: List[dict], max_tokens: int
-) -> List[dict]:
+) -> Tuple[List[dict], List[dict]]:
     """
     Iteratively decay the conversation until within token limit
 
@@ -160,12 +160,12 @@ def safe_message_prep(
     *It's also run in executor under normal since theres so much iteration*
     """
 
-    def count(msgs: List[dict], role: str = None):
+    def count(role: str = None):
         func_tokens = function_list_tokens(function_list)
         if not role:
-            return sum(num_tokens_from_string(i["content"]) for i in msgs) + func_tokens
+            return sum(num_tokens_from_string(i["content"]) for i in messages) + func_tokens
         return (
-            sum(num_tokens_from_string(i["content"]) for i in msgs if i["role"] == role)
+            sum(num_tokens_from_string(i["content"]) for i in messages if i["role"] == role)
             + func_tokens
         )
 
@@ -178,9 +178,9 @@ def safe_message_prep(
             messages.remove(next((i for i in messages if i["role"] == role), None))
 
     # If conversation is okay then just return
-    token_count = count(messages)
+    token_count = count()
     if token_count <= max_tokens:
-        return messages
+        return messages, function_list
 
     log.info("Compressing convo...")
     # Define roles to pop in order
@@ -202,18 +202,26 @@ def safe_message_prep(
                     ratio = 0.95
                 token_lim = round(num_tokens_from_string(msg["content"]) * ratio)
                 messages[index]["content"] = token_cut(msg["content"], token_lim)
-                token_count = count(messages)
+                token_count = count()
                 if token_count <= max_tokens:
-                    return messages
+                    return messages, function_list
 
         for role in roles_to_pop:
-            if count(messages, role) > 1:
+            if count(role) > 1:
                 pop_first(role)
-                token_count = count(messages)
+                token_count = count()
                 if token_count <= max_tokens:
-                    return messages
+                    return messages, function_list
+
+    for _ in range(5):
+        if len(function_list) > 5:
+            function_list.pop(0)
+            token_count = count()
+            if token_count <= max_tokens:
+                return messages, function_list
+
     # If conversation isn't sufficient by now then idk
-    return messages
+    return messages, function_list
 
 
 def token_pagify(text: str, max_tokens: int = 2000):
