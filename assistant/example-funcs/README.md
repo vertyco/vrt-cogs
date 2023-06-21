@@ -1,5 +1,7 @@
 # Adding Functions to the Assistant
 
+Some GPT models are trained in a way that allows us to specify certain functions available to them, and enable them to call those functions at any time.
+
 This guide will help you understand how to integrate your cog with the Assistant.
 
 ## Prerequisites
