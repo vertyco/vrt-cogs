@@ -27,6 +27,7 @@ from .common.utils import (
     compile_messages,
     extract_code_blocks,
     extract_code_blocks_with_lang,
+    function_list_tokens,
     get_attachments,
     num_tokens_from_string,
     remove_code_blocks,
@@ -261,6 +262,7 @@ class API(MixinMeta):
                     function_calls.remove(func)
                     break
 
+        function_tokens = function_list_tokens(function_calls) if function_calls else 0
         messages = await asyncio.to_thread(
             self.prepare_messages,
             message,
@@ -271,6 +273,7 @@ class API(MixinMeta):
             channel,
             query_embedding,
             params,
+            function_tokens,
         )
         last_function_response = ""
         last_function = ""
@@ -457,6 +460,7 @@ class API(MixinMeta):
         channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
         query_embedding: List[float],
         params: dict,
+        function_tokens: int,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -515,28 +519,28 @@ class API(MixinMeta):
         total_tokens = conversation.token_count()
 
         embeddings = []
+        # Be conservative with embeddings
         for i in conf.get_related_embeddings(query_embedding):
             if (
-                num_tokens_from_string(f"\n\nContext:\n{i[1]}\n\n") + total_tokens
+                num_tokens_from_string(f"\n\nContext:\n{i[1]}\n\n")
+                + total_tokens
+                + function_tokens
                 < max_tokens * 0.8
             ):
                 embeddings.append(f"{i[1]}")
 
         if embeddings:
             joined = "\n".join(embeddings)
-            prefix = display_name if display_name else "User"
-            if "{author}" in conf.prompt or "{author}" in conf.system_prompt:
-                prefix = "User"
 
             if conf.embed_method == "static":
-                message = f"Context:\n{joined}\n\n{prefix}: {message}"
+                conversation.update_messages(f"Context:\n{joined}", "user")
 
             elif conf.embed_method == "dynamic":
                 system_prompt += f"\n\nContext:\n{joined}"
 
             elif conf.embed_method == "hybrid" and len(embeddings) > 1:
                 system_prompt += f"\n\nContext:\n{embeddings[1:]}"
-                message = f"Context:\n{embeddings[0]}\n\n{prefix}: {message}"
+                conversation.update_messages(f"Context:\n{embeddings[0]}", "user")
 
         messages = conversation.prepare_chat(message, system_prompt, initial_prompt)
         return messages
