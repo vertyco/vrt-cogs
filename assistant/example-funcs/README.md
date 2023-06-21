@@ -48,7 +48,7 @@ async def get_member_balance(guild: discord.Guild, name: str, *args, **kwargs) -
 
 ## JSON Schema Example
 
-Here is an example of a JSON schema for the `get_member_balance` function:
+Here is an example of a JSON schema for the `get_member_balance` function (note how the `guild` object from the function above isnt included):
 
 ```json
 {
