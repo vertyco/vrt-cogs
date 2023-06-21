@@ -67,6 +67,14 @@ Here is an example of a JSON schema for the `get_member_balance` function:
 }
 ```
 
+### The following objects are passed by default as keyword arguments and do not need to be included in the schema.
+
+- **user**: the user currently chatting with the bot (discord.Member)
+- **channel**: channel the user is chatting in (TextChannel|Thread|ForumChannel)
+- **guild**: current guild (discord.Guild)
+- **bot**: the bot object (Red)
+- **conf**: the config model for Assistant (GuildSettings)
+
 ## 3rd Party Cog Support
 
 3rd party cogs can register their own functions easily by using a custom listener. The Assistant cog will automatically unregister cogs when they are unloaded. If a cog tries to register a function whose name already exists, an error will be logged and the function will not register.
