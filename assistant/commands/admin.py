@@ -1030,7 +1030,9 @@ class Admin(MixinMeta):
 
         Only these two models can use function calls as of now:
         - gpt-3.5-turbo-0613
+        - gpt-3.5-turbo-16k-0613
         - gpt-4-0613
+        - gpt-4-32k-0613
 
         The following objects are passed by default as keyword arguments.
         - **user**: the user currently chatting with the bot (discord.Member)
