@@ -9,6 +9,7 @@ from typing import List, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
+import openai
 import orjson
 import pandas as pd
 import pytz
@@ -580,10 +581,20 @@ class Admin(MixinMeta):
         valid = humanize_list(CHAT + COMPLETION)
         if not model:
             return await ctx.send(f"Valid models are `{valid}`")
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.api_key:
+            return await ctx.send(
+                f"You must set an API key first with `{ctx.prefix}assist openaikey`"
+            )
+        try:
+            await openai.Model.aretrieve(model, api_key=conf.api_key)
+        except openai.InvalidRequestError:
+            return await ctx.send("This model is not available for the API key provided!")
+
         model = model.lower().strip()
         if model not in CHAT + COMPLETION:
             return await ctx.send(f"Invalid model type! Valid model types are `{valid}`")
-        conf = self.db.get_conf(ctx.guild)
+
         conf.model = model
         await ctx.send(f"The {model} model will now be used")
         await self.save_conf()
