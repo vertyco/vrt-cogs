@@ -183,6 +183,7 @@ def safe_message_prep(
     if count(messages) <= max_tokens:
         return messages
 
+    log.info("Compressing convo...")
     # Define roles to pop in order
     roles_to_pop = ["function", "assistant", "user"]
 
