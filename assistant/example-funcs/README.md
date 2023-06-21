@@ -1,6 +1,4 @@
-# 3rd Party Cog Support
-
-## Adding Functions to the Assistant
+# Adding Functions to the Assistant
 
 This guide will help you understand how to integrate your cog with the Assistant.
 
