@@ -41,7 +41,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.10.0"
+    __version__ = "3.10.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -969,8 +969,15 @@ class XTools(commands.Cog):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
 
-        async def get_gamertag_profile(gamertag: str, *args, **kwargs):
+        async def get_gamertag_profile(
+            user: discord.Member, gamertag: str = None, *args, **kwargs
+        ):
             async with aiohttp.ClientSession() as session:
+                if not gamertag:
+                    users = await self.config.users()
+                    if str(user.id) not in users:
+                        return "No gamertag has been set for this user, please specify a gamertag"
+                    gamertag = users[str(user.id)]["gamertag"]
                 xbl_client = await self.auth_manager(session)
                 if not xbl_client:
                     return "Could not communicate with XSAPI"
@@ -1019,10 +1026,9 @@ class XTools(commands.Cog):
                 "properties": {
                     "gamertag": {
                         "type": "string",
-                        "description": "name of the person's xbox gamertag",
+                        "description": "name of the person's xbox gamertag, fetches set gamertag for user chatting if none provided",
                     },
                 },
-                "required": ["gamertag"],
             },
         }
         await cog.register_function(self, schema, get_gamertag_profile)
