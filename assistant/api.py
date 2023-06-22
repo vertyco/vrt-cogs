@@ -388,6 +388,7 @@ class API(MixinMeta):
                     repeats += 1
                     if repeats > 3:
                         pop_schema(function_name)
+                        log.info(f"Popping {function_name} to avoid GPT insanity")
                         continue
                 else:
                     repeats = 0

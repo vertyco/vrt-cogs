@@ -281,7 +281,7 @@ def function_embeds(
 ) -> List[discord.Embed]:
     main = {"Assistant": functions}
     for cog, funcs in registry.items():
-        main[cog.qualified_name] = funcs
+        main[cog] = funcs
     pages = sum(len(v) for v in main.values())
     page = 1
     embeds = []

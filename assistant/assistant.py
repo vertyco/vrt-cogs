@@ -209,9 +209,10 @@ class Assistant(
         Returns:
             bool: True if function was successfully registered
         """
+        cog = cog.qualified_name
 
         def fail(reason: str):
-            return f"Function registry failed for {cog.qualified_name}: {reason}"
+            return f"Function registry failed for {cog}: {reason}"
 
         if not schema or not function:
             log.info(fail("Schema or Function not supplied"))
@@ -227,7 +228,7 @@ class Assistant(
             if registered_cog == cog:
                 continue
             if function_name in registered_functions:
-                err = f"{registered_cog.qualified_name} already registered the function {function_name}"
+                err = f"{registered_cog} already registered the function {function_name}"
                 log.info(fail(err))
                 return False
 
@@ -237,7 +238,7 @@ class Assistant(
                 return False
             function_string = function
             function = compile_function(function_name, function)
-            log.info(f"The {cog.qualified_name} cog registered a function string: {function_name}")
+            log.info(f"The {cog} cog registered a function string: {function_name}")
         else:
             if function.__name__ != function_name:
                 log.info(
@@ -245,7 +246,7 @@ class Assistant(
                 )
                 return False
             function_string = inspect.getsource(function)
-            log.info(f"The {cog.qualified_name} cog registered a function object: {function_name}")
+            log.info(f"The {cog} cog registered a function object: {function_name}")
 
         self.registry[cog][function_name] = CustomFunction(
             code=function_string.strip(), jsonschema=schema, call=function
@@ -258,10 +259,11 @@ class Assistant(
         Args:
             cog (commands.Cog)
         """
+        cog = cog.qualified_name
         if cog not in self.registry:
             return
         del self.registry[cog]
-        log.info(f"{cog.qualified_name} cog removed from registry")
+        log.info(f"{cog} cog removed from registry")
 
     async def unregister_function(self, cog: commands.Cog, function_name: str) -> None:
         """Remove a specific cog's function from the registry
@@ -270,14 +272,13 @@ class Assistant(
             cog (commands.Cog)
             function_name (str)
         """
+        cog = cog.qualified_name
         if cog not in self.registry:
             return
         if function_name not in self.registry[cog]:
             return
         del self.registry[cog][function_name]
-        log.info(
-            f"{cog.qualified_name} cog removed the function {function_name} from the registry"
-        )
+        log.info(f"{cog} cog removed the function {function_name} from the registry")
 
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
