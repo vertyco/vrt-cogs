@@ -57,7 +57,7 @@ class Assistant(
         self.config.register_global(db={})
         self.db: DB = DB()
         self.re_pool = Pool()
-        self.registry: Dict[commands.Cog, Dict[str, CustomFunction]] = {}
+        self.registry: Dict[str, Dict[str, CustomFunction]] = {}
 
         self.saving = False
         self.first_run = True

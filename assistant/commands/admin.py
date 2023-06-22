@@ -153,6 +153,14 @@ class Admin(MixinMeta):
         if blacklist:
             embed.add_field(name="Blacklist", value=humanize_list(blacklist), inline=False)
 
+        if self.registry:
+            cogs = humanize_list(self.registry.keys())
+            embed.add_field(
+                name="Cog Registry",
+                value=f"The following cogs have registered functions with the assistant\n{box(cogs)}",
+                inline=False,
+            )
+
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
         files = []
         if system_file:
