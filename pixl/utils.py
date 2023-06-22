@@ -90,8 +90,6 @@ class PixlGrids:
         return self
 
     async def __anext__(self) -> discord.File:
-        if self.task:
-            self.task.cancel()
         end_conditions = [
             len(self.to_chop) <= 0,  # Image is fully revealed
             self.have_winner(),  # Someone guessed it right
@@ -114,6 +112,10 @@ class PixlGrids:
         self.blank.save(buffer, format="WEBP", quality=100)
         buffer.seek(0)
         return discord.File(buffer, filename=buffer.name)
+
+    async def __aexit__(self):
+        if self.task:
+            self.task.cancel()
 
     def init(self) -> None:
         # Add game starter to participants
