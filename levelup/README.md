@@ -183,7 +183,7 @@ Restore a server backup<br/><br/>Attach the .json file to the command message to
  - Usage: `[p]lvlset admin importmee6 <import_by> <replace> <i_agree> `
  - Restricted to: `GUILD_OWNER`
 
-Import levels and exp from MEE6<br/><br/>**Make sure your server's leaderboard is public!**<br/><br/>**Arguments**<br/>export_by - which stat to prioritize (level or exp)<br/>If exp is entered, it will import their experience and base their new level off of that.<br/>If level is entered, it will import their level and calculate their exp based off of that.<br/>replace - (True/False) if True, it will replace the user's exp or level, otherwise it will add it<br/>i_agree - (Yes/No) Just an extra option to make sure you want to execute this command
+Import levels and exp from MEE6<br/><br/>**Make sure your server's leaderboard is public!**<br/><br/>**Arguments**<br/>import_by - which stat to prioritize (level or exp)<br/>If exp is entered, it will import their experience and base their new level off of that.<br/>If level is entered, it will import their level and calculate their exp based off of that.<br/>replace - (True/False) if True, it will replace the user's exp or level, otherwise it will add it<br/>i_agree - (Yes/No) Just an extra option to make sure you want to execute this command
 
 ### lvlset admin cleanup
  - Usage: `[p]lvlset admin cleanup `
