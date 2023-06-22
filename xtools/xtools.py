@@ -41,7 +41,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.9.0"
+    __version__ = "3.10.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -90,15 +90,16 @@ class XTools(commands.Cog):
                 return data
 
     # General authentication manager
-    async def auth_manager(self, ctx, session):
+    async def auth_manager(self, session, ctx: commands.Context = None):
         tokens = await self.config.tokens()
         client_id = await self.config.clientid()
         client_secret = await self.config.clientsecret()
         if not client_id:
-            await ctx.send(
-                f"Client ID and Secret have not been set yet!\n"
-                f"Bot owner needs to run `{ctx.prefix}apiset tokens`"
-            )
+            if ctx:
+                await ctx.send(
+                    f"Client ID and Secret have not been set yet!\n"
+                    f"Bot owner needs to run `{ctx.prefix}apiset tokens`"
+                )
             return None
         auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
         if tokens == {}:
@@ -109,27 +110,31 @@ class XTools(commands.Cog):
                 scopes = "&scope=Xboxlive.signin+Xboxlive.offline_access&"
                 redirect_uri = "&redirect_uri=http://localhost/auth/callback"
                 auth_url = f"{url}{cid}{types}{scopes}{redirect_uri}"
-                await ctx.send("Sending you a DM to authorize your tokens.")
+                if ctx:
+                    await ctx.send("Sending you a DM to authorize your tokens.")
                 await self.ask_auth(ctx, ctx.author, auth_url)
                 return None
             else:
-                await ctx.send("Tokens have not been authorized by bot owner yet!")
+                if ctx:
+                    await ctx.send("Tokens have not been authorized by bot owner yet!")
                 return None
         try:
             auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         except Exception as e:
             if "validation error" in str(e):
-                await ctx.send("Tokens have not been authorized by bot owner yet!")
+                if ctx:
+                    await ctx.send("Tokens have not been authorized by bot owner yet!")
                 return None
         try:
             await auth_mgr.refresh_tokens()
         except Exception as e:
             if "Bad Request" in str(e):
-                await ctx.send(
-                    "Tokens have failed to refresh.\n"
-                    "Microsoft API may be having issues.\n"
-                    f"Bot owner will need to re-authorize their tokens with `{ctx.prefix}apiset auth`"
-                )
+                if ctx:
+                    await ctx.send(
+                        "Tokens have failed to refresh.\n"
+                        "Microsoft API may be having issues.\n"
+                        f"Bot owner will need to re-authorize their tokens with `{ctx.prefix}apiset auth`"
+                    )
                 return None
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
         xbl_client = XboxLiveClient(auth_mgr)
@@ -324,7 +329,7 @@ class XTools(commands.Cog):
         """Set your Gamertag to use commands without entering it"""
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
-                xbl_client = await self.auth_manager(ctx, session)
+                xbl_client = await self.auth_manager(session, ctx)
                 if not xbl_client:
                     return
                 try:
@@ -348,7 +353,7 @@ class XTools(commands.Cog):
             if not gamertag:
                 return
         async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
+            xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
             try:
@@ -364,7 +369,7 @@ class XTools(commands.Cog):
     async def get_gamertag(self, ctx, *, xuid):
         """Get the Gamertag associated with an XUID"""
         async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
+            xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
             try:
@@ -386,7 +391,7 @@ class XTools(commands.Cog):
             if not gamertag:
                 return
         async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
+            xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
             embed = discord.Embed(description="Gathering data...", color=discord.Color.random())
@@ -440,7 +445,7 @@ class XTools(commands.Cog):
             if not gamertag:
                 return
         async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
+            xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
             embed = discord.Embed(description="Gathering data...", color=discord.Color.random())
@@ -493,7 +498,7 @@ class XTools(commands.Cog):
             if not gamertag:
                 return
         async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
+            xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
             embed = discord.Embed(description="Gathering data...", color=discord.Color.random())
@@ -637,7 +642,7 @@ class XTools(commands.Cog):
                 if not gamertag:
                     return
             async with aiohttp.ClientSession() as session:
-                xbl_client = await self.auth_manager(ctx, session)
+                xbl_client = await self.auth_manager(session, ctx)
                 if not xbl_client:
                     return
                 embed = discord.Embed(
@@ -753,7 +758,7 @@ class XTools(commands.Cog):
             if not gamertag:
                 return
         async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
+            xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
             embed = discord.Embed(description="Gathering data...", color=discord.Color.random())
@@ -823,7 +828,7 @@ class XTools(commands.Cog):
                 if len(game_ids) == 0:
                     return await ctx.send("No games found!")
                 async with aiohttp.ClientSession() as session:
-                    xbl_client = await self.auth_manager(ctx, session)
+                    xbl_client = await self.auth_manager(session, ctx)
                     if not xbl_client:
                         return
                     game_data = json.loads(
@@ -842,7 +847,7 @@ class XTools(commands.Cog):
             if not gamertag:
                 return
         async with aiohttp.ClientSession() as session:
-            xbl_client = await self.auth_manager(ctx, session)
+            xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
             embed = discord.Embed(description="Gathering data...", color=discord.Color.random())
@@ -959,3 +964,65 @@ class XTools(commands.Cog):
     @status.before_loop
     async def before_status_loop(self):
         await self.bot.wait_until_red_ready()
+
+    @commands.Cog.listener()
+    async def on_assistant_cog_add(self, cog: commands.Cog):
+        """Registers a command with Assistant enabling it to access to command docs"""
+
+        async def get_gamertag_profile(gamertag: str, *args, **kwargs):
+            async with aiohttp.ClientSession() as session:
+                xbl_client = await self.auth_manager(session)
+                if not xbl_client:
+                    return "Could not communicate with XSAPI"
+
+                try:
+                    profile_data = json.loads(
+                        (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                    )
+                except aiohttp.ClientResponseError:
+                    return "Invalid Gamertag. Try again."
+
+                _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
+                friends_data = json.loads(
+                    (await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json()
+                )
+
+                # Manually get presence and activity info since xbox webapi method is outdated
+                token = await self.get_token(session)
+                header = {
+                    "x-xbl-contract-version": "3",
+                    "Authorization": token,
+                    "Accept": "application/json",
+                    "Accept-Language": "en-US",
+                    "Host": "presencebeta.xboxlive.com",
+                }
+                url = f"https://userpresence.xboxlive.com/users/xuid({xuid})"
+                async with self.session.get(url=url, headers=header) as res:
+                    presence_data = await res.json(content_type=None)
+                url = f"https://avty.xboxlive.com/users/xuid({xuid})/Activity/History?numItems=5&excludeTypes=TextPost"
+                async with self.session.get(url=url, headers=header) as res:
+                    activity_data = await res.json(content_type=None)
+                profile_data["friends"] = friends_data
+                profile_data["presence"] = presence_data
+                profile_data["activity"] = activity_data["activityItems"]
+                embed = profile_embed(profile_data)
+                reply = f"{embed.title}\n"
+                for field in embed.fields:
+                    reply += f"{field.name}\n{field.value}\n\n"
+                return reply
+
+        schema = {
+            "name": "get_gamertag_profile",
+            "description": "Get details about an Xbox Gamertag profile like gamerscore, bio, followers, ect..",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "gamertag": {
+                        "type": "string",
+                        "description": "name of the person's xbox gamertag",
+                    },
+                },
+                "required": ["gamertag"],
+            },
+        }
+        await cog.register_function(self, schema, get_gamertag_profile)
