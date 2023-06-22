@@ -270,9 +270,6 @@ class AutoDocs(commands.Cog):
         async def get_command_info(
             guild: discord.Guild, command_name: str, *args, **kwargs
         ) -> str:
-            cog = self.bot.get_cog("AutoDocs")
-            if not cog:
-                return "Cog not loaded!"
             command = self.bot.get_command(command_name)
             if not command:
                 return "Command not found, check valid commands for this cog first"
