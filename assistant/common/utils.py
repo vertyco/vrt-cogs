@@ -9,7 +9,13 @@ import discord
 import openai
 import tiktoken
 from aiocache import cached
-from openai.error import APIConnectionError, APIError, RateLimitError, Timeout
+from openai.error import (
+    APIConnectionError,
+    APIError,
+    RateLimitError,
+    ServiceUnavailableError,
+    Timeout,
+)
 from openai.version import VERSION
 from redbot.core import commands
 from redbot.core.bot import Red
@@ -354,7 +360,9 @@ def embedding_embeds(embeddings: Dict[str, Any], place: int) -> List[discord.Emb
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError]),
+    retry=retry_if_exception_type(
+        Union[Timeout, APIConnectionError, RateLimitError, ServiceUnavailableError]
+    ),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -368,7 +376,9 @@ async def request_embedding(text: str, api_key: str) -> List[float]:
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
+    retry=retry_if_exception_type(
+        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
+    ),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -424,7 +434,9 @@ def _chat(
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
+    retry=retry_if_exception_type(
+        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
+    ),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -444,7 +456,9 @@ async def request_completion_response(
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
+    retry=retry_if_exception_type(
+        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
+    ),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -455,7 +469,9 @@ async def request_image_create(prompt: str, api_key: str, size: str, user_id: st
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
+    retry=retry_if_exception_type(
+        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
+    ),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
@@ -470,7 +486,9 @@ async def request_image_edit(
 
 
 @retry(
-    retry=retry_if_exception_type(Union[Timeout, APIConnectionError, RateLimitError, APIError]),
+    retry=retry_if_exception_type(
+        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
+    ),
     wait=wait_random_exponential(min=1, max=5),
     stop=stop_after_delay(120),
     reraise=True,
