@@ -54,16 +54,24 @@ class Base(MixinMeta):
         conversation = self.db.get_conversation(user.id, ctx.channel.id, ctx.guild.id)
         messages = len(conversation.messages)
 
-        if messages > conf.max_retention * 0.9:
-            color = discord.Color.red()
-        elif messages > conf.max_retention * 0.7:
-            color = discord.Color.dark_orange()
-        elif messages > conf.max_retention * 0.5:
-            color = discord.Color.gold()
-        elif messages > conf.max_retention * 0.3:
-            color = discord.Color.yellow()
-        else:
-            color = discord.Color.from_rgb(255, 255, 255)
+        def generate_color(index, limit):
+            if index > limit:
+                return (255, 0, 0)
+
+            # RGB for white is (255, 255, 255) and for red is (255, 0, 0)
+            # As we progress from white to red, we need to decrease the values of green and blue from 255 to 0
+
+            # Calculate the decrement in green and blue values
+            decrement = int((255 / limit) * index)
+
+            # Calculate the new green and blue values
+            green = blue = 255 - decrement
+
+            # Return the new RGB color
+            return (255, green, blue)
+
+        r, g, b = generate_color(messages, conf.max_retention)
+        color = discord.Color.from_rgb(r, g, b)
 
         embed = discord.Embed(
             description=(

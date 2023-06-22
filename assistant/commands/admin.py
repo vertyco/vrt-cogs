@@ -440,7 +440,7 @@ class Admin(MixinMeta):
         if max_retention == 0:
             await ctx.send("Conversation retention has been disabled")
         else:
-            await ctx.send(f"Conversation can now retain up to **{max_retention}** messages")
+            await ctx.send(f"Conversations can now retain up to **{max_retention}** messages")
         await self.save_conf()
 
     @assistant.command(name="maxtime")
