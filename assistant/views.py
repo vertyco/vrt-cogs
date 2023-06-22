@@ -660,7 +660,7 @@ class CodeMenu(discord.ui.View):
                     "Could not find function!", ephemeral=True
                 )
             return await interaction.response.send_message(
-                f"This function is managed by the `{cog.qualified_name}` cog and cannot be edited",
+                f"This function is managed by the `{cog}` cog and cannot be edited",
                 ephemeral=True,
             )
         entry = self.db.functions[function_name]
@@ -728,7 +728,7 @@ class CodeMenu(discord.ui.View):
                     "Could not find function!", ephemeral=True
                 )
             return await interaction.response.send_message(
-                f"This function is managed by the `{cog.qualified_name}` cog and cannot be deleted",
+                f"This function is managed by the `{cog}` cog and cannot be deleted",
                 ephemeral=True,
             )
         del self.db.functions[function_name]
