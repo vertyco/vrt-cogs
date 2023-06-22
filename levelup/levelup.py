@@ -22,7 +22,12 @@ from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_list,
+    humanize_number,
+    humanize_timedelta,
+)
 from redbot.core.utils.predicates import MessagePredicate
 
 from levelup.utils.formatter import (
@@ -70,7 +75,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.0.2"
+    __version__ = "3.1.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2963,3 +2968,33 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         """Force save the cache"""
         await self.save_cache()
         await ctx.tick()
+
+    @commands.Cog.listener()
+    async def on_assistant_cog_add(self, cog: commands.Cog):
+        """Registers a command with Assistant enabling it to access to command docs"""
+
+        async def get_user_profile(user: discord.Member, *args, **kwargs):
+            if user.guild.id not in cog.data:
+                return "The LevelUp cog has been loaded but doesnt have any data yet"
+            self.init_user(user.guild.id, str(user.id))
+            user_data = self.data[user.guild.id]["users"][str(user.id)].copy()
+            extracted = {
+                "experience points": user_data["xp"],
+                "voice time": humanize_timedelta(seconds=int(user_data["voice"])),
+                "message count": humanize_number(user_data["messages"]),
+                "user level": user_data["level"],
+                "prestige level": user_data["prestige"],
+                "profile emoji": user_data["emoji"],
+                "stars": humanize_number(user_data["stars"]),
+            }
+            return json.dumps(extracted)
+
+        schema = {
+            "name": "get_user_profile",
+            "description": "Use this function to get a user's discord level, xp, voice time and other stats about their LevelUp profile.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        }
+        await cog.register_function(self, schema, get_user_profile)
