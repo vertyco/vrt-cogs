@@ -4,7 +4,6 @@ from typing import Dict, Union
 
 import discord
 from discord.ext.commands.cog import CogMeta
-from redbot.core import commands
 from redbot.core.bot import Red
 
 from .models import DB, CustomFunction, GuildSettings
@@ -20,7 +19,7 @@ class MixinMeta(metaclass=ABCMeta):
     bot: Red
     db: DB
     re_pool: Pool
-    registry: Dict[commands.Cog, Dict[str, CustomFunction]]
+    registry: Dict[str, Dict[str, CustomFunction]]
 
     @abstractmethod
     async def get_chat_response(
