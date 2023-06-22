@@ -31,7 +31,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.6.0"
+    __version__ = "0.6.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -268,43 +268,39 @@ class AutoDocs(commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
 
         async def get_command_info(
-            bot, guild: discord.Guild, command_name: str, *args, **kwargs
+            guild: discord.Guild, command_name: str, *args, **kwargs
         ) -> str:
-            cog = bot.get_cog("AutoDocs")
+            cog = self.bot.get_cog("AutoDocs")
             if not cog:
                 return "Cog not loaded!"
-            command = bot.get_command(command_name)
+            command = self.bot.get_command(command_name)
             if not command:
-                return "Command not found, try running the get_command_names function to get valid commands"
-            doc = await cog.get_command_doc(guild, command)
+                return "Command not found, check valid commands for this cog first"
+            doc = await self.get_command_doc(guild, command)
             if not doc:
                 return "Failed to fetch info for that command!"
             return f"Cog name: {command.cog.qualified_name}\nCommand:\n{doc}"
 
         schema = {
             "name": "get_command_info",
-            "description": "Get info about a specific discord bot command",
+            "description": "Get info about a specific command",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command_name": {
                         "type": "string",
-                        "description": "the name of the command",
+                        "description": "name of the command",
                     },
                 },
                 "required": ["command_name"],
             },
         }
-
         await cog.register_function(self, schema, get_command_info)
 
-        async def get_command_names(bot, cog_name: str, *args, **kwargs):
-
-            cog = bot.get_cog(cog_name)
+        async def get_command_names(cog_name: str, *args, **kwargs):
+            cog = self.bot.get_cog(cog_name)
             if not cog:
-                return (
-                    "Could not find that cog, use the get_cog_list function to get avaiable cogs"
-                )
+                return "Could not find that cog, check loaded cogs first"
             names = [i.qualified_name for i in cog.walk_app_commands()] + [
                 i.qualified_name for i in cog.walk_commands()
             ]
@@ -313,32 +309,54 @@ class AutoDocs(commands.Cog):
 
         schema = {
             "name": "get_command_names",
-            "description": "Get a list of available discord bot commands",
+            "description": "Get a list of commands for a cog",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "cog_name": {
                         "type": "string",
-                        "description": "the name of the cog, case sensitive",
+                        "description": "name of the cog, case sensitive",
                     }
                 },
                 "required": ["cog_name"],
             },
         }
-
         await cog.register_function(self, schema, get_command_names)
 
-        async def get_cog_list(bot, *args, **kwargs):
-            joined = "\n".join([i for i in bot.cogs])
+        async def get_cog_info(cog_name: str, *args, **kwargs):
+            cog = self.bot.get_cog(cog_name)
+            if not cog:
+                return "Could not find that cog, check loaded cogs first"
+            if desc := cog.help:
+                return desc
+            return "This cog has no description"
+
+        schema = {
+            "name": "get_cog_info",
+            "description": "Get the description for a cog",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "cog_name": {
+                        "type": "string",
+                        "description": "name of the cog, case sensitive",
+                    }
+                },
+                "required": ["cog_name"],
+            },
+        }
+        await cog.register_function(self, schema, get_cog_info)
+
+        async def get_cog_list(*args, **kwargs):
+            joined = "\n".join([i for i in self.bot.cogs])
             return f"Cog Names:\n{joined}"
 
         schema = {
             "name": "get_cog_list",
-            "description": "Gets a list of currently loaded cog names",
+            "description": "Get a list of currently loaded cogs by name",
             "parameters": {
                 "type": "object",
                 "properties": {},
             },
         }
-
         await cog.register_function(self, schema, get_cog_list)
