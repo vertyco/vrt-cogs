@@ -136,12 +136,12 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
                 return "There is not enough data collected. Try again later."
 
             timezone = await self.config.guild(guild).timezone()
-            now = datetime.datetime.now().astimezone(tz=pytz.timezone(timezone))
+            now = datetime.now().astimezone(tz=pytz.timezone(timezone))
             start = now - delta
             columns = ["ts", "total"]
             rows = [i for i in data]
             for i in rows:
-                i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
+                i[0] = datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
             df = pd.DataFrame(rows, columns=columns)
             df = df.set_index(["ts"])
             df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
@@ -218,12 +218,12 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
                 return "There is not enough data collected. Try again later."
 
             timezone = await self.config.guild(guild).timezone()
-            now = datetime.datetime.now().astimezone(tz=pytz.timezone(timezone))
+            now = datetime.now().astimezone(tz=pytz.timezone(timezone))
             start = now - delta
             columns = ["ts", "total"]
             rows = [i for i in data]
             for i in rows:
-                i[0] = datetime.datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
+                i[0] = datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
             df = pd.DataFrame(rows, columns=columns)
             df = df.set_index(["ts"])
             df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
