@@ -1551,7 +1551,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         **Make sure your guild's leaderboard is public!**
 
         **Arguments**
-        `export_by` - which stat to prioritize (`level` or `exp`)
+        `import_by` - which stat to prioritize (`level` or `exp`)
         If exp is entered, it will import their experience and base their new level off of that.
         If level is entered, it will import their level and calculate their exp based off of that.
         `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it
