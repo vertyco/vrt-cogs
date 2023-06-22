@@ -101,7 +101,7 @@ def profile(data):
 
 
 # Format profile embed
-def profile_embed(data):
+def profile_embed(data) -> discord.Embed:
     gt, xuid, bio, location, gs, pfp, tenure, tier, rep = profile(data)
     state = data["presence"]["state"]
     if state == "Online":
@@ -200,9 +200,7 @@ def screenshot_embeds(data, gamertag):
         views = pic["views"]
         ss = pic["screenshot_uris"][0]["uri"]
         ss = ss.split("?")[0]
-        timestamp = (datetime.fromisoformat(pic["date_taken"])).strftime(
-            "%m/%d/%Y, %H:%M:%S"
-        )
+        timestamp = (datetime.fromisoformat(pic["date_taken"])).strftime("%m/%d/%Y, %H:%M:%S")
         embed = discord.Embed(
             color=discord.Color.random(), description=f"**{gamertag}'s Screenshots**"
         )
@@ -233,9 +231,7 @@ def game_embeds(gamertag, gamename, gs, data):
     # Main data setup
     minutes_played = 0
     if len(data["stats"]["statlistscollection"][0]["stats"]) > 0:
-        minutes_played = int(
-            data["stats"]["statlistscollection"][0]["stats"][0]["value"]
-        )
+        minutes_played = int(data["stats"]["statlistscollection"][0]["stats"][0]["value"])
     title_pic = data["info"]["titles"][0]["display_image"]
 
     count = 1
@@ -250,12 +246,7 @@ def game_embeds(gamertag, gamename, gs, data):
             time = fix_timestamp(timestamp)
             time = time.strftime("%m/%d/%Y, %H:%M:%S")
             desc = ach["description"]
-            info = (
-                f"{name}\n"
-                f"Status: Unlocked on {time}\n"
-                f"{desc}\n"
-                f"{worth} Gamerscore"
-            )
+            info = f"{name}\n" f"Status: Unlocked on {time}\n" f"{desc}\n" f"{worth} Gamerscore"
         else:
             info = f"{name}\n" f"Status: {status}\n" f"{desc}\n" f"{worth} Gamerscore"
 
@@ -354,9 +345,7 @@ def gameclip_embeds(clip_data, gamertag):
     clips = clip_data["game_clips"]
     for clip in clips:
         state = clip["state"]
-        recorded_on = fix_timestamp(clip["date_recorded"]).strftime(
-            "%m/%d/%Y, %H:%M:%S"
-        )
+        recorded_on = fix_timestamp(clip["date_recorded"]).strftime("%m/%d/%Y, %H:%M:%S")
         published = False
         if state == "Published":
             published = True
@@ -382,9 +371,7 @@ def gameclip_embeds(clip_data, gamertag):
             f"Recorded on: `{recorded_on}`\n"
         )
         if published:
-            published_on = fix_timestamp(clip["date_published"]).strftime(
-                "%m/%d/%Y, %H:%M:%S"
-            )
+            published_on = fix_timestamp(clip["date_published"]).strftime("%m/%d/%Y, %H:%M:%S")
             clip_info += f"Published on `{published_on}`\n"
         clip_info += f"**[Click Here To Watch]({clip_uri})**"
         embed.add_field(name="Clip Info", value=clip_info)
@@ -504,16 +491,12 @@ def ms_status(data: dict) -> List[discord.Embed]:
     if len(desc) > 4096:
         embeds = []
         for p in pagify(desc):
-            embed = discord.Embed(
-                title=title, description=p, color=discord.Color.orange()
-            )
+            embed = discord.Embed(title=title, description=p, color=discord.Color.orange())
             embed.set_footer(text=f"Last Updated: {last_updated}")
             embeds.append(embed)
             return embeds
     else:
-        embed = discord.Embed(
-            title=title, description=desc, color=discord.Color.orange()
-        )
+        embed = discord.Embed(title=title, description=desc, color=discord.Color.orange())
         embed.set_footer(text=f"Last Updated: {last_updated}")
         return [embed]
 
@@ -546,13 +529,11 @@ def gwg_embeds(products):
         price = game["display_sku_availabilities"][0]["availabilities"][0][
             "order_management_data"
         ]["price"]["list_price"]
-        release_date = game["display_sku_availabilities"][0]["availabilities"][0][
-            "properties"
-        ]["original_release_date"]
+        release_date = game["display_sku_availabilities"][0]["availabilities"][0]["properties"][
+            "original_release_date"
+        ]
         timestamp = fix_timestamp(release_date).strftime("%m/%d/%Y")
-        embed = discord.Embed(
-            title=f"{game_name}", description=f"**Description**\n{box(desc)}"
-        )
+        embed = discord.Embed(title=f"{game_name}", description=f"**Description**\n{box(desc)}")
         embed.add_field(
             name="Info",
             value=f"`Developer:` {dev_name}\n"
