@@ -199,7 +199,10 @@ def safe_message_prep(
     roles_to_pop = ["function", "assistant", "user"]
 
     # Iteratively degrade the conversation until tokens are just under specified limit
-    for try_num in range(50):
+    for iter_num in range(20):
+        if token_count <= max_tokens:
+            return messages, function_list
+
         if token_count > max_tokens and len(messages) > 1:
             for index, msg in enumerate(messages):
                 place = index + 1
@@ -207,6 +210,9 @@ def safe_message_prep(
                 if msg["role"] == "system":
                     continue
                 if len(msg["content"]) < 10:
+                    continue
+                # Don't degrade most recent messages unless on iteration # 5
+                if index + 1 == len(messages) - 1 and iter_num < 5:
                     continue
 
                 x = (place / (len(messages) - 1)) * 10 - 5
@@ -218,20 +224,24 @@ def safe_message_prep(
                 if token_count <= max_tokens:
                     return messages, function_list
 
-        if token_count > max_tokens and len(messages) > 1:
-            for role in roles_to_pop:
-                if count(role) > 1:
+            if iter_num > 3:
+                for role in roles_to_pop:
+                    if count(role) <= 1:
+                        continue
                     pop_first(role)
                     token_count = count()
                     if token_count <= max_tokens:
                         return messages, function_list
 
-        if len(function_list) > 0 and try_num > 10 and token_count > max_tokens:
-            popped = function_list.pop(0)
-            log.info(f"Popping function {popped['name']} to fit tokens")
-            token_count = count()
-            if token_count <= max_tokens:
-                return messages, function_list
+            if len(function_list) > 0 and iter_num > 1:
+                popped = function_list.pop(0)
+                log.info(f"Popping function {popped['name']} to fit tokens")
+                token_count = count()
+                if token_count <= max_tokens:
+                    return messages, function_list
+
+    if len(messages) == 1 and token_count > max_tokens:
+        messages[0]["content"] = token_cut(messages[0]["content"], max_tokens)
 
     # If conversation isn't sufficient by now then idk
     return messages, function_list
