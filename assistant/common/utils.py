@@ -193,27 +193,8 @@ def safe_message_prep(
     roles_to_pop = ["function", "assistant", "user"]
 
     # Iteratively degrade the conversation until tokens are just under specified limit
-    for _ in range(100):
-        if token_count > max_tokens and messages:
-            for index, msg in enumerate(messages):
-                if len(msg) < 10:
-                    continue
-                if msg["role"] == "function":
-                    ratio = 0.7
-                elif msg["role"] == "assistant":
-                    ratio = 0.8
-                elif msg["role"] == "user":
-                    ratio = 0.9
-                else:
-                    ratio = 0.95
-                token_lim = round(num_tokens_from_string(msg["content"]) * ratio)
-                messages[index]["content"] = token_cut(msg["content"], token_lim)
-                token_count = count()
-                if token_count <= max_tokens:
-                    return messages, function_list
-
     for try_num in range(50):
-        if token_count > max_tokens and messages:
+        if token_count > max_tokens and len(messages) > 1:
             for index, msg in enumerate(messages):
                 place = index + 1
                 # Never degrade system message
@@ -231,7 +212,7 @@ def safe_message_prep(
                 if token_count <= max_tokens:
                     return messages, function_list
 
-        if token_count > max_tokens and messages:
+        if token_count > max_tokens and len(messages) > 1:
             for role in roles_to_pop:
                 if count(role) > 1:
                     pop_first(role)
