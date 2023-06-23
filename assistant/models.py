@@ -148,6 +148,7 @@ class GuildSettings(BaseModel):
     max_token_role_override: Dict[int, int] = {}
     max_retention_role_override: Dict[int, int] = {}
     model_role_overrides: Dict[int, str] = {}
+    max_time_role_override: Dict[int, int] = {}
 
     image_tools: bool = True
     image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
@@ -199,6 +200,15 @@ class GuildSettings(BaseModel):
                 return self.max_retention_role_override[role.id]
         return self.max_retention
 
+    def get_user_max_time(self, member: Optional[discord.Member] = None) -> int:
+        if not member or not self.max_time_role_override:
+            return self.max_retention_time
+        sorted_roles = sorted(member.roles, reverse=True)
+        for role in sorted_roles:
+            if role.id in self.max_time_role_override:
+                return self.max_time_role_override[role.id]
+        return self.max_retention_time
+
 
 class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
@@ -230,14 +240,16 @@ class Conversation(BaseModel):
         initial = conf.system_prompt + conf.prompt + (message if isinstance(message, str) else "")
         return num_tokens_from_string(initial) + self.user_token_count(message)
 
-    def is_expired(self, conf: GuildSettings):
-        if not conf.max_retention_time:
+    def is_expired(self, conf: GuildSettings, member: Optional[discord.Member] = None):
+        if not conf.get_user_max_time(member):
             return False
-        return (datetime.now().timestamp() - self.last_updated) > conf.max_retention_time
+        return (datetime.now().timestamp() - self.last_updated) > conf.conf.get_user_max_time(
+            member
+        )
 
     def cleanup(self, conf: GuildSettings, member: Optional[discord.Member] = None):
         clear = [
-            self.is_expired(conf),
+            self.is_expired(conf, member),
             not conf.get_user_max_retention(member),
         ]
         if any(clear):
