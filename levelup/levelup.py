@@ -75,7 +75,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.1.3"
+    __version__ = "3.1.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2491,7 +2491,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                         f"Failed to assign the following roles to {user} in {guild}: {humanize_list([r.name for r in adding])}"
                     )
                 try:
-                    await user.add_roles(*removing)
+                    await user.remove_roles(*removing)
                     roles_removed += len(removing)
                 except discord.Forbidden:
                     log.warning(
