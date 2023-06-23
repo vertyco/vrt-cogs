@@ -338,8 +338,8 @@ class API(MixinMeta):
                     function_calls = pop_schema(function_name, function_calls)  # Just in case
                     messages.append(
                         {
-                            "role": "function",
-                            "content": "this function doesnt exist, use something else.",
+                            "role": "system",
+                            "content": f"{function_name} is not a valid function",
                             "name": function_name,
                         }
                     )
