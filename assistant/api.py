@@ -260,11 +260,8 @@ class API(MixinMeta):
             ),
         }
 
-        def pop_schema(name: str):
-            for func in function_calls:
-                if func["name"] == name:
-                    function_calls.remove(func)
-                    break
+        def pop_schema(name: str, calls: List[dict]):
+            return [func for func in calls if func["name"] != name]
 
         function_tokens = function_list_tokens(function_calls) if function_calls else 0
         messages = await asyncio.to_thread(
@@ -280,7 +277,7 @@ class API(MixinMeta):
             function_tokens,
         )
         last_function_response = ""
-        last_function = ""
+        last_function_name = ""
         if conf.model in CHAT:
             reply = "Could not get reply!"
             calls = 0
@@ -325,7 +322,7 @@ class API(MixinMeta):
                     if last_function_response:
                         # Only keep most recent function response in convo
                         conversation.update_messages(
-                            last_function_response, "function", last_function
+                            last_function_response, "function", last_function_name
                         )
                     break
                 if not function_call:
@@ -338,7 +335,7 @@ class API(MixinMeta):
                 function_name = function_call["name"]
                 if function_name not in function_map:
                     log.error(f"GPT suggested a function not provided: {function_name}")
-                    pop_schema(function_name)  # Just in case
+                    function_calls = pop_schema(function_name, function_calls)  # Just in case
                     messages.append(
                         {
                             "role": "function",
@@ -379,7 +376,7 @@ class API(MixinMeta):
                         f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
                         exc_info=e,
                     )
-                    pop_schema(function_name)
+                    function_calls = pop_schema(function_name, function_calls)
                     continue
 
                 if isinstance(result, bytes):
@@ -388,16 +385,16 @@ class API(MixinMeta):
                     result = str(result)
 
                 # Calling the same function and getting the same result repeatedly is just insanity GPT
-                if function_name == last_function and result == last_function_response:
+                if function_name == last_function_name and result == last_function_response:
                     repeats += 1
                     if repeats > 2:
-                        pop_schema(function_name)
+                        function_calls = pop_schema(function_name, function_calls)
                         log.info(f"Popping {function_name} for repeats")
                         continue
                 else:
                     repeats = 0
 
-                last_function = function_name
+                last_function_name = function_name
                 last_function_response = result
 
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
