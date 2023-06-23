@@ -25,6 +25,7 @@ from redbot.core.utils.chat_formatting import (
 from .abc import MixinMeta
 from .common.utils import (
     compile_messages,
+    degrade_conversation,
     extract_code_blocks,
     extract_code_blocks_with_lang,
     function_list_tokens,
@@ -34,7 +35,6 @@ from .common.utils import (
     request_chat_response,
     request_completion_response,
     request_embedding,
-    safe_message_prep,
     token_cut,
 )
 from .models import CHAT, MODELS, READ_EXTENSIONS, Conversation, GuildSettings
@@ -290,10 +290,14 @@ class API(MixinMeta):
                     function_calls = []
                 # Safely prep messages
                 max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
-                if len(messages) > 2:
-                    messages, function_calls = await asyncio.to_thread(
-                        safe_message_prep, messages, function_calls, max_tokens
+                if len(messages) > 1:
+                    # Iteratively degrade the conversation to ensure it is always under the token limit
+                    messages, function_calls, degraded = await asyncio.to_thread(
+                        degrade_conversation, messages, function_calls, max_tokens
                     )
+                    if degraded:
+                        conversation.overwrite(messages)
+
                 if not messages:
                     log.error("Messages got pruned too aggressively, increase token limit!")
                     break
@@ -386,9 +390,9 @@ class API(MixinMeta):
                 # Calling the same function and getting the same result repeatedly is just insanity GPT
                 if function_name == last_function and result == last_function_response:
                     repeats += 1
-                    if repeats > 3:
+                    if repeats > 2:
                         pop_schema(function_name)
-                        log.info(f"Popping {function_name} to avoid GPT insanity")
+                        log.info(f"Popping {function_name} for repeats")
                         continue
                 else:
                     repeats = 0
