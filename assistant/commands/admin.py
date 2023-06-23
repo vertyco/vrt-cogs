@@ -75,6 +75,7 @@ class Admin(MixinMeta):
         ) + function_list_tokens(third_party_funcs)
         desc = (
             f"`OpenAI Version:    `{VERSION}\n"
+            f"`Model:             `{conf.model}\n"
             f"`Enabled:           `{conf.enabled}\n"
             f"`Timezone:          `{conf.timezone}\n"
             f"`Channel:           `{channel}\n"
@@ -87,14 +88,6 @@ class Admin(MixinMeta):
             f"`Temperature:       `{conf.temperature}\n"
             f"`System Message:    `{humanize_number(system_tokens)} tokens\n"
             f"`Initial Prompt:    `{humanize_number(prompt_tokens)} tokens\n"
-            f"`Model:             `{conf.model}\n"
-            f"`Embeddings:        `{humanize_number(len(conf.embeddings))}\n"
-            f"`Top N Embeddings:  `{conf.top_n}\n"
-            f"`Min Relatedness:   `{conf.min_relatedness}\n"
-            f"`Embedding Method:  `{conf.embed_method}\n"
-            f"`Function Calling:  `{conf.use_function_calls}\n"
-            f"`Maximum Recursion: `{conf.max_function_calls}\n"
-            f"`Function Tokens:   `{humanize_number(func_tokens)}"
         )
         system_file = (
             discord.File(
@@ -114,6 +107,31 @@ class Admin(MixinMeta):
             description=desc,
             color=ctx.author.color,
         )
+        embedding_field = (
+            f"`Top N Embeddings:  `{conf.top_n}\n"
+            f"`Min Relatedness:   `{conf.min_relatedness}\n"
+            f"`Embedding Method:  `{conf.embed_method}\n"
+        )
+        embed.add_field(
+            name=f"Embeddings ({humanize_number(len(conf.embeddings))})",
+            value=embedding_field,
+            inline=False,
+        )
+
+        custom_func_field = (
+            f"`Function Calling:  `{conf.use_function_calls}\n"
+            f"`Maximum Recursion: `{conf.max_function_calls}\n"
+            f"`Function Tokens:   `{humanize_number(func_tokens)}\n"
+        )
+        if self.registry:
+            cogs = humanize_list([cog for cog in self.registry])
+            custom_func_field += f"The following cogs also have functions registered with the assistant\n{box(cogs)}"
+        embed.add_field(
+            name=f"Custom Functions ({len(self.db.functions)})",
+            value=custom_func_field,
+            inline=False,
+        )
+
         send_key = [ctx.guild.owner_id == ctx.author.id, ctx.author.id in self.bot.owner_ids]
         if private and any(send_key):
             embed.add_field(
@@ -152,14 +170,6 @@ class Admin(MixinMeta):
                 blacklist.append(f"{object_id}?")
         if blacklist:
             embed.add_field(name="Blacklist", value=humanize_list(blacklist), inline=False)
-
-        if self.registry:
-            cogs = humanize_list([cog for cog in self.registry])
-            embed.add_field(
-                name="Cog Registry",
-                value=f"The following cogs have registered functions with the assistant\n{box(cogs)}",
-                inline=False,
-            )
 
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
         files = []
