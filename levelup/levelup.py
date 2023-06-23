@@ -2974,7 +2974,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         """Registers a command with Assistant enabling it to access to command docs"""
 
         async def get_user_profile(user: discord.Member, *args, **kwargs):
-            if user.guild.id not in cog.data:
+            if user.guild.id not in self.data:
                 return "The LevelUp cog has been loaded but doesnt have any data yet"
             self.init_user(user.guild.id, str(user.id))
             user_data = self.data[user.guild.id]["users"][str(user.id)].copy()
