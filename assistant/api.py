@@ -278,7 +278,11 @@ class API(MixinMeta):
         )
         last_function_response = ""
         last_function_name = ""
-        if conf.model in CHAT:
+
+        model = conf.get_user_model(author)
+        max_tokens = min(conf.get_user_max_tokens(author), MODELS[model] - 100)
+
+        if model in CHAT:
             reply = "Could not get reply!"
             calls = 0
             repeats = 0
@@ -286,7 +290,7 @@ class API(MixinMeta):
                 if calls >= conf.max_function_calls or conversation.function_count() >= 64:
                     function_calls = []
                 # Safely prep messages
-                max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+
                 if len(messages) > 1:
                     # Iteratively degrade the conversation to ensure it is always under the token limit
                     messages, function_calls, degraded = await asyncio.to_thread(
@@ -300,7 +304,7 @@ class API(MixinMeta):
                     break
                 try:
                     response = await request_chat_response(
-                        model=conf.model,
+                        model=model,
                         messages=messages,
                         temperature=conf.temperature,
                         api_key=conf.api_key,
@@ -311,7 +315,7 @@ class API(MixinMeta):
                         f"Function response failed. functions: {len(function_calls)}", exc_info=e
                     )
                     response = await request_chat_response(
-                        model=conf.model,
+                        model=model,
                         messages=messages,
                         temperature=conf.temperature,
                         api_key=conf.api_key,
@@ -397,7 +401,6 @@ class API(MixinMeta):
                 last_function_name = function_name
                 last_function_response = result
 
-                max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
                 # Ensure response isnt too large
                 result = token_cut(
                     result,
@@ -410,12 +413,11 @@ class API(MixinMeta):
             if calls > 1:
                 log.info(f"Made {calls} function calls in a row")
         else:
-            max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
             compiled = compile_messages(messages)
             cut_message = token_cut(compiled, max_tokens)
             tokens_to_use = round((max_tokens - num_tokens_from_string(cut_message)) * 0.8)
             reply = await request_completion_response(
-                model=conf.model,
+                model=model,
                 message=cut_message,
                 temperature=conf.temperature,
                 api_key=conf.api_key,
@@ -438,7 +440,7 @@ class API(MixinMeta):
         conversation.update_messages(reply, "assistant")
         if block:
             reply = "Response failed due to invalid regex, check logs for more info."
-        conversation.cleanup(conf)
+        conversation.cleanup(conf, author)
         return reply
 
     async def safe_regex(self, regex: str, content: str):
@@ -520,7 +522,9 @@ class API(MixinMeta):
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
-        max_tokens = min(conf.max_tokens, MODELS[conf.model] - 100)
+        max_tokens = min(
+            conf.get_user_max_tokens(author), MODELS[conf.get_user_model(author)] - 100
+        )
 
         total_tokens = conversation.token_count()
 

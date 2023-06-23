@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 import orjson
@@ -145,6 +145,10 @@ class GuildSettings(BaseModel):
     blacklist: List[int] = []  # Channel/Role/User IDs
     block_failed_regex: bool = False
 
+    max_token_role_override: Dict[int, int] = {}
+    max_retention_role_override: Dict[int, int] = {}
+    model_role_overrides: Dict[int, str] = {}
+
     image_tools: bool = True
     image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
     use_function_calls: bool = False
@@ -167,6 +171,33 @@ class GuildSettings(BaseModel):
         ]
         strings_and_relatedness.sort(key=lambda x: x[2], reverse=True)
         return strings_and_relatedness[: self.top_n]
+
+    def get_user_model(self, member: Optional[discord.Member] = None) -> str:
+        if not member or not self.model_role_overrides:
+            return self.model
+        sorted_roles = sorted(member.roles, reverse=True)
+        for role in sorted_roles:
+            if role.id in self.model_role_overrides:
+                return self.model_role_overrides[role.id]
+        return self.model
+
+    def get_user_max_tokens(self, member: Optional[discord.Member] = None) -> int:
+        if not member or not self.max_token_role_override:
+            return self.max_tokens
+        sorted_roles = sorted(member.roles, reverse=True)
+        for role in sorted_roles:
+            if role.id in self.max_token_role_override:
+                return self.max_token_role_override[role.id]
+        return self.max_tokens
+
+    def get_user_max_retention(self, member: Optional[discord.Member] = None) -> int:
+        if not member or not self.max_retention_role_override:
+            return self.max_retention
+        sorted_roles = sorted(member.roles, reverse=True)
+        for role in sorted_roles:
+            if role.id in self.max_retention_role_override:
+                return self.max_retention_role_override[role.id]
+        return self.max_retention
 
 
 class Conversation(BaseModel):
@@ -204,15 +235,15 @@ class Conversation(BaseModel):
             return False
         return (datetime.now().timestamp() - self.last_updated) > conf.max_retention_time
 
-    def cleanup(self, conf: GuildSettings):
+    def cleanup(self, conf: GuildSettings, member: Optional[discord.Member] = None):
         clear = [
             self.is_expired(conf),
-            not conf.max_retention,
+            not conf.get_user_max_retention(member),
         ]
         if any(clear):
             self.messages.clear()
         elif conf.max_retention:
-            self.messages = self.messages[-conf.max_retention :]
+            self.messages = self.messages[-conf.get_user_max_retention(member) :]
 
     def reset(self):
         self.last_updated = datetime.now().timestamp()
