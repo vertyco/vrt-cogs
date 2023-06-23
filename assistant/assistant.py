@@ -44,7 +44,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.5.2"
+    __version__ = "3.5.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -79,6 +79,7 @@ class Assistant(
         logging.getLogger("openai").setLevel(logging.WARNING)
         self.bot.dispatch("assistant_cog_add", self)
         await asyncio.sleep(10)
+        await asyncio.to_thread(self._cleanup)
         self.save_loop.start()
 
     async def save_conf(self):
@@ -100,6 +101,50 @@ class Assistant(
             self.saving = False
         if not self.db.persistent_conversations and self.save_loop.is_running():
             self.save_loop.cancel()
+
+    def _cleanup(self):
+        cleaned = False
+        for guild_id in self.db.configs.copy().keys():
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                log.debug("Cleaning up guild")
+                del self.db.configs[guild_id]
+                cleaned = True
+                continue
+            conf = self.db.get_conf(guild_id)
+            for role_id in conf.max_token_role_override.copy():
+                if not guild.get_role(role_id):
+                    log.debug("Cleaning deleted max token override role")
+                    del conf.max_token_role_override[role_id]
+                    cleaned = True
+            for role_id in conf.max_retention_role_override.copy():
+                if not guild.get_role(role_id):
+                    log.debug("Cleaning deleted max retention override role")
+                    del conf.max_retention_role_override[role_id]
+                    cleaned = True
+            for role_id in conf.model_role_overrides.copy():
+                if not guild.get_role(role_id):
+                    log.debug("Cleaning deleted model override role")
+                    del conf.model_role_overrides[role_id]
+                    cleaned = True
+            for role_id in conf.max_time_role_override.copy():
+                if not guild.get_role(role_id):
+                    log.debug("Cleaning deleted max time override role")
+                    del conf.max_time_role_override[role_id]
+                    cleaned = True
+            for obj_id in conf.blacklist.copy():
+                discord_obj = (
+                    guild.get_role(obj_id)
+                    or guild.get_member(obj_id)
+                    or guild.get_channel_or_thread(obj_id)
+                )
+                if not discord_obj:
+                    log.debug("Cleaning up invalid blacklisted ID")
+                    conf.blacklist.remove(obj_id)
+                    cleaned = True
+
+        health = "BAD (Cleaned)" if cleaned else "GOOD"
+        log.info(f"Config health: {health}")
 
     @tasks.loop(minutes=2)
     async def save_loop(self):
