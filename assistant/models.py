@@ -218,6 +218,13 @@ class Conversation(BaseModel):
         self.last_updated = datetime.now().timestamp()
         self.messages.clear()
 
+    def overwrite(self, messages: List[dict]):
+        self.reset()
+        for i in messages:
+            if i["role"] == "system":
+                continue
+            self.messages.append(i)
+
     def update_messages(self, message: str, role: str, name: str = None) -> None:
         """Update conversation cache
 
