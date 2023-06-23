@@ -68,16 +68,18 @@ class Base(MixinMeta):
             green = blue = 255 - decrement
 
             # Return the new RGB color
-            return (255, green, blue)
+            return (green, blue)
 
-        r, g, b = generate_color(messages, conf.max_retention)
-        color = discord.Color.from_rgb(r, g, b)
+        g, b = generate_color(messages, conf.max_retention)
+        gg, bb = generate_color(conversation.user_token_count(), conf.max_tokens)
+        # Whatever limit is more severe get that color
+        color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
 
         embed = discord.Embed(
             description=(
                 f"{ctx.channel.mention}\n"
                 f"`Messages: `{messages}/{conf.max_retention}\n"
-                f"`Tokens:   `{conversation.user_token_count()}\n"
+                f"`Tokens:   `{conversation.user_token_count()}/{conf.max_tokens}\n"
                 f"`Expired:  `{conversation.is_expired(conf)}\n"
                 f"`Model:    `{conf.model}"
             ),
@@ -85,6 +87,9 @@ class Base(MixinMeta):
         )
         embed.set_author(
             name=f"Conversation stats for {user.display_name}", icon_url=user.display_avatar
+        )
+        embed.set_footer(
+            text="Token limit is a soft cap and excess is trimmed before sending to the api"
         )
         await ctx.send(embed=embed)
 
