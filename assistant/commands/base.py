@@ -78,7 +78,8 @@ class Base(MixinMeta):
                 f"{ctx.channel.mention}\n"
                 f"`Messages: `{messages}/{conf.max_retention}\n"
                 f"`Tokens:   `{conversation.user_token_count()}\n"
-                f"`Expired:  `{conversation.is_expired(conf)}"
+                f"`Expired:  `{conversation.is_expired(conf)}\n"
+                f"`Model:    `{conf.model}"
             ),
             color=color,
         )
