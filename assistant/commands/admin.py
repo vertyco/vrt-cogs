@@ -194,6 +194,19 @@ class Admin(MixinMeta):
                     name="Max Message Retention Role Overrides", value=field, inline=False
                 )
 
+        if overrides := conf.max_time_role_override:
+            field = ""
+            for role_id, retention_time in overrides.copy().items():
+                role = ctx.guild.get_role(role_id)
+                if not role:
+                    del conf.max_time_role_override[role_id]
+                    continue
+                field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
+            if field:
+                embed.add_field(
+                    name="Max Message Retention Time Role Overrides", value=field, inline=False
+                )
+
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
 
         files = []
@@ -499,7 +512,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="maxtime")
-    async def max_retention_time(self, ctx: commands.Context, retention_time: int):
+    async def max_retention_time(self, ctx: commands.Context, retention_seconds: int):
         """
         Set the conversation expiration time
 
@@ -508,17 +521,17 @@ class Admin(MixinMeta):
 
         Set to 0 to store conversations indefinitely or until the bot restarts or cog is reloaded
         """
-        if retention_time < 0:
+        if retention_seconds < 0:
             return await ctx.send("Max retention time needs to be at least 0 or higher")
         conf = self.db.get_conf(ctx.guild)
-        conf.max_retention_time = retention_time
-        if retention_time == 0:
+        conf.max_retention_time = retention_seconds
+        if retention_seconds == 0:
             await ctx.send(
                 "Conversations will be stored until the bot restarts or the cog is reloaded"
             )
         else:
             await ctx.send(
-                f"Conversations will be considered active for **{retention_time}** seconds"
+                f"Conversations will be considered active for **{retention_seconds}** seconds"
             )
         await self.save_conf()
 
@@ -1294,5 +1307,31 @@ class Admin(MixinMeta):
         else:
             conf.max_retention_role_override[role.id] = max_retention
             await ctx.send(f"Max retention override for {role.mention} added!")
+
+        await self.save_conf()
+
+    @override.command(name="maxtime")
+    async def max_time_override(
+        self, ctx: commands.Context, retention_seconds: int, *, role: discord.Role
+    ):
+        """
+        Assign a max retention time override to a role
+
+        *Specify same role and time to remove the override*
+        """
+        if retention_seconds < 0:
+            return await ctx.send("Max retention time needs to be at least 0 or higher")
+        conf = self.db.get_conf(ctx.guild)
+
+        if role.id in conf.max_time_role_override:
+            if conf.max_time_role_override[role.id] == retention_seconds:
+                del conf.max_time_role_override[role.id]
+                await ctx.send(f"Max retention time override for {role.mention} removed!")
+            else:
+                conf.max_time_role_override[role.id] = retention_seconds
+                await ctx.send(f"Max retention time override for {role.mention} overwritten!")
+        else:
+            conf.max_time_role_override[role.id] = retention_seconds
+            await ctx.send(f"Max retention time override for {role.mention} added!")
 
         await self.save_conf()
