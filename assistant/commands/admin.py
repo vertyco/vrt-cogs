@@ -161,10 +161,10 @@ class Admin(MixinMeta):
 
         if overrides := conf.model_role_overrides:
             field = ""
-            for role_id, model in overrides.copy().items():
-                role = ctx.guild.get_role(role_id)
+            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+            for role, model in sorted_roles:
                 if not role:
-                    del conf.model_role_overrides[role_id]
                     continue
                 field += f"{role.mention}: `{model}`\n"
             if field:
@@ -172,10 +172,10 @@ class Admin(MixinMeta):
 
         if overrides := conf.max_token_role_override:
             field = ""
-            for role_id, tokens in overrides.copy().items():
-                role = ctx.guild.get_role(role_id)
+            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+            for role, tokens in sorted_roles:
                 if not role:
-                    del conf.max_token_role_override[role_id]
                     continue
                 field += f"{role.mention}: `{humanize_number(tokens)}`\n"
             if field:
@@ -183,10 +183,10 @@ class Admin(MixinMeta):
 
         if overrides := conf.max_retention_role_override:
             field = ""
-            for role_id, retention in overrides.copy().items():
-                role = ctx.guild.get_role(role_id)
+            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+            for role, retention in sorted_roles:
                 if not role:
-                    del conf.max_retention_role_override[role_id]
                     continue
                 field += f"{role.mention}: `{humanize_number(retention)}`\n"
             if field:
@@ -196,10 +196,10 @@ class Admin(MixinMeta):
 
         if overrides := conf.max_time_role_override:
             field = ""
-            for role_id, retention_time in overrides.copy().items():
-                role = ctx.guild.get_role(role_id)
+            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+            for role, retention_time in sorted_roles:
                 if not role:
-                    del conf.max_time_role_override[role_id]
                     continue
                 field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
             if field:
