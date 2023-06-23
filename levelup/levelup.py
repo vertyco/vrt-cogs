@@ -75,7 +75,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.1.2"
+    __version__ = "3.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2978,20 +2978,20 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 return "The LevelUp cog has been loaded but doesnt have any data yet"
             self.init_user(user.guild.id, str(user.id))
             user_data = self.data[user.guild.id]["users"][str(user.id)].copy()
-            extracted = {
-                "experience points": user_data["xp"],
-                "voice time": humanize_timedelta(seconds=int(user_data["voice"])),
-                "message count": humanize_number(user_data["messages"]),
-                "user level": user_data["level"],
-                "prestige level": user_data["prestige"],
-                "profile emoji": user_data["emoji"],
-                "stars": humanize_number(user_data["stars"]),
-            }
-            return json.dumps(extracted)
+            txt = (
+                f"Experience: {round(user_data['xp'])}\n"
+                f"Voice time: {humanize_timedelta(seconds=int(user_data['voice']))}\n"
+                f"Message count: {humanize_number(user_data['messages'])}\n"
+                f"Level: {user_data['level']}\n"
+                f"Prestige: {user_data['prestige']}\n"
+                f"Emoji: {user_data['emoji']}\n"
+                f"Stars: {humanize_number(user_data['stars'])}"
+            )
+            return txt
 
         schema = {
             "name": "get_user_profile",
-            "description": "Use this function to get a user's discord level, xp, voice time and other stats about their LevelUp profile.",
+            "description": "get a users level, xp, voice time and other stats about their LevelUp profile in the discord",
             "parameters": {
                 "type": "object",
                 "properties": {},
