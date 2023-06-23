@@ -53,6 +53,7 @@ class Base(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conversation = self.db.get_conversation(user.id, ctx.channel.id, ctx.guild.id)
         messages = len(conversation.messages)
+        max_tokens = conf.get_user_max_tokens(ctx.author)
 
         def generate_color(index, limit):
             if index > limit:
@@ -71,7 +72,7 @@ class Base(MixinMeta):
             return (green, blue)
 
         g, b = generate_color(messages, conf.max_retention)
-        gg, bb = generate_color(conversation.user_token_count(), conf.max_tokens)
+        gg, bb = generate_color(conversation.user_token_count(), max_tokens)
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
 
@@ -79,9 +80,9 @@ class Base(MixinMeta):
             description=(
                 f"{ctx.channel.mention}\n"
                 f"`Messages: `{messages}/{conf.max_retention}\n"
-                f"`Tokens:   `{conversation.user_token_count()}/{conf.max_tokens}\n"
+                f"`Tokens:   `{conversation.user_token_count()}/{max_tokens}\n"
                 f"`Expired:  `{conversation.is_expired(conf)}\n"
-                f"`Model:    `{conf.model}"
+                f"`Model:    `{conf.get_user_model(ctx.author)}"
             ),
             color=color,
         )

@@ -158,6 +158,16 @@ def function_list_tokens(functions: List[dict]) -> int:
 def degrade_conversation(
     messages: List[dict], function_list: List[dict], max_tokens: int
 ) -> Tuple[List[dict], List[dict], bool]:
+    """Iteratively degrade a conversation payload, prioritizing more recent messages and critical context
+
+    Args:
+        messages (List[dict]): message entries sent to the api
+        function_list (List[dict]): list of json function schemas for the model
+        max_tokens (int): target tokens to keep conversation token count under
+
+    Returns:
+        Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded
+    """
     # Calculate the initial total token count
     total_tokens = sum(num_tokens_from_string(msg["content"]) for msg in messages) + sum(
         num_tokens_from_string(json.dumps(func)) for func in function_list
