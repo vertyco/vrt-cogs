@@ -79,7 +79,7 @@ class Base(MixinMeta):
         embed = discord.Embed(
             description=(
                 f"{ctx.channel.mention}\n"
-                f"`Messages: `{messages}/{conf.max_retention}\n"
+                f"`Messages: `{messages}/{conf.get_user_max_retention(ctx.author)}\n"
                 f"`Tokens:   `{conversation.user_token_count()}/{max_tokens}\n"
                 f"`Expired:  `{conversation.is_expired(conf)}\n"
                 f"`Model:    `{conf.get_user_model(ctx.author)}"
