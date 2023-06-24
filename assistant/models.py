@@ -243,9 +243,7 @@ class Conversation(BaseModel):
     def is_expired(self, conf: GuildSettings, member: Optional[discord.Member] = None):
         if not conf.get_user_max_time(member):
             return False
-        return (datetime.now().timestamp() - self.last_updated) > conf.conf.get_user_max_time(
-            member
-        )
+        return (datetime.now().timestamp() - self.last_updated) > conf.get_user_max_time(member)
 
     def cleanup(self, conf: GuildSettings, member: Optional[discord.Member] = None):
         clear = [
