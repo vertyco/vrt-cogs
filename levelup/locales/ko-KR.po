@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:22-0400\n"
-"PO-Revision-Date: 2023-06-23 23:22\n"
+"PO-Revision-Date: 2023-06-24 17:56\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -19,7 +19,7 @@ msgstr ""
 
 #: base.py:81
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "유효한 URL이 아닌 것 같습니다."
 
 #: base.py:92
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
@@ -225,7 +225,7 @@ msgstr ""
 
 #: base.py:458 base.py:487
 msgid "command"
-msgstr ""
+msgstr "명령어"
 
 #: base.py:462
 msgid "Could not send background collage, file size may be too large."
