@@ -57,7 +57,7 @@ class Base(MixinMeta):
 
         def generate_color(index: int, limit: int):
             if index > limit:
-                return (255, 0, 0)
+                return (0, 0)
 
             # RGB for white is (255, 255, 255) and for red is (255, 0, 0)
             # As we progress from white to red, we need to decrease the values of green and blue from 255 to 0
@@ -71,16 +71,10 @@ class Base(MixinMeta):
             # Return the new RGB color
             return (green, blue)
 
-        try:
-            retention = generate_color(messages, conf.get_user_max_retention(ctx.author))
-            tokens = generate_color(conversation.user_token_count(), max_tokens)
-            # Whatever limit is more severe get that color
-            color = discord.Color.from_rgb(
-                255, min(retention[0], tokens[0]), min(retention[1], tokens[1])
-            )
-        except Exception as e:
-            log.error("could not get color gradient", exc_info=e)
-            color = discord.Color.from_rgb(255, 255, 255)
+        g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
+        gg, bb = generate_color(conversation.user_token_count(), max_tokens)
+        # Whatever limit is more severe get that color
+        color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
 
         embed = discord.Embed(
             description=(
