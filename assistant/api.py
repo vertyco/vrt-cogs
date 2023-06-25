@@ -226,8 +226,12 @@ class API(MixinMeta):
         if conf.use_function_calls and extend_function_calls:
             function_calls.extend(self.db.get_function_calls(conf))
             function_map.update(self.db.get_function_map())
-            for cog_functions in self.registry.values():
+            for cog_name, cog_functions in self.registry.items():
+                if not self.bot.get_cog(cog_name):
+                    continue
                 for function_name, function in cog_functions.items():
+                    if not function.call:
+                        continue
                     function_calls.append(function.jsonschema)
                     function_map[function_name] = function.call
 
