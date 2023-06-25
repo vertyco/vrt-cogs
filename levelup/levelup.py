@@ -607,12 +607,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not usepics:
             if notify:
                 if dm:
-                    dmtxt = (
-                        _("You have just reached level ")
-                        + str(new_level)
-                        + _(" in ")
-                        + guild.name
-                        + "!"
+                    dmtxt = _("You have just reached level {level} in {guild}!").format(
+                        level=str(new_level), guild=guild.name
                     )
                     dmembed = discord.Embed(description=dmtxt, color=member.color)
                     dmembed.set_thumbnail(url=pfp)
@@ -621,7 +617,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     except discord.Forbidden:
                         pass
                 elif all(perms) and channel:
-                    channeltxt = _("Just reached level ") + str(new_level) + "!"
+                    channeltxt = _("Just reached level {level}!").format(level=str(new_level))
                     channelembed = discord.Embed(description=channeltxt, color=member.color)
                     channelembed.set_author(name=name, icon_url=pfp)
                     if mention:
