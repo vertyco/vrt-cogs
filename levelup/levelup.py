@@ -75,7 +75,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.1.4"
+    __version__ = "3.1.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -660,13 +660,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     except discord.Forbidden:
                         pass
                 elif all(perms) and channel:
-                    if mention:
-                        await channel.send(
-                            f"**{mentionuser}" + _(" just leveled up!**"),
-                            file=file,
-                        )
-                    else:
-                        await channel.send(f"**{name}" + _(" just leveled up!**"), file=file)
+                    txt = _("**{user} just leveled up!**").format(
+                        user=mentionuser if mention else name
+                    )
+                    await channel.send(txt, file=file)
 
         if not roleperms:
             # log.warning(f"Bot can't manage roles in {guild.name}")
