@@ -1,0 +1,238 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2023-06-15 21:22-0400\n"
+"PO-Revision-Date: 2023-06-23 23:22\n"
+"Last-Translator: \n"
+"Language-Team: Korean\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ko\n"
+"X-Crowdin-File: /main/tickets/locales/messages.pot\n"
+"X-Crowdin-File-ID: 13\n"
+"Language: ko_KR\n"
+
+#: menu.py:65 views.py:75
+msgid "You are not allowed to interact with this button."
+msgstr ""
+
+#: tickets.py:27
+#, docstring
+msgid "\n"
+"    Support ticket system with multi-panel functionality\n"
+"    "
+msgstr ""
+
+#: tickets.py:40
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: tickets.py:296
+msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
+msgstr ""
+
+#: tickets.py:312
+msgid "(Auto-Close) Opened ticket with no response for "
+msgstr ""
+
+#: tickets.py:361
+msgid "User left guild(Auto-Close)"
+msgstr ""
+
+#: utils.py:95
+msgid "I am missing the `Manage Channels` permission to close this ticket!"
+msgstr ""
+
+#: utils.py:99
+msgid "I am missing the `Manage Threads` permission to close this ticket!"
+msgstr ""
+
+#: utils.py:106
+msgid "Ticket created by **{}-{}** has been closed.\n"
+"`PanelType: `{}\n"
+"`Opened on: `<t:{}:F>\n"
+"`Closed on: `<t:{}:F>\n"
+"`Closed by: `{}\n"
+"`Reason:    `{}\n"
+msgstr ""
+
+#: utils.py:122
+msgid "Ticket Closed\n"
+"{}\n"
+"Currently missing permissions to send embeds to this channel!"
+msgstr ""
+
+#: utils.py:126
+msgid "Ticket Closed"
+msgstr ""
+
+#: utils.py:137
+msgid "Archiving channel..."
+msgstr ""
+
+#: utils.py:140
+msgid "This channel will be deleted once complete"
+msgstr ""
+
+#: utils.py:146
+msgid "Question: {}\n"
+"Response: {}\n"
+msgstr ""
+
+#: utils.py:157
+msgid "Files uploaded: "
+msgstr ""
+
+#: utils.py:247
+msgid "There are no tickets stored in the database."
+msgstr ""
+
+#: utils.py:277
+msgid "ticket"
+msgstr ""
+
+#: utils.py:277
+msgid "tickets"
+msgstr ""
+
+#: utils.py:278
+msgid "Pruned `{}` invalid {}"
+msgstr ""
+
+#: utils.py:281
+msgid "There are no tickets to prune"
+msgstr ""
+
+#: utils.py:289
+msgid "Ticket Overview"
+msgstr ""
+
+#: utils.py:314
+msgid "There are no active tickets."
+msgstr ""
+
+#: utils.py:343
+#, docstring
+msgid "Update active ticket overview\n\n"
+"    Args:\n"
+"        guild (discord.Guild): discord server\n"
+"        conf (dict): settings for the guild\n\n"
+"    Returns:\n"
+"        int: Message ID of the overview panel\n"
+"    "
+msgstr ""
+
+#: views.py:37
+msgid "cancel"
+msgstr ""
+
+#: views.py:129
+msgid "Closing your ticket"
+msgstr ""
+
+#: views.py:131
+msgid "Reason for closing"
+msgstr ""
+
+#: views.py:164
+msgid "You do not have permissions to close this ticket"
+msgstr ""
+
+#: views.py:176 views.py:178
+msgid "Closing..."
+msgstr ""
+
+#: views.py:248
+msgid "You been blacklisted from creating tickets!"
+msgstr ""
+
+#: views.py:254
+msgid "You have a role that has been blacklisted from creating tickets!"
+msgstr ""
+
+#: views.py:266
+msgid "You must have one of the following roles to open this ticket: "
+msgstr ""
+
+#: views.py:279
+msgid "You have the maximum amount of tickets opened already!"
+msgstr ""
+
+#: views.py:286
+msgid "The category for this support panel cannot be found!\n"
+"please contact an admin!"
+msgstr ""
+
+#: views.py:301
+msgid "Submission Info"
+msgstr ""
+
+#: views.py:318
+msgid "Unanswered"
+msgstr ""
+
+#: views.py:406
+msgid "{} ticket for {}"
+msgstr ""
+
+#: views.py:431
+msgid "There was an error while preparing your ticket, please contact an admin!\n"
+"{}"
+msgstr ""
+
+#: views.py:442
+msgid "Welcome to your ticket channel "
+msgstr ""
+
+#: views.py:444
+msgid "\n"
+"You or an admin can close this with the `{}close` command"
+msgstr ""
+
+#: views.py:496
+msgid "Ticket form questions"
+msgstr ""
+
+#: views.py:499
+msgid "I tried to pin the response message but don't have the manage messages permissions!"
+msgstr ""
+
+#: views.py:504
+msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
+msgstr ""
+
+#: views.py:522
+msgid "`Created By: `{user}\n"
+"`User ID:    `{userid}\n"
+"`Opened:     `{timestamp}\n"
+"`Ticket:     `{channelname}\n"
+"`Panel Name: `{panelname}\n"
+"**[Click to Jump!]({jumpurl})**"
+msgstr ""
+
+#: views.py:531
+msgid "Ticket Opened"
+msgstr ""
+
+#: views.py:602
+msgid "You have already been added to the ticket **{}**!"
+msgstr ""
+
+#: views.py:613
+msgid "You already have access to the ticket **{}**!"
+msgstr ""
+
+#: views.py:618
+msgid "{} was added to the ticket"
+msgstr ""
+
+#: views.py:623
+msgid "You have been added to the ticket **{}**"
+msgstr ""
+

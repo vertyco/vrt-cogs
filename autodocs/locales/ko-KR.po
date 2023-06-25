@@ -1,0 +1,229 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2023-06-15 21:24-0400\n"
+"PO-Revision-Date: 2023-06-23 23:23\n"
+"Last-Translator: \n"
+"Language-Team: Korean\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ko\n"
+"X-Crowdin-File: /main/autodocs/locales/messages.pot\n"
+"X-Crowdin-File-ID: 25\n"
+"Language: ko_KR\n"
+
+#: autodocs.py:24
+#, docstring
+msgid "\n"
+"    Document your cogs with ease!\n\n"
+"    Easily create documentation for any cog in Markdown format.\n"
+"    "
+msgstr ""
+
+#: autodocs.py:35
+msgid "{}\n"
+"Cog Version: {}\n"
+"Author: {}"
+msgstr ""
+
+#: autodocs.py:41
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: autodocs.py:57
+msgid "name"
+msgstr ""
+
+#: autodocs.py:57
+msgid "text"
+msgstr ""
+
+#: autodocs.py:66
+msgid "{} cog description"
+msgstr ""
+
+#: autodocs.py:116
+msgid "Create docs for a cog"
+msgstr ""
+
+#: autodocs.py:118
+msgid "The name of the cog you want to make docs for (Case Sensitive)"
+msgstr ""
+
+#: autodocs.py:119
+msgid "Replace all occurrences of [p] with the bots prefix"
+msgstr ""
+
+#: autodocs.py:120
+msgid "Replace all occurrences of [botname] with the bots name"
+msgstr ""
+
+#: autodocs.py:121
+msgid "Include extra info like converters and their docstrings"
+msgstr ""
+
+#: autodocs.py:122
+msgid "Include hidden commands"
+msgstr ""
+
+#: autodocs.py:123
+msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
+msgstr ""
+
+#: autodocs.py:126
+msgid "Include a csv with each command isolated per row"
+msgstr ""
+
+#: autodocs.py:141
+#, docstring
+msgid "\n"
+"        Create a Markdown docs page for a cog and send to discord\n\n"
+"        **Arguments**\n"
+"        `cog_name:           `(str) The name of the cog you want to make docs for (Case Sensitive)\n"
+"        `replace_prefix:     `(bool) If True, replaces the `prefix` placeholder with the bots prefix\n"
+"        `replace_botname:    `(bool) If True, replaces the `botname` placeholder with the bots name\n"
+"        `extended_info:      `(bool) If True, include extra info like converters and their docstrings\n"
+"        `include_hidden:     `(bool) If True, includes hidden commands\n"
+"        `privilege_level:    `(str) Hide commands above specified privilege level\n"
+"        - (user, mod, admin, guildowner, botowner)\n"
+"        `csv_export:         `(bool) Include a csv with each command isolated per row for use as embeddings\n\n"
+"        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
+"        them and sent in a zip file\n"
+"        "
+msgstr ""
+
+#: autodocs.py:163
+msgid "AllCogDocs"
+msgstr ""
+
+#: autodocs.py:203
+msgid "Here are the docs for all of your currently loaded cogs!"
+msgstr ""
+
+#: autodocs.py:207
+msgid "I could not find that cog, maybe it is not loaded?"
+msgstr ""
+
+#: autodocs.py:229
+msgid "Here are your docs for {}!"
+msgstr ""
+
+#: converters.py:62
+msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
+msgstr ""
+
+#: converters.py:65
+msgid "A number without decimal places."
+msgstr ""
+
+#: converters.py:66
+msgid "A number with or without decimal places."
+msgstr ""
+
+#: converters.py:67
+msgid "Can be 1, 0, true, false, t, f"
+msgstr ""
+
+#: formatter.py:18
+msgid "Help"
+msgstr ""
+
+#: formatter.py:19
+msgid "Usage"
+msgstr ""
+
+#: formatter.py:20
+msgid "Aliases"
+msgstr ""
+
+#: formatter.py:21
+msgid "Required"
+msgstr ""
+
+#: formatter.py:22
+msgid "Autocomplete"
+msgstr ""
+
+#: formatter.py:23
+msgid "Choices"
+msgstr ""
+
+#: formatter.py:24
+msgid "Optional"
+msgstr ""
+
+#: formatter.py:25
+msgid "Default"
+msgstr ""
+
+#: formatter.py:26
+msgid "Slash"
+msgstr ""
+
+#: formatter.py:27
+msgid "Hybrid"
+msgstr ""
+
+#: formatter.py:28
+msgid "Command"
+msgstr ""
+
+#: formatter.py:29
+msgid "Restricted to"
+msgstr ""
+
+#: formatter.py:30
+msgid "Server Only"
+msgstr ""
+
+#: formatter.py:31
+msgid "per"
+msgstr ""
+
+#: formatter.py:32
+msgid "seconds"
+msgstr ""
+
+#: formatter.py:33
+msgid "second"
+msgstr ""
+
+#: formatter.py:34
+msgid "Cooldown"
+msgstr ""
+
+#: formatter.py:35
+msgid "Checks"
+msgstr ""
+
+#: formatter.py:59
+#, docstring
+msgid "Formats documentation for a single command"
+msgstr ""
+
+#: formatter.py:221
+msgid "Could not get docstring or class for {} converter"
+msgstr ""
+
+#: formatter.py:225 formatter.py:284
+msgid "Could not get docstring for {} converter"
+msgstr ""
+
+#: formatter.py:229
+msgid "Could not get class for {} converter"
+msgstr ""
+
+#: formatter.py:274
+msgid "Could not find {} for the {} argument of the {} command"
+msgstr ""
+
+#: formatter.py:311
+msgid "Extended Arg Info\n"
+msgstr ""
+
