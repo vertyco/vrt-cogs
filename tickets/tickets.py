@@ -29,7 +29,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.2"
+    __version__ = "2.0.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -229,14 +229,8 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
 
                     # v2.0.0 stores message id for close button to re-init views on reload
                     if message_id := ticket_info.get("message_id"):
-                        try:
-                            ticket_message = await ticket_channel.fetch_message(message_id)
-                            view = CloseView(self.bot, self.config, int(uid), ticket_channel)
-                            await ticket_message.edit(view=view)
-                        except discord.NotFound:
-                            log.warning(
-                                f"Failed to update close view for {ticket_channel} in {guild.name}"
-                            )
+                        view = CloseView(self.bot, self.config, int(uid), ticket_channel)
+                        self.bot.add_view(view, message_id=message_id)
 
                     if not ticket_info["logmsg"]:
                         continue

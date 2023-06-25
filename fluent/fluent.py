@@ -242,15 +242,12 @@ class Fluent(commands.Cog):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access translations"""
 
-        async def get_translation(bot, message: str, to_language: str, *args, **kwargs) -> str:
-            cog = bot.get_cog("Fluent")
-            if not cog:
-                return "Cog not loaded!"
-            lang = await cog.converter(to_language)
+        async def get_translation(message: str, to_language: str, *args, **kwargs) -> str:
+            lang = await self.converter(to_language)
             if not lang:
                 return "Invalid target language"
             try:
-                translation = await cog.translate(message, lang)
+                translation = await self.translate(message, lang)
                 return f"{translation.text}\n({translation.src} -> {lang})"
             except Exception as e:
                 return f"Error: {e}"
