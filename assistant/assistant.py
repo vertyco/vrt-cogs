@@ -13,12 +13,7 @@ from redbot.core.bot import Red
 from .abc import CompositeMetaClass
 from .api import API
 from .commands import AssistantCommands
-from .common.utils import (
-    code_string_valid,
-    compile_function,
-    json_schema_invalid,
-    request_embedding,
-)
+from .common.utils import json_schema_invalid, request_embedding
 from .listener import AssistantListener
 from .models import DB, CustomFunction, Embedding, EmbeddingEntryExists, NoAPIKey
 
@@ -44,7 +39,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.5.4"
+    __version__ = "3.5.45"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -104,6 +99,13 @@ class Assistant(
 
     def _cleanup(self):
         cleaned = False
+        # Cleanup registry if any cogs no longer exist
+        for cog_name in self.registry.copy():
+            cog = self.bot.get_cog(cog_name)
+            if not cog:
+                log.debug(f"{cog_name} no longer loaded. Unregistering its functions")
+                del self.registry[cog_name]
+                cleaned = True
         for guild_id in self.db.configs.copy().keys():
             guild = self.bot.get_guild(guild_id)
             if not guild:
@@ -150,6 +152,7 @@ class Assistant(
     async def save_loop(self):
         if not self.db.persistent_conversations:
             return
+        await self._cleanup()
         await self.save_conf()
 
     async def add_embedding(
@@ -241,15 +244,13 @@ class Assistant(
         for i in payload:
             await self.register_function(cog, i["schema"], i["function"])
 
-    async def register_function(
-        self, cog: commands.Cog, schema: dict, function: Union[str, Callable]
-    ) -> bool:
+    async def register_function(self, cog: commands.Cog, schema: dict, function: Callable) -> bool:
         """Allow 3rd party cogs to register their functions for the model to use
 
         Args:
             cog (commands.Cog): the cog registering its commands
             schema (dict): JSON schema representation of the command (see https://json-schema.org/understanding-json-schema/)
-            function (Union[str, Callable]): either the raw code string or the actual callable function
+            function (Callable): the callable function
 
         Returns:
             bool: True if function was successfully registered
@@ -277,21 +278,11 @@ class Assistant(
                 log.info(fail(err))
                 return False
 
-        if isinstance(function, str):
-            if not code_string_valid(function):
-                log.info(fail("Code string is invalid!"))
-                return False
-            function_string = function
-            function = compile_function(function_name, function)
-            log.info(f"The {cog} cog registered a function string: {function_name}")
-        else:
-            if function.__name__ != function_name:
-                log.info(
-                    fail("Function name from json schema does not match function name from code")
-                )
-                return False
-            function_string = inspect.getsource(function)
-            log.info(f"The {cog} cog registered a function object: {function_name}")
+        if function.__name__ != function_name:
+            log.info(fail("Function name from json schema does not match function name from code"))
+            return False
+        function_string = inspect.getsource(function)
+        log.info(f"The {cog} cog registered a function object: {function_name}")
 
         self.registry[cog][function_name] = CustomFunction(
             code=function_string.strip(), jsonschema=schema, call=function

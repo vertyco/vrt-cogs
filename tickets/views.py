@@ -154,6 +154,8 @@ class CloseView(View):
         self.owner_id = owner_id
         self.channel = channel
 
+        self.close_ticket.custom_id = f"{owner_id}|{channel.id}"
+
     @discord.ui.button(label="Close", style=ButtonStyle.danger)
     async def close_ticket(self, interaction: Interaction, button: Button):
         conf = await self.config.guild(interaction.guild).all()
