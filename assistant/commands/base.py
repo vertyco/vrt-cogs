@@ -71,10 +71,16 @@ class Base(MixinMeta):
             # Return the new RGB color
             return (green, blue)
 
-        g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
-        gg, bb = generate_color(conversation.user_token_count(), max_tokens)
-        # Whatever limit is more severe get that color
-        color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
+        try:
+            retention = generate_color(messages, conf.get_user_max_retention(ctx.author))
+            tokens = generate_color(conversation.user_token_count(), max_tokens)
+            # Whatever limit is more severe get that color
+            color = discord.Color.from_rgb(
+                255, min(retention[0], tokens[0]), min(retention[1], tokens[1])
+            )
+        except Exception as e:
+            log.error("could not get color gradient", exc_info=e)
+            color = discord.Color.from_rgb(255, 255, 255)
 
         embed = discord.Embed(
             description=(
