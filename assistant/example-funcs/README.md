@@ -17,29 +17,24 @@ This guide will help you understand how to integrate your cog with the Assistant
 - Understanding of JSON schema (see [JSON Schema Reference](https://json-schema.org/understanding-json-schema/))
 - Knowledge of OpenAI's function call feature (see [Function Call Docs](https://platform.openai.com/docs/guides/gpt/function-calling) and [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_with_chat_models.ipynb))
 
-## Function Registration
+# Function Registration
 
-To register a function, use the `register_function` method. This method allows 3rd party cogs to register their functions for the model to use.
+There are two ways the Assistant can use functions.
 
-The method takes three arguments:
+1. Custom Functions: The bot owner can create custom functions via the `[p]customfunc` menu
+2. Registry Functions: Other 3rd party cogs can register their functions
 
-- `cog_name`: the name of the cog registering its commands
-- `schema`: [JSON Schema](https://json-schema.org/understanding-json-schema/) representation of the command
+The following objects are passed by default as keyword arguments and do not need to be included in the schema.
 
-The function returns `True` if it was successfully registered. Assitionally, you can use `register_functions` and supply a list of schemas to register multiple functions at once
+- **user**: the user currently chatting with the bot (discord.Member)
+- **channel**: channel the user is chatting in (TextChannel|Thread|ForumChannel)
+- **guild**: current guild (discord.Guild)
+- **bot**: the bot object (Red)
+- **conf**: the config model for Assistant (GuildSettings)
 
-## Function Unregistration
+All functions **MUST** take `*args, **kwargs` as parameters to handle excess objects being passed
 
-To unregister a function or a cog, use the `unregister_function` or `unregister_cog` methods respectively.
-
-## Event Listeners
-
-The Assistant cog uses event listeners to handle the addition and removal of cogs.
-
-- `on_cog_add`: This event is triggered when a new cog is added. It schedules the custom listeners of the added cog.
-- `on_cog_remove`: This event is triggered when a cog is removed. It unregisters the removed cog.
-
-## Function Example
+## Custom Functions
 
 Here is an example of a function that gets a member's VC balance by name:
 
@@ -53,8 +48,6 @@ async def get_member_balance(guild: discord.Guild, name: str, *args, **kwargs) -
     bal = await bank.get_balance(user)
     return f"{bal} VC"
 ```
-
-## JSON Schema Example
 
 Here is an example of a JSON schema for the `get_member_balance` function (note how the `guild` object from the function above isnt included):
 
@@ -75,19 +68,49 @@ Here is an example of a JSON schema for the `get_member_balance` function (note 
 }
 ```
 
-### The following objects are passed by default as keyword arguments and do not need to be included in the schema.
-
-- **user**: the user currently chatting with the bot (discord.Member)
-- **channel**: channel the user is chatting in (TextChannel|Thread|ForumChannel)
-- **guild**: current guild (discord.Guild)
-- **bot**: the bot object (Red)
-- **conf**: the config model for Assistant (GuildSettings)
-
 ## 3rd Party Cog Support
 
 3rd party cogs can register their own functions easily by using a custom listener. The Assistant cog will automatically unregister cogs when they are unloaded. If a cog tries to register a function whose name already exists, an error will be logged and the function will not register.
 
-All functions **MUST** take `*args, **kwargs` as parameters.
+To register a function, use the `register_function` method. This method allows 3rd party cogs to register their functions for the model to use.
+
+The method takes three arguments:
+
+- `cog_name`: the name of the cog registering its commands
+- `schema`: [JSON Schema](https://json-schema.org/understanding-json-schema/) representation of the command
+
+The function returns `True` if it was successfully registered. Additionally, you can use `register_functions` and supply a list of schemas to register multiple functions at once
+
+## Function Registration
+
+```python
+async def register_function(self, cog_name: str, schema: dict) -> bool:
+    ...
+
+async def register_functions(self, cog_name: str, schemas: List[dict]) -> None:
+    # Register multiple functions at once
+    ...
+```
+
+## Function Removal
+
+To unregister a function or a cog, use the `unregister_function` or `unregister_cog` methods respectively.
+
+```python
+async def unregister_function(cog_name: str, function_name: str) -> None:
+    ...
+
+async def unregister_cog(cog_name: str) -> None:
+    # This is automatically called when the cog is unloaded
+    ...
+```
+
+## Event Listeners
+
+The Assistant cog uses event listeners to handle the addition and removal of cogs.
+
+- `on_cog_add`: This event is triggered when a new cog is added. It schedules the custom listeners of the added cog.
+- `on_cog_remove`: This event is triggered when a cog is removed. It unregisters the removed cog.
 
 ### Example implementation
 
@@ -127,7 +150,7 @@ async def get_translation(self, message: str, to_language: str, *args, **kwargs)
 
 By adding this custom listener, the cog can detect when Assistant is loaded and register its function with it to allow OpenAI's LLM to call it when needed.
 
-### Tips:
+## Tips
 
 - The function name in the schema needs to match the function name you wish to call in your cog exactly.
 - The string returned by the function is not seen by the user, it is read by GPT and summarrized by the model so it can be condensed or json, although natural language tends to give more favorable results.
