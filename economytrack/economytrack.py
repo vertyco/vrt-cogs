@@ -31,7 +31,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.4.0"
+    __version__ = "0.4.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -120,68 +120,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
-
-        async def get_member_count_info(
-            guild: discord.Guild, timespan: str = "1d", *args, **kwargs
-        ) -> str:
-            if timespan.lower() == "all":
-                delta = timedelta(days=36500)
-            else:
-                delta = commands.parse_timedelta(timespan, minimum=timedelta(hours=1))
-                if delta is None:
-                    delta = timedelta(hours=1)
-
-            data = await self.config.guild(guild).member_data()
-            if len(data) < 2:
-                return "There is not enough data collected. Try again later."
-
-            timezone = await self.config.guild(guild).timezone()
-            now = datetime.now().astimezone(tz=pytz.timezone(timezone))
-            start = now - delta
-            columns = ["ts", "total"]
-            rows = [i for i in data]
-            for i in rows:
-                i[0] = datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
-            df = pd.DataFrame(rows, columns=columns)
-            df = df.set_index(["ts"])
-            df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
-            mask = (df.index > start) & (df.index <= now)
-            df = df.loc[mask]
-            df = pd.DataFrame(df)
-
-            if df.empty or len(df.values) < 2:  # In case there is data but it is old
-                return "There is not enough data collected. Try again later."
-
-            if timespan.lower() == "all":
-                alltime = humanize_timedelta(seconds=len(data) * 60)
-                reply = f"Total member count for all time ({alltime})\n"
-            else:
-                delta: timedelta = df.index[-1] - df.index[0]
-                reply = f"Total member count over the last {humanize_timedelta(timedelta=delta)}\n"
-
-            lowest = df.min().total
-            highest = df.max().total
-            avg = df.mean().total
-            current = df.values[-1][0]
-
-            reply += f"`DataPoints: `{humanize_number(len(df.values))}\n"
-
-            reply += (
-                "Statistics\n"
-                f"`Current: `{humanize_number(current)}\n"
-                f"`Average: `{humanize_number(round(avg))}\n"
-                f"`Highest: `{humanize_number(highest)}\n"
-                f"`Lowest:  `{humanize_number(lowest)}\n"
-                f"`Diff:    `{humanize_number(highest - lowest)}\n"
-            )
-
-            first = df.values[0][0]
-            diff = "+" if current > first else "-"
-            field = f"{diff} {humanize_number(abs(current - first))}"
-            reply += f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field, 'diff')}"
-            return reply
-
-        schema = {
+        schema1 = {
             "name": "get_member_count_info",
             "description": "Get member stats of the current server over a period of time",
             "parameters": {
@@ -194,82 +133,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
                 },
             },
         }
-        await cog.register_function(self, schema, get_member_count_info)
-
-        async def get_economy_info(
-            guild: discord.Guild, timespan: str = "1d", *args, **kwargs
-        ) -> str:
-            if timespan.lower() == "all":
-                delta = timedelta(days=36500)
-            else:
-                delta = commands.parse_timedelta(timespan, minimum=timedelta(hours=1))
-                if delta is None:
-                    delta = timedelta(hours=1)
-
-            is_global = await bank.is_global()
-            currency_name = await bank.get_currency_name(guild)
-            bank_name = await bank.get_bank_name(guild)
-            if is_global:
-                data = await self.config.data()
-            else:
-                data = await self.config.guild(guild).data()
-
-            if len(data) < 2:
-                return "There is not enough data collected. Try again later."
-
-            timezone = await self.config.guild(guild).timezone()
-            now = datetime.now().astimezone(tz=pytz.timezone(timezone))
-            start = now - delta
-            columns = ["ts", "total"]
-            rows = [i for i in data]
-            for i in rows:
-                i[0] = datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
-            df = pd.DataFrame(rows, columns=columns)
-            df = df.set_index(["ts"])
-            df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
-            mask = (df.index > start) & (df.index <= now)
-            df = df.loc[mask]
-            df = pd.DataFrame(df)
-
-            if df.empty or len(df.values) < 2:  # In case there is data but it is old
-                return "There is not enough data collectedTry again later."
-
-            if timespan.lower() == "all":
-                alltime = humanize_timedelta(seconds=len(data) * 60)
-                reply = f"Total economy balance for all time ({alltime})"
-            else:
-                delta: timedelta = df.index[-1] - df.index[0]
-                reply = (
-                    f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
-                )
-
-            lowest = df.min().total
-            highest = df.max().total
-            avg = df.mean().total
-            current = df.values[-1][0]
-
-            reply += (
-                f"`DataPoints: `{humanize_number(len(df.values))}\n"
-                f"`BankName:   `{bank_name}\n"
-                f"`Currency:   `{currency_name}"
-            )
-
-            reply += (
-                "Statistics\n"
-                f"`Current: `{humanize_number(current)}\n"
-                f"`Average: `{humanize_number(round(avg))}\n"
-                f"`Highest: `{humanize_number(highest)}\n"
-                f"`Lowest:  `{humanize_number(lowest)}\n"
-                f"`Diff:    `{humanize_number(highest - lowest)}\n"
-            )
-
-            first = df.values[0][0]
-            diff = "+" if current > first else "-"
-            field = f"{diff} {humanize_number(abs(current - first))}"
-            reply += f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field, 'diff')}"
-            return reply
-
-        schema = {
+        schema2 = {
             "name": "get_economy_info",
             "description": "Get total amount of currency for the current guild, along with bank info and economy stats",
             "parameters": {
@@ -282,4 +146,135 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
                 },
             },
         }
-        await cog.register_function(self, schema, get_economy_info)
+        await cog.register_functions("EconomyTrack", [schema1, schema2])
+
+    async def get_member_count_info(
+        self, guild: discord.Guild, timespan: str = "1d", *args, **kwargs
+    ) -> str:
+        if timespan.lower() == "all":
+            delta = timedelta(days=36500)
+        else:
+            delta = commands.parse_timedelta(timespan, minimum=timedelta(hours=1))
+            if delta is None:
+                delta = timedelta(hours=1)
+
+        data = await self.config.guild(guild).member_data()
+        if len(data) < 2:
+            return "There is not enough data collected. Try again later."
+
+        timezone = await self.config.guild(guild).timezone()
+        now = datetime.now().astimezone(tz=pytz.timezone(timezone))
+        start = now - delta
+        columns = ["ts", "total"]
+        rows = [i for i in data]
+        for i in rows:
+            i[0] = datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
+        df = pd.DataFrame(rows, columns=columns)
+        df = df.set_index(["ts"])
+        df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
+        mask = (df.index > start) & (df.index <= now)
+        df = df.loc[mask]
+        df = pd.DataFrame(df)
+
+        if df.empty or len(df.values) < 2:  # In case there is data but it is old
+            return "There is not enough data collected. Try again later."
+
+        if timespan.lower() == "all":
+            alltime = humanize_timedelta(seconds=len(data) * 60)
+            reply = f"Total member count for all time ({alltime})\n"
+        else:
+            delta: timedelta = df.index[-1] - df.index[0]
+            reply = f"Total member count over the last {humanize_timedelta(timedelta=delta)}\n"
+
+        lowest = df.min().total
+        highest = df.max().total
+        avg = df.mean().total
+        current = df.values[-1][0]
+
+        reply += f"`DataPoints: `{humanize_number(len(df.values))}\n"
+
+        reply += (
+            "Statistics\n"
+            f"`Current: `{humanize_number(current)}\n"
+            f"`Average: `{humanize_number(round(avg))}\n"
+            f"`Highest: `{humanize_number(highest)}\n"
+            f"`Lowest:  `{humanize_number(lowest)}\n"
+            f"`Diff:    `{humanize_number(highest - lowest)}\n"
+        )
+
+        first = df.values[0][0]
+        diff = "+" if current > first else "-"
+        field = f"{diff} {humanize_number(abs(current - first))}"
+        reply += f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field, 'diff')}"
+        return reply
+
+    async def get_economy_info(
+        self, guild: discord.Guild, timespan: str = "1d", *args, **kwargs
+    ) -> str:
+        if timespan.lower() == "all":
+            delta = timedelta(days=36500)
+        else:
+            delta = commands.parse_timedelta(timespan, minimum=timedelta(hours=1))
+            if delta is None:
+                delta = timedelta(hours=1)
+
+        is_global = await bank.is_global()
+        currency_name = await bank.get_currency_name(guild)
+        bank_name = await bank.get_bank_name(guild)
+        if is_global:
+            data = await self.config.data()
+        else:
+            data = await self.config.guild(guild).data()
+
+        if len(data) < 2:
+            return "There is not enough data collected. Try again later."
+
+        timezone = await self.config.guild(guild).timezone()
+        now = datetime.now().astimezone(tz=pytz.timezone(timezone))
+        start = now - delta
+        columns = ["ts", "total"]
+        rows = [i for i in data]
+        for i in rows:
+            i[0] = datetime.fromtimestamp(i[0]).astimezone(tz=pytz.timezone(timezone))
+        df = pd.DataFrame(rows, columns=columns)
+        df = df.set_index(["ts"])
+        df = df[~df.index.duplicated(keep="first")]  # Remove duplicate indexes
+        mask = (df.index > start) & (df.index <= now)
+        df = df.loc[mask]
+        df = pd.DataFrame(df)
+
+        if df.empty or len(df.values) < 2:  # In case there is data but it is old
+            return "There is not enough data collectedTry again later."
+
+        if timespan.lower() == "all":
+            alltime = humanize_timedelta(seconds=len(data) * 60)
+            reply = f"Total economy balance for all time ({alltime})"
+        else:
+            delta: timedelta = df.index[-1] - df.index[0]
+            reply = f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
+
+        lowest = df.min().total
+        highest = df.max().total
+        avg = df.mean().total
+        current = df.values[-1][0]
+
+        reply += (
+            f"`DataPoints: `{humanize_number(len(df.values))}\n"
+            f"`BankName:   `{bank_name}\n"
+            f"`Currency:   `{currency_name}"
+        )
+
+        reply += (
+            "Statistics\n"
+            f"`Current: `{humanize_number(current)}\n"
+            f"`Average: `{humanize_number(round(avg))}\n"
+            f"`Highest: `{humanize_number(highest)}\n"
+            f"`Lowest:  `{humanize_number(lowest)}\n"
+            f"`Diff:    `{humanize_number(highest - lowest)}\n"
+        )
+
+        first = df.values[0][0]
+        diff = "+" if current > first else "-"
+        field = f"{diff} {humanize_number(abs(current - first))}"
+        reply += f"Since <t:{int(df.index[0].timestamp())}:D>\n{box(field, 'diff')}"
+        return reply

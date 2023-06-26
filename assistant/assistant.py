@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import logging
 from multiprocessing.pool import Pool
 from time import perf_counter
@@ -15,7 +14,7 @@ from .api import API
 from .commands import AssistantCommands
 from .common.utils import json_schema_invalid, request_embedding
 from .listener import AssistantListener
-from .models import DB, CustomFunction, Embedding, EmbeddingEntryExists, NoAPIKey
+from .models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 
 log = logging.getLogger("red.vrt.assistant")
 
@@ -39,7 +38,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.5.45"
+    __version__ = "3.6.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -52,7 +51,9 @@ class Assistant(
         self.config.register_global(db={})
         self.db: DB = DB()
         self.re_pool = Pool()
-        self.registry: Dict[str, Dict[str, CustomFunction]] = {}
+
+        # {cog_name: {function_name: {function_json_schema}}}
+        self.registry: Dict[str, Dict[str, dict]] = {}
 
         self.saving = False
         self.first_run = True
@@ -100,12 +101,20 @@ class Assistant(
     def _cleanup(self):
         cleaned = False
         # Cleanup registry if any cogs no longer exist
-        for cog_name in self.registry.copy():
+        for cog_name, cog_functions in self.registry.copy().items():
             cog = self.bot.get_cog(cog_name)
             if not cog:
                 log.debug(f"{cog_name} no longer loaded. Unregistering its functions")
                 del self.registry[cog_name]
                 cleaned = True
+                continue
+            for function_name in cog_functions:
+                if not hasattr(cog, function_name):
+                    log.debug(f"{cog_name} no longer has function named {function_name}, removing")
+                    del self.registry[cog_name][function_name]
+                    cleaned = True
+
+        # Clean up any stale channels
         for guild_id in self.db.configs.copy().keys():
             guild = self.bot.get_guild(guild_id)
             if not guild:
@@ -155,6 +164,7 @@ class Assistant(
         await self._cleanup()
         await self.save_conf()
 
+    # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
         self, guild: discord.Guild, name: str, text: str, overwrite: bool = False
     ) -> Optional[List[float]]:
@@ -231,95 +241,97 @@ class Assistant(
             extend_function_calls,
         )
 
-    async def register_functions(self, cog: commands.Cog, payload: List[dict]) -> None:
-        """Quick way to register multiple functions for a cog
-
-        Args:
-            cog (commands.Cog)
-            payload (List[dict]): List of dicts representing the json schema and function call or string
-
-        Example:
-            payload = [{"schema": {ValidJsonSchema}, "function": CallableOrString}, {...}, {...}]
-        """
-        for i in payload:
-            await self.register_function(cog, i["schema"], i["function"])
-
-    async def register_function(self, cog: commands.Cog, schema: dict, function: Callable) -> bool:
-        """Allow 3rd party cogs to register their functions for the model to use
-
-        Args:
-            cog (commands.Cog): the cog registering its commands
-            schema (dict): JSON schema representation of the command (see https://json-schema.org/understanding-json-schema/)
-            function (Callable): the callable function
-
-        Returns:
-            bool: True if function was successfully registered
-        """
-        cog_name = cog.qualified_name
-
-        def fail(reason: str):
-            return f"Function registry failed for {cog_name}: {reason}"
-
-        if not schema or not function:
-            log.info(fail("Schema or Function not supplied"))
-            return False
-        if cog_name not in self.registry:
-            self.registry[cog_name] = {}
-        missing = json_schema_invalid(schema)
-        if missing:
-            log.info(fail(f"Invalid json schema. Reasons:\n{missing}"))
-            return False
-        function_name = schema["name"]
-        for registered_cog, registered_functions in self.registry.items():
-            if registered_cog == cog_name:
-                continue
-            if function_name in registered_functions:
-                err = f"{registered_cog} already registered the function {function_name}"
-                log.info(fail(err))
-                return False
-
-        if function.__name__ != function_name:
-            log.info(fail("Function name from json schema does not match function name from code"))
-            return False
-        function_string = inspect.getsource(function)
-        log.info(f"The {cog_name} cog registered a function object: {function_name}")
-
-        self.registry[cog_name][function_name] = CustomFunction(
-            code=function_string.strip(), jsonschema=schema, call=function
-        )
-        return True
-
-    async def unregister_cog(self, cog: commands.Cog) -> None:
-        """Remove a cog from the registry
-
-        Args:
-            cog (commands.Cog)
-        """
-        cog_name = cog.qualified_name
-        if cog_name not in self.registry:
-            return
-        del self.registry[cog_name]
-        log.info(f"{cog_name} cog removed from registry")
-
-    async def unregister_function(self, cog: commands.Cog, function_name: str) -> None:
-        """Remove a specific cog's function from the registry
-
-        Args:
-            cog (commands.Cog)
-            function_name (str)
-        """
-        cog_name = cog.qualified_name
-        if cog_name not in self.registry:
-            return
-        if function_name not in self.registry[cog_name]:
-            return
-        del self.registry[cog_name][function_name]
-        log.info(f"{cog_name} cog removed the function {function_name} from the registry")
-
+    # ------------------ 3rd PARTY FUNCTION REGISTRY ------------------
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
         self.bot.dispatch("assistant_cog_add", self)
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog):
-        await self.unregister_cog(cog)
+        await self.unregister_cog(cog.qualified_name)
+
+    async def register_functions(self, cog_name: str, schemas: List[dict]) -> None:
+        """Quick way to register multiple functions for a cog
+
+        Args:
+            cog_name (str): the name of the cog registering the functions
+            schemas (List[dict]): List of dicts representing the json schemas of the functions
+        """
+        for schema in schemas:
+            await self.register_function(cog_name, schema)
+
+    async def register_function(self, cog_name: str, schema: dict) -> bool:
+        """Allow 3rd party cogs to register their functions for the model to use
+
+        Args:
+            cog_name (str): the name of the cog registering the function
+            schema (dict): JSON schema representation of the command (see https://json-schema.org/understanding-json-schema/)
+
+        Returns:
+            bool: True if function was successfully registered
+        """
+
+        def fail(reason: str):
+            return f"Function registry failed for {cog_name}: {reason}"
+
+        cog = self.bot.get_cog(cog_name)
+        if not cog:
+            log.info(fail("Cog is not loaded or does not exist"))
+            return False
+
+        if not schema:
+            log.info(fail("Empty schema dict provided!"))
+            return False
+
+        missing = json_schema_invalid(schema)
+        if missing:
+            log.info(fail(f"Invalid json schema!\nMISSING\n{missing}"))
+            return False
+
+        function_name = schema["name"]
+        for registered_cog_name, registered_functions in self.registry.items():
+            if registered_cog_name == cog_name:
+                continue
+            if function_name in registered_functions:
+                err = f"{registered_cog_name} already registered the function {function_name}"
+                log.info(fail(err))
+                return False
+
+        if not hasattr(cog, function_name):
+            log.info(fail(f"Cog does not have a function called {function_name}"))
+            return False
+
+        if cog_name not in self.registry:
+            self.registry[cog_name] = {}
+
+        log.info(f"The {cog_name} cog registered a function object: {function_name}")
+        self.registry[cog_name][function_name] = schema
+        return True
+
+    async def unregister_function(self, cog_name: str, function_name: str) -> None:
+        """Remove a specific cog's function from the registry
+
+        Args:
+            cog_name (str): name of the cog
+            function_name (str): name of the function
+        """
+        if cog_name not in self.registry:
+            log.debug(f"{cog_name} not in registry")
+            return
+        if function_name not in self.registry[cog_name]:
+            log.debug(f"{function_name} not in {cog_name}'s registry")
+            return
+        del self.registry[cog_name][function_name]
+        log.info(f"{cog_name} cog removed the function {function_name} from the registry")
+
+    async def unregister_cog(self, cog_name: str) -> None:
+        """Remove a cog from the registry
+
+        Args:
+            cog_name (str): name of the cog
+        """
+        if cog_name not in self.registry:
+            log.debug(f"{cog_name} not in registry")
+            return
+        del self.registry[cog_name]
+        log.info(f"{cog_name} cog removed from registry")

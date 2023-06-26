@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import json
 import logging
 import math
@@ -18,7 +19,8 @@ from openai.error import (
 )
 from openai.version import VERSION
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box
+from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import box, humanize_number
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -203,7 +205,7 @@ def degrade_conversation(
         if most_recent_user != -1 and most_recent_function != -1 and most_recent_assistant != -1:
             break
 
-    log.debug(f"Degrating messages (total: {total_tokens}/max: {max_tokens})")
+    log.debug(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
     # Degrade the conversation except for the most recent user and function messages
     i = 0
     while total_tokens > max_tokens and i < len(messages):
@@ -286,16 +288,29 @@ def compile_messages(messages: List[dict]) -> str:
 
 
 def function_embeds(
-    functions: Dict[str, Any], registry: Dict[commands.Cog, Dict[str, Any]], owner: bool
+    functions: Dict[str, dict], registry: Dict[str, Dict[str, dict]], owner: bool, bot: Red
 ) -> List[discord.Embed]:
     main = {"Assistant": functions}
-    for cog, funcs in registry.items():
-        main[cog] = funcs
+    for cog_name, function_schemas in registry.items():
+        cog = bot.get_cog(cog_name)
+        if not cog:
+            continue
+        for function_name, function_schema in function_schemas.items():
+            function_obj = getattr(cog, function_name, None)
+            if function_obj is None:
+                continue
+            if cog_name not in main:
+                main[cog_name] = {}
+            main[cog_name][function_name] = {
+                "code": inspect.getsource(function_obj),
+                "jsonschema": function_schema,
+            }
+
     pages = sum(len(v) for v in main.values())
     page = 1
     embeds = []
     for cog_name, functions in main.items():
-        for function_name, function in functions.items():
+        for function_name, func in functions.items():
             embed = discord.Embed(
                 title="Custom Functions", description=function_name, color=discord.Color.blue()
             )
@@ -305,22 +320,30 @@ def function_embeds(
                     value=f"This function is managed by the `{cog_name}` cog",
                     inline=False,
                 )
+            schema = json.dumps(func["jsonschema"], indent=2)
+            tokens = num_tokens_from_string(schema)
+            schema_text = (
+                f"This function consumes `{humanize_number(tokens)}` input tokens each call\n"
+            )
+
             if owner:
-                schema = json.dumps(function.jsonschema, indent=2)
                 if len(schema) > 1000:
-                    schema = f"{schema[:1000]}..."
-                embed.add_field(name="Schema", value=box(schema, "json"), inline=False)
-                code = box(function.code, "py")
-                if len(function.code) > 1000:
-                    code = f"{box(function.code[:1000], 'py')}..."
-                embed.add_field(name="Code", value=code, inline=False)
+                    schema_text += box(schema[:1000], "py") + "..."
+                else:
+                    schema_text += box(schema, "py")
+
+                if len(func["code"]) > 1000:
+                    code_text = box(func["code"][:1000], "py") + "..."
+                else:
+                    code_text = box(func["code"], "py")
+
             else:
-                embed.add_field(
-                    name="Schema",
-                    value=box(function.jsonschema["description"], "json"),
-                    inline=False,
-                )
-                embed.add_field(name="Code", value=box("Hidden..."), inline=False)
+                schema_text += box(func["jsonschema"]["description"], "json")
+                code_text = box("Hidden...")
+
+            embed.add_field(name="Schema", value=schema_text, inline=False)
+            embed.add_field(name="Code", value=code_text, inline=False)
+
             embed.set_footer(text=f"Page {page}/{pages}")
             embeds.append(embed)
             page += 1
