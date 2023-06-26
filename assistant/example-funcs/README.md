@@ -68,7 +68,7 @@ Here is an example of a JSON schema for the `get_member_balance` function (note 
 }
 ```
 
-## 3rd Party Cog Support
+## 3rd Party Cog Support (Registry Functions)
 
 3rd party cogs can register their own functions easily by using a custom listener. The Assistant cog will automatically unregister cogs when they are unloaded. If a cog tries to register a function whose name already exists, an error will be logged and the function will not register.
 
