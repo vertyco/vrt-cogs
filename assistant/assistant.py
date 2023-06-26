@@ -98,7 +98,7 @@ class Assistant(
         if not self.db.persistent_conversations and self.save_loop.is_running():
             self.save_loop.cancel()
 
-    def _cleanup(self):
+    def _cleanup_db(self):
         cleaned = False
         # Cleanup registry if any cogs no longer exist
         for cog_name, cog_functions in self.registry.copy().items():
@@ -161,7 +161,7 @@ class Assistant(
     async def save_loop(self):
         if not self.db.persistent_conversations:
             return
-        await self._cleanup()
+        await asyncio.to_thread(self._cleanup_db)
         await self.save_conf()
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
