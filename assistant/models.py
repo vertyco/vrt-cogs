@@ -1,11 +1,12 @@
 import logging
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 import orjson
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
+from redbot.core.bot import Red
 
 from .common.utils import compile_function, num_tokens_from_string
 
@@ -92,34 +93,17 @@ class Embedding(BaseModel):
 
 
 class CustomFunction(BaseModel):
+    """Functions added by bot owner via string"""
+
     code: str
     jsonschema: dict
-    call: Callable = None
 
     class Config:
-        arbitrary_types_allowed = True
         json_loads = orjson.loads
         json_dumps = orjson.dumps
 
-    def dict(self, *args, **kwargs):
-        kwargs["exclude"] = {"call": True}
-        return super().dict(*args, **kwargs)
-
-    @classmethod
-    def parse_obj(cls, obj: Any):
-        name = obj["jsonschema"]["name"]
-        try:
-            obj["call"] = compile_function(name, obj["code"])
-        except Exception as e:
-            log.error(f"Failed to compile saved function: {name}", exc_info=e)
-        return super().parse_obj(obj)
-
-    def refresh(self):
-        name = self.jsonschema["name"]
-        try:
-            self.call = compile_function(name, self.code)
-        except Exception as e:
-            log.error(f"Failed to compile saved function: {name}", exc_info=e)
+    def prep(self) -> Callable:
+        return compile_function(self.jsonschema["name"], self.code)
 
 
 class GuildSettings(BaseModel):
@@ -306,14 +290,6 @@ class DB(BaseModel):
         json_loads = orjson.loads
         json_dumps = orjson.dumps
 
-    @classmethod
-    def parse_obj(cls, obj: Any):
-        if "functions" in obj:
-            obj["functions"] = {
-                k: CustomFunction.parse_obj(v) for k, v in obj["functions"].items()
-            }
-        return super().parse_obj(obj)
-
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
 
@@ -336,21 +312,46 @@ class DB(BaseModel):
         self.conversations[key] = Conversation()
         return self.conversations[key]
 
-    def get_function_calls(self, conf: GuildSettings) -> List[dict]:
-        return [
-            i.jsonschema
-            for i in self.functions.values()
-            if i.jsonschema["name"] not in conf.disabled_functions and i.call is not None
-        ]
+    def prep_functions(
+        self, bot: Red, conf: GuildSettings, registry: Dict[str, Dict[str, dict]]
+    ) -> Tuple[List[dict], Dict[str, Callable]]:
+        """Prep custom and registry functions for use with the API
 
-    def get_function_map(self) -> Dict[str, Callable]:
-        functions = {}
-        for function_name, function in self.functions.items():
-            if not function.call:
-                log.warning(f"No call for {function_name}")
+        Args:
+            bot (Red): Red instance
+            conf (GuildSettings): current guild settings
+            registry (Dict[str, Dict[str, dict]]): 3rd party cog registry dict
+
+        Returns:
+            Tuple[List[dict], Dict[str, Callable]]: List of json function schemas and a dict mapping to their callables
+        """
+        function_calls = []
+        function_map = {}
+
+        # Prep bot owner functions first
+        for function_name, func in self.functions.items():
+            if func.jsonschema["name"] in conf.disabled_functions:
                 continue
-            functions[function_name] = function.call
-        return functions
+            function_calls.append(func.jsonschema)
+            function_map[function_name] = func.prep()
+
+        # Next prep registry functions
+        for cog_name, function_schemas in registry.items():
+            cog = bot.get_cog(cog_name)
+            if not cog:
+                continue
+            for function_name, function_schema in function_schemas.items():
+                if function_name in conf.disabled_functions:
+                    continue
+                if function_name in function_map:
+                    continue
+                function_obj = getattr(cog, function_name, None)
+                if function_obj is None:
+                    continue
+                function_calls.append(function_schema)
+                function_map[function_name] = function_obj
+
+        return function_calls, function_map
 
 
 class NoAPIKey(Exception):

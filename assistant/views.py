@@ -419,7 +419,7 @@ class CodeMenu(discord.ui.View):
         self,
         ctx: commands.Context,
         db: DB,
-        registry: Dict[commands.Cog, Dict[str, CustomFunction]],
+        registry: Dict[str, Dict[str, dict]],
         save_func: Callable,
     ):
         super().__init__(timeout=600)
@@ -458,8 +458,9 @@ class CodeMenu(discord.ui.View):
 
     async def get_pages(self) -> None:
         owner = self.ctx.author.id in self.ctx.bot.owner_ids
+        func_dump = {k: v.dict() for k, v in self.db.functions.items()}
         self.pages = await asyncio.to_thread(
-            function_embeds, self.db.functions, self.registry, owner
+            function_embeds, func_dump, self.registry, owner, self.ctx.bot
         )
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)

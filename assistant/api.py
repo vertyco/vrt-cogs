@@ -224,16 +224,12 @@ class API(MixinMeta):
     ) -> str:
         """Call the API asynchronously"""
         if conf.use_function_calls and extend_function_calls:
-            function_calls.extend(self.db.get_function_calls(conf))
-            function_map.update(self.db.get_function_map())
-            for cog_name, cog_functions in self.registry.items():
-                if not self.bot.get_cog(cog_name):
-                    continue
-                for function_name, function in cog_functions.items():
-                    if not function.call:
-                        continue
-                    function_calls.append(function.jsonschema)
-                    function_map[function_name] = function.call
+            # Prepare registry and custom functions
+            prepped_function_calls, prepped_function_map = self.db.prep_functions(
+                bot=self.bot, conf=conf, registry=self.registry
+            )
+            function_calls.extend(prepped_function_calls)
+            function_map.update(prepped_function_map)
 
         conversation = self.db.get_conversation(
             author if isinstance(author, int) else author.id,
@@ -293,7 +289,6 @@ class API(MixinMeta):
             while True:
                 if calls >= conf.max_function_calls or conversation.function_count() >= 64:
                     function_calls = []
-                # Safely prep messages
 
                 if len(messages) > 1:
                     # Iteratively degrade the conversation to ensure it is always under the token limit

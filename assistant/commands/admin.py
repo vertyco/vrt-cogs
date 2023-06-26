@@ -64,15 +64,10 @@ class Admin(MixinMeta):
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
         system_tokens = num_tokens_from_string(conf.system_prompt)
         prompt_tokens = num_tokens_from_string(conf.prompt)
-        third_party_funcs = [
-            i.jsonschema
-            for sublist in self.registry.values()
-            for i in sublist.values()
-            if i.jsonschema["name"] not in conf.disabled_functions
-        ]
-        func_tokens = function_list_tokens(
-            self.db.get_function_calls(conf)
-        ) + function_list_tokens(third_party_funcs)
+        func_list, _ = self.db.prep_functions(self.bot, conf, self.registry)
+        func_tokens = function_list_tokens(func_list)
+        func_count = len(func_list)
+
         desc = (
             f"`OpenAI Version:    `{VERSION}\n"
             f"`Model:             `{conf.model}\n"
@@ -114,8 +109,9 @@ class Admin(MixinMeta):
         if self.registry:
             cogs = humanize_list([cog for cog in self.registry])
             custom_func_field += f"The following cogs also have functions registered with the assistant\n{box(cogs)}"
+
         embed.add_field(
-            name=f"Custom Functions ({len(self.db.functions)})",
+            name=f"Custom Functions ({humanize_number(func_count)})",
             value=custom_func_field,
             inline=False,
         )

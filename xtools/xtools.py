@@ -41,7 +41,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.10.1"
+    __version__ = "3.10.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -968,56 +968,6 @@ class XTools(commands.Cog):
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
-
-        async def get_gamertag_profile(
-            user: discord.Member, gamertag: str = None, *args, **kwargs
-        ):
-            async with aiohttp.ClientSession() as session:
-                if not gamertag:
-                    users = await self.config.users()
-                    if str(user.id) not in users:
-                        return "No gamertag has been set for this user, please specify a gamertag"
-                    gamertag = users[str(user.id)]["gamertag"]
-                xbl_client = await self.auth_manager(session)
-                if not xbl_client:
-                    return "Could not communicate with XSAPI"
-
-                try:
-                    profile_data = json.loads(
-                        (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                    )
-                except aiohttp.ClientResponseError:
-                    return "Invalid Gamertag. Try again."
-
-                _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-                friends_data = json.loads(
-                    (await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json()
-                )
-
-                # Manually get presence and activity info since xbox webapi method is outdated
-                token = await self.get_token(session)
-                header = {
-                    "x-xbl-contract-version": "3",
-                    "Authorization": token,
-                    "Accept": "application/json",
-                    "Accept-Language": "en-US",
-                    "Host": "presencebeta.xboxlive.com",
-                }
-                url = f"https://userpresence.xboxlive.com/users/xuid({xuid})"
-                async with self.session.get(url=url, headers=header) as res:
-                    presence_data = await res.json(content_type=None)
-                url = f"https://avty.xboxlive.com/users/xuid({xuid})/Activity/History?numItems=5&excludeTypes=TextPost"
-                async with self.session.get(url=url, headers=header) as res:
-                    activity_data = await res.json(content_type=None)
-                profile_data["friends"] = friends_data
-                profile_data["presence"] = presence_data
-                profile_data["activity"] = activity_data["activityItems"]
-                embed = profile_embed(profile_data)
-                reply = f"{embed.title}\n"
-                for field in embed.fields:
-                    reply += f"{field.name}\n{field.value}\n\n"
-                return reply
-
         schema = {
             "name": "get_gamertag_profile",
             "description": "Get details about an Xbox Gamertag profile like gamerscore, bio, followers, ect..",
@@ -1031,4 +981,53 @@ class XTools(commands.Cog):
                 },
             },
         }
-        await cog.register_function(self, schema, get_gamertag_profile)
+        await cog.register_function("XTools", schema)
+
+    async def get_gamertag_profile(
+        self, user: discord.Member, gamertag: str = None, *args, **kwargs
+    ):
+        async with aiohttp.ClientSession() as session:
+            if not gamertag:
+                users = await self.config.users()
+                if str(user.id) not in users:
+                    return "No gamertag has been set for this user, please specify a gamertag"
+                gamertag = users[str(user.id)]["gamertag"]
+            xbl_client = await self.auth_manager(session)
+            if not xbl_client:
+                return "Could not communicate with XSAPI"
+
+            try:
+                profile_data = json.loads(
+                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
+                )
+            except aiohttp.ClientResponseError:
+                return "Invalid Gamertag. Try again."
+
+            _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
+            friends_data = json.loads(
+                (await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json()
+            )
+
+            # Manually get presence and activity info since xbox webapi method is outdated
+            token = await self.get_token(session)
+            header = {
+                "x-xbl-contract-version": "3",
+                "Authorization": token,
+                "Accept": "application/json",
+                "Accept-Language": "en-US",
+                "Host": "presencebeta.xboxlive.com",
+            }
+            url = f"https://userpresence.xboxlive.com/users/xuid({xuid})"
+            async with self.session.get(url=url, headers=header) as res:
+                presence_data = await res.json(content_type=None)
+            url = f"https://avty.xboxlive.com/users/xuid({xuid})/Activity/History?numItems=5&excludeTypes=TextPost"
+            async with self.session.get(url=url, headers=header) as res:
+                activity_data = await res.json(content_type=None)
+            profile_data["friends"] = friends_data
+            profile_data["presence"] = presence_data
+            profile_data["activity"] = activity_data["activityItems"]
+            embed = profile_embed(profile_data)
+            reply = f"{embed.title}\n"
+            for field in embed.fields:
+                reply += f"{field.name}\n{field.value}\n\n"
+            return reply

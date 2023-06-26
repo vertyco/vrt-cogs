@@ -75,7 +75,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """Your friendly neighborhood leveling system"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.1.5"
+    __version__ = "3.1.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2965,23 +2965,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
-
-        async def get_user_profile(user: discord.Member, *args, **kwargs):
-            if user.guild.id not in self.data:
-                return "The LevelUp cog has been loaded but doesnt have any data yet"
-            self.init_user(user.guild.id, str(user.id))
-            user_data = self.data[user.guild.id]["users"][str(user.id)].copy()
-            txt = (
-                f"Experience: {round(user_data['xp'])}\n"
-                f"Voice time: {humanize_timedelta(seconds=int(user_data['voice']))}\n"
-                f"Message count: {humanize_number(user_data['messages'])}\n"
-                f"Level: {user_data['level']}\n"
-                f"Prestige: {user_data['prestige']}\n"
-                f"Emoji: {user_data['emoji']}\n"
-                f"Stars: {humanize_number(user_data['stars'])}"
-            )
-            return txt
-
         schema = {
             "name": "get_user_profile",
             "description": "get a users level, xp, voice time and other stats about their LevelUp profile in the discord",
@@ -2990,4 +2973,20 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 "properties": {},
             },
         }
-        await cog.register_function(self, schema, get_user_profile)
+        await cog.register_function("LevelUp", schema)
+
+    async def get_user_profile(self, user: discord.Member, *args, **kwargs):
+        if user.guild.id not in self.data:
+            return "The LevelUp cog has been loaded but doesnt have any data yet"
+        self.init_user(user.guild.id, str(user.id))
+        user_data = self.data[user.guild.id]["users"][str(user.id)].copy()
+        txt = (
+            f"Experience: {round(user_data['xp'])}\n"
+            f"Voice time: {humanize_timedelta(seconds=int(user_data['voice']))}\n"
+            f"Message count: {humanize_number(user_data['messages'])}\n"
+            f"Level: {user_data['level']}\n"
+            f"Prestige: {user_data['prestige']}\n"
+            f"Emoji: {user_data['emoji']}\n"
+            f"Stars: {humanize_number(user_data['stars'])}"
+        )
+        return txt

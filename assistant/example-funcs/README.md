@@ -23,11 +23,10 @@ To register a function, use the `register_function` method. This method allows 3
 
 The method takes three arguments:
 
-- `cog`: the cog registering its commands
-- `schema`: JSON schema representation of the command
-- `function`: either the raw code string or the actual callable function
+- `cog_name`: the name of the cog registering its commands
+- `schema`: [JSON Schema](https://json-schema.org/understanding-json-schema/) representation of the command
 
-The function returns `True` if the function was successfully registered.
+The function returns `True` if it was successfully registered. Assitionally, you can use `register_functions` and supply a list of schemas to register multiple functions at once
 
 ## Function Unregistration
 
@@ -88,11 +87,50 @@ Here is an example of a JSON schema for the `get_member_balance` function (note 
 
 3rd party cogs can register their own functions easily by using a custom listener. The Assistant cog will automatically unregister cogs when they are unloaded. If a cog tries to register a function whose name already exists, an error will be logged and the function will not register.
 
-All functions **MUST** take `*args, **kwargs` as parameters. When importing functions as strings, make sure to include any imports. The function name in your schema must match the function name itself exactly.
+All functions **MUST** take `*args, **kwargs` as parameters.
+
+### Example implementation
+
+The exmaple below is how my Fluent cog registers its translate function
+
+```python
+@commands.Cog.listener()
+async def on_assistant_cog_add(self, cog: commands.Cog):
+    """Registers a command with Assistant enabling it to access translations"""
+    schema = {
+        "name": "get_translation",
+        "description": "Translate text to another language",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string", "description": "the text to translate"},
+                "to_language": {
+                    "type": "string",
+                    "description": "the target language to translate to",
+                },
+            },
+            "required": ["message", "to_language"],
+        },
+    }
+    await cog.register_function(cog_name="Fluent", schema=schema)
+
+async def get_translation(self, message: str, to_language: str, *args, **kwargs) -> str:
+    lang = await self.converter(to_language)
+    if not lang:
+        return "Invalid target language"
+    try:
+        translation = await self.translate(message, lang)
+        return f"{translation.text}\n({translation.src} -> {lang})"
+    except Exception as e:
+        return f"Error: {e}"
+```
+
+By adding this custom listener, the cog can detect when Assistant is loaded and register its function with it to allow OpenAI's LLM to call it when needed.
 
 ### Tips:
 
-- The string returned by the function is not seen by the user, it is read by GPT and summarrized by the model so it can be condensed or json, although natural language tends to give more favorable resutls.
+- The function name in the schema needs to match the function name you wish to call in your cog exactly.
+- The string returned by the function is not seen by the user, it is read by GPT and summarrized by the model so it can be condensed or json, although natural language tends to give more favorable results.
 - function description and parameter description matter for how accurately the functions are used.
 - a good system/initial prompt also matters for how/when/why functions will be used.
 - getting things to work how you want is an art, tinker with it as you go, make it as a custom function first before adding it to your cog's listener for easiser testing.
