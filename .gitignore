@@ -158,7 +158,7 @@ testcog/
 makereqs.py
 requirements.txt
 __pycache__/
-scratch.py
+scratch*.py
 template/
 migrate.py
 stonks/
