@@ -204,7 +204,7 @@ class Listen:
                         user = entry.user
                         break
             except discord.Forbidden:
-                # Discord is dumb
+                # Bot left guild before finishing process
                 pass
         return user
 
