@@ -198,10 +198,14 @@ class Listen:
         if not me:
             return user
         if guild.me.guild_permissions.view_audit_log:
-            async for entry in guild.audit_logs(limit=5, action=action):
-                if entry.target.id == target.id:
-                    user = entry.user
-                    break
+            try:
+                async for entry in guild.audit_logs(limit=5, action=action):
+                    if entry.target.id == target.id:
+                        user = entry.user
+                        break
+            except discord.Forbidden:
+                # Discord is dumb
+                pass
         return user
 
     @commands.Cog.listener()
