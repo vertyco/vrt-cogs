@@ -81,7 +81,7 @@ class EconomyTrackCommands(MixinMeta):
                 pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True
             )[0]
             return await ctx.send(f"Invalid Timezone, did you mean `{likely_match}`?")
-        time = datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
+        time = datetime.datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
         await ctx.send(f"Timezone set to **{timezone}** (`{time}`)")
         await self.config.guild(ctx.guild).timezone.set(timezone)
 
