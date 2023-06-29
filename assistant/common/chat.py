@@ -137,8 +137,11 @@ class ChatHandler(MixinMeta):
 
         to_send = [str(i) for i in to_send if str(i).strip()]
 
-        if not to_send:
-            return await message.reply("No results!")
+        if not to_send and listener:
+            return
+        elif not to_send and not listener:
+            return await message.reply("No results found")
+
         for index, text in enumerate(to_send):
             if index == 0:
                 await self.send_reply(message, text, conf, files, True)
