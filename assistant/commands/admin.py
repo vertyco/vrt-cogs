@@ -21,20 +21,15 @@ from rapidfuzz import fuzz
 from redbot.core import app_commands, commands
 from redbot.core.utils.chat_formatting import (
     box,
-    escape,
     humanize_list,
     humanize_number,
     pagify,
 )
 
 from ..abc import MixinMeta
-from ..common.utils import (
-    function_list_tokens,
-    get_attachments,
-    num_tokens_from_string,
-    request_embedding,
-)
-from ..models import CHAT, COMPLETION, Embedding
+from ..common.constants import CHAT, COMPLETION, SELF_HOSTED
+from ..common.models import Embedding
+from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -48,7 +43,9 @@ class Admin(MixinMeta):
         """
         Setup the assistant
 
-        You will need an api key to use the assistant. https://platform.openai.com/account/api-keys
+        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.
+
+        This cog comes with a pre-trained **[self-hosted model](https://huggingface.co/distilbert-base-uncased-distilled-squad)** (Q&A Only)
         """
         pass
 
@@ -62,15 +59,18 @@ class Admin(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
-        system_tokens = num_tokens_from_string(conf.system_prompt)
-        prompt_tokens = num_tokens_from_string(conf.prompt)
+        system_tokens = await self.get_token_count(conf.system_prompt, conf)
+        prompt_tokens = await self.get_token_count(conf.prompt, conf)
+
         func_list, _ = self.db.prep_functions(self.bot, conf, self.registry)
-        func_tokens = function_list_tokens(func_list)
+        func_tokens = await self.function_token_count(conf, func_list)
         func_count = len(func_list)
 
+        llm_type = self.get_llm_type(conf)
+        extra = " (Using Local LLM)" if llm_type == "local" else ""
         desc = (
             f"`OpenAI Version:    `{VERSION}\n"
-            f"`Model:             `{conf.model}\n"
+            f"`Model:             `{conf.model}{extra}\n"
             f"`Enabled:           `{conf.enabled}\n"
             f"`Timezone:          `{conf.timezone}\n"
             f"`Channel:           `{channel}\n"
@@ -90,10 +90,20 @@ class Admin(MixinMeta):
             description=desc,
             color=ctx.author.color,
         )
+
+        types = set(i.openai_tokens for i in conf.embeddings.values())
+        if len(types) == 2:
+            encoded_by = "Mixed (Please Refresh!)"
+        else:
+            encoded_by = (
+                "OpenAI" if list(conf.embeddings.values())[0].openai_tokens else "Local LLM"
+            )
+
         embedding_field = (
             f"`Top N Embeddings:  `{conf.top_n}\n"
             f"`Min Relatedness:   `{conf.min_relatedness}\n"
             f"`Embedding Method:  `{conf.embed_method}\n"
+            f"`Encoded By:        `{encoded_by}"
         )
         embed.add_field(
             name=f"Embeddings ({humanize_number(len(conf.embeddings))})",
@@ -120,7 +130,7 @@ class Admin(MixinMeta):
         if private and any(send_key):
             embed.add_field(
                 name="OpenAI Key",
-                value=conf.api_key if conf.api_key else "Not Set",
+                value=box(conf.api_key) if conf.api_key else "Not Set",
                 inline=False,
             )
 
@@ -155,53 +165,65 @@ class Admin(MixinMeta):
         if blacklist:
             embed.add_field(name="Blacklist", value=humanize_list(blacklist), inline=False)
 
-        if overrides := conf.model_role_overrides:
-            field = ""
-            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
-            for role, model in sorted_roles:
-                if not role:
-                    continue
-                field += f"{role.mention}: `{model}`\n"
-            if field:
-                embed.add_field(name="Model Role Overrides", value=field, inline=False)
+        if not private:
+            if overrides := conf.model_role_overrides:
+                field = ""
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                for role, model in sorted_roles:
+                    if not role:
+                        continue
+                    field += f"{role.mention}: `{model}`\n"
+                if field:
+                    embed.add_field(name="Model Role Overrides", value=field, inline=False)
 
-        if overrides := conf.max_token_role_override:
-            field = ""
-            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
-            for role, tokens in sorted_roles:
-                if not role:
-                    continue
-                field += f"{role.mention}: `{humanize_number(tokens)}`\n"
-            if field:
-                embed.add_field(name="Max Token Role Overrides", value=field, inline=False)
+            if overrides := conf.max_token_role_override:
+                field = ""
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                for role, tokens in sorted_roles:
+                    if not role:
+                        continue
+                    field += f"{role.mention}: `{humanize_number(tokens)}`\n"
+                if field:
+                    embed.add_field(name="Max Token Role Overrides", value=field, inline=False)
 
-        if overrides := conf.max_retention_role_override:
-            field = ""
-            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
-            for role, retention in sorted_roles:
-                if not role:
-                    continue
-                field += f"{role.mention}: `{humanize_number(retention)}`\n"
-            if field:
-                embed.add_field(
-                    name="Max Message Retention Role Overrides", value=field, inline=False
-                )
+            if overrides := conf.max_retention_role_override:
+                field = ""
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                for role, retention in sorted_roles:
+                    if not role:
+                        continue
+                    field += f"{role.mention}: `{humanize_number(retention)}`\n"
+                if field:
+                    embed.add_field(
+                        name="Max Message Retention Role Overrides", value=field, inline=False
+                    )
 
-        if overrides := conf.max_time_role_override:
-            field = ""
-            roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-            sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
-            for role, retention_time in sorted_roles:
-                if not role:
-                    continue
-                field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
-            if field:
-                embed.add_field(
-                    name="Max Message Retention Time Role Overrides", value=field, inline=False
-                )
+            if overrides := conf.max_time_role_override:
+                field = ""
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                for role, retention_time in sorted_roles:
+                    if not role:
+                        continue
+                    field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
+                if field:
+                    embed.add_field(
+                        name="Max Message Retention Time Role Overrides", value=field, inline=False
+                    )
+
+        name = "Local LLM " + ("(Available)" if self.local_llm is not None else "(Unavailable)")
+        using = "" if extra else " (Not Using)"
+        local_text = (
+            f"`Confidence:         `{conf.confidence}\n"
+            f"`Local LLM:          `{self.db.local_model}{using}\n"
+            f"`Using Local LLM:    `{conf.use_local_llm}\n"
+            f"`Local Embed Model:  `{self.db.local_embedder}\n"
+            f"`Using Local Embeds: `{conf.use_local_embedder}"
+        )
+        embed.add_field(name=name, value=local_text, inline=False)
 
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
 
@@ -242,11 +264,15 @@ class Admin(MixinMeta):
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
         key = view.key.strip()
-        if not key:
-            return await msg.edit(content="No key was entered!", embed=None, view=None)
         conf = self.db.get_conf(ctx.guild)
+        if not key and not conf.api_key:
+            await msg.edit(content="No API key was entered!", embed=None, view=None)
+        elif not key and conf.api_key:
+            await msg.edit(content="OpenAI key has been removed!", embed=None, view=None)
+        else:
+            await msg.edit(content="OpenAI key has been set!", embed=None, view=None)
+
         conf.api_key = key
-        await msg.edit(content="OpenAI key has been set!", embed=None, view=None)
         await self.save_conf()
 
     @assistant.command(name="timezone")
@@ -276,6 +302,21 @@ class Admin(MixinMeta):
         else:
             self.db.persistent_conversations = True
             await ctx.send("Persistent conversations have been **Enabled**")
+        await self.save_conf()
+
+    @assistant.command(name="selfhosted")
+    @commands.is_owner()
+    async def toggle_self_hosted_model(self, ctx: commands.Context):
+        """Toggle the self hosted model"""
+        if self.db.self_hosted:
+            self.db.self_hosted = False
+            self.local_llm.shutdown()
+            self.local_llm = None
+            await ctx.send("Self hosted model has been shut down!")
+        else:
+            self.db.self_hosted = True
+            await self.init_models()
+            await ctx.send("Self hosted model has been initialized!")
         await self.save_conf()
 
     @assistant.command(name="prompt", aliases=["pre"])
@@ -317,7 +358,7 @@ class Admin(MixinMeta):
                 prompt = (await attachments[0].read()).decode()
             except Exception as e:
                 await ctx.send(
-                    f"Failed to read `{attachments[0].filename}`, bot owner can use `{ctx.prefix}traceback` for more information"
+                    f"Failed to read `{attachments[0].filename}`, bot owner can use `{ctx.clean_prefix}traceback` for more information"
                 )
                 log.error("Failed to parse initial prompt", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()
@@ -325,8 +366,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
 
-        ptokens = num_tokens_from_string(prompt)
-        stokens = num_tokens_from_string(conf.system_prompt)
+        ptokens = await self.get_token_count(prompt, conf)
+        stokens = await self.get_token_count(conf.system_prompt, conf)
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
         if combined >= max_tokens:
@@ -344,7 +385,7 @@ class Admin(MixinMeta):
             await ctx.send(
                 (
                     "Please include an initial prompt or .txt file!\n"
-                    f"Use `{ctx.prefix}help assistant prompt` to view details for this command"
+                    f"Use `{ctx.clean_prefix}help assistant prompt` to view details for this command"
                 )
             )
         elif prompt and conf.prompt:
@@ -395,7 +436,7 @@ class Admin(MixinMeta):
                 system_prompt = (await attachments[0].read()).decode()
             except Exception as e:
                 await ctx.send(
-                    f"Failed to read `{attachments[0].filename}`, bot owner can use `{ctx.prefix}traceback` for more information"
+                    f"Failed to read `{attachments[0].filename}`, bot owner can use `{ctx.clean_prefix}traceback` for more information"
                 )
                 log.error("Failed to parse initial prompt", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()
@@ -403,8 +444,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
 
-        ptokens = num_tokens_from_string(conf.prompt)
-        stokens = num_tokens_from_string(system_prompt)
+        ptokens = await self.get_token_count(conf.prompt, conf)
+        stokens = await self.get_token_count(system_prompt, conf)
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
         if combined >= max_tokens:
@@ -427,7 +468,7 @@ class Admin(MixinMeta):
             await ctx.send(
                 (
                     "Please include a system prompt or .txt file!\n"
-                    f"Use `{ctx.prefix}help assistant system` to view details for this command"
+                    f"Use `{ctx.clean_prefix}help assistant system` to view details for this command"
                 )
             )
         elif system_prompt and conf.system_prompt:
@@ -546,6 +587,97 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send(f"Temperature has been set to **{temperature}**")
 
+    @assistant.command(name="localmodel", aliases=["lm"])
+    async def toggle_local_model_use(self, ctx: commands.Context):
+        """
+        Toggle whether the local model should be used for responses
+
+        **Note**
+        - This can only be used if the bot owner has enabled it
+        - This model will NOT work without embedding data, and functions very differently from OpenAI's model
+        - This model is lightweight and therefor much less accurate than OpenAI's models
+
+        **Tips**
+        - Using the local model with OpenAI embeddings may give pretty decent results
+        - The quality of your embedding data will be key for getting desirable responses
+        - The relatedness and scoring of embeddings are much different than OpenAI settings so you'll want to play with it
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_local_llm:
+            conf.use_local_llm = False
+            await ctx.send("Assistant will use **OpenAI** for Q&A")
+        elif self.local_llm is not None:
+            conf.use_local_llm = True
+            await ctx.send("Assistant will use the **local** model for Q&A")
+        else:
+            return await ctx.send("The local model has been disabled by the bot owner!")
+        await self.save_conf()
+
+    @assistant.command(name="localembedder", aliases=["localembed", "le"])
+    async def toggle_local_embedder_use(self, ctx: commands.Context):
+        """
+        Toggle whether the local model should be used for creating embeddings
+
+        **Resources**
+        - [About Semantic Search](https://huggingface.co/spaces/sentence-transformers/embeddings-semantic-search)
+        - [OpenAI Embedding Intro](https://platform.openai.com/docs/guides/embeddings/what-are-embeddings)
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_local_embedder:
+            conf.use_local_embedder = False
+            txt = (
+                "Assistant will use **OpenAI** for embeddings.\n"
+                f"Use `{ctx.clean_prefix}assist refreshembeds` to update the weights!"
+            )
+        elif self.local_llm is not None:
+            conf.use_local_embedder = True
+            txt = (
+                "Assistant will use the **local** model for embeddings.\n"
+                f"Use `{ctx.clean_prefix}assist refreshembeds` to update the weights"
+            )
+        else:
+            return await ctx.send("The local model has been disabled by the bot owner!")
+
+        await ctx.send(txt)
+        await self.save_conf()
+
+    @assistant.command(name="refreshembeds", aliases=["refreshembeddings"])
+    async def refresh_embeddings(self, ctx: commands.Context):
+        """
+        Refresh embedding weights
+
+        *This command is only for switching between OpenAI embeddings and the local model*
+
+        Embeddings that were created using OpenAI cannot be used with the local model and vice versa
+        """
+        conf = self.db.get_conf(ctx.guild)
+        llm_type = self.get_llm_type(conf)
+        if llm_type == "none":
+            return await ctx.send("API key not set or local model disabled!")
+        async with ctx.typing():
+            synced = await self.sync_embeddings(conf)
+            if synced:
+                await ctx.send(f"Embeddings have been updated to the **{llm_type.upper()}** model")
+            else:
+                await ctx.send("No embeddings needed to be refreshed")
+
+    @assistant.command(name="confidence")
+    async def set_confidence(self, ctx: commands.Context, confidence: float):
+        """
+        Set the confidence for the local model if used (0.0 - 1.0)
+
+        Closer to 1 is more concise and accurate while closer to 0 is less so.
+
+        If the models reponse confidence is under this value, it will not return results
+        """
+        if not 0 <= confidence <= 1:
+            return await ctx.send("Confidence must be between **0.0** and **1.0**")
+        confidence = round(confidence, 2)
+        conf = self.db.get_conf(ctx.guild)
+        conf.confidence = confidence
+        await self.save_conf()
+        await ctx.send(f"Confidence has been set to **{confidence}**")
+
     @assistant.command(name="functioncalls")
     async def toggle_function_calls(self, ctx: commands.Context):
         """Toggle whether GPT can call functions
@@ -630,7 +762,7 @@ class Admin(MixinMeta):
     @assistant.command(name="model")
     async def set_model(self, ctx: commands.Context, model: str = None):
         """
-        Set the GPT model to use
+        Set the OpenAI model to use
 
         Valid models and their context info:
         - Model-Name: MaxTokens, ModelType
@@ -647,27 +779,35 @@ class Admin(MixinMeta):
 
         Other sub-models are also included
         """
-        valid = humanize_list(CHAT + COMPLETION)
+        valid_raw = CHAT + COMPLETION
+        valid = (
+            f"**Chat**\n{box(humanize_list(CHAT))}\n"
+            f"**Completion**\n{box(humanize_list(COMPLETION))}\n"
+        )
+        if self.db.self_hosted:
+            valid_raw += SELF_HOSTED
+            valid += f"**Self-Hosted (QA Only)**\n{box(humanize_list(SELF_HOSTED))}"
+
         if not model:
-            return await ctx.send(f"Valid models are `{valid}`")
+            return await ctx.send(f"Valid models are:\n{valid}")
         model = model.lower().strip()
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key:
+        if not conf.api_key and self.local_llm is None:
             return await ctx.send(
-                f"You must set an API key first with `{ctx.prefix}assist openaikey`"
+                f"You must set an API key first with `{ctx.clean_prefix}assist openaikey`"
             )
-        try:
-            await openai.Model.aretrieve(model, api_key=conf.api_key)
-        except openai.InvalidRequestError:
-            return await ctx.send("This model is not available for the API key provided!")
 
-        if model not in CHAT + COMPLETION:
-            return await ctx.send(
-                f"Assistant does not support this model yet! Valid model types are `{valid}`"
-            )
+        if conf.api_key and model not in SELF_HOSTED:
+            try:
+                await openai.Model.aretrieve(model, api_key=conf.api_key)
+            except openai.InvalidRequestError:
+                return await ctx.send("This model is not available for the API key provided!")
+
+        if model not in valid_raw:
+            return await ctx.send(f"Invalid model type! Available model types are: {valid}")
 
         conf.model = model
-        await ctx.send(f"The {model} model will now be used")
+        await ctx.send(f"The **{model}** model will now be used")
         await self.save_conf()
 
     @assistant.command(name="resetembeddings")
@@ -798,33 +938,6 @@ class Admin(MixinMeta):
             await ctx.send("If a reges blacklist fails, the bot will still reply")
         await self.save_conf()
 
-    @assistant.command(name="embeddingtest", aliases=["etest"])
-    @commands.bot_has_permissions(embed_links=True)
-    async def test_embedding_response(self, ctx: commands.Context, *, question: str):
-        """
-        Fetch related embeddings according to the current settings along with their scores
-
-        You can use this to fine-tune the minimum relatedness for your assistant
-        """
-        conf = self.db.get_conf(ctx.guild)
-        if not conf.embeddings:
-            return await ctx.send("You do not have any embeddings configured!")
-        async with ctx.typing():
-            query = await request_embedding(question, conf.api_key)
-            if not query:
-                return await ctx.send("Failed to get embedding for your query")
-            embeddings = conf.get_related_embeddings(query)
-            if not embeddings:
-                return await ctx.send(
-                    "No embeddings could be related to this query with the current settings"
-                )
-            for name, em, score in embeddings:
-                for p in pagify(em, page_length=4000):
-                    embed = discord.Embed(
-                        description=f"`Name: `{name}\n`Score: `{score}\n{box(escape(p))}"
-                    )
-                    await ctx.send(embed=embed)
-
     @assistant.command(name="embedmethod")
     async def toggle_embedding_method(self, ctx: commands.Context):
         """
@@ -861,8 +974,6 @@ class Admin(MixinMeta):
         This will read excel files too
         """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key:
-            return await ctx.send("No API key set!")
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -899,6 +1010,21 @@ class Admin(MixinMeta):
         message = await ctx.send(message_text)
 
         df = await asyncio.to_thread(pd.concat, frames)
+
+        if conf.use_local_embedder and self.local_llm is None:
+            err = "Unable to use local model, bot owner must have disabled it!"
+            if conf.api_key:
+                err += (
+                    f"\nIt appears you have API keys set though, if you'd like to switch to the OpenAI embeddings, "
+                    f"use the `{ctx.clean_prefix}assist localembedder` command."
+                )
+            return await ctx.send(err)
+        if not conf.use_local_embedder and not conf.api_key:
+            err = f"No API keys set! use `{ctx.clean_prefix}assistant openaikey` to set them."
+            if self.local_llm is not None:
+                err += f"\nTo use the local embedding model instead, use the `{ctx.clean_prefix}assist localembedder` command."
+            return await ctx.send(err)
+
         imported = 0
         for index, row in enumerate(df.values):
             if pd.isna(row[0]) or pd.isna(row[1]):
@@ -916,12 +1042,15 @@ class Admin(MixinMeta):
                     await message.edit(
                         content=f"{message_text}\n`Currently {proc}: `**{name}** ({index + 1}/{len(df)})"
                     )
-            embedding = await request_embedding(text, conf.api_key)
-            if not embedding:
+            query_embedding = await self.request_embedding(text, conf)
+            if len(query_embedding) == 0:
                 await ctx.send(f"Failed to process embedding: `{name}`")
                 continue
 
-            conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+            openai_tokens = not conf.use_local_embedder
+            conf.embeddings[name] = Embedding(
+                text=text, embedding=query_embedding, openai_tokens=openai_tokens
+            )
             imported += 1
         await message.edit(content=f"{message_text}\n**COMPLETE**")
         await ctx.send(f"Successfully imported {humanize_number(imported)} embeddings!")
@@ -935,8 +1064,6 @@ class Admin(MixinMeta):
             overwrite (bool): overwrite embeddings with existing entry names
         """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key:
-            return await ctx.send("No API key set!")
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -970,6 +1097,7 @@ class Admin(MixinMeta):
             await ctx.send(
                 f"Imported the following files: `{humanize_list(files)}`\n{humanize_number(imported)} embeddings imported"
             )
+        await self.save_conf()
 
     @assistant.command(name="exportcsv")
     @commands.bot_has_permissions(attach_files=True)
@@ -982,10 +1110,10 @@ class Admin(MixinMeta):
         if not conf.embeddings:
             return await ctx.send("There are no embeddings to export!")
         async with ctx.typing():
-            columns = ["name", "text"]
+            columns = ["name", "text", "openai_tokens"]
             rows = []
             for name, em in conf.embeddings.items():
-                rows.append([name, em.text])
+                rows.append([name, em.text, em.openai_tokens])
             df = pd.DataFrame(rows, columns=columns)
             df_buffer = BytesIO()
             df.to_csv(df_buffer, index=False)
@@ -1063,7 +1191,8 @@ class Admin(MixinMeta):
     @commands.admin_or_permissions(administrator=True)
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def embeddings(self, ctx: commands.Context, *, query: str = ""):
-        """Manage embeddings for training
+        """
+        Manage embeddings for training
 
         Embeddings are used to optimize training of the assistant and minimize token usage.
 
@@ -1073,14 +1202,30 @@ class Admin(MixinMeta):
         You can enter a search query with this command to bring up the menu and go directly to that embedding selection.
         """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key:
-            return await ctx.send(
-                f"No API key! Use `{ctx.prefix}assistant openaikey` to set your OpenAI key!"
-            )
         if ctx.interaction:
             await ctx.interaction.response.defer()
 
-        view = EmbeddingMenu(ctx, conf, self.save_conf)
+        if conf.use_local_embedder and self.local_llm is None:
+            err = "Unable to use local model, bot owner must have disabled it!"
+            if conf.api_key:
+                err += (
+                    f"\nIt appears you have API keys set though, if you'd like to switch to the OpenAI embeddings, "
+                    f"use the `{ctx.clean_prefix}assist localembedder` command."
+                )
+            return await ctx.send(err)
+        if not conf.use_local_embedder and not conf.api_key:
+            err = f"No API keys set! use `{ctx.clean_prefix}assistant openaikey` to set them."
+            if self.local_llm is not None:
+                err += f"\nTo use the local embedding model instead, use the `{ctx.clean_prefix}assist localembedder` command."
+            return await ctx.send(err)
+
+        view = EmbeddingMenu(
+            ctx,
+            conf,
+            self.save_conf,
+            self.get_embbedding_menu_embeds,
+            self.request_embedding,
+        )
         await view.get_pages()
         if not query:
             return await view.start()
@@ -1114,10 +1259,10 @@ class Admin(MixinMeta):
         - [JSON Schema Reference](https://json-schema.org/understanding-json-schema/)
 
         Only these two models can use function calls as of now:
-        - gpt-3.5-turbo-0613
-        - gpt-3.5-turbo-16k-0613
-        - gpt-4-0613
-        - gpt-4-32k-0613
+        - gpt-3.5-turbo
+        - gpt-3.5-turbo-16k
+        - gpt-4
+        - gpt-4-32k
 
         The following objects are passed by default as keyword arguments.
         - **user**: the user currently chatting with the bot (discord.Member)
@@ -1135,7 +1280,7 @@ class Admin(MixinMeta):
         if ctx.interaction:
             await ctx.interaction.response.defer()
 
-        view = CodeMenu(ctx, self.db, self.registry, self.save_conf)
+        view = CodeMenu(ctx, self.db, self.registry, self.save_conf, self.get_function_menu_embeds)
         await view.get_pages()
         if not function_name:
             return await view.start()
@@ -1228,7 +1373,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.api_key:
             return await ctx.send(
-                f"You must set an API key first with `{ctx.prefix}assist openaikey`"
+                f"You must set an API key first with `{ctx.clean_prefix}assist openaikey`"
             )
         try:
             await openai.Model.aretrieve(model, api_key=conf.api_key)

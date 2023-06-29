@@ -3,93 +3,32 @@ from datetime import datetime
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
-import orjson
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 from redbot.core.bot import Red
-
-from .common.utils import compile_function, num_tokens_from_string
+from sentence_transformers import SentenceTransformer
+from transformers.pipelines.question_answering import QuestionAnsweringPipeline
 
 log = logging.getLogger("red.vrt.assistant.models")
 
-MODELS = {
-    "gpt-3.5-turbo": 4096,
-    "gpt-3.5-turbo-0613": 4096,
-    "gpt-3.5-turbo-16k": 16384,
-    "gpt-3.5-turbo-16k-0613": 16384,
-    "gpt-4": 8192,
-    "gpt-4-0613": 8192,
-    "gpt-4-32k": 32768,
-    "gpt-4-32k-0613": 32768,
-    "code-davinci-002": 8001,
-    "text-davinci-003": 4097,
-    "text-davinci-002": 4097,
-    "text-curie-001": 2049,
-    "text-babbage-001": 2049,
-    "text-ada-001": 2049,
-}
-CHAT = [
-    "gpt-3.5-turbo",
-    "gpt-3.5-turbo-0613",
-    "gpt-3.5-turbo-16k",
-    "gpt-3.5-turbo-16k-0613",
-    "gpt-4",
-    "gpt-4-0613",
-    "gpt-4-32k",
-    "gpt-4-32k-0613",
-    "code-davinci-002",
-]
-COMPLETION = [
-    "text-davinci-003",
-    "text-davinci-002",
-    "text-curie-001",
-    "text-babbage-001",
-    "text-ada-001",
-]
-READ_EXTENSIONS = [
-    ".txt",
-    ".py",
-    ".json",
-    ".yml",
-    ".yaml",
-    ".xml",
-    ".html",
-    ".ini",
-    ".css",
-    ".toml",
-    ".md",
-    ".ini",
-    ".conf",
-    ".go",
-    ".cfg",
-    ".java",
-    ".c",
-    ".php",
-    ".swift",
-    ".vb",
-    ".xhtml",
-    ".rss",
-    ".css",
-    ".asp",
-    ".js",
-    ".ts",
-    ".cs",
-    ".c++",
-    ".cc",
-    ".ps1",
-    ".bat",
-    ".batch",
-    ".shell",
-]
+
+class LocalLLM(BaseModel):
+    embedder: SentenceTransformer
+    pipe: QuestionAnsweringPipeline
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def shutdown(self):
+        del self.embedder
+        del self.pipe
 
 
 class Embedding(BaseModel):
     text: str
     embedding: List[float]
-
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson.dumps
+    # If embedding was tokenized with tiktoken
+    openai_tokens: bool = True
 
 
 class CustomFunction(BaseModel):
@@ -98,12 +37,10 @@ class CustomFunction(BaseModel):
     code: str
     jsonschema: dict
 
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson.dumps
-
     def prep(self) -> Callable:
-        return compile_function(self.jsonschema["name"], self.code)
+        """Prep function for execution"""
+        exec(self.code, globals())
+        return globals()[self.jsonschema["name"]]
 
 
 class GuildSettings(BaseModel):
@@ -116,13 +53,18 @@ class GuildSettings(BaseModel):
     channel_id: int = 0
     api_key: str = ""
     endswith_questionmark: bool = False
+    min_length: int = 7
     max_retention: int = 0
     max_retention_time: int = 1800
     max_tokens: int = 4000
-    min_length: int = 7
     mention: bool = False
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
+
+    confidence: float = 0.1
+    use_local_llm: bool = True
+    use_local_embedder: bool = True
+
     timezone: str = "UTC"
     temperature: float = 0.0
     regex_blacklist: List[str] = [r"^As an AI language model,"]
@@ -140,17 +82,23 @@ class GuildSettings(BaseModel):
     max_function_calls: int = 10  # Max calls in a row
     disabled_functions: List[str] = []
 
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson.dumps
-
-    def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, float]]:
-        if not self.top_n or not query_embedding or not self.embeddings:
+    def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, str, float]]:
+        if not self.top_n or len(query_embedding) == 0 or not self.embeddings:
             return []
-        strings_and_relatedness = [
-            (name, i.text, cosine_similarity(query_embedding, i.embedding))
-            for name, i in self.embeddings.items()
-        ]
+        strings_and_relatedness = []
+        for name, em in self.embeddings.items():
+            if len(query_embedding) != len(em.embedding):
+                continue
+            try:
+                score = cosine_similarity(query_embedding, em.embedding)
+            except ValueError as e:
+                log.error(
+                    f"Failed to match '{name}' embedding {len(query_embedding)} - {len(em.embedding)}",
+                    exc_info=e,
+                )
+                continue
+            strings_and_relatedness.append((name, em.text, score, em.openai_tokens))
+
         strings_and_relatedness = [
             i for i in strings_and_relatedness if i[2] >= self.min_relatedness
         ]
@@ -198,31 +146,10 @@ class Conversation(BaseModel):
     messages: list[dict[str, str]] = []
     last_updated: float = 0.0
 
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson.dumps
-
-    def token_count(self) -> int:
-        return num_tokens_from_string("".join(message["content"] for message in self.messages))
-
     def function_count(self) -> int:
         if not self.messages:
             return 0
         return sum(i["role"] == "function" for i in self.messages)
-
-    def user_token_count(self, message: str = "") -> int:
-        if not self.messages and not message:
-            return 0
-        content = [m["content"] for m in self.messages]
-        messages = "".join(content)
-        messages += message
-        if not messages:
-            return 0
-        return num_tokens_from_string(messages)
-
-    def conversation_token_count(self, conf: GuildSettings, message: str = "") -> int:
-        initial = conf.system_prompt + conf.prompt + (message if isinstance(message, str) else "")
-        return num_tokens_from_string(initial) + self.user_token_count(message)
 
     def is_expired(self, conf: GuildSettings, member: Optional[discord.Member] = None):
         if not conf.get_user_max_time(member):
@@ -267,6 +194,7 @@ class Conversation(BaseModel):
     def prepare_chat(
         self, user_message: str, initial_prompt: str, system_prompt: str
     ) -> List[dict]:
+        """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
         if system_prompt:
             prepared.append({"role": "system", "content": system_prompt})
@@ -286,9 +214,11 @@ class DB(BaseModel):
     persistent_conversations: bool = False
     functions: Dict[str, CustomFunction] = {}
 
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson.dumps
+    self_hosted: bool = False
+    low_mem: bool = True
+
+    local_model: str = "deepset/roberta-base-squad2"
+    local_embedder: str = "all-MiniLM-L12-v2"
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

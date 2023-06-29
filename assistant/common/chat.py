@@ -4,7 +4,6 @@ import json
 import logging
 import multiprocessing as mp
 import re
-import sys
 import traceback
 from datetime import datetime
 from inspect import iscoroutinefunction
@@ -14,35 +13,25 @@ from typing import Callable, Dict, List, Optional, Union
 import discord
 import pytz
 from openai.error import InvalidRequestError
-from redbot.core import bank, version_info
-from redbot.core.utils.chat_formatting import (
-    box,
-    humanize_list,
-    humanize_number,
-    pagify,
-)
+from redbot.core import bank
+from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
-from .abc import MixinMeta
-from .common.utils import (
+from ..abc import MixinMeta
+from .constants import CHAT, COMPLETION, READ_EXTENSIONS, SUPPORTS_FUNCTIONS
+from .models import Conversation, GuildSettings
+from .utils import (
     compile_messages,
-    degrade_conversation,
     extract_code_blocks,
     extract_code_blocks_with_lang,
-    function_list_tokens,
     get_attachments,
-    num_tokens_from_string,
+    get_params,
     remove_code_blocks,
-    request_chat_response,
-    request_completion_response,
-    request_embedding,
-    token_cut,
 )
-from .models import CHAT, MODELS, READ_EXTENSIONS, Conversation, GuildSettings
 
-log = logging.getLogger("red.vrt.assistant.api")
+log = logging.getLogger("red.vrt.assistant.chathandler")
 
 
-class API(MixinMeta):
+class ChatHandler(MixinMeta):
     async def handle_message(
         self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
     ) -> str:
@@ -223,7 +212,7 @@ class API(MixinMeta):
         extend_function_calls: bool = True,
     ) -> str:
         """Call the API asynchronously"""
-        if conf.use_function_calls and extend_function_calls:
+        if conf.use_function_calls and extend_function_calls and conf.model in SUPPORTS_FUNCTIONS:
             # Prepare registry and custom functions
             prepped_function_calls, prepped_function_map = self.db.prep_functions(
                 bot=self.bot, conf=conf, registry=self.registry
@@ -244,12 +233,9 @@ class API(MixinMeta):
         query_embedding = []
         if conf.top_n:
             # Save on tokens by only getting embeddings if theyre enabled
-            try:
-                query_embedding = await request_embedding(text=message, api_key=conf.api_key)
-            except Exception:
-                log.warning(f"Failed to get embedding for message in {guild.name}: {message}")
+            query_embedding = await self.request_embedding(message, conf)
 
-        params = {
+        extras = {
             "banktype": "global bank" if await bank.is_global() else "local bank",
             "currency": await bank.get_currency_name(guild),
             "bank": await bank.get_bank_name(guild),
@@ -263,26 +249,25 @@ class API(MixinMeta):
         def pop_schema(name: str, calls: List[dict]):
             return [func for func in calls if func["name"] != name]
 
-        function_tokens = function_list_tokens(function_calls) if function_calls else 0
-        messages = await asyncio.to_thread(
-            self.prepare_messages,
-            message,
-            guild,
-            conf,
-            conversation,
-            author,
-            channel,
-            query_embedding,
-            params,
-            function_tokens,
-        )
-        last_function_response = ""
-        last_function_name = ""
-
         model = conf.get_user_model(author)
-        max_tokens = min(conf.get_user_max_tokens(author), MODELS[model] - 100)
+        max_tokens = self.get_max_tokens(conf, author)
+        llm_type = self.get_llm_type(conf)
 
-        if model in CHAT:
+        if llm_type == "api" and model in CHAT:
+            messages = await self.prepare_messages(
+                message,
+                guild,
+                conf,
+                conversation,
+                author,
+                channel,
+                query_embedding,
+                extras,
+                function_calls,
+            )
+
+            last_function_response = ""
+            last_function_name = ""
             reply = "Could not get reply!"
             calls = 0
             repeats = 0
@@ -292,8 +277,8 @@ class API(MixinMeta):
 
                 if len(messages) > 1:
                     # Iteratively degrade the conversation to ensure it is always under the token limit
-                    messages, function_calls, degraded = await asyncio.to_thread(
-                        degrade_conversation, messages, function_calls, max_tokens
+                    messages, function_calls, degraded = await self.degrade_conversation(
+                        messages, function_calls, conf, author
                     )
                     if degraded:
                         conversation.overwrite(messages)
@@ -302,23 +287,18 @@ class API(MixinMeta):
                     log.error("Messages got pruned too aggressively, increase token limit!")
                     break
                 try:
-                    response = await request_chat_response(
-                        model=model,
-                        messages=messages,
-                        temperature=conf.temperature,
-                        api_key=conf.api_key,
-                        functions=function_calls,
-                    )
+                    response = await self.request_chat_response(messages, conf, function_calls)
                 except InvalidRequestError as e:
                     log.warning(
                         f"Function response failed. functions: {len(function_calls)}", exc_info=e
                     )
-                    response = await request_chat_response(
-                        model=model,
-                        messages=messages,
-                        temperature=conf.temperature,
-                        api_key=conf.api_key,
+                    response = await self.request_chat_response(messages, conf)
+                except Exception as e:
+                    log.error(
+                        f"Exception occured for chat response.\nMessages: {messages}", exc_info=e
                     )
+                    break
+
                 reply = response["content"]
                 function_call = response.get("function_call")
                 if reply and not function_call:
@@ -332,7 +312,9 @@ class API(MixinMeta):
                     continue
                 calls += 1
                 if reply:
-                    conversation.update_messages(reply, "assistant")
+                    conversation.update_messages(
+                        reply, "assistant", str(author.id) if author else None
+                    )
                     messages.append({"role": "assistant", "content": reply})
 
                 function_name = function_call["name"]
@@ -401,29 +383,61 @@ class API(MixinMeta):
                 last_function_response = result
 
                 # Ensure response isnt too large
-                result = token_cut(
-                    result,
-                    round(max_tokens - conversation.conversation_token_count(conf, message)),
-                )
+                result = await self.cut_text_by_tokens(result, conf, max_tokens)
 
                 log.info(f"Called function {function_name}\nParams: {params}\nResult: {result}")
                 messages.append({"role": "function", "name": function_name, "content": result})
 
             if calls > 1:
                 log.info(f"Made {calls} function calls in a row")
-        else:
+        elif llm_type == "api" and model in COMPLETION:
+            messages = await self.prepare_messages(
+                message,
+                guild,
+                conf,
+                conversation,
+                author,
+                channel,
+                query_embedding,
+                extras,
+                function_calls,
+            )
             compiled = compile_messages(messages)
-            cut_message = token_cut(compiled, max_tokens)
-            tokens_to_use = round((max_tokens - num_tokens_from_string(cut_message)) * 0.8)
-            reply = await request_completion_response(
-                model=model,
-                message=cut_message,
-                temperature=conf.temperature,
-                api_key=conf.api_key,
-                max_tokens=tokens_to_use,
+            cut_message = await self.cut_text_by_tokens(compiled, conf, max_tokens)
+            to_use = round((max_tokens - (await self.get_token_count(cut_message, conf))) * 0.8)
+
+            reply = await self.request_completion_response(
+                prompt=cut_message, conf=conf, max_response_tokens=to_use
             )
             for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
                 reply = reply.replace(i, "").strip()
+        elif llm_type == "local":
+            log.debug("Using local LLM")
+            context = await self.prepare_local_llm_context(
+                message,
+                guild,
+                conf,
+                conversation,
+                author,
+                channel,
+                query_embedding,
+                extras,
+                function_calls,
+            )
+            if not context:
+                log.debug("No context provided to local model")
+                reply = "No relevant context embeddigns were found related to that query"
+            else:
+                log.debug(f"CONTEXT: {context}")
+                reply = await self.request_local_response(
+                    prompt=message, context=context, min_confidence=conf.confidence
+                )
+                if not reply:
+                    reply = "Couldn't determine a response for that query"
+        else:
+            reply = (
+                "Self-hosted model is disabled!" if conf.api_key else "No API key has been set!"
+            )
 
         block = False
         for regex in conf.regex_blacklist:
@@ -436,14 +450,14 @@ class API(MixinMeta):
                     block = True
                 continue
 
-        conversation.update_messages(reply, "assistant")
+        conversation.update_messages(reply, "assistant", str(author.id) if author else None)
         if block:
             reply = "Response failed due to invalid regex, check logs for more info."
         conversation.cleanup(conf, author)
         return reply
 
     async def safe_regex(self, regex: str, content: str):
-        process = self.re_pool.apply_async(
+        process = self.mp_pool.apply_async(
             re.sub,
             args=(
                 regex,
@@ -457,7 +471,7 @@ class API(MixinMeta):
         subbed = await asyncio.wait_for(new_task, timeout=5)
         return subbed
 
-    def prepare_messages(
+    async def prepare_messages(
         self,
         message: str,
         guild: discord.Guild,
@@ -466,8 +480,8 @@ class API(MixinMeta):
         author: Optional[discord.Member],
         channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
         query_embedding: List[float],
-        params: dict,
-        function_tokens: int,
+        extras: dict,
+        function_calls: List[dict],
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -484,72 +498,78 @@ class API(MixinMeta):
             List[dict]: list of messages prepped for api
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
-        roles = [role for role in author.roles if "everyone" not in role.name] if author else []
-        display_name = author.display_name if author else ""
-
-        params = {
-            **params,
-            "botname": self.bot.user.name,
-            "timestamp": f"<t:{round(now.timestamp())}:F>",
-            "day": now.strftime("%A"),
-            "date": now.strftime("%B %d, %Y"),
-            "time": now.strftime("%I:%M %p"),
-            "timetz": now.strftime("%I:%M %p %Z"),
-            "members": guild.member_count,
-            "username": author.name if author else "",
-            "user": author.name if author else "",
-            "displayname": display_name,
-            "datetime": str(datetime.now()),
-            "roles": humanize_list([role.name for role in roles]),
-            "rolementions": humanize_list([role.mention for role in roles]),
-            "avatar": author.display_avatar.url if author else "",
-            "owner": guild.owner.name,
-            "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",
-            "server": guild.name,
-            "messages": len(conversation.messages),
-            "tokens": str(conversation.user_token_count(message=message)),
-            "retention": str(conf.get_user_max_retention(author)),
-            "retentiontime": str(conf.get_user_max_time(author)),
-            "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-            "dpy": discord.__version__,
-            "red": str(version_info),
-            "cogs": humanize_list([self.bot.get_cog(cog).qualified_name for cog in self.bot.cogs]),
-            "channelname": channel.name if channel else "",
-            "channelmention": channel.mention if channel else "",
-            "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
-        }
+        params = await asyncio.to_thread(get_params, self.bot, guild, now, author, channel, extras)
         system_prompt = conf.system_prompt.format(**params)
         initial_prompt = conf.prompt.format(**params)
 
-        max_tokens = min(
-            conf.get_user_max_tokens(author), MODELS[conf.get_user_model(author)] - 100
-        )
+        current_tokens = await self.get_token_count(message + system_prompt + initial_prompt, conf)
+        current_tokens += await self.convo_token_count(conf, conversation)
+        current_tokens += await self.function_token_count(conf, function_calls)
 
-        total_tokens = conversation.token_count()
+        max_tokens = self.get_max_tokens(conf, author)
+
+        # await self.sync_embeddings(conf, author)
+        related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
 
         embeddings = []
-        # Be conservative with embeddings
-        for i in conf.get_related_embeddings(query_embedding):
-            if (
-                num_tokens_from_string(f"\n\nContext:\n{i[1]}\n\n")
-                + total_tokens
-                + function_tokens
-                < max_tokens * 0.8
-            ):
-                embeddings.append(f"{i[1]}")
+        # Get related embeddings (Name, text, score)
+        for i in related:
+            embed_tokens = await self.get_token_count(i[1], conf)
+            if embed_tokens + current_tokens > max_tokens:
+                break
+            embeddings.append(i[1])
 
         if embeddings:
             joined = "\n".join(embeddings)
 
             if conf.embed_method == "static":
-                conversation.update_messages(f"Context:\n{joined}", "user")
+                conversation.update_messages(
+                    f"Context:\n{joined}", "user", str(author.id) if author else None
+                )
 
             elif conf.embed_method == "dynamic":
                 system_prompt += f"\n\nContext:\n{joined}"
 
             elif conf.embed_method == "hybrid" and len(embeddings) > 1:
                 system_prompt += f"\n\nContext:\n{embeddings[1:]}"
-                conversation.update_messages(f"Context:\n{embeddings[0]}", "user")
+                conversation.update_messages(
+                    f"Context:\n{embeddings[0]}", "user", str(author.id) if author else None
+                )
 
         messages = conversation.prepare_chat(message, system_prompt, initial_prompt)
         return messages
+
+    async def prepare_local_llm_context(
+        self,
+        message: str,
+        guild: discord.Guild,
+        conf: GuildSettings,
+        conversation: Conversation,
+        author: Optional[discord.Member],
+        channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
+        query_embedding: List[float],
+        extras: dict,
+        function_calls: List[dict],
+    ) -> List[dict]:
+        now = datetime.now().astimezone(pytz.timezone(conf.timezone))
+        params = await asyncio.to_thread(get_params, self.bot, guild, now, author, channel, extras)
+        system_prompt = conf.system_prompt.format(**params)
+        initial_prompt = conf.prompt.format(**params)
+        context = system_prompt + "\n" + initial_prompt
+
+        current_tokens = await self.get_token_count(message + system_prompt + initial_prompt, conf)
+        current_tokens += await self.convo_token_count(conf, conversation)
+        current_tokens += await self.function_token_count(conf, function_calls)
+
+        max_tokens = self.get_max_tokens(conf, author)
+
+        # await self.sync_embeddings(conf, author)
+        related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
+
+        # Get related embeddings (Name, text, score)
+        for i in related:
+            embed_tokens = await self.get_token_count(i[1], conf)
+            if embed_tokens + current_tokens > max_tokens:
+                break
+            context += f"\n{i[1]}"
+        return context

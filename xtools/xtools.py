@@ -98,7 +98,7 @@ class XTools(commands.Cog):
             if ctx:
                 await ctx.send(
                     f"Client ID and Secret have not been set yet!\n"
-                    f"Bot owner needs to run `{ctx.prefix}apiset tokens`"
+                    f"Bot owner needs to run `{ctx.clean_prefix}apiset tokens`"
                 )
             return None
         auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
@@ -133,7 +133,7 @@ class XTools(commands.Cog):
                     await ctx.send(
                         "Tokens have failed to refresh.\n"
                         "Microsoft API may be having issues.\n"
-                        f"Bot owner will need to re-authorize their tokens with `{ctx.prefix}apiset auth`"
+                        f"Bot owner will need to re-authorize their tokens with `{ctx.clean_prefix}apiset auth`"
                     )
                 return None
         await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
@@ -205,7 +205,7 @@ class XTools(commands.Cog):
         users = await self.config.users()
         if str(ctx.author.id) not in users:
             await ctx.send(
-                f"You haven't set your Gamertag yet! To set a Gamertag type `{ctx.prefix}setgt`\n"
+                f"You haven't set your Gamertag yet! To set a Gamertag type `{ctx.clean_prefix}setgt`\n"
                 f"Alternatively, you can type the command and include a Gamertag."
             )
             return None
@@ -223,7 +223,7 @@ class XTools(commands.Cog):
         if not client_id:
             await ctx.send(
                 f"Client ID and Secret have not been set yet!\n"
-                f"Bot owner needs to run `{ctx.prefix}apiset tokens`"
+                f"Bot owner needs to run `{ctx.clean_prefix}apiset tokens`"
             )
             return None
         url = "https://login.live.com/oauth20_authorize.srf?"
@@ -270,12 +270,12 @@ class XTools(commands.Cog):
         )
         embed.add_field(
             name="Step 5",
-            value=f"• Type `{ctx.prefix}apiset tokens` and include your Client ID and Secret\n",
+            value=f"• Type `{ctx.clean_prefix}apiset tokens` and include your Client ID and Secret\n",
             inline=False,
         )
         embed.add_field(
             name="Step 6",
-            value=f"• Type `{ctx.prefix}apiset auth` and the bot will dm you a link to authorize your tokens\n"
+            value=f"• Type `{ctx.clean_prefix}apiset auth` and the bot will dm you a link to authorize your tokens\n"
             f"• Alternatively, try any command and the bot will DM you the link\n"
             f"• Make sure to use a **Different** email to sign in than the one you created the Azure app with",
             inline=False,

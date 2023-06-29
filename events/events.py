@@ -620,7 +620,7 @@ class Events(commands.Cog):
         if event["completed"]:
             return await msg.edit(
                 content=f"This event has already completed!\n"
-                f"To delete this event, use the `{ctx.prefix}events delete` command",
+                f"To delete this event, use the `{ctx.clean_prefix}events delete` command",
                 embed=None,
             )
         await msg.edit(
@@ -636,12 +636,12 @@ class Events(commands.Cog):
         if not subs:
             return await msg.edit(
                 content=f"There are no submissions for **{event['event_name']}.**\n"
-                f"If you want to delete it, use the `{ctx.prefix}events delete` command instead."
+                f"If you want to delete it, use the `{ctx.clean_prefix}events delete` command instead."
             )
         if not ctx.guild.get_channel(event["channel_id"]):
             return await msg.edit(
                 content=f"I am unable to find the channel for **{event['event_name']}!**\n"
-                f"To delete this event, use the `{ctx.prefix}events delete` command."
+                f"To delete this event, use the `{ctx.clean_prefix}events delete` command."
             )
         await msg.edit(content="Ending event and tallying votes. Stand by...")
         async with ctx.typing():
@@ -1116,7 +1116,7 @@ class Events(commands.Cog):
             f"`Days In Server: `{days_in_server}\n"
             f"`Start Date:     `<t:{start_date}:D> (<t:{start_date}:R>)\n"
             f"`End Date:       `<t:{end_date}:D> (<t:{end_date}:R>)\n\n"
-            f"Use the `{ctx.prefix}enter` command to enter.\n"
+            f"Use the `{ctx.clean_prefix}enter` command to enter.\n"
             f"React with {emoji} to vote on submissions.",
             color=ctx.author.color,
         )

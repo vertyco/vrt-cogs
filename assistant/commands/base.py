@@ -1,7 +1,9 @@
+import asyncio
 import logging
 
 import discord
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import box, escape, pagify
 
 from ..abc import MixinMeta
 from ..common.utils import can_use
@@ -30,7 +32,7 @@ class Base(MixinMeta):
         - Including `--extract` will send the code separately from the reply
         """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key:
+        if not conf.api_key and self.local_llm is None:
             return await ctx.send("This command requires an API key from OpenAI to be configured!")
         if not await can_use(ctx.message, conf.blacklist):
             return
@@ -53,9 +55,12 @@ class Base(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conversation = self.db.get_conversation(user.id, ctx.channel.id, ctx.guild.id)
         messages = len(conversation.messages)
-        max_tokens = conf.get_user_max_tokens(ctx.author)
+
+        max_tokens = self.get_max_tokens(conf, ctx.author)
 
         def generate_color(index: int, limit: int):
+            if not limit:
+                return (0, 0)
             if index > limit:
                 return (0, 0)
 
@@ -71,18 +76,25 @@ class Base(MixinMeta):
             # Return the new RGB color
             return (green, blue)
 
+        convo_tokens = await self.convo_token_count(conf, conversation)
         g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
-        gg, bb = generate_color(conversation.user_token_count(), max_tokens)
+        gg, bb = generate_color(convo_tokens, max_tokens)
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
-
+        llm_type = self.get_llm_type(conf)
+        if llm_type == "api":
+            model = conf.get_user_model(ctx.author)
+        elif llm_type == "local":
+            model = self.db.local_model
+        else:
+            model = "None (Chat Disabled)"
         embed = discord.Embed(
             description=(
                 f"{ctx.channel.mention}\n"
                 f"`Messages: `{messages}/{conf.get_user_max_retention(ctx.author)}\n"
-                f"`Tokens:   `{conversation.user_token_count()}/{max_tokens}\n"
+                f"`Tokens:   `{convo_tokens}/{max_tokens}\n"
                 f"`Expired:  `{conversation.is_expired(conf, ctx.author)}\n"
-                f"`Model:    `{conf.get_user_model(ctx.author)}"
+                f"`Model:    `{model}"
             ),
             color=color,
         )
@@ -105,3 +117,37 @@ class Base(MixinMeta):
         conversation = self.db.get_conversation(ctx.author.id, ctx.channel.id, ctx.guild.id)
         conversation.reset()
         await ctx.send("Your conversation in this channel has been reset!")
+
+    @commands.command(name="query")
+    @commands.bot_has_permissions(embed_links=True)
+    async def test_embedding_response(self, ctx: commands.Context, *, query: str):
+        """
+        Fetch related embeddings according to the current settings along with their scores
+
+        You can use this to fine-tune the minimum relatedness for your assistant
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.embeddings:
+            return await ctx.send("You do not have any embeddings configured!")
+        async with ctx.typing():
+            query_embedding = await self.request_embedding(query, conf)
+
+            if not query_embedding:
+                return await ctx.send("Failed to get embedding for your query")
+            # await self.sync_embeddings(conf, ctx.author)
+            embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
+            if not embeddings:
+                return await ctx.send(
+                    "No embeddings could be related to this query with the current settings"
+                )
+            for name, em, score, openai_encoded in embeddings:
+                for p in pagify(em, page_length=4000):
+                    encoded_by = "OpenAI" if openai_encoded else "Local LLM"
+                    txt = (
+                        f"`Entry Name:  `{name}\n"
+                        f"`Relatedness: `{round(score, 4)}\n"
+                        f"`Encoded By:  `{encoded_by}\n"
+                    )
+                    txt += box(escape(p))
+                    embed = discord.Embed(description=txt)
+                    await ctx.send(embed=embed)

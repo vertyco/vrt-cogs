@@ -455,7 +455,7 @@ class UserCommands(MixinMeta, ABC):
             txt = _(
                 "Here are the current default backgrounds, to set one permanently you can use the "
             )
-            txt += f"`{ctx.prefix}mypf background <filename>` " + _("command")
+            txt += f"`{ctx.clean_prefix}mypf background <filename>` " + _("command")
             try:
                 await ctx.send(txt, file=file)
             except discord.HTTPException:
@@ -484,7 +484,7 @@ class UserCommands(MixinMeta, ABC):
             buffer.seek(0)
             file = discord.File(buffer)
             txt = _("Here are the current fonts, to set one permanently you can use the ")
-            txt += f"`{ctx.prefix}mypf font <fontname>` " + _("command")
+            txt += f"`{ctx.clean_prefix}mypf font <fontname>` " + _("command")
             try:
                 await ctx.send(txt, file=file)
             except discord.HTTPException:
@@ -1030,7 +1030,7 @@ class UserCommands(MixinMeta, ABC):
         if not stat:
             stat = "exp"
         if "star" in stat.lower():
-            txt = _("Use the `") + str(ctx.prefix) + _("startop` command for that")
+            txt = _("Use the `") + str(ctx.clean_prefix) + _("startop` command for that")
             return await ctx.send(txt)
         conf = self.data[ctx.guild.id]
         func = functools.partial(get_leaderboard, ctx, conf, stat, "normal")
