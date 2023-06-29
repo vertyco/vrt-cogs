@@ -445,6 +445,8 @@ class CodeMenu(discord.ui.View):
         self.pages: List[discord.Embed] = []
         self.message: discord.Message = None
 
+        self.update_button()
+
         if ctx.author.id not in ctx.bot.owner_ids:
             self.remove_item(self.new_function)
             self.remove_item(self.delete)
