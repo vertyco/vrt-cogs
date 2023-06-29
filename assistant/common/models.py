@@ -62,8 +62,8 @@ class GuildSettings(BaseModel):
     model: str = "gpt-3.5-turbo"
 
     confidence: float = 0.1
-    use_local_llm: bool = True
-    use_local_embedder: bool = True
+    use_local_llm: bool = False
+    use_local_embedder: bool = False
 
     timezone: str = "UTC"
     temperature: float = 0.0
