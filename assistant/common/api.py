@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import json
 import logging
 import math
 from typing import List, Optional, Tuple, Union
@@ -394,7 +395,7 @@ class API(MixinMeta):
                         value=f"This function is managed by the `{cog_name}` cog",
                         inline=False,
                     )
-                schema = orjson.dumps(func["jsonschema"], indent=2)
+                schema = json.dumps(func["jsonschema"], indent=2)
                 tokens = await self.get_token_count(schema, conf)
                 schema_text = (
                     f"This function consumes `{humanize_number(tokens)}` input tokens each call\n"
