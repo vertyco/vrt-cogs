@@ -315,7 +315,8 @@ class Admin(MixinMeta):
             await ctx.send("Self hosted model has been shut down!")
         else:
             self.db.self_hosted = True
-            await self.init_models()
+            async with ctx.typing():
+                await self.init_models()
             await ctx.send("Self hosted model has been initialized!")
         await self.save_conf()
 
@@ -1494,6 +1495,9 @@ class Admin(MixinMeta):
         self.db.local_model = model
         await ctx.send(f"The **{model}** model will now be used")
         await self.save_conf()
+        if self.local_llm:
+            self.local_llm.shutdown()
+        await self.init_models()
 
     @assistant.command(name="setlocalembedder")
     @commands.is_owner()
@@ -1514,3 +1518,6 @@ class Admin(MixinMeta):
         self.db.local_model = model
         await ctx.send(f"The **{model}** model will now be used")
         await self.save_conf()
+        if self.local_llm:
+            self.local_llm.shutdown()
+        await self.init_models()
