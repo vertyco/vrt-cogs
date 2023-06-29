@@ -26,7 +26,7 @@ from tenacity import (
 )
 
 from ..abc import MixinMeta
-from .constants import MODELS, SELF_HOSTED, SUPPORTS_FUNCTIONS
+from .constants import LOCAL_MODELS, MODELS, SUPPORTS_FUNCTIONS
 from .models import Conversation, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
@@ -182,7 +182,7 @@ class API(MixinMeta):
         """Get token list from text"""
 
         def _run():
-            if conf.model in SELF_HOSTED and self.local_llm is not None:
+            if conf.model in LOCAL_MODELS and self.local_llm is not None:
                 return self.local_llm.pipe.tokenizer.encode(text)
             else:
                 return self.openai_tokenizer.encode(text)
@@ -195,7 +195,7 @@ class API(MixinMeta):
         """Get text from token list"""
 
         def _run():
-            if conf.model in SELF_HOSTED and self.local_llm is not None:
+            if conf.model in LOCAL_MODELS and self.local_llm is not None:
                 return self.local_llm.pipe.tokenizer.convert_tokens_to_string(tokens)
             else:
                 return self.openai_tokenizer.decode(tokens)

@@ -34,9 +34,11 @@ COMPLETION = [
     "text-babbage-001",
     "text-ada-001",
 ]
-SELF_HOSTED = [
-    "distilbert-base-uncased-distilled-squad",  # 1.8GB download, 500MB RAM
-    "deepset/roberta-base-squad2",  # 2.5GB download, 730MB RAM (RECOMMENDED)
+LOCAL_MODELS = [
+    "distilbert-base-uncased-distilled-squad",  # 256MB download, 500MB RAM
+    "deepset/tinyroberta-squad2",  # 326MB download, 600-800MB RAM
+    "deepset/roberta-base-squad2",  # 496MB download, 730MB RAM (RECOMMENDED)
+    "deepset/roberta-large-squad2",  # 1.42GB download, 1.64GB RAM
 ]
 LOCAL_EMBED_MODELS = [
     "all-mpnet-base-v2",  # 420MB download, 750MB RAM
