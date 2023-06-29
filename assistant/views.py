@@ -11,17 +11,14 @@ from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 
+from .common.models import DB, CustomFunction, Embedding, GuildSettings
 from .common.utils import (
     code_string_valid,
-    embedding_embeds,
     extract_code_blocks,
-    function_embeds,
     get_attachments,
     json_schema_invalid,
-    request_embedding,
     wait_message,
 )
-from .models import DB, CustomFunction, Embedding, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.views")
 ON_EMOJI = "\N{ON WITH EXCLAMATION MARK WITH LEFT RIGHT ARROW ABOVE}"
@@ -35,7 +32,7 @@ class APIModal(discord.ui.Modal):
         self.field = discord.ui.TextInput(
             label="Enter your OpenAI Key below",
             style=discord.TextStyle.short,
-            required=True,
+            required=False,
         )
         self.add_item(self.field)
 
@@ -113,11 +110,20 @@ class EmbeddingSearch(discord.ui.Modal):
 
 
 class EmbeddingMenu(discord.ui.View):
-    def __init__(self, ctx: commands.Context, conf: GuildSettings, save_func: Callable):
+    def __init__(
+        self,
+        ctx: commands.Context,
+        conf: GuildSettings,
+        save_func: Callable,
+        fetch_pages: Callable,
+        embed_method: Callable,
+    ):
         super().__init__(timeout=600)
         self.ctx = ctx
         self.conf = conf
         self.save = save_func
+        self.fetch_pages = fetch_pages
+        self.embed_method = embed_method
 
         self.has_skip = True
         self.place = 0
@@ -140,7 +146,7 @@ class EmbeddingMenu(discord.ui.View):
         return await super().on_timeout()
 
     async def get_pages(self) -> None:
-        self.pages = await asyncio.to_thread(embedding_embeds, self.conf.embeddings, self.place)
+        self.pages = await self.fetch_pages(self.conf, self.place)
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)
@@ -176,14 +182,16 @@ class EmbeddingMenu(discord.ui.View):
                 )
 
     async def add_embedding(self, name: str, text: str):
-        embedding = await request_embedding(text, self.conf.api_key)
+        embedding = await self.embed_method(text, self.conf)
         if not embedding:
             return await self.ctx.send(
                 f"Failed to process embedding `{name}`\nContent: ```\n{text}\n```"
             )
         if name in self.conf.embeddings:
             return await self.ctx.send(f"An embedding with the name `{name}` already exists!")
-        self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+        self.conf.embeddings[name] = Embedding(
+            text=text, embedding=embedding, openai_tokens=not self.conf.use_local_embedder
+        )
         await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
@@ -232,13 +240,13 @@ class EmbeddingMenu(discord.ui.View):
         await modal.wait()
         if not modal.name or not modal.text:
             return
-        embedding = await request_embedding(modal.text, self.conf.api_key)
+        embedding = await self.embed_method(modal.text, self.conf)
         if not embedding:
             return await interaction.followup.send(
                 "Failed to edit that embedding, please try again later", ephemeral=True
             )
         self.conf.embeddings[modal.name] = Embedding(
-            nickname=modal.name, text=modal.text, embedding=embedding
+            text=modal.text, embedding=embedding, openai_tokens=not self.conf.use_local_embedder
         )
         if modal.name != name:
             del self.conf.embeddings[name]
@@ -421,6 +429,7 @@ class CodeMenu(discord.ui.View):
         db: DB,
         registry: Dict[str, Dict[str, dict]],
         save_func: Callable,
+        fetch_pages: Callable,
     ):
         super().__init__(timeout=600)
         self.ctx = ctx
@@ -428,6 +437,7 @@ class CodeMenu(discord.ui.View):
         self.conf = db.get_conf(ctx.guild)
         self.registry = registry
         self.save = save_func
+        self.fetch_pages = fetch_pages
 
         self.has_skip = True
 
@@ -457,11 +467,7 @@ class CodeMenu(discord.ui.View):
         return await super().on_timeout()
 
     async def get_pages(self) -> None:
-        owner = self.ctx.author.id in self.ctx.bot.owner_ids
-        func_dump = {k: v.dict() for k, v in self.db.functions.items()}
-        self.pages = await asyncio.to_thread(
-            function_embeds, func_dump, self.registry, owner, self.ctx.bot
-        )
+        self.pages = await self.fetch_pages(self.ctx.author)
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)

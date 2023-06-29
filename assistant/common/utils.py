@@ -1,35 +1,16 @@
 import asyncio
-import inspect
-import json
 import logging
-import math
 import re
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+import sys
+from datetime import datetime
+from typing import List, Optional, Tuple, Union
 
 import discord
-import openai
-import tiktoken
-from aiocache import cached
-from openai.error import (
-    APIConnectionError,
-    APIError,
-    RateLimitError,
-    ServiceUnavailableError,
-    Timeout,
-)
-from openai.version import VERSION
-from redbot.core import commands
+from redbot.core import commands, version_info
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import box, humanize_number
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_delay,
-    wait_random_exponential,
-)
+from redbot.core.utils.chat_formatting import humanize_list
 
 log = logging.getLogger("red.vrt.assistant.utils")
-encoding = tiktoken.get_encoding("cl100k_base")
 
 
 def get_attachments(message: discord.Message) -> List[discord.Attachment]:
@@ -115,12 +96,6 @@ def code_string_valid(code: str) -> bool:
         return False
 
 
-def compile_function(function_name: str, code: str) -> Callable:
-    globals().update({"discord": discord})
-    exec(code, globals())
-    return globals()[function_name]
-
-
 def json_schema_invalid(schema: dict) -> str:
     # String will be empty if function is good
     missing = ""
@@ -140,142 +115,6 @@ def json_schema_invalid(schema: dict) -> str:
     return missing
 
 
-def num_tokens_from_string(string: str) -> int:
-    """Returns the number of tokens in a text string."""
-    if not string:
-        return 0
-    num_tokens = len(encoding.encode(string))
-    return num_tokens
-
-
-def function_list_tokens(functions: List[dict]) -> int:
-    if not functions:
-        return 0
-    dumps = [json.dumps(i) for i in functions]
-    joined = "".join(dumps)
-    return num_tokens_from_string(joined)
-
-
-def degrade_conversation(
-    messages: List[dict], function_list: List[dict], max_tokens: int
-) -> Tuple[List[dict], List[dict], bool]:
-    """Iteratively degrade a conversation payload, prioritizing more recent messages and critical context
-
-    Args:
-        messages (List[dict]): message entries sent to the api
-        function_list (List[dict]): list of json function schemas for the model
-        max_tokens (int): target tokens to keep conversation token count under
-
-    Returns:
-        Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded
-    """
-    # Calculate the initial total token count
-    total_tokens = sum(num_tokens_from_string(msg["content"]) for msg in messages) + sum(
-        num_tokens_from_string(json.dumps(func)) for func in function_list
-    )
-    # Check if the total token count is already under the max token limit
-    if total_tokens <= max_tokens:
-        return messages, function_list, False
-
-    # Helper function to degrade a message
-    def degrade_message(msg: str) -> str:
-        words = msg.split()
-        if len(words) > 1:
-            return " ".join(words[:-1])
-        else:
-            return ""
-
-    log.debug(f"Removing functions (total: {total_tokens}/max: {max_tokens})")
-    # Degrade function_list first
-    while total_tokens > max_tokens and len(function_list) > 0:
-        popped = function_list.pop(0)
-        total_tokens -= num_tokens_from_string(json.dumps(popped))
-        if total_tokens <= max_tokens:
-            return messages, function_list, True
-
-    # Find the indices of the most recent messages for each role
-    most_recent_user = most_recent_function = most_recent_assistant = -1
-    for i, msg in enumerate(reversed(messages)):
-        if most_recent_user == -1 and msg["role"] == "user":
-            most_recent_user = len(messages) - 1 - i
-        if most_recent_function == -1 and msg["role"] == "function":
-            most_recent_function = len(messages) - 1 - i
-        if most_recent_assistant == -1 and msg["role"] == "assistant":
-            most_recent_assistant = len(messages) - 1 - i
-        if most_recent_user != -1 and most_recent_function != -1 and most_recent_assistant != -1:
-            break
-
-    log.debug(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
-    # Degrade the conversation except for the most recent user and function messages
-    i = 0
-    while total_tokens > max_tokens and i < len(messages):
-        if messages[i]["role"] == "system" or i == most_recent_user or i == most_recent_function:
-            i += 1
-            continue
-
-        degraded_content = degrade_message(messages[i]["content"])
-        if degraded_content:
-            token_diff = num_tokens_from_string(messages[i]["content"]) - num_tokens_from_string(
-                degraded_content
-            )
-            messages[i]["content"] = degraded_content
-            total_tokens -= token_diff
-        else:
-            total_tokens -= num_tokens_from_string(messages[i]["content"])
-            messages.pop(i)
-
-        if total_tokens <= max_tokens:
-            return messages, function_list, True
-
-    # Degrade the most recent user and function messages as the last resort
-    log.debug(f"Degrating user/function messages (total: {total_tokens}/max: {max_tokens})")
-    for i in [most_recent_function, most_recent_user]:
-        if total_tokens <= max_tokens:
-            return messages, function_list, True
-        while total_tokens > max_tokens:
-            degraded_content = degrade_message(messages[i]["content"])
-            if degraded_content:
-                token_diff = num_tokens_from_string(
-                    messages[i]["content"]
-                ) - num_tokens_from_string(degraded_content)
-                messages[i]["content"] = degraded_content
-                total_tokens -= token_diff
-            else:
-                total_tokens -= num_tokens_from_string(messages[i]["content"])
-                messages.pop(i)
-                break
-
-    return messages, function_list, True
-
-
-def token_pagify(text: str, max_tokens: int = 2000):
-    """Pagify a long string by tokens rather than characters"""
-    token_chunks = []
-    tokens = encoding.encode(text)
-    current_chunk = []
-
-    for token in tokens:
-        current_chunk.append(token)
-        if len(current_chunk) == max_tokens:
-            token_chunks.append(current_chunk)
-            current_chunk = []
-
-    if current_chunk:
-        token_chunks.append(current_chunk)
-
-    text_chunks = []
-    for chunk in token_chunks:
-        text_chunk = encoding.decode(chunk)
-        text_chunks.append(text_chunk)
-
-    return text_chunks
-
-
-def token_cut(message: str, max_tokens: int):
-    cut_tokens = encoding.encode(message)[:max_tokens]
-    return encoding.decode(cut_tokens)
-
-
 def compile_messages(messages: List[dict]) -> str:
     """Compile messages list into a single string"""
     text = ""
@@ -287,248 +126,40 @@ def compile_messages(messages: List[dict]) -> str:
     return text
 
 
-def function_embeds(
-    functions: Dict[str, dict], registry: Dict[str, Dict[str, dict]], owner: bool, bot: Red
-) -> List[discord.Embed]:
-    main = {"Assistant": functions}
-    for cog_name, function_schemas in registry.items():
-        cog = bot.get_cog(cog_name)
-        if not cog:
-            continue
-        for function_name, function_schema in function_schemas.items():
-            function_obj = getattr(cog, function_name, None)
-            if function_obj is None:
-                continue
-            if cog_name not in main:
-                main[cog_name] = {}
-            main[cog_name][function_name] = {
-                "code": inspect.getsource(function_obj),
-                "jsonschema": function_schema,
-            }
-
-    pages = sum(len(v) for v in main.values())
-    page = 1
-    embeds = []
-    for cog_name, functions in main.items():
-        for function_name, func in functions.items():
-            embed = discord.Embed(
-                title="Custom Functions", description=function_name, color=discord.Color.blue()
-            )
-            if cog_name != "Assistant":
-                embed.add_field(
-                    name="3rd Party",
-                    value=f"This function is managed by the `{cog_name}` cog",
-                    inline=False,
-                )
-            schema = json.dumps(func["jsonschema"], indent=2)
-            tokens = num_tokens_from_string(schema)
-            schema_text = (
-                f"This function consumes `{humanize_number(tokens)}` input tokens each call\n"
-            )
-
-            if owner:
-                if len(schema) > 1000:
-                    schema_text += box(schema[:1000], "py") + "..."
-                else:
-                    schema_text += box(schema, "py")
-
-                if len(func["code"]) > 1000:
-                    code_text = box(func["code"][:1000], "py") + "..."
-                else:
-                    code_text = box(func["code"], "py")
-
-            else:
-                schema_text += box(func["jsonschema"]["description"], "json")
-                code_text = box("Hidden...")
-
-            embed.add_field(name="Schema", value=schema_text, inline=False)
-            embed.add_field(name="Code", value=code_text, inline=False)
-
-            embed.set_footer(text=f"Page {page}/{pages}")
-            embeds.append(embed)
-            page += 1
-
-    if not embeds:
-        embeds.append(
-            discord.Embed(
-                description="No custom code has been added yet!", color=discord.Color.purple()
-            )
-        )
-    return embeds
-
-
-def embedding_embeds(embeddings: Dict[str, Any], place: int) -> List[discord.Embed]:
-    embeddings = sorted(embeddings.items(), key=lambda x: x[0])
-    embeds = []
-    pages = math.ceil(len(embeddings) / 5)
-    start = 0
-    stop = 5
-    for page in range(pages):
-        stop = min(stop, len(embeddings))
-        embed = discord.Embed(title="Embeddings", color=discord.Color.blue())
-        embed.set_footer(text=f"Page {page + 1}/{pages}")
-        num = 0
-        for i in range(start, stop):
-            em = embeddings[i]
-            text = em[1].text
-            token_length = num_tokens_from_string(text)
-            val = f"`Tokens: `{token_length}\n```\n{text[:30]}...\n```"
-            embed.add_field(
-                name=f"➣ {em[0]}" if place == num else em[0],
-                value=val,
-                inline=False,
-            )
-            num += 1
-        embeds.append(embed)
-        start += 5
-        stop += 5
-    if not embeds:
-        embeds.append(
-            discord.Embed(
-                description="No embeddings have been added!", color=discord.Color.purple()
-            )
-        )
-    return embeds
-
-
-@retry(
-    retry=retry_if_exception_type(
-        Union[Timeout, APIConnectionError, RateLimitError, ServiceUnavailableError]
-    ),
-    wait=wait_random_exponential(min=1, max=5),
-    stop=stop_after_delay(120),
-    reraise=True,
-)
-@cached(ttl=1800)
-async def request_embedding(text: str, api_key: str) -> List[float]:
-    response = await openai.Embedding.acreate(
-        input=text, model="text-embedding-ada-002", api_key=api_key, timeout=30
-    )
-    return response["data"][0]["embedding"]
-
-
-@retry(
-    retry=retry_if_exception_type(
-        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
-    ),
-    wait=wait_random_exponential(min=1, max=5),
-    stop=stop_after_delay(120),
-    reraise=True,
-)
-@cached(ttl=30)
-async def request_chat_response(
-    model: str,
-    messages: List[dict],
-    api_key: str,
-    temperature: float,
-    functions: Optional[List[dict]] = [],
+def get_params(
+    bot: Red,
+    guild: discord.Guild,
+    now: datetime,
+    author: Optional[discord.Member],
+    channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
+    extras: dict,
 ) -> dict:
-    # response = await asyncio.to_thread(_chat, model, messages, api_key, temperature, functions)
-    function_able_models = [
-        "gpt-3.5-turbo-0613",
-        "gpt-3.5-turbo-16k-0613",
-        "gpt-4-0613",
-        "gpt-4-32k-0613",
-    ]
-    if VERSION >= "0.27.6" and model in function_able_models and functions:
-        response = await openai.ChatCompletion.acreate(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            api_key=api_key,
-            timeout=60,
-            functions=functions,
-        )
-    else:
-        response = await openai.ChatCompletion.acreate(
-            model=model, messages=messages, temperature=temperature, api_key=api_key, timeout=60
-        )
-    return response["choices"][0]["message"]
-
-
-def _chat(
-    model: str,
-    messages: List[dict],
-    api_key: str,
-    temperature: float,
-    functions: Optional[List[dict]] = [],
-):
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        api_key=api_key,
-        timeout=60,
-        functions=functions,
-        function_call="auto" if functions else "none",
-    )
-    return response["choices"][0]["message"]
-
-
-@retry(
-    retry=retry_if_exception_type(
-        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
-    ),
-    wait=wait_random_exponential(min=1, max=5),
-    stop=stop_after_delay(120),
-    reraise=True,
-)
-@cached(ttl=30)
-async def request_completion_response(
-    model: str, message: str, api_key: str, temperature: float, max_tokens: int
-) -> str:
-    response = await openai.Completion.acreate(
-        model=model,
-        prompt=message,
-        temperature=temperature,
-        api_key=api_key,
-        max_tokens=max_tokens,
-    )
-    return response["choices"][0]["text"]
-
-
-@retry(
-    retry=retry_if_exception_type(
-        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
-    ),
-    wait=wait_random_exponential(min=1, max=5),
-    stop=stop_after_delay(120),
-    reraise=True,
-)
-async def request_image_create(prompt: str, api_key: str, size: str, user_id: str) -> str:
-    response = await openai.Image.acreate(api_key=api_key, prompt=prompt, size=size, user=user_id)
-    return response["data"][0]["url"]
-
-
-@retry(
-    retry=retry_if_exception_type(
-        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
-    ),
-    wait=wait_random_exponential(min=1, max=5),
-    stop=stop_after_delay(120),
-    reraise=True,
-)
-async def request_image_edit(
-    prompt: str, api_key: str, size: str, user_id: str, image: bytes, mask: Optional[bytes]
-) -> str:
-    response = await openai.Image.create_edit(
-        api_key=api_key, prompt=prompt, size=size, user=user_id, image=image, mask=mask
-    )
-    return response["data"][0]["url"]
-
-
-@retry(
-    retry=retry_if_exception_type(
-        Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
-    ),
-    wait=wait_random_exponential(min=1, max=5),
-    stop=stop_after_delay(120),
-    reraise=True,
-)
-async def request_image_variant(
-    prompt: str, api_key: str, size: str, user_id: str, image: bytes
-) -> str:
-    response = await openai.Image.create_variation(
-        api_key=api_key, prompt=prompt, size=size, user=user_id, image=image
-    )
-    return response["data"][0]["url"]
+    roles = [role for role in author.roles if "everyone" not in role.name] if author else []
+    display_name = author.display_name if author else ""
+    return {
+        **extras,
+        "botname": bot.user.name,
+        "timestamp": f"<t:{round(now.timestamp())}:F>",
+        "day": now.strftime("%A"),
+        "date": now.strftime("%B %d, %Y"),
+        "time": now.strftime("%I:%M %p"),
+        "timetz": now.strftime("%I:%M %p %Z"),
+        "members": guild.member_count,
+        "username": author.name if author else "",
+        "user": author.name if author else "",
+        "displayname": display_name,
+        "datetime": str(datetime.now()),
+        "roles": humanize_list([role.name for role in roles]),
+        "rolementions": humanize_list([role.mention for role in roles]),
+        "avatar": author.display_avatar.url if author else "",
+        "owner": guild.owner.name,
+        "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",
+        "server": guild.name,
+        "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "dpy": discord.__version__,
+        "red": str(version_info),
+        "cogs": humanize_list([bot.get_cog(cog).qualified_name for cog in bot.cogs]),
+        "channelname": channel.name if channel else "",
+        "channelmention": channel.mention if channel else "",
+        "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
+    }

@@ -5,16 +5,20 @@ from time import perf_counter
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
+import tiktoken
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from sentence_transformers import SentenceTransformer
+from transformers import pipeline
 
 from .abc import CompositeMetaClass
-from .api import API
 from .commands import AssistantCommands
-from .common.utils import json_schema_invalid, request_embedding
+from .common.api import API
+from .common.chat import ChatHandler
+from .common.models import DB, Embedding, EmbeddingEntryExists, LocalLLM, NoAPIKey
+from .common.utils import json_schema_invalid
 from .listener import AssistantListener
-from .models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 
 log = logging.getLogger("red.vrt.assistant")
 
@@ -23,6 +27,7 @@ class Assistant(
     AssistantCommands,
     AssistantListener,
     API,
+    ChatHandler,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -35,10 +40,21 @@ class Assistant(
     - **[p]chat**: talk with the assistant
     - **[p]convostats**: view a user's token usage/conversation message count for the channel
     - **[p]clearconvo**: reset your conversation with the assistant in the channel
+
+    **Support for Local Models**
+
+    **QA/Tokenizing Model**: `deepset/roberta-base-squad2`
+    - Download size: 2.5GB
+    - RAM usage: around 750MB-1.2GB
+    **Embedding Model**: `all-MiniLM-L12-v2`.
+    - Download size: 120MB
+    - RAM usage: 650-750MB
+
+    *The local model can only be used as Q&A, it doesn't support any message retention or memory*
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.6.1"
+    __version__ = "4.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -50,7 +66,10 @@ class Assistant(
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         self.config.register_global(db={})
         self.db: DB = DB()
-        self.re_pool = Pool()
+        self.mp_pool = Pool()
+
+        self.openai_tokenizer: tiktoken.core.Encoding = None
+        self.local_llm: LocalLLM = None
 
         # {cog_name: {function_name: {function_json_schema}}}
         self.registry: Dict[str, Dict[str, dict]] = {}
@@ -63,8 +82,10 @@ class Assistant(
 
     async def cog_unload(self):
         self.save_loop.cancel()
-        self.re_pool.close()
+        self.mp_pool.close()
         self.bot.dispatch("assistant_cog_remove")
+        if self.local_llm:
+            self.local_llm.shutdown()
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
@@ -72,11 +93,34 @@ class Assistant(
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.parse_obj, data)
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
+
+        asyncio.create_task(self.init_models())
+
         logging.getLogger("openai").setLevel(logging.WARNING)
+        logging.getLogger("aiocache").setLevel(logging.WARNING)
         self.bot.dispatch("assistant_cog_add", self)
-        await asyncio.sleep(10)
-        await asyncio.to_thread(self._cleanup)
+
+        await asyncio.sleep(30)
+        await asyncio.to_thread(self._cleanup_db)
         self.save_loop.start()
+
+    async def init_models(self):
+        def _init():
+            self.openai_tokenizer = tiktoken.get_encoding("cl100k_base")
+            if self.db.self_hosted:
+                self.local_llm = LocalLLM(
+                    embedder=SentenceTransformer(self.db.local_embedder),
+                    pipe=pipeline(
+                        "question-answering",
+                        model=self.db.local_model,
+                        tokenizer=self.db.local_model,
+                        low_cpu_mem_usage=self.db.low_mem,
+                        use_fast=True,
+                    ),
+                )
+                log.info("Local model initialized!")
+
+        await asyncio.to_thread(_init)
 
     async def save_conf(self):
         if self.saving:
@@ -88,9 +132,12 @@ class Assistant(
                 self.db.conversations.clear()
             dump = await asyncio.to_thread(self.db.dict)
             await self.config.db.set(dump)
+            txt = f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms"
             if self.first_run:
-                log.info(f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms")
+                log.info(txt)
                 self.first_run = False
+            else:
+                log.debug(txt)
         except Exception as e:
             log.error("Failed to save config", exc_info=e)
         finally:
@@ -166,7 +213,12 @@ class Assistant(
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
-        self, guild: discord.Guild, name: str, text: str, overwrite: bool = False
+        self,
+        guild: discord.Guild,
+        name: str,
+        text: str,
+        overwrite: bool = False,
+        user: Optional[discord.Member] = None,
     ) -> Optional[List[float]]:
         """
         Method for other cogs to access and add embeddings
@@ -186,11 +238,11 @@ class Assistant(
         """
 
         conf = self.db.get_conf(guild)
-        if not conf.api_key:
-            raise NoAPIKey("OpenAI key has not been set for this server!")
+
         if name in conf.embeddings and not overwrite:
             raise EmbeddingEntryExists(f"The entry name '{name}' already exists!")
-        embedding = await request_embedding(text, conf.api_key)
+
+        embedding = await self.request_embedding(text, conf)
         if not embedding:
             return None
         conf.embeddings[name] = Embedding(text=text, embedding=embedding)
@@ -228,7 +280,7 @@ class Assistant(
             str: the reply from ChatGPT (may need to be pagified)
         """
         conf = self.db.get_conf(guild)
-        if not conf.api_key:
+        if not conf.api_key and self.local_llm is None:
             raise NoAPIKey("OpenAI key has not been set for this server!")
         return await self.get_chat_response(
             message,

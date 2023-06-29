@@ -149,7 +149,7 @@ class VrtUtils(commands.Cog):
         cog_update_command = ctx.bot.get_command("cog update")
         if cog_update_command is None:
             return await ctx.send(
-                f"Make sure you first `{ctx.prefix}load downloader` before you can use this command."
+                f"Make sure you first `{ctx.clean_prefix}load downloader` before you can use this command."
             )
         await ctx.invoke(cog_update_command, *cogs, reload=True)
 

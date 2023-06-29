@@ -29,7 +29,7 @@ class AdminCommands(MixinMeta):
         """Ticket Setup Guide"""
         desc = (
             _("To create a support ticket panel, type ")
-            + f"`{ctx.prefix}tickets addpanel"
+            + f"`{ctx.clean_prefix}tickets addpanel"
             + _(" <panel_name>`")
         )
         em = Embed(
@@ -40,50 +40,50 @@ class AdminCommands(MixinMeta):
         step1 = _(
             "Set the category ID that new tickets will be created under if using channel tickets.\n"
         )
-        step1 += f"`{ctx.prefix}tickets category " + _("<panel_name> <category_id>`")
+        step1 += f"`{ctx.clean_prefix}tickets category " + _("<panel_name> <category_id>`")
         em.add_field(name=_("Step 1"), value=step1, inline=False)
         step2 = _("Set the channel that the bots ticket panel will be located in.\n")
-        step2 += f"`{ctx.prefix}tickets channel " + _("<panel_name> <channel_id>`")
+        step2 += f"`{ctx.clean_prefix}tickets channel " + _("<panel_name> <channel_id>`")
         em.add_field(name=_("Step 2"), value=step2, inline=False)
         step3 = _("Set the ID of the bots ticket panel message.\n")
-        step3 += f"`{ctx.prefix}tickets panelmessage " + _("<panel_name> <message_id>`\n")
+        step3 += f"`{ctx.clean_prefix}tickets panelmessage " + _("<panel_name> <message_id>`\n")
         step3 += _(
             "At this point the ticket panel will be activated, "
             "all following steps are for extra customization.\n"
             "If you need a message to add the buttons to, you can use the `{}tickets embed` command.\n"
-        ).format(ctx.prefix)
+        ).format(ctx.clean_prefix)
         step3 += _(
             "If the bot is having trouble finding the message, run the command in the same channel as it."
         )
         em.add_field(name=_("Step 3"), value=step3, inline=False)
         step4 = _("Set the text of the ticket panel button.\n")
-        step4 += f"`{ctx.prefix}tickets buttontext " + _("<panel_name> <button_text>`")
+        step4 += f"`{ctx.clean_prefix}tickets buttontext " + _("<panel_name> <button_text>`")
         em.add_field(name=_("Button Text"), value=step4, inline=False)
         step5 = _("Set the ticket panel button color.\n")
         step5 += _("Valid colors are ") + "`red`, `blue`, `green`, and `grey`.\n"
-        step5 += f"`{ctx.prefix}tickets buttoncolor " + _("<panel_name> <button_color>`")
+        step5 += f"`{ctx.clean_prefix}tickets buttoncolor " + _("<panel_name> <button_color>`")
         em.add_field(name=_("Button Color"), value=step5, inline=False)
         step6 = _("Set the button emoji for the ticket panel.\n")
-        step6 += f"`{ctx.prefix}tickets buttonemoji " + _("<panel_name> <emoji>`")
+        step6 += f"`{ctx.clean_prefix}tickets buttonemoji " + _("<panel_name> <emoji>`")
         em.add_field(name=_("Button Emoji"), value=step6, inline=False)
 
         step7 = _("Use threads instead of channels for tickets\n")
-        step7 += f"`{ctx.prefix}tickets usethreads " + _("<panel_name>`")
+        step7 += f"`{ctx.clean_prefix}tickets usethreads " + _("<panel_name>`")
         em.add_field(name=_("Thread Tickets"), value=step7, inline=False)
 
         step8 = _("Add a message the bot sends to the user in their ticket.\n")
-        step8 += f"`{ctx.prefix}tickets addmessage " + _("<panel_name>`")
+        step8 += f"`{ctx.clean_prefix}tickets addmessage " + _("<panel_name>`")
         em.add_field(name=_("Ticket Messages"), value=step8, inline=False)
 
         step9 = _("View and remove a messages the bot sends to the user in their ticket.\n")
-        step9 += f"`{ctx.prefix}tickets viewmessages " + _("<panel_name>`")
+        step9 += f"`{ctx.clean_prefix}tickets viewmessages " + _("<panel_name>`")
         em.add_field(name=_("Remove/View Ticket Messages"), value=step9, inline=False)
 
         step10 = _("Set the naming format for ticket channels that are opened.\n")
-        step10 += f"`{ctx.prefix}tickets ticketname " + _("<panel_name> <name_format>`")
+        step10 += f"`{ctx.clean_prefix}tickets ticketname " + _("<panel_name> <name_format>`")
         em.add_field(name=_("Ticket Channel Name"), value=step10, inline=False)
         step11 = _("Set log channel for a ticket panel.\n")
-        step11 += f"`{ctx.prefix}tickets logchannel " + _("<panel_name> <channel>`")
+        step11 += f"`{ctx.clean_prefix}tickets logchannel " + _("<panel_name> <channel>`")
         em.add_field(name=_("Log Channel"), value=step11, inline=False)
 
         tip = _(
@@ -816,7 +816,7 @@ class AdminCommands(MixinMeta):
         if not panels:
             return await ctx.send(
                 _("There are no panels available!\nUse ")
-                + f"`{ctx.prefix}tset addpanel` "
+                + f"`{ctx.clean_prefix}tset addpanel` "
                 + _("to create one.")
             )
         embeds = []

@@ -2188,7 +2188,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             text = _(
                 "Embed profiles are disabled. Enable them to set the progress bar length with "
             )
-            text += f"`{ctx.prefix}levelset barlength`"
+            text += f"`{ctx.clean_prefix}levelset barlength`"
             return await ctx.send(text)
         if bar_length < 15 or bar_length > 50:
             return await ctx.send(

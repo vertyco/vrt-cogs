@@ -109,7 +109,7 @@ class Pixl(commands.Cog):
 
         if not all_users:
             return await ctx.send(
-                f"There are no users saved yet, start a game with `{ctx.prefix}pixl`"
+                f"There are no users saved yet, start a game with `{ctx.clean_prefix}pixl`"
             )
         sorted_users = sorted(all_users.items(), key=lambda x: x[1]["score"], reverse=True)
         you = None
@@ -524,7 +524,7 @@ class Pixl(commands.Cog):
                 if not attachments:
                     return await ctx.send(
                         f"If you do not provide any arguments with this command then you must attach a text file.\n"
-                        f"Type `{ctx.prefix}help pixlset image addglobal` for more info."
+                        f"Type `{ctx.clean_prefix}help pixlset image addglobal` for more info."
                     )
                 file = attachments[0]
                 if not file.filename.endswith(".txt"):
@@ -619,7 +619,7 @@ class Pixl(commands.Cog):
                 if not attachments:
                     return await ctx.send(
                         f"If you do not provide any arguments with this command then you must attach a text file.\n"
-                        f"Type `{ctx.prefix}help pixlset image add` for more info."
+                        f"Type `{ctx.clean_prefix}help pixlset image add` for more info."
                     )
                 file = attachments[0]
                 if not file.filename.endswith(".txt"):
