@@ -114,8 +114,6 @@ class ChatHandler(MixinMeta):
 
         files = None
         to_send = []
-        if not to_send:
-            return await message.reply("No results!")
         if outputfile and not extract:
             # Everything to file
             file = discord.File(BytesIO(reply.encode()), filename=outputfile)
@@ -137,6 +135,8 @@ class ChatHandler(MixinMeta):
             # Everything to discord
             to_send.append(reply)
 
+        if not to_send:
+            return await message.reply("No results!")
         for index, text in enumerate(to_send):
             if index == 0:
                 await self.send_reply(message, text, conf, files, True)
