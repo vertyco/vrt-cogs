@@ -27,7 +27,7 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.constants import CHAT, COMPLETION, SELF_HOSTED
+from ..common.constants import CHAT, COMPLETION, LOCAL_EMBED_MODELS, LOCAL_MODELS
 from ..common.models import Embedding
 from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
@@ -45,7 +45,7 @@ class Admin(MixinMeta):
 
         You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.
 
-        This cog comes with a pre-trained **[self-hosted model](https://huggingface.co/distilbert-base-uncased-distilled-squad)** (Q&A Only)
+        This cog comes with a pre-trained **[self-hosted model](https://huggingface.co/deepset/roberta-base-squad2)** (Q&A Only)
         """
         pass
 
@@ -784,9 +784,6 @@ class Admin(MixinMeta):
             f"**Chat**\n{box(humanize_list(CHAT))}\n"
             f"**Completion**\n{box(humanize_list(COMPLETION))}\n"
         )
-        if self.db.self_hosted:
-            valid_raw += SELF_HOSTED
-            valid += f"**Self-Hosted (QA Only)**\n{box(humanize_list(SELF_HOSTED))}"
 
         if not model:
             return await ctx.send(f"Valid models are:\n{valid}")
@@ -797,7 +794,7 @@ class Admin(MixinMeta):
                 f"You must set an API key first with `{ctx.clean_prefix}assist openaikey`"
             )
 
-        if conf.api_key and model not in SELF_HOSTED:
+        if conf.api_key and model not in LOCAL_MODELS:
             try:
                 await openai.Model.aretrieve(model, api_key=conf.api_key)
             except openai.InvalidRequestError:
@@ -1475,4 +1472,45 @@ class Admin(MixinMeta):
             conf.max_time_role_override[role.id] = retention_seconds
             await ctx.send(f"Max retention time override for {role.mention} added!")
 
+        await self.save_conf()
+
+    @assistant.command(name="setlocalmodel")
+    @commands.is_owner()
+    async def set_local_model(self, ctx: commands.Context, model: str = None):
+        """
+        Set the local LLM
+
+        Valid models:
+        - deepset/roberta-large-squad2 (1.42GB download, 1.6-2.1GB RAM)
+        - deepset/roberta-base-squad2 (496MB download, 730MB-1.1GB RAM)
+        - deepset/tinyroberta-squad2 (326MB download, 600-800MB RAM)
+        """
+        valid = humanize_list(LOCAL_MODELS)
+        if not model:
+            return await ctx.send(f"Valid models are:\n{valid}")
+        model = model.lower().strip()
+        if model not in LOCAL_MODELS:
+            return await ctx.send(f"Invalid model type! Available model types are: {valid}")
+        self.db.local_model = model
+        await ctx.send(f"The **{model}** model will now be used")
+        await self.save_conf()
+
+    @assistant.command(name="setlocalembedder")
+    @commands.is_owner()
+    async def set_local_embedder(self, ctx: commands.Context, model: str = None):
+        """
+        Set the local embedding model
+
+        Valid models:
+        - all-MiniLM-L12-v2 (120MB download, 650MB RAM)
+        - all-MiniLM-L6-v2 (80MB download, 350MB RAM)
+        """
+        valid = humanize_list(LOCAL_EMBED_MODELS)
+        if not model:
+            return await ctx.send(f"Valid models are:\n{valid}")
+        model = model.lower().strip()
+        if model not in LOCAL_EMBED_MODELS:
+            return await ctx.send(f"Invalid model type! Available model types are: {valid}")
+        self.db.local_model = model
+        await ctx.send(f"The **{model}** model will now be used")
         await self.save_conf()

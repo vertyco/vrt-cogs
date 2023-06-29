@@ -43,18 +43,18 @@ class Assistant(
 
     **Support for Local Models**
 
-    **QA/Tokenizing Model**: `deepset/roberta-base-squad2`
-    - Download size: 2.5GB
-    - RAM usage: around 750MB-1.2GB
-    **Embedding Model**: `all-MiniLM-L12-v2`.
-    - Download size: 120MB
-    - RAM usage: 650-750MB
+    **Default QA/Tokenizing Model**: `deepset/roberta-large-squad2`
+    - Download size: 1.42GB
+    - RAM usage: around 1.64-2.0 GB
+    **Default Embedding Model**: `all-MiniLM-L12-v2`.
+    - Download size: 120 MB
+    - RAM usage: 650-750 MB
 
     *The local model can only be used as Q&A, it doesn't support any message retention or memory*
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.0.3"
+    __version__ = "4.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

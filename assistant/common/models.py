@@ -217,7 +217,7 @@ class DB(BaseModel):
     self_hosted: bool = False
     low_mem: bool = True
 
-    local_model: str = "deepset/roberta-base-squad2"
+    local_model: str = "deepset/roberta-large-squad2"
     local_embedder: str = "all-MiniLM-L12-v2"
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
