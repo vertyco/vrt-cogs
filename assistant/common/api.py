@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple, Union
 import discord
 import openai
 import orjson
+import psutil
 from aiocache import cached
 from openai.error import (
     APIConnectionError,
@@ -26,7 +27,7 @@ from tenacity import (
 )
 
 from ..abc import MixinMeta
-from .constants import LOCAL_MODELS, MODELS, SUPPORTS_FUNCTIONS
+from .constants import LOCAL_GPT_MODELS, LOCAL_MODELS, MODELS, SUPPORTS_FUNCTIONS
 from .models import Conversation, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
@@ -60,16 +61,37 @@ class API(MixinMeta):
         )
         return response["data"][0]["embedding"]
 
+    async def request_chat_response(
+        self, messages: List[dict], conf: GuildSettings, functions: List[dict] = []
+    ) -> dict:
+        log.debug(
+            f"Requesting chat response. {len(messages)} messages, {len(functions)} functions"
+        )
+        if self.local_llm is not None and conf.use_local_llm:
+            return await self._local_chat(messages)
+
+        return await self._openai_chat(messages, conf, functions)
+
+    @cached(ttl=15)
+    async def _local_chat(self, messages: List[dict]) -> dict:
+        def _run():
+            response = self.local_llm.gpt.chat_completion(
+                messages=messages, verbose=False, streaming=False
+            )
+            return response["choices"][0]["message"]
+
+        return await asyncio.to_thread(_run)
+
     @retry(
         retry=retry_if_exception_type(
             Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
         ),
         wait=wait_random_exponential(min=1, max=5),
-        stop=stop_after_delay(60),
+        stop=stop_after_delay(120),
         reraise=True,
     )
-    @cached(ttl=30)
-    async def request_chat_response(
+    @cached(ttl=15)
+    async def _openai_chat(
         self, messages: List[dict], conf: GuildSettings, functions: List[dict] = []
     ) -> dict:
         if functions and VERSION >= "0.27.6" and conf.model in SUPPORTS_FUNCTIONS:
@@ -149,6 +171,13 @@ class API(MixinMeta):
                 log.info("Local LLM not running!")
             return "none"
 
+    def can_use_local_model(self, model: str) -> bool:
+        all_models = {**LOCAL_MODELS, **LOCAL_GPT_MODELS}
+        # Reduce ram requirement a little
+        ram_required = all_models[model]["ram"] * 0.8
+        total_ram = psutil.virtual_memory().total / 1024 * 1024 * 1024
+        return total_ram > ram_required
+
     async def sync_embeddings(self, conf: GuildSettings) -> bool:
         synced = False
 
@@ -169,7 +198,10 @@ class API(MixinMeta):
         return synced
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
-        return min(conf.get_user_max_tokens(user), MODELS[conf.get_user_model(user)] - 96)
+        user_max = conf.get_user_max_tokens(user)
+        if self.get_llm_type(conf) == "api":
+            return min(user_max, MODELS[conf.get_user_model(user)] - 96)
+        return min(user_max, 4000)
 
     async def cut_text_by_tokens(self, text: str, conf: GuildSettings, max_tokens: int) -> str:
         tokens = await self.get_tokens(text, conf)

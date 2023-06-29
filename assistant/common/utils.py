@@ -10,6 +10,8 @@ from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import humanize_list
 
+from .constants import LOCAL_GPT_MODELS, LOCAL_MODELS
+
 log = logging.getLogger("red.vrt.assistant.utils")
 
 
@@ -163,3 +165,22 @@ def get_params(
         "channelmention": channel.mention if channel else "",
         "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
     }
+
+
+def make_model_embed() -> discord.Embed:
+    models = {**LOCAL_MODELS, **LOCAL_GPT_MODELS}
+    embed = discord.Embed(
+        title="Local Models", description="The following models can be used locally"
+    )
+    for model, i in models.items():
+        txt = (
+            f"`Model:          `{model}\n"
+            f"`Download Size:  `{i['size']}GB\n"
+            f"`Max Ram Use:    `{i['ram']}GB\n"
+        )
+        if params := i.get("params"):
+            txt += f"`Params:         `{params}"
+        else:
+            txt += "This model can only be used for Q&A or semantic search!"
+        embed.add_field(name=i["name"], value=txt, inline=False)
+    return embed

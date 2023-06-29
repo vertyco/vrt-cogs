@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
+from gpt4all import GPT4All
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 from redbot.core.bot import Red
@@ -14,7 +15,8 @@ log = logging.getLogger("red.vrt.assistant.models")
 
 class LocalLLM(BaseModel):
     embedder: SentenceTransformer
-    pipe: QuestionAnsweringPipeline
+    pipe: QuestionAnsweringPipeline = None
+    gpt: GPT4All = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -22,6 +24,7 @@ class LocalLLM(BaseModel):
     def shutdown(self):
         del self.embedder
         del self.pipe
+        del self.gpt
 
 
 class Embedding(BaseModel):
@@ -216,6 +219,7 @@ class DB(BaseModel):
 
     self_hosted: bool = False
     low_mem: bool = True
+    threads: int = 0
 
     local_model: str = "deepset/roberta-large-squad2"
     local_embedder: str = "all-MiniLM-L12-v2"

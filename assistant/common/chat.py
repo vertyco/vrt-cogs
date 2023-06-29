@@ -17,7 +17,14 @@ from redbot.core import bank
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
-from .constants import CHAT, COMPLETION, READ_EXTENSIONS, SUPPORTS_FUNCTIONS
+from .constants import (
+    CHAT,
+    COMPLETION,
+    LOCAL_GPT_MODELS,
+    LOCAL_MODELS,
+    READ_EXTENSIONS,
+    SUPPORTS_FUNCTIONS,
+)
 from .models import Conversation, GuildSettings
 from .utils import (
     compile_messages,
@@ -259,23 +266,23 @@ class ChatHandler(MixinMeta):
         model = conf.get_user_model(author)
         max_tokens = self.get_max_tokens(conf, author)
         llm_type = self.get_llm_type(conf)
-
-        if llm_type == "api" and model in CHAT:
-            messages = await self.prepare_messages(
-                message,
-                guild,
-                conf,
-                conversation,
-                author,
-                channel,
-                query_embedding,
-                extras,
-                function_calls,
-            )
-
+        messages = await self.prepare_messages(
+            message,
+            guild,
+            conf,
+            conversation,
+            author,
+            channel,
+            query_embedding,
+            extras,
+            function_calls,
+        )
+        reply = "Could not get reply!"
+        if (llm_type == "api" and model in CHAT) or (
+            llm_type == "local" and self.db.local_model in LOCAL_GPT_MODELS
+        ):
             last_function_response = ""
             last_function_name = ""
-            reply = "Could not get reply!"
             calls = 0
             repeats = 0
             while True:
@@ -398,17 +405,6 @@ class ChatHandler(MixinMeta):
             if calls > 1:
                 log.info(f"Made {calls} function calls in a row")
         elif llm_type == "api" and model in COMPLETION:
-            messages = await self.prepare_messages(
-                message,
-                guild,
-                conf,
-                conversation,
-                author,
-                channel,
-                query_embedding,
-                extras,
-                function_calls,
-            )
             compiled = compile_messages(messages)
             cut_message = await self.cut_text_by_tokens(compiled, conf, max_tokens)
             to_use = round((max_tokens - (await self.get_token_count(cut_message, conf))) * 0.8)
@@ -418,7 +414,7 @@ class ChatHandler(MixinMeta):
             )
             for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
                 reply = reply.replace(i, "").strip()
-        elif llm_type == "local":
+        elif llm_type == "local" and self.db.local_model in LOCAL_MODELS:
             log.debug("Using local LLM")
             context = await self.prepare_local_llm_context(
                 message,
