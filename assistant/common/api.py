@@ -215,7 +215,7 @@ class API(MixinMeta):
     async def function_token_count(self, conf: GuildSettings, functions: List[dict]) -> int:
         if not functions:
             return 0
-        dumped = "".join(orjson.dumps(i) for i in functions)
+        dumped = "".join(orjson.dumps(str(i)) for i in functions if i is not None)
         return await self.get_token_count(dumped, conf)
 
     # -------------------------------------------------------

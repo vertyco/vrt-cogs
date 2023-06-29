@@ -135,6 +135,8 @@ class ChatHandler(MixinMeta):
             # Everything to discord
             to_send.append(reply)
 
+        to_send = [str(i) for i in to_send if str(i).strip()]
+
         if not to_send:
             return await message.reply("No results!")
         for index, text in enumerate(to_send):
