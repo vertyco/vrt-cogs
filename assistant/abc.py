@@ -52,6 +52,10 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
+    def can_use_local_model(self, model: str) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     async def sync_embeddings(self, conf: GuildSettings) -> bool:
         raise NotImplementedError
 

@@ -39,7 +39,9 @@
     "rapidfuzz",
     "pytz",
     "transformers",
-    "sentence-transformers"
+    "sentence-transformers",
+    "gpt4all",
+    "psutil"
   ],
   "short": "Another Chat GPT Cog",
   "tags": [

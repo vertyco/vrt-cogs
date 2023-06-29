@@ -7,8 +7,10 @@ from typing import Callable, Dict, List, Optional, Union
 import discord
 import tiktoken
 from discord.ext import tasks
+from gpt4all import GPT4All
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.data_manager import cog_data_path
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
 
@@ -16,6 +18,7 @@ from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
+from .common.constants import LOCAL_EMBED_MODELS, LOCAL_GPT_MODELS, LOCAL_MODELS
 from .common.models import DB, Embedding, EmbeddingEntryExists, LocalLLM, NoAPIKey
 from .common.utils import json_schema_invalid
 from .listener import AssistantListener
@@ -42,10 +45,9 @@ class Assistant(
     - **[p]clearconvo**: reset your conversation with the assistant in the channel
 
     **Support for Local Models**
+    There are a variety of local models available, from simple Q&A/Semantic Search using less than 1GB, to larger 16GB models.
+    Use `[p]assist setlocalmodel` to view them.
 
-    **Default QA/Tokenizing Model**: `deepset/roberta-large-squad2`
-    - Download size: 1.42GB
-    - RAM usage: around 1.64-2.0 GB
     **Default Embedding Model**: `all-MiniLM-L12-v2`.
     - Download size: 120 MB
     - RAM usage: 650-750 MB
@@ -54,7 +56,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.0.5"
+    __version__ = "4.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -93,6 +95,7 @@ class Assistant(
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.parse_obj, data)
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
+        await asyncio.to_thread(self._cleanup_db)
 
         asyncio.create_task(self.init_models())
 
@@ -101,22 +104,39 @@ class Assistant(
         self.bot.dispatch("assistant_cog_add", self)
 
         await asyncio.sleep(30)
-        await asyncio.to_thread(self._cleanup_db)
         self.save_loop.start()
 
     async def init_models(self):
         def _init():
+            if self.local_llm:
+                self.local_llm.shutdown()
             self.openai_tokenizer = tiktoken.get_encoding("cl100k_base")
             if self.db.self_hosted:
-                self.local_llm = LocalLLM(
-                    embedder=SentenceTransformer(self.db.local_embedder),
-                    pipe=pipeline(
+                if not self.can_use_local_model(self.db.local_model):
+                    log.error(f"Not enough RAM to initialize local model {self.db.local_model}")
+                    return
+                threads = self.db.threads if self.db.threads else None
+                if self.db.local_model in LOCAL_MODELS:
+                    pipe = pipeline(
                         "question-answering",
                         model=self.db.local_model,
                         tokenizer=self.db.local_model,
                         low_cpu_mem_usage=self.db.low_mem,
                         use_fast=True,
-                    ),
+                    )
+                    gpt = None
+                else:
+                    pipe = None
+                    gpt = GPT4All(
+                        model_name=self.db.local_model,
+                        model_path=str(cog_data_path(self).absolute()),
+                        n_threads=threads,
+                    )
+
+                self.local_llm = LocalLLM(
+                    embedder=SentenceTransformer(self.db.local_embedder),
+                    pipe=pipe,
+                    gpt=gpt,
                 )
                 log.info("Local model initialized!")
 
@@ -147,6 +167,16 @@ class Assistant(
 
     def _cleanup_db(self):
         cleaned = False
+        # Make sure models are valid
+        if self.db.local_embedder not in LOCAL_EMBED_MODELS:
+            # Select smallest model
+            self.db.local_embedder = LOCAL_EMBED_MODELS[0]
+            cleaned = True
+        if self.db.local_model not in {**LOCAL_MODELS, **LOCAL_GPT_MODELS}:
+            # Select smallest model
+            self.db.local_model = list(LOCAL_MODELS.keys())[0]
+            cleaned = True
+
         # Cleanup registry if any cogs no longer exist
         for cog_name, cog_functions in self.registry.copy().items():
             cog = self.bot.get_cog(cog_name)

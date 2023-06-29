@@ -27,9 +27,15 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.constants import CHAT, COMPLETION, LOCAL_EMBED_MODELS, LOCAL_MODELS
+from ..common.constants import (
+    CHAT,
+    COMPLETION,
+    LOCAL_EMBED_MODELS,
+    LOCAL_GPT_MODELS,
+    LOCAL_MODELS,
+)
 from ..common.models import Embedding
-from ..common.utils import get_attachments
+from ..common.utils import get_attachments, make_model_embed
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -1481,23 +1487,31 @@ class Admin(MixinMeta):
         """
         Set the local LLM
 
-        Valid models:
+        Tiny Models:
         - deepset/roberta-large-squad2 (1.42GB download, 1.6-2.1GB RAM)
         - deepset/roberta-base-squad2 (496MB download, 730MB-1.1GB RAM)
         - deepset/tinyroberta-squad2 (326MB download, 600-800MB RAM)
+
+        Large Models:
+        - Hermes
+
+        - Use `[p]assist setlocalmodel` without specifying to view all models
         """
-        valid = humanize_list(LOCAL_MODELS)
+        valid_embed = make_model_embed()
         if not model:
-            return await ctx.send(f"Valid models are:\n{valid}")
+            return await ctx.send(embed=valid_embed)
+        all_models = {**LOCAL_MODELS, **LOCAL_GPT_MODELS}
         model = model.lower().strip()
-        if model not in LOCAL_MODELS:
-            return await ctx.send(f"Invalid model type! Available model types are: {valid}")
+        if model not in all_models:
+            return await ctx.send("Invalid model type!", embed=valid_embed)
+        if not self.can_use_local_model(model):
+            return await ctx.send("Your system does not meet the RAM requirements for this model!")
         self.db.local_model = model
-        await ctx.send(f"The **{model}** model will now be used")
+        msg = await ctx.send("Initializing model, stand by...")
+        async with ctx.typing():
+            await self.init_models()
+            await msg.edit(content=f"The **{model}** model will now be used")
         await self.save_conf()
-        if self.local_llm:
-            self.local_llm.shutdown()
-        await self.init_models()
 
     @assistant.command(name="setlocalembedder")
     @commands.is_owner()
@@ -1518,6 +1532,4 @@ class Admin(MixinMeta):
         self.db.local_model = model
         await ctx.send(f"The **{model}** model will now be used")
         await self.save_conf()
-        if self.local_llm:
-            self.local_llm.shutdown()
         await self.init_models()
