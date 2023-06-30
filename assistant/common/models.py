@@ -29,8 +29,10 @@ class LocalLLM(BaseModel):
 
     def shutdown(self):
         del self.embedder
-        del self.pipe
-        del self.gpt
+        if self.pipe:
+            del self.pipe
+        if self.gpt:
+            del self.gpt
 
 
 class Embedding(BaseModel):
