@@ -820,7 +820,7 @@ class Admin(MixinMeta):
     @assistant.command(name="endpoint")
     async def set_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
         """
-        Set a custom endpoint to use a self-hosted model
+        Set a custom endpoint to use a [self-hosted model](https://github.com/nomic-ai/gpt4all/blob/main/gpt4all-api/README.md)
 
         Example: `http://localhost:8000/v1`
         """
@@ -839,7 +839,7 @@ class Admin(MixinMeta):
     @assistant.command(name="globalendpoint")
     async def set_global_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
         """
-        Set a custom global endpoint to use a self-hosted model for all guilds as a fallback
+        Set a custom global endpoint to use a [self-hosted model](https://github.com/nomic-ai/gpt4all/blob/main/gpt4all-api/README.md) for all guilds as a fallback
 
         Example: `http://localhost:8000/v1`
         """
