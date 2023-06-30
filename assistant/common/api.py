@@ -22,7 +22,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from tenacity import (
     retry,
     retry_if_exception_type,
-    stop_after_delay,
+    stop_after_attempt,
     wait_random_exponential,
 )
 
@@ -35,7 +35,7 @@ log = logging.getLogger("red.vrt.assistant.api")
 
 class API(MixinMeta):
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
-        if conf.use_local_embedder or not conf.api_key:
+        if (conf.use_local_embedder or not conf.api_key) and self.local_llm is not None:
             log.debug("Local embed requested")
             embeddings = await self._local_embed(text)
             log.debug(f"Embed length: {len(embeddings)}")
@@ -51,7 +51,7 @@ class API(MixinMeta):
             Union[Timeout, APIConnectionError, RateLimitError, ServiceUnavailableError]
         ),
         wait=wait_random_exponential(min=1, max=5),
-        stop=stop_after_delay(15),
+        stop=stop_after_attempt(3),
         reraise=True,
     )
     @cached(ttl=1800)
@@ -87,19 +87,23 @@ class API(MixinMeta):
             Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
         ),
         wait=wait_random_exponential(min=1, max=5),
-        stop=stop_after_delay(120),
+        stop=stop_after_attempt(3),
         reraise=True,
     )
     @cached(ttl=15)
     async def _openai_chat(
         self, messages: List[dict], conf: GuildSettings, functions: List[dict] = []
     ) -> dict:
+        override = conf.endpoint_override
+        if not conf.api_key and override is None:
+            override = self.db.endpoint_override
         if functions and VERSION >= "0.27.6" and conf.model in SUPPORTS_FUNCTIONS:
             response = await openai.ChatCompletion.acreate(
                 model=conf.model,
                 messages=messages,
                 temperature=conf.temperature,
                 api_key=conf.api_key,
+                api_base=conf.endpoint_override,
                 timeout=60,
                 functions=functions,
             )
@@ -109,6 +113,7 @@ class API(MixinMeta):
                 messages=messages,
                 temperature=conf.temperature,
                 api_key=conf.api_key,
+                api_base=conf.endpoint_override,
                 timeout=60,
             )
         return response["choices"][0]["message"]
@@ -118,7 +123,7 @@ class API(MixinMeta):
             Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
         ),
         wait=wait_random_exponential(min=1, max=5),
-        stop=stop_after_delay(60),
+        stop=stop_after_attempt(3),
         reraise=True,
     )
     @cached(ttl=30)
@@ -130,6 +135,7 @@ class API(MixinMeta):
             prompt=prompt,
             temperature=conf.temperature,
             api_key=conf.api_key,
+            api_base=conf.endpoint_override,
             max_tokens=max_response_tokens,
         )
         return response["choices"][0]["text"]
@@ -163,6 +169,8 @@ class API(MixinMeta):
             return "api"
         elif self.local_llm is not None:
             return "local"
+        elif self.db.endpoint_override is not None:
+            return "api"
         else:
             # Either api model is selected but no api key, or self hosted is selected but its not enabled
             if not conf.api_key:

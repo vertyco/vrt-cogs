@@ -32,7 +32,12 @@ class Base(MixinMeta):
         - Including `--extract` will send the code separately from the reply
         """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key and self.local_llm is None:
+        if (
+            not conf.api_key
+            and self.local_llm is None
+            and not conf.endpoint_override
+            and not self.db.endpoint_override
+        ):
             return await ctx.send("This command requires an API key from OpenAI to be configured!")
         if not await can_use(ctx.message, conf.blacklist):
             return

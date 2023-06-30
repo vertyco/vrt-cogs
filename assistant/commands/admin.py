@@ -74,9 +74,12 @@ class Admin(MixinMeta):
 
         llm_type = self.get_llm_type(conf)
         extra = " (Using Local LLM)" if llm_type == "local" else ""
+        override = (
+            f"`Endpoint Override: `{conf.endpoint_override}\n" if conf.endpoint_override else ""
+        )
         desc = (
             f"`OpenAI Version:    `{VERSION}\n"
-            f"`Model:             `{conf.model}{extra}\n"
+            f"`Model:             `{conf.model}{extra}\n{override}"
             f"`Enabled:           `{conf.enabled}\n"
             f"`Timezone:          `{conf.timezone}\n"
             f"`Channel:           `{channel}\n"
@@ -812,6 +815,43 @@ class Admin(MixinMeta):
 
         conf.model = model
         await ctx.send(f"The **{model}** model will now be used")
+        await self.save_conf()
+
+    @assistant.command(name="endpoint")
+    async def set_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
+        """
+        Set a custom endpoint to use a self-hosted model
+
+        Example: `http://localhost:8000/v1`
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.endpoint_override and not endpoint:
+            conf.endpoint_override = None
+            await ctx.send("Endpoint has been reset!")
+        elif conf.endpoint_override and endpoint:
+            conf.endpoint_override = endpoint
+            await ctx.send("Endpoint has been overwritten!")
+        elif not conf.endpoint_override and endpoint:
+            conf.endpoint_override = endpoint
+            await ctx.send("Endpoint has been set!")
+        await self.save_conf()
+
+    @assistant.command(name="globalendpoint")
+    async def set_global_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
+        """
+        Set a custom global endpoint to use a self-hosted model for all guilds as a fallback
+
+        Example: `http://localhost:8000/v1`
+        """
+        if self.db.endpoint_override and not endpoint:
+            self.db.endpoint_override = None
+            await ctx.send("Endpoint has been reset!")
+        elif self.db.endpoint_override and endpoint:
+            self.db.endpoint_override = endpoint
+            await ctx.send("Endpoint has been overwritten!")
+        elif not self.db.endpoint_override and endpoint:
+            self.db.endpoint_override = endpoint
+            await ctx.send("Endpoint has been set!")
         await self.save_conf()
 
     @assistant.command(name="resetembeddings")
