@@ -1,14 +1,20 @@
 import logging
 from datetime import datetime
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
-from gpt4all import GPT4All
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 from redbot.core.bot import Red
-from sentence_transformers import SentenceTransformer
-from transformers.pipelines.question_answering import QuestionAnsweringPipeline
+
+try:
+    from gpt4all import GPT4All
+    from sentence_transformers import SentenceTransformer
+    from transformers.pipelines.question_answering import QuestionAnsweringPipeline
+except Exception:
+    GPT4All = Any
+    SentenceTransformer = Any
+    QuestionAnsweringPipeline = Any
 
 log = logging.getLogger("red.vrt.assistant.models")
 

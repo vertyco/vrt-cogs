@@ -7,12 +7,9 @@ from typing import Callable, Dict, List, Optional, Union
 import discord
 import tiktoken
 from discord.ext import tasks
-from gpt4all import GPT4All
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
-from sentence_transformers import SentenceTransformer
-from transformers import pipeline
 
 from .abc import CompositeMetaClass
 from .commands import AssistantCommands
@@ -56,7 +53,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.2.2"
+    __version__ = "4.2.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -115,8 +112,11 @@ class Assistant(
                 if not self.can_use_local_model(self.db.local_model):
                     log.error(f"Not enough RAM to initialize local model {self.db.local_model}")
                     return
+
                 threads = self.db.threads if self.db.threads else None
                 if self.db.local_model in LOCAL_MODELS:
+                    from transformers import pipeline
+
                     pipe = pipeline(
                         "question-answering",
                         model=self.db.local_model,
@@ -126,12 +126,16 @@ class Assistant(
                     )
                     gpt = None
                 else:
+                    from gpt4all import GPT4All
+
                     pipe = None
                     gpt = GPT4All(
                         model_name=self.db.local_model,
                         model_path=str(cog_data_path(self).absolute()),
                         n_threads=threads,
                     )
+
+                from sentence_transformers import SentenceTransformer
 
                 self.local_llm = LocalLLM(
                     embedder=SentenceTransformer(self.db.local_embedder),
