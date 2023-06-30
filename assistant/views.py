@@ -445,8 +445,6 @@ class CodeMenu(discord.ui.View):
         self.pages: List[discord.Embed] = []
         self.message: discord.Message = None
 
-        self.update_button()
-
         if ctx.author.id not in ctx.bot.owner_ids:
             self.remove_item(self.new_function)
             self.remove_item(self.delete)
@@ -470,6 +468,7 @@ class CodeMenu(discord.ui.View):
 
     async def get_pages(self) -> None:
         self.pages = await self.fetch_pages(self.ctx.author)
+        self.update_button()
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)
@@ -483,7 +482,6 @@ class CodeMenu(discord.ui.View):
 
     async def start(self):
         self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
-        self.update_button()
 
     def test_func(self, function_string: str) -> bool:
         try:
@@ -508,6 +506,8 @@ class CodeMenu(discord.ui.View):
         return missing
 
     def update_button(self):
+        if not self.pages:
+            return
         if not self.pages[self.page].fields:
             return
         function_name = self.pages[self.page].description
