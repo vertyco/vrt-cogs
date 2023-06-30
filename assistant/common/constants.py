@@ -82,7 +82,7 @@ LOCAL_GPT_MODELS = {
         "ram": 8,
         "params": "7 billion",
     },
-    "orca-mini-7b.ggmlv3.q4_0.binn": {
+    "orca-mini-7b.ggmlv3.q4_0.bin": {
         "name": "Orca",
         "size": 3.53,
         "ram": 8,
