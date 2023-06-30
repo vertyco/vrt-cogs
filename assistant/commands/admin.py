@@ -1483,7 +1483,7 @@ class Admin(MixinMeta):
 
     @assistant.command(name="setlocalmodel")
     @commands.is_owner()
-    async def set_local_model(self, ctx: commands.Context, model: str = None):
+    async def set_local_model(self, ctx: commands.Context, *, model: str = None):
         """
         Set the local LLM
 
@@ -1501,7 +1501,6 @@ class Admin(MixinMeta):
         if not model:
             return await ctx.send(embed=valid_embed)
         all_models = {**LOCAL_MODELS, **LOCAL_GPT_MODELS}
-        model = model.lower().strip()
         if model not in all_models:
             return await ctx.send("Invalid model type!", embed=valid_embed)
         if not self.can_use_local_model(model):
