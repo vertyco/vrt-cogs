@@ -319,7 +319,8 @@ class Admin(MixinMeta):
         """Toggle the self hosted model"""
         if self.db.self_hosted:
             self.db.self_hosted = False
-            self.local_llm.shutdown()
+            if self.local_llm:
+                self.local_llm.shutdown()
             self.local_llm = None
             await ctx.send("Self hosted model has been shut down!")
         else:
