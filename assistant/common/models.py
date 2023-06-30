@@ -63,6 +63,7 @@ class GuildSettings(BaseModel):
     mention: bool = False
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
+    endpoint_override: Optional[str] = None
 
     confidence: float = 0.1
     use_local_llm: bool = False
@@ -223,6 +224,7 @@ class DB(BaseModel):
 
     local_model: str = "deepset/roberta-large-squad2"
     local_embedder: str = "all-MiniLM-L12-v2"
+    endpoint_override: Optional[str] = None
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
