@@ -175,12 +175,12 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
     def get_llm_type(self, conf: GuildSettings, embeds: bool = False) -> str:
-        check = conf.use_local_embedder if embeds else conf.use_local_llm
-        if conf.api_key and not check:
+        to_use = conf.use_local_embedder if embeds else conf.use_local_llm
+        if conf.api_key and not to_use:
             return "api"
         elif self.local_llm is not None:
             return "local"
-        elif self.db.endpoint_override is not None:
+        elif self.db.endpoint_override or conf.endpoint_override:
             return "api"
         else:
             # Either api model is selected but no api key, or self hosted is selected but its not enabled
