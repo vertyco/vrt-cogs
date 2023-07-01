@@ -101,7 +101,9 @@ class Admin(MixinMeta):
         )
 
         types = set(i.openai_tokens for i in conf.embeddings.values())
-        if len(types) == 2:
+        if len(types) == 0:
+            encoded_by = "N/A"
+        elif len(types) == 2:
             encoded_by = "Mixed (Please Refresh!)"
         else:
             encoded_by = (
