@@ -268,20 +268,25 @@ class Admin(MixinMeta):
     @commands.bot_has_permissions(embed_links=True)
     async def set_openai_key(self, ctx: commands.Context):
         """Set your OpenAI key"""
-        view = SetAPI(ctx.author)
-        embed = discord.Embed(description="Click to set your OpenAI key", color=ctx.author.color)
+        conf = self.db.get_conf(ctx.guild)
+
+        view = SetAPI(ctx.author, conf.api_key)
+        txt = "Click to set your OpenAI key\n\n" "To remove your keys, enter `none`"
+        embed = discord.Embed(description=txt, color=ctx.author.color)
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
         key = view.key.strip()
-        conf = self.db.get_conf(ctx.guild)
-        if not key and not conf.api_key:
-            await msg.edit(content="No API key was entered!", embed=None, view=None)
-        elif not key and conf.api_key:
+
+        if key == "none" and conf.api_key:
+            conf.api_key = None
             await msg.edit(content="OpenAI key has been removed!", embed=None, view=None)
+        elif key == "none" and not conf.api_key:
+            conf.api_key = key
+            await msg.edit(content="No API key was entered!", embed=None, view=None)
         else:
+            conf.api_key = key
             await msg.edit(content="OpenAI key has been set!", embed=None, view=None)
 
-        conf.api_key = key
         await self.save_conf()
 
     @assistant.command(name="timezone")
@@ -842,6 +847,8 @@ class Admin(MixinMeta):
         elif not conf.endpoint_override and endpoint:
             conf.endpoint_override = endpoint
             await ctx.send("Endpoint has been set!")
+        else:
+            return await ctx.send_help()
         await self.save_conf()
 
     @assistant.command(name="globalendpoint")
