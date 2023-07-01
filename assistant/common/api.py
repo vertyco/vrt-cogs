@@ -227,8 +227,11 @@ class API(MixinMeta):
             else:
                 return self.openai_tokenizer.encode(text)
 
-        if not text:
+        if not len(text) < 1:
             return []
+        if isinstance(text, bytes):
+            text = text.decode(encoding="utf-8")
+
         return await asyncio.to_thread(_run)
 
     async def get_text(self, tokens: list, conf: GuildSettings) -> str:
