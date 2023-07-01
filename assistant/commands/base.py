@@ -136,7 +136,6 @@ class Base(MixinMeta):
             return await ctx.send("You do not have any embeddings configured!")
         async with ctx.typing():
             query_embedding = await self.request_embedding(query, conf)
-
             if not query_embedding:
                 return await ctx.send("Failed to get embedding for your query")
             # await self.sync_embeddings(conf, ctx.author)

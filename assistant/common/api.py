@@ -56,8 +56,17 @@ class API(MixinMeta):
     )
     @cached(ttl=1800)
     async def _openai_embed(self, text: str, conf: GuildSettings) -> List[float]:
+        override = conf.endpoint_override
+        if not conf.api_key and override is None:
+            override = self.db.endpoint_override
+        if conf.api_key:
+            override = None
         response = await openai.Embedding.acreate(
-            input=text, model="text-embedding-ada-002", api_key=conf.api_key, timeout=30
+            input=text,
+            model="text-embedding-ada-002",
+            api_key=conf.api_key,
+            timeout=30,
+            api_base=override,
         )
         return response["data"][0]["embedding"]
 
@@ -97,13 +106,15 @@ class API(MixinMeta):
         override = conf.endpoint_override
         if not conf.api_key and override is None:
             override = self.db.endpoint_override
+        if conf.api_key:
+            override = None
         if functions and VERSION >= "0.27.6" and conf.model in SUPPORTS_FUNCTIONS:
             response = await openai.ChatCompletion.acreate(
                 model=conf.model,
                 messages=messages,
                 temperature=conf.temperature,
                 api_key=conf.api_key,
-                api_base=conf.endpoint_override,
+                api_base=override,
                 timeout=60,
                 functions=functions,
             )
@@ -113,7 +124,7 @@ class API(MixinMeta):
                 messages=messages,
                 temperature=conf.temperature,
                 api_key=conf.api_key,
-                api_base=conf.endpoint_override,
+                api_base=override,
                 timeout=60,
             )
         return response["choices"][0]["message"]

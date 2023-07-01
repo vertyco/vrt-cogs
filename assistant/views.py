@@ -26,12 +26,13 @@ OFF_EMOJI = "\N{MOBILE PHONE OFF}"
 
 
 class APIModal(discord.ui.Modal):
-    def __init__(self):
-        self.key = ""
+    def __init__(self, key: str = None):
+        self.key = key
         super().__init__(title="Set OpenAI Key", timeout=120)
         self.field = discord.ui.TextInput(
             label="Enter your OpenAI Key below",
             style=discord.TextStyle.short,
+            default=self.key,
             required=False,
         )
         self.add_item(self.field)
@@ -43,9 +44,9 @@ class APIModal(discord.ui.Modal):
 
 
 class SetAPI(discord.ui.View):
-    def __init__(self, author: discord.Member):
+    def __init__(self, author: discord.Member, key: str = None):
         self.author = author
-        self.key = ""
+        self.key = key
         super().__init__(timeout=60)
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -56,7 +57,7 @@ class SetAPI(discord.ui.View):
 
     @discord.ui.button(label="Set OpenAI Key", style=discord.ButtonStyle.primary)
     async def confirm(self, interaction: discord.Interaction, buttons: discord.ui.Button):
-        modal = APIModal()
+        modal = APIModal(key=self.key)
         await interaction.response.send_modal(modal)
         await modal.wait()
         self.key = modal.key
