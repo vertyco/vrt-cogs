@@ -867,6 +867,8 @@ class Admin(MixinMeta):
         elif not self.db.endpoint_override and endpoint:
             self.db.endpoint_override = endpoint
             await ctx.send("Endpoint has been set!")
+        else:
+            return await ctx.send_help()
         await self.save_conf()
 
     @assistant.command(name="resetembeddings")

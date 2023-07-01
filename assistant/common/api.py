@@ -57,16 +57,19 @@ class API(MixinMeta):
     @cached(ttl=1800)
     async def _openai_embed(self, text: str, conf: GuildSettings) -> List[float]:
         override = conf.endpoint_override
-        if not conf.api_key and override is None:
+        key = conf.api_key
+        if not key and override is None:
             override = self.db.endpoint_override
-        if conf.api_key:
+        if key:
             override = None
+        if override:
+            log.debug(f"using override endpoint {override}")
         response = await openai.Embedding.acreate(
             input=text,
             model="text-embedding-ada-002",
-            api_key=conf.api_key,
-            timeout=30,
+            api_key=None if override else key,
             api_base=override,
+            timeout=30,
         )
         return response["data"][0]["embedding"]
 
@@ -104,16 +107,19 @@ class API(MixinMeta):
         self, messages: List[dict], conf: GuildSettings, functions: List[dict] = []
     ) -> dict:
         override = conf.endpoint_override
-        if not conf.api_key and override is None:
+        key = conf.api_key
+        if not key and override is None:
             override = self.db.endpoint_override
-        if conf.api_key:
+        if key:
             override = None
+        if override:
+            log.debug(f"using override endpoint {override}")
         if functions and VERSION >= "0.27.6" and conf.model in SUPPORTS_FUNCTIONS:
             response = await openai.ChatCompletion.acreate(
                 model=conf.model,
                 messages=messages,
                 temperature=conf.temperature,
-                api_key=conf.api_key,
+                api_key=None if override else key,
                 api_base=override,
                 timeout=60,
                 functions=functions,
@@ -123,7 +129,7 @@ class API(MixinMeta):
                 model=conf.model,
                 messages=messages,
                 temperature=conf.temperature,
-                api_key=conf.api_key,
+                api_key=None if override else key,
                 api_base=override,
                 timeout=60,
             )
