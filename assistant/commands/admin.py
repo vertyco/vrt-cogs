@@ -326,7 +326,14 @@ class Admin(MixinMeta):
         else:
             self.db.self_hosted = True
             async with ctx.typing():
-                await self.init_models()
+                try:
+                    await self.init_models()
+                except Exception as e:
+                    err = (
+                        f"ValueError: {e}.\n"
+                        "If running on a VM, make sure sure your cpu has the AVX flag, use `cat /proc/cpuinfo` too check."
+                    )
+                    return await ctx.send(err)
             await ctx.send("Self hosted model has been initialized!")
         await self.save_conf()
 
