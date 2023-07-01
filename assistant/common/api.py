@@ -67,7 +67,7 @@ class API(MixinMeta):
         response = await openai.Embedding.acreate(
             input=text,
             model="text-embedding-ada-002",
-            api_key=None if override else key,
+            api_key="unset" if override else key,
             api_base=override,
             timeout=30,
         )
@@ -119,7 +119,7 @@ class API(MixinMeta):
                 model=conf.model,
                 messages=messages,
                 temperature=conf.temperature,
-                api_key=None if override else key,
+                api_key="unset" if override else key,
                 api_base=override,
                 timeout=60,
                 functions=functions,
@@ -129,7 +129,7 @@ class API(MixinMeta):
                 model=conf.model,
                 messages=messages,
                 temperature=conf.temperature,
-                api_key=None if override else key,
+                api_key="unset" if override else key,
                 api_base=override,
                 timeout=60,
             )
@@ -184,17 +184,19 @@ class API(MixinMeta):
         to_use = conf.use_local_embedder if embeds else conf.use_local_llm
         if conf.api_key and not to_use:
             return "api"
-        elif self.local_llm is not None:
+        if self.local_llm is not None:
             return "local"
-        elif self.db.endpoint_override or conf.endpoint_override:
+        if conf.endpoint_override is not None:
             return "api"
-        else:
-            # Either api model is selected but no api key, or self hosted is selected but its not enabled
-            if not conf.api_key:
-                log.info("No API key!")
-            elif self.local_llm is None:
-                log.info("Local LLM not running!")
-            return "none"
+        if self.db.endpoint_override is not None:
+            return "api"
+
+        # Either api model is selected but no api key, or self hosted is selected but its not enabled
+        if not conf.api_key:
+            log.info("No API key!")
+        elif self.local_llm is None:
+            log.info("Local LLM not running!")
+        return "none"
 
     def can_use_local_model(self, model: str) -> bool:
         all_models = {**LOCAL_MODELS, **LOCAL_GPT_MODELS}
