@@ -151,11 +151,11 @@ def compile_messages(
         \n### Prompt: """
 
     for message in messages:
+        content = message["content"].strip()
         if message["role"] == "user":
-            user_message = "\n" + message["content"]
-            full_prompt += user_message
+            full_prompt += f"\n{content}"
         if message["role"] == "assistant":
-            assistant_message = "\n### Response: " + message["content"]
+            assistant_message = "\n### Response: " + content
             full_prompt += assistant_message
 
     if default_prompt_footer:

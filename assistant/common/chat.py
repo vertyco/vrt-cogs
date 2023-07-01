@@ -278,9 +278,12 @@ class ChatHandler(MixinMeta):
             function_calls,
         )
         reply = "Could not get reply!"
-        if (llm_type == "api" and model in CHAT) or (
-            llm_type == "local" and self.db.local_model in LOCAL_GPT_MODELS
-        ):
+        chat_conditions = [
+            (llm_type == "api" and model in CHAT),
+            (llm_type == "local" and self.db.local_model in LOCAL_GPT_MODELS),
+            (self.db.endpoint_override or conf.endpoint_override),
+        ]
+        if any(chat_conditions):
             last_function_response = ""
             last_function_name = ""
             calls = 0
@@ -527,19 +530,19 @@ class ChatHandler(MixinMeta):
 
             if conf.embed_method == "static":
                 conversation.update_messages(
-                    f"Context:\n{joined}", "user", str(author.id) if author else None
+                    f"### Context:\n{joined}", "user", str(author.id) if author else None
                 )
 
             elif conf.embed_method == "dynamic":
-                system_prompt += f"\n\nContext:\n{joined}"
+                system_prompt += f"\n\n### Context:\n{joined}"
 
             elif conf.embed_method == "hybrid" and len(embeddings) > 1:
-                system_prompt += f"\n\nContext:\n{embeddings[1:]}"
+                system_prompt += f"\n\n### Context:\n{embeddings[1:]}"
                 conversation.update_messages(
-                    f"Context:\n{embeddings[0]}", "user", str(author.id) if author else None
+                    f"### Context:\n{embeddings[0]}", "user", str(author.id) if author else None
                 )
 
-        messages = conversation.prepare_chat(message, system_prompt, initial_prompt)
+        messages = conversation.prepare_chat(message, initial_prompt, system_prompt)
         return messages
 
     async def prepare_local_llm_context(
