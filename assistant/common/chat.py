@@ -98,6 +98,7 @@ class ChatHandler(MixinMeta):
                     log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
                 return
             except KeyError as e:
+                log.debug("get_chat_response error", exc_info=e)
                 await message.channel.send(
                     f"**KeyError in prompt or system message**\n{box(str(e), 'py')}"
                 )
@@ -408,13 +409,16 @@ class ChatHandler(MixinMeta):
         max_tokens = self.get_max_tokens(conf, author)
 
         related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
+
         embeddings = []
         # Get related embeddings (Name, text, score)
         for i in related:
             embed_tokens = await self.get_token_count(i[1], conf)
             if embed_tokens + current_tokens > max_tokens:
+                log.debug("Cannot fit anymore embeddings")
                 break
             embeddings.append(i[1])
+
         if embeddings:
             joined = "\n".join(embeddings)
 
@@ -426,10 +430,13 @@ class ChatHandler(MixinMeta):
             elif conf.embed_method == "dynamic":
                 system_prompt += f"\n\n### Context:\n{joined}"
 
-            elif conf.embed_method == "hybrid" and len(embeddings) > 1:
-                system_prompt += f"\n\n### Context:\n{embeddings[1:]}"
+            elif conf.embed_method == "hybrid":
+                if len(embeddings) > 1:
+                    system_prompt += f"\n\n### Context:\n{embeddings[1:]}"
                 conversation.update_messages(
-                    f"### Context:\n{embeddings[0]}", "user", str(author.id) if author else None
+                    f"### Context:\n{embeddings[0]}",
+                    "user",
+                    str(author.id) if author else None,
                 )
 
         messages = conversation.prepare_chat(message, initial_prompt, system_prompt)
