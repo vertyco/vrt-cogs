@@ -917,6 +917,10 @@ class Admin(MixinMeta):
 
         df = await asyncio.to_thread(pd.concat, frames)
 
+        entries = len(df.index)
+        split_by = 10
+        if entries > 300:
+            split_by = round(entries / 25)
         imported = 0
         for index, row in enumerate(df.values):
             if pd.isna(row[0]) or pd.isna(row[1]):
@@ -928,8 +932,7 @@ class Admin(MixinMeta):
                 if row[1] == conf.embeddings[name].text or not overwrite:
                     continue
             text = str(row[1])[:4000]
-
-            if index and (index + 1) % 5 == 0:
+            if index and (index + 1) % split_by == 0:
                 with contextlib.suppress(discord.DiscordServerError):
                     await message.edit(
                         content=f"{message_text}\n`Currently {proc}: `**{name}** ({index + 1}/{len(df)})"
