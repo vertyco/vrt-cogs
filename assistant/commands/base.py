@@ -6,6 +6,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, escape, pagify
 
 from ..abc import MixinMeta
+from ..common.calls import request_model
 from ..common.utils import can_use
 
 log = logging.getLogger("red.vrt.assistant.base")
@@ -80,13 +81,23 @@ class Base(MixinMeta):
         gg, bb = generate_color(convo_tokens, max_tokens)
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
+        model = conf.get_user_model(ctx.author)
+        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
+            endpoint = conf.endpoint_override or self.db.endpoint_override
+            try:
+                res = await request_model(f"{endpoint}/model")
+                model = res["model"]
+            except Exception as e:  # Could be any issue, don't worry about it here
+                log.warning("Could not fetch external model", exc_info=e)
+                pass
+
         embed = discord.Embed(
             description=(
                 f"{ctx.channel.mention}\n"
                 f"`Messages: `{messages}/{conf.get_user_max_retention(ctx.author)}\n"
                 f"`Tokens:   `{convo_tokens}/{max_tokens}\n"
                 f"`Expired:  `{conversation.is_expired(conf, ctx.author)}\n"
-                f"`Model:    `{conf.get_user_model(ctx.author)}"
+                f"`Model:    `{model}"
             ),
             color=color,
         )
