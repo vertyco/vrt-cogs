@@ -1075,7 +1075,12 @@ class Admin(MixinMeta):
 
         df = await asyncio.to_thread(pd.concat, frames)
 
-        if conf.use_local_embedder and self.local_llm is None:
+        if (
+            conf.use_local_embedder
+            and self.local_llm is None
+            and not conf.endpoint_override
+            and not self.db.endpoint_override
+        ):
             err = "Unable to use local model, bot owner must have disabled it!"
             if conf.api_key:
                 err += (
