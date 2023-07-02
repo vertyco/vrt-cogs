@@ -67,7 +67,7 @@ class Assistant(
         self.db: DB = DB()
         self.mp_pool = Pool()
 
-        self.openai_tokenizer: tiktoken.core.Encoding = None
+        self.openai_tokenizer: tiktoken.core.Encoding = tiktoken.get_encoding("cl100k_base")
         self.local_llm: LocalLLM = None
 
         # {cog_name: {function_name: {function_json_schema}}}
@@ -107,7 +107,6 @@ class Assistant(
         def _init():
             if self.local_llm:
                 self.local_llm.shutdown()
-            self.openai_tokenizer = tiktoken.get_encoding("cl100k_base")
             if self.db.self_hosted:
                 if not self.can_use_local_model(self.db.local_model):
                     log.error(f"Not enough RAM to initialize local model {self.db.local_model}")
