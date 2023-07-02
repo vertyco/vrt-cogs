@@ -9,14 +9,12 @@ import tiktoken
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
-from redbot.core.data_manager import cog_data_path
 
 from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
-from .common.constants import LOCAL_EMBED_MODELS, LOCAL_GPT_MODELS, LOCAL_MODELS
-from .common.models import DB, Embedding, EmbeddingEntryExists, LocalLLM, NoAPIKey
+from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
 from .listener import AssistantListener
 
@@ -67,8 +65,7 @@ class Assistant(
         self.db: DB = DB()
         self.mp_pool = Pool()
 
-        self.openai_tokenizer: tiktoken.core.Encoding = tiktoken.get_encoding("cl100k_base")
-        self.local_llm: LocalLLM = None
+        self.tokenizer: tiktoken.core.Encoding = tiktoken.get_encoding("cl100k_base")
 
         # {cog_name: {function_name: {function_json_schema}}}
         self.registry: Dict[str, Dict[str, dict]] = {}
@@ -83,8 +80,6 @@ class Assistant(
         self.save_loop.cancel()
         self.mp_pool.close()
         self.bot.dispatch("assistant_cog_remove")
-        if self.local_llm:
-            self.local_llm.shutdown()
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
@@ -94,56 +89,12 @@ class Assistant(
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         await asyncio.to_thread(self._cleanup_db)
 
-        asyncio.create_task(self.init_models())
-
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
         self.bot.dispatch("assistant_cog_add", self)
 
         await asyncio.sleep(30)
         self.save_loop.start()
-
-    async def init_models(self):
-        def _init():
-            if self.local_llm:
-                self.local_llm.shutdown()
-            if self.db.self_hosted:
-                if not self.can_use_local_model(self.db.local_model):
-                    log.error(f"Not enough RAM to initialize local model {self.db.local_model}")
-                    return
-
-                threads = self.db.threads if self.db.threads else None
-                if self.db.local_model in LOCAL_MODELS:
-                    from transformers import pipeline
-
-                    pipe = pipeline(
-                        "question-answering",
-                        model=self.db.local_model,
-                        tokenizer=self.db.local_model,
-                        low_cpu_mem_usage=self.db.low_mem,
-                        use_fast=True,
-                    )
-                    gpt = None
-                else:
-                    from gpt4all import GPT4All
-
-                    pipe = None
-                    gpt = GPT4All(
-                        model_name=self.db.local_model,
-                        model_path=str(cog_data_path(self).absolute()),
-                        n_threads=threads,
-                    )
-
-                from sentence_transformers import SentenceTransformer
-
-                self.local_llm = LocalLLM(
-                    embedder=SentenceTransformer(self.db.local_embedder),
-                    pipe=pipe,
-                    gpt=gpt,
-                )
-                log.info("Local model initialized!")
-
-        await asyncio.to_thread(_init)
 
     async def save_conf(self):
         if self.saving:
@@ -170,16 +121,6 @@ class Assistant(
 
     def _cleanup_db(self):
         cleaned = False
-        # Make sure models are valid
-        if self.db.local_embedder not in LOCAL_EMBED_MODELS:
-            # Select smallest model
-            self.db.local_embedder = LOCAL_EMBED_MODELS[0]
-            cleaned = True
-        if self.db.local_model not in {**LOCAL_MODELS, **LOCAL_GPT_MODELS}:
-            # Select smallest model
-            self.db.local_model = list(LOCAL_MODELS.keys())[0]
-            cleaned = True
-
         # Cleanup registry if any cogs no longer exist
         for cog_name, cog_functions in self.registry.copy().items():
             cog = self.bot.get_cog(cog_name)
@@ -313,7 +254,7 @@ class Assistant(
             str: the reply from ChatGPT (may need to be pagified)
         """
         conf = self.db.get_conf(guild)
-        if not conf.api_key and self.local_llm is None:
+        if not self.can_call_llm(conf):
             raise NoAPIKey("OpenAI key has not been set for this server!")
         return await self.get_chat_response(
             message,
