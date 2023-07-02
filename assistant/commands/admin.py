@@ -668,7 +668,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="refreshembeds", aliases=["refreshembeddings"])
-    async def refresh_embeddings(self, ctx: commands.Context):
+    async def refresh_embeddings(self, ctx: commands.Context, force_refresh: str = None):
         """
         Refresh embedding weights
 
@@ -681,7 +681,7 @@ class Admin(MixinMeta):
         if llm_type == "none":
             return await ctx.send("API key not set or local model disabled!")
         async with ctx.typing():
-            synced = await self.sync_embeddings(conf)
+            synced = await self.sync_embeddings(conf, force_refresh)
             if synced:
                 await ctx.send(f"Embeddings have been updated to the **{llm_type.upper()}** model")
             else:
