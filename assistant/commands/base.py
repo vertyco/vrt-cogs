@@ -32,13 +32,22 @@ class Base(MixinMeta):
         - Including `--extract` will send the code separately from the reply
         """
         conf = self.db.get_conf(ctx.guild)
+        err = (
+            "Using this command requires one of the following configurations\n"
+            f"- Set an OpenAI API key with `{ctx.clean_prefix}assist openaikey`\n"
+            f"- Set an endpoint override with `{ctx.clean_prefix}assist endpoint`\n"
+        )
+        if self.local_llm is not None:
+            err += f"- Enable use of the local model available with `{ctx.clean_prefix}assist localmodel`\n"
+        if ctx.author.id in self.bot.owner_ids and self.local_llm is None:
+            err += f"- Initialize the local model with `{ctx.clean_prefix}assist selfhosted`"
         if (
             not conf.api_key
             and self.local_llm is None
             and not conf.endpoint_override
             and not self.db.endpoint_override
         ):
-            return await ctx.send("This command requires an API key from OpenAI to be configured!")
+            return await ctx.send(err)
         if not await can_use(ctx.message, conf.blacklist):
             return
         # embed_links perm handled in following functions
