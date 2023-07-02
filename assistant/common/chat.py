@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import pytz
-from openai.error import InvalidRequestError
+from openai.error import APIConnectionError, InvalidRequestError
 from redbot.core import bank
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
@@ -87,16 +87,19 @@ class ChatHandler(MixinMeta):
                 reply = await self.get_chat_response(
                     question, message.author, message.guild, message.channel, conf
                 )
+            except APIConnectionError as e:
+                reply = "Failed to communicate with endpoint!"
+                log.error(f"APIConnectionError (From listener: {listener})", exc_info=e)
             except InvalidRequestError as e:
                 if error := e.error:
                     # OpenAI related error, doesn't need to be restricted to bot owner only
-                    await message.reply(error["message"], mention_author=conf.mention)
+                    reply = f"Error: {error['message']}"
                     log.error(
                         f"Invalid Request Error (From listener: {listener})\n{error}", exc_info=e
                     )
                 else:
                     log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
-                return
+                    return
             except KeyError as e:
                 log.debug("get_chat_response error", exc_info=e)
                 await message.channel.send(
@@ -105,12 +108,9 @@ class ChatHandler(MixinMeta):
                 return
             except Exception as e:
                 prefix = (await self.bot.get_valid_prefixes(message.guild))[0]
-                await message.channel.send(
-                    f"Uh oh, something went wrong! Bot owner can use `{prefix}traceback` to view the error."
-                )
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()
-                return
+                reply = f"Uh oh, something went wrong! Bot owner can use `{prefix}traceback` to view the error."
 
         files = None
         to_send = []
