@@ -1075,12 +1075,7 @@ class Admin(MixinMeta):
 
         df = await asyncio.to_thread(pd.concat, frames)
 
-        if (
-            conf.use_local_embedder
-            and self.local_llm is None
-            and not conf.endpoint_override
-            and not self.db.endpoint_override
-        ):
+        if conf.use_local_embedder and self.local_llm is None:
             err = "Unable to use local model, bot owner must have disabled it!"
             if conf.api_key:
                 err += (
@@ -1088,7 +1083,13 @@ class Admin(MixinMeta):
                     f"use the `{ctx.clean_prefix}assist localembedder` command."
                 )
             return await ctx.send(err)
-        if not conf.use_local_embedder and not conf.api_key:
+
+        if (
+            not conf.use_local_embedder
+            and not conf.api_key
+            and not conf.endpoint_override
+            and not self.db.endpoint_override
+        ):
             err = f"No API keys set! use `{ctx.clean_prefix}assistant openaikey` to set them."
             if self.local_llm is not None:
                 err += f"\nTo use the local embedding model instead, use the `{ctx.clean_prefix}assist localembedder` command."
