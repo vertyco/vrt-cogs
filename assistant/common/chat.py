@@ -17,17 +17,9 @@ from redbot.core import bank
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
-from .constants import (
-    CHAT,
-    COMPLETION,
-    LOCAL_GPT_MODELS,
-    LOCAL_MODELS,
-    READ_EXTENSIONS,
-    SUPPORTS_FUNCTIONS,
-)
+from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS
 from .models import Conversation, GuildSettings
 from .utils import (
-    compile_messages,
     extract_code_blocks,
     extract_code_blocks_with_lang,
     get_attachments,
@@ -155,65 +147,6 @@ class ChatHandler(MixinMeta):
             else:
                 await self.send_reply(message, text, conf, None, False)
 
-    async def send_reply(
-        self,
-        message: discord.Message,
-        content: str,
-        conf: GuildSettings,
-        files: Optional[List[discord.File]],
-        reply: bool = False,
-    ):
-        embed_perms = message.channel.permissions_for(message.guild.me).embed_links
-        file_perms = message.channel.permissions_for(message.guild.me).attach_files
-        if files and not file_perms:
-            files = []
-            content += "\nMissing 'attach files' permissions!"
-        delims = ("```", "\n")
-
-        async def send(
-            content: Optional[str] = None,
-            embed: Optional[discord.Embed] = None,
-            embeds: Optional[List[discord.Embed]] = None,
-            files: Optional[List[discord.File]] = [],
-            mention: bool = False,
-        ):
-            if reply:
-                try:
-                    return await message.reply(
-                        content=content,
-                        embed=embed,
-                        embeds=embeds,
-                        files=files,
-                        mention_author=mention,
-                    )
-                except discord.HTTPException:
-                    pass
-            return await message.channel.send(
-                content=content, embed=embed, embeds=embeds, files=files
-            )
-
-        if len(content) <= 2000:
-            await send(content, files=files, mention=conf.mention)
-        elif len(content) <= 4000 and embed_perms:
-            await send(embed=discord.Embed(description=content), files=files, mention=conf.mention)
-        elif embed_perms:
-            embeds = [
-                discord.Embed(description=p)
-                for p in pagify(content, page_length=3950, delims=delims)
-            ]
-            for index, embed in enumerate(embeds):
-                if index == 0:
-                    await send(embed=embed, files=files, mention=conf.mention)
-                else:
-                    await send(embed=embed)
-        else:
-            pages = [p for p in pagify(content, page_length=2000, delims=delims)]
-            for index, p in enumerate(pages):
-                if index == 0:
-                    await send(content=p, files=files, mention=conf.mention)
-                else:
-                    await send(content=p)
-
     async def get_chat_response(
         self,
         message: str,
@@ -263,9 +196,7 @@ class ChatHandler(MixinMeta):
         def pop_schema(name: str, calls: List[dict]):
             return [func for func in calls if func["name"] != name]
 
-        model = conf.get_user_model(author)
         max_tokens = self.get_max_tokens(conf, author)
-        llm_type = self.get_llm_type(conf)
         messages = await self.prepare_messages(
             message,
             guild,
@@ -277,173 +208,135 @@ class ChatHandler(MixinMeta):
             extras,
             function_calls,
         )
-        reply = "Could not get reply!"
-        chat_conditions = [
-            (llm_type == "api" and model in CHAT),
-            (llm_type == "local" and self.db.local_model in LOCAL_GPT_MODELS),
-            (self.db.endpoint_override or conf.endpoint_override),
-        ]
-        if any(chat_conditions):
-            last_function_response = ""
-            last_function_name = ""
-            calls = 0
-            repeats = 0
-            while True:
-                if calls >= conf.max_function_calls or conversation.function_count() >= 64:
-                    function_calls = []
+        reply = "Failed to get response!"
+        last_function_response = ""
+        last_function_name = ""
+        calls = 0
+        repeats = 0
+        while True:
+            if calls >= conf.max_function_calls or conversation.function_count() >= 64:
+                function_calls = []
 
-                if len(messages) > 1:
-                    # Iteratively degrade the conversation to ensure it is always under the token limit
-                    messages, function_calls, degraded = await self.degrade_conversation(
-                        messages, function_calls, conf, author
-                    )
-                    if degraded:
-                        conversation.overwrite(messages)
-
-                if not messages:
-                    log.error("Messages got pruned too aggressively, increase token limit!")
-                    break
-                try:
-                    response = await self.request_chat_response(messages, conf, function_calls)
-                except InvalidRequestError as e:
-                    log.warning(
-                        f"Function response failed. functions: {len(function_calls)}", exc_info=e
-                    )
-                    response = await self.request_chat_response(messages, conf)
-                except Exception as e:
-                    log.error(
-                        f"Exception occured for chat response.\nMessages: {messages}", exc_info=e
-                    )
-                    break
-
-                reply = response["content"]
-                function_call = response.get("function_call")
-                if reply and not function_call:
-                    if last_function_response:
-                        # Only keep most recent function response in convo
-                        conversation.update_messages(
-                            last_function_response, "function", last_function_name
-                        )
-                    break
-                if not function_call:
-                    continue
-                calls += 1
-                if reply:
-                    conversation.update_messages(
-                        reply, "assistant", str(author.id) if author else None
-                    )
-                    messages.append({"role": "assistant", "content": reply})
-
-                function_name = function_call["name"]
-                if function_name not in function_map:
-                    log.error(f"GPT suggested a function not provided: {function_name}")
-                    function_calls = pop_schema(function_name, function_calls)  # Just in case
-                    messages.append(
-                        {
-                            "role": "system",
-                            "content": f"{function_name} is not a valid function",
-                            "name": function_name,
-                        }
-                    )
-                    continue
-
-                arguments = function_call.get("arguments", "{}")
-                try:
-                    params = json.loads(arguments)
-                except json.JSONDecodeError:
-                    params = {}
-                    log.error(
-                        f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}"
-                    )
-                # Try continuing anyway
-
-                extras = {
-                    "user": guild.get_member(author) if isinstance(author, int) else author,
-                    "channel": guild.get_channel_or_thread(channel)
-                    if isinstance(channel, int)
-                    else channel,
-                    "guild": guild,
-                    "bot": self.bot,
-                    "conf": conf,
-                }
-                kwargs = {**params, **extras}
-                func = function_map[function_name]
-                try:
-                    if iscoroutinefunction(func):
-                        result = await func(**kwargs)
-                    else:
-                        result = await asyncio.to_thread(func, **kwargs)
-                except Exception as e:
-                    log.error(
-                        f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
-                        exc_info=e,
-                    )
-                    function_calls = pop_schema(function_name, function_calls)
-                    continue
-
-                if isinstance(result, bytes):
-                    result = result.decode()
-                elif not isinstance(result, str):
-                    result = str(result)
-
-                # Calling the same function and getting the same result repeatedly is just insanity GPT
-                if function_name == last_function_name and result == last_function_response:
-                    repeats += 1
-                    if repeats > 2:
-                        function_calls = pop_schema(function_name, function_calls)
-                        log.info(f"Popping {function_name} for repeats")
-                        continue
-                else:
-                    repeats = 0
-
-                last_function_name = function_name
-                last_function_response = result
-
-                # Ensure response isnt too large
-                result = await self.cut_text_by_tokens(result, conf, max_tokens)
-
-                log.info(f"Called function {function_name}\nParams: {params}\nResult: {result}")
-                messages.append({"role": "function", "name": function_name, "content": result})
-
-            if calls > 1:
-                log.info(f"Made {calls} function calls in a row")
-        elif llm_type == "api" and model in COMPLETION:
-            compiled = compile_messages(messages)
-            cut_message = await self.cut_text_by_tokens(compiled, conf, max_tokens)
-            to_use = round((max_tokens - (await self.get_token_count(cut_message, conf))) * 0.8)
-
-            reply = await self.request_completion_response(
-                prompt=cut_message, conf=conf, max_response_tokens=to_use
-            )
-            for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
-                reply = reply.replace(i, "").strip()
-        elif llm_type == "local" and self.db.local_model in LOCAL_MODELS:
-            log.debug("Using local LLM")
-            context = await self.prepare_local_llm_context(
-                message,
-                guild,
-                conf,
-                conversation,
-                author,
-                channel,
-                query_embedding,
-                extras,
-                function_calls,
-            )
-            if not context:
-                log.debug("No context provided to local model")
-                reply = "No relevant context embeddigns were found related to that query"
-            else:
-                log.debug(f"CONTEXT: {context}")
-                reply = await self.request_local_response(
-                    prompt=message, context=context, min_confidence=conf.confidence
+            if len(messages) > 1:
+                # Iteratively degrade the conversation to ensure it is always under the token limit
+                messages, function_calls, degraded = await self.degrade_conversation(
+                    messages, function_calls, conf, author
                 )
-                if not reply:
-                    reply = "Couldn't determine a response for that query"
-        else:
-            reply = (
-                "Self-hosted model is disabled!" if conf.api_key else "No API key has been set!"
-            )
+                if degraded:
+                    conversation.overwrite(messages)
+
+            if not messages:
+                log.error("Messages got pruned too aggressively, increase token limit!")
+                break
+            try:
+                response = await self.request_response(
+                    messages=messages,
+                    conf=conf,
+                    functions=function_calls,
+                    member=author,
+                )
+            except InvalidRequestError as e:
+                log.warning(
+                    f"Function response failed. functions: {len(function_calls)}", exc_info=e
+                )
+                response = await self.request_chat_response(messages, conf, member=author)
+            except Exception as e:
+                log.error(
+                    f"Exception occured for chat response.\nMessages: {messages}", exc_info=e
+                )
+                break
+
+            reply = response["content"]
+            function_call = response.get("function_call")
+            if reply and not function_call:
+                if last_function_response:
+                    # Only keep most recent function response in convo
+                    conversation.update_messages(
+                        last_function_response, "function", last_function_name
+                    )
+                break
+            if not function_call:
+                continue
+            calls += 1
+            if reply:
+                conversation.update_messages(
+                    reply, "assistant", str(author.id) if author else None
+                )
+                messages.append({"role": "assistant", "content": reply})
+
+            function_name = function_call["name"]
+            if function_name not in function_map:
+                log.error(f"GPT suggested a function not provided: {function_name}")
+                function_calls = pop_schema(function_name, function_calls)  # Just in case
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": f"{function_name} is not a valid function",
+                        "name": function_name,
+                    }
+                )
+                continue
+
+            arguments = function_call.get("arguments", "{}")
+            try:
+                params = json.loads(arguments)
+            except json.JSONDecodeError:
+                params = {}
+                log.error(
+                    f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}"
+                )
+            # Try continuing anyway
+
+            extras = {
+                "user": guild.get_member(author) if isinstance(author, int) else author,
+                "channel": guild.get_channel_or_thread(channel)
+                if isinstance(channel, int)
+                else channel,
+                "guild": guild,
+                "bot": self.bot,
+                "conf": conf,
+            }
+            kwargs = {**params, **extras}
+            func = function_map[function_name]
+            try:
+                if iscoroutinefunction(func):
+                    result = await func(**kwargs)
+                else:
+                    result = await asyncio.to_thread(func, **kwargs)
+            except Exception as e:
+                log.error(
+                    f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
+                    exc_info=e,
+                )
+                function_calls = pop_schema(function_name, function_calls)
+                continue
+
+            if isinstance(result, bytes):
+                result = result.decode()
+            elif not isinstance(result, str):
+                result = str(result)
+
+            # Calling the same function and getting the same result repeatedly is just insanity GPT
+            if function_name == last_function_name and result == last_function_response:
+                repeats += 1
+                if repeats > 2:
+                    function_calls = pop_schema(function_name, function_calls)
+                    log.info(f"Popping {function_name} for repeats")
+                    continue
+            else:
+                repeats = 0
+
+            last_function_name = function_name
+            last_function_response = result
+
+            # Ensure response isnt too large
+            result = await self.cut_text_by_tokens(result, conf, max_tokens)
+
+            log.info(f"Called function {function_name}\nParams: {params}\nResult: {result}")
+            messages.append({"role": "function", "name": function_name, "content": result})
+
+        if calls > 1:
+            log.info(f"Made {calls} function calls in a row")
 
         block = False
         for regex in conf.regex_blacklist:
@@ -514,7 +407,6 @@ class ChatHandler(MixinMeta):
 
         max_tokens = self.get_max_tokens(conf, author)
 
-        # await self.sync_embeddings(conf, author)
         related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
         embeddings = []
         # Get related embeddings (Name, text, score)
@@ -543,37 +435,61 @@ class ChatHandler(MixinMeta):
         messages = conversation.prepare_chat(message, initial_prompt, system_prompt)
         return messages
 
-    async def prepare_local_llm_context(
+    async def send_reply(
         self,
-        message: str,
-        guild: discord.Guild,
+        message: discord.Message,
+        content: str,
         conf: GuildSettings,
-        conversation: Conversation,
-        author: Optional[discord.Member],
-        channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
-        query_embedding: List[float],
-        extras: dict,
-        function_calls: List[dict],
-    ) -> List[dict]:
-        now = datetime.now().astimezone(pytz.timezone(conf.timezone))
-        params = await asyncio.to_thread(get_params, self.bot, guild, now, author, channel, extras)
-        system_prompt = conf.system_prompt.format(**params)
-        initial_prompt = conf.prompt.format(**params)
-        context = system_prompt + "\n" + initial_prompt
+        files: Optional[List[discord.File]],
+        reply: bool = False,
+    ):
+        embed_perms = message.channel.permissions_for(message.guild.me).embed_links
+        file_perms = message.channel.permissions_for(message.guild.me).attach_files
+        if files and not file_perms:
+            files = []
+            content += "\nMissing 'attach files' permissions!"
+        delims = ("```", "\n")
 
-        current_tokens = await self.get_token_count(message + system_prompt + initial_prompt, conf)
-        current_tokens += await self.convo_token_count(conf, conversation)
-        current_tokens += await self.function_token_count(conf, function_calls)
+        async def send(
+            content: Optional[str] = None,
+            embed: Optional[discord.Embed] = None,
+            embeds: Optional[List[discord.Embed]] = None,
+            files: Optional[List[discord.File]] = [],
+            mention: bool = False,
+        ):
+            if reply:
+                try:
+                    return await message.reply(
+                        content=content,
+                        embed=embed,
+                        embeds=embeds,
+                        files=files,
+                        mention_author=mention,
+                    )
+                except discord.HTTPException:
+                    pass
+            return await message.channel.send(
+                content=content, embed=embed, embeds=embeds, files=files
+            )
 
-        max_tokens = self.get_max_tokens(conf, author)
-
-        # await self.sync_embeddings(conf, author)
-        related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
-
-        # Get related embeddings (Name, text, score)
-        for i in related:
-            embed_tokens = await self.get_token_count(i[1], conf)
-            if embed_tokens + current_tokens > max_tokens:
-                break
-            context += f"\n{i[1]}"
-        return context
+        if len(content) <= 2000:
+            await send(content, files=files, mention=conf.mention)
+        elif len(content) <= 4000 and embed_perms:
+            await send(embed=discord.Embed(description=content), files=files, mention=conf.mention)
+        elif embed_perms:
+            embeds = [
+                discord.Embed(description=p)
+                for p in pagify(content, page_length=3950, delims=delims)
+            ]
+            for index, embed in enumerate(embeds):
+                if index == 0:
+                    await send(embed=embed, files=files, mention=conf.mention)
+                else:
+                    await send(embed=embed)
+        else:
+            pages = [p for p in pagify(content, page_length=2000, delims=delims)]
+            for index, p in enumerate(pages):
+                if index == 0:
+                    await send(content=p, files=files, mention=conf.mention)
+                else:
+                    await send(content=p)

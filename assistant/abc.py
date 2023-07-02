@@ -5,9 +5,10 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 import discord
 import tiktoken
 from discord.ext.commands.cog import CogMeta
+from redbot.core import commands
 from redbot.core.bot import Red
 
-from .common.models import DB, Conversation, GuildSettings, LocalLLM
+from .common.models import DB, Conversation, GuildSettings
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -22,41 +23,30 @@ class MixinMeta(metaclass=ABCMeta):
     mp_pool: Pool
     registry: Dict[str, Dict[str, dict]]
 
-    openai_tokenizer: tiktoken.core.Encoding
-    local_llm: LocalLLM
+    tokenizer: tiktoken.core.Encoding
+
+    @abstractmethod
+    async def request_response(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        functions: List[dict] = [],
+        member: discord.Member = None,
+    ) -> Dict[str, str]:
+        raise NotImplementedError
 
     @abstractmethod
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
         raise NotImplementedError
 
     @abstractmethod
-    async def request_chat_response(
-        self, messages: List[dict], conf: GuildSettings, functions: List[dict] = []
-    ) -> dict:
+    async def can_call_llm(
+        self, conf: GuildSettings, ctx: Optional[commands.Context] = None
+    ) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    async def request_completion_response(
-        self, prompt: str, conf: GuildSettings, max_response_tokens: int
-    ) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def request_local_response(
-        self, prompt: str, context: str, min_confidence: float
-    ) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_llm_type(self, conf: GuildSettings) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
-    def can_use_local_model(self, model: str) -> bool:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def sync_embeddings(self, conf: GuildSettings, force: bool = None) -> bool:
+    async def resync_embeddings(self, conf: GuildSettings) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -140,9 +130,6 @@ class MixinMeta(metaclass=ABCMeta):
     # ----------------------- MAIN --------------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
-    @abstractmethod
-    async def init_models(self):
-        raise NotImplementedError
 
     @abstractmethod
     async def save_conf(self):

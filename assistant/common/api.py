@@ -3,225 +3,116 @@ import inspect
 import json
 import logging
 import math
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import discord
-import openai
 import orjson
-import psutil
-from aiocache import cached
-from openai.error import (
-    APIConnectionError,
-    APIError,
-    RateLimitError,
-    ServiceUnavailableError,
-    Timeout,
-)
-from openai.version import VERSION
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, humanize_number
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_random_exponential,
-)
 
 from ..abc import MixinMeta
-from .constants import LOCAL_GPT_MODELS, LOCAL_MODELS, MODELS, SUPPORTS_FUNCTIONS
+from .calls import (
+    request_chat_completion_raw,
+    request_completion_raw,
+    request_embedding_raw,
+)
+from .constants import CHAT, MODELS
 from .models import Conversation, GuildSettings
+from .utils import compile_messages
 
 log = logging.getLogger("red.vrt.assistant.api")
 
 
 class API(MixinMeta):
-    async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
-        if (conf.use_local_embedder or not conf.api_key) and self.local_llm is not None:
-            log.debug("Local embed requested")
-            embeddings = await self._local_embed(text)
-            log.debug(f"Embed length: {len(embeddings)}")
-            return embeddings.tolist()
-        return await self._openai_embed(text, conf)
+    async def request_response(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        functions: List[dict] = [],
+        member: Optional[discord.Member] = None,
+    ) -> Dict[str, str]:
+        api_base = conf.endpoint_override or self.db.endpoint_override
+        api_key = "unset"
+        if conf.api_key:
+            api_base = None
+            api_key = conf.api_key
 
-    @cached(ttl=1800)
-    async def _local_embed(self, text: str) -> List[float]:
-        return await asyncio.to_thread(self.local_llm.embedder.encode, text)
-
-    @retry(
-        retry=retry_if_exception_type(
-            Union[Timeout, APIConnectionError, RateLimitError, ServiceUnavailableError]
-        ),
-        wait=wait_random_exponential(min=1, max=5),
-        stop=stop_after_attempt(3),
-        reraise=True,
-    )
-    @cached(ttl=1800)
-    async def _openai_embed(self, text: str, conf: GuildSettings) -> List[float]:
-        override = conf.endpoint_override
-        key = conf.api_key
-        if not key and override is None:
-            override = self.db.endpoint_override
-        if key:
-            override = None
-        if override:
-            log.debug(f"using override endpoint {override}")
-        response = await openai.Embedding.acreate(
-            input=text,
-            model="text-embedding-ada-002",
-            api_key="unset" if override else key,
-            api_base=override,
-            timeout=30,
-        )
-        return response["data"][0]["embedding"]
-
-    async def request_chat_response(
-        self, messages: List[dict], conf: GuildSettings, functions: List[dict] = []
-    ) -> dict:
-        log.debug(
-            f"Requesting chat response. {len(messages)} messages, {len(functions)} functions"
-        )
-        if self.local_llm is not None and conf.use_local_llm:
-            return await self._local_chat(messages)
-
-        return await self._openai_chat(messages, conf, functions)
-
-    @cached(ttl=15)
-    async def _local_chat(self, messages: List[dict]) -> dict:
-        def _run():
-            response = self.local_llm.gpt.chat_completion(
-                messages=messages, verbose=False, streaming=False
-            )
-            return response["choices"][0]["message"]
-
-        return await asyncio.to_thread(_run)
-
-    @retry(
-        retry=retry_if_exception_type(
-            Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
-        ),
-        wait=wait_random_exponential(min=1, max=5),
-        stop=stop_after_attempt(3),
-        reraise=True,
-    )
-    @cached(ttl=15)
-    async def _openai_chat(
-        self, messages: List[dict], conf: GuildSettings, functions: List[dict] = []
-    ) -> dict:
-        override = conf.endpoint_override
-        key = conf.api_key
-        if not key and override is None:
-            override = self.db.endpoint_override
-        if key:
-            override = None
-        if override:
-            log.debug(f"using override endpoint {override}")
-        if functions and VERSION >= "0.27.6" and conf.model in SUPPORTS_FUNCTIONS:
-            response = await openai.ChatCompletion.acreate(
-                model=conf.model,
+        model = conf.get_user_model(member)
+        if model in CHAT:
+            return await request_chat_completion_raw(
+                model=model,
                 messages=messages,
                 temperature=conf.temperature,
-                api_key="unset" if override else key,
-                api_base=override,
-                timeout=60,
+                api_key=api_key,
+                api_base=api_base,
                 functions=functions,
             )
-        else:
-            response = await openai.ChatCompletion.acreate(
-                model=conf.model,
-                messages=messages,
-                temperature=conf.temperature,
-                api_key="unset" if override else key,
-                api_base=override,
-                timeout=60,
-            )
-        return response["choices"][0]["message"]
 
-    @retry(
-        retry=retry_if_exception_type(
-            Union[Timeout, APIConnectionError, RateLimitError, APIError, ServiceUnavailableError]
-        ),
-        wait=wait_random_exponential(min=1, max=5),
-        stop=stop_after_attempt(3),
-        reraise=True,
-    )
-    @cached(ttl=30)
-    async def request_completion_response(
-        self, prompt: str, conf: GuildSettings, max_response_tokens: int
-    ) -> str:
-        response = await openai.Completion.acreate(
-            model=conf.model,
+        compiled = compile_messages(messages)
+        prompt = await self.cut_text_by_tokens(compiled, conf, self.get_max_tokens(conf, member))
+        response = await request_completion_raw(
+            model=model,
             prompt=prompt,
             temperature=conf.temperature,
-            api_key=conf.api_key,
-            api_base=conf.endpoint_override,
-            max_tokens=max_response_tokens,
+            api_key=api_key,
+            api_base=api_base,
         )
-        return response["choices"][0]["text"]
+        for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
+            response = response.replace(i, "").strip()
+        return {"content": response}
 
-    async def request_local_response(
-        self, prompt: str, context: str, min_confidence: float
-    ) -> str:
-        def _run():
-            result = self.local_llm.pipe(question=prompt, context=context)
-            if not result:
-                return ""
-
-            log.debug(f"Response: {result}")
-            score = result.get("score", 0)
-            if score < min_confidence:
-                return ""
-            return result.get("answer", "")
-
-        if not context:
-            return ""
-        return await asyncio.to_thread(_run)
+    async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
+        api_base = conf.endpoint_override or self.db.endpoint_override
+        api_key = "unset"
+        if conf.api_key:
+            api_base = None
+            api_key = conf.api_key
+        embedding = await request_embedding_raw(text, api_key, api_base)
+        return embedding
 
     # -------------------------------------------------------
     # -------------------------------------------------------
     # ----------------------- HELPERS -----------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
-    def get_llm_type(self, conf: GuildSettings, embeds: bool = False) -> str:
-        to_use = conf.use_local_embedder if embeds else conf.use_local_llm
-        if conf.api_key and not to_use:
-            return "api"
-        if self.local_llm is not None:
-            return "local"
-        if conf.endpoint_override is not None:
-            return "api"
-        if self.db.endpoint_override is not None:
-            return "api"
 
-        # Either api model is selected but no api key, or self hosted is selected but its not enabled
-        if not conf.api_key:
-            log.info("No API key!")
-        elif self.local_llm is None:
-            log.info("Local LLM not running!")
-        return "none"
+    async def can_call_llm(
+        self, conf: GuildSettings, ctx: Optional[commands.Context] = None
+    ) -> bool:
+        cant = [
+            not conf.api_key,
+            conf.endpoint_override is None,
+            self.db.endpoint_override is None,
+        ]
+        if all(cant):
+            if ctx:
+                txt = "There are no API keys set!\n"
+                if ctx.author.id == ctx.guild.owner_id:
+                    txt += f"- Set your OpenAI key with `{ctx.clean_prefix}assist openaikey`\n"
+                    txt += f"- Or set an endpoint override to your self-hosted LLM with `{ctx.clean_prefix}assist endpoint`\n"
+                if ctx.author.id in self.bot.owner_ids:
+                    txt += f"- Alternatively you can set a global endpoint with `{ctx.clean_prefix}assist globalendpoint`"
+                await ctx.send(txt)
+            return False
+        return True
 
-    def can_use_local_model(self, model: str) -> bool:
-        all_models = {**LOCAL_MODELS, **LOCAL_GPT_MODELS}
-        # Reduce ram requirement a little
-        ram_required = all_models[model]["ram"] * 0.8
-        total_ram = psutil.virtual_memory().total / 1024 * 1024 * 1024
-        return total_ram > ram_required
+    async def resync_embeddings(self, conf: GuildSettings) -> int:
+        """Update embeds to match current dimensions
 
-    async def sync_embeddings(self, conf: GuildSettings, force: bool = None) -> bool:
-        synced = False
+        Takes a sample using current embed method, the updates the rest to match dimensions
+        """
+        if not conf.embeddings:
+            return 0
 
+        sample = list(conf.embeddings.values())[0]
+        sample_embed = await self.request_embedding(sample.text, conf)
+
+        synced = 0
         for name, em in conf.embeddings.items():
-            if conf.use_local_embedder and em.openai_tokens:
-                log.debug(f"Converting OpenAI embedding '{name}' to Local version")
+            if len(em.embedding) != len(sample_embed):
                 em.embedding = await self.request_embedding(em.text, conf)
-                em.openai_tokens = False
-                synced = True
-            elif not conf.use_local_embedder and not em.openai_tokens:
-                log.debug(f"Converting Local embedding '{name}' to OpenAI version")
-                em.embedding = await self.request_embedding(em.text, conf)
-                em.openai_tokens = True
-                synced = True
-            elif force:
-                em.embedding = await self.request_embedding(em.text, conf)
-                synced = True
+                synced += 1
+                log.debug(f"Updating embedding {name}")
 
         if synced:
             await self.save_conf()
@@ -229,43 +120,30 @@ class API(MixinMeta):
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
-        if self.get_llm_type(conf) == "api":
-            return min(user_max, MODELS[conf.get_user_model(user)] - 96)
-        return min(user_max, 4000)
+        return min(user_max, MODELS[conf.get_user_model(user)] - 96)
 
     async def cut_text_by_tokens(self, text: str, conf: GuildSettings, max_tokens: int) -> str:
         tokens = await self.get_tokens(text, conf)
         return await self.get_text(tokens[:max_tokens])
 
     async def get_token_count(self, text: str, conf: GuildSettings) -> int:
-        return len(await self.get_tokens(text, conf))
+        tokens = await self.get_tokens(text, conf)
+        return len(tokens)
 
     async def get_tokens(self, text: str, conf: GuildSettings) -> list:
         """Get token list from text"""
 
-        def _run():
-            if conf.model in LOCAL_MODELS and self.local_llm is not None:
-                return self.local_llm.pipe.tokenizer.encode(text)
-            else:
-                return self.openai_tokenizer.encode(text)
-
-        if not len(text) < 1:
+        if len(text) < 1:
+            log.debug("No text to get tokens from!")
             return []
         if isinstance(text, bytes):
             text = text.decode(encoding="utf-8")
 
-        return await asyncio.to_thread(_run)
+        return await asyncio.to_thread(self.tokenizer.encode, text)
 
     async def get_text(self, tokens: list, conf: GuildSettings) -> str:
         """Get text from token list"""
-
-        def _run():
-            if conf.model in LOCAL_MODELS and self.local_llm is not None:
-                return self.local_llm.pipe.tokenizer.convert_tokens_to_string(tokens)
-            else:
-                return self.openai_tokenizer.decode(tokens)
-
-        return await asyncio.to_thread(_run)
+        return await asyncio.to_thread(self.tokenizer.decode, tokens)
 
     async def convo_token_count(self, conf: GuildSettings, convo: Conversation) -> int:
         """Fetch token count of stored messages"""
@@ -513,13 +391,16 @@ class API(MixinMeta):
             for i in range(start, stop):
                 name, embedding = embeddings[i]
                 tokens = await self.get_token_count(embedding.text, conf)
-                encoder = "OpenAI" if embedding.openai_tokens else "Local LLM"
                 text = (
                     box(f"{embedding.text[:30].strip()}...")
                     if len(embedding.text) > 33
                     else box(embedding.text.strip())
                 )
-                val = f"`Tokens:     `{tokens}\n" f"`Encoded by: `{encoder}\n" f"{text}"
+                val = (
+                    f"`Tokens:     `{tokens}\n"
+                    f"`Dimensions: `{len(embedding.embedding)}\n"
+                    f"{text}"
+                )
                 embed.add_field(
                     name=f"➣ {name}" if place == num else name,
                     value=val,

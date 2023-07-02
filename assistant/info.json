@@ -37,11 +37,7 @@
     "plotly",
     "pandas",
     "rapidfuzz",
-    "pytz",
-    "transformers",
-    "sentence-transformers",
-    "gpt4all",
-    "psutil"
+    "pytz"
   ],
   "short": "Another Chat GPT Cog",
   "tags": [
@@ -51,7 +47,9 @@
     "ai",
     "chat",
     "chatgpt",
-    "chat-gpt"
+    "chat-gpt",
+    "llm",
+    "language model"
   ],
   "type": "COG"
 }

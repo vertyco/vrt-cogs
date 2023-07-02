@@ -191,7 +191,7 @@ class EmbeddingMenu(discord.ui.View):
         if name in self.conf.embeddings:
             return await self.ctx.send(f"An embedding with the name `{name}` already exists!")
         self.conf.embeddings[name] = Embedding(
-            text=text, embedding=embedding, openai_tokens=not self.conf.use_local_embedder
+            text=text, embedding=embedding
         )
         await self.get_pages()
         with suppress(discord.NotFound):
@@ -247,7 +247,7 @@ class EmbeddingMenu(discord.ui.View):
                 "Failed to edit that embedding, please try again later", ephemeral=True
             )
         self.conf.embeddings[modal.name] = Embedding(
-            text=modal.text, embedding=embedding, openai_tokens=not self.conf.use_local_embedder
+            text=modal.text, embedding=embedding
         )
         if modal.name != name:
             del self.conf.embeddings[name]

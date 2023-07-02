@@ -28,15 +28,9 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.constants import (
-    CHAT,
-    COMPLETION,
-    LOCAL_EMBED_MODELS,
-    LOCAL_GPT_MODELS,
-    LOCAL_MODELS,
-)
+from ..common.constants import CHAT, COMPLETION
 from ..common.models import DB, Embedding
-from ..common.utils import get_attachments, make_model_embed
+from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
@@ -73,14 +67,12 @@ class Admin(MixinMeta):
         func_tokens = await self.function_token_count(conf, func_list)
         func_count = len(func_list)
 
-        llm_type = self.get_llm_type(conf)
-        extra = " (Using Local LLM)" if llm_type == "local" else ""
         override = (
             f"`Endpoint Override: `{conf.endpoint_override}\n" if conf.endpoint_override else ""
         )
         desc = (
             f"`OpenAI Version:    `{VERSION}\n"
-            f"`Model:             `{conf.model}{extra}\n{override}"
+            f"`Model:             `{conf.model}\n{override}"
             f"`Enabled:           `{conf.enabled}\n"
             f"`Timezone:          `{conf.timezone}\n"
             f"`Channel:           `{channel}\n"
@@ -101,15 +93,14 @@ class Admin(MixinMeta):
             color=ctx.author.color,
         )
 
-        types = set(i.openai_tokens for i in conf.embeddings.values())
-        if len(types) == 0:
-            encoded_by = "N/A"
-        elif len(types) == 2:
+        types = set(len(i.embedding) for i in conf.embeddings.values())
+
+        if len(types) == 2:
             encoded_by = "Mixed (Please Refresh!)"
+        elif len(types) == 1:
+            encoded_by = "Synced!"
         else:
-            encoded_by = (
-                "OpenAI" if list(conf.embeddings.values())[0].openai_tokens else "Local LLM"
-            )
+            encoded_by = "N/A"
 
         embedding_field = (
             f"`Top N Embeddings:  `{conf.top_n}\n"
@@ -226,17 +217,6 @@ class Admin(MixinMeta):
                         name="Max Message Retention Time Role Overrides", value=field, inline=False
                     )
 
-        name = "Local LLM " + ("(Available)" if self.local_llm is not None else "(Unavailable)")
-        using = "" if extra else " (Not Using)"
-        local_text = (
-            f"`Confidence:         `{conf.confidence}\n"
-            f"`Local LLM:          `{self.db.local_model}{using}\n"
-            f"`Using Local LLM:    `{conf.use_local_llm}\n"
-            f"`Local Embed Model:  `{self.db.local_embedder}\n"
-            f"`Using Local Embeds: `{conf.use_local_embedder}"
-        )
-        embed.add_field(name=name, value=local_text, inline=False)
-
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
 
         files = []
@@ -307,42 +287,6 @@ class Admin(MixinMeta):
         await ctx.send(f"Timezone set to **{timezone}** (`{time}`)")
         conf = self.db.get_conf(ctx.guild)
         conf.timezone = timezone
-        await self.save_conf()
-
-    @assistant.command(name="persist")
-    @commands.is_owner()
-    async def toggle_persistent_conversations(self, ctx: commands.Context):
-        """Toggle persistent conversations"""
-        if self.db.persistent_conversations:
-            self.db.persistent_conversations = False
-            await ctx.send("Persistent conversations have been **Disabled**")
-        else:
-            self.db.persistent_conversations = True
-            await ctx.send("Persistent conversations have been **Enabled**")
-        await self.save_conf()
-
-    @assistant.command(name="selfhosted")
-    @commands.is_owner()
-    async def toggle_self_hosted_model(self, ctx: commands.Context):
-        """Toggle the self hosted model"""
-        if self.db.self_hosted:
-            self.db.self_hosted = False
-            if self.local_llm:
-                self.local_llm.shutdown()
-            self.local_llm = None
-            await ctx.send("Self hosted model has been shut down!")
-        else:
-            self.db.self_hosted = True
-            async with ctx.typing():
-                try:
-                    await self.init_models()
-                except Exception as e:
-                    err = (
-                        f"ValueError: {e}.\n"
-                        "If running on a VM, make sure sure your cpu has the AVX flag, use `cat /proc/cpuinfo` too check."
-                    )
-                    return await ctx.send(err)
-            await ctx.send("Self hosted model has been initialized!")
         await self.save_conf()
 
     @assistant.command(name="prompt", aliases=["pre"])
@@ -613,106 +557,34 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send(f"Temperature has been set to **{temperature}**")
 
-    @assistant.command(name="localmodel", aliases=["lm"])
-    async def toggle_local_model_use(self, ctx: commands.Context):
-        """
-        Toggle whether the local model should be used for responses
-
-        **Note**
-        - This can only be used if the bot owner has enabled it
-        - This model will NOT work without embedding data, and functions very differently from OpenAI's model
-        - This model is lightweight and therefor much less accurate than OpenAI's models
-
-        **Tips**
-        - Using the local model with OpenAI embeddings may give pretty decent results
-        - The quality of your embedding data will be key for getting desirable responses
-        - The relatedness and scoring of embeddings are much different than OpenAI settings so you'll want to play with it
-        """
-        conf = self.db.get_conf(ctx.guild)
-        if conf.use_local_llm:
-            conf.use_local_llm = False
-            await ctx.send("Assistant will use **OpenAI** for Q&A")
-        elif self.local_llm is not None:
-            conf.use_local_llm = True
-            await ctx.send("Assistant will use the **local** model for Q&A")
-        else:
-            return await ctx.send("The local model has been disabled by the bot owner!")
-        await self.save_conf()
-
-    @assistant.command(name="localembedder", aliases=["localembed", "le"])
-    async def toggle_local_embedder_use(self, ctx: commands.Context):
-        """
-        Toggle whether the local model should be used for creating embeddings
-
-        **Resources**
-        - [About Semantic Search](https://huggingface.co/spaces/sentence-transformers/embeddings-semantic-search)
-        - [OpenAI Embedding Intro](https://platform.openai.com/docs/guides/embeddings/what-are-embeddings)
-        """
-        conf = self.db.get_conf(ctx.guild)
-        if conf.use_local_embedder:
-            conf.use_local_embedder = False
-            txt = (
-                "Assistant will use **OpenAI** for embeddings.\n"
-                f"Use `{ctx.clean_prefix}assist refreshembeds` to update the weights!"
-            )
-        elif self.local_llm is not None:
-            conf.use_local_embedder = True
-            txt = (
-                "Assistant will use the **local** model for embeddings.\n"
-                f"Use `{ctx.clean_prefix}assist refreshembeds` to update the weights"
-            )
-        else:
-            return await ctx.send("The local model has been disabled by the bot owner!")
-
-        await ctx.send(txt)
-        await self.save_conf()
-
     @assistant.command(name="refreshembeds", aliases=["refreshembeddings"])
-    async def refresh_embeddings(self, ctx: commands.Context, force_refresh: str = None):
+    async def refresh_embeddings(self, ctx: commands.Context):
         """
         Refresh embedding weights
 
-        *This command is only for switching between OpenAI embeddings and the local model*
+        *This command can be used when changing the embedding method you use with your self-hosted llm*
 
-        Embeddings that were created using OpenAI cannot be used with the local model and vice versa
+        Embeddings that were created using OpenAI cannot be use with the self-hosted model and vice versa
         """
         conf = self.db.get_conf(ctx.guild)
-        llm_type = self.get_llm_type(conf)
-        if llm_type == "none":
-            return await ctx.send("API key not set or local model disabled!")
+        if not await self.can_call_llm(conf, ctx):
+            return
         async with ctx.typing():
-            synced = await self.sync_embeddings(conf, force_refresh)
+            synced = await self.resync_embeddings(conf)
             if synced:
-                await ctx.send(f"Embeddings have been updated to the **{llm_type.upper()}** model")
+                await ctx.send(f"{synced} embeddings have been updated")
             else:
                 await ctx.send("No embeddings needed to be refreshed")
-
-    @assistant.command(name="confidence")
-    async def set_confidence(self, ctx: commands.Context, confidence: float):
-        """
-        Set the confidence for the local model if used (0.0 - 1.0)
-
-        Closer to 1 is more concise and accurate while closer to 0 is less so.
-
-        If the models reponse confidence is under this value, it will not return results
-        """
-        if not 0 <= confidence <= 1:
-            return await ctx.send("Confidence must be between **0.0** and **1.0**")
-        confidence = round(confidence, 2)
-        conf = self.db.get_conf(ctx.guild)
-        conf.confidence = confidence
-        await self.save_conf()
-        await ctx.send(f"Confidence has been set to **{confidence}**")
 
     @assistant.command(name="functioncalls")
     async def toggle_function_calls(self, ctx: commands.Context):
         """Toggle whether GPT can call functions
 
-        Only the following models can call functions at the moment
-        - gpt-3.5-turbo-0613
-        - gpt-3.5-turbo-16k-0613
-        - gpt-4-0613
-        - gpt-4-32k-0613
+        Only the following models can call functions at the moment (With OpenAI key only)
+        - gpt-3.5-turbo
+        - gpt-3.5-turbo-16k
+        - gpt-4
+        - gpt-4-32k
         """
         conf = self.db.get_conf(ctx.guild)
         if conf.use_function_calls:
@@ -730,9 +602,10 @@ class Admin(MixinMeta):
         This sets how many times the model can call functions in a row
 
         Only the following models can call functions at the moment
-        - gpt-3.5-turbo-0613
-        - gpt-3.5-turbo-16k-0613
-        - gpt-4-0613
+        - gpt-3.5-turbo
+        - gpt-3.5-turbo-16k
+        - gpt-4
+        - gpt-4-32k
         """
         conf = self.db.get_conf(ctx.guild)
         recursion = max(0, recursion)
@@ -815,19 +688,17 @@ class Admin(MixinMeta):
             return await ctx.send(f"Valid models are:\n{valid}")
         model = model.lower().strip()
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key and self.local_llm is None and conf.endpoint_override is None:
-            return await ctx.send(
-                f"You must set an API key first with `{ctx.clean_prefix}assist openaikey`"
-            )
+        if not await self.can_call_llm(conf, ctx):
+            return
 
-        if conf.api_key and model not in LOCAL_MODELS:
+        if conf.api_key:
             try:
                 await openai.Model.aretrieve(model, api_key=conf.api_key)
             except openai.InvalidRequestError:
                 return await ctx.send("This model is not available for the API key provided!")
 
         if model not in valid_raw:
-            return await ctx.send(f"Invalid model type! Available model types are: {valid}")
+            return await ctx.send(f"Invalid model type! Available model types are:\n{valid}")
 
         conf.model = model
         await ctx.send(f"The **{model}** model will now be used")
@@ -888,21 +759,6 @@ class Admin(MixinMeta):
         await ctx.send("All embedding data has been wiped!")
         await self.save_conf()
 
-    @assistant.command(name="resetglobalembeddings")
-    @commands.is_owner()
-    async def wipe_global_embeddings(self, ctx: commands.Context, yes_or_no: bool):
-        """
-        Wipe saved embeddings for all servers
-
-        This will delete any and all saved embedding training data for the assistant.
-        """
-        if not yes_or_no:
-            return await ctx.send("Not wiping embedding data")
-        for conf in self.db.configs.values():
-            conf.embeddings = {}
-        await ctx.send("All embedding data has been wiped for all servers!")
-        await self.save_conf()
-
     @assistant.command(name="resetconversations")
     async def wipe_conversations(self, ctx: commands.Context, yes_or_no: bool):
         """
@@ -916,21 +772,6 @@ class Admin(MixinMeta):
             if ctx.guild.id == int(key.split("-")[2]):
                 convo.messages.clear()
         await ctx.send("Conversations have been wiped in this server!")
-        await self.save_conf()
-
-    @assistant.command(name="resetglobalconversations")
-    @commands.is_owner()
-    async def wipe_global_conversations(self, ctx: commands.Context, yes_or_no: bool):
-        """
-        Wipe saved conversations for the assistant in all servers
-
-        This will delete any and all saved conversations for the assistant.
-        """
-        if not yes_or_no:
-            return await ctx.send("Not wiping conversations")
-        for convo in self.db.conversations.values():
-            convo.messages.clear()
-        await ctx.send("Conversations have been wiped for all servers!")
         await self.save_conf()
 
     @assistant.command(name="topn")
@@ -985,7 +826,6 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="regexfailblock")
-    @commands.is_owner()
     async def toggle_regex_fail_blocking(self, ctx: commands.Context):
         """
         Toggle whether failed regex blocks the assistant's reply
@@ -1038,6 +878,8 @@ class Admin(MixinMeta):
         This will read excel files too
         """
         conf = self.db.get_conf(ctx.guild)
+        if not await self.can_call_llm(conf, ctx):
+            return
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -1075,26 +917,6 @@ class Admin(MixinMeta):
 
         df = await asyncio.to_thread(pd.concat, frames)
 
-        if conf.use_local_embedder and self.local_llm is None:
-            err = "Unable to use local model, bot owner must have disabled it!"
-            if conf.api_key:
-                err += (
-                    f"\nIt appears you have API keys set though, if you'd like to switch to the OpenAI embeddings, "
-                    f"use the `{ctx.clean_prefix}assist localembedder` command."
-                )
-            return await ctx.send(err)
-
-        if (
-            not conf.use_local_embedder
-            and not conf.api_key
-            and not conf.endpoint_override
-            and not self.db.endpoint_override
-        ):
-            err = f"No API keys set! use `{ctx.clean_prefix}assistant openaikey` to set them."
-            if self.local_llm is not None:
-                err += f"\nTo use the local embedding model instead, use the `{ctx.clean_prefix}assist localembedder` command."
-            return await ctx.send(err)
-
         imported = 0
         for index, row in enumerate(df.values):
             if pd.isna(row[0]) or pd.isna(row[1]):
@@ -1117,10 +939,7 @@ class Admin(MixinMeta):
                 await ctx.send(f"Failed to process embedding: `{name}`")
                 continue
 
-            openai_tokens = not conf.use_local_embedder
-            conf.embeddings[name] = Embedding(
-                text=text, embedding=query_embedding, openai_tokens=openai_tokens
-            )
+            conf.embeddings[name] = Embedding(text=text, embedding=query_embedding)
             imported += 1
         await message.edit(content=f"{message_text}\n**COMPLETE**")
         await ctx.send(f"Successfully imported {humanize_number(imported)} embeddings!")
@@ -1180,10 +999,10 @@ class Admin(MixinMeta):
         if not conf.embeddings:
             return await ctx.send("There are no embeddings to export!")
         async with ctx.typing():
-            columns = ["name", "text", "openai_tokens"]
+            columns = ["name", "text"]
             rows = []
             for name, em in conf.embeddings.items():
-                rows.append([name, em.text, em.openai_tokens])
+                rows.append([name, em.text])
             df = pd.DataFrame(rows, columns=columns)
             df_buffer = BytesIO()
             df.to_csv(df_buffer, index=False)
@@ -1275,19 +1094,8 @@ class Admin(MixinMeta):
         if ctx.interaction:
             await ctx.interaction.response.defer()
 
-        if conf.use_local_embedder and self.local_llm is None:
-            err = "Unable to use local model, bot owner must have disabled it!"
-            if conf.api_key:
-                err += (
-                    f"\nIt appears you have API keys set though, if you'd like to switch to the OpenAI embeddings, "
-                    f"use the `{ctx.clean_prefix}assist localembedder` command."
-                )
-            return await ctx.send(err)
-        if not conf.use_local_embedder and not conf.api_key:
-            err = f"No API keys set! use `{ctx.clean_prefix}assistant openaikey` to set them."
-            if self.local_llm is not None:
-                err += f"\nTo use the local embedding model instead, use the `{ctx.clean_prefix}assist localembedder` command."
-            return await ctx.send(err)
+        if not await self.can_call_llm(conf, ctx):
+            return
 
         view = EmbeddingMenu(
             ctx,
@@ -1388,18 +1196,6 @@ class Admin(MixinMeta):
                 entries.append(key)
         return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
 
-    @assistant.command(name="wipecog")
-    @commands.is_owner()
-    async def wipe_cog(self, ctx: commands.Context, confirm: bool):
-        """Wipe all settings and data for entire cog"""
-        if not confirm:
-            return await ctx.send("Not wiping cog")
-        self.db.configs.clear()
-        self.db.conversations.clear()
-        self.db.persistent_conversations = False
-        await self.save_conf()
-        await ctx.send("Cog has been wiped!")
-
     @assistant.command(name="blacklist")
     async def blacklist_settings(
         self,
@@ -1441,20 +1237,19 @@ class Admin(MixinMeta):
         """
         model = model.lower().strip()
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key:
-            return await ctx.send(
-                f"You must set an API key first with `{ctx.clean_prefix}assist openaikey`"
-            )
-        try:
-            await openai.Model.aretrieve(model, api_key=conf.api_key)
-        except openai.InvalidRequestError:
-            return await ctx.send("This model is not available for the API key provided!")
+        if not self.can_call_llm(conf, ctx):
+            return
 
         if model not in CHAT + COMPLETION:
             valid = humanize_list(CHAT + COMPLETION)
             return await ctx.send(
-                f"Assistant does not support this model yet! Valid model types are `{valid}`"
+                f"Assistant does not support this model yet! Valid model types are\n{box(valid)}"
             )
+
+        try:
+            await openai.Model.aretrieve(model, api_key=conf.api_key)
+        except openai.InvalidRequestError:
+            return await ctx.send("This model is not available for the API key provided!")
 
         if role.id in conf.model_role_overrides:
             if conf.model_role_overrides[role.id] == model:
@@ -1547,57 +1342,23 @@ class Admin(MixinMeta):
 
         await self.save_conf()
 
-    @assistant.command(name="setlocalmodel")
+    # --------------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------
+    # -------------------------------- OWNER ONLY ------------------------------------------
+    # --------------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------
+
+    @assistant.command(name="wipecog")
     @commands.is_owner()
-    async def set_local_model(self, ctx: commands.Context, *, model: str = None):
-        """
-        Set the local LLM
-
-        Tiny Models:
-        - deepset/roberta-large-squad2 (1.42GB download, 1.6-2.1GB RAM)
-        - deepset/roberta-base-squad2 (496MB download, 730MB-1.1GB RAM)
-        - deepset/tinyroberta-squad2 (326MB download, 600-800MB RAM)
-
-        Large Models:
-        - Hermes
-
-        - Use `[p]assist setlocalmodel` without specifying to view all models
-        """
-        valid_embed = make_model_embed()
-        if not model:
-            return await ctx.send(embed=valid_embed)
-        all_models = {**LOCAL_MODELS, **LOCAL_GPT_MODELS}
-        if model not in all_models:
-            return await ctx.send("Invalid model type!", embed=valid_embed)
-        if not self.can_use_local_model(model):
-            return await ctx.send("Your system does not meet the RAM requirements for this model!")
-        self.db.local_model = model
-        msg = await ctx.send("Initializing model, stand by...")
-        async with ctx.typing():
-            await self.init_models()
-            await msg.edit(content=f"The **{model}** model will now be used")
+    async def wipe_cog(self, ctx: commands.Context, confirm: bool):
+        """Wipe all settings and data for entire cog"""
+        if not confirm:
+            return await ctx.send("Not wiping cog")
+        self.db.configs.clear()
+        self.db.conversations.clear()
+        self.db.persistent_conversations = False
         await self.save_conf()
-
-    @assistant.command(name="setlocalembedder")
-    @commands.is_owner()
-    async def set_local_embedder(self, ctx: commands.Context, model: str = None):
-        """
-        Set the local embedding model
-
-        Valid models:
-        - all-MiniLM-L12-v2 (120MB download, 650MB RAM)
-        - all-MiniLM-L6-v2 (80MB download, 350MB RAM)
-        """
-        valid = humanize_list(LOCAL_EMBED_MODELS)
-        if not model:
-            return await ctx.send(f"Valid models are:\n{valid}")
-        model = model.lower().strip()
-        if model not in LOCAL_EMBED_MODELS:
-            return await ctx.send(f"Invalid model type! Available model types are: {valid}")
-        self.db.local_model = model
-        await ctx.send(f"The **{model}** model will now be used")
-        await self.save_conf()
-        await self.init_models()
+        await ctx.send("Cog has been wiped!")
 
     @assistant.command(name="backupcog")
     @commands.is_owner()
@@ -1661,4 +1422,46 @@ class Admin(MixinMeta):
         dump = await attachments[0].read()
         self.db = await asyncio.to_thread(DB.parse_raw, dump)
         await ctx.send("Cog has been restored!")
+        await self.save_conf()
+
+    @assistant.command(name="resetglobalconversations")
+    @commands.is_owner()
+    async def wipe_global_conversations(self, ctx: commands.Context, yes_or_no: bool):
+        """
+        Wipe saved conversations for the assistant in all servers
+
+        This will delete any and all saved conversations for the assistant.
+        """
+        if not yes_or_no:
+            return await ctx.send("Not wiping conversations")
+        for convo in self.db.conversations.values():
+            convo.messages.clear()
+        await ctx.send("Conversations have been wiped for all servers!")
+        await self.save_conf()
+
+    @assistant.command(name="persist")
+    @commands.is_owner()
+    async def toggle_persistent_conversations(self, ctx: commands.Context):
+        """Toggle persistent conversations"""
+        if self.db.persistent_conversations:
+            self.db.persistent_conversations = False
+            await ctx.send("Persistent conversations have been **Disabled**")
+        else:
+            self.db.persistent_conversations = True
+            await ctx.send("Persistent conversations have been **Enabled**")
+        await self.save_conf()
+
+    @assistant.command(name="resetglobalembeddings")
+    @commands.is_owner()
+    async def wipe_global_embeddings(self, ctx: commands.Context, yes_or_no: bool):
+        """
+        Wipe saved embeddings for all servers
+
+        This will delete any and all saved embedding training data for the assistant.
+        """
+        if not yes_or_no:
+            return await ctx.send("Not wiping embedding data")
+        for conf in self.db.configs.values():
+            conf.embeddings = {}
+        await ctx.send("All embedding data has been wiped for all servers!")
         await self.save_conf()

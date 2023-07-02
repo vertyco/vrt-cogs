@@ -32,25 +32,10 @@ class Base(MixinMeta):
         - Including `--extract` will send the code separately from the reply
         """
         conf = self.db.get_conf(ctx.guild)
-        err = (
-            "Using this command requires one of the following configurations\n"
-            f"- Set an OpenAI API key with `{ctx.clean_prefix}assist openaikey`\n"
-            f"- Set an endpoint override with `{ctx.clean_prefix}assist endpoint`\n"
-        )
-        if self.local_llm is not None:
-            err += f"- Enable use of the local model available with `{ctx.clean_prefix}assist localmodel`\n"
-        if ctx.author.id in self.bot.owner_ids and self.local_llm is None:
-            err += f"- Initialize the local model with `{ctx.clean_prefix}assist selfhosted`"
-        if (
-            not conf.api_key
-            and self.local_llm is None
-            and not conf.endpoint_override
-            and not self.db.endpoint_override
-        ):
-            return await ctx.send(err)
+        if not await self.can_call_llm(conf, ctx):
+            return
         if not await can_use(ctx.message, conf.blacklist):
             return
-        # embed_links perm handled in following functions
         async with ctx.typing():
             await self.handle_message(ctx.message, question, conf)
 
@@ -95,20 +80,13 @@ class Base(MixinMeta):
         gg, bb = generate_color(convo_tokens, max_tokens)
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
-        llm_type = self.get_llm_type(conf)
-        if llm_type == "api":
-            model = conf.get_user_model(ctx.author)
-        elif llm_type == "local":
-            model = self.db.local_model
-        else:
-            model = "None (Chat Disabled)"
         embed = discord.Embed(
             description=(
                 f"{ctx.channel.mention}\n"
                 f"`Messages: `{messages}/{conf.get_user_max_retention(ctx.author)}\n"
                 f"`Tokens:   `{convo_tokens}/{max_tokens}\n"
                 f"`Expired:  `{conversation.is_expired(conf, ctx.author)}\n"
-                f"`Model:    `{model}"
+                f"`Model:    `{conf.get_user_model(ctx.author)}"
             ),
             color=color,
         )
@@ -143,23 +121,24 @@ class Base(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.embeddings:
             return await ctx.send("You do not have any embeddings configured!")
+        if not await self.can_call_llm(conf, ctx):
+            return
         async with ctx.typing():
             query_embedding = await self.request_embedding(query, conf)
             if not query_embedding:
                 return await ctx.send("Failed to get embedding for your query")
-            # await self.sync_embeddings(conf, ctx.author)
+
             embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
             if not embeddings:
                 return await ctx.send(
                     "No embeddings could be related to this query with the current settings"
                 )
-            for name, em, score, openai_encoded in embeddings:
+            for name, em, score, dimension in embeddings:
                 for p in pagify(em, page_length=4000):
-                    encoded_by = "OpenAI" if openai_encoded else "Local LLM"
                     txt = (
                         f"`Entry Name:  `{name}\n"
                         f"`Relatedness: `{round(score, 4)}\n"
-                        f"`Encoded By:  `{encoded_by}\n"
+                        f"`Dimensions:  `{dimension}",
                     )
                     txt += box(escape(p))
                     embed = discord.Embed(description=txt)

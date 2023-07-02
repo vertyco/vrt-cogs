@@ -1,45 +1,18 @@
 import logging
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 from openai.embeddings_utils import cosine_similarity
 from pydantic import BaseModel
 from redbot.core.bot import Red
 
-try:
-    from gpt4all import GPT4All
-    from sentence_transformers import SentenceTransformer
-    from transformers.pipelines.question_answering import QuestionAnsweringPipeline
-except Exception:
-    GPT4All = Any
-    SentenceTransformer = Any
-    QuestionAnsweringPipeline = Any
-
 log = logging.getLogger("red.vrt.assistant.models")
-
-
-class LocalLLM(BaseModel):
-    embedder: SentenceTransformer
-    pipe: QuestionAnsweringPipeline = None
-    gpt: GPT4All = None
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    def shutdown(self):
-        del self.embedder
-        if self.pipe:
-            del self.pipe
-        if self.gpt:
-            del self.gpt
 
 
 class Embedding(BaseModel):
     text: str
     embedding: List[float]
-    # If embedding was tokenized with tiktoken
-    openai_tokens: bool = True
 
 
 class CustomFunction(BaseModel):
@@ -62,7 +35,7 @@ class GuildSettings(BaseModel):
     min_relatedness: float = 0.75
     embed_method: Literal["dynamic", "static", "hybrid"] = "dynamic"
     channel_id: int = 0
-    api_key: str = ""
+    api_key: Optional[str] = None
     endswith_questionmark: bool = False
     min_length: int = 7
     max_retention: int = 0
@@ -72,10 +45,6 @@ class GuildSettings(BaseModel):
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
     endpoint_override: Optional[str] = None
-
-    confidence: float = 0.1
-    use_local_llm: bool = False
-    use_local_embedder: bool = False
 
     timezone: str = "UTC"
     temperature: float = 0.0
@@ -109,7 +78,7 @@ class GuildSettings(BaseModel):
                     exc_info=e,
                 )
                 continue
-            strings_and_relatedness.append((name, em.text, score, em.openai_tokens))
+            strings_and_relatedness.append((name, em.text, score, len(em.embedding)))
 
         strings_and_relatedness = [
             i for i in strings_and_relatedness if i[2] >= self.min_relatedness
@@ -226,12 +195,6 @@ class DB(BaseModel):
     persistent_conversations: bool = False
     functions: Dict[str, CustomFunction] = {}
 
-    self_hosted: bool = False
-    low_mem: bool = True
-    threads: int = 0
-
-    local_model: str = "deepset/roberta-large-squad2"
-    local_embedder: str = "all-MiniLM-L12-v2"
     endpoint_override: Optional[str] = None
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
