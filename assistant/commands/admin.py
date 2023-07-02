@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import json
 import logging
 import re
 import traceback
@@ -34,7 +35,7 @@ from ..common.constants import (
     LOCAL_GPT_MODELS,
     LOCAL_MODELS,
 )
-from ..common.models import Embedding
+from ..common.models import DB, Embedding
 from ..common.utils import get_attachments, make_model_embed
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
@@ -1591,3 +1592,67 @@ class Admin(MixinMeta):
         await ctx.send(f"The **{model}** model will now be used")
         await self.save_conf()
         await self.init_models()
+
+    @assistant.command(name="backupcog")
+    @commands.is_owner()
+    async def backup_cog(self, ctx: commands.Context):
+        """
+        Take a backup of the cog
+
+        - This does not backup conversation data
+        """
+
+        def _dump():
+            # Delete and convo data
+            self.db.conversations.clear()
+            to_dict = self.db.dict()
+            return json.dumps(to_dict)
+
+        dump = await asyncio.to_thread(_dump)
+
+        buffer = BytesIO(dump.encode())
+        buffer.name = f"Assistant_{int(datetime.now().timestamp())}.json"
+        buffer.seek(0)
+        file = discord.File(buffer)
+        try:
+            await ctx.send("Here is your export!", file=file)
+            return
+        except discord.HTTPException:
+            await ctx.send("File too large, attempting to compress...")
+
+        def zip_file() -> discord.File:
+            zip_buffer = BytesIO()
+            zip_buffer.name = f"Assistant_{int(datetime.now().timestamp())}.json"
+            with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+                arc.writestr(
+                    "embeddings_export.json",
+                    dump,
+                    compress_type=ZIP_DEFLATED,
+                    compresslevel=9,
+                )
+            zip_buffer.seek(0)
+            file = discord.File(zip_buffer)
+            return file
+
+        file = await asyncio.to_thread(zip_file)
+        try:
+            await ctx.send("Here is your embeddings export!", file=file)
+            return
+        except discord.HTTPException:
+            await ctx.send("File is still too large even with compression!")
+
+    @assistant.command(name="restorecog")
+    @commands.is_owner()
+    async def restore_cog(self, ctx: commands.Context):
+        """
+        Restore the cog from a backup
+        """
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send(
+                "You must attach **.json** files to this command or reference a message that has them!"
+            )
+        dump = await attachments[0].read()
+        self.db = await asyncio.to_thread(DB.parse_raw, dump)
+        await ctx.send("Cog has been restored!")
+        await self.save_conf()
