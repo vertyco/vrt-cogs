@@ -26,7 +26,7 @@
     "ujson",
     "msgpack",
     "aiohttp",
-    "pydantic",
+    "pydantic<=1.10.10",
     "orjson",
     "json5",
     "tiktoken",
