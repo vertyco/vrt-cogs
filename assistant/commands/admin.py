@@ -815,7 +815,7 @@ class Admin(MixinMeta):
             return await ctx.send(f"Valid models are:\n{valid}")
         model = model.lower().strip()
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key and self.local_llm is None:
+        if not conf.api_key and self.local_llm is None and conf.endpoint_override is None:
             return await ctx.send(
                 f"You must set an API key first with `{ctx.clean_prefix}assist openaikey`"
             )
@@ -836,7 +836,7 @@ class Admin(MixinMeta):
     @assistant.command(name="endpoint")
     async def set_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
         """
-        Set a custom endpoint to use a [self-hosted model](https://github.com/nomic-ai/gpt4all/blob/main/gpt4all-api/README.md)
+        Set a custom endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api)
 
         Example: `http://localhost:8000/v1`
         """
@@ -857,7 +857,7 @@ class Admin(MixinMeta):
     @assistant.command(name="globalendpoint")
     async def set_global_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
         """
-        Set a custom global endpoint to use a [self-hosted model](https://github.com/nomic-ai/gpt4all/blob/main/gpt4all-api/README.md) for all guilds as a fallback
+        Set a custom global endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api) for all guilds as a fallback
 
         Example: `http://localhost:8000/v1`
         """
