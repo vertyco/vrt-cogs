@@ -149,3 +149,11 @@ async def request_text_raw(tokens: list, url: str):
         async with session.post(url, json=payload) as response:
             res = await response.json()
             return res["text"]
+
+
+@cached(ttl=1800)
+async def request_model(url: str):
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url) as response:
+            return await response.json()
