@@ -205,7 +205,7 @@ class API(MixinMeta):
         total_ram = psutil.virtual_memory().total / 1024 * 1024 * 1024
         return total_ram > ram_required
 
-    async def sync_embeddings(self, conf: GuildSettings) -> bool:
+    async def sync_embeddings(self, conf: GuildSettings, force: bool = None) -> bool:
         synced = False
 
         for name, em in conf.embeddings.items():
@@ -218,6 +218,9 @@ class API(MixinMeta):
                 log.debug(f"Converting Local embedding '{name}' to OpenAI version")
                 em.embedding = await self.request_embedding(em.text, conf)
                 em.openai_tokens = True
+                synced = True
+            elif force:
+                em.embedding = await self.request_embedding(em.text, conf)
                 synced = True
 
         if synced:
