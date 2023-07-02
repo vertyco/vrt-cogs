@@ -138,8 +138,10 @@ class Base(MixinMeta):
                     txt = (
                         f"`Entry Name:  `{name}\n"
                         f"`Relatedness: `{round(score, 4)}\n"
-                        f"`Dimensions:  `{dimension}",
+                        f"`Dimensions:  `{dimension}\n"
                     )
-                    txt += box(escape(p))
+                    escaped = escape(p)
+                    boxed = box(escaped)
+                    txt += boxed
                     embed = discord.Embed(description=txt)
                     await ctx.send(embed=embed)

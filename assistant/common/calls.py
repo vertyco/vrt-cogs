@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Union
 
+import aiohttp
 import openai
 from aiocache import cached
 from openai.error import (
@@ -128,3 +129,23 @@ async def request_completion_raw(
         timeout=timeout,
     )
     return response["choices"][0]["text"]
+
+
+@cached(ttl=30)
+async def request_tokens_raw(text: str, url: str):
+    payload = {"text": text, "tokens": None}
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(url, json=payload) as response:
+            res = await response.json()
+            return res["tokens"]
+
+
+@cached(ttl=30)
+async def request_text_raw(tokens: list, url: str):
+    payload = {"text": None, "tokens": tokens}
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(url, json=payload) as response:
+            res = await response.json()
+            return res["text"]

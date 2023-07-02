@@ -15,6 +15,8 @@ from .calls import (
     request_chat_completion_raw,
     request_completion_raw,
     request_embedding_raw,
+    request_text_raw,
+    request_tokens_raw,
 )
 from .constants import CHAT, MODELS
 from .models import Conversation, GuildSettings
@@ -62,11 +64,13 @@ class API(MixinMeta):
         return {"content": response}
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
-        api_base = conf.endpoint_override or self.db.endpoint_override
-        api_key = "unset"
         if conf.api_key:
             api_base = None
             api_key = conf.api_key
+        else:
+            log.debug("Using external embedder")
+            api_base = conf.endpoint_override or self.db.endpoint_override
+            api_key = "unset"
         embedding = await request_embedding_raw(text, api_key, api_base)
         return embedding
 
@@ -132,17 +136,27 @@ class API(MixinMeta):
 
     async def get_tokens(self, text: str, conf: GuildSettings) -> list:
         """Get token list from text"""
-
-        if len(text) < 1:
+        if not text:
             log.debug("No text to get tokens from!")
             return []
         if isinstance(text, bytes):
             text = text.decode(encoding="utf-8")
 
+        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
+            log.debug("Using external tokenizer")
+            endpoint = conf.endpoint_override or self.db.endpoint_override
+            return await request_tokens_raw(text, f"{endpoint}/tokenize")
+
         return await asyncio.to_thread(self.tokenizer.encode, text)
 
     async def get_text(self, tokens: list, conf: GuildSettings) -> str:
         """Get text from token list"""
+
+        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
+            log.debug("Using external tokenizer")
+            endpoint = conf.endpoint_override or self.db.endpoint_override
+            return await request_text_raw(tokens, f"{endpoint}/untokenize")
+
         return await asyncio.to_thread(self.tokenizer.decode, tokens)
 
     async def convo_token_count(self, conf: GuildSettings, convo: Conversation) -> int:
@@ -158,8 +172,10 @@ class API(MixinMeta):
     async def function_token_count(self, conf: GuildSettings, functions: List[dict]) -> int:
         if not functions:
             return 0
-        dump = [str(i) for i in functions if len(str(i)) > 0]
-        joined = "".join(dump)
+        dumpped = []
+        for i in functions:
+            dumpped.append(json.dumps(i))
+        joined = "".join(dumpped)
         return await self.get_token_count(joined, conf)
 
     # -------------------------------------------------------
