@@ -151,7 +151,10 @@ def compile_messages(
     for message in messages:
         content = message["content"].strip()
         if message["role"] == "user":
-            full_prompt += f"\n{content}"
+            if content.startswith("Context"):
+                full_prompt += f"\n{content}"
+            else:
+                full_prompt += f"\n### Human: \n{content}"
         if message["role"] == "assistant":
             assistant_message = "\n### Response: " + content
             full_prompt += assistant_message

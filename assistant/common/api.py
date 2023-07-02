@@ -124,7 +124,7 @@ class API(MixinMeta):
 
     async def cut_text_by_tokens(self, text: str, conf: GuildSettings, max_tokens: int) -> str:
         tokens = await self.get_tokens(text, conf)
-        return await self.get_text(tokens[:max_tokens])
+        return await self.get_text(tokens[:max_tokens], conf)
 
     async def get_token_count(self, text: str, conf: GuildSettings) -> int:
         tokens = await self.get_tokens(text, conf)
