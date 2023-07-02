@@ -516,7 +516,6 @@ class ChatHandler(MixinMeta):
 
         # await self.sync_embeddings(conf, author)
         related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
-        self.bot.get_context()
         embeddings = []
         # Get related embeddings (Name, text, score)
         for i in related:
@@ -524,7 +523,6 @@ class ChatHandler(MixinMeta):
             if embed_tokens + current_tokens > max_tokens:
                 break
             embeddings.append(i[1])
-        self.bot.user.mention
         if embeddings:
             joined = "\n".join(embeddings)
 
