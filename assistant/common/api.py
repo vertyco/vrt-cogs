@@ -145,7 +145,10 @@ class API(MixinMeta):
         if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
             log.debug("Using external tokenizer")
             endpoint = conf.endpoint_override or self.db.endpoint_override
-            return await request_tokens_raw(text, f"{endpoint}/tokenize")
+            try:
+                return await request_tokens_raw(text, f"{endpoint}/tokenize")
+            except KeyError:  # API probably old
+                pass
 
         return await asyncio.to_thread(self.tokenizer.encode, text)
 
