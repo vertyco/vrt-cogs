@@ -39,15 +39,10 @@ class Assistant(
     - **[p]convostats**: view a user's token usage/conversation message count for the channel
     - **[p]clearconvo**: reset your conversation with the assistant in the channel
 
-    **Support for Local Models**
-    There are a variety of local models available, from simple Q&A/Semantic Search using less than 1GB, to larger 16GB models.
-    Use `[p]assist setlocalmodel` to view them.
-
-    **Default Embedding Model**: `all-MiniLM-L12-v2`.
-    - Download size: 120 MB
-    - RAM usage: 650-750 MB
-
-    *The local model can only be used as Q&A, it doesn't support any message retention or memory*
+    **Support for self-hosted endpoints!**
+    Assistant supports usage of **[Self-Hosted Models](https://github.com/vertyco/gpt-api)** via endpoint overrides.
+    To set a custom endpoint for example: `[p]assist endpoint http://localhost:8000/v1`
+    This will now make calls to your self-hosted api
     """
 
     __author__ = "Vertyco#0117"
