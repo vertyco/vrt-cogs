@@ -51,7 +51,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.2.9"
+    __version__ = "4.3.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -270,7 +270,10 @@ class Assistant(
     # ------------------ 3rd PARTY FUNCTION REGISTRY ------------------
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
-        self.bot.dispatch("assistant_cog_add", self)
+        event = "on_assistant_cog_add"
+        funcs = [func for event_name, func in cog.get_listeners() if event_name == event]
+        for func in funcs:
+            self.bot._schedule_event(func, event, self)
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog):
