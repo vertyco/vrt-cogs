@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 import discord
 import orjson
+from aiohttp import ClientConnectionError
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, humanize_number
 
@@ -147,7 +148,7 @@ class API(MixinMeta):
             endpoint = conf.endpoint_override or self.db.endpoint_override
             try:
                 return await request_tokens_raw(text, f"{endpoint}/tokenize")
-            except KeyError:  # API probably old
+            except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
                 pass
 
         return await asyncio.to_thread(self.tokenizer.encode, text)
