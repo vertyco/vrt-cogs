@@ -436,6 +436,9 @@ class SupportButton(Button):
                 ).format(box(str(e), "py")),
                 color=discord.Color.red(),
             )
+            log.info(
+                f"Failed to create ticket for {user.display_name} in {guild.name}", exc_info=e
+            )
             if modal:
                 return await interaction.followup.send(embed=em, ephemeral=True)
             else:
