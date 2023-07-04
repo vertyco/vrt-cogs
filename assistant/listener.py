@@ -32,14 +32,24 @@ class AssistantListener(MixinMeta):
             ref = message.reference.resolved
             if ref and ref.author.id != self.bot.user.id:
                 return
-
+        # Check if cog is disabled
+        if await self.bot.cog_disabled_in_guild(self, message.guild):
+            return
+        # Check permissions
+        if not message.channel.permissions_for(message.guild.me).send_messages:
+            return
+        if not message.channel.permissions_for(message.guild.me).embed_links:
+            return
         conf = self.db.get_conf(message.guild)
         if not conf.enabled:
             return
-        if not conf.api_key:
+        no_api = [not conf.api_key, not conf.endpoint_override, not self.db.endpoint_override]
+        if all(no_api):
             return
+
         channel = message.channel
-        if channel.id != conf.channel_id:
+        mention_ids = [m.id for m in message.mentions]
+        if channel.id != conf.channel_id and self.bot.user.id not in mention_ids:
             return
         if not await can_use(message, conf.blacklist, respond=False):
             return
