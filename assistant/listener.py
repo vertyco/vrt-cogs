@@ -27,11 +27,6 @@ class AssistantListener(MixinMeta):
         # Ignore if channel doesn't exist
         if not message.channel:
             return
-        # Ignore references to other members
-        if hasattr(message, "reference") and message.reference:
-            ref = message.reference.resolved
-            if ref and ref.author.id != self.bot.user.id:
-                return
         # Check if cog is disabled
         if await self.bot.cog_disabled_in_guild(self, message.guild):
             return
@@ -40,6 +35,7 @@ class AssistantListener(MixinMeta):
             return
         if not message.channel.permissions_for(message.guild.me).embed_links:
             return
+
         conf = self.db.get_conf(message.guild)
         if not conf.enabled:
             return
@@ -49,8 +45,17 @@ class AssistantListener(MixinMeta):
 
         channel = message.channel
         mention_ids = [m.id for m in message.mentions]
-        if channel.id != conf.channel_id and self.bot.user.id not in mention_ids:
-            return
+        # Return under these conditions
+        if self.bot.user.id not in mention_ids:
+            # Ignore channels that arent a dedicated assistant channel
+            if channel.id != conf.channel_id:
+                return
+            # Ignore references to other members unless bot is pinged
+            if hasattr(message, "reference") and message.reference:
+                ref = message.reference.resolved
+                if ref and ref.author.id != self.bot.user.id:
+                    return
+
         if not await can_use(message, conf.blacklist, respond=False):
             return
         mentions = [member.id for member in message.mentions]
