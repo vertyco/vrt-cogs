@@ -11,6 +11,7 @@ from discord import app_commands
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.mod import is_admin_or_superior, is_mod_or_superior
 
 from .formatter import HELP, IGNORE, CustomCmdFmt
 
@@ -28,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.6.2"
+    __version__ = "0.6.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -253,16 +254,30 @@ class AutoDocs(commands.Cog):
     # ------------------------------------------------------------------------
     # ------------------------------------------------------------------------
     async def get_command_info(
-        self, guild: discord.Guild, command_name: str, *args, **kwargs
+        self, guild: discord.Guild, user: discord.Member, command_name: str, *args, **kwargs
     ) -> str:
         command = self.bot.get_command(command_name)
         if not command:
             return "Command not found, check valid commands for this cog first"
+
         prefixes = await self.bot.get_valid_prefixes(guild)
-        c = CustomCmdFmt(self.bot, command, prefixes[0], True, False, "guildowner", True)
+
+        if user.id in self.bot.owner_ids:
+            level = "botowner"
+        elif user.id == guild.owner_id or user.guild_permissions.manage_guild:
+            level = "guildowner"
+        elif (await is_admin_or_superior(self, user)) or user.guild_permissions.manage_roles:
+            level = "admin"
+        elif (await is_mod_or_superior(self, user)) or user.guild_permissions.manage_messages:
+            level = "mod"
+        else:
+            level = "user"
+
+        c = CustomCmdFmt(self.bot, command, prefixes[0], True, False, level, True)
         doc = c.get_doc()
         if not doc:
-            return "Failed to fetch info for that command!"
+            return "The user you are chatting with does not have the required permissions to use that command"
+
         return f"Cog name: {command.cog.qualified_name}\nCommand:\n{doc}"
 
     async def get_command_names(self, cog_name: str, *args, **kwargs):
