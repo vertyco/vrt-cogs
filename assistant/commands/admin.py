@@ -459,11 +459,28 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="channel")
-    async def set_channel(self, ctx: commands.Context, channel: discord.TextChannel):
+    async def set_channel(
+        self,
+        ctx: commands.Context,
+        channel: Union[
+            discord.TextChannel,
+            discord.Thread,
+            discord.ForumChannel,
+        ] = None,
+    ):
         """Set the channel for the assistant"""
         conf = self.db.get_conf(ctx.guild)
-        conf.channel_id = channel.id
-        await ctx.send("Channel id has been set")
+        if channel is None and not conf.channel_id:
+            return await ctx.send_help()
+        if channel is None and conf.channel_id:
+            await ctx.send("Assistant channel has been removed")
+            conf.channel_id = None
+        elif channel and conf.channel_id:
+            await ctx.send("Assistant channel has been overwritten")
+            conf.channel_id = channel.id
+        else:
+            await ctx.send("Channel id has been set")
+            conf.channel_id = channel.id
         await self.save_conf()
 
     @assistant.command(name="questionmark")
