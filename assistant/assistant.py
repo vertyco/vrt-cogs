@@ -196,7 +196,11 @@ class Assistant(
             return f"User {user.display_name} is not recognized as a tutor!"
         try:
             embedding = await self.add_embedding(
-                guild, embedding_name, embedding_text, overwrite=False
+                guild,
+                embedding_name,
+                embedding_text,
+                overwrite=False,
+                ai_created=True,
             )
             if embedding is None:
                 return "Failed to create embedding!"
@@ -211,6 +215,7 @@ class Assistant(
         name: str,
         text: str,
         overwrite: bool = False,
+        ai_created: bool = False,
     ) -> Optional[List[float]]:
         """
         Method for other cogs to access and add embeddings
@@ -237,7 +242,7 @@ class Assistant(
         embedding = await self.request_embedding(text, conf)
         if not embedding:
             return None
-        conf.embeddings[name] = Embedding(text=text, embedding=embedding)
+        conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created)
         asyncio.create_task(self.save_conf())
         return embedding
 

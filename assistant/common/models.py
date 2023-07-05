@@ -13,6 +13,7 @@ log = logging.getLogger("red.vrt.assistant.models")
 class Embedding(BaseModel):
     text: str
     embedding: List[float]
+    ai_created: bool = False
 
 
 class CustomFunction(BaseModel):
