@@ -178,6 +178,14 @@ class ChatHandler(MixinMeta):
         if isinstance(channel, int):
             channel = guild.get_channel(channel)
 
+        if "_learn" in function_map and author.id not in conf.tutors:
+            if not any([role.id in conf.tutors for role in author.roles]):
+                del function_map["_learn"]
+                for i in function_calls.copy():
+                    if i["name"] == "_learn":
+                        function_calls.remove(i)
+                        break
+
         query_embedding = []
         if conf.top_n:
             # Save on tokens by only getting embeddings if theyre enabled

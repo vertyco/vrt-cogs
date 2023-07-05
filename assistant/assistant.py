@@ -14,6 +14,7 @@ from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
+from .common.constants import TUTOR_SCHEMA
 from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
 from .listener import AssistantListener
@@ -46,7 +47,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.3.2"
+    __version__ = "4.4.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -83,6 +84,7 @@ class Assistant(
         self.db = await asyncio.to_thread(DB.parse_obj, data)
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         await asyncio.to_thread(self._cleanup_db)
+        await self.register_function(self.qualified_name, TUTOR_SCHEMA)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
@@ -180,6 +182,28 @@ class Assistant(
         await asyncio.to_thread(self._cleanup_db)
         await self.save_conf()
 
+    async def _learn(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        embedding_name: str,
+        embedding_text: str,
+        *args,
+        **kwargs,
+    ):
+        conf = self.db.get_conf(guild)
+        if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
+            return f"User {user.display_name} is not recognized as a tutor!"
+        try:
+            embedding = await self.add_embedding(
+                guild, embedding_name, embedding_text, overwrite=False
+            )
+            if embedding is None:
+                return "Failed to create embedding!"
+            return f"The {embedding_name} embedding entry has been created, you can now reference it later"
+        except EmbeddingEntryExists:
+            return f"An embedding entry with the name {embedding_name} already exists!"
+
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
         self,
@@ -187,7 +211,6 @@ class Assistant(
         name: str,
         text: str,
         overwrite: bool = False,
-        user: Optional[discord.Member] = None,
     ) -> Optional[List[float]]:
         """
         Method for other cogs to access and add embeddings

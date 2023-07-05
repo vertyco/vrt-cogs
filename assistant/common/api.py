@@ -327,7 +327,7 @@ class API(MixinMeta):
     # -------------------------------------------------------
     async def get_function_menu_embeds(self, user: discord.Member) -> List[discord.Embed]:
         func_dump = {k: v.dict() for k, v in self.db.functions.items()}
-        registry = {"Assistant": func_dump}
+        registry = {"Assistant-Custom": func_dump}
         for cog_name, function_schemas in self.registry.items():
             cog = self.bot.get_cog(cog_name)
             if not cog:
@@ -353,10 +353,16 @@ class API(MixinMeta):
                 embed = discord.Embed(
                     title="Custom Functions", description=function_name, color=discord.Color.blue()
                 )
-                if cog_name != "Assistant":
+                if cog_name != "Assistant-Custom":
                     embed.add_field(
                         name="3rd Party",
                         value=f"This function is managed by the `{cog_name}` cog",
+                        inline=False,
+                    )
+                elif cog_name == "Assistant":
+                    embed.add_field(
+                        name="Internal Function",
+                        value="This is an internal command that can only be used when interacting with a tutor",
                         inline=False,
                     )
                 schema = json.dumps(func["jsonschema"], indent=2)

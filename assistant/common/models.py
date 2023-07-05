@@ -31,6 +31,8 @@ class GuildSettings(BaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
     embeddings: Dict[str, Embedding] = {}
+    blacklist: List[int] = []  # Channel/Role/User IDs
+    tutors: List[int] = []  # Role or user IDs
     top_n: int = 3
     min_relatedness: float = 0.75
     embed_method: Literal["dynamic", "static", "hybrid"] = "dynamic"
@@ -49,7 +51,6 @@ class GuildSettings(BaseModel):
     timezone: str = "UTC"
     temperature: float = 0.0
     regex_blacklist: List[str] = [r"^As an AI language model,"]
-    blacklist: List[int] = []  # Channel/Role/User IDs
     block_failed_regex: bool = False
 
     max_token_role_override: Dict[int, int] = {}
@@ -220,7 +221,10 @@ class DB(BaseModel):
         return self.conversations[key]
 
     def prep_functions(
-        self, bot: Red, conf: GuildSettings, registry: Dict[str, Dict[str, dict]]
+        self,
+        bot: Red,
+        conf: GuildSettings,
+        registry: Dict[str, Dict[str, dict]],
     ) -> Tuple[List[dict], Dict[str, Callable]]:
         """Prep custom and registry functions for use with the API
 

@@ -113,6 +113,14 @@ class Admin(MixinMeta):
             value=embedding_field,
             inline=False,
         )
+        tutors = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.tutors]
+        mentions = [i.mention for i in tutors]
+        tutor_field = (
+            "The following roles/users are considered tutors, "
+            "if function calls are on the model can create its own embeddings: "
+        )
+        tutor_field += humanize_list(sorted(mentions))
+        embed.add_field(name="Tutors", value=tutor_field, inline=False)
 
         custom_func_field = (
             f"`Function Calling:  `{conf.use_function_calls}\n"
@@ -1225,6 +1233,32 @@ class Admin(MixinMeta):
         else:
             conf.blacklist.append(channel_role_member.id)
             await ctx.send(f"{channel_role_member.name} has been added to the blacklist")
+        await self.save_conf()
+
+    @assistant.command(name="tutor", aliases=["tutors"])
+    async def tutor_settings(
+        self,
+        ctx: commands.Context,
+        *,
+        role_or_member: Union[
+            discord.Member,
+            discord.Role,
+        ],
+    ):
+        """
+        Add/Remove items from the tutor list.
+
+        If using OpenAI's function calling and talking to a tutor, the AI is able to create its own embeddings to remember later
+
+        `role_or_member` can be a member or role
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if role_or_member.id in conf.tutors:
+            conf.tutors.remove(role_or_member.id)
+            await ctx.send(f"{role_or_member.name} has been removed from the tutor list")
+        else:
+            conf.tutors.append(role_or_member.id)
+            await ctx.send(f"{role_or_member.name} has been added to the tutor list")
         await self.save_conf()
 
     @assistant.group(name="override")
