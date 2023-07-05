@@ -163,3 +163,5 @@ template/
 migrate.py
 stonks/
 custom-functions/
+uncomp/
+compress.py
