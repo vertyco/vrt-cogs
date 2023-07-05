@@ -77,3 +77,21 @@ READ_EXTENSIONS = [
     ".batch",
     ".shell",
 ]
+TUTOR_SCHEMA = {
+    "name": "_learn",
+    "description": "Use this function to store information to reference later when someone corrects you or tells you something you didnt know",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "embedding_name": {
+                "type": "string",
+                "description": "Entry name for the embedding, should be less than 30 characters",
+            },
+            "embedding_text": {
+                "type": "string",
+                "description": "Information you want to store for later, should be less than 4000 characters",
+            },
+        },
+        "required": ["embedding_name", "embedding_text"],
+    },
+}
