@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from io import BytesIO
 
 import discord
 from redbot.core import commands
@@ -42,7 +43,7 @@ class Base(MixinMeta):
 
     @commands.command(name="convostats")
     @commands.guild_only()
-    async def token_count(self, ctx: commands.Context, *, user: discord.Member = None):
+    async def show_convo_stats(self, ctx: commands.Context, *, user: discord.Member = None):
         """
         Check the token and message count of yourself or another user's conversation for this channel
 
@@ -156,3 +157,30 @@ class Base(MixinMeta):
                     txt += boxed
                     embed = discord.Embed(description=txt)
                     await ctx.send(embed=embed)
+
+    @commands.command(name="showconvo")
+    @commands.guild_only()
+    @commands.guildowner()
+    async def show_convo(self, ctx: commands.Context, *, user: discord.Member = None):
+        """
+        View the current transcript of a conversation
+
+        This is mainly here for moderation purposes
+        """
+        if not user:
+            user = ctx.author
+        conversation = self.db.get_conversation(user.id, ctx.channel.id, ctx.guild.id)
+        if not conversation.messages:
+            return await ctx.send("You have no conversation in this channel!")
+
+        text = ""
+        for message in conversation.messages:
+            role = message["role"]
+            content = message["content"]
+            text += f"{role}: {content}\n"
+
+        buffer = BytesIO(text.encode())
+        buffer.name = f"{ctx.author.name}_transcript.txt"
+        buffer.seek(0)
+        file = discord.File(buffer)
+        await ctx.send("Here is your conversation transcript!", file=file)
