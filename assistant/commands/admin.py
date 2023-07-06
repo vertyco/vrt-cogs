@@ -474,7 +474,7 @@ class Admin(MixinMeta):
             return await ctx.send_help()
         if channel is None and conf.channel_id:
             await ctx.send("Assistant channel has been removed")
-            conf.channel_id = None
+            conf.channel_id = 0
         elif channel and conf.channel_id:
             await ctx.send("Assistant channel has been overwritten")
             conf.channel_id = channel.id

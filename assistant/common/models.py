@@ -37,7 +37,7 @@ class GuildSettings(BaseModel):
     top_n: int = 3
     min_relatedness: float = 0.75
     embed_method: Literal["dynamic", "static", "hybrid"] = "dynamic"
-    channel_id: int = 0
+    channel_id: Optional[int] = 0
     api_key: Optional[str] = None
     endswith_questionmark: bool = False
     min_length: int = 7
