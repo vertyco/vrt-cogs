@@ -215,10 +215,8 @@ class UserCommands(MixinMeta, ABC):
                 self.init_user_weekly(guild_id, user_id)
             self.data[guild_id]["weekly"]["users"][user_id]["stars"] += 1
 
-        if mention:
-            await ctx.send(_("You just gave a star to ") + f"{user.mention}!")
-        else:
-            await ctx.send(_("You just gave a star to ") + f"**{user.name}**!")
+        name = user.mention if mention else f"**{user.name}**"
+        await ctx.send(_("You just gave a star to {}!").format(name))
 
     # For testing purposes
     @commands.command(name="mocklvl", hidden=True)
