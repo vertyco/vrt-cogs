@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import pytz
-from openai.error import APIConnectionError, InvalidRequestError
+from openai.error import APIConnectionError, AuthenticationError, InvalidRequestError
 from redbot.core import bank
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
@@ -108,6 +108,11 @@ class ChatHandler(MixinMeta):
                 else:
                     log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
                     return
+            except AuthenticationError:
+                if message.author == message.guild.owner:
+                    reply = "Invalid API key, please set a new valid key!"
+                else:
+                    reply = "Uh oh, looks like my API key is invalid!"
             except KeyError as e:
                 log.debug("get_chat_response error", exc_info=e)
                 await message.channel.send(
@@ -440,17 +445,17 @@ class ChatHandler(MixinMeta):
 
             if conf.embed_method == "static":
                 conversation.update_messages(
-                    f"### Context:\n{joined}", "user", str(author.id) if author else None
+                    f"Context:\n{joined}", "user", str(author.id) if author else None
                 )
 
             elif conf.embed_method == "dynamic":
-                system_prompt += f"\n\n### Context:\n{joined}"
+                system_prompt += f"\n\nContext:\n{joined}"
 
             elif conf.embed_method == "hybrid":
                 if len(embeddings) > 1:
-                    system_prompt += f"\n\n### Context:\n{embeddings[1:]}"
+                    system_prompt += f"\n\nContext:\n{embeddings[1:]}"
                 conversation.update_messages(
-                    f"### Context:\n{embeddings[0]}",
+                    f"Context:\n{embeddings[0]}",
                     "user",
                     str(author.id) if author else None,
                 )
