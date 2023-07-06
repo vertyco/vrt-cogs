@@ -78,18 +78,18 @@ READ_EXTENSIONS = [
     ".shell",
 ]
 TUTOR_SCHEMA = {
-    "name": "_learn",
-    "description": "Use this function to store information to reference later when someone corrects you or tells you something you didnt know",
+    "name": "_knowledge_store",
+    "description": "Store information to reference later, useful when someone corrects you or tells you something you didn't know",
     "parameters": {
         "type": "object",
         "properties": {
             "embedding_name": {
                 "type": "string",
-                "description": "Entry name for the embedding, should be less than 30 characters",
+                "description": "A short unique name for the embedding entry",
             },
             "embedding_text": {
                 "type": "string",
-                "description": "Information you want to store for later, should be less than 4000 characters",
+                "description": "The information to be stored",
             },
         },
         "required": ["embedding_name", "embedding_text"],
