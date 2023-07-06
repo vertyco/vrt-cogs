@@ -570,12 +570,12 @@ class Admin(MixinMeta):
     @assistant.command(name="temperature")
     async def set_temperature(self, ctx: commands.Context, temperature: float):
         """
-        Set the temperature for the model (0.0 - 1.0)
+        Set the temperature for the model (0.0 - 2.0)
 
-        Closer to 0 is more concise and accurate while closer to 1 is more imaginative
+        Closer to 0 is more concise and accurate while closer to 2 is more imaginative
         """
-        if not 0 <= temperature <= 1:
-            return await ctx.send("Temperature must be between **0.0** and **1.0**")
+        if not 0 <= temperature <= 2:
+            return await ctx.send("Temperature must be between **0.0** and **2.0**")
         temperature = round(temperature, 2)
         conf = self.db.get_conf(ctx.guild)
         conf.temperature = temperature
