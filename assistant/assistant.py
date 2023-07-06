@@ -47,7 +47,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.4.0"
+    __version__ = "4.4.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -179,7 +179,6 @@ class Assistant(
     async def save_loop(self):
         if not self.db.persistent_conversations:
             return
-        await asyncio.to_thread(self._cleanup_db)
         await self.save_conf()
 
     async def _learn(
