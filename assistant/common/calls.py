@@ -30,11 +30,11 @@ from .constants import SUPPORTS_FUNCTIONS
             ServiceUnavailableError,
         ]
     ),
-    wait=wait_random_exponential(min=1, max=5),
+    wait=wait_random_exponential(min=5, max=15),
     stop=stop_after_attempt(3),
     reraise=True,
 )
-@cached(ttl=1800)
+@cached(ttl=3600)
 async def request_embedding_raw(
     text: str,
     api_key: str,
@@ -59,7 +59,7 @@ async def request_embedding_raw(
             ServiceUnavailableError,
         ]
     ),
-    wait=wait_random_exponential(min=1, max=5),
+    wait=wait_random_exponential(min=5, max=15),
     stop=stop_after_attempt(3),
     reraise=True,
 )
@@ -105,7 +105,7 @@ async def request_chat_completion_raw(
             ServiceUnavailableError,
         ]
     ),
-    wait=wait_random_exponential(min=1, max=5),
+    wait=wait_random_exponential(min=5, max=15),
     stop=stop_after_attempt(3),
     reraise=True,
 )
