@@ -181,7 +181,7 @@ class Assistant(
             return
         await self.save_conf()
 
-    async def _learn(
+    async def _knowledge_store(
         self,
         guild: discord.Guild,
         user: discord.Member,
