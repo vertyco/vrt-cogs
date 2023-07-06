@@ -78,8 +78,8 @@ READ_EXTENSIONS = [
     ".shell",
 ]
 TUTOR_SCHEMA = {
-    "name": "_knowledge_store",
-    "description": "Use this function as needed to store info in your 'memory' to reference later",
+    "name": "knowledge_store",
+    "description": "Use this function to store information about something, useful when someone corrects you or tells you something new",
     "parameters": {
         "type": "object",
         "properties": {
@@ -89,7 +89,7 @@ TUTOR_SCHEMA = {
             },
             "embedding_text": {
                 "type": "string",
-                "description": "The information to be stored",
+                "description": "A summary or snippet of useful information",
             },
         },
         "required": ["embedding_name", "embedding_text"],
