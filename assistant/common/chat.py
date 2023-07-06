@@ -447,23 +447,21 @@ class ChatHandler(MixinMeta):
             joined = "\n".join(embeddings)
 
             if conf.embed_method == "static":
-                conversation.update_messages(
-                    f"Context:\n{joined}", "user", str(author.id) if author else None
-                )
+                conversation.update_messages(joined, "user", str(author.id) if author else None)
 
             elif conf.embed_method == "dynamic":
-                system_prompt += f"\n\nContext:\n{joined}"
+                initial_prompt += f"\n\n{joined}"
 
-            elif conf.embed_method == "hybrid":
+            else:  # Hybrid embedding
                 if len(embeddings) > 1:
-                    system_prompt += f"\n\nContext:\n{embeddings[1:]}"
+                    initial_prompt += f"\n\n{embeddings[1:]}"
                 conversation.update_messages(
-                    f"Context:\n{embeddings[0]}",
-                    "user",
-                    str(author.id) if author else None,
+                    embeddings[0], "user", str(author.id) if author else None
                 )
 
-        messages = conversation.prepare_chat(message, initial_prompt, system_prompt)
+        messages = conversation.prepare_chat(
+            message, initial_prompt.strip(), system_prompt.strip()
+        )
         return messages
 
     async def send_reply(
