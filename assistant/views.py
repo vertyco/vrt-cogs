@@ -190,9 +190,7 @@ class EmbeddingMenu(discord.ui.View):
             )
         if name in self.conf.embeddings:
             return await self.ctx.send(f"An embedding with the name `{name}` already exists!")
-        self.conf.embeddings[name] = Embedding(
-            text=text, embedding=embedding
-        )
+        self.conf.embeddings[name] = Embedding(text=text, embedding=embedding)
         await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
@@ -246,9 +244,7 @@ class EmbeddingMenu(discord.ui.View):
             return await interaction.followup.send(
                 "Failed to edit that embedding, please try again later", ephemeral=True
             )
-        self.conf.embeddings[modal.name] = Embedding(
-            text=modal.text, embedding=embedding
-        )
+        self.conf.embeddings[modal.name] = Embedding(text=modal.text, embedding=embedding)
         if modal.name != name:
             del self.conf.embeddings[name]
         await self.get_pages()
@@ -575,7 +571,7 @@ class CodeMenu(discord.ui.View):
             return await interaction.response.send_message("No code to inspect!", ephemeral=True)
         function_name = self.pages[self.page].description
         if function_name in self.db.functions:
-            entry = self.db.functions[function_name]
+            entry = self.db.functions[function_name].jsonschema
         else:
             for functions in self.registry.values():
                 if function_name in functions:
@@ -585,7 +581,7 @@ class CodeMenu(discord.ui.View):
                 return await interaction.response.send_message("Cannot find function!")
         files = [
             discord.File(
-                BytesIO(json.dumps(entry.jsonschema, indent=2).encode()),
+                BytesIO(json.dumps(entry, indent=2).encode()),
                 filename=f"{function_name}.json",
             ),
             discord.File(BytesIO(entry.code.encode()), filename=f"{function_name}.py"),
