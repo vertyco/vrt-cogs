@@ -75,7 +75,7 @@ class ChatHandler(MixinMeta):
 
         if hasattr(message, "reference") and message.reference:
             ref = message.reference.resolved
-            if ref and ref.author.id != message.author.id:
+            if ref and ref.author.id not in [message.author.id, self.bot.user.id]:
                 question = (
                     f"{ref.author.display_name} said: {ref.content}\n\n"
                     f"{message.author.display_name}: {question}"
