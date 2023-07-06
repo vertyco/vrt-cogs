@@ -190,6 +190,8 @@ class Assistant(
         *args,
         **kwargs,
     ):
+        if len(embedding_name) > 45:
+            return "Error: embedding_name should be 45 characters or less!"
         conf = self.db.get_conf(guild)
         if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
             return f"User {user.display_name} is not recognized as a tutor!"
