@@ -353,8 +353,11 @@ class ChatHandler(MixinMeta):
 
             # Ensure response isnt too large
             result = await self.cut_text_by_tokens(result, conf, max_tokens)
-
-            log.info(f"Called function {function_name}\nParams: {params}\nResult: {result}")
+            info = (
+                f"Called function {function_name} in {guild.name} for {author.display_name}\n"
+                f"Params: {params}\nResult: {result}"
+            )
+            log.info(info)
             messages.append({"role": "function", "name": function_name, "content": result})
 
         if calls > 1:
