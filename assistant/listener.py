@@ -45,24 +45,23 @@ class AssistantListener(MixinMeta):
 
         channel = message.channel
         mention_ids = [m.id for m in message.mentions]
-        # Return under these conditions
-        if self.bot.user.id not in mention_ids:
-            # Ignore channels that arent a dedicated assistant channel
-            if channel.id != conf.channel_id:
+
+        # Ignore channels that arent a dedicated assistant channel
+        if self.bot.user.id not in mention_ids and channel.id != conf.channel_id:
+            return
+
+        # Ignore references to other members unless bot is pinged
+        if hasattr(message, "reference") and message.reference:
+            ref = message.reference.resolved
+            if ref and ref.author.id != self.bot.user.id and self.bot.user.id not in mention_ids:
                 return
-            # Ignore references to other members unless bot is pinged
-            if hasattr(message, "reference") and message.reference:
-                ref = message.reference.resolved
-                if ref and ref.author.id != self.bot.user.id:
-                    return
 
         if not await can_use(message, conf.blacklist, respond=False):
             return
-        mentions = [member.id for member in message.mentions]
         if (
             not message.content.endswith("?")
             and conf.endswith_questionmark
-            and self.bot.user.id not in mentions
+            and self.bot.user.id not in mention_ids
         ):
             return
 

@@ -73,6 +73,14 @@ class ChatHandler(MixinMeta):
                 text = file_bytes
             question += f'\n\nUploaded File ({i.filename})\n"""\n{text}\n"""\n'
 
+        if hasattr(message, "reference") and message.reference:
+            ref = message.reference.resolved
+            if ref and ref.author.id != message.author.id:
+                question = (
+                    f"{ref.author.display_name} said: {ref.content}\n\n"
+                    f"{message.author.display_name}: {question}"
+                )
+
         if get_last_message:
             conversation = self.db.get_conversation(
                 message.author.id, message.channel.id, message.guild.id
