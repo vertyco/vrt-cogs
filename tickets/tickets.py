@@ -5,6 +5,7 @@ import logging
 import discord
 from discord.ext import tasks
 from redbot.core import Config, commands
+from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
@@ -29,7 +30,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.3"
+    __version__ = "2.0.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -39,9 +40,8 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         """No data to delete"""
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
+    def __init__(self, bot: Red):
+        self.bot: Red = bot
         self.config = Config.get_conf(self, 117117, force_registration=True)
         default_guild = {
             # Settings
@@ -231,6 +231,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                     if message_id := ticket_info.get("message_id"):
                         view = CloseView(self.bot, self.config, int(uid), ticket_channel)
                         self.bot.add_view(view, message_id=message_id)
+                        self.views.append(view)
 
                     if not ticket_info["logmsg"]:
                         continue
