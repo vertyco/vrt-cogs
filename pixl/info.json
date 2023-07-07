@@ -22,10 +22,8 @@
   "required_cogs": {},
   "requirements": [
     "Pillow",
-    "aiohttp",
     "aiocache",
-    "tabulate",
-    "rapidfuzz"
+    "tabulate"
   ],
   "short": "Image guessing game!",
   "tags": [

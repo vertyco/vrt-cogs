@@ -79,7 +79,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.2.0"
+    __version__ = "3.2.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -552,7 +552,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             return False
         self.data[guild.id]["users"][str(user.id)]["stars"] += 1
         return True
-
 
     async def check_levelups(self, guild_id: int, user_id: str, message: discord.Message = None):
         base = self.data[guild_id]["base"]

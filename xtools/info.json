@@ -26,8 +26,7 @@
     "xmltojson",
     "xbox-webapi",
     "utils",
-    "tabulate",
-    "pytz"
+    "tabulate"
   ],
   "short": "Get Xbox Live Info and Player Stats.",
   "tags": [
