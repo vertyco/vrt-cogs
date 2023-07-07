@@ -73,13 +73,23 @@ class ChatHandler(MixinMeta):
                 text = file_bytes
             question += f'\n\nUploaded File ({i.filename})\n"""\n{text}\n"""\n'
 
+        # If referencing a message that isnt part of the user's conversation, include the context
         if hasattr(message, "reference") and message.reference:
             ref = message.reference.resolved
-            if ref and ref.author.id not in [message.author.id, self.bot.user.id]:
-                question = (
-                    f"{ref.author.display_name} said: {ref.content}\n\n"
-                    f"{message.author.display_name}: {question}"
-                )
+            if ref and ref.author.id != message.author.id:
+                # If we're referencing the bot, make sure the bot's message isnt referencing the convo
+                include = True
+                if hasattr(ref, "reference") and ref.reference:
+                    subref = ref.reference.resolved
+                    # Make sure the message being referenced isnt just the bot replying
+                    if subref and subref.author.id != message.author.id:
+                        include = False
+
+                if include:
+                    question = (
+                        f"{ref.author.name} said: {ref.content}\n\n"
+                        f"{message.author.name} replying to {ref.author.name}: {question}"
+                    )
 
         if get_last_message:
             conversation = self.db.get_conversation(
