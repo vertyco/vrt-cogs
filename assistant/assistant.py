@@ -207,7 +207,7 @@ class Assistant(
                 return "Failed to create embedding!"
             return f"The {embedding_name} embedding entry has been created, you can now reference it later"
         except EmbeddingEntryExists:
-            return f"An embedding entry with the name {embedding_name} already exists!"
+            return "Error: embedding_name already exists!"
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
