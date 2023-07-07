@@ -89,7 +89,7 @@ TUTOR_SCHEMA = {
             },
             "embedding_text": {
                 "type": "string",
-                "description": "A summary or snippet of useful information",
+                "description": "A summary of the information to be stored based on the context of the conversation or correction",
             },
         },
         "required": ["embedding_name", "embedding_text"],
