@@ -12,7 +12,6 @@ from typing import (
     Union,
 )
 
-import PIL
 from PIL import Image, ImageDraw, ImageFont
 
 from .helpers import NodeType, getsize, to_nodes
@@ -78,9 +77,7 @@ class Pilmoji:
             source = source()
 
         elif not isinstance(source, BaseSource):
-            raise TypeError(
-                f"source must inherit from BaseSource, not {source.__class__}."
-            )
+            raise TypeError(f"source must inherit from BaseSource, not {source.__class__}.")
 
         self.source: BaseSource = source
 
@@ -210,9 +207,7 @@ class Pilmoji:
         if emoji_scale_factor is None:
             emoji_scale_factor = self._default_emoji_scale_factor
 
-        return getsize(
-            text, font, spacing=spacing, emoji_scale_factor=emoji_scale_factor
-        )
+        return getsize(text, font, spacing=spacing, emoji_scale_factor=emoji_scale_factor)
 
     def text(
         self,
@@ -300,10 +295,10 @@ class Pilmoji:
             for node in line:
                 content = node.content
 
-                if PIL.__version__ >= "9.2.0":
-                    width = int(font.getlength(content))
-                else:
+                try:
                     width, _ = font.getsize(content)
+                except AttributeError:
+                    width = int(font.getlength(content))
 
                 if node.type is NodeType.text:
                     self.draw.text((x, y), content, *args, **kwargs)

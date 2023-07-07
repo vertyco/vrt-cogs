@@ -25,9 +25,7 @@
     "aiocache",
     "ujson",
     "msgpack",
-    "aiohttp",
     "pydantic<=1.10.10",
-    "orjson",
     "json5",
     "tiktoken",
     "scipy",
@@ -35,9 +33,7 @@
     "tenacity",
     "matplotlib",
     "plotly",
-    "pandas",
-    "rapidfuzz",
-    "pytz"
+    "pandas"
   ],
   "short": "Another Chat GPT Cog",
   "tags": [

@@ -18,8 +18,7 @@
   "requirements": [
     "pandas",
     "plotly",
-    "kaleido",
-    "rapidfuzz"
+    "kaleido"
   ],
   "short": "Economy tracker",
   "tags": [
