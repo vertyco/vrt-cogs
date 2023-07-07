@@ -433,8 +433,16 @@ class ChatHandler(MixinMeta):
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
         params = await asyncio.to_thread(get_params, self.bot, guild, now, author, channel, extras)
-        system_prompt = conf.system_prompt.format(**params)
-        initial_prompt = conf.prompt.format(**params)
+
+        def format_string(text: str):
+            """Instead of format(**params) possibly giving a KeyError if prompt has code in it"""
+            for k, v in params.items():
+                key = "{" + k + "}"
+                text = text.replace(key, str(v))
+            return text
+
+        system_prompt = format_string(conf.system_prompt)
+        initial_prompt = format_string(conf.prompt)
 
         current_tokens = await self.get_token_count(message + system_prompt + initial_prompt, conf)
         current_tokens += await self.convo_token_count(conf, conversation)
