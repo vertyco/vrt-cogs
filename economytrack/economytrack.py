@@ -119,7 +119,6 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
-        """Registers a command with Assistant enabling it to access to command docs"""
         schema1 = {
             "name": "get_member_count_info",
             "description": "Get member stats of the current server over a period of time",

@@ -240,7 +240,6 @@ class Fluent(commands.Cog):
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
-        """Registers a command with Assistant enabling it to access translations"""
         schema = {
             "name": "get_translation",
             "description": "Translate text to another language",

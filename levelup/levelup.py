@@ -2976,7 +2976,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
-        """Registers a command with Assistant enabling it to access to command docs"""
         schema = {
             "name": "get_user_profile",
             "description": "get a users level, xp, voice time and other stats about their LevelUp profile in the discord",
