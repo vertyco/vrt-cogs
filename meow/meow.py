@@ -28,7 +28,7 @@ class Meow(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -62,7 +62,7 @@ class Meow(commands.Cog):
         else:
             return await ctx.send(self.get_cat())
 
-    def get_cat(self) -> str:
+    def get_cat(self, *args, **kwargs) -> str:
         return random.choice(CATS)
 
     @commands.Cog.listener()
