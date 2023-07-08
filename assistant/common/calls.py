@@ -34,7 +34,7 @@ from .constants import SUPPORTS_FUNCTIONS
     stop=stop_after_attempt(3),
     reraise=True,
 )
-@cached(ttl=3600)
+@cached(ttl=21600)
 async def request_embedding_raw(
     text: str,
     api_key: str,
