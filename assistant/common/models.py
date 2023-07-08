@@ -85,6 +85,8 @@ class GuildSettings(BaseModel):
         strings_and_relatedness = [
             i for i in strings_and_relatedness if i[2] >= self.min_relatedness
         ]
+        if not strings_and_relatedness:
+            return []
         strings_and_relatedness.sort(key=lambda x: x[2], reverse=True)
         return strings_and_relatedness[: self.top_n]
 
