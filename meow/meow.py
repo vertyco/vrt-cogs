@@ -69,7 +69,7 @@ class Meow(commands.Cog):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         schema = {
             "name": "get_cat",
-            "description": "get a random ascii cat",
+            "description": "generates ascii art of a cat face emoji",
             "parameters": {
                 "type": "object",
                 "properties": {},
