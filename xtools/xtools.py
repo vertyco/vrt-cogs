@@ -967,7 +967,6 @@ class XTools(commands.Cog):
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
-        """Registers a command with Assistant enabling it to access to command docs"""
         schema = {
             "name": "get_gamertag_profile",
             "description": "Get details about an Xbox Gamertag profile like gamerscore, bio, followers, ect..",
