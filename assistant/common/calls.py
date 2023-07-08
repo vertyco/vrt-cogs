@@ -69,6 +69,7 @@ async def request_chat_completion_raw(
     messages: List[dict],
     temperature: float,
     api_key: str,
+    max_tokens: int,
     api_base: Optional[str] = None,
     functions: List[dict] = [],
     timeout: int = 60,
@@ -79,6 +80,7 @@ async def request_chat_completion_raw(
             messages=messages,
             temperature=temperature,
             api_key=api_key,
+            max_tokens=max_tokens,
             api_base=api_base,
             functions=functions,
             timeout=timeout,
@@ -89,6 +91,7 @@ async def request_chat_completion_raw(
             messages=messages,
             temperature=temperature,
             api_key=api_key,
+            max_tokens=max_tokens,
             api_base=api_base,
             timeout=timeout,
         )
@@ -115,8 +118,8 @@ async def request_completion_raw(
     prompt: str,
     temperature: float,
     api_key: str,
+    max_tokens: int,
     api_base: Optional[str] = None,
-    max_tokens: int = 250,
     timeout: int = 60,
 ) -> str:
     response = await openai.Completion.acreate(
@@ -124,8 +127,8 @@ async def request_completion_raw(
         prompt=prompt,
         temperature=temperature,
         api_key=api_key,
-        api_base=api_base,
         max_tokens=max_tokens,
+        api_base=api_base,
         timeout=timeout,
     )
     return response["choices"][0]["text"]

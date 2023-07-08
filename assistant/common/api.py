@@ -47,9 +47,9 @@ class API(MixinMeta):
                 messages=messages,
                 temperature=conf.temperature,
                 api_key=api_key,
+                max_tokens=max_response_tokens,
                 api_base=api_base,
                 functions=functions,
-                max_tokens=max_response_tokens,
             )
 
         compiled = compile_messages(messages)
@@ -59,8 +59,8 @@ class API(MixinMeta):
             prompt=prompt,
             temperature=conf.temperature,
             api_key=api_key,
-            api_base=api_base,
             max_tokens=max_response_tokens,
+            api_base=api_base,
         )
         for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
             response = response.replace(i, "").strip()
