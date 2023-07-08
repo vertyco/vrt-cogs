@@ -71,20 +71,21 @@ class Admin(MixinMeta):
             f"`Endpoint Override: `{conf.endpoint_override}\n" if conf.endpoint_override else ""
         )
         desc = (
-            f"`OpenAI Version:    `{VERSION}\n"
-            f"`Model:             `{conf.model}\n{override}"
-            f"`Enabled:           `{conf.enabled}\n"
-            f"`Timezone:          `{conf.timezone}\n"
-            f"`Channel:           `{channel}\n"
-            f"`? Required:        `{conf.endswith_questionmark}\n"
-            f"`Mentions:          `{conf.mention}\n"
-            f"`Max Retention:     `{conf.max_retention}\n"
-            f"`Retention Expire:  `{conf.max_retention_time}s\n"
-            f"`Max Tokens:        `{conf.max_tokens}\n"
-            f"`Min Length:        `{conf.min_length}\n"
-            f"`Temperature:       `{conf.temperature}\n"
-            f"`System Message:    `{humanize_number(system_tokens)} tokens\n"
-            f"`Initial Prompt:    `{humanize_number(prompt_tokens)} tokens\n"
+            f"`OpenAI Version:      `{VERSION}\n"
+            f"`Model:               `{conf.model}\n{override}"
+            f"`Enabled:             `{conf.enabled}\n"
+            f"`Timezone:            `{conf.timezone}\n"
+            f"`Channel:             `{channel}\n"
+            f"`? Required:          `{conf.endswith_questionmark}\n"
+            f"`Mentions:            `{conf.mention}\n"
+            f"`Max Retention:       `{conf.max_retention}\n"
+            f"`Retention Expire:    `{conf.max_retention_time}s\n"
+            f"`Max Tokens:          `{conf.max_tokens}\n"
+            f"`Max Response Tokens: `{conf.max_response_tokens}\n"
+            f"`Min Length:          `{conf.min_length}\n"
+            f"`Temperature:         `{conf.temperature}\n"
+            f"`System Message:      `{humanize_number(system_tokens)} tokens\n"
+            f"`Initial Prompt:      `{humanize_number(prompt_tokens)} tokens\n"
         )
 
         embed = discord.Embed(
@@ -223,6 +224,19 @@ class Admin(MixinMeta):
                 if field:
                     embed.add_field(
                         name="Max Message Retention Time Role Overrides", value=field, inline=False
+                    )
+
+            if overrides := conf.max_response_token_override:
+                field = ""
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                for role, retention_time in sorted_roles:
+                    if not role:
+                        continue
+                    field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
+                if field:
+                    embed.add_field(
+                        name="Max Response Token Role Overrides", value=field, inline=False
                     )
 
         embed.set_footer(text=f"Showing settings for {ctx.guild.name}")
@@ -663,7 +677,7 @@ class Admin(MixinMeta):
     @assistant.command(name="maxtokens")
     async def max_tokens(self, ctx: commands.Context, max_tokens: int):
         """
-        Set the max tokens the model can use at once
+        Set the max tokens that the bot will send to the model
 
         **Tips**
         - Max tokens are a soft cap, sometimes messages can be a little over
@@ -680,6 +694,19 @@ class Admin(MixinMeta):
             f"The maximum amount of tokens sent in a payload will be {max_tokens}.\n"
             "*Note that models with token limits lower than this will still be trimmed*"
         )
+        await ctx.send(txt)
+        await self.save_conf()
+
+    @assistant.command(name="maxresponsetokens")
+    async def max_response_tokens(self, ctx: commands.Context, max_tokens: int):
+        """
+        Set the max response tokens the model can respond with
+        """
+        if max_tokens < 10:
+            return await ctx.send("Use at least 10 tokens")
+        conf = self.db.get_conf(ctx.guild)
+        conf.max_response_tokens = max_tokens
+        txt = f"The maximum amount of tokens in the models responses will be {max_tokens}."
         await ctx.send(txt)
         await self.save_conf()
 
@@ -1341,6 +1368,32 @@ class Admin(MixinMeta):
         else:
             conf.max_token_role_override[role.id] = max_tokens
             await ctx.send(f"Max token override for {role.mention} added!")
+
+        await self.save_conf()
+
+    @override.command(name="maxresponsetokens")
+    async def max_response_token_override(
+        self, ctx: commands.Context, max_tokens: int, *, role: discord.Role
+    ):
+        """
+        Assign a max response token override to a role
+
+        *Specify same role and token count to remove the override*
+        """
+        if max_tokens < 10:
+            return await ctx.send("Use at least 10 tokens")
+        conf = self.db.get_conf(ctx.guild)
+
+        if role.id in conf.max_response_token_override:
+            if conf.max_token_role_override[role.id] == max_tokens:
+                del conf.max_response_token_override[role.id]
+                await ctx.send(f"Max response token override for {role.mention} removed!")
+            else:
+                conf.max_response_token_override[role.id] = max_tokens
+                await ctx.send(f"Max response token override for {role.mention} overwritten!")
+        else:
+            conf.max_response_token_override[role.id] = max_tokens
+            await ctx.send(f"Max response token override for {role.mention} added!")
 
         await self.save_conf()
 
