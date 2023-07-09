@@ -271,7 +271,11 @@ class ChatHandler(MixinMeta):
                 log.warning(
                     f"Function response failed. functions: {len(function_calls)}", exc_info=e
                 )
-                response = await self.request_chat_response(messages, conf, member=author)
+                response = await self.request_response(
+                    messages=messages,
+                    conf=conf,
+                    member=author,
+                )
             except Exception as e:
                 log.error(
                     f"Exception occured for chat response.\nMessages: {messages}", exc_info=e
