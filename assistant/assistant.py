@@ -47,7 +47,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.4.4"
+    __version__ = "4.4.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -207,7 +207,7 @@ class Assistant(
                 return "Failed to create embedding!"
             return f"The {embedding_name} embedding entry has been created, you can now reference it later"
         except EmbeddingEntryExists:
-            return "Error: embedding_name already exists!"
+            return "An embedding with that entry name already exists"
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
