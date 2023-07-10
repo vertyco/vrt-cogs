@@ -1,18 +1,17 @@
-from unittest.mock import AsyncMock, MagicMock
+import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
 
-from .api import Result, TranslateManager
+try:
+    from .api import Result, TranslateManager
+except ImportError:
+    from api import Result, TranslateManager
 
 
 @pytest.fixture
-def bot():
-    return MagicMock()
-
-
-@pytest.fixture
-def manager(bot):
-    return TranslateManager(bot)
+def manager():
+    return TranslateManager()
 
 
 @pytest.mark.asyncio
@@ -50,3 +49,9 @@ async def test_same_text_translation(manager):
     assert result.text == "Hello"
     assert result.src == "en"
     assert result.dest == "en"
+
+
+if __name__ == "__main__":
+    trans = TranslateManager()
+    res = asyncio.run(trans.google("hello", "es"))
+    print(res)

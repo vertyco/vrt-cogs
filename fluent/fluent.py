@@ -12,7 +12,6 @@ from redbot.core.utils.chat_formatting import pagify
 
 from .api import TranslateManager
 
-translator = googletrans.Translator()
 log = logging.getLogger("red.vrt.fluent")
 fail_embed = discord.Embed(description="❌ API seems to be down at the moment.")
 
@@ -26,7 +25,7 @@ class Fluent(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.3.1"
+    __version__ = "1.3.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
