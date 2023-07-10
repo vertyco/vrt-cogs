@@ -79,7 +79,7 @@ READ_EXTENSIONS = [
 ]
 TUTOR_SCHEMA = {
     "name": "knowledge_store",
-    "description": "Use this function to store information about something, useful when someone corrects you or tells you something new",
+    "description": "Use this function to store information about something as an embedding, useful when someone corrects you or tells you something new",
     "parameters": {
         "type": "object",
         "properties": {

@@ -244,7 +244,6 @@ class ChatHandler(MixinMeta):
         last_function_response = ""
         last_function_name = ""
         calls = 0
-        repeats = 0
         while True:
             if calls >= conf.max_function_calls or conversation.function_count() >= 64:
                 function_calls = []
@@ -354,13 +353,9 @@ class ChatHandler(MixinMeta):
 
             # Calling the same function and getting the same result repeatedly is just insanity GPT
             if function_name == last_function_name and result == last_function_response:
-                repeats += 1
-                if repeats > 2:
-                    function_calls = pop_schema(function_name, function_calls)
-                    log.info(f"Popping {function_name} for repeats")
-                    continue
-            else:
-                repeats = 0
+                function_calls = pop_schema(function_name, function_calls)
+                log.info(f"Popping {function_name} for repeats")
+                continue
 
             last_function_name = function_name
             last_function_response = result
