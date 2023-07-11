@@ -160,6 +160,8 @@ class AdminCommands(MixinMeta):
         Set the message ID of a ticket panel
         Run this command in the same channel as the ticket panel message
         """
+        if message.author.id != self.bot.user.id:
+            return await ctx.send("I cannot add buttons to messages sent by other users!")
         panel_name = panel_name.lower()
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
