@@ -615,7 +615,7 @@ class Admin(MixinMeta):
             else:
                 await ctx.send("No embeddings needed to be refreshed")
 
-    @assistant.command(name="functioncalls")
+    @assistant.command(name="functioncalls", aliases=["usefunctions"])
     async def toggle_function_calls(self, ctx: commands.Context):
         """Toggle whether GPT can call functions
 
