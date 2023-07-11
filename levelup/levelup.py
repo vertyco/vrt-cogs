@@ -79,7 +79,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.2.1"
+    __version__ = "3.2.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -789,7 +789,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             cid = str(message.channel.id)
             cat_cid = str(message.channel.category.id) if message.channel.category else "0"
             if cid in channel_bonuses or cat_cid in channel_bonuses:
-                bonuschannelrange = channel_bonuses[cid]
+                bonus_id = cid if cid in channel_bonuses else cat_cid
+                bonuschannelrange = channel_bonuses[bonus_id]
                 bmin = int(bonuschannelrange[0])
                 bmax = int(bonuschannelrange[1]) + 1
                 bxp = random.choice(range(bmin, bmax))
