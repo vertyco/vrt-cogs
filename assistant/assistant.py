@@ -47,11 +47,17 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.4.6"
+    __version__ = "4.4.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
         return f"{helpcmd}\nVersion: {self.__version__}\nAuthor: {self.__author__}"
+
+    async def red_delete_data_for_user(self, *, requester, user_id: int):
+        """No data to delete"""
+        for key in self.db.conversations.copy():
+            if key.split("-")[0] == str(user_id):
+                del self.db.conversations[key]
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
