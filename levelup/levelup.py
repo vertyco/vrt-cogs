@@ -1669,16 +1669,15 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         config_root = json.loads(path.read_text())
         base_config = config_root[leveler_config_id]
 
-        mongo_config = base_config["MONGODB"]
-        if not mongo_config:
-            mongo_config = {
-                "host": "localhost",
-                "port": 27017,
-                "username": None,
-                "password": None,
-                "db_name": "leveler",
-            }
+        default_mongo_config = {
+            "host": "localhost",
+            "port": 27017,
+            "username": None,
+            "password": None,
+            "db_name": "leveler",
+        }
 
+        mongo_config = base_config.get("MONGODB", default_mongo_config)
         global_config = base_config["GLOBAL"]
         guild_config = base_config["GUILD"]
 
