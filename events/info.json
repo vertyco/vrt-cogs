@@ -19,7 +19,8 @@
   "required_cogs": {},
   "requirements": [
     "ujson",
-    "msgpack"
+    "msgpack",
+    "aiocache"
   ],
   "short": "Host and manage events in your server",
   "tags": [
