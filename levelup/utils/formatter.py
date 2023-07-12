@@ -1,4 +1,3 @@
-import copy
 import logging
 import math
 import random
@@ -6,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Union
 
 import discord
-from aiocache import SimpleMemoryCache, cached
+from aiocache import cached
 from aiohttp import ClientSession
 from redbot.core import commands
 from redbot.core.i18n import Translator
@@ -126,55 +125,43 @@ def get_attachments(ctx) -> list:
 
 
 def get_leaderboard(
-    ctx: commands.Context, conf: dict, stat: str, lbtype: str
+    ctx: commands.Context, settings: dict, stat: str, lbtype: str
 ) -> Union[List[discord.Embed], str]:
-    conf = dict(copy.deepcopy(conf))
     if lbtype == "weekly":
-        lb = conf["weekly"]["users"]
+        lb = settings["weekly"]["users"]
         title = _("Weekly ")
     else:
-        lb = conf["users"]
+        lb = {uid: data.copy() for uid, data in settings["users"].items()}
         title = _("LevelUp ")
-
-        prestige_req = conf["prestige"]
+        prestige_req = settings["prestige"]
         for uid, data in lb.items():
             prestige = data["prestige"]
             if prestige:
-                data["xp"] += prestige * get_xp(
-                    prestige_req, conf["base"], conf["exp"]
-                )
+                data["xp"] += prestige * get_xp(prestige_req, settings["base"], settings["exp"])
 
     if "v" in stat.lower():
-        sorted_users = sorted(
-            lb.items(), key=lambda x: x[1]["voice"], reverse=True
-        )
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["voice"], reverse=True)
         title += _("Voice Leaderboard")
         key = "voice"
         statname = _("Voicetime")
         col = "🎙️"
         total = time_formatter(sum(v["voice"] for v in lb.values()))
     elif "m" in stat.lower():
-        sorted_users = sorted(
-            lb.items(), key=lambda x: x[1]["messages"], reverse=True
-        )
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["messages"], reverse=True)
         title += _("Message Leaderboard")
         key = "messages"
         statname = _("Messages")
         col = "💬"
         total = humanize_number(round(sum(v["messages"] for v in lb.values())))
     elif "s" in stat.lower():
-        sorted_users = sorted(
-            lb.items(), key=lambda x: x[1]["stars"], reverse=True
-        )
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["stars"], reverse=True)
         title += _("Star Leaderboard")
         key = "stars"
         statname = _("Stars")
         col = "⭐"
         total = humanize_number(round(sum(v["stars"] for v in lb.values())))
     else:  # Exp
-        sorted_users = sorted(
-            lb.items(), key=lambda x: x[1]["xp"], reverse=True
-        )
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["xp"], reverse=True)
         title += _("Exp Leaderboard")
         key = "xp"
         statname = _("Exp")
@@ -182,7 +169,7 @@ def get_leaderboard(
         total = humanize_number(round(sum(v["xp"] for v in lb.values())))
 
     if lbtype == "weekly":
-        w = conf["weekly"]
+        w = settings["weekly"]
         desc = _("Total ") + f"{statname}: `{total}`\n"
         desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d>\n"
         if w["autoreset"]:
@@ -197,26 +184,15 @@ def get_leaderboard(
 
     if not sorted_users:
         if lbtype == "weekly":
-            txt = (
-                _("There is no data for the weekly ")
-                + statname.lower()
-                + _(" leaderboard yet")
-            )
+            txt = _("There is no data for the weekly ") + statname.lower() + _(" leaderboard yet")
         else:
-            txt = (
-                _("There is no data for the ")
-                + statname.lower()
-                + _(" leaderboard yet")
-            )
+            txt = _("There is no data for the ") + statname.lower() + _(" leaderboard yet")
         return txt
 
     you = ""
     for i in sorted_users:
         if i[0] == str(ctx.author.id):
-            you = (
-                _("You: ")
-                + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
-            )
+            you = _("You: ") + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
 
     pages = math.ceil(len(sorted_users) / 10)
     start = 0
@@ -284,7 +260,7 @@ def get_leaderboard(
     return embeds
 
 
-@cached(ttl=3600, cache=SimpleMemoryCache)
+@cached(ttl=3600)
 async def get_content_from_url(url: str):
     try:
         async with ClientSession() as session:
@@ -313,9 +289,7 @@ async def get_user_position(conf: dict, user_id: str) -> dict:
         total_xp += xp
         if user == user_id:
             user_xp = xp
-    sorted_users = sorted(
-        leaderboard.items(), key=lambda x: x[1], reverse=True
-    )
+    sorted_users = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     for i in sorted_users:
         if i[0] == user_id:
             if total_xp:
