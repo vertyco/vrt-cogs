@@ -79,7 +79,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.2.5"
+    __version__ = "3.2.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1666,11 +1666,18 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             return await ctx.send(_("No config found for Malarne's Leveler cog!"))
 
         leveler_config_id = "78008101945374987542543513523680608657"
-        base_config = json.loads(path.read_text())[leveler_config_id]
+        config_root = json.loads(path.read_text())
+        base_config = config_root[leveler_config_id]
 
         mongo_config = base_config["MONGODB"]
         if not mongo_config:
-            return await ctx.send(_("Couldnt find mongo config"))
+            mongo_config = {
+                "host": "localhost",
+                "port": 27017,
+                "username": None,
+                "password": None,
+                "db_name": "leveler",
+            }
 
         global_config = base_config["GLOBAL"]
         guild_config = base_config["GUILD"]
