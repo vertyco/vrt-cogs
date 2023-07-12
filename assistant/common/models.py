@@ -46,6 +46,7 @@ class GuildSettings(BaseModel):
     max_response_tokens: int = 500
     max_tokens: int = 4000
     mention: bool = False
+    mention_respond: bool = True  # TODO: add command to toggle
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
     endpoint_override: Optional[str] = None
