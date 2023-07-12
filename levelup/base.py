@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import functools
 import logging
 import math
 import os.path
@@ -52,9 +51,8 @@ _ = Translator("LevelUp", __file__)
 @cog_i18n(_)
 class UserCommands(MixinMeta, ABC):
     # Generate level up image
-    async def gen_levelup_img(self, args: dict):
-        func = functools.partial(self.generate_levelup, **args)
-        task = self.bot.loop.run_in_executor(self.threadpool, func)
+    async def gen_levelup_img(self, params: dict):
+        task = asyncio.to_thread(self.generate_levelup, kwargs=params)
         try:
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -62,12 +60,9 @@ class UserCommands(MixinMeta, ABC):
         return img
 
     # Generate profile image
-    async def gen_profile_img(self, args: dict, full: bool = True):
-        if full:
-            func = functools.partial(self.generate_profile, **args)
-        else:
-            func = functools.partial(self.generate_slim_profile, **args)
-        task = self.bot.loop.run_in_executor(self.threadpool, func)
+    async def gen_profile_img(self, params: dict, full: bool = True):
+        method = self.generate_profile if full else self.generate_slim_profile
+        task = asyncio.to_thread(method, kwargs=params)
         try:
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -83,9 +78,8 @@ class UserCommands(MixinMeta, ABC):
         try:
             # Try running it through profile generator blind to see if it errors
 
-            args = {"bg_image": image_url}
-            func = functools.partial(self.generate_profile, **args)
-            await self.bot.loop.run_in_executor(self.threadpool, func)
+            params = {"bg_image": image_url}
+            await asyncio.to_thread(self.generate_profile, kwargs=params)
         except Exception as e:
             if "cannot identify image file" in str(e):
                 await ctx.send(
@@ -104,8 +98,7 @@ class UserCommands(MixinMeta, ABC):
         if same and self.fdata["img"]:
             img = self.fdata["img"]
         else:
-            func = functools.partial(self.get_all_fonts)
-            task = self.bot.loop.run_in_executor(None, func)
+            task = asyncio.to_thread(self.get_all_fonts)
             try:
                 img = await asyncio.wait_for(task, timeout=60)
                 self.fdata["img"] = img
@@ -120,8 +113,7 @@ class UserCommands(MixinMeta, ABC):
         if same and self.fdata["img"]:
             img = self.fdata["img"]
         else:
-            func = functools.partial(self.get_all_backgrounds)
-            task = self.bot.loop.run_in_executor(None, func)
+            task = asyncio.to_thread(self.get_all_backgrounds)
             try:
                 img = await asyncio.wait_for(task, timeout=60)
                 self.bgdata["img"] = img
@@ -1031,8 +1023,9 @@ class UserCommands(MixinMeta, ABC):
             txt = _("Use the `") + str(ctx.clean_prefix) + _("startop` command for that")
             return await ctx.send(txt)
         conf = self.data[ctx.guild.id]
-        func = functools.partial(get_leaderboard, ctx, conf, stat, "normal")
-        embeds = await self.bot.loop.run_in_executor(None, func)
+
+        async with ctx.typing():
+            embeds = await asyncio.to_thread(get_leaderboard, ctx, conf, stat, "normal")
         if isinstance(embeds, str):
             return await ctx.send(embeds)
         if not embeds:
@@ -1142,8 +1135,7 @@ class UserCommands(MixinMeta, ABC):
             return await ctx.send(
                 _("There is no data for the weekly leaderboard yet, please chat a bit first.")
             )
-        func = functools.partial(get_leaderboard, ctx, conf, stat, "weekly")
-        embeds = await self.bot.loop.run_in_executor(None, func)
+        embeds = await asyncio.to_thread(get_leaderboard, ctx, conf, stat, "weekly")
         if isinstance(embeds, str):
             return await ctx.send(embeds)
 
