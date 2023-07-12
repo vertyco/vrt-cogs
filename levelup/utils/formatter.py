@@ -41,7 +41,8 @@ def time_to_level(
     while True:
         xp = random.choice(range(xp_range[0], xp_range[1]))
         xp_obtained += xp
-        time_to_reach_level += cooldown
+        # Wait up to an hour after cooldown for a little more realism
+        time_to_reach_level += cooldown + random.randint(0, 3600)
         if xp_obtained >= xp_needed:
             return time_to_reach_level
 
@@ -75,9 +76,8 @@ def get_bar(progress, total, perc=None, width: int = 20) -> str:
 
 # Format time from total seconds and format into readable string
 def time_formatter(time_in_seconds) -> str:
-    time_in_seconds = int(
-        time_in_seconds
-    )  # Some time differences get sent as a float so just handle it the dumb way
+    # Some time differences get sent as a float so just handle it the dumb way
+    time_in_seconds = int(time_in_seconds)
     minutes, seconds = divmod(time_in_seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
@@ -109,7 +109,7 @@ def get_next_reset(weekday: int, hour: int):
     return int(reset.replace(hour=hour, minute=0, second=0).timestamp())
 
 
-def get_attachments(ctx) -> list:
+def get_attachments(ctx) -> List[discord.Attachment]:
     """Get all attachments from context"""
     content = []
     if ctx.message.attachments:
@@ -131,13 +131,17 @@ def get_leaderboard(
         lb = settings["weekly"]["users"]
         title = _("Weekly ")
     else:
-        lb = {uid: data.copy() for uid, data in settings["users"].items()}
+        lb = settings["users"]
         title = _("LevelUp ")
-        prestige_req = settings["prestige"]
-        for uid, data in lb.items():
-            prestige = data["prestige"]
-            if prestige:
-                data["xp"] += prestige * get_xp(prestige_req, settings["base"], settings["exp"])
+
+        if "xp" in stat.lower():
+            lb = {uid: data.copy() for uid, data in settings["users"].items()}
+            prestige_req = settings["prestige"]
+            for uid, data in lb.items():
+                if prestige := data["prestige"]:
+                    data["xp"] += prestige * get_xp(
+                        prestige_req, settings["base"], settings["exp"]
+                    )
 
     if "v" in stat.lower():
         sorted_users = sorted(lb.items(), key=lambda x: x[1]["voice"], reverse=True)
@@ -205,8 +209,8 @@ def get_leaderboard(
         table = []
         for i in range(start, stop, 1):
             uid = sorted_users[i][0]
-            user = ctx.guild.get_member(int(uid))
-            user = user.name if user else uid
+            user_obj = ctx.guild.get_member(int(uid))
+            user = user_obj.display_name if user_obj else uid
             data = sorted_users[i][1]
 
             place = i + 1
@@ -244,13 +248,12 @@ def get_leaderboard(
             color=discord.Color.random(),
         )
         if DPY2:
-            if ctx.guild.icon:
-                embed.set_thumbnail(url=ctx.guild.icon.url)
+            embed.set_thumbnail(url=ctx.guild.icon)
         else:
             embed.set_thumbnail(url=ctx.guild.icon_url)
 
         if you:
-            embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} ｜ {you}")
+            embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} | {you}")
         else:
             embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages}")
 
