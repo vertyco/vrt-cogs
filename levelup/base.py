@@ -52,7 +52,7 @@ _ = Translator("LevelUp", __file__)
 class UserCommands(MixinMeta, ABC):
     # Generate level up image
     async def gen_levelup_img(self, params: dict):
-        task = asyncio.to_thread(self.generate_levelup, kwargs=params)
+        task = asyncio.to_thread(self.generate_levelup, **params)
         try:
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -62,7 +62,7 @@ class UserCommands(MixinMeta, ABC):
     # Generate profile image
     async def gen_profile_img(self, params: dict, full: bool = True):
         method = self.generate_profile if full else self.generate_slim_profile
-        task = asyncio.to_thread(method, kwargs=params)
+        task = asyncio.to_thread(method, **params)
         try:
             img = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
