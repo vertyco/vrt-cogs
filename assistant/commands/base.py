@@ -133,6 +133,8 @@ class Base(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.embeddings:
             return await ctx.send("You do not have any embeddings configured!")
+        if not conf.top_n:
+            return await ctx.send("Top N is set to 0 so no embeddings will be returned")
         if not await self.can_call_llm(conf, ctx):
             return
         async with ctx.typing():

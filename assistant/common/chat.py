@@ -201,14 +201,6 @@ class ChatHandler(MixinMeta):
         if isinstance(channel, int):
             channel = guild.get_channel(channel)
 
-        if "_learn" in function_map and author.id not in conf.tutors:
-            if not any([role.id in conf.tutors for role in author.roles]):
-                del function_map["_learn"]
-                for i in function_calls.copy():
-                    if i["name"] == "_learn":
-                        function_calls.remove(i)
-                        break
-
         query_embedding = []
         if conf.top_n:
             # Save on tokens by only getting embeddings if theyre enabled
@@ -227,6 +219,15 @@ class ChatHandler(MixinMeta):
 
         def pop_schema(name: str, calls: List[dict]):
             return [func for func in calls if func["name"] != name]
+
+        if "knowledge_store" in function_map and author.id not in conf.tutors:
+            if not any([role.id in conf.tutors for role in author.roles]):
+                function_calls = pop_schema("knowledge_store", function_calls)
+                del function_map["knowledge_store"]
+
+        if "knowledge_search" in function_map and not conf.top_n:
+            function_calls = pop_schema("knowledge_search", function_calls)
+            del function_map["knowledge_search"]
 
         max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(

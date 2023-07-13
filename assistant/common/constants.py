@@ -77,7 +77,7 @@ READ_EXTENSIONS = [
     ".batch",
     ".shell",
 ]
-TUTOR_SCHEMA = {
+KNOWLEDGE_STORE = {
     "name": "knowledge_store",
     "description": "Use this function to store information about something as an embedding, useful when someone corrects you or tells you something new",
     "parameters": {
@@ -93,5 +93,19 @@ TUTOR_SCHEMA = {
             },
         },
         "required": ["embedding_name", "embedding_text"],
+    },
+}
+KNOWLEDGE_SEARCH = {
+    "name": "knowledge_search",
+    "description": "Use this function to query the embedding database for related info",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "search_query": {
+                "type": "string",
+                "description": "The context you wish to search for",
+            }
+        },
+        "required": ["search_query"],
     },
 }
