@@ -43,7 +43,7 @@ class Assistant(
     **Support for self-hosted endpoints!**
     Assistant supports usage of **[Self-Hosted Models](https://github.com/vertyco/gpt-api)** via endpoint overrides.
     To set a custom endpoint for example: `[p]assist endpoint http://localhost:8000/v1`
-    This will now make calls to your self-hosted api
+    This will now make calls to your self-hosted api.
     """
 
     __author__ = "Vertyco#0117"
