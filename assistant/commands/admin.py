@@ -121,7 +121,8 @@ class Admin(MixinMeta):
             "if function calls are on the model can create its own embeddings: "
         )
         tutor_field += humanize_list(sorted(mentions))
-        embed.add_field(name="Tutors", value=tutor_field, inline=False)
+        if mentions:
+            embed.add_field(name="Tutors", value=tutor_field, inline=False)
 
         custom_func_field = (
             f"`Function Calling:  `{conf.use_function_calls}\n"
