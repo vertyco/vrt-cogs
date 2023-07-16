@@ -222,6 +222,7 @@ class TicketModal(Modal):
         for k, v in self.inputs.items():
             self.fields[k] = {"question": v.label, "answer": v.value}
         await interaction.response.defer()
+        self.stop()
 
 
 class SupportButton(Button):
@@ -314,6 +315,7 @@ class SupportButton(Button):
                 form_embed.set_author(name=title, icon_url=user.display_avatar.url)
             else:
                 form_embed.set_author(name=title)
+
             m = TicketModal(panel_title, modal)
             await interaction.response.send_modal(m)
             await m.wait()
