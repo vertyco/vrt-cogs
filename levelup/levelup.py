@@ -1663,7 +1663,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         path = cog_data_path(self).parent / "Leveler" / "settings.json"
         if not path.exists():
-            return await ctx.send(_("No config found for Malarne's Leveler cog!"))
+            return await ctx.send(_("No config found for Fixator's Leveler cog!"))
 
         leveler_config_id = "78008101945374987542543513523680608657"
         config_root = json.loads(path.read_text())
