@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.6"
+    __version__ = "1.6.7"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -151,7 +151,7 @@ class VrtUtils(commands.Cog):
             return await ctx.send(
                 f"Make sure you first `{ctx.clean_prefix}load downloader` before you can use this command."
             )
-        await ctx.invoke(cog_update_command, *cogs, reload=True)
+        await ctx.invoke(cog_update_command, True, *cogs)
 
     @commands.command(aliases=["diskbench"])
     @commands.is_owner()
