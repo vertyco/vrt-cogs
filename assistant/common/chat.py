@@ -459,7 +459,7 @@ class ChatHandler(MixinMeta):
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
-            embeddings.append(i[1])
+            embeddings.append(f'"""{i[1]}"""')
 
         if embeddings:
             joined = "\n".join(embeddings)
