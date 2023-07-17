@@ -29,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.6.3"
+    __version__ = "0.6.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -288,19 +288,19 @@ class AutoDocs(commands.Cog):
             i.qualified_name for i in cog.walk_commands()
         ]
         joined = "\n".join(names)
-        return f"Command Names:\n{joined}"
+        return f"Available commands for the {cog_name} cog:\n{joined}"
 
     async def get_cog_info(self, cog_name: str, *args, **kwargs):
         cog = self.bot.get_cog(cog_name)
         if not cog:
             return "Could not find that cog, check loaded cogs first"
         if desc := cog.help:
-            return desc
+            return f"Description of the {cog_name} cog: {desc}"
         return "This cog has no description"
 
     async def get_cog_list(self, *args, **kwargs):
         joined = "\n".join([i for i in self.bot.cogs])
-        return f"Cog Names:\n{joined}"
+        return f"Currently loaded cogs:\n{joined}"
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
