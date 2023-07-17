@@ -39,15 +39,20 @@ class API(MixinMeta):
         if conf.api_key:
             api_base = None
             api_key = conf.api_key
+
         max_response_tokens = conf.get_user_max_response_tokens(member)
         model = conf.get_user_model(member)
+        model_max_tokens = MODELS[model]
+        convo_tokens = await self.payload_token_count(conf, messages)
+        max_tokens = min(max_response_tokens, model_max_tokens - convo_tokens)
+
         if model in CHAT:
             return await request_chat_completion_raw(
                 model=model,
                 messages=messages,
                 temperature=conf.temperature,
                 api_key=api_key,
-                max_tokens=max_response_tokens,
+                max_tokens=max_tokens,
                 api_base=api_base,
                 functions=functions,
             )
@@ -59,7 +64,7 @@ class API(MixinMeta):
             prompt=prompt,
             temperature=conf.temperature,
             api_key=api_key,
-            max_tokens=max_response_tokens,
+            max_tokens=max_tokens,
             api_base=api_base,
         )
         for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
@@ -168,6 +173,9 @@ class API(MixinMeta):
     async def convo_token_count(self, conf: GuildSettings, convo: Conversation) -> int:
         """Fetch token count of stored messages"""
         return sum([(await self.get_token_count(i["content"], conf)) for i in convo.messages])
+
+    async def payload_token_count(self, conf: GuildSettings, messages: List[dict]):
+        return sum([(await self.get_token_count(i["content"], conf)) for i in messages])
 
     async def prompt_token_count(self, conf: GuildSettings) -> int:
         """Fetch token count of system and initial prompts"""
