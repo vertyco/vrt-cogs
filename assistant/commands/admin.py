@@ -28,6 +28,7 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
+from ..common.calls import request_model
 from ..common.constants import CHAT, COMPLETION
 from ..common.models import DB, Embedding
 from ..common.utils import get_attachments
@@ -58,6 +59,8 @@ class Admin(MixinMeta):
 
         To send in current channel, use `[p]assistant view false`
         """
+        send_key = [ctx.guild.owner_id == ctx.author.id, ctx.author.id in self.bot.owner_ids]
+
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
         system_tokens = await self.get_token_count(conf.system_prompt, conf)
@@ -67,12 +70,31 @@ class Admin(MixinMeta):
         func_tokens = await self.function_token_count(conf, func_list)
         func_count = len(func_list)
 
-        override = (
-            f"`Endpoint Override: `{conf.endpoint_override}\n" if conf.endpoint_override else ""
-        )
+        model_text = conf.model
+        endpoint = conf.endpoint_override or self.db.endpoint_override
+        if not conf.api_key and conf.endpoint_override:
+            try:
+                res = await request_model(f"{endpoint}/model")
+                model = res["model"]
+                model_text = f"{model} ({conf.endpoint_override})"
+            except Exception as e:  # Could be any issue, don't worry about it here
+                log.warning("Could not fetch external model", exc_info=e)
+                pass
+        elif not conf.api_key and self.db.endpoint_override:
+            try:
+                res = await request_model(f"{endpoint}/model")
+                model = res["model"]
+                if ctx.author.id in self.bot.owner_ids:
+                    model_text = f"{model} ({self.db.endpoint_override})"
+                else:
+                    model_text = f"{model} (Global Override)"
+            except Exception as e:  # Could be any issue, don't worry about it here
+                log.warning("Could not fetch external model", exc_info=e)
+                pass
+
         desc = (
             f"`OpenAI Version:      `{VERSION}\n"
-            f"`Model:               `{conf.model}\n{override}"
+            f"`Model:               `{model_text}\n"
             f"`Enabled:             `{conf.enabled}\n"
             f"`Timezone:            `{conf.timezone}\n"
             f"`Channel:             `{channel}\n"
@@ -139,7 +161,6 @@ class Admin(MixinMeta):
             inline=False,
         )
 
-        send_key = [ctx.guild.owner_id == ctx.author.id, ctx.author.id in self.bot.owner_ids]
         if private and any(send_key):
             embed.add_field(
                 name="OpenAI Key",
