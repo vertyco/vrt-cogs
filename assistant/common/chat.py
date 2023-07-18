@@ -220,11 +220,13 @@ class ChatHandler(MixinMeta):
         def pop_schema(name: str, calls: List[dict]):
             return [func for func in calls if func["name"] != name]
 
+        # Don't include if user is not a tutor
         if "knowledge_store" in function_map and author.id not in conf.tutors:
             if not any([role.id in conf.tutors for role in author.roles]):
                 function_calls = pop_schema("knowledge_store", function_calls)
                 del function_map["knowledge_store"]
 
+        # Don't include if there are no embeddings
         if "knowledge_search" in function_map and not conf.top_n:
             function_calls = pop_schema("knowledge_search", function_calls)
             del function_map["knowledge_search"]
