@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-06-15 21:22-0400\n"
-"PO-Revision-Date: 2023-06-16 01:26\n"
+"POT-Creation-Date: 2023-07-18 09:35-0400\n"
+"PO-Revision-Date: 2023-07-18 13:50\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -17,31 +17,31 @@ msgstr ""
 "X-Crowdin-File-ID: 13\n"
 "Language: hr_HR\n"
 
-#: menu.py:65 views.py:75
+#: menu.py:65 views.py:76
 msgid "You are not allowed to interact with this button."
 msgstr ""
 
-#: tickets.py:27
+#: tickets.py:28
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
 msgstr ""
 
-#: tickets.py:40
+#: tickets.py:41
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: tickets.py:296
+#: tickets.py:297
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr ""
 
-#: tickets.py:312
+#: tickets.py:313
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr ""
 
-#: tickets.py:361
+#: tickets.py:362
 msgid "User left guild(Auto-Close)"
 msgstr ""
 
@@ -128,86 +128,86 @@ msgid "Update active ticket overview\n\n"
 "    "
 msgstr ""
 
-#: views.py:37
+#: views.py:38
 msgid "cancel"
 msgstr ""
 
-#: views.py:129
+#: views.py:130
 msgid "Closing your ticket"
 msgstr ""
 
-#: views.py:131
+#: views.py:132
 msgid "Reason for closing"
 msgstr ""
 
-#: views.py:164
+#: views.py:174
 msgid "You do not have permissions to close this ticket"
 msgstr ""
 
-#: views.py:176 views.py:178
+#: views.py:186 views.py:188
 msgid "Closing..."
 msgstr ""
 
-#: views.py:248
+#: views.py:259
 msgid "You been blacklisted from creating tickets!"
 msgstr ""
 
-#: views.py:254
+#: views.py:265
 msgid "You have a role that has been blacklisted from creating tickets!"
 msgstr ""
 
-#: views.py:266
+#: views.py:277
 msgid "You must have one of the following roles to open this ticket: "
 msgstr ""
 
-#: views.py:279
+#: views.py:290
 msgid "You have the maximum amount of tickets opened already!"
 msgstr ""
 
-#: views.py:286
+#: views.py:297
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
 msgstr ""
 
-#: views.py:301
+#: views.py:312
 msgid "Submission Info"
 msgstr ""
 
-#: views.py:318
+#: views.py:330
 msgid "Unanswered"
 msgstr ""
 
-#: views.py:406
+#: views.py:419
 msgid "{} ticket for {}"
 msgstr ""
 
-#: views.py:431
+#: views.py:444
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
 msgstr ""
 
-#: views.py:442
+#: views.py:458
 msgid "Welcome to your ticket channel "
 msgstr ""
 
-#: views.py:444
+#: views.py:460
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
 msgstr ""
 
-#: views.py:496
+#: views.py:512
 msgid "Ticket form questions"
 msgstr ""
 
-#: views.py:499
+#: views.py:515
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
 msgstr ""
 
-#: views.py:504
+#: views.py:520
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
 msgstr ""
 
-#: views.py:522
+#: views.py:538
 msgid "`Created By: `{user}\n"
 "`User ID:    `{userid}\n"
 "`Opened:     `{timestamp}\n"
@@ -216,23 +216,23 @@ msgid "`Created By: `{user}\n"
 "**[Click to Jump!]({jumpurl})**"
 msgstr ""
 
-#: views.py:531
+#: views.py:547
 msgid "Ticket Opened"
 msgstr ""
 
-#: views.py:602
+#: views.py:619
 msgid "You have already been added to the ticket **{}**!"
 msgstr ""
 
-#: views.py:613
+#: views.py:630
 msgid "You already have access to the ticket **{}**!"
 msgstr ""
 
-#: views.py:618
+#: views.py:635
 msgid "{} was added to the ticket"
 msgstr ""
 
-#: views.py:623
+#: views.py:640
 msgid "You have been added to the ticket **{}**"
 msgstr ""
 
