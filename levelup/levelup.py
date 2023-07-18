@@ -79,7 +79,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.2.7"
+    __version__ = "3.2.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1687,7 +1687,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             from pymongo import errors as mongoerrors  # type: ignore
         except Exception as e:
             log.warning(f"pymongo Import Error: {e}")
-            return await ctx.send(_("Failed to import modules"))
+            txt = _(
+                "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo` and `{}pipinstall motor`"
+            ).format(ctx.clean_prefix, ctx.clean_prefix)
+            return await ctx.send(txt)
 
         # Try connecting to mongo
         if self._db_ready:
