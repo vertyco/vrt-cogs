@@ -48,7 +48,9 @@ class API(MixinMeta):
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_model_tokens = MODELS[model]
         diff = min(max_model_tokens - convo_tokens, max_convo_tokens - convo_tokens)
-        max_tokens = min(max_response_tokens, max(diff, 100))
+        if diff < 1:
+            diff = max_model_tokens - convo_tokens
+        max_tokens = min(max_response_tokens, max(diff, 10))
 
         if model in CHAT:
             return await request_chat_completion_raw(
