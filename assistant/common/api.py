@@ -227,11 +227,14 @@ class API(MixinMeta):
             total_tokens += count
 
         # Check if the total token count is already under the max token limit
+        max_response_tokens = conf.get_user_max_response_tokens(user)
         max_tokens = self.get_max_tokens(conf, user)
+        if max_tokens > max_response_tokens * 1.05:
+            max_tokens = max_tokens - max_response_tokens
+
         if total_tokens <= max_tokens:
             return messages, function_list, False
 
-        # Helper function to degrade a message
         def _degrade_message(msg: str) -> str:
             words = msg.split()
             if len(words) > 1:
