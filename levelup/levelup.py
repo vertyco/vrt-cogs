@@ -79,7 +79,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.2.8"
+    __version__ = "3.2.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1573,71 +1573,74 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             base = conf["base"]
             exp = conf["exp"]
             async for i in AsyncIter(range(pages)):
-                url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{ctx.guild.id}?page={i}&limit=999"
-                async with ClientSession() as session:
-                    async with session.get(url) as res:
-                        status = res.status
-                        data = await res.json()
-                        error = data.get("error", {})
-                        error_msg = error.get("message", None)
-                        if status != 200:
-                            if status == 401:
-                                return await ctx.send(
-                                    _("Your leaderboard needs to be set to public!")
-                                )
-                            elif error_msg:
-                                return await ctx.send(error_msg)
-                            else:
-                                return await ctx.send(_("No data found!"))
-                        players = data["players"]
-                        if not players:
-                            break
-                        async for user in AsyncIter(players):
-                            uid = str(user["id"])
-                            member = ctx.guild.get_member(int(uid))
-                            if not member:
-                                failed += 1
-                                continue
+                try:
+                    url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{ctx.guild.id}?page={i}&limit=999"
+                    async with ClientSession() as session:
+                        async with session.get(url) as res:
+                            status = res.status
+                            data = await res.json(content_type=None)
+                except Exception as e:
+                    log.warning(
+                        f"Failed to import page {i} of mee6 leaderboard data in {ctx.guild}",
+                        exc_info=e,
+                    )
+                    await ctx.send(f"Failed to import page {i} of mee6 leaderboard data")
+                    continue
 
-                            lvl = user["level"]
-                            xp = user["xp"]
-                            if uid not in self.data[ctx.guild.id]["users"]:
-                                self.init_user(ctx.guild.id, uid)
+                error = data.get("error", {})
+                error_msg = error.get("message", None)
+                if status != 200:
+                    if status == 401:
+                        return await ctx.send(_("Your leaderboard needs to be set to public!"))
+                    elif error_msg:
+                        return await ctx.send(error_msg)
+                    else:
+                        return await ctx.send(_("No data found!"))
+                players = data["players"]
+                if not players:
+                    break
+                async for user in AsyncIter(players):
+                    uid = str(user["id"])
+                    member = ctx.guild.get_member(int(uid))
+                    if not member:
+                        failed += 1
+                        continue
 
-                            if replace:  # Replace stats
-                                if "l" in import_by.lower():
-                                    self.data[ctx.guild.id]["users"][uid]["level"] = lvl
-                                    newxp = get_xp(lvl, base, exp)
-                                    self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
-                                else:
-                                    self.data[ctx.guild.id]["users"][uid]["xp"] = xp
-                                    newlvl = get_level(xp, base, exp)
-                                    self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
-                                self.data[ctx.guild.id]["users"][uid]["messages"] = user[
-                                    "message_count"
-                                ]
-                            else:  # Add stats
-                                if "l" in import_by.lower():
-                                    self.data[ctx.guild.id]["users"][uid]["level"] += lvl
-                                    newxp = get_xp(
-                                        self.data[ctx.guild.id]["users"][uid]["level"],
-                                        base,
-                                        exp,
-                                    )
-                                    self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
-                                else:
-                                    self.data[ctx.guild.id]["users"][uid]["xp"] += xp
-                                    newlvl = get_level(
-                                        self.data[ctx.guild.id]["users"][uid]["xp"],
-                                        base,
-                                        exp,
-                                    )
-                                    self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
-                                self.data[ctx.guild.id]["users"][uid]["messages"] += user[
-                                    "message_count"
-                                ]
+                    lvl = user["level"]
+                    xp = user["xp"]
+                    if uid not in self.data[ctx.guild.id]["users"]:
+                        self.init_user(ctx.guild.id, uid)
 
-                            imported += 1
+                    if replace:  # Replace stats
+                        if "l" in import_by.lower():
+                            self.data[ctx.guild.id]["users"][uid]["level"] = lvl
+                            newxp = get_xp(lvl, base, exp)
+                            self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
+                        else:
+                            self.data[ctx.guild.id]["users"][uid]["xp"] = xp
+                            newlvl = get_level(xp, base, exp)
+                            self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
+                        self.data[ctx.guild.id]["users"][uid]["messages"] = user["message_count"]
+                    else:  # Add stats
+                        if "l" in import_by.lower():
+                            self.data[ctx.guild.id]["users"][uid]["level"] += lvl
+                            newxp = get_xp(
+                                self.data[ctx.guild.id]["users"][uid]["level"],
+                                base,
+                                exp,
+                            )
+                            self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
+                        else:
+                            self.data[ctx.guild.id]["users"][uid]["xp"] += xp
+                            newlvl = get_level(
+                                self.data[ctx.guild.id]["users"][uid]["xp"],
+                                base,
+                                exp,
+                            )
+                            self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
+                        self.data[ctx.guild.id]["users"][uid]["messages"] += user["message_count"]
+
+                    imported += 1
 
             if not imported and not failed:
                 await ctx.send(_("No MEE6 stats were found"))
