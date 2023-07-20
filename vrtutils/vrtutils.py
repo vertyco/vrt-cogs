@@ -317,6 +317,7 @@ class VrtUtils(commands.Cog):
     # https://github.com/kennnyshiwa/kennnyshiwa-cogs
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def botinfo(self, ctx: commands.Context):
         """
         Get info about the bot
@@ -399,7 +400,7 @@ class VrtUtils(commands.Cog):
         py_version = f"{ver.major}.{ver.minor}.{ver.micro}"
 
         embed = discord.Embed(
-            title=f"Stats for {self.bot.user.name}",
+            title=f"Stats for {self.bot.user.display_name}",
             description="Below are various stats about the bot and the system it runs on.",
             color=color,
         )
@@ -471,9 +472,9 @@ class VrtUtils(commands.Cog):
             inline=False,
         )
 
-        bot_icon = self.bot.user.display_avatar.url
-        embed.set_thumbnail(url=bot_icon)
-        embed.set_footer(text=f"System: {ostype}\nUptime: {sys_uptime}")
+        embed.set_footer(
+            text=f"System: {ostype}\nUptime: {sys_uptime}", icon_url=self.bot.user.display_avatar
+        )
         return embed
 
     @commands.command()
