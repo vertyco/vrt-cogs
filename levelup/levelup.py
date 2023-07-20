@@ -13,10 +13,12 @@ from time import monotonic
 from typing import Dict, List, Set, Tuple, Union
 
 import discord
+import json5
 import matplotlib
 import matplotlib.pyplot as plt
 import tabulate
-from aiohttp import ClientSession
+from aiocache import cached
+from aiohttp import ClientSession, ClientTimeout
 from discord.ext import tasks
 from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.data_manager import bundled_data_path, cog_data_path
@@ -29,6 +31,12 @@ from redbot.core.utils.chat_formatting import (
     humanize_timedelta,
 )
 from redbot.core.utils.predicates import MessagePredicate
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 from levelup.utils.formatter import (
     get_attachments,
@@ -79,7 +87,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.2.9"
+    __version__ = "3.3.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1541,6 +1549,26 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         txt = _("Imported {} profile(s)").format(imported)
         await ctx.send(txt)
 
+    @retry(
+        retry=retry_if_exception_type(Exception),
+        wait=wait_random_exponential(min=5, max=30),
+        stop=stop_after_attempt(6),
+        reraise=True,
+    )
+    @cached(ttl=600)
+    async def fetch_mee6_payload(self, guild_id: int, page: int):
+        url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}&limit=999"
+        timeout = ClientTimeout(total=60)
+        async with ClientSession(timeout=timeout) as session:
+            async with session.get(url) as res:
+                status = res.status
+                try:
+                    data = await res.json()
+                except json.JSONDecodeError:
+                    # Try json5
+                    data = await res.json(loads=json5.loads)
+                return data, status
+
     @admin_group.command(name="importmee6")
     @commands.guildowner()
     @commands.bot_has_permissions(embed_links=True)
@@ -1565,6 +1593,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         """
         if not i_agree:
             return await ctx.send(_("Not importing MEE6 levels"))
+
         pages = math.ceil(len(ctx.guild.members) / 999)
         imported = 0
         failed = 0
@@ -1572,20 +1601,17 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             conf = self.data[ctx.guild.id]
             base = conf["base"]
             exp = conf["exp"]
+
             async for i in AsyncIter(range(pages)):
                 try:
-                    url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{ctx.guild.id}?page={i}&limit=999"
-                    async with ClientSession() as session:
-                        async with session.get(url) as res:
-                            status = res.status
-                            data = await res.json(content_type=None)
+                    data, status = await self.fetch_mee6_payload(ctx.guild.id, i)
                 except Exception as e:
                     log.warning(
                         f"Failed to import page {i} of mee6 leaderboard data in {ctx.guild}",
                         exc_info=e,
                     )
-                    await ctx.send(f"Failed to import page {i} of mee6 leaderboard data")
-                    continue
+                    await ctx.send(f"Failed to import page {i} of mee6 leaderboard data: {e}")
+                    break
 
                 error = data.get("error", {})
                 error_msg = error.get("message", None)
@@ -1649,6 +1675,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 if failed:
                     txt += f" ({failed} " + _("failed") + ")"
                 await ctx.send(txt)
+                await self.save_cache(ctx.guild)
 
     @admin_group.command(name="importfixator")
     @commands.is_owner()
