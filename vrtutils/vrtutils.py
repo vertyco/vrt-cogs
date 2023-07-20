@@ -10,7 +10,7 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from sys import executable
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import cpuinfo
 import discord
@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.7"
+    __version__ = "1.6.8"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -316,158 +316,168 @@ class VrtUtils(commands.Cog):
     # Inspired by kennnyshiwa's imperialtoolkit botstat command
     # https://github.com/kennnyshiwa/kennnyshiwa-cogs
     @commands.command()
+    @commands.bot_has_permissions(embed_links=True)
     async def botinfo(self, ctx: commands.Context):
         """
         Get info about the bot
         """
         async with ctx.typing():
-            # -/-/-/CPU-/-/-/
-            cpu_count = psutil.cpu_count()  # Int
-            cpu_perc = await self.bot.loop.run_in_executor(
-                None, lambda: psutil.cpu_percent(interval=3, percpu=True)
-            )  # List of floats
-            cpu_freq = psutil.cpu_freq(percpu=True)  # List of Objects
-            cpu_info = cpuinfo.get_cpu_info()  # Dict
-            cpu_type = cpu_info["brand_raw"] if "brand_raw" in cpu_info else "Unknown"
-
-            # -/-/-/MEM-/-/-/
-            ram = psutil.virtual_memory()  # Obj
-            ram_total = self.get_size(ram.total)
-            ram_used = self.get_size(ram.used)
-            disk = psutil.disk_usage(os.getcwd())
-            disk_total = self.get_size(disk.total)
-            disk_used = self.get_size(disk.used)
-
-            p = psutil.Process()
-            io_counters = p.io_counters()
-            disk_usage_process = io_counters[2] + io_counters[3]  # read_bytes + write_bytes
-            # Disk load
-            disk_io_counter = psutil.disk_io_counters()
-            if disk_io_counter:
-                disk_io_total = disk_io_counter[2] + disk_io_counter[3]  # read_bytes + write_bytes
-                disk_usage = (disk_usage_process / disk_io_total) * 100
-            else:
-                disk_usage = 0
-
-            # -/-/-/NET-/-/-/
-            net = psutil.net_io_counters()  # Obj
-            sent = self.get_size(net.bytes_sent)
-            recv = self.get_size(net.bytes_recv)
-
-            # -/-/-/OS-/-/-/
-            ostype = "Unknown"
-            if os.name == "nt":
-                osdat = platform.uname()
-                ostype = f"{osdat.system} {osdat.release} (version {osdat.version})"
-            elif sys.platform == "darwin":
-                osdat = platform.mac_ver()
-                ostype = f"Mac OS {osdat[0]} {osdat[1]}"
-            elif sys.platform == "linux":
-                import distro
-
-                ostype = f"{distro.name()} {distro.version()}"
-
-            td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(psutil.boot_time())
-            sys_uptime = humanize_timedelta(timedelta=td)
-
-            # -/-/-/BOT-/-/-/
-            servers = "{:,}".format(len(self.bot.guilds))
-            shards = self.bot.shard_count
-            users = "{:,}".format(len(self.bot.users))
-            channels = "{:,}".format(sum(len(guild.channels) for guild in self.bot.guilds))
-            emojis = "{:,}".format(len(self.bot.emojis))
-            cogs = "{:,}".format(len(self.bot.cogs))
-            commandcount = 0
-            for cog in self.bot.cogs:
-                for __ in self.bot.get_cog(cog).walk_commands():
-                    commandcount += 1
-            commandcount = "{:,}".format(commandcount)
-            td = datetime.datetime.utcnow() - self.bot.uptime
-            uptime = humanize_timedelta(timedelta=td)
-
-            # -/-/-/LIBS-/-/-/
-            red_version = version_info
-            ver = sys.version_info
-            py_version = f"{ver.major}.{ver.minor}.{ver.micro}"
-
-            embed = discord.Embed(
-                title=f"Stats for {self.bot.user.name}",
-                description="Below are various stats about the bot and the system it runs on.",
-                color=await ctx.embed_color(),
-            )
-
-            botstats = (
-                f"Servers:  {servers} ({shards} {'shard' if shards == 1 else 'shards'})\n"
-                f"Users:    {users}\n"
-                f"Channels: {channels}\n"
-                f"Emojis:   {emojis}\n"
-                f"Cogs:     {cogs}\n"
-                f"Commands: {commandcount}\n"
-                f"Uptime:   {uptime}\n"
-                f"Red:      {red_version}\n"
-                f"DPy:      {DPY}\n"
-                f"Python:   {py_version}"
-            )
-            embed.add_field(
-                name="\N{ROBOT FACE} BOT",
-                value=box(botstats, lang="python"),
-                inline=False,
-            )
-
-            cpustats = f"CPU:    {cpu_type}\n" f"Cores:  {cpu_count}\n"
-            if len(cpu_freq) == 1:
-                cpustats += f"{cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
-            else:
-                for i, obj in enumerate(cpu_freq):
-                    maxfreq = f"/{round(obj.max, 2)}" if obj.max else ""
-                    cpustats += f"Core {i}: {round(obj.current, 2)}{maxfreq} Mhz\n"
-            if isinstance(cpu_perc, list):
-                for i, perc in enumerate(cpu_perc):
-                    space = " "
-                    if i >= 10:
-                        space = ""
-                    bar = self.get_bar(0, 0, perc, width=16)
-                    cpustats += f"Core {i}:{space} {bar}\n"
-            for p in pagify(cpustats, page_length=1024):
-                embed.add_field(
-                    name="\N{DESKTOP COMPUTER} CPU",
-                    value=box(p, lang="python"),
-                    inline=False,
-                )
-
-            rambar = self.get_bar(0, 0, ram.percent, width=18)
-            diskbar = self.get_bar(0, 0, disk.percent, width=18)
-            memtext = (
-                f"RAM ({ram_used}/{ram_total})\n"
-                f"{rambar}\n"
-                f"DISK ({disk_used}/{disk_total})\n"
-                f"{diskbar}\n"
-            )
-            embed.add_field(
-                name="\N{FLOPPY DISK} MEM",
-                value=box(memtext, lang="python"),
-                inline=False,
-            )
-
-            disk_usage_bar = self.get_bar(0, 0, disk_usage, width=18)
-            i_o = f"DISK LOAD\n" f"{disk_usage_bar}"
-            embed.add_field(
-                name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
-                value=box(i_o, lang="python"),
-                inline=False,
-            )
-
-            netstat = f"Sent:     {sent}\n" f"Received: {recv}"
-            embed.add_field(
-                name="\N{SATELLITE ANTENNA} Network",
-                value=box(netstat, lang="python"),
-                inline=False,
-            )
-
-            bot_icon = self.bot.user.display_avatar.url
-            embed.set_thumbnail(url=bot_icon)
-            embed.set_footer(text=f"System: {ostype}\nUptime: {sys_uptime}")
+            color = await self.bot.get_embed_color(ctx)
+            embed = await asyncio.to_thread(self.get_bot_info_embed, color)
             await ctx.send(embed=embed)
+
+    def get_bot_info_embed(self, color: discord.Color) -> discord.Embed:
+        process = psutil.Process(os.getpid())
+
+        # -/-/-/CPU-/-/-/
+        cpu_count = psutil.cpu_count()  # Int
+        cpu_perc: List[float] = psutil.cpu_percent(interval=3, percpu=True)
+        cpu_freq: list = psutil.cpu_freq(percpu=True)  # List of Objects
+        cpu_info: dict = cpuinfo.get_cpu_info()  # Dict
+        cpu_type = cpu_info.get("brand_raw", "Unknown")
+        bot_cpu_used = process.cpu_percent(interval=3)
+
+        # -/-/-/MEM-/-/-/
+        ram = psutil.virtual_memory()  # Obj
+        ram_total = self.get_size(ram.total)
+        ram_used = self.get_size(ram.used)
+        disk = psutil.disk_usage(os.getcwd())
+        disk_total = self.get_size(disk.total)
+        disk_used = self.get_size(disk.used)
+        bot_ram_used = self.get_size(process.memory_info().rss)
+
+        io_counters = process.io_counters()
+        disk_usage_process = io_counters[2] + io_counters[3]  # read_bytes + write_bytes
+        # Disk load
+        disk_io_counter = psutil.disk_io_counters()
+        if disk_io_counter:
+            disk_io_total = disk_io_counter[2] + disk_io_counter[3]  # read_bytes + write_bytes
+            disk_usage = (disk_usage_process / disk_io_total) * 100
+        else:
+            disk_usage = 0
+
+        # -/-/-/NET-/-/-/
+        net = psutil.net_io_counters()  # Obj
+        sent = self.get_size(net.bytes_sent)
+        recv = self.get_size(net.bytes_recv)
+
+        # -/-/-/OS-/-/-/
+        ostype = "Unknown"
+        if os.name == "nt":
+            osdat = platform.uname()
+            ostype = f"{osdat.system} {osdat.release} (version {osdat.version})"
+        elif sys.platform == "darwin":
+            osdat = platform.mac_ver()
+            ostype = f"Mac OS {osdat[0]} {osdat[1]}"
+        elif sys.platform == "linux":
+            import distro
+
+            ostype = f"{distro.name()} {distro.version()}"
+
+        td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(psutil.boot_time())
+        sys_uptime = humanize_timedelta(timedelta=td)
+
+        # -/-/-/BOT-/-/-/
+        servers = "{:,}".format(len(self.bot.guilds))
+        shards = self.bot.shard_count
+        users = "{:,}".format(len(self.bot.users))
+        channels = "{:,}".format(sum(len(guild.channels) for guild in self.bot.guilds))
+        emojis = "{:,}".format(len(self.bot.emojis))
+        cogs = "{:,}".format(len(self.bot.cogs))
+        commandcount = 0
+        for cog in self.bot.cogs:
+            for __ in self.bot.get_cog(cog).walk_commands():
+                commandcount += 1
+        commandcount = "{:,}".format(commandcount)
+        td = datetime.datetime.utcnow() - self.bot.uptime
+        uptime = humanize_timedelta(timedelta=td)
+
+        # -/-/-/LIBS-/-/-/
+        red_version = version_info
+        ver = sys.version_info
+        py_version = f"{ver.major}.{ver.minor}.{ver.micro}"
+
+        embed = discord.Embed(
+            title=f"Stats for {self.bot.user.name}",
+            description="Below are various stats about the bot and the system it runs on.",
+            color=color,
+        )
+
+        botstats = (
+            f"Servers:  {servers} ({shards} {'shard' if shards == 1 else 'shards'})\n"
+            f"Users:    {users}\n"
+            f"Channels: {channels}\n"
+            f"Emojis:   {emojis}\n"
+            f"Cogs:     {cogs}\n"
+            f"Commands: {commandcount}\n"
+            f"Uptime:   {uptime}\n"
+            f"Red:      {red_version}\n"
+            f"DPy:      {DPY}\n"
+            f"Python:   {py_version}"
+        )
+        embed.add_field(
+            name="\N{ROBOT FACE} BOT",
+            value=box(botstats, lang="python"),
+            inline=False,
+        )
+
+        cpustats = f"CPU: {cpu_type}\nBot Using: {bot_cpu_used}%\nCores: {cpu_count}"
+
+        if len(cpu_freq) == 1:
+            cpustats += f" @ {cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
+        else:
+            cpustats += "\n"
+            for i, obj in enumerate(cpu_freq):
+                maxfreq = f"/{round(obj.max, 2)}" if obj.max else ""
+                cpustats += f"Core {i}: {round(obj.current, 2)}{maxfreq} Mhz\n"
+
+        if isinstance(cpu_perc, list):
+            for i, perc in enumerate(cpu_perc):
+                space = " "
+                if i >= 10:
+                    space = ""
+                bar = self.get_bar(0, 0, perc, width=16)
+                cpustats += f"Core {i}:{space} {bar}\n"
+        for p in pagify(cpustats, page_length=1024):
+            embed.add_field(
+                name="\N{DESKTOP COMPUTER} CPU",
+                value=box(p, lang="python"),
+                inline=False,
+            )
+
+        rambar = self.get_bar(0, 0, ram.percent, width=18)
+        diskbar = self.get_bar(0, 0, disk.percent, width=18)
+        memtext = (
+            f"RAM {ram_used}/{ram_total} (bot using {bot_ram_used})\n"
+            f"{rambar}\n"
+            f"DISK {disk_used}/{disk_total}\n"
+            f"{diskbar}\n"
+        )
+        embed.add_field(
+            name="\N{FLOPPY DISK} MEM",
+            value=box(memtext, lang="python"),
+            inline=False,
+        )
+
+        disk_usage_bar = self.get_bar(0, 0, disk_usage, width=18)
+        i_o = f"DISK LOAD\n" f"{disk_usage_bar}"
+        embed.add_field(
+            name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
+            value=box(i_o, lang="python"),
+            inline=False,
+        )
+
+        netstat = f"Sent:     {sent}\n" f"Received: {recv}"
+        embed.add_field(
+            name="\N{SATELLITE ANTENNA} Network",
+            value=box(netstat, lang="python"),
+            inline=False,
+        )
+
+        bot_icon = self.bot.user.display_avatar.url
+        embed.set_thumbnail(url=bot_icon)
+        embed.set_footer(text=f"System: {ostype}\nUptime: {sys_uptime}")
+        return embed
 
     @commands.command()
     async def getuser(self, ctx, *, user_id: Union[int, discord.User]):
