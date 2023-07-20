@@ -85,7 +85,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.3.2"
+    __version__ = "3.4.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1572,6 +1572,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         ctx: commands.Context,
         import_by: str,
         replace: bool,
+        include_settings: bool,
         i_agree: bool,
     ):
         """
@@ -1584,15 +1585,28 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         If exp is entered, it will import their experience and base their new level off of that.
         If level is entered, it will import their level and calculate their exp based off of that.
         `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it
+        `include_settings` - import level roles and exp settings from MEE6
         `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
+
+        **Note**
+        Instead of typing true/false
+        1 = True
+        0 = False
         """
         if not i_agree:
             return await ctx.send(_("Not importing MEE6 levels"))
 
         msg = await ctx.send(_("Fetching mee6 leaderboard data, this could take a while..."))
+
+        conf = self.data[ctx.guild.id]
+        base = conf["base"]
+        exp = conf["exp"]
+
         pages = math.ceil(len(ctx.guild.members) / 1000)
         players: List[dict] = []
         failed_pages = 0
+        settings_imported = False
+
         async with ctx.typing():
             async for i in AsyncIter(range(pages), delay=5):
                 try:
@@ -1621,9 +1635,27 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     else:
                         return await ctx.send(_("No data found!"))
 
+                if include_settings and not settings_imported:
+                    settings_imported = True
+                    if xp_rate := data.get("xp_rate"):
+                        self.data[ctx.guild.id]["base"] = round(xp_rate * 100)
+
+                    if xp_per_message := data.get("xp_per_message"):
+                        self.data[ctx.guild.id]["xp"] = xp_per_message
+
+                    if role_rewards := data.get("role_rewards"):
+                        for entry in role_rewards:
+                            level_requirement = entry["rank"]
+                            role_id = entry["role"]["id"]
+                            self.data[ctx.guild.id]["levelroles"][str(level_requirement)] = int(
+                                role_id
+                            )
+                    await ctx.send("Settings imported!")
+
                 player_data = data.get("players")
                 if not player_data:
                     break
+
                 players.extend(player_data)
 
         if failed_pages:
@@ -1639,10 +1671,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         imported = 0
         failed = 0
         async with ctx.typing():
-            conf = self.data[ctx.guild.id]
-            base = conf["base"]
-            exp = conf["exp"]
-
             async for user in AsyncIter(players):
                 uid = str(user["id"])
                 member = ctx.guild.get_member(int(uid))
