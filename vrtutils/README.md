@@ -72,13 +72,13 @@ See which channel is the oldest
  - Aliases: `oldestusers`
  - Checks: `server_only`
 
-See which users have been in the server the longest<br/><br/>**Arguments**<br/>amount: how many members to display<br/>include_bots: (True/False) whether to include bots
+See which users have been in the server the longest<br/><br/>**Arguments**<br/>`amount:` how many members to display<br/>`include_bots:` (True/False) whether to include bots
 
 # oldestaccounts
  - Usage: `[p]oldestaccounts [amount=10] [include_bots=False] `
  - Checks: `server_only`
 
-See which users have the oldest Discord accounts<br/><br/>**Arguments**<br/>amount: how many members to display<br/>include_bots: (True/False) whether to include bots
+See which users have the oldest Discord accounts<br/><br/>**Arguments**<br/>`amount:` how many members to display<br/>`include_bots:` (True/False) whether to include bots
 
 # rolemembers
  - Usage: `[p]rolemembers <role> `
@@ -109,4 +109,10 @@ Convert text to binary
  - Usage: `[p]binary2text <binary_string> `
 
 Convert a binary string to text
+
+# randomnum
+ - Usage: `[p]randomnum [minimum=1] [maximum=100] `
+ - Aliases: `rnum`
+
+Generate a random number between the numbers specified
 

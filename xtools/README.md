@@ -8,10 +8,10 @@ Cool Tools for Xbox
 
 Set up the XTools cog
 
-## apiset help
- - Usage: `[p]apiset help `
+## apiset tokens
+ - Usage: `[p]apiset tokens <client_id> <client_secret> `
 
-Tutorial for getting your ClientID and Secret
+Set Client ID and Secret
 
 ## apiset reset
  - Usage: `[p]apiset reset `
@@ -23,14 +23,13 @@ Reset the all token data
 
 
 
-## apiset tokens
- - Usage: `[p]apiset tokens <client_id> <client_secret> `
+## apiset help
+ - Usage: `[p]apiset help `
 
-Set Client ID and Secret
+Tutorial for getting your ClientID and Secret
 
 # xstatuschannel
  - Usage: `[p]xstatuschannel <channel> `
- - Restricted to: `ADMIN`
 
 Set the channel for Microsoft status alerts<br/><br/>Any time microsoft services go down an alert will go out in the channel and be updated
 

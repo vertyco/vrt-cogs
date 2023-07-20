@@ -7,7 +7,7 @@ Guess pictures for points
  - Aliases: `pixlb, pixelb, pixlelb, and pixleaderboard`
  - Checks: `server_only`
 
-View the Pixl leaderboard!<br/><br/>**Arguments**<br/>show_global: show the global leaderboard<br/><br/>example: [p]pixlb true
+View the Pixl leaderboard!<br/><br/>**Arguments**<br/>`show_global`: show the global leaderboard<br/><br/>example: `[p]pixlb true`
 
 # pixl
  - Usage: `[p]pixl `
@@ -18,22 +18,31 @@ Start a Pixl game!<br/>Guess the image as it is slowly revealed
 
 # pixlset
  - Usage: `[p]pixlset `
- - Restricted to: `ADMIN`
  - Aliases: `pixelset and pixleset`
  - Checks: `server_only`
 
 Configure the Pixl game
 
-## pixlset blocks
- - Usage: `[p]pixlset blocks <amount> `
+## pixlset view
+ - Usage: `[p]pixlset view `
 
-Set the amount of blocks to reveal after each delay
+View the current settings
+
+## pixlset participants
+ - Usage: `[p]pixlset participants <amount> `
+
+Set the minimum amount of participants for the game to reward users credits
 
 ## pixlset delay
  - Usage: `[p]pixlset delay <seconds> `
  - Restricted to: `BOT_OWNER`
 
 (Owner Only)Set the delay between block reveals<br/><br/>**Warning**<br/>Setting this too low may hit rate limits, default is 5 seconds.
+
+## pixlset blocks
+ - Usage: `[p]pixlset blocks <amount> `
+
+Set the amount of blocks to reveal after each delay
 
 ## pixlset timelimit
  - Usage: `[p]pixlset timelimit <seconds> `
@@ -44,11 +53,6 @@ Set the time limit for Pixl games
  - Usage: `[p]pixlset showdefault `
 
 (Toggle) Whether to use the default hardcoded images in this server
-
-## pixlset view
- - Usage: `[p]pixlset view `
-
-View the current settings
 
 ## pixlset showanswer
  - Usage: `[p]pixlset showanswer `
@@ -65,6 +69,11 @@ View the current settings
 
 Add/Remove images
 
+### pixlset image add
+ - Usage: `[p]pixlset image add <url> <answers> `
+
+Add an image for your server to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
+
 ### pixlset image viewdefault
  - Usage: `[p]pixlset image viewdefault `
 
@@ -74,17 +83,6 @@ View the default images
  - Usage: `[p]pixlset image testserver `
 
 Test the server images to ensure they are valid urls
-
-### pixlset image addglobal
- - Usage: `[p]pixlset image addglobal <url> <answers> `
- - Restricted to: `BOT_OWNER`
-
-Add a global image for all servers to use<br/><br/>**Arguments**<br/>url:     the url of the image<br/>answers: a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: url, answer, answer, answer...<br/><br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>
-
-### pixlset image add
- - Usage: `[p]pixlset image add <url> <answers> `
-
-Add an image for your server to use<br/><br/>**Arguments**<br/>url:     the url of the image<br/>answers: a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: url, answer, answer, answer...<br/><br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>
 
 ### pixlset image testglobal
  - Usage: `[p]pixlset image testglobal `
@@ -97,15 +95,16 @@ Test the global images to ensure they are valid urls
 
 View the server images
 
+### pixlset image addglobal
+ - Usage: `[p]pixlset image addglobal <url> <answers> `
+ - Restricted to: `BOT_OWNER`
+
+Add a global image for all servers to use<br/><br/>**Arguments**<br/>`url:     `the url of the image<br/>`answers: `a list of possible answers separated by a comma<br/><br/>**Alternative**<br/>If args are left blank, a text file can be uploaded with the following format for bulk image adding.<br/>Each line starts with the url followed by all the possible correct answers separated by a comma<br/><br/>Example: `url, answer, answer, answer...`<br/>```<br/>https://some_url.com/example.png, answer1, answer two, another answer<br/>https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer<br/>```
+
 ### pixlset image viewglobal
  - Usage: `[p]pixlset image viewglobal `
 
 View the global images
-
-## pixlset participants
- - Usage: `[p]pixlset participants <amount> `
-
-Set the minimum amount of participants for the game to reward users credits
 
 ## pixlset ratio
  - Usage: `[p]pixlset ratio <ratio> `
