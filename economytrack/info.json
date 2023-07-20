@@ -6,7 +6,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not store data about users.",
   "hidden": false,
-  "install_msg": "Thank you for installing EconomyTrack!",
+  "install_msg": "Thank you for installing EconomyTrack!\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/economytrack/README.md",
   "min_bot_version": "3.4.0",
   "min_python_version": [
     3,

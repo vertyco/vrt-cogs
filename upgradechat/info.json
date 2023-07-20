@@ -6,7 +6,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not store any personal data of users.",
   "hidden": false,
-  "install_msg": "**NOTE:** You are expected to know how to use Upgrade.Chat and create products ect.. This cog only guides you on how to create/set your API tokens.",
+  "install_msg": "**NOTE:** You are expected to know how to use Upgrade.Chat and create products ect.. This cog only guides you on how to create/set your API tokens.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/upgradechat/README.md",
   "min_bot_version": "3.4.0",
   "min_python_version": [
     3,

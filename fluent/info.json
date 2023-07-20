@@ -6,7 +6,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not persistently store data about users. This cog uses google and flowery's translator APIs",
   "hidden": false,
-  "install_msg": "Thank you for installing Fluent!",
+  "install_msg": "Thank you for installing Fluent!\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/fluent/README.md",
   "min_bot_version": "3.5.0",
   "min_python_version": [
     3,

@@ -1,7 +1,7 @@
 {
     "author": ["aikaterna", "Paddo"],
     "description": "Hunting, it hunts birds and things that fly.",
-    "install_msg": "Check out [p]hunting to get started.",
+    "install_msg": "Check out [p]hunting to get started.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/hunting/README.md",
     "short": "A bird hunting game.",
     "tags": ["hunting", "hunt", "game"],
   "min_python_version": [
