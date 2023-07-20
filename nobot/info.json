@@ -6,7 +6,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog only listens for other bots, it is probably not a good idea to use this on large or public bots.",
   "hidden": false,
-  "install_msg": "Thank you for installing NoBot! Type `[p]nobot` to view the list of commands\n**THIS COG IS NOT INTENDED FOR LARGE OR PUBLIC BOTS**",
+  "install_msg": "Thank you for installing NoBot! Type `[p]nobot` to view the list of commands.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/nobot/README.md",
   "min_bot_version": "3.4.0",
   "min_python_version": [
     3,

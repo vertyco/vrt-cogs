@@ -6,7 +6,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog uses Microsofts XSAPI endpoints to pull data. It stores your (the bot owner's) client ID and secret for the Azure application for authorization.",
   "hidden": false,
-  "install_msg": "Thank you for installing! Use `[p]help XTools` for a list of commands you can use. Use `[p]apiset help` for a tutorial to help you get your tokens authorized.",
+  "install_msg": "Thank you for installing! Use `[p]help XTools` for a list of commands you can use. Use `[p]apiset help` for a tutorial to help you get your tokens authorized.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/xtools/README.md",
   "min_bot_version": "3.5.0",
   "min_python_version": [
     3,
