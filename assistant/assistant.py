@@ -200,12 +200,10 @@ class Assistant(
         conf = self.db.get_conf(guild)
         if not conf.embeddings:
             return "There are no embeddings saved!"
-        if not conf.top_n:
-            return "Top N is set to 0 so no embeddings will be returned!"
         query_embedding = await self.request_embedding(search_query, conf)
         if not query_embedding:
             return f"Failed to get embedding for your the query '{search_query}'"
-        embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
+        embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding, 1)
         if not embeddings:
             return f"No embeddings could be found related to the search query '{search_query}'"
 
