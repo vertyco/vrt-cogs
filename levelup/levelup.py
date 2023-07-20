@@ -1604,6 +1604,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     )
                     await ctx.send(f"Failed to import page {i} of mee6 leaderboard data: {e}")
                     failed_pages += 1
+                    if isinstance(e, json.JSONDecodeError):
+                        await msg.edit(
+                            content=_("Mee6 is rate limiting too heavily! Import Failed!")
+                        )
+                        return
                     continue
 
                 error = data.get("error", {})
