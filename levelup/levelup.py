@@ -1549,7 +1549,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @retry(
         retry=retry_if_exception_type(json.JSONDecodeError),
-        wait=wait_random_exponential(min=150, max=450),
+        wait=wait_random_exponential(min=120, max=600),
         stop=stop_after_attempt(6),
         reraise=True,
     )
