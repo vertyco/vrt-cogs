@@ -1558,7 +1558,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}&limit=999"
         timeout = ClientTimeout(total=60)
         async with ClientSession(timeout=timeout) as session:
-            async with session.get(url) as res:
+            async with session.get(url, headers={"Accept": "application/json"}) as res:
                 status = res.status
                 try:
                     data = await res.json(content_type=None)
