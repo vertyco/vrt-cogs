@@ -1683,7 +1683,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         else:
             txt = _("Imported {} User(s)").format(str(imported))
             if failed:
-                txt += _(" ({} failed)").format(str(failed))
+                txt += _(" ({} skipped since they are no longer in the discord)").format(
+                    str(failed)
+                )
             await msg.edit(content=txt)
             await ctx.tick()
             await self.save_cache(ctx.guild)
