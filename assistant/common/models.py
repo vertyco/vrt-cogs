@@ -68,7 +68,9 @@ class GuildSettings(BaseModel):
     max_function_calls: int = 10  # Max calls in a row
     disabled_functions: List[str] = []
 
-    def get_related_embeddings(self, query_embedding: List[float]) -> List[Tuple[str, str, float]]:
+    def get_related_embeddings(
+        self, query_embedding: List[float], top_n_override: Optional[int] = None
+    ) -> List[Tuple[str, str, float]]:
         if not self.top_n or len(query_embedding) == 0 or not self.embeddings:
             return []
         strings_and_relatedness = []
@@ -91,7 +93,7 @@ class GuildSettings(BaseModel):
         if not strings_and_relatedness:
             return []
         strings_and_relatedness.sort(key=lambda x: x[2], reverse=True)
-        return strings_and_relatedness[: self.top_n]
+        return strings_and_relatedness[: top_n_override or self.top_n]
 
     def get_user_model(self, member: Optional[discord.Member] = None) -> str:
         if not member or not self.model_role_overrides:
