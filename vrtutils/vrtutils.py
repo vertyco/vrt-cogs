@@ -335,7 +335,7 @@ class VrtUtils(commands.Cog):
         cpu_freq: list = psutil.cpu_freq(percpu=True)  # List of Objects
         cpu_info: dict = cpuinfo.get_cpu_info()  # Dict
         cpu_type = cpu_info.get("brand_raw", "Unknown")
-        bot_cpu_used = process.cpu_percent(interval=3)
+        bot_cpu_used = process.cpu_percent(interval=1)
 
         # -/-/-/MEM-/-/-/
         ram = psutil.virtual_memory()  # Obj
