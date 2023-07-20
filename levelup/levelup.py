@@ -13,7 +13,6 @@ from time import monotonic
 from typing import Dict, List, Set, Tuple, Union
 
 import discord
-import json5
 import matplotlib
 import matplotlib.pyplot as plt
 import tabulate
@@ -86,7 +85,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.3.1"
+    __version__ = "3.3.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1549,22 +1548,20 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await ctx.send(txt)
 
     @retry(
-        retry=retry_if_exception_type(Exception),
-        wait=wait_random_exponential(min=5, max=30),
+        retry=retry_if_exception_type(json.JSONDecodeError),
+        wait=wait_random_exponential(min=150, max=450),
         stop=stop_after_attempt(6),
         reraise=True,
     )
     async def fetch_mee6_payload(self, guild_id: int, page: int):
-        url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}&limit=999"
+        url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}&limit=1000"
         timeout = ClientTimeout(total=60)
         async with ClientSession(timeout=timeout) as session:
             async with session.get(url, headers={"Accept": "application/json"}) as res:
                 status = res.status
-                try:
-                    data = await res.json(content_type=None)
-                except json.JSONDecodeError:
-                    # Try json5
-                    data = await res.json(loads=json5.loads, content_type=None)
+                if status == 429:
+                    log.warning("mee6 import is being rate limited!")
+                data = await res.json(content_type=None)
                 return data, status
 
     @admin_group.command(name="importmee6")
@@ -1592,12 +1589,12 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not i_agree:
             return await ctx.send(_("Not importing MEE6 levels"))
 
-        msg = await ctx.send(_("Fetching mee6 leaderboard data, please wait..."))
-        pages = math.ceil(len(ctx.guild.members) / 999)
+        msg = await ctx.send(_("Fetching mee6 leaderboard data, this could take a while..."))
+        pages = math.ceil(len(ctx.guild.members) / 1000)
         players: List[dict] = []
         failed_pages = 0
         async with ctx.typing():
-            async for i in AsyncIter(range(pages)):
+            async for i in AsyncIter(range(pages), delay=5):
                 try:
                     data, status = await self.fetch_mee6_payload(ctx.guild.id, i)
                 except Exception as e:
