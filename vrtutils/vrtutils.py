@@ -429,7 +429,7 @@ class VrtUtils(commands.Cog):
         )
 
         for i, perc in enumerate(cpu_perc):
-            space = "" if i >= 10 else " "
+            space = "" if i >= 10 or len(cpu_perc) < 10 else " "
             index = i if len(cpu_freq) > i else 0
             bar = self.get_bar(0, 0, perc, width=16)
             speed = round(cpu_freq[index].current)
