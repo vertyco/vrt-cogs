@@ -16,7 +16,6 @@ View EmojiTracker Blacklist
 
 # resetreacts
  - Usage: `[p]resetreacts `
- - Restricted to: `ADMIN`
  - Checks: `server_only`
 
 Reset reaction data for this server
