@@ -17,7 +17,6 @@ import json5
 import matplotlib
 import matplotlib.pyplot as plt
 import tabulate
-from aiocache import cached
 from aiohttp import ClientSession, ClientTimeout
 from discord.ext import tasks
 from redbot.core import Config, VersionInfo, commands, version_info
@@ -87,7 +86,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.3.0"
+    __version__ = "3.3.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1555,7 +1554,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         stop=stop_after_attempt(6),
         reraise=True,
     )
-    @cached(ttl=600)
     async def fetch_mee6_payload(self, guild_id: int, page: int):
         url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}&limit=999"
         timeout = ClientTimeout(total=60)
@@ -1563,10 +1561,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             async with session.get(url) as res:
                 status = res.status
                 try:
-                    data = await res.json()
+                    data = await res.json(content_type=None)
                 except json.JSONDecodeError:
                     # Try json5
-                    data = await res.json(loads=json5.loads)
+                    data = await res.json(loads=json5.loads, content_type=None)
                 return data, status
 
     @admin_group.command(name="importmee6")
