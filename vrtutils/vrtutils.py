@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.8"
+    __version__ = "1.6.9"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -421,7 +421,7 @@ class VrtUtils(commands.Cog):
             inline=False,
         )
 
-        cpustats = f"CPU: {cpu_type}\nBot Using: {bot_cpu_used}%\nCores: {cpu_count}"
+        cpustats = f"CPU: {cpu_type}\nCores: {cpu_count}"
 
         if len(cpu_freq) == 1:
             cpustats += f" @ {cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
@@ -431,13 +431,17 @@ class VrtUtils(commands.Cog):
                 maxfreq = f"/{round(obj.max, 2)}" if obj.max else ""
                 cpustats += f"Core {i}: {round(obj.current, 2)}{maxfreq} Mhz\n"
 
-        if isinstance(cpu_perc, list):
-            for i, perc in enumerate(cpu_perc):
-                space = " "
-                if i >= 10:
-                    space = ""
-                bar = self.get_bar(0, 0, perc, width=16)
-                cpustats += f"Core {i}:{space} {bar}\n"
+        avg = round(sum(cpu_perc) / len(cpu_perc), 1)
+        cpustats += f"Overall Usage: {avg}%\n"
+        cpustats += f"Bot Usage: {bot_cpu_used}%\n"
+
+        for i, perc in enumerate(cpu_perc):
+            space = " "
+            if i >= 10:
+                space = ""
+            bar = self.get_bar(0, 0, perc, width=16)
+            cpustats += f"Core {i}:{space} {bar}\n"
+
         for p in pagify(cpustats, page_length=1024):
             embed.add_field(
                 name="\N{DESKTOP COMPUTER} CPU",
@@ -448,7 +452,7 @@ class VrtUtils(commands.Cog):
         rambar = self.get_bar(0, 0, ram.percent, width=18)
         diskbar = self.get_bar(0, 0, disk.percent, width=18)
         memtext = (
-            f"RAM {ram_used}/{ram_total} (bot using {bot_ram_used})\n"
+            f"RAM {ram_used}/{ram_total} (Bot: {bot_ram_used})\n"
             f"{rambar}\n"
             f"DISK {disk_used}/{disk_total}\n"
             f"{diskbar}\n"
