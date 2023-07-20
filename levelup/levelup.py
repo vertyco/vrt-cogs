@@ -1628,7 +1628,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         if failed_pages:
             await ctx.send(
-                _("{} pages failed to import, check logs for more info").format(str(failed_pages))
+                _("{} pages failed to fetch from mee6 api, check logs for more info").format(
+                    str(failed_pages)
+                )
             )
         if not players:
             return await ctx.send(_("No leaderboard data found!"))
@@ -1666,19 +1668,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 else:  # Add stats
                     if "l" in import_by.lower():
                         self.data[ctx.guild.id]["users"][uid]["level"] += lvl
-                        newxp = get_xp(
-                            self.data[ctx.guild.id]["users"][uid]["level"],
-                            base,
-                            exp,
-                        )
+                        newxp = get_xp(self.data[ctx.guild.id]["users"][uid]["level"], base, exp)
                         self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
                     else:
                         self.data[ctx.guild.id]["users"][uid]["xp"] += xp
-                        newlvl = get_level(
-                            self.data[ctx.guild.id]["users"][uid]["xp"],
-                            base,
-                            exp,
-                        )
+                        newlvl = get_level(self.data[ctx.guild.id]["users"][uid]["xp"], base, exp)
                         self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
                     self.data[ctx.guild.id]["users"][uid]["messages"] += user["message_count"]
 
