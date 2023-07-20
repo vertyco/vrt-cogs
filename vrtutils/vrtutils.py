@@ -332,6 +332,7 @@ class VrtUtils(commands.Cog):
         # -/-/-/CPU-/-/-/
         cpu_count = psutil.cpu_count()  # Int
         cpu_perc: List[float] = psutil.cpu_percent(interval=3, percpu=True)
+        cpu_avg = round(sum(cpu_perc) / len(cpu_perc), 1)
         cpu_freq: list = psutil.cpu_freq(percpu=True)  # List of Objects
         cpu_info: dict = cpuinfo.get_cpu_info()  # Dict
         cpu_type = cpu_info.get("brand_raw", "Unknown")
@@ -421,26 +422,18 @@ class VrtUtils(commands.Cog):
             inline=False,
         )
 
-        cpustats = f"CPU: {cpu_type}\nCores: {cpu_count}"
-
-        if len(cpu_freq) == 1:
-            cpustats += f" @ {cpu_freq[0].current}/{cpu_freq[0].max} Mhz\n"
-        else:
-            cpustats += "\n"
-            for i, obj in enumerate(cpu_freq):
-                maxfreq = f"/{round(obj.max, 2)}" if obj.max else ""
-                cpustats += f"Core {i}: {round(obj.current, 2)}{maxfreq} Mhz\n"
-
-        avg = round(sum(cpu_perc) / len(cpu_perc), 1)
-        cpustats += f"Overall Usage: {avg}%\n"
-        cpustats += f"Bot Usage: {bot_cpu_used}%\n"
+        cpustats = f"CPU: {cpu_type}\n"
+        cpustats += f"Bot: {bot_cpu_used}%\nOverall: {cpu_avg}%\n"
+        cpustats += (
+            f"Cores: {cpu_count} @ {round(cpu_freq[0].current)}/{round(cpu_freq[0].max)} Mhz\n"
+        )
 
         for i, perc in enumerate(cpu_perc):
-            space = " "
-            if i >= 10:
-                space = ""
+            space = "" if i >= 10 else " "
+            index = i if len(cpu_freq) > i else 0
             bar = self.get_bar(0, 0, perc, width=16)
-            cpustats += f"Core {i}:{space} {bar}\n"
+            speed = round(cpu_freq[index].current)
+            cpustats += f"c{i}:{space} {bar} @ {speed} MHz\n"
 
         for p in pagify(cpustats, page_length=1024):
             embed.add_field(
