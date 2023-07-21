@@ -258,6 +258,10 @@ class Generator(MixinMeta, ABC):
             stats_size -= 1
             emoji_scale += 0.1
             stats_font = ImageFont.truetype(base_font, stats_size)
+        # And exp text
+        while (stats_font.getlength(exp) + bar_start + 10) > final.width - 10:
+            stats_size -= 1
+            stats_font = ImageFont.truetype(base_font, stats_size)
 
         star_fontsize = 60
         star_font = ImageFont.truetype(base_font, star_fontsize)
