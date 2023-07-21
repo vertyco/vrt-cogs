@@ -166,8 +166,11 @@ class Conversation(BaseModel):
             self.messages = self.messages[-conf.get_user_max_retention(member) :]
 
     def reset(self):
-        self.last_updated = datetime.now().timestamp()
+        self.refresh()
         self.messages.clear()
+
+    def refresh(self):
+        self.last_updated = datetime.now().timestamp()
 
     def overwrite(self, messages: List[dict]):
         self.reset()
@@ -188,7 +191,7 @@ class Conversation(BaseModel):
         if name:
             message["name"] = name
         self.messages.append(message)
-        self.last_updated = datetime.now().timestamp()
+        self.refresh()
 
     def prepare_chat(
         self, user_message: str, initial_prompt: str, system_prompt: str
@@ -203,7 +206,7 @@ class Conversation(BaseModel):
         user_message = {"role": "user", "content": user_message}
         prepared.append(user_message)
         self.messages.append(user_message)
-        self.last_updated = datetime.now().timestamp()
+        self.refresh()
         return prepared
 
 

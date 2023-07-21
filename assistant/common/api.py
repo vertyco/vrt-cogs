@@ -141,10 +141,17 @@ class API(MixinMeta):
         return min(user_max, MODELS[conf.get_user_model(user)] - 96)
 
     async def cut_text_by_tokens(self, text: str, conf: GuildSettings, max_tokens: int) -> str:
+        if not text:
+            log.debug("No text to cut by tokens!")
+            return text
         tokens = await self.get_tokens(text, conf)
         return await self.get_text(tokens[:max_tokens], conf)
 
     async def get_token_count(self, text: str, conf: GuildSettings) -> int:
+        if not text:
+            log.debug("No text to get token count from!")
+            # raise Exception("No text to get token count from!")
+            return 0
         tokens = await self.get_tokens(text, conf)
         return len(tokens)
 
@@ -178,10 +185,18 @@ class API(MixinMeta):
 
     async def convo_token_count(self, conf: GuildSettings, convo: Conversation) -> int:
         """Fetch token count of stored messages"""
-        return sum([(await self.get_token_count(i["content"], conf)) for i in convo.messages])
+        return sum(
+            [
+                (await self.get_token_count(i["content"], conf))
+                for i in convo.messages
+                if i["content"]
+            ]
+        )
 
     async def payload_token_count(self, conf: GuildSettings, messages: List[dict]):
-        return sum([(await self.get_token_count(i["content"], conf)) for i in messages])
+        return sum(
+            [(await self.get_token_count(i["content"], conf)) for i in messages if i["content"]]
+        )
 
     async def prompt_token_count(self, conf: GuildSettings) -> int:
         """Fetch token count of system and initial prompts"""
@@ -223,6 +238,8 @@ class API(MixinMeta):
         # Calculate the initial total token count
         total_tokens = 0
         for message in messages:
+            if not message["content"]:
+                continue
             count = await self.get_token_count(message["content"], conf)
             total_tokens += count
 
@@ -271,15 +288,20 @@ class API(MixinMeta):
                 break
 
         log.debug(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
-        # Degrade the conversation except for the most recent user and function messages
+        # Degrade the conversation except for the most recent user, assistant, and function messages
         i = 0
         while total_tokens > max_tokens and i < len(messages):
             if (
                 messages[i]["role"] == "system"
                 or i == most_recent_user
                 or i == most_recent_function
+                or i == most_recent_assistant
             ):
                 i += 1
+                continue
+
+            if not messages[i]["content"] and "function_call" not in messages[i]:
+                messages.pop(i)
                 continue
 
             degraded_content = _degrade_message(messages[i]["content"])
@@ -318,6 +340,9 @@ class API(MixinMeta):
 
     async def token_pagify(self, text: str, conf: GuildSettings) -> List[str]:
         """Pagify a long string by tokens rather than characters"""
+        if not text:
+            log.debug("No text to pagify!")
+            return []
         token_chunks = []
         tokens = await self.get_tokens(text, conf)
         current_chunk = []

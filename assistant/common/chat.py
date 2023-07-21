@@ -24,6 +24,7 @@ from .utils import (
     extract_code_blocks_with_lang,
     get_attachments,
     get_params,
+    process_username,
     remove_code_blocks,
 )
 
@@ -222,15 +223,15 @@ class ChatHandler(MixinMeta):
             return [func for func in calls if func["name"] != name]
 
         # Don't include if user is not a tutor
-        if "knowledge_store" in function_map and author.id not in conf.tutors:
+        if "create_embedding" in function_map and author.id not in conf.tutors:
             if not any([role.id in conf.tutors for role in author.roles]):
-                function_calls = pop_schema("knowledge_store", function_calls)
-                del function_map["knowledge_store"]
+                function_calls = pop_schema("create_embedding", function_calls)
+                del function_map["create_embedding"]
 
         # Don't include if there are no embeddings
-        if "knowledge_search" in function_map and not conf.top_n:
-            function_calls = pop_schema("knowledge_search", function_calls)
-            del function_map["knowledge_search"]
+        if "search_embeddings" in function_map and (not conf.top_n or not conf.embeddings):
+            function_calls = pop_schema("search_embeddings", function_calls)
+            del function_map["search_embeddings"]
 
         max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(
@@ -245,9 +246,10 @@ class ChatHandler(MixinMeta):
             function_calls,
         )
         reply = "Failed to get response!"
-        last_function_response = ""
-        last_function_name = ""
+        # last_function_response = ""
+        # last_function_name = ""
         calls = 0
+        # repeats = 0
         while True:
             if calls >= conf.max_function_calls or conversation.function_count() >= 64:
                 function_calls = []
@@ -285,23 +287,18 @@ class ChatHandler(MixinMeta):
                 )
                 break
 
-            reply = response["content"]
-            function_call = response.get("function_call")
-            if reply and not function_call:
-                if last_function_response:
-                    # Only keep most recent function response in convo
-                    conversation.update_messages(
-                        last_function_response, "function", last_function_name
-                    )
+            if reply := response["content"]:
                 break
+
+            # If content is None then function call must exist
+            function_call = response.get("function_call")
             if not function_call:
                 continue
+
+            # Add function call to messages
+            messages.append(response)
+
             calls += 1
-            if reply:
-                conversation.update_messages(
-                    reply, "assistant", str(author.id) if author else None
-                )
-                messages.append({"role": "assistant", "content": reply})
 
             function_name = function_call["name"]
             if function_name not in function_map:
@@ -355,14 +352,16 @@ class ChatHandler(MixinMeta):
             elif not isinstance(result, str):
                 result = str(result)
 
-            # Calling the same function and getting the same result repeatedly is just insanity GPT
-            if function_name == last_function_name and result == last_function_response:
-                function_calls = pop_schema(function_name, function_calls)
-                log.info(f"Popping {function_name} for repeats")
-                continue
+            # # Calling the same function and getting the same result repeatedly is just insanity GPT
+            # if function_name == last_function_name and result == last_function_response:
+            #     repeats += 1
+            #     if repeats > 2:
+            #         function_calls = pop_schema(function_name, function_calls)
+            #         log.info(f"Popping {function_name} for repeats")
+            #     continue
 
-            last_function_name = function_name
-            last_function_response = result
+            # last_function_name = function_name
+            # last_function_response = result
 
             # Ensure response isnt too large
             result = await self.cut_text_by_tokens(result, conf, max_tokens)
@@ -373,6 +372,7 @@ class ChatHandler(MixinMeta):
             log.info(info)
             messages.append({"role": "function", "name": function_name, "content": result})
 
+        # Handle the rest of the reply
         if calls > 1:
             log.info(f"Made {calls} function calls in a row")
 
@@ -387,7 +387,9 @@ class ChatHandler(MixinMeta):
                     block = True
                 continue
 
-        conversation.update_messages(reply, "assistant", str(author.id) if author else None)
+        conversation.update_messages(
+            reply, "assistant", process_username(author.name) if author else None
+        )
         if block:
             reply = "Response failed due to invalid regex, check logs for more info."
         conversation.cleanup(conf, author)
@@ -468,7 +470,9 @@ class ChatHandler(MixinMeta):
             joined = "\n".join(embeddings)
 
             if conf.embed_method == "static":
-                conversation.update_messages(joined, "user", str(author.id) if author else None)
+                conversation.update_messages(
+                    joined, "user", process_username(author.name) if author else None
+                )
 
             elif conf.embed_method == "dynamic":
                 initial_prompt += f"\n\n{joined}"
@@ -477,7 +481,7 @@ class ChatHandler(MixinMeta):
                 if len(embeddings) > 1:
                     initial_prompt += f"\n\n{embeddings[1:]}"
                 conversation.update_messages(
-                    embeddings[0], "user", str(author.id) if author else None
+                    embeddings[0], "user", process_username(author.name) if author else None
                 )
 
         messages = conversation.prepare_chat(
