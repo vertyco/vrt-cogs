@@ -63,8 +63,10 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else "Not Set"
-        system_tokens = await self.get_token_count(conf.system_prompt, conf)
-        prompt_tokens = await self.get_token_count(conf.prompt, conf)
+        system_tokens = (
+            await self.get_token_count(conf.system_prompt, conf) if conf.system_prompt else 0
+        )
+        prompt_tokens = await self.get_token_count(conf.prompt, conf) if conf.prompt else 0
 
         func_list, _ = self.db.prep_functions(self.bot, conf, self.registry)
         func_tokens = await self.function_token_count(conf, func_list)
@@ -380,8 +382,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
 
-        ptokens = await self.get_token_count(prompt, conf)
-        stokens = await self.get_token_count(conf.system_prompt, conf)
+        ptokens = await self.get_token_count(prompt, conf) if prompt else 0
+        stokens = await self.get_token_count(conf.system_prompt, conf) if conf.system_prompt else 0
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
         if combined >= max_tokens:
@@ -458,8 +460,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
 
-        ptokens = await self.get_token_count(conf.prompt, conf)
-        stokens = await self.get_token_count(system_prompt, conf)
+        ptokens = await self.get_token_count(conf.prompt, conf) if conf.prompt else 0
+        stokens = await self.get_token_count(system_prompt, conf) if system_prompt else 0
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
         if combined >= max_tokens:

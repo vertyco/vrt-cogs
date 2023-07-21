@@ -53,7 +53,8 @@ schema = {
             },
             "temp_scale": {
                 "type": "string",
-                "description": "Units of measurement. For temperature in Fahrenheit use imperial. For temperature in Celsius use metric",
+                "enum": ["imperial", "metric"],
+                "description": "imperial for Farenheit, metric for Celcius",
             },
         },
         "required": ["location"],

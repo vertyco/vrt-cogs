@@ -79,17 +79,17 @@ READ_EXTENSIONS = [
 ]
 CREATE_EMBEDDING = {
     "name": "create_embedding",
-    "description": "Use this function to save information about something as an embedding, useful when someone corrects you or tells you something new",
+    "description": "Use this function to save information about something outside of the context of the current conversation, and can be referenced later. useful when someone corrects you or tells you something new.",
     "parameters": {
         "type": "object",
         "properties": {
             "embedding_name": {
                 "type": "string",
-                "description": "A short unique name for the embedding entry",
+                "description": "Short unique name for the embedding entry",
             },
             "embedding_text": {
                 "type": "string",
-                "description": "A summary of the information to be stored based on the context of the conversation or correction",
+                "description": "Detailed summary of information to be stored based on the context of the conversation or correction.",
             },
         },
         "required": ["embedding_name", "embedding_text"],

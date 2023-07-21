@@ -65,6 +65,17 @@ async def can_use(message: discord.Message, blacklist: list, respond: bool = Tru
     return allowed
 
 
+def process_username(username: str):
+    pattern = re.compile("^[a-zA-Z0-9_-]{1,64}$")
+    if not pattern.match(username):
+        # Username is not valid, replace invalid characters
+        username = re.sub("[^a-zA-Z0-9_-]", "-", username)
+
+        # Username should not exceed 64 characters
+        username = username[:64]
+    return username
+
+
 def extract_code_blocks(content: str) -> List[str]:
     code_blocks = re.findall(r"```(?:\w+)(.*?)```", content, re.DOTALL)
     if not code_blocks:
