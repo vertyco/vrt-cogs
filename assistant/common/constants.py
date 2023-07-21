@@ -77,9 +77,9 @@ READ_EXTENSIONS = [
     ".batch",
     ".shell",
 ]
-KNOWLEDGE_STORE = {
-    "name": "knowledge_store",
-    "description": "Use this function to store information about something as an embedding, useful when someone corrects you or tells you something new",
+CREATE_EMBEDDING = {
+    "name": "create_embedding",
+    "description": "Use this function to save information about something as an embedding, useful when someone corrects you or tells you something new",
     "parameters": {
         "type": "object",
         "properties": {
@@ -95,9 +95,9 @@ KNOWLEDGE_STORE = {
         "required": ["embedding_name", "embedding_text"],
     },
 }
-KNOWLEDGE_SEARCH = {
-    "name": "knowledge_search",
-    "description": "Use this function to query the embedding database for related info",
+SEARCH_EMBEDDINGS = {
+    "name": "search_embeddings",
+    "description": "Use this function to search embeddings for related info",
     "parameters": {
         "type": "object",
         "properties": {

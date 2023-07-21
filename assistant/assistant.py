@@ -14,7 +14,7 @@ from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
-from .common.constants import KNOWLEDGE_SEARCH, KNOWLEDGE_STORE
+from .common.constants import CREATE_EMBEDDING, SEARCH_EMBEDDINGS
 from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
 from .listener import AssistantListener
@@ -47,7 +47,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.5.6"
+    __version__ = "4.5.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -92,8 +92,8 @@ class Assistant(
         await asyncio.to_thread(self._cleanup_db)
 
         # Register internal functions
-        await self.register_function(self.qualified_name, KNOWLEDGE_STORE)
-        await self.register_function(self.qualified_name, KNOWLEDGE_SEARCH)
+        await self.register_function(self.qualified_name, CREATE_EMBEDDING)
+        await self.register_function(self.qualified_name, SEARCH_EMBEDDINGS)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
@@ -190,30 +190,7 @@ class Assistant(
             return
         await self.save_conf()
 
-    async def knowledge_search(
-        self,
-        guild: discord.Guild,
-        search_query: str,
-        *args,
-        **kwargs,
-    ):
-        conf = self.db.get_conf(guild)
-        if not conf.embeddings:
-            return "There are no embeddings saved!"
-        query_embedding = await self.request_embedding(search_query, conf)
-        if not query_embedding:
-            return f"Failed to get embedding for your the query '{search_query}'"
-        embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding, 1)
-        if not embeddings:
-            return f"No embeddings could be found related to the search query '{search_query}'"
-
-        embed = embeddings[0]
-        return (
-            f"Search results for '{search_query}'\n"
-            f"Found entry '{embed[0]}' with relatedness score of '{embed[2]}'\n{embed[1]}"
-        )
-
-    async def knowledge_store(
+    async def create_embedding(
         self,
         guild: discord.Guild,
         user: discord.Member,
@@ -240,6 +217,29 @@ class Assistant(
             return "The embedding has been created successfully"
         except EmbeddingEntryExists:
             return "That embedding already exists"
+
+    async def search_embeddings(
+        self,
+        guild: discord.Guild,
+        search_query: str,
+        *args,
+        **kwargs,
+    ):
+        conf = self.db.get_conf(guild)
+        if not conf.embeddings:
+            return "There are no embeddings saved!"
+        query_embedding = await self.request_embedding(search_query, conf)
+        if not query_embedding:
+            return f"Failed to get embedding for your the query '{search_query}'"
+        embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding, 1)
+        if not embeddings:
+            return f"No embeddings could be found related to the search query '{search_query}'"
+
+        embed = embeddings[0]
+        return (
+            f"Search results for '{search_query}'\n"
+            f"Found entry '{embed[0]}' with relatedness score of '{embed[2]}'\n{embed[1]}"
+        )
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
