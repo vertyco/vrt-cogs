@@ -37,11 +37,11 @@ log = logging.getLogger("red.vrt.xtools")
 
 class XTools(commands.Cog):
     """
-    Cool Tools for Xbox
+    Provides various features and functionalities related to Xbox, including profile retrieval, game clips and screenshot viewing, Microsoft services status checking, and more.
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.10.2"
+    __version__ = "3.10.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
