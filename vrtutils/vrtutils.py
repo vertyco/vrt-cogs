@@ -426,10 +426,12 @@ class VrtUtils(commands.Cog):
         )
 
         cpustats = f"CPU: {cpu_type}\n"
-        cpustats += f"Bot: {bot_cpu_used}%\nOverall: {cpu_avg}%\n"
-        cpustats += (
-            f"Cores: {cpu_count} @ {round(cpu_freq[0].current)}/{round(cpu_freq[0].max)} Mhz\n"
-        )
+        cpustats += f"Bot: {bot_cpu_used}%\nOverall: {cpu_avg}%\nCores: {cpu_count}"
+        clock, clockmax = round(cpu_freq[0].current), round(cpu_freq[0].max)
+        if clockmax:
+            cpustats += f" @ {clock}/{clockmax} MHz\n"
+        else:
+            cpustats += f" @ {clock} MHz\n"
 
         preformat = []
         for i, perc in enumerate(cpu_perc):
