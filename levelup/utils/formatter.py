@@ -210,7 +210,7 @@ def get_leaderboard(
         for i in range(start, stop, 1):
             uid = sorted_users[i][0]
             user_obj = ctx.guild.get_member(int(uid))
-            user = user_obj.display_name if user_obj else uid
+            user = user_obj.name if user_obj else uid
             data = sorted_users[i][1]
 
             place = i + 1
