@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.9"
+    __version__ = "1.6.10"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -96,12 +96,14 @@ class VrtUtils(commands.Cog):
 
     @staticmethod
     def get_bar(progress, total, perc=None, width: int = 20) -> str:
+        fill = "▰"
+        space = "▱"
         if perc is not None:
             ratio = perc / 100
         else:
             ratio = progress / total
-        bar = "█" * round(ratio * width) + "-" * round(width - (ratio * width))
-        return f"|{bar}| {round(100 * ratio, 1)}%"
+        bar = fill * round(ratio * width) + space * round(width - (ratio * width))
+        return f"{bar} {round(100 * ratio, 1)}%"
 
     async def do_shell_command(self, command: str):
         cmd = f"{executable} -m {command}"
@@ -329,6 +331,7 @@ class VrtUtils(commands.Cog):
 
     def get_bot_info_embed(self, color: discord.Color) -> discord.Embed:
         process = psutil.Process(os.getpid())
+        bot_cpu_used = process.cpu_percent(interval=3)
 
         # -/-/-/CPU-/-/-/
         cpu_count = psutil.cpu_count()  # Int
@@ -337,7 +340,6 @@ class VrtUtils(commands.Cog):
         cpu_freq: list = psutil.cpu_freq(percpu=True)  # List of Objects
         cpu_info: dict = cpuinfo.get_cpu_info()  # Dict
         cpu_type = cpu_info.get("brand_raw", "Unknown")
-        bot_cpu_used = process.cpu_percent(interval=1)
 
         # -/-/-/MEM-/-/-/
         ram = psutil.virtual_memory()  # Obj
@@ -429,12 +431,18 @@ class VrtUtils(commands.Cog):
             f"Cores: {cpu_count} @ {round(cpu_freq[0].current)}/{round(cpu_freq[0].max)} Mhz\n"
         )
 
+        preformat = []
         for i, perc in enumerate(cpu_perc):
             space = "" if i >= 10 or len(cpu_perc) < 10 else " "
             index = i if len(cpu_freq) > i else 0
-            bar = self.get_bar(0, 0, perc, width=16)
+            bar = self.get_bar(0, 0, perc, width=14)
             speed = round(cpu_freq[index].current)
-            cpustats += f"c{i}:{space} {bar} @ {speed} MHz\n"
+            preformat.append((f"c{i}:{space} {bar}", f"{speed} MHz"))
+
+        max_width = max([len(i[0]) for i in preformat])
+        for usage, speed in preformat:
+            space = (max_width - len(usage)) * " " if len(usage) < max_width else ""
+            cpustats += f"{usage}{space} @ {speed}\n"
 
         for p in pagify(cpustats, page_length=1024):
             embed.add_field(
