@@ -296,7 +296,7 @@ class Pilmoji:
                 content = node.content
 
                 try:
-                    width, _ = font.getsize(content)
+                    width = font.getbbox(content)[2]
                 except AttributeError:
                     width = int(font.getlength(content))
 
