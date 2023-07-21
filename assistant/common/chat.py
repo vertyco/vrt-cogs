@@ -202,7 +202,8 @@ class ChatHandler(MixinMeta):
             channel = guild.get_channel(channel)
 
         query_embedding = []
-        if conf.top_n:
+        message_tokens = await self.get_token_count(message, conf)
+        if conf.top_n and message_tokens < 8191:
             # Save on tokens by only getting embeddings if theyre enabled
             query_embedding = await self.request_embedding(message, conf)
 
