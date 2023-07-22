@@ -71,7 +71,7 @@ async def request_chat_completion_raw(
     api_key: str,
     max_tokens: int,
     api_base: Optional[str] = None,
-    functions: List[dict] = [],
+    functions: Optional[List[dict]] = None,
     timeout: int = 60,
 ) -> Dict[str, str]:
     if functions and VERSION >= "0.27.6" and model in SUPPORTS_FUNCTIONS:

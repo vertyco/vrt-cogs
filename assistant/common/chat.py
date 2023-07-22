@@ -528,9 +528,11 @@ class ChatHandler(MixinMeta):
             content: Optional[str] = None,
             embed: Optional[discord.Embed] = None,
             embeds: Optional[List[discord.Embed]] = None,
-            files: Optional[List[discord.File]] = [],
+            files: Optional[List[discord.File]] = None,
             mention: bool = False,
         ):
+            if files is None:
+                files = []
             if reply:
                 try:
                     return await message.reply(
