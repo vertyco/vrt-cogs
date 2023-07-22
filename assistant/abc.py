@@ -30,7 +30,7 @@ class MixinMeta(metaclass=ABCMeta):
         self,
         messages: List[dict],
         conf: GuildSettings,
-        functions: List[dict] = [],
+        functions: Optional[List[dict]] = None,
         member: discord.Member = None,
     ) -> Dict[str, str]:
         raise NotImplementedError
@@ -119,8 +119,8 @@ class MixinMeta(metaclass=ABCMeta):
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         conf: GuildSettings,
-        function_calls: List[dict] = [],
-        function_map: Dict[str, Callable] = {},
+        function_calls: Optional[List[dict]] = None,
+        function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
     ) -> str:
         raise NotImplementedError

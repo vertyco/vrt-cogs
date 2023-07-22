@@ -31,7 +31,7 @@ class API(MixinMeta):
         self,
         messages: List[dict],
         conf: GuildSettings,
-        functions: List[dict] = [],
+        functions: Optional[List[dict]] = None,
         member: Optional[discord.Member] = None,
     ) -> Dict[str, str]:
         api_base = conf.endpoint_override or self.db.endpoint_override
