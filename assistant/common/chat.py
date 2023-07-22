@@ -179,11 +179,16 @@ class ChatHandler(MixinMeta):
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
         conf: GuildSettings,
-        function_calls: List[dict] = [],
-        function_map: Dict[str, Callable] = {},
+        function_calls: Optional[List[dict]] = None,
+        function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
     ) -> str:
         """Call the API asynchronously"""
+        if function_calls is None:
+            function_calls = []
+        if function_map is None:
+            function_map = {}
+
         if conf.use_function_calls and extend_function_calls and conf.model in SUPPORTS_FUNCTIONS:
             # Prepare registry and custom functions
             prepped_function_calls, prepped_function_map = self.db.prep_functions(
@@ -222,6 +227,20 @@ class ChatHandler(MixinMeta):
         def pop_schema(name: str, calls: List[dict]):
             return [func for func in calls if func["name"] != name]
 
+        # I think this is fixed now
+        # def recompile_functions(existing: List[dict]):
+        #     """
+        #     Functions somehow double up and grow uncontrollably.
+        #     I havent figured out why so this is a crappy workaround for now
+        #     """
+        #     names = []
+        #     recompiled = []
+        #     for i in existing:
+        #         if i["name"] not in names:
+        #             names.append(i["name"])
+        #             recompiled.append(i)
+        #     return recompiled
+
         # Don't include if user is not a tutor
         if "create_embedding" in function_map and author.id not in conf.tutors:
             if not any([role.id in conf.tutors for role in author.roles]):
@@ -251,13 +270,15 @@ class ChatHandler(MixinMeta):
         calls = 0
         # repeats = 0
         while True:
-            if calls >= conf.max_function_calls or conversation.function_count() >= 64:
+            # function_calls = recompile_functions(function_calls)
+
+            if calls >= conf.max_function_calls:
                 function_calls = []
 
             if len(messages) > 1:
                 # Iteratively degrade the conversation to ensure it is always under the token limit
                 messages, function_calls, degraded = await self.degrade_conversation(
-                    messages, function_calls.copy(), conf, author
+                    messages, function_calls, conf, author
                 )
                 if degraded:
                     conversation.overwrite(messages)
