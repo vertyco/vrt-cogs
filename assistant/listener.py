@@ -4,7 +4,7 @@ import discord
 from redbot.core import commands
 
 from .abc import MixinMeta
-from .common.utils import can_use
+from .common.utils import can_use, embed_to_content
 
 log = logging.getLogger("red.vrt.assistant.listener")
 
@@ -16,14 +16,17 @@ class AssistantListener(MixinMeta):
         if not message:
             return
         # If message was from a bot
-        if message.author.bot:
+        if message.author.bot and not self.db.listen_to_bots:
             return
         # If message wasn't sent in a guild
         if not message.guild:
             return
         # Ignore messages without content
         if not message.content:
-            return
+            if not message.embeds:
+                return
+            # Replace message content with embed content
+            embed_to_content(message)
         # Ignore if channel doesn't exist
         if not message.channel:
             return

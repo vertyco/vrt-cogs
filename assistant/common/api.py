@@ -9,6 +9,7 @@ import discord
 import orjson
 from aiohttp import ClientConnectionError
 from redbot.core import commands
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
 
 from ..abc import MixinMeta
@@ -24,8 +25,10 @@ from .models import Conversation, GuildSettings
 from .utils import compile_messages
 
 log = logging.getLogger("red.vrt.assistant.api")
+_ = Translator("Assistant", __file__)
 
 
+@cog_i18n(_)
 class API(MixinMeta):
     async def request_response(
         self,
@@ -104,12 +107,18 @@ class API(MixinMeta):
         ]
         if all(cant):
             if ctx:
-                txt = "There are no API keys set!\n"
+                txt = _("There are no API keys set!\n")
                 if ctx.author.id == ctx.guild.owner_id:
-                    txt += f"- Set your OpenAI key with `{ctx.clean_prefix}assist openaikey`\n"
-                    txt += f"- Or set an endpoint override to your self-hosted LLM with `{ctx.clean_prefix}assist endpoint`\n"
+                    txt += _("- Set your OpenAI key with `{}`\n").format(
+                        f"{ctx.clean_prefix}assist openaikey"
+                    )
+                    txt += _(
+                        "- Or set an endpoint override to your self-hosted LLM with `{}`\n"
+                    ).format(f"{ctx.clean_prefix}assist endpoint")
                 if ctx.author.id in self.bot.owner_ids:
-                    txt += f"- Alternatively you can set a global endpoint with `{ctx.clean_prefix}assist globalendpoint`"
+                    txt += _("- Alternatively you can set a global endpoint with `{}`").format(
+                        f"{ctx.clean_prefix}assist globalendpoint"
+                    )
                 await ctx.send(txt)
             return False
         return True
@@ -395,52 +404,58 @@ class API(MixinMeta):
         for cog_name, functions in registry.items():
             for function_name, func in functions.items():
                 embed = discord.Embed(
-                    title="Custom Functions", description=function_name, color=discord.Color.blue()
+                    title=_("Custom Functions"),
+                    description=function_name,
+                    color=discord.Color.blue(),
                 )
                 if cog_name != "Assistant-Custom":
                     embed.add_field(
-                        name="3rd Party",
-                        value=f"This function is managed by the `{cog_name}` cog",
+                        name=_("3rd Party"),
+                        value=_("This function is managed by the `{}` cog").format(cog_name),
                         inline=False,
                     )
                 elif cog_name == "Assistant":
                     embed.add_field(
-                        name="Internal Function",
-                        value="This is an internal command that can only be used when interacting with a tutor",
+                        name=_("Internal Function"),
+                        value=_(
+                            "This is an internal command that can only be used when interacting with a tutor"
+                        ),
                         inline=False,
                     )
                 schema = json.dumps(func["jsonschema"], indent=2)
                 tokens = await self.get_token_count(schema, conf)
-                schema_text = (
-                    f"This function consumes `{humanize_number(tokens)}` input tokens each call\n"
+
+                schema_text = _("This function consumes `{}` input tokens each call\n").format(
+                    humanize_number(tokens)
                 )
 
                 if user.id in self.bot.owner_ids:
                     if len(schema) > 1000:
-                        schema_text += box(schema[:1000], "py") + "..."
+                        schema_text += box(schema[:1000] + "...", "py")
                     else:
                         schema_text += box(schema, "py")
 
                     if len(func["code"]) > 1000:
-                        code_text = box(func["code"][:1000], "py") + "..."
+                        code_text = box(func["code"][:1000] + "...", "py")
                     else:
                         code_text = box(func["code"], "py")
 
                 else:
                     schema_text += box(func["jsonschema"]["description"], "json")
-                    code_text = box("Hidden...")
+                    code_text = box(_("Hidden..."))
 
-                embed.add_field(name="Schema", value=schema_text, inline=False)
-                embed.add_field(name="Code", value=code_text, inline=False)
+                embed.add_field(name=_("Schema"), value=schema_text, inline=False)
+                embed.add_field(name=_("Code"), value=code_text, inline=False)
 
-                embed.set_footer(text=f"Page {page}/{pages}")
+                embed.set_footer(text=_("Page {}/{}").format(page, pages))
                 embeds.append(embed)
                 page += 1
 
         if not embeds:
             embeds.append(
                 discord.Embed(
-                    description="No custom code has been added yet!", color=discord.Color.purple()
+                    description=_("No custom code has been added yet!"),
+                    color=discord.Color.purple(),
                 )
             )
         return embeds
@@ -455,8 +470,8 @@ class API(MixinMeta):
         stop = 5
         for page in range(pages):
             stop = min(stop, len(embeddings))
-            embed = discord.Embed(title="Embeddings", color=discord.Color.blue())
-            embed.set_footer(text=f"Page {page + 1}/{pages}")
+            embed = discord.Embed(title=_("Embeddings"), color=discord.Color.blue())
+            embed.set_footer(text=_("Page {}/{}").format(page + 1, pages))
             num = 0
             for i in range(start, stop):
                 name, embedding = embeddings[i]
@@ -467,9 +482,9 @@ class API(MixinMeta):
                     else box(embedding.text.strip())
                 )
                 val = (
-                    f"`Tokens:     `{tokens}\n"
-                    f"`Dimensions: `{len(embedding.embedding)}\n"
-                    f"{text}"
+                    _("`Tokens:     `{}\n").format(tokens)
+                    + _("`Dimensions: `{}\n").format(len(embedding.embedding))
+                    + text
                 )
                 embed.add_field(
                     name=f"➣ {name}" if place == num else name,
@@ -483,7 +498,7 @@ class API(MixinMeta):
         if not embeds:
             embeds.append(
                 discord.Embed(
-                    description="No embeddings have been added!", color=discord.Color.purple()
+                    description=_("No embeddings have been added!"), color=discord.Color.purple()
                 )
             )
         return embeds
