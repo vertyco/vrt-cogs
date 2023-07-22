@@ -45,6 +45,8 @@ async def wait_message(ctx: commands.Context) -> Optional[discord.Message]:
 
 
 async def can_use(message: discord.Message, blacklist: list, respond: bool = True) -> bool:
+    if message.webhook_id is not None:
+        return True
     allowed = True
     if message.author.id in blacklist:
         if respond:
