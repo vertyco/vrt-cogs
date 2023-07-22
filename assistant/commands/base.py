@@ -4,6 +4,7 @@ from io import BytesIO
 
 import discord
 from redbot.core import commands
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, escape, pagify
 
 from ..abc import MixinMeta
@@ -11,10 +12,24 @@ from ..common.calls import request_model
 from ..common.utils import can_use
 
 log = logging.getLogger("red.vrt.assistant.base")
+_ = Translator("Assistant", __file__)
 
 
+@cog_i18n(_)
 class Base(MixinMeta):
-    @commands.command(name="chat", aliases=["ask"])
+    @commands.command(
+        name="chat",
+        aliases=[
+            "ask",
+            "razgovor",
+            "discuter",
+            "plaudern",
+            "채팅",
+            "charlar",
+            "baterpapo",
+            "sohbet",
+        ],
+    )
     @commands.guild_only()
     @commands.cooldown(1, 6, commands.BucketType.user)
     async def ask_question(self, ctx: commands.Context, *, question: str):
@@ -89,24 +104,31 @@ class Base(MixinMeta):
                 res = await request_model(f"{endpoint}/model")
                 model = res["model"]
             except Exception as e:  # Could be any issue, don't worry about it here
-                log.warning("Could not fetch external model", exc_info=e)
+                log.warning(_("Could not fetch external model"), exc_info=e)
                 pass
 
+        desc = (
+            ctx.channel.mention
+            + "\n"
+            + _("`Messages: `{}/{}\n`Tokens:   `{}/{}\n`Expired:  `{}\n`Model:    `{}").format(
+                messages,
+                conf.get_user_max_retention(ctx.author),
+                convo_tokens,
+                max_tokens,
+                conversation.is_expired(conf, ctx.author),
+                model,
+            )
+        )
         embed = discord.Embed(
-            description=(
-                f"{ctx.channel.mention}\n"
-                f"`Messages: `{messages}/{conf.get_user_max_retention(ctx.author)}\n"
-                f"`Tokens:   `{convo_tokens}/{max_tokens}\n"
-                f"`Expired:  `{conversation.is_expired(conf, ctx.author)}\n"
-                f"`Model:    `{model}"
-            ),
+            description=desc,
             color=color,
         )
         embed.set_author(
-            name=f"Conversation stats for {user.display_name}", icon_url=user.display_avatar
+            name=_("Conversation stats for {}").format(user.display_name),
+            icon_url=user.display_avatar,
         )
         embed.set_footer(
-            text="Token limit is a soft cap and excess is trimmed before sending to the api"
+            text=_("Token limit is a soft cap and excess is trimmed before sending to the api")
         )
         await ctx.send(embed=embed)
 
@@ -120,7 +142,7 @@ class Base(MixinMeta):
         """
         conversation = self.db.get_conversation(ctx.author.id, ctx.channel.id, ctx.guild.id)
         conversation.reset()
-        await ctx.send("Your conversation in this channel has been reset!")
+        await ctx.send(_("Your conversation in this channel has been reset!"))
 
     @commands.command(name="query")
     @commands.bot_has_permissions(embed_links=True)
@@ -132,27 +154,27 @@ class Base(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.embeddings:
-            return await ctx.send("You do not have any embeddings configured!")
+            return await ctx.send(_("You do not have any embeddings configured!"))
         if not conf.top_n:
-            return await ctx.send("Top N is set to 0 so no embeddings will be returned")
+            return await ctx.send(_("Top N is set to 0 so no embeddings will be returned"))
         if not await self.can_call_llm(conf, ctx):
             return
         async with ctx.typing():
             query_embedding = await self.request_embedding(query, conf)
             if not query_embedding:
-                return await ctx.send("Failed to get embedding for your query")
+                return await ctx.send(_("Failed to get embedding for your query"))
 
             embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
             if not embeddings:
                 return await ctx.send(
-                    "No embeddings could be related to this query with the current settings"
+                    _("No embeddings could be related to this query with the current settings")
                 )
             for name, em, score, dimension in embeddings:
                 for p in pagify(em, page_length=4000):
                     txt = (
-                        f"`Entry Name:  `{name}\n"
-                        f"`Relatedness: `{round(score, 4)}\n"
-                        f"`Dimensions:  `{dimension}\n"
+                        _("`Entry Name:  `{}\n").format(name)
+                        + _("`Relatedness: `{}\n").format(round(score, 4))
+                        + _("`Dimensions:  `{}\n").format(dimension)
                     )
                     escaped = escape(p)
                     boxed = box(escaped)
@@ -173,7 +195,7 @@ class Base(MixinMeta):
             user = ctx.author
         conversation = self.db.get_conversation(user.id, ctx.channel.id, ctx.guild.id)
         if not conversation.messages:
-            return await ctx.send("You have no conversation in this channel!")
+            return await ctx.send(_("You have no conversation in this channel!"))
 
         text = ""
         for message in conversation.messages:
@@ -185,4 +207,4 @@ class Base(MixinMeta):
         buffer.name = f"{ctx.author.name}_transcript.txt"
         buffer.seek(0)
         file = discord.File(buffer)
-        await ctx.send("Here is your conversation transcript!", file=file)
+        await ctx.send(_("Here is your conversation transcript!"), file=file)

@@ -215,6 +215,7 @@ class DB(BaseModel):
     conversations: dict[str, Conversation] = {}
     persistent_conversations: bool = False
     functions: Dict[str, CustomFunction] = {}
+    listen_to_bots: bool = False
 
     endpoint_override: Optional[str] = None
 

@@ -8,9 +8,11 @@ from typing import List, Optional, Tuple, Union
 import discord
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 log = logging.getLogger("red.vrt.assistant.utils")
+_ = Translator("Assistant", __file__)
 
 
 def get_attachments(message: discord.Message) -> List[discord.Attachment]:
@@ -35,7 +37,7 @@ async def wait_message(ctx: commands.Context) -> Optional[discord.Message]:
     try:
         message = await ctx.bot.wait_for("message", timeout=600, check=check)
         if message.content == "cancel":
-            await ctx.send("Canceled")
+            await ctx.send(_("Canceled"))
             return None
         return message
     except asyncio.TimeoutError:
@@ -46,23 +48,39 @@ async def can_use(message: discord.Message, blacklist: list, respond: bool = Tru
     allowed = True
     if message.author.id in blacklist:
         if respond:
-            await message.channel.send("You have been blacklisted from using this command!")
+            await message.channel.send(_("You have been blacklisted from using this command!"))
         allowed = False
     elif any(role.id in blacklist for role in message.author.roles):
         if respond:
-            await message.channel.send("You have a blacklisted role and cannot use this command!")
+            await message.channel.send(
+                _("You have a blacklisted role and cannot use this command!")
+            )
         allowed = False
     elif message.channel.id in blacklist:
         if respond:
-            await message.channel.send("You cannot use that command in this channel!")
+            await message.channel.send(_("You cannot use that command in this channel!"))
         allowed = False
     elif message.channel.category_id in blacklist:
         if respond:
             await message.channel.send(
-                "You cannot use that command in any channels under this category"
+                _("You cannot use that command in any channels under this category")
             )
         allowed = False
     return allowed
+
+
+def embed_to_content(message: discord.Message) -> None:
+    if not message.embeds or message.content is not None:
+        return message
+    extracted = ""
+    embed = message.embeds[0]
+    if title := embed.title:
+        extracted += f"# {title}\n"
+    if desc := embed.description:
+        extracted += f"{desc}\n"
+    for field in embed.fields:
+        extracted += f"## {field.name}\n{field.value}\n"
+    message.content = extracted
 
 
 def process_username(username: str):
@@ -92,8 +110,8 @@ def extract_code_blocks_with_lang(content: str) -> List[Tuple[str, str]]:
 
 
 def remove_code_blocks(content: str) -> str:
-    content = re.sub(r"```(?:\w+)(.*?)```", "[Code Removed]", content, flags=re.DOTALL).strip()
-    return re.sub(r"```(.*?)```", "[Code Removed]", content, flags=re.DOTALL).strip()
+    content = re.sub(r"```(?:\w+)(.*?)```", _("[Code Removed]"), content, flags=re.DOTALL).strip()
+    return re.sub(r"```(.*?)```", _("[Code Removed]"), content, flags=re.DOTALL).strip()
 
 
 def code_string_valid(code: str) -> bool:

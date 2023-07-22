@@ -14,6 +14,7 @@ import discord
 import pytz
 from openai.error import APIConnectionError, AuthenticationError, InvalidRequestError
 from redbot.core import bank
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
@@ -29,8 +30,10 @@ from .utils import (
 )
 
 log = logging.getLogger("red.vrt.assistant.chathandler")
+_ = Translator("Assistant", __file__)
 
 
+@cog_i18n(_)
 class ChatHandler(MixinMeta):
     async def handle_message(
         self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
@@ -99,7 +102,7 @@ class ChatHandler(MixinMeta):
             reply = (
                 conversation.messages[-1]["content"]
                 if conversation.messages
-                else "No message history!"
+                else _("No message history!")
             )
         else:
             try:
@@ -107,12 +110,12 @@ class ChatHandler(MixinMeta):
                     question, message.author, message.guild, message.channel, conf
                 )
             except APIConnectionError as e:
-                reply = "Failed to communicate with endpoint!"
+                reply = _("Failed to communicate with endpoint!")
                 log.error(f"APIConnectionError (From listener: {listener})", exc_info=e)
             except InvalidRequestError as e:
                 if error := e.error:
                     # OpenAI related error, doesn't need to be restricted to bot owner only
-                    reply = f"Error: {error['message']}"
+                    reply = _("Error: {}").format(error["message"])
                     log.error(
                         f"Invalid Request Error (From listener: {listener})\n{error}", exc_info=e
                     )
@@ -121,20 +124,22 @@ class ChatHandler(MixinMeta):
                     return
             except AuthenticationError:
                 if message.author == message.guild.owner:
-                    reply = "Invalid API key, please set a new valid key!"
+                    reply = _("Invalid API key, please set a new valid key!")
                 else:
-                    reply = "Uh oh, looks like my API key is invalid!"
+                    reply = _("Uh oh, looks like my API key is invalid!")
             except KeyError as e:
                 log.debug("get_chat_response error", exc_info=e)
                 await message.channel.send(
-                    f"**KeyError in prompt or system message**\n{box(str(e), 'py')}"
+                    _("**KeyError in prompt or system message**\n{}").format(box(str(e), "py"))
                 )
                 return
             except Exception as e:
                 prefix = (await self.bot.get_valid_prefixes(message.guild))[0]
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()
-                reply = f"Uh oh, something went wrong! Bot owner can use `{prefix}traceback` to view the error."
+                reply = _(
+                    "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
+                ).format(f"{prefix}traceback")
 
         files = None
         to_send = []
@@ -164,7 +169,7 @@ class ChatHandler(MixinMeta):
         if not to_send and listener:
             return
         elif not to_send and not listener:
-            return await message.reply("No results found")
+            return await message.reply(_("No results found"))
 
         for index, text in enumerate(to_send):
             if index == 0:
@@ -264,7 +269,7 @@ class ChatHandler(MixinMeta):
             extras,
             function_calls,
         )
-        reply = "Failed to get response!"
+        reply = _("Failed to get response!")
         # last_function_response = ""
         # last_function_name = ""
         calls = 0
@@ -304,7 +309,7 @@ class ChatHandler(MixinMeta):
                     buffer.seek(0)
                     file = discord.File(buffer)
                     try:
-                        await channel.send("Too many functions called", file=file)
+                        await channel.send(_("Too many functions called"), file=file)
                     except discord.HTTPException:
                         pass
                 response = await self.request_response(
@@ -411,7 +416,7 @@ class ChatHandler(MixinMeta):
             reply, "assistant", process_username(author.name) if author else None
         )
         if block:
-            reply = "Response failed due to invalid regex, check logs for more info."
+            reply = _("Response failed due to invalid regex, check logs for more info.")
         conversation.cleanup(conf, author)
         return reply
 
@@ -521,7 +526,7 @@ class ChatHandler(MixinMeta):
         file_perms = message.channel.permissions_for(message.guild.me).attach_files
         if files and not file_perms:
             files = []
-            content += "\nMissing 'attach files' permissions!"
+            content += _("\nMissing 'attach files' permissions!")
         delims = ("```", "\n")
 
         async def send(

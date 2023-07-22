@@ -22,6 +22,9 @@ from .listener import AssistantListener
 log = logging.getLogger("red.vrt.assistant")
 
 
+# redgettext -D views.py commands/admin.py commands/base.py common/api.py common/chat.py common/utils.py --command-docstring
+
+
 class Assistant(
     AssistantCommands,
     AssistantListener,
@@ -47,7 +50,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.6.0"
+    __version__ = "4.7.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
