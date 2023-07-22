@@ -257,7 +257,7 @@ class ChatHandler(MixinMeta):
             if len(messages) > 1:
                 # Iteratively degrade the conversation to ensure it is always under the token limit
                 messages, function_calls, degraded = await self.degrade_conversation(
-                    messages, function_calls, conf, author
+                    messages, function_calls.copy(), conf, author
                 )
                 if degraded:
                     conversation.overwrite(messages)
@@ -276,6 +276,16 @@ class ChatHandler(MixinMeta):
                 log.warning(
                     f"Function response failed. functions: {len(function_calls)}", exc_info=e
                 )
+                if await self.bot.is_owner(author) and len(function_calls) > 64:
+                    dump = json.dumps(function_calls, indent=2)
+                    buffer = BytesIO(dump.encode())
+                    buffer.name = "FunctionDump.json"
+                    buffer.seek(0)
+                    file = discord.File(buffer)
+                    try:
+                        await channel.send("Too many functions called", file=file)
+                    except discord.HTTPException:
+                        pass
                 response = await self.request_response(
                     messages=messages,
                     conf=conf,
@@ -351,17 +361,6 @@ class ChatHandler(MixinMeta):
                 result = result.decode()
             elif not isinstance(result, str):
                 result = str(result)
-
-            # # Calling the same function and getting the same result repeatedly is just insanity GPT
-            # if function_name == last_function_name and result == last_function_response:
-            #     repeats += 1
-            #     if repeats > 2:
-            #         function_calls = pop_schema(function_name, function_calls)
-            #         log.info(f"Popping {function_name} for repeats")
-            #     continue
-
-            # last_function_name = function_name
-            # last_function_response = result
 
             # Ensure response isnt too large
             result = await self.cut_text_by_tokens(result, conf, max_tokens)
