@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-20 16:34\n"
+"PO-Revision-Date: 2023-07-23 02:08\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -19,11 +19,11 @@ msgstr ""
 
 #: base.py:76
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "Uh oh, parece que isso não é um URL válido."
 
 #: base.py:86
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "Parece que não é uma imagem válida, não consigo identificar o arquivo."
 
 #: base.py:91
 msgid "Uh Oh, looks like that is not a valid image"
