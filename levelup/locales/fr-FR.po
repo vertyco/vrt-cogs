@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 18:57\n"
+"PO-Revision-Date: 2023-07-23 20:00\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -625,7 +625,7 @@ msgstr "Niveau:"
 
 #: generator.py:216
 msgid "Exp: "
-msgstr ""
+msgstr "Expérience : "
 
 #: generator.py:219 generator.py:625
 msgid "Messages: "
@@ -645,7 +645,7 @@ msgstr "Temps de la voix:"
 
 #: generator.py:629
 msgid " - Prestige "
-msgstr ""
+msgstr " - Prestige "
 
 #: generator.py:1100
 #, docstring
@@ -690,7 +690,7 @@ msgstr ""
 
 #: levelup.py:357 levelup.py:361
 msgid "just gave a star to"
-msgstr ""
+msgstr "vient de donner une étoile à"
 
 #: levelup.py:630
 msgid "You have just reached level {level} in {guild}!"
@@ -702,7 +702,7 @@ msgstr ""
 
 #: levelup.py:673
 msgid "You just leveled up in "
-msgstr ""
+msgstr "Vous venez de monter de niveau dans "
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
@@ -761,15 +761,15 @@ msgstr ""
 #: levelup.py:1104
 #, docstring
 msgid "View all LevelUP settings"
-msgstr ""
+msgstr "Afficher tous les paramètres de LevelUP"
 
 #: levelup.py:1144
 msgid "Image"
-msgstr ""
+msgstr "Image"
 
 #: levelup.py:1144
 msgid "Embed"
-msgstr ""
+msgstr "Incorporer"
 
 #: levelup.py:1146
 msgid "**Main**\n"
@@ -777,132 +777,133 @@ msgstr ""
 
 #: levelup.py:1147
 msgid "`Profile Type:      `"
-msgstr ""
+msgstr "`Type de profil:      `"
 
 #: levelup.py:1148
 msgid "`Include Balance:   `"
-msgstr ""
+msgstr "`Inclure le solde :   `"
 
 #: levelup.py:1149
 msgid "`Progress Bar:      `"
-msgstr ""
+msgstr "`Barre de progression:      `"
 
 #: levelup.py:1150
 msgid "**Messages**\n"
-msgstr ""
+msgstr "**Messages**\n"
 
 #: levelup.py:1151
 msgid "`Message XP:        `"
-msgstr ""
+msgstr "`Message XP:        `"
 
 #: levelup.py:1152
 msgid "`Min Msg Length:    `"
-msgstr ""
+msgstr "`Longueur minimale du message :`"
 
 #: levelup.py:1153 levelup.py:1170
 msgid "`Cooldown:          `"
-msgstr ""
+msgstr "`Temps de recharge :          `"
 
 #: levelup.py:1154
 msgid "**Voice**\n"
-msgstr ""
+msgstr "**Voix**\n"
 
 #: levelup.py:1155
 msgid "`Voice XP:          `"
-msgstr ""
+msgstr "`Voice XP:          `"
 
 #: levelup.py:1156
 msgid "`Ignore Muted:      `"
-msgstr ""
+msgstr "`Ignorer les utilisateurs en sourdine :`"
 
 #: levelup.py:1157
 msgid "`Ignore Solo:       `"
-msgstr ""
+msgstr "`Ignorer Solo:       `"
 
 #: levelup.py:1158
 msgid "`Ignore Deafened:   `"
-msgstr ""
+msgstr "`Ignorer les sourds :   `"
 
 #: levelup.py:1159
 msgid "`Ignore Invisible:  `"
-msgstr ""
+msgstr "`Ignorer Invisible:  `"
 
 #: levelup.py:1160
 msgid "**Level Algorithm**\n"
-msgstr ""
+msgstr "**Algorithme de Niveau**\n"
 
 #: levelup.py:1161
 msgid "`Base Multiplier:   `"
-msgstr ""
+msgstr "`Multiplicateur de base:   `"
 
 #: levelup.py:1162
 msgid "`Exp Multiplier:    `"
-msgstr ""
+msgstr "`Multiplicateur EXP:    `"
 
 #: levelup.py:1163
 msgid "**LevelUps**\n"
-msgstr ""
+msgstr "**Niveaux**\n"
 
 #: levelup.py:1164
 msgid "`LevelUp Notify:    `"
-msgstr ""
+msgstr "`LevelUp Notify:    `"
 
 #: levelup.py:1165
 msgid "`Notify in DMs:     `"
-msgstr ""
+msgstr "`Notifier en DM :`"
 
 #: levelup.py:1166
 msgid "`Mention User:      `"
-msgstr ""
+msgstr "`Mentionnez l'utilisateur:`"
 
 #: levelup.py:1167
 msgid "`AutoRemove Roles:  `"
-msgstr ""
+msgstr "`AutoSuppression des Rôles :`"
 
 #: levelup.py:1168
 msgid "`LevelUp Channel:   `"
-msgstr ""
+msgstr "`Chaîne LevelUp :`"
 
 #: levelup.py:1169
 msgid "**Stars**\n"
-msgstr ""
+msgstr "**Étoiles**\n"
 
 #: levelup.py:1171
 msgid "`React Mention:     `"
-msgstr ""
+msgstr "`Réagir la mention:`"
 
 #: levelup.py:1172
 msgid "`MentionAutoDelete: `"
-msgstr ""
+msgstr "`MentionAutoDelete: `"
 
 #: levelup.py:1174
 msgid "**Levels**\n"
-msgstr ""
+msgstr "**Les niveaux**\n"
 
 #: levelup.py:1181
 msgid "`Level "
-msgstr ""
+msgstr "`Level` "
 
 #: levelup.py:1183
 msgid "**Prestige**\n"
 "`Stack Roles: `"
-msgstr ""
+msgstr "**Prestige**\n"
+"`Rôles de pile :`"
 
 #: levelup.py:1184
 msgid "`Level Req:  `"
-msgstr ""
+msgstr "`Niveau requis: `"
 
 #: levelup.py:1193
 msgid "`Prestige "
-msgstr ""
+msgstr "`Prestige "
 
 #: levelup.py:1195
 msgid "LevelUp Settings"
-msgstr ""
+msgstr "Paramètres de LevelUp"
 
 #: levelup.py:1207
 msgid "Voice XP Bonus Roles"
-msgstr ""
+msgstr "Rôles bonus de voix xp"
 
 #: levelup.py:1216
 msgid "Voice XP Bonus Channels"
