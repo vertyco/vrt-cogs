@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 14:46\n"
+"PO-Revision-Date: 2023-07-23 16:56\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -183,7 +183,7 @@ msgstr ""
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Ihr benutzerdefinierter Schriftartenpfad ist\n"
 
 #: base.py:374
 #, docstring
@@ -193,20 +193,24 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Fügen Sie dem Zahnrad von Discord eine benutzerdefinierte Schriftart hinzu\n\n"
+"        **Argumente**\n"
+"        `preferred_filename` - Wenn ein Name angegeben ist, wird er als dieser Name anstelle des Dateinamens gespeichert\n"
+"        **Hinweis:** Fügen Sie die Dateierweiterung nicht in den bevorzugten Namen ein, sie wird automatisch hinzugefügt"
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "Das ist kein gültiges Format, es müssen `.ttf` oder `.otf` Erweiterungen sein."
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Ihre benutzerdefinierte Schriftart wurde als gespeichert."
 
 #: base.py:409
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Entfernen Sie eine Schriftart aus dem Schriftordner des Zahnrads"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
