@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 14:46\n"
+"PO-Revision-Date: 2023-07-23 16:56\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -179,11 +179,11 @@ msgstr "Pozadina `"
 
 #: base.py:361 base.py:421
 msgid "` Has been removed!"
-msgstr ""
+msgstr "`Je uklonjen!"
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Vaš put prilagođene mape font je\n"
 
 #: base.py:374
 #, docstring
@@ -193,15 +193,19 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Dodajte prilagođeni font u zupčanik iz nesklada\n\n"
+"        **Argumenti**\n"
+"        `preferred_filename` - Ako je navedeno ime, bit će spremljeno pod tim imenom umjesto naziva datoteke\n"
+"        **Napomena:** Nemojte uključivati proširenje datoteke u željenom imenu, automatski će se dodati"
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "To nije valjani format, mora biti `.ttf` ili `.otf` ekstenzije."
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Vaša prilagođena datoteka fonta je spremljena kao"
 
 #: base.py:409
 #, docstring
