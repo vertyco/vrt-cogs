@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 16:56\n"
+"PO-Revision-Date: 2023-07-23 18:00\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -218,7 +218,7 @@ msgstr "COG의 글꼴 폴더에서 글꼴을 제거하십시오"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "그 이름을 가진 글꼴을 찾을 수 없었습니다"
 
 #: base.py:421
 msgid "Font `"
