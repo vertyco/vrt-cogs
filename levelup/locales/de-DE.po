@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-20 16:34\n"
+"PO-Revision-Date: 2023-07-23 03:41\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -92,27 +92,27 @@ msgstr "Nicht gesetzt"
 
 #: base.py:273
 msgid "`Profile Size:    `"
-msgstr ""
+msgstr "`Profilgröße:`"
 
 #: base.py:274
 msgid "`Name Color:      `"
-msgstr ""
+msgstr "`Name Farbe:`"
 
 #: base.py:275
 msgid "`Stat Color:      `"
-msgstr ""
+msgstr "`Statfarbe:`"
 
 #: base.py:276
 msgid "`Level Bar Color: `"
-msgstr ""
+msgstr "`Level Barfarbe:`"
 
 #: base.py:277
 msgid "`Font:            `"
-msgstr ""
+msgstr "`Schrift:`"
 
 #: base.py:278
 msgid "`Background:      `"
-msgstr ""
+msgstr "`Hintergrund:`"
 
 #: base.py:279
 msgid "`Blur:            `"
@@ -120,16 +120,16 @@ msgstr ""
 
 #: base.py:282
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "Ihre Profileinstellungen"
 
 #: base.py:305 base.py:366
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "Holen Sie sich den Ordnerpfad für den Standardhintergrund dieses COG"
 
 #: base.py:307
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "Ihr Standard-Hintergrundordnerpfad ist\n"
 
 #: base.py:313
 #, docstring
@@ -139,7 +139,10 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "Fügen Sie dem COG von Discord einen benutzerdefinierten Hintergrund hinzu\n\n"
+"**Argumente**\n"
+"`Preferred_filename` - Wenn ein Name angegeben ist, wird er als dieser Name anstelle des Dateinamens gespeichert\n"
+"**Hinweis:** Fügen Sie die Dateierweiterung nicht in den bevorzugten Namen ein, sie wird automatisch hinzugefügt"
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
