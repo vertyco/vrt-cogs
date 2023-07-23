@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 20:56\n"
+"PO-Revision-Date: 2023-07-23 22:11\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -960,62 +960,62 @@ msgstr "\n"
 #: levelup.py:1292
 #, docstring
 msgid "Toggle whether to render profiles as gifs if the user's discord profile is animated"
-msgstr ""
+msgstr "Basculez si nécessaire pour rendre les profils en tant que GIF si le profil Discord de l'utilisateur est animé"
 
 #: levelup.py:1296
 msgid "I will no longer render profiles with GIFs"
-msgstr ""
+msgstr "Je ne vais plus afficher les profils avec des GIFs"
 
 #: levelup.py:1299
 msgid "I will now render GIFs with user profiles"
-msgstr ""
+msgstr "Je vais maintenant rendre les GIFs avec les profils d'utilisateurs"
 
 #: levelup.py:1306
 #, docstring
 msgid "Reset cog data for all guilds"
-msgstr ""
+msgstr "Réinitialisez les données COG pour toutes les guildes"
 
 #: levelup.py:1308
 msgid "Are you sure you want to reset all stats and settings for the entire cog?"
-msgstr ""
+msgstr "Êtes-vous sûr de vouloir réinitialiser toutes les statistiques et les paramètres de l'ensemble du COG ?"
 
 #: levelup.py:1314
 msgid "Not resetting all guilds"
-msgstr ""
+msgstr "Ne pas réinitialiser toutes les guildes"
 
 #: levelup.py:1318
 msgid "Settings and stats for all guilds have been reset"
-msgstr ""
+msgstr "Les paramètres et les statistiques pour toutes les guildes ont été réinitialisés"
 
 #: levelup.py:1324
 #, docstring
 msgid "Reset cog data for this guild"
-msgstr ""
+msgstr "Réinitialisez les données COG pour cette guilde"
 
 #: levelup.py:1326
 msgid "Are you sure you want to reset all stats and settings for this guild?"
-msgstr ""
+msgstr "Êtes-vous sûr que vous souhaitez réinitialiser toutes les statistiques et paramètres pour cette guilde ?"
 
 #: levelup.py:1331
 msgid "Not resetting config"
-msgstr ""
+msgstr "Ne pas réinitialiser la configuration"
 
 #: levelup.py:1334
 msgid "All settings and stats reset"
-msgstr ""
+msgstr "Tous les réglages et statistiques sont réinitialisés"
 
 #: levelup.py:1340
 #, docstring
 msgid "Reset everyone's exp and level"
-msgstr ""
+msgstr "Réinitialisez l'expérience et le niveau de tout le monde"
 
 #: levelup.py:1343
 msgid "Are you sure you want to reset "
-msgstr ""
+msgstr "Êtes-vous sûr de vouloir réinitialiser ? "
 
 #: levelup.py:1343
 msgid " users' stats?"
-msgstr ""
+msgstr " Statistiques des utilisateurs ?"
 
 #: levelup.py:1344
 msgid "\n"
