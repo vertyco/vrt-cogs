@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 03:41\n"
+"PO-Revision-Date: 2023-07-23 04:39\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -146,19 +146,19 @@ msgstr "Fügen Sie dem COG von Discord einen benutzerdefinierten Hintergrund hin
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "Ich konnte keine Anhänge finden."
 
 #: base.py:328
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "Das ist kein gültiges Format, muss von den folgenden Erweiterungen sein:"
 
 #: base.py:337 base.py:397
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Ich konnte die Datei nicht von Discord bekommen."
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Ihr benutzerdefinierter Hintergrund wurde gespeichert."
 
 #: base.py:349
 #, docstring
