@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 16:56\n"
+"PO-Revision-Date: 2023-07-23 18:00\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -214,7 +214,7 @@ msgstr "Entfernen Sie eine Schriftart aus dem Schriftordner des Zahnrads"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Ich konnte keine Schriftarten mit diesem Namen finden"
 
 #: base.py:421
 msgid "Font `"
