@@ -1,0 +1,244 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2023-07-22 14:24-0400\n"
+"PO-Revision-Date: 2023-07-22 18:29\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /main/assistant/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 55\n"
+"Language: fr_FR\n"
+
+#: common\api.py:110
+msgid "There are no API keys set!\n"
+msgstr ""
+
+#: common\api.py:112
+msgid "- Set your OpenAI key with `{}`\n"
+msgstr ""
+
+#: common\api.py:115
+msgid "- Or set an endpoint override to your self-hosted LLM with `{}`\n"
+msgstr ""
+
+#: common\api.py:119
+msgid "- Alternatively you can set a global endpoint with `{}`"
+msgstr ""
+
+#: common\api.py:127
+#, docstring
+msgid "Update embeds to match current dimensions\n\n"
+"        Takes a sample using current embed method, the updates the rest to match dimensions\n"
+"        "
+msgstr ""
+
+#: common\api.py:168
+#, docstring
+msgid "Get token list from text"
+msgstr ""
+
+#: common\api.py:186
+#, docstring
+msgid "Get text from token list"
+msgstr ""
+
+#: common\api.py:196
+#, docstring
+msgid "Fetch token count of stored messages"
+msgstr ""
+
+#: common\api.py:211
+#, docstring
+msgid "Fetch token count of system and initial prompts"
+msgstr ""
+
+#: common\api.py:237
+#, docstring
+msgid "Iteratively degrade a conversation payload, prioritizing more recent messages and critical context\n\n"
+"        Args:\n"
+"            messages (List[dict]): message entries sent to the api\n"
+"            function_list (List[dict]): list of json function schemas for the model\n"
+"            conf: (GuildSettings): current settings\n\n"
+"        Returns:\n"
+"            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
+"        "
+msgstr ""
+
+#: common\api.py:351
+#, docstring
+msgid "Pagify a long string by tokens rather than characters"
+msgstr ""
+
+#: common\api.py:407
+msgid "Custom Functions"
+msgstr ""
+
+#: common\api.py:413
+msgid "3rd Party"
+msgstr ""
+
+#: common\api.py:414
+msgid "This function is managed by the `{}` cog"
+msgstr ""
+
+#: common\api.py:419
+msgid "Internal Function"
+msgstr ""
+
+#: common\api.py:420
+msgid "This is an internal command that can only be used when interacting with a tutor"
+msgstr ""
+
+#: common\api.py:428
+msgid "This function consumes `{}` input tokens each call\n"
+msgstr ""
+
+#: common\api.py:445
+msgid "Hidden..."
+msgstr ""
+
+#: common\api.py:447
+msgid "Schema"
+msgstr ""
+
+#: common\api.py:448
+msgid "Code"
+msgstr ""
+
+#: common\api.py:450 common\api.py:474
+msgid "Page {}/{}"
+msgstr ""
+
+#: common\api.py:457
+msgid "No custom code has been added yet!"
+msgstr ""
+
+#: common\api.py:473
+msgid "Embeddings"
+msgstr ""
+
+#: common\api.py:485
+msgid "`Tokens:     `{}\n"
+msgstr ""
+
+#: common\api.py:486
+msgid "`Dimensions: `{}\n"
+msgstr ""
+
+#: common\api.py:501
+msgid "No embeddings have been added!"
+msgstr ""
+
+#: common\chat.py:105
+msgid "No message history!"
+msgstr ""
+
+#: common\chat.py:113
+msgid "Failed to communicate with endpoint!"
+msgstr ""
+
+#: common\chat.py:118
+msgid "Error: {}"
+msgstr ""
+
+#: common\chat.py:127
+msgid "Invalid API key, please set a new valid key!"
+msgstr ""
+
+#: common\chat.py:129
+msgid "Uh oh, looks like my API key is invalid!"
+msgstr ""
+
+#: common\chat.py:133
+msgid "**KeyError in prompt or system message**\n"
+"{}"
+msgstr ""
+
+#: common\chat.py:140
+msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
+msgstr ""
+
+#: common\chat.py:172
+msgid "No results found"
+msgstr ""
+
+#: common\chat.py:191
+#, docstring
+msgid "Call the API asynchronously"
+msgstr ""
+
+#: common\chat.py:272
+msgid "Failed to get response!"
+msgstr ""
+
+#: common\chat.py:312
+msgid "Too many functions called"
+msgstr ""
+
+#: common\chat.py:419
+msgid "Response failed due to invalid regex, check logs for more info."
+msgstr ""
+
+#: common\chat.py:450
+#, docstring
+msgid "Prepare content for calling the GPT API\n\n"
+"        Args:\n"
+"            message (str): question or chat message\n"
+"            guild (discord.Guild): guild associated with the chat\n"
+"            conf (GuildSettings): config data\n"
+"            conversation (Conversation): user's conversation object for chat history\n"
+"            author (Optional[discord.Member]): user chatting with the bot\n"
+"            channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): channel for context\n"
+"            query_embedding List[float]: message embedding weights\n\n"
+"        Returns:\n"
+"            List[dict]: list of messages prepped for api\n"
+"        "
+msgstr ""
+
+#: common\chat.py:468
+#, docstring
+msgid "Instead of format(**params) possibly giving a KeyError if prompt has code in it"
+msgstr ""
+
+#: common\chat.py:529
+msgid "\n"
+"Missing 'attach files' permissions!"
+msgstr ""
+
+#: common\utils.py:19
+#, docstring
+msgid "Get all attachments from context"
+msgstr ""
+
+#: common\utils.py:40
+msgid "Canceled"
+msgstr ""
+
+#: common\utils.py:51
+msgid "You have been blacklisted from using this command!"
+msgstr ""
+
+#: common\utils.py:56
+msgid "You have a blacklisted role and cannot use this command!"
+msgstr ""
+
+#: common\utils.py:61
+msgid "You cannot use that command in this channel!"
+msgstr ""
+
+#: common\utils.py:66
+msgid "You cannot use that command in any channels under this category"
+msgstr ""
+
+#: common\utils.py:113 common\utils.py:114
+msgid "[Code Removed]"
+msgstr ""
+
