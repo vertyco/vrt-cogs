@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 20:00\n"
+"PO-Revision-Date: 2023-07-23 20:56\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -907,7 +907,7 @@ msgstr "Rôles bonus de voix xp"
 
 #: levelup.py:1216
 msgid "Voice XP Bonus Channels"
-msgstr ""
+msgstr "Canaux bonus de la voix xp"
 
 #: levelup.py:1219
 msgid "Stream XP Bonus"
@@ -915,23 +915,23 @@ msgstr ""
 
 #: levelup.py:1228
 msgid "Message XP Bonus Roles"
-msgstr ""
+msgstr "Message xp Rôles bonus"
 
 #: levelup.py:1237
 msgid "Message XP Bonus Channels"
-msgstr ""
+msgstr "Message xp canaux bonus"
 
 #: levelup.py:1244
 msgid "Ignored Roles"
-msgstr ""
+msgstr "Rôles ignorés"
 
 #: levelup.py:1253
 msgid "Ignored Channels"
-msgstr ""
+msgstr "Canaux ignorés"
 
 #: levelup.py:1260
 msgid "Ignored Users"
-msgstr ""
+msgstr "Utilisateurs ignorés"
 
 #: levelup.py:1268
 #, docstring
@@ -939,7 +939,9 @@ msgid "\n"
 "        Cog admin commands\n\n"
 "        Reset levels, backup and restore cog data\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Commandes d'administration COG\n\n"
+"Réinitialiser les niveaux, sauvegarder et restaurer les données COG "
 
 #: levelup.py:1278
 #, docstring
@@ -949,7 +951,11 @@ msgid "\n"
 "        If profile embeds are enabled this setting will have no effect\n"
 "        Anything less than 5 seconds will effectively disable the cache\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Définissez la durée pendant laquelle les images de profil doivent être conservées en cache.\n"
+"Lorsqu'un utilisateur exécute la commande de profil, son image générée sera stockée en cache et réutilisée pendant X secondes.\n\n"
+"Si les intégrations de profil sont activées, ce paramètre n'aura aucun effet.\n"
+"Toute durée inférieure à 5 secondes désactivera efficacement le cache "
 
 #: levelup.py:1292
 #, docstring
