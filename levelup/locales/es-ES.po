@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 02:08\n"
+"PO-Revision-Date: 2023-07-23 03:41\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -27,7 +27,7 @@ msgstr "Uh oh, parece que no es una imagen válida, no se puede identificar el a
 
 #: base.py:91
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "Uh oh, parece que no es una imagen válida."
 
 #: base.py:166
 #, docstring
@@ -35,31 +35,32 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "Recompensa a un buen estudiante\n"
+"Dale una estrella a un usuario por ser un buen estudiante"
 
 #: base.py:175
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "\"Cache aún no está cargado, espera unos segundos más.\""
 
 #: base.py:177
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "¡No puedes darte estrellas!"
 
 #: base.py:179
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "¡No puedes dar estrellas a un bot!"
 
 #: base.py:195
 msgid "You need to wait "
-msgstr ""
+msgstr "Necesitas esperar."
 
 #: base.py:197
 msgid " before you can give more stars!"
-msgstr ""
+msgstr "¡Antes de que puedas dar más estrellas!"
 
 #: base.py:203
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "¡No hay datos disponibles para ese usuario todavía!"
 
 #: base.py:211
 msgid "You just gave a star to {}!"
@@ -68,7 +69,7 @@ msgstr ""
 #: base.py:216
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "\"Prueba de nivel Gen de imágenes\""
 
 #: base.py:250
 #, docstring
@@ -77,35 +78,37 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "Personaliza los colores de tu perfil\n\n"
+"Aquí hay un enlace al selector de color de Google:\n"
+"**[Picker de color hexadecimal](https://htmlcolorcodes.com/)**"
 
 #: base.py:267 base.py:268 base.py:269 base.py:270
 msgid "Not Set"
-msgstr ""
+msgstr "\"No establecido\""
 
 #: base.py:273
 msgid "`Profile Size:    `"
-msgstr ""
+msgstr "`Tamaño del perfil:`"
 
 #: base.py:274
 msgid "`Name Color:      `"
-msgstr ""
+msgstr "`Color de nombre:`"
 
 #: base.py:275
 msgid "`Stat Color:      `"
-msgstr ""
+msgstr "`Color de estadística:`"
 
 #: base.py:276
 msgid "`Level Bar Color: `"
-msgstr ""
+msgstr "`Color de la barra de nivel:`"
 
 #: base.py:277
 msgid "`Font:            `"
-msgstr ""
+msgstr "`Fuente:`"
 
 #: base.py:278
 msgid "`Background:      `"
-msgstr ""
+msgstr "`Antecedentes:`"
 
 #: base.py:279
 msgid "`Blur:            `"
@@ -113,16 +116,16 @@ msgstr ""
 
 #: base.py:282
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "Su configuración de perfil"
 
 #: base.py:305 base.py:366
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "Obtener la ruta de la carpeta para los fondos predeterminados de este COG"
 
 #: base.py:307
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "Su ruta de carpeta de fondo predeterminada es\n"
 
 #: base.py:313
 #, docstring
@@ -132,7 +135,10 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "Agregue un fondo personalizado al COG desde Discord\n\n"
+"**Argumentos**\n"
+"`preferred_filename` - Si se proporciona un nombre, se guardará con este nombre en lugar del nombre de archivo\n"
+"**Nota:** no incluya la extensión del archivo en el nombre preferido, se agregará automáticamente"
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
