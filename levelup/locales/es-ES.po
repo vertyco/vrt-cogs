@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 14:46\n"
+"PO-Revision-Date: 2023-07-23 16:56\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -179,7 +179,7 @@ msgstr ""
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Su ruta de carpeta de fuente personalizada es\n"
 
 #: base.py:374
 #, docstring
@@ -189,20 +189,24 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Agregue una fuente personalizada al engranaje de Discord.\n\n"
+"        **Argumentos**\n"
+"        `preferred_filename` - Si se proporciona un nombre, se guardará con este nombre en lugar del nombre de archivo.\n"
+"        **Nota:** No incluya la extensión del archivo en el nombre preferido, se agregará automáticamente."
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "Ese no es un formato válido, debe ser extensiones `.ttf` o `.otf`"
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Su archivo de fuente personalizada se ha guardado como"
 
 #: base.py:409
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Eliminar una fuente de la carpeta de fuentes del engranaje"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
