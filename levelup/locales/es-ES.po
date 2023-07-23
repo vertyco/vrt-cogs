@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 16:56\n"
+"PO-Revision-Date: 2023-07-23 18:00\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -210,7 +210,7 @@ msgstr "Eliminar una fuente de la carpeta de fuentes del engranaje"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "No pude encontrar ninguna fuente con ese nombre"
 
 #: base.py:421
 msgid "Font `"
