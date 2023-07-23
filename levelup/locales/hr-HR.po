@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 18:00\n"
+"PO-Revision-Date: 2023-07-23 22:11\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -214,49 +214,49 @@ msgstr "Uklonite font iz mape fonta zupčanika"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Nisam mogao pronaći nijedan font s tim imenom"
 
 #: base.py:421
 msgid "Font `"
-msgstr ""
+msgstr "Font `"
 
 #: base.py:427
 #, docstring
 msgid "View the default backgrounds"
-msgstr ""
+msgstr "Pogledajte zadane pozadine"
 
 #: base.py:430 base.py:461
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "Profili slika su onemogućeni na ovom poslužitelju, tako da je ova naredba isključena"
 
 #: base.py:435 base.py:466
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "Nije uspio generirati pozadinske uzorke"
 
 #: base.py:445
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "Evo trenutnih zadanih pozadina, za postavljanje jedne trajno možete koristiti "
 
 #: base.py:448 base.py:477
 msgid "command"
-msgstr ""
+msgstr "naredba"
 
 #: base.py:452
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "Nije moguće poslati pozadinski kolaž, veličina datoteke može biti prevelika."
 
 #: base.py:458
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "Pogledajte dostupne fontove za upotrebu"
 
 #: base.py:476
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "Evo trenutnih fontova, za postavljanje jednog trajno možete koristiti "
 
 #: base.py:481
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "Nisam mogao poslati kolaž fonta, veličina datoteke može biti prevelika."
 
 #: base.py:485
 #, docstring
@@ -265,24 +265,27 @@ msgid "\n"
 "        Full size includes your balance, role icon and prestige icon\n"
 "        Slim is a smaller slimmed down version\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Prebacite vrstu slike svog profila (puna/vitka)\n\n"
+"Puna veličina uključuje vašu ravnotežu, ikonu uloga i ikonu prestiža.\n"
+"Slim je manja vitka verzija "
 
 #: base.py:493 base.py:523 base.py:568 base.py:614 base.py:674 base.py:730
 #: base.py:759
 msgid "Image profiles are disabled on this server, this setting has no effect"
-msgstr ""
+msgstr "Profili slika su onemogućeni na ovom serveru, ova postavka nema nikakav učinak"
 
 #: base.py:499
 msgid "You have no information stored about your account yet. Talk for a bit first"
-msgstr ""
+msgstr "Još niste pohranjeni podaci o svom računu. Razgovarajte malo prvo"
 
 #: base.py:504
 msgid "Your profile image has been set to **Slim**"
-msgstr ""
+msgstr "Vaša slika profila je postavljena na **Slim**"
 
 #: base.py:507
 msgid "Your profile image has been set to **Full**"
-msgstr ""
+msgstr "Vaša slika profila je postavljena na **Puna**"
 
 #: base.py:513
 #, docstring
@@ -292,11 +295,15 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Postavite heksadecimalnu boju za svoje korisničko ime\n\n"
+"Ovdje je veza do Googleovog birača boje:\n"
+"**[Hex birač boje](https://htmlcolorcodes.com/)**\n\n"
+"Postavite na `zadano` da biste nasumično odabrali boju svog imena svaki put kada pokrenete naredbu "
 
 #: base.py:532
 msgid "Your name color has been reset to default"
-msgstr ""
+msgstr "Vaša boja imena je vraćena na zadano"
 
 #: base.py:538 base.py:583 base.py:629
 msgid "That is an invalid color, please use a valid integer color code or hex color."
