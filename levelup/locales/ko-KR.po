@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 03:41\n"
+"PO-Revision-Date: 2023-07-23 04:39\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -150,11 +150,11 @@ msgstr "\"\"\"\n"
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "첨부 파일을 찾을 수 없었습니다."
 
 #: base.py:328
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "이는 유효한 형식이 아니며 다음 확장자 중 하나여야 합니다:"
 
 #: base.py:337 base.py:397
 msgid "I was not able to get the file from Discord"
@@ -162,7 +162,7 @@ msgstr "Discord에서 파일을 가져올 수 없습니다."
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "사용자 정의 배경이 저장되었습니다."
 
 #: base.py:349
 #, docstring
