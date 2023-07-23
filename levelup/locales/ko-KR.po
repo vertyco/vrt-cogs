@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 04:39\n"
+"PO-Revision-Date: 2023-07-23 14:46\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -167,15 +167,15 @@ msgstr "사용자 정의 배경이 저장되었습니다."
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "COG의 배경 폴더에서 기본 배경을 제거하세요."
 
 #: base.py:355
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "그 이름을 가진 배경 이미지를 찾을 수 없었습니다."
 
 #: base.py:360 base.py:420
 msgid "Could not delete file: "
-msgstr ""
+msgstr "파일을 삭제할 수 없습니다."
 
 #: base.py:361
 msgid "Background `"
