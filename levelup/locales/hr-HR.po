@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 04:39\n"
+"PO-Revision-Date: 2023-07-23 14:46\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -163,19 +163,19 @@ msgstr ""
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Uklonite zadanu pozadinu iz mape pozadine zupčanika"
 
 #: base.py:355
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "Nisam mogao pronaći nijednu pozadinsku sliku s tim imenom."
 
 #: base.py:360 base.py:420
 msgid "Could not delete file: "
-msgstr ""
+msgstr "Nije mogao izbrisati datoteku:"
 
 #: base.py:361
 msgid "Background `"
-msgstr ""
+msgstr "Pozadina `"
 
 #: base.py:361 base.py:421
 msgid "` Has been removed!"
