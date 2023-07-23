@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-20 16:34\n"
+"PO-Revision-Date: 2023-07-23 03:41\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -71,7 +71,7 @@ msgstr ""
 #: base.py:216
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "Test LevelUp Görüntü Gen"
 
 #: base.py:250
 #, docstring
