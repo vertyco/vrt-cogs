@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 18:00\n"
+"PO-Revision-Date: 2023-07-23 18:57\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -411,7 +411,7 @@ msgstr "Je n'ai pas pu trouver de fichier de police avec ce nom"
 
 #: base.py:750
 msgid "Your profile font has been set to "
-msgstr ""
+msgstr "Votre police de profil a été définie sur"
 
 #: base.py:754
 #, docstring
@@ -427,59 +427,59 @@ msgstr ""
 #: base.py:775
 #, docstring
 msgid "View your profile"
-msgstr ""
+msgstr "Afficher votre profil"
 
 #: base.py:793
 msgid "No information available yet!"
-msgstr ""
+msgstr "Aucune information disponible pour le moment !"
 
 #: base.py:796
 msgid "I do not have permission to send images to this channel"
-msgstr ""
+msgstr "Je n'ai pas la permission d'envoyer des images à ce canal"
 
 #: base.py:798
 msgid "I do not have permission to send embeds to this channel"
-msgstr ""
+msgstr "Je n'ai pas la permission d'envoyer des intégrations à ce canal"
 
 #: base.py:839 generator.py:820 levelup.py:2603
 msgid "Level "
-msgstr ""
+msgstr "Niveau"
 
 #: base.py:841 generator.py:223
 msgid "Prestige "
-msgstr ""
+msgstr "Prestige"
 
 #: base.py:842
 msgid " stars\n"
-msgstr ""
+msgstr "étoiles\n"
 
 #: base.py:843
 msgid " messages sent\n"
-msgstr ""
+msgstr "Messages envoyés\n"
 
 #: base.py:844
 msgid " in voice\n"
-msgstr ""
+msgstr "dans la voix\n"
 
 #: base.py:850
 msgid "Rank "
-msgstr ""
+msgstr "Rang"
 
 #: base.py:852
 msgid ", with "
-msgstr ""
+msgstr ", avec"
 
 #: base.py:854
 msgid "% of global server Exp"
-msgstr ""
+msgstr "% du serveur mondial Expérience"
 
 #: base.py:857
 msgid "Progress"
-msgstr ""
+msgstr "Progrès"
 
 #: base.py:858
 msgid "Profile"
-msgstr ""
+msgstr "Profil"
 
 #: base.py:935
 #, docstring
@@ -489,47 +489,50 @@ msgid "\n"
 "        reset your level and experience to gain a prestige level and any perks associated with it\n\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Prestige ton rang !\n"
+"Une fois que tu as atteint le niveau de prestige requis sur ce serveur, tu peux réinitialiser ton niveau et ton expérience pour gagner un niveau de prestige et tous les avantages qui y sont associés.\n\n"
+"Si tu es au-dessus du niveau et de l'XP lorsque tu fais un prestige, ton XP et tes niveaux seront conservés"
 
 #: base.py:948
 msgid "Prestige is disabled on this server!"
-msgstr ""
+msgstr "Prestige est désactivé sur ce serveur!"
 
 #: base.py:951 levelup.py:2201
 msgid "Prestige levels have not been set yet!"
-msgstr ""
+msgstr "Les niveaux de prestige n'ont pas encore été fixés !"
 
 #: base.py:955
 msgid "No information available for you yet!"
-msgstr ""
+msgstr "Aucune information disponible pour vous pour le moment !"
 
 #: base.py:962
 msgid "**You are not eligible to prestige yet!**\n"
-msgstr ""
+msgstr "Vous n'êtes pas encore éligible au prestige !\n"
 
 #: base.py:963
 msgid "`Your level:     `"
-msgstr ""
+msgstr "`«Votre niveau:»`"
 
 #: base.py:964
 msgid "`Required Level: `"
-msgstr ""
+msgstr "`«Niveau requis: »`"
 
 #: base.py:970
 msgid "Prestige level "
-msgstr ""
+msgstr "Niveau de prestige"
 
 #: base.py:970
 msgid " has not been set yet!"
-msgstr ""
+msgstr "n'a pas encore été défini !"
 
 #: base.py:981
 msgid "I do not have the proper permissions to assign you to the role "
-msgstr ""
+msgstr "Je n'ai pas les autorisations appropriées pour vous attribuer au rôle"
 
 #: base.py:995
 msgid "You have reached Prestige "
-msgstr ""
+msgstr "Vous avez atteint le prestige"
 
 #: base.py:1012
 #, docstring
@@ -552,28 +555,28 @@ msgstr ""
 
 #: base.py:1032 base.py:1115
 msgid "No user data yet!"
-msgstr ""
+msgstr "Pas encore de données utilisateur !"
 
 #: base.py:1044
 #, docstring
 msgid "View the star leaderboard"
-msgstr ""
+msgstr "Voir le classement des étoiles"
 
 #: base.py:1056
 msgid "Nobody has stars yet 😕"
-msgstr ""
+msgstr "Personne n'a encore des étoiles 😕"
 
 #: base.py:1071
 msgid "**Star Leaderboard**\n"
-msgstr ""
+msgstr "**Classement des étoiles**\n"
 
 #: base.py:1072
 msgid "**Total ⭐'s: "
-msgstr ""
+msgstr "**Total des ⭐:"
 
 #: base.py:1102 base.py:1104
 msgid "Pages "
-msgstr ""
+msgstr "Pages"
 
 #: base.py:1121
 #, docstring
@@ -614,11 +617,11 @@ msgstr ""
 
 #: generator.py:213 generator.py:620
 msgid "Rank: #"
-msgstr ""
+msgstr "Rang: #"
 
 #: generator.py:214 generator.py:621
 msgid "Level: "
-msgstr ""
+msgstr "Niveau:"
 
 #: generator.py:216
 msgid "Exp: "
@@ -626,19 +629,19 @@ msgstr ""
 
 #: generator.py:219 generator.py:625
 msgid "Messages: "
-msgstr ""
+msgstr "Messages:"
 
 #: generator.py:220
 msgid "Voice: "
-msgstr ""
+msgstr "Voix:"
 
 #: generator.py:222
 msgid "Balance: "
-msgstr ""
+msgstr "Équilibre:"
 
 #: generator.py:626
 msgid "Voice Time: "
-msgstr ""
+msgstr "Temps de la voix:"
 
 #: generator.py:629
 msgid " - Prestige "
