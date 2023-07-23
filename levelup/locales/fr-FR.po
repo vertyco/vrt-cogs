@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 16:56\n"
+"PO-Revision-Date: 2023-07-23 18:00\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -210,49 +210,49 @@ msgstr "Retirez une police du dossier de police du COG"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Je n'ai pas trouvé de polices avec ce nom"
 
 #: base.py:421
 msgid "Font `"
-msgstr ""
+msgstr "Font `"
 
 #: base.py:427
 #, docstring
 msgid "View the default backgrounds"
-msgstr ""
+msgstr "Afficher les arrière-plans par défaut"
 
 #: base.py:430 base.py:461
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "Les profils d'image sont désactivés sur ce serveur, donc cette commande est désactivée"
 
 #: base.py:435 base.py:466
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "Échec de générer des échantillons d'arrière-plan"
 
 #: base.py:445
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "Voici les arrière-plans par défaut actuels, pour en définir un en permanence, vous pouvez utiliser le"
 
 #: base.py:448 base.py:477
 msgid "command"
-msgstr ""
+msgstr "commande"
 
 #: base.py:452
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "Impossible d'envoyer un collage d'arrière-plan, la taille du fichier peut être trop grande."
 
 #: base.py:458
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "Voir les polices disponibles à utiliser"
 
 #: base.py:476
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "Voici les polices actuelles, pour en définir une permanence, vous pouvez utiliser le"
 
 #: base.py:481
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "Impossible d'envoyer un collage de polices, la taille du fichier peut être trop grande."
 
 #: base.py:485
 #, docstring
@@ -261,24 +261,27 @@ msgid "\n"
 "        Full size includes your balance, role icon and prestige icon\n"
 "        Slim is a smaller slimmed down version\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Basculez le type d'image de votre profil (complet/mince)\n\n"
+"La taille complète inclut votre solde, l'icône de votre rôle et l'icône de prestige\n"
+"Slim est une version plus petite et allégée"
 
 #: base.py:493 base.py:523 base.py:568 base.py:614 base.py:674 base.py:730
 #: base.py:759
 msgid "Image profiles are disabled on this server, this setting has no effect"
-msgstr ""
+msgstr "Les profils d'image sont désactivés sur ce serveur, cette configuration n'a aucun effet"
 
 #: base.py:499
 msgid "You have no information stored about your account yet. Talk for a bit first"
-msgstr ""
+msgstr "Vous n'avez pas encore d'informations stockées sur votre compte. Parlez un peu d'abord"
 
 #: base.py:504
 msgid "Your profile image has been set to **Slim**"
-msgstr ""
+msgstr "Votre image de profil a été définie sur **Slim**"
 
 #: base.py:507
 msgid "Your profile image has been set to **Full**"
-msgstr ""
+msgstr "Votre image de profil a été définie sur **Full**"
 
 #: base.py:513
 #, docstring
@@ -288,19 +291,23 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Définissez une couleur hexadécimale pour votre nom d'utilisateur.\n\n"
+"Voici un lien vers le sélecteur de couleurs hexadécimales de Google :\n"
+"**[Sélecteur de couleurs hexadécimales](https://htmlcolorcodes.com/)**\n\n"
+"Définissez-le sur `par défaut` pour randomiser la couleur de votre nom à chaque fois que vous exécutez la commande"
 
 #: base.py:532
 msgid "Your name color has been reset to default"
-msgstr ""
+msgstr "Votre couleur de nom a été réinitialisée à la valeur par défaut"
 
 #: base.py:538 base.py:583 base.py:629
 msgid "That is an invalid color, please use a valid integer color code or hex color."
-msgstr ""
+msgstr "C'est une couleur invalide, veuillez utiliser un code couleur entier valide ou une couleur hexadécimale."
 
 #: base.py:548 base.py:594 base.py:640
 msgid "Failed to set color, the following error occurred:\n"
-msgstr ""
+msgstr "Échec de la couleur, l'erreur suivante s'est produite:\n"
 
 #: base.py:558
 #, docstring
@@ -310,11 +317,15 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Définissez une couleur hexadécimale pour les statistiques de votre serveur.\n\n"
+"Voici un lien vers le sélecteur de couleurs hexadécimales de Google :\n"
+"**[Sélecteur de couleurs hexadécimales](https://htmlcolorcodes.com/)**\n\n"
+"Définissez sur `par défaut` pour randomiser la couleur de votre nom à chaque fois que vous exécutez la commande"
 
 #: base.py:577
 msgid "Your stats color has been reset to default"
-msgstr ""
+msgstr "La couleur de vos statistiques a été réinitialisée à la valeur par défaut"
 
 #: base.py:604
 #, docstring
@@ -324,11 +335,15 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Définissez une couleur hexadécimale pour votre barre de niveau.\n\n"
+"Voici un lien vers le sélecteur de couleurs hexadécimales de Google :\n"
+"**[Sélecteur de couleurs hexadécimales](https://htmlcolorcodes.com/)**\n\n"
+"Définissez sur `par défaut` pour randomiser la couleur de votre nom à chaque fois que vous exécutez la commande"
 
 #: base.py:623
 msgid "Your level bar color has been reset to default"
-msgstr ""
+msgstr "Votre couleur de barre de niveau a été réinitialisée à la valeur par défaut"
 
 #: base.py:650
 #, docstring
@@ -349,15 +364,30 @@ msgid "\n"
 "         - `random` will randomly select from a pool of default backgrounds each time\n"
 "         - `filename` run `[p]mypf backgrounds` to view default options you can use by including their filename\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Définissez un arrière-plan pour votre profil.\n\n"
+"Cela remplacera votre bannière de profil en tant qu'arrière-plan.\n\n"
+"**AVERTISSEMENT**\n"
+"Les arrière-plans de profil sont de larges paysages (1050 par 450 pixels) avec un rapport d'aspect de 21:9.\n"
+"L'utilisation d'images en portrait sera recadrée.\n\n"
+"Astuce : Une recherche sur \"fonds d'écran pour double moniteur\" donne de bons résultats pour les bonnes images.\n\n"
+"Voici quelques bons endroits où chercher :\n"
+"[dualmonitorbackgrounds](https://www.dualmonitorbackgrounds.com/)\n"
+"[setaswall](https://www.setaswall.com/dual-monitor-wallpapers/)\n"
+"[pexels](https://www.pexels.com/photo/panoramic-photography-of-trees-and-lake-358482/)\n"
+"[teahub](https://www.teahub.io/searchw/dual-monitor/)\n\n"
+"**Options supplémentaires**\n"
+"- Laissez l'URL de l'image vide pour réinitialiser l'utilisation de votre bannière de profil (ou une image aléatoire si vous n'en avez pas)\n"
+"- `random` sélectionnera au hasard parmi une sélection d'arrière-plans par défaut à chaque fois\n"
+"- `filename` exécutez `[p]mypf backgrounds` pour afficher les options par défaut que vous pouvez utiliser en incluant leur nom de fichier"
 
 #: base.py:712 base.py:714
 msgid "Your background image has been set!"
-msgstr ""
+msgstr "Votre image d'arrière-plan a été définie!"
 
 #: base.py:717
 msgid "Your background has been removed since you did not specify a url!"
-msgstr ""
+msgstr "Votre arrière-plan a été supprimé car vous n'avez pas spécifié d'URL !"
 
 #: base.py:722
 #, docstring
@@ -366,15 +396,18 @@ msgid "\n"
 "        To view available fonts, type `[p]myprofile fonts`\n"
 "        To revert to the default font, use `default` for the `font_name` argument\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Définissez une police pour votre profil\n\n"
+"Pour voir les polices disponibles, tapez `[p]myprofile fonts`\n"
+"Pour revenir à la police par défaut, utilisez `default` pour l'argument `font_name`"
 
 #: base.py:740
 msgid "Your profile font has been reverted to default"
-msgstr ""
+msgstr "Votre police de profil a été rétablie par défaut"
 
 #: base.py:747
 msgid "I could not find a font file with that name"
-msgstr ""
+msgstr "Je n'ai pas pu trouver de fichier de police avec ce nom"
 
 #: base.py:750
 msgid "Your profile font has been set to "
