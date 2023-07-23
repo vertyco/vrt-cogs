@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 03:41\n"
+"PO-Revision-Date: 2023-07-23 04:39\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -139,19 +139,22 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "Dodajte prilagođenu pozadinu u zupčanik iz nesklada\n\n"
+"**Argumenti**\n"
+"`preferred_filename` - Ako je navedeno ime, bit će spremljeno pod tim imenom umjesto naziva datoteke\n"
+"**Napomena:** nemojte uključivati ekstenziju datoteke u željenom imenu, automatski će se dodati"
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "Nisam bio u mogućnosti pronaći nikakve priloge."
 
 #: base.py:328
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "To nije valjan format, mora biti na sljedećim proširenjima:"
 
 #: base.py:337 base.py:397
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Nisam bio u mogućnosti dobiti datoteku od nesklada"
 
 #: base.py:344
 msgid "Your custom background has been saved as "
