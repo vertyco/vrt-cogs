@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-20 16:34\n"
+"PO-Revision-Date: 2023-07-23 03:41\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -35,19 +35,26 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "\"\"\"\n"
+"좋은 국수에게 보상하십시오\n"
+"좋은 국수가 된 사용자에게 별을 줘\n"
+"\"\"\"\n"
+"\"\"\"\n"
+"좋은 국수에게 보상하십시오\n"
+"좋은 국수가 된 사용자에게 별을 줘\n"
+"\"\"\""
 
 #: base.py:175
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "\"캐시는 아직로드되지 않았으며 몇 초 더 기다립니다.\""
 
 #: base.py:177
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "당신은 자신에게 별점을 줄 수 없습니다!"
 
 #: base.py:179
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "당신은 봇에 별을 줄 수 없습니다!"
 
 #: base.py:195
 msgid "You need to wait "
@@ -55,11 +62,11 @@ msgstr "기다려야 합니다. "
 
 #: base.py:197
 msgid " before you can give more stars!"
-msgstr ""
+msgstr "더 많은 별을 줄 수 있기 전에!"
 
 #: base.py:203
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "아직 해당 사용자에 대한 데이터가 없습니다!"
 
 #: base.py:211
 msgid "You just gave a star to {}!"
@@ -68,7 +75,7 @@ msgstr ""
 #: base.py:216
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "테스트 레벨 업 이미지 유전자"
 
 #: base.py:250
 #, docstring
@@ -77,35 +84,37 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "프로필 색상을 사용자 정의하십시오\n\n"
+"Google의 컬러 피커에 대한 링크는 다음과 같습니다.\n"
+"**[Hex Color Picker](https://htmlcolorcodes.com/)**"
 
 #: base.py:267 base.py:268 base.py:269 base.py:270
 msgid "Not Set"
-msgstr ""
+msgstr "설정되지 않았습니다"
 
 #: base.py:273
 msgid "`Profile Size:    `"
-msgstr ""
+msgstr "`프로필 크기 :`"
 
 #: base.py:274
 msgid "`Name Color:      `"
-msgstr ""
+msgstr "`이름 색 :`"
 
 #: base.py:275
 msgid "`Stat Color:      `"
-msgstr ""
+msgstr "`통계 색상 :`"
 
 #: base.py:276
 msgid "`Level Bar Color: `"
-msgstr ""
+msgstr "`레벨 바 색상 :`"
 
 #: base.py:277
 msgid "`Font:            `"
-msgstr ""
+msgstr "`글꼴 :`"
 
 #: base.py:278
 msgid "`Background:      `"
-msgstr ""
+msgstr "`배경 :`"
 
 #: base.py:279
 msgid "`Blur:            `"
@@ -113,16 +122,16 @@ msgstr ""
 
 #: base.py:282
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "프로필 설정"
 
 #: base.py:305 base.py:366
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "이 COG의 기본 배경에 대한 폴더 경로를 가져옵니다."
 
 #: base.py:307
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "기본 배경 폴더 경로는 다음과 같습니다.\n"
 
 #: base.py:313
 #, docstring
@@ -132,7 +141,12 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\"\"\"\n"
+"불화에서 톱니에 맞춤 배경을 추가하십시오\n\n"
+"**인수**\n"
+"`preferred_filename` - 이름이 주어지면 파일 이름 대신 이 이름으로 저장됩니다.\n"
+"**참고:** 선호 이름에 파일 확장자를 포함하지 마십시오. 자동으로 추가됩니다.\n"
+"\"\"\""
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"

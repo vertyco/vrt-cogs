@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-20 16:34\n"
+"PO-Revision-Date: 2023-07-23 03:41\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -71,7 +71,7 @@ msgstr ""
 #: base.py:216
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "Test nivoup slike gen"
 
 #: base.py:250
 #, docstring
@@ -125,11 +125,11 @@ msgstr "Postavke tvog profila"
 #: base.py:305 base.py:366
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "Dobijte putanju mape za zadane pozadine ovog zupčanika"
 
 #: base.py:307
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "Vaša zadana staza mape pozadine je\n"
 
 #: base.py:313
 #, docstring
