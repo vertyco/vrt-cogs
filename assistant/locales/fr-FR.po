@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-07-24 20:11\n"
+"PO-Revision-Date: 2023-07-24 21:10\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -184,7 +184,7 @@ msgstr "Le code de cette fonction est trop long, vous devrez le télécharger à
 
 #: views.py:728
 msgid "`{}` function updated!"
-msgstr ""
+msgstr "La fonction `{}` a été mise à jour !"
 
 #: views.py:739
 msgid "No code to delete!"
