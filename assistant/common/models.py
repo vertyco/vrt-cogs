@@ -43,7 +43,7 @@ class GuildSettings(BaseModel):
     min_length: int = 7
     max_retention: int = 0
     max_retention_time: int = 1800
-    max_response_tokens: int = 500
+    max_response_tokens: int = 0
     max_tokens: int = 4000
     mention: bool = False
     mention_respond: bool = True  # TODO: add command to toggle
