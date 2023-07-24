@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-24 03:47\n"
+"PO-Revision-Date: 2023-07-24 23:23\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -32,11 +32,11 @@ msgstr "\n"
 #: tickets.py:41
 #, docstring
 msgid "No data to delete"
-msgstr "Nema podataka za brisanje"
+msgstr ""
 
 #: tickets.py:297
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
-msgstr "Ako ne odgovorite na ovu kartu u narednih 20 minuta, bit će automatski zatvorena."
+msgstr ""
 
 #: tickets.py:313
 msgid "(Auto-Close) Opened ticket with no response for "
@@ -48,11 +48,11 @@ msgstr "Korisnik je napustio Ceh (Auto-Zatvaranje)"
 
 #: utils.py:95
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
-msgstr "Nedostaje mi dopuštenje `Upravljanje kanalima` za zatvaranje ove karte!"
+msgstr ""
 
 #: utils.py:99
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
-msgstr "Nedostaje mi dopuštenje `Upravljanje Threads` za zatvaranje ove karte!"
+msgstr ""
 
 #: utils.py:106
 msgid "Ticket created by **{}-{}** has been closed.\n"
@@ -88,11 +88,11 @@ msgstr ""
 
 #: utils.py:157
 msgid "Files uploaded: "
-msgstr "Datoteke prenesene: "
+msgstr ""
 
 #: utils.py:247
 msgid "There are no tickets stored in the database."
-msgstr "U bazi podataka ne postoje karte pohranjene."
+msgstr ""
 
 #: utils.py:277
 msgid "ticket"
@@ -108,15 +108,15 @@ msgstr ""
 
 #: utils.py:281
 msgid "There are no tickets to prune"
-msgstr "Nema ulaznica za obrezivanje"
+msgstr ""
 
 #: utils.py:289
 msgid "Ticket Overview"
-msgstr "Pregled karata"
+msgstr ""
 
 #: utils.py:314
 msgid "There are no active tickets."
-msgstr "Nema aktivnih ulaznica."
+msgstr ""
 
 #: utils.py:343
 #, docstring
@@ -127,12 +127,7 @@ msgid "Update active ticket overview\n\n"
 "    Returns:\n"
 "        int: Message ID of the overview panel\n"
 "    "
-msgstr "Ažurirajte pregled aktivnih karata\n\n"
-"    Argumenti:\n"
-"        guild (discord.Guild): Discord poslužitelj\n"
-"        conf (dict): postavke za poslužitelj\n\n"
-"    Vraća:\n"
-"        int: ID poruke pregledaža karata "
+msgstr ""
 
 #: views.py:38
 msgid "cancel"
@@ -156,11 +151,11 @@ msgstr ""
 
 #: views.py:259
 msgid "You been blacklisted from creating tickets!"
-msgstr "Bili ste na crnoj listi od stvaranja ulaznica!"
+msgstr ""
 
 #: views.py:265
 msgid "You have a role that has been blacklisted from creating tickets!"
-msgstr "Imate ulogu koja je na crnoj listi za stvaranje ulaznica!"
+msgstr ""
 
 #: views.py:277
 msgid "You must have one of the following roles to open this ticket: "
@@ -178,15 +173,15 @@ msgstr "Ne može se pronaći kategorija za ovaj panel za podršku!\n"
 
 #: views.py:312
 msgid "Submission Info"
-msgstr "Podaci o prijavi"
+msgstr ""
 
 #: views.py:330
 msgid "Unanswered"
-msgstr "Bez odgovora"
+msgstr ""
 
 #: views.py:419
 msgid "{} ticket for {}"
-msgstr "{} ulaznica za {}"
+msgstr ""
 
 #: views.py:444
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
@@ -200,8 +195,7 @@ msgstr "Dobrodošli na vaš kanal za kartu "
 #: views.py:460
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
-msgstr "\n"
-"Vi ili administrator možete to zatvoriti s naredbom `{}close`"
+msgstr ""
 
 #: views.py:512
 msgid "Ticket form questions"
@@ -213,7 +207,7 @@ msgstr ""
 
 #: views.py:520
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
-msgstr "Vaš kanal za karte je stvoren, **[KLIKNITE OVDJE]({})**"
+msgstr ""
 
 #: views.py:538
 msgid "`Created By: `{user}\n"
@@ -226,7 +220,7 @@ msgstr ""
 
 #: views.py:547
 msgid "Ticket Opened"
-msgstr "Ulaznica otvorena"
+msgstr ""
 
 #: views.py:619
 msgid "You have already been added to the ticket **{}**!"
@@ -238,9 +232,9 @@ msgstr ""
 
 #: views.py:635
 msgid "{} was added to the ticket"
-msgstr "{} je dodan u kartu"
+msgstr ""
 
 #: views.py:640
 msgid "You have been added to the ticket **{}**"
-msgstr "Dodali ste se u kartu **{}**"
+msgstr ""
 
