@@ -742,14 +742,19 @@ class Admin(MixinMeta):
     async def max_response_tokens(self, ctx: commands.Context, max_tokens: int):
         """
         Set the max response tokens the model can respond with
+
+        Set to 0 for response tokens to be dynamic
         """
-        if max_tokens < 10:
-            return await ctx.send(_("Use at least 10 tokens"))
+        if max_tokens < 0:
+            return await ctx.send(_("Cannot be a negative number!"))
         conf = self.db.get_conf(ctx.guild)
         conf.max_response_tokens = max_tokens
-        txt = _("The maximum amount of tokens in the models responses will be {}.").format(
-            max_tokens
-        )
+        if max_tokens:
+            txt = _("The maximum amount of tokens in the models responses will be {}.").format(
+                max_tokens
+            )
+        else:
+            txt = _("Response tokens will now be dynamic")
         await ctx.send(txt)
         await self.save_conf()
 
@@ -1452,10 +1457,12 @@ class Admin(MixinMeta):
         """
         Assign a max response token override to a role
 
+        Set to 0 for response tokens to be dynamic
+
         *Specify same role and token count to remove the override*
         """
-        if max_tokens < 10:
-            return await ctx.send(_("Use at least 10 tokens"))
+        if max_tokens < 0:
+            return await ctx.send(_("Cannot be a negative number!"))
         conf = self.db.get_conf(ctx.guild)
 
         if role.id in conf.max_response_token_override:

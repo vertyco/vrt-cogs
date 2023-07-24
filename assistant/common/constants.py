@@ -1,11 +1,14 @@
 MODELS = {
     "gpt-3.5-turbo": 4096,
+    "gpt-3.5-turbo-0301": 4096,
     "gpt-3.5-turbo-0613": 4096,
     "gpt-3.5-turbo-16k": 16384,
     "gpt-3.5-turbo-16k-0613": 16384,
     "gpt-4": 8192,
+    "gpt-4-0301": 8192,
     "gpt-4-0613": 8192,
     "gpt-4-32k": 32768,
+    "gpt-4-32k-0301": 32768,
     "gpt-4-32k-0613": 32768,
     "code-davinci-002": 8001,
     "text-davinci-003": 4097,
@@ -26,12 +29,15 @@ SUPPORTS_FUNCTIONS = [
 ]
 CHAT = [
     "gpt-3.5-turbo",
+    "gpt-3.5-turbo-0301",
     "gpt-3.5-turbo-0613",
     "gpt-3.5-turbo-16k",
     "gpt-3.5-turbo-16k-0613",
     "gpt-4",
+    "gpt-4-0301",
     "gpt-4-0613",
     "gpt-4-32k",
+    "gpt-4-32k-0301",
     "gpt-4-32k-0613",
     "code-davinci-002",
 ]
@@ -76,6 +82,7 @@ READ_EXTENSIONS = [
     ".bat",
     ".batch",
     ".shell",
+    ".env",
 ]
 CREATE_EMBEDDING = {
     "name": "create_embedding",

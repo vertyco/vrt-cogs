@@ -74,27 +74,20 @@ async def request_chat_completion_raw(
     functions: Optional[List[dict]] = None,
     timeout: int = 60,
 ) -> Dict[str, str]:
+    kwargs = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "api_key": api_key,
+        "api_base": api_base,
+        "timeout": timeout,
+    }
+    if max_tokens > 0:
+        kwargs["max_tokens"] = max_tokens
     if functions and VERSION >= "0.27.6" and model in SUPPORTS_FUNCTIONS:
-        response = await openai.ChatCompletion.acreate(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            api_key=api_key,
-            max_tokens=max_tokens,
-            api_base=api_base,
-            functions=functions,
-            timeout=timeout,
-        )
-    else:
-        response = await openai.ChatCompletion.acreate(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            api_key=api_key,
-            max_tokens=max_tokens,
-            api_base=api_base,
-            timeout=timeout,
-        )
+        kwargs["functions"] = functions
+
+    response = await openai.ChatCompletion.acreate(**kwargs)
     return response["choices"][0]["message"]
 
 
