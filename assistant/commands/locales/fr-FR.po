@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-07-24 18:07\n"
+"PO-Revision-Date: 2023-07-24 19:06\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -1442,11 +1442,11 @@ msgstr ""
 
 #: commands\base.py:125
 msgid "Conversation stats for {}"
-msgstr ""
+msgstr "Statistiques de conversation pour {}"
 
 #: commands\base.py:129
 msgid "Token limit is a soft cap and excess is trimmed before sending to the api"
-msgstr ""
+msgstr "La limite de jetons est une limite souple et l'excédent est supprimé avant d'être envoyé à l'API"
 
 #: commands\base.py:136
 #, docstring
@@ -1454,11 +1454,13 @@ msgid "\n"
 "        Reset your conversation with the bot\n\n"
 "        This will clear all message history between you and the bot for this channel\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Réinitialisez votre conversation avec le bot\n\n"
+"Cela effacera tout l'historique des messages entre vous et le bot pour ce canal "
 
 #: commands\base.py:143
 msgid "Your conversation in this channel has been reset!"
-msgstr ""
+msgstr "Votre conversation dans ce canal a été réinitialisée !"
 
 #: commands\base.py:148
 #, docstring
@@ -1466,35 +1468,37 @@ msgid "\n"
 "        Fetch related embeddings according to the current settings along with their scores\n\n"
 "        You can use this to fine-tune the minimum relatedness for your assistant\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Obtenir les embeddings associés selon les paramètres actuels ainsi que leurs scores\n\n"
+"Vous pouvez utiliser ceci pour affiner la similarité minimale pour votre assistant "
 
 #: commands\base.py:155
 msgid "You do not have any embeddings configured!"
-msgstr ""
+msgstr "Vous n'avez pas configuré d'embeddings !"
 
 #: commands\base.py:157
 msgid "Top N is set to 0 so no embeddings will be returned"
-msgstr ""
+msgstr "Top N est fixé à 0, donc aucun encastrement ne sera renvoyé"
 
 #: commands\base.py:163
 msgid "Failed to get embedding for your query"
-msgstr ""
+msgstr "Échec de l'intégration de votre requête"
 
 #: commands\base.py:168
 msgid "No embeddings could be related to this query with the current settings"
-msgstr ""
+msgstr "Aucun embedding ne peut être associé à cette requête avec les paramètres actuels"
 
 #: commands\base.py:173
 msgid "`Entry Name:  `{}\n"
-msgstr ""
+msgstr "`Nom d'entrée :  {}`\n"
 
 #: commands\base.py:174
 msgid "`Relatedness: `{}\n"
-msgstr ""
+msgstr "`La parenté : {}`\n"
 
 #: commands\base.py:175
 msgid "`Dimensions:  `{}\n"
-msgstr ""
+msgstr "`Dimensions:  {}`\n"
 
 #: commands\base.py:187
 #, docstring
@@ -1502,13 +1506,15 @@ msgid "\n"
 "        View the current transcript of a conversation\n\n"
 "        This is mainly here for moderation purposes\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Afficher la transcription actuelle d'une conversation\n\n"
+"Ceci est principalement destiné à des fins de modération "
 
 #: commands\base.py:196
 msgid "You have no conversation in this channel!"
-msgstr ""
+msgstr "Vous n'avez aucune conversation dans ce canal !"
 
 #: commands\base.py:208
 msgid "Here is your conversation transcript!"
-msgstr ""
+msgstr "Voici la transcription de votre conversation !"
 
