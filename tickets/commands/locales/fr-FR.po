@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-22 18:28\n"
+"PO-Revision-Date: 2023-07-24 14:02\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -20,93 +20,95 @@ msgstr ""
 #: commands\admin.py:24
 #, docstring
 msgid "Base support ticket settings"
-msgstr ""
+msgstr "Paramètres des billets d'assistance de base"
 
 #: commands\admin.py:29 commands\admin.py:36
 #, docstring
 msgid "Ticket Setup Guide"
-msgstr ""
+msgstr "Guide de configuration des billets"
 
 #: commands\admin.py:31
 msgid "To create a support ticket panel, type "
-msgstr ""
+msgstr "Pour créer un panneau de ticket d'assistance, tapez "
 
 #: commands\admin.py:33
 msgid " <panel_name>`"
-msgstr ""
+msgstr " <Selan_name> `"
 
 #: commands\admin.py:40
 msgid "Set the category ID that new tickets will be created under if using channel tickets.\n"
-msgstr ""
+msgstr "Définissez l'ID de catégorie sous lequel les nouveaux tickets seront créés si vous utilisez des tickets de canal.\n"
 
 #: commands\admin.py:43
 msgid "<panel_name> <category_id>`"
-msgstr ""
+msgstr "<Selan_name> <catégorie_id> `"
 
 #: commands\admin.py:44
 msgid "Step 1"
-msgstr ""
+msgstr "Étape 1"
 
 #: commands\admin.py:45
 msgid "Set the channel that the bots ticket panel will be located in.\n"
-msgstr ""
+msgstr "Définissez le canal dans lequel le panneau de billets du bot sera situé.\n"
 
 #: commands\admin.py:46
 msgid "<panel_name> <channel_id>`"
-msgstr ""
+msgstr "<Selon_name> <CanCan_id>`"
 
 #: commands\admin.py:47
 msgid "Step 2"
-msgstr ""
+msgstr "Étape 2"
 
 #: commands\admin.py:48
 msgid "Set the ID of the bots ticket panel message.\n"
-msgstr ""
+msgstr "Définissez l'ID du message du panneau de billets Bots.\n"
 
 #: commands\admin.py:49
 msgid "<panel_name> <message_id>`\n"
-msgstr ""
+msgstr "<Selon_name> <Message_id> `\n"
 
 #: commands\admin.py:50
 msgid "At this point the ticket panel will be activated, all following steps are for extra customization.\n"
 "If you need a message to add the buttons to, you can use the `{}tickets embed` command.\n"
-msgstr ""
+msgstr "À ce stade, le panneau de billets sera activé, toutes les étapes suivantes sont destinées à une personnalisation supplémentaire.\n"
+"Si vous avez besoin d'un message pour ajouter les boutons, vous pouvez utiliser la commande `{}tickets embed`.\n"
 
 #: commands\admin.py:55
 msgid "If the bot is having trouble finding the message, run the command in the same channel as it."
-msgstr ""
+msgstr "Si le bot a du mal à trouver le message, exécutez la commande dans le même canal que lui."
 
 #: commands\admin.py:58
 msgid "Step 3"
-msgstr ""
+msgstr "Étape 3"
 
 #: commands\admin.py:59
 msgid "Set the text of the ticket panel button.\n"
-msgstr ""
+msgstr "Définissez le texte du bouton du panneau de billets.\n"
 
 #: commands\admin.py:60
 msgid "<panel_name> <button_text>`"
-msgstr ""
+msgstr "<Selon_name> <Itton_text> `"
 
 #: commands\admin.py:61
 msgid "Button Text"
-msgstr ""
+msgstr "Texte du bouton"
 
 #: commands\admin.py:62
 msgid "Set the ticket panel button color.\n"
-msgstr ""
+msgstr "Définissez la couleur du bouton du panneau de billette.\n"
 
 #: commands\admin.py:63
 msgid "Valid colors are "
-msgstr ""
+msgstr "Les couleurs valides sont\n"
+"Les couleurs valides sont "
 
 #: commands\admin.py:64
 msgid "<panel_name> <button_color>`"
-msgstr ""
+msgstr "<Selon_name> <Fut_Color> `"
 
 #: commands\admin.py:65
 msgid "Button Color"
-msgstr ""
+msgstr "Couleur du bouton"
 
 #: commands\admin.py:66
 msgid "Set the button emoji for the ticket panel.\n"
