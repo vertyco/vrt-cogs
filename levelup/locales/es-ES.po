@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-24 19:06\n"
+"PO-Revision-Date: 2023-07-24 21:10\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -214,7 +214,7 @@ msgstr "No pude encontrar ninguna fuente con ese nombre"
 
 #: base.py:421
 msgid "Font `"
-msgstr ""
+msgstr "Fuente `"
 
 #: base.py:427
 #, docstring
@@ -495,43 +495,43 @@ msgstr "\n"
 
 #: base.py:948
 msgid "Prestige is disabled on this server!"
-msgstr ""
+msgstr "El prestigio está desactivado en este servidor!"
 
 #: base.py:951 levelup.py:2201
 msgid "Prestige levels have not been set yet!"
-msgstr ""
+msgstr "¡Los niveles de prestigio aún no se han establecido!"
 
 #: base.py:955
 msgid "No information available for you yet!"
-msgstr ""
+msgstr "¡Aún no hay información disponible para ti!"
 
 #: base.py:962
 msgid "**You are not eligible to prestige yet!**\n"
-msgstr ""
+msgstr "**¡Aún no eres elegible para prestigio!**\n"
 
 #: base.py:963
 msgid "`Your level:     `"
-msgstr ""
+msgstr "`Tu nivel:     `"
 
 #: base.py:964
 msgid "`Required Level: `"
-msgstr ""
+msgstr "`Nivel Requerido: `"
 
 #: base.py:970
 msgid "Prestige level "
-msgstr ""
+msgstr "Nivel de prestigio "
 
 #: base.py:970
 msgid " has not been set yet!"
-msgstr ""
+msgstr " ¡aún no se ha establecido!"
 
 #: base.py:981
 msgid "I do not have the proper permissions to assign you to the role "
-msgstr ""
+msgstr "No tengo los permisos adecuados para asignarte al rol "
 
 #: base.py:995
 msgid "You have reached Prestige "
-msgstr ""
+msgstr "Has alcanzado Prestigio "
 
 #: base.py:1012
 #, docstring
@@ -554,28 +554,28 @@ msgstr ""
 
 #: base.py:1032 base.py:1115
 msgid "No user data yet!"
-msgstr ""
+msgstr "¡Aún no hay datos de usuario!"
 
 #: base.py:1044
 #, docstring
 msgid "View the star leaderboard"
-msgstr ""
+msgstr "Ver la tabla de líderes de estrellas"
 
 #: base.py:1056
 msgid "Nobody has stars yet 😕"
-msgstr ""
+msgstr "Nadie tiene estrellas todavía 😕"
 
 #: base.py:1071
 msgid "**Star Leaderboard**\n"
-msgstr ""
+msgstr "**Tabla de Líderes de Estrellas**\n"
 
 #: base.py:1072
 msgid "**Total ⭐'s: "
-msgstr ""
+msgstr "**Total de ⭐: "
 
 #: base.py:1102 base.py:1104
 msgid "Pages "
-msgstr ""
+msgstr "Páginas "
 
 #: base.py:1121
 #, docstring
@@ -616,11 +616,11 @@ msgstr ""
 
 #: generator.py:213 generator.py:620
 msgid "Rank: #"
-msgstr ""
+msgstr "Rango: #"
 
 #: generator.py:214 generator.py:621
 msgid "Level: "
-msgstr ""
+msgstr "Nivel: "
 
 #: generator.py:216
 msgid "Exp: "
@@ -628,23 +628,23 @@ msgstr ""
 
 #: generator.py:219 generator.py:625
 msgid "Messages: "
-msgstr ""
+msgstr "Mensajes: "
 
 #: generator.py:220
 msgid "Voice: "
-msgstr ""
+msgstr "Voz: "
 
 #: generator.py:222
 msgid "Balance: "
-msgstr ""
+msgstr "Equilibrio: "
 
 #: generator.py:626
 msgid "Voice Time: "
-msgstr ""
+msgstr "Tiempo de voz: "
 
 #: generator.py:629
 msgid " - Prestige "
-msgstr ""
+msgstr " Prestigio "
 
 #: generator.py:1100
 #, docstring
@@ -689,7 +689,7 @@ msgstr ""
 
 #: levelup.py:357 levelup.py:361
 msgid "just gave a star to"
-msgstr ""
+msgstr "acaba de dar una estrella a"
 
 #: levelup.py:630
 msgid "You have just reached level {level} in {guild}!"
@@ -701,7 +701,7 @@ msgstr ""
 
 #: levelup.py:673
 msgid "You just leveled up in "
-msgstr ""
+msgstr "Acabas de subir de nivel en "
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
@@ -760,15 +760,15 @@ msgstr ""
 #: levelup.py:1104
 #, docstring
 msgid "View all LevelUP settings"
-msgstr ""
+msgstr "Ver todos los ajustes de LevelUP"
 
 #: levelup.py:1144
 msgid "Image"
-msgstr ""
+msgstr "Imagen"
 
 #: levelup.py:1144
 msgid "Embed"
-msgstr ""
+msgstr "Insertar"
 
 #: levelup.py:1146
 msgid "**Main**\n"
@@ -776,7 +776,7 @@ msgstr ""
 
 #: levelup.py:1147
 msgid "`Profile Type:      `"
-msgstr ""
+msgstr "`Tipo de perfil:       `"
 
 #: levelup.py:1148
 msgid "`Include Balance:   `"
