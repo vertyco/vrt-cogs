@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-24 05:06\n"
+"PO-Revision-Date: 2023-07-24 12:53\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -543,15 +543,20 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Voir le classement\n\n"
+"        **Arguments**\n"
+"        `stat`: Quel type de statistique afficher le classement hebdomadaire pour\n"
+"        Les options valides sont `exp`, `messages`, et `voice`\n"
+"        Les abréviations de ces arguments peuvent également être utilisées "
 
 #: base.py:1023
 msgid "Use the `"
-msgstr ""
+msgstr "Utilisez le `"
 
 #: base.py:1023
 msgid "startop` command for that"
-msgstr ""
+msgstr "Commande `startop` pour cela"
 
 #: base.py:1032 base.py:1115
 msgid "No user data yet!"
@@ -655,7 +660,7 @@ msgstr " - Prestige "
 #: generator.py:1100
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr ""
+msgstr "Obtenez la séquence de durée moyenne des cadres GIF"
 
 #: levelup.py:83
 #, docstring
@@ -716,7 +721,7 @@ msgstr ""
 #: levelup.py:998
 #, docstring
 msgid "Announce and reset the weekly leaderboard"
-msgstr ""
+msgstr "Annoncer et réinitialiser le classement hebdomadaire"
 
 #: levelup.py:1008
 msgid "There are no users with exp"
@@ -732,36 +737,36 @@ msgstr "`Total Exp:`"
 
 #: levelup.py:1019
 msgid "`Total Messages: `"
-msgstr ""
+msgstr "`Messages totaux:`"
 
 #: levelup.py:1020
 msgid "`Total Stars:    `"
-msgstr ""
+msgstr "`Total Stars:`"
 
 #: levelup.py:1021
 msgid "`Total Voice:    `"
-msgstr ""
+msgstr "`Voix totale:`"
 
 #: levelup.py:1045
 msgid "`Exp:      `"
-msgstr ""
+msgstr "`Exp:`"
 
 #: levelup.py:1046
 msgid "`Messages: `"
-msgstr ""
+msgstr "`Messages:`"
 
 #: levelup.py:1047
 msgid "`Stars:    `"
-msgstr ""
+msgstr "`Étoiles:`"
 
 #: levelup.py:1048
 msgid "`Voice:    `"
-msgstr ""
+msgstr "`Voix:`"
 
 #: levelup.py:1098
 #, docstring
 msgid "Access LevelUp setting commands"
-msgstr ""
+msgstr "Commandes d'accès aux paramètres de LevelUp"
 
 #: levelup.py:1104
 #, docstring
@@ -1187,7 +1192,7 @@ msgstr ""
 
 #: levelup.py:1595
 msgid "Not importing MEE6 levels"
-msgstr ""
+msgstr "Ne pas importer les niveaux de MEE6"
 
 #: levelup.py:1597
 msgid "Fetching mee6 leaderboard data, please wait..."
@@ -1195,11 +1200,11 @@ msgstr ""
 
 #: levelup.py:1618
 msgid "Your leaderboard needs to be set to public!"
-msgstr ""
+msgstr "Votre classement doit être mis en public !"
 
 #: levelup.py:1622
 msgid "No data found!"
-msgstr ""
+msgstr "Aucune donnée trouvée !"
 
 #: levelup.py:1631
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
@@ -1215,7 +1220,7 @@ msgstr ""
 
 #: levelup.py:1682
 msgid "No MEE6 stats were found"
-msgstr ""
+msgstr "Aucune statistique MEE6 n'a été trouvée"
 
 #: levelup.py:1684
 msgid "Imported {} User(s)"
@@ -1283,7 +1288,7 @@ msgstr "Supprimé "
 
 #: levelup.py:1858
 msgid " user IDs from the config that are no longer in the server."
-msgstr ""
+msgstr " ID utilisateur de la configuration qui ne sont plus dans le serveur."
 
 #: levelup.py:1865
 #, docstring
@@ -1922,7 +1927,7 @@ msgstr "prestige_level doit être un nombre !"
 #: levelup.py:2682
 #, docstring
 msgid "Test emojis to see if the bot is able to get a valid url for them"
-msgstr ""
+msgstr "Tester les emojis pour voir si le bot est capable d'obtenir une URL valide pour eux"
 
 #: levelup.py:2691
 #, docstring
@@ -2018,119 +2023,119 @@ msgstr "Membre ajouté à la liste d'ignore"
 #: levelup.py:2784
 #, docstring
 msgid "Access the weekly settings for levelUp"
-msgstr ""
+msgstr "Accéder aux paramètres hebdomadaires pour levelUp"
 
 #: levelup.py:2790
 #, docstring
 msgid "View the current weekly settings"
-msgstr ""
+msgstr "Afficher les paramètres hebdomadaires actuels"
 
 #: levelup.py:2792
 msgid "**Enabled**"
-msgstr ""
+msgstr "**Activé**"
 
 #: levelup.py:2792
 msgid "**Disabled**"
-msgstr ""
+msgstr "**Désactivé**"
 
 #: levelup.py:2793
 msgid "Weekly stat tracking is currently "
-msgstr ""
+msgstr "Le suivi hebdomadaire des statistiques est actuellement "
 
 #: levelup.py:2795
 msgid "Weekly LevelUp settings"
-msgstr ""
+msgstr "Paramètres de niveau hebdomadaire"
 
 #: levelup.py:2808
 msgid "`Winner Count:   `"
-msgstr ""
+msgstr "`Nombre de gagnants :`"
 
 #: levelup.py:2810
 msgid "`Last Winner(s): `"
-msgstr ""
+msgstr "`«Dernier gagnant(s) : `"
 
 #: levelup.py:2811 levelup.py:2814 levelup.py:2815
 msgid "None"
-msgstr ""
+msgstr "None"
 
 #: levelup.py:2814
 msgid "`Channel:        `"
-msgstr ""
+msgstr "`Channel:`"
 
 #: levelup.py:2815
 msgid "`Role:           `"
-msgstr ""
+msgstr "`Rôle:`"
 
 #: levelup.py:2816
 msgid "`RoleAllWinners: `"
-msgstr ""
+msgstr "`RoleAllWinners: `"
 
 #: levelup.py:2817
 msgid "`Auto Remove:    `"
-msgstr ""
+msgstr "`Auto Supprimer:`"
 
 #: levelup.py:2818
 msgid "`Bonus Exp:      `"
-msgstr ""
+msgstr "`Bonus Exp:`"
 
 #: levelup.py:2819
 msgid "Settings"
-msgstr ""
+msgstr "Paramètres"
 
 #: levelup.py:2822
 msgid "`Reset Day:  `"
-msgstr ""
+msgstr "`Réinitialisation du jour:`"
 
 #: levelup.py:2823
 msgid "`Reset Hour: `"
-msgstr ""
+msgstr "`Hour de réinitialisation:`"
 
 #: levelup.py:2824
 msgid "`Last Reset: `"
-msgstr ""
+msgstr "`«Dernière réinitialisation: »`"
 
 #: levelup.py:2826
 msgid "`Next Reset: `"
-msgstr ""
+msgstr "`Réinitialisation suivante:`"
 
 #: levelup.py:2828
 msgid "Auto Reset "
-msgstr ""
+msgstr "Réinitialisation automatique "
 
 #: levelup.py:2834
 #, docstring
 msgid "Reset the weekly leaderboard manually and announce winners"
-msgstr ""
+msgstr "Réinitialisez le classement hebdomadaire manuellement et annoncez les gagnants"
 
 #: levelup.py:2836
 msgid "Not resetting weekly leaderboard"
-msgstr ""
+msgstr "Ne pas réinitialiser le classement hebdomadaire"
 
 #: levelup.py:2842
 #, docstring
 msgid "Toggle weekly stat tracking"
-msgstr ""
+msgstr "Basculer le suivi des statistiques hebdomadaires"
 
 #: levelup.py:2846
 msgid "Weekly stat tracking has been **Disabled**"
-msgstr ""
+msgstr "Le suivi hebdomadaire des statistiques a été **désactivé**"
 
 #: levelup.py:2849
 msgid "Weekly stat tracking has been **Enabled**"
-msgstr ""
+msgstr "Le suivi hebdomadaire des statistiques a été **activé**"
 
 #: levelup.py:2854
 #, docstring
 msgid "Toggle weekly auto-reset"
-msgstr ""
+msgstr "Activer/désactiver la réinitialisation automatique hebdomadaire"
 
 #: levelup.py:2858
 msgid "Weekly auto-reset has been **Disabled**"
-msgstr ""
+msgstr "L'auto-réinitialisation hebdomadaire a été **désactivée**"
 
 #: levelup.py:2861
 msgid "Weekly auto-reset has been **Enabled**"
-msgstr ""
+msgstr "L'auto-réinitialisation hebdomadaire a été **activée**"
 
 #: levelup.py:2866
 #, docstring
@@ -2138,15 +2143,18 @@ msgid "\n"
 "        What hour the weekly stats reset\n"
 "        Set the hour (0 - 23 in UTC) for the weekly reset to take place\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Quelle heure les statistiques hebdomadaires se réinitialisent\n"
+"Définissez l'heure (0 - 23 en UTC) pour la réinitialisation hebdomadaire à avoir lieu "
 
 #: levelup.py:2871
 msgid "Hour must be 0 to 23"
-msgstr ""
+msgstr "L'heure doit être de 0 à 23"
 
 #: levelup.py:2873
 msgid "Weekly stats auto reset hour is now "
-msgstr ""
+msgstr "I apologize for the discrepancy. Here is the corrected translation:\n\n"
+"\"L'heure de réinitialisation automatique des statistiques hebdomadaires est maintenant de \" "
 
 #: levelup.py:2880
 #, docstring
@@ -2154,15 +2162,18 @@ msgid "\n"
 "        What day of the week the weekly stats reset\n"
 "        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Quel jour de la semaine les statistiques hebdomadaires sont réinitialisées\n"
+"Définissez le jour de la semaine (0 - 6 = lundi - dimanche) pour la réinitialisation hebdomadaire "
 
 #: levelup.py:2885
 msgid "Day must be 0 to 6 (Monday to Sunday)"
-msgstr ""
+msgstr "La journée doit être de 0 à 6 (du lundi au dimanche)"
 
 #: levelup.py:2887
 msgid "Weekly stats auto reset day is now "
-msgstr ""
+msgstr "Les statistiques hebdomadaires La journée de réinitialisation est maintenant.\n"
+"La journée de réinitialisation des statistiques hebdomadaires est maintenant "
 
 #: levelup.py:2894
 #, docstring
@@ -2170,15 +2181,17 @@ msgid "\n"
 "        Top weekly member count\n"
 "        Set amount of members to include in the weekly top leaderboard\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Compte de membres hebdomadaires des meilleurs\n"
+"Définissez le nombre de membres à inclure dans le classement hebdomadaire des meilleurs "
 
 #: levelup.py:2899
 msgid "There must be at least one winner!"
-msgstr ""
+msgstr "Il doit y avoir au moins un gagnant !"
 
 #: levelup.py:2901
 msgid "There can only be up to 25 winners!"
-msgstr ""
+msgstr "Il ne peut y avoir que jusqu'à 25 gagnants !"
 
 #: levelup.py:2908
 #, docstring
@@ -2189,34 +2202,35 @@ msgstr ""
 
 #: levelup.py:2912
 msgid "I do not have permission to send messages to that channel!"
-msgstr ""
+msgstr "Je n'ai pas la permission d'envoyer des messages à cette chaîne !"
 
 #: levelup.py:2914
 msgid "I do not have permission to send embeds to that channel!"
-msgstr ""
+msgstr "Je n'ai pas la permission d'envoyer des intégrations à ce canal !"
 
 #: levelup.py:2921
 #, docstring
 msgid "Weekly winner role reward\n"
 "        Set the role awarded to the top member of the weekly leaderboard"
-msgstr ""
+msgstr "Récompense du rôle du gagnant hebdomadaire\n"
+"Définissez le rôle attribué au membre le mieux classé du classement hebdomadaire"
 
 #: levelup.py:2924
 msgid "I do not have permission to manage roles!"
-msgstr ""
+msgstr "Je n'ai pas la permission de gérer les rôles !"
 
 #: levelup.py:2931
 #, docstring
 msgid "Toggle whether to give the weekly winner role to all winners or only 1st place"
-msgstr ""
+msgstr "Basculer entre donner le rôle de gagnant hebdomadaire à tous les gagnants ou seulement à la 1ère place"
 
 #: levelup.py:2936
 msgid "Only the 1st place winner of the weekly stats reset will receive the weekly role"
-msgstr ""
+msgstr "Seul le lauréat de la première place de la réinitialisation hebdomadaire des statistiques recevra le rôle hebdomadaire"
 
 #: levelup.py:2943
 msgid "All top members listed in the weekly stat reset will receive the weekly role"
-msgstr ""
+msgstr "Tous les membres les mieux classés figurant dans la réinitialisation hebdomadaire des statistiques recevront le rôle hebdomadaire"
 
 #: levelup.py:2949
 #, docstring
@@ -2227,11 +2241,11 @@ msgstr ""
 
 #: levelup.py:2955
 msgid "Auto role removal from previous winner has been **Disabled**"
-msgstr ""
+msgstr "La suppression automatique du rôle du précédent gagnant a été **désactivée**"
 
 #: levelup.py:2958
 msgid "Auto role removal from previous winner has been **Enabled**"
-msgstr ""
+msgstr "La suppression automatique du rôle du précédent gagnant a été **activée**"
 
 #: levelup.py:2963
 #, docstring
@@ -2239,7 +2253,9 @@ msgid "\n"
 "        Weekly winners bonus experience points\n"
 "        Set to 0 to disable exp bonus\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Points d'expérience bonus des gagnants hebdomadaires\n"
+"Réglé à 0 pour désactiver le bonus d'expérience "
 
 #: levelup.py:2975
 #, docstring
