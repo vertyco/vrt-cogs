@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-24 03:47\n"
+"PO-Revision-Date: 2023-07-24 05:06\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -587,15 +587,20 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, `stars`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Voir le classement hebdomadaire\n\n"
+"        **Arguments**\n"
+"        `stat`: Quel type de statistique afficher le classement hebdomadaire pour\n"
+"        Les options valides sont `exp`, `messages`, `stars`, et `voice`\n"
+"        Les abréviations de ces arguments peuvent également être utilisées "
 
 #: base.py:1133 base.py:1155
 msgid "Weekly stats are disabled for this guild"
-msgstr ""
+msgstr "Les statistiques hebdomadaires sont désactivées pour cette guilde"
 
 #: base.py:1136
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
-msgstr ""
+msgstr "Il n'y a pas encore de données pour le classement hebdomadaire, veuillez d'abord discuter un peu."
 
 #: base.py:1152
 #, docstring
@@ -662,31 +667,31 @@ msgstr ""
 
 #: levelup.py:235
 msgid "Monday"
-msgstr ""
+msgstr "Lundi"
 
 #: levelup.py:236
 msgid "Tuesday"
-msgstr ""
+msgstr "Mardi"
 
 #: levelup.py:237
 msgid "Wednesday"
-msgstr ""
+msgstr "Mercredi"
 
 #: levelup.py:238
 msgid "Thursday"
-msgstr ""
+msgstr "Jeudi"
 
 #: levelup.py:239
 msgid "Friday"
-msgstr ""
+msgstr "Vendredi"
 
 #: levelup.py:240
 msgid "Saturday"
-msgstr ""
+msgstr "Samedi"
 
 #: levelup.py:241
 msgid "Sunday"
-msgstr ""
+msgstr "Dimanche"
 
 #: levelup.py:357 levelup.py:361
 msgid "just gave a star to"
@@ -715,15 +720,15 @@ msgstr ""
 
 #: levelup.py:1008
 msgid "There are no users with exp"
-msgstr ""
+msgstr "Il n'y a pas d'utilisateurs avec exp"
 
 #: levelup.py:1017
 msgid "Top Weekly Exp Earners"
-msgstr ""
+msgstr "Top hebdomadaire des gagnants d'expérience"
 
 #: levelup.py:1018
 msgid "`Total Exp:      `"
-msgstr ""
+msgstr "`Total Exp:`"
 
 #: levelup.py:1019
 msgid "`Total Messages: `"
@@ -1991,7 +1996,7 @@ msgstr ""
 
 #: levelup.py:2760
 msgid "Role added to ignore list"
-msgstr ""
+msgstr "Rôle ajouté à la liste d'ignorés"
 
 #: levelup.py:2765
 #, docstring
@@ -2004,11 +2009,11 @@ msgstr ""
 
 #: levelup.py:2774
 msgid "Member removed from ignore list"
-msgstr ""
+msgstr "Membre supprimé de la liste d'ignoré"
 
 #: levelup.py:2777
 msgid "Member added to ignore list"
-msgstr ""
+msgstr "Membre ajouté à la liste d'ignore"
 
 #: levelup.py:2784
 #, docstring
@@ -2239,32 +2244,32 @@ msgstr ""
 #: levelup.py:2975
 #, docstring
 msgid "Force level a user or yourself"
-msgstr ""
+msgstr "Forcez le niveau d'un utilisateur ou de vous-même"
 
 #: levelup.py:2992 levelup.py:3017
 msgid "Forced "
-msgstr ""
+msgstr "Forcé "
 
 #: levelup.py:2992
 msgid " to level up!"
-msgstr ""
+msgstr " Pour monter de niveau !"
 
 #: levelup.py:3000
 #, docstring
 msgid "Force de-level a user or yourself"
-msgstr ""
+msgstr "Forcer le niveau d'un utilisateur ou de vous-même"
 
 #: levelup.py:3017
 msgid " to level down!"
-msgstr ""
+msgstr " à bas niveau!"
 
 #: levelup.py:3025
 #, docstring
 msgid "Force Initialization"
-msgstr ""
+msgstr "Initialisation de la force"
 
 #: levelup.py:3032
 #, docstring
 msgid "Force save the cache"
-msgstr ""
+msgstr "Forcer la sauvegarde du cache"
 
