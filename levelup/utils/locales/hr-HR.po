@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:34-0400\n"
-"PO-Revision-Date: 2023-07-18 13:50\n"
+"PO-Revision-Date: 2023-07-24 02:35\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -40,7 +40,7 @@ msgstr " minuta"
 #: utils\formatter.py:113
 #, docstring
 msgid "Get all attachments from context"
-msgstr ""
+msgstr "Nabavite sve priloge iz konteksta"
 
 #: utils\formatter.py:132
 msgid "Weekly "
