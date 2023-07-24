@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-18 13:49\n"
+"PO-Revision-Date: 2023-07-24 23:23\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -19,14 +19,15 @@ msgstr ""
 
 #: menu.py:65 views.py:76
 msgid "You are not allowed to interact with this button."
-msgstr ""
+msgstr "No está permitido interactuar con este botón."
 
 #: tickets.py:28
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
-msgstr ""
+msgstr "\n"
+"Sistema de tickets de soporte con funcionalidad multipanel "
 
 #: tickets.py:41
 #, docstring
@@ -39,11 +40,11 @@ msgstr ""
 
 #: tickets.py:313
 msgid "(Auto-Close) Opened ticket with no response for "
-msgstr ""
+msgstr "(Cierre automático) Ticket abierto sin respuesta durante "
 
 #: tickets.py:362
 msgid "User left guild(Auto-Close)"
-msgstr ""
+msgstr "Usuario abandonó gremio (Auto-Cerrar)"
 
 #: utils.py:95
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
@@ -70,15 +71,15 @@ msgstr ""
 
 #: utils.py:126
 msgid "Ticket Closed"
-msgstr ""
+msgstr "Billete cerrado"
 
 #: utils.py:137
 msgid "Archiving channel..."
-msgstr ""
+msgstr "Archivando canal..."
 
 #: utils.py:140
 msgid "This channel will be deleted once complete"
-msgstr ""
+msgstr "Este canal será eliminado una vez completado"
 
 #: utils.py:146
 msgid "Question: {}\n"
@@ -95,11 +96,11 @@ msgstr ""
 
 #: utils.py:277
 msgid "ticket"
-msgstr ""
+msgstr "billete"
 
 #: utils.py:277
 msgid "tickets"
-msgstr ""
+msgstr "entradas"
 
 #: utils.py:278
 msgid "Pruned `{}` invalid {}"
@@ -130,7 +131,7 @@ msgstr ""
 
 #: views.py:38
 msgid "cancel"
-msgstr ""
+msgstr "cancelar"
 
 #: views.py:130
 msgid "Closing your ticket"
@@ -162,12 +163,12 @@ msgstr ""
 
 #: views.py:290
 msgid "You have the maximum amount of tickets opened already!"
-msgstr ""
+msgstr "¡Ya tienes la cantidad máxima de tickets abiertos!"
 
 #: views.py:297
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
-msgstr ""
+msgstr "¡No se puede encontrar la categoría para este panel de soporte! ¡Por favor, contacta a un administrador!"
 
 #: views.py:312
 msgid "Submission Info"
@@ -188,7 +189,7 @@ msgstr ""
 
 #: views.py:458
 msgid "Welcome to your ticket channel "
-msgstr ""
+msgstr "Bienvenido a su canal de entradas "
 
 #: views.py:460
 msgid "\n"
