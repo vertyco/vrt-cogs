@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:34-0400\n"
-"PO-Revision-Date: 2023-07-18 13:49\n"
+"PO-Revision-Date: 2023-07-24 23:23\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -19,23 +19,23 @@ msgstr ""
 
 #: utils\formatter.py:86
 msgid "None"
-msgstr ""
+msgstr "Ninguno"
 
 #: utils\formatter.py:89
 msgid " second"
-msgstr ""
+msgstr " segundo"
 
 #: utils\formatter.py:91
 msgid " seconds"
-msgstr ""
+msgstr " segundos"
 
 #: utils\formatter.py:94
 msgid " minute"
-msgstr ""
+msgstr " minuto"
 
 #: utils\formatter.py:96
 msgid " minutes"
-msgstr ""
+msgstr " minutos"
 
 #: utils\formatter.py:113
 #, docstring
