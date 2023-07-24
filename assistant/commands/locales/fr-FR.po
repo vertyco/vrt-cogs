@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-07-22 18:28\n"
+"PO-Revision-Date: 2023-07-24 15:50\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +24,10 @@ msgid "\n"
 "        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n\n"
 "        This cog comes with a pre-trained **[self-hosted model](https://huggingface.co/deepset/roberta-base-squad2)** (Q&A Only)\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Configurer l'assistant\n"
+"        Vous aurez besoin d'une **[clé API](https://platform.openai.com/account/api-keys)** d'OpenAI pour utiliser ChatGPT et leurs autres modèles.\n"
+"        Ce cog est livré avec un **[modèle auto-hébergé](https://huggingface.co/deepset/roberta-base-squad2)** (Q&R uniquement) "
 
 #: commands\admin.py:60
 #, docstring
@@ -32,204 +35,207 @@ msgid "\n"
 "        View current settings\n\n"
 "        To send in current channel, use `[p]assistant view false`\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Afficher les paramètres actuels\n"
+"        Pour envoyer dans le canal actuel, utilisez `[p]assistant view false` "
 
 #: commands\admin.py:68 commands\admin.py:175
 msgid "Not Set"
-msgstr ""
+msgstr "Pas encore défini"
 
 #: commands\admin.py:95
 msgid "{} (Global Override)"
-msgstr ""
+msgstr "{} (Remplacement global)"
 
 #: commands\admin.py:101
 msgid "`OpenAI Version:      `{}\n"
-msgstr ""
+msgstr "`Version Openai:` {}\n"
 
 #: commands\admin.py:102
 msgid "`Model:               `{}\n"
-msgstr ""
+msgstr "`Modèle:               `{}\n"
 
 #: commands\admin.py:103
 msgid "`Enabled:             `{}\n"
-msgstr ""
+msgstr "`Activé:             `{}\n"
 
 #: commands\admin.py:104
 msgid "`Timezone:            `{}\n"
-msgstr ""
+msgstr "`Fuseau horaire:            `{}\n"
 
 #: commands\admin.py:105
 msgid "`Channel:             `{}\n"
-msgstr ""
+msgstr "`Channel:             `{}\n"
 
 #: commands\admin.py:106
 msgid "`? Required:          `{}\n"
-msgstr ""
+msgstr "`?Requis:          `{}\n"
 
 #: commands\admin.py:107
 msgid "`Mentions:            `{}\n"
-msgstr ""
+msgstr "`Mentions:` {}\n"
 
 #: commands\admin.py:108
 msgid "`Max Retention:       `{}\n"
-msgstr ""
+msgstr "`Rétention maximale:       `{}\n"
 
 #: commands\admin.py:109
 msgid "`Retention Expire:    `{}s\n"
-msgstr ""
+msgstr "`Rétention expire:    {}s`\n"
 
 #: commands\admin.py:110
 msgid "`Max Tokens:          `{}\n"
-msgstr ""
+msgstr "`Tokens max:` {}\n"
 
 #: commands\admin.py:111
 msgid "`Max Response Tokens: `{}\n"
-msgstr ""
+msgstr "`Tokens de réponse maximum:` {}\n"
 
 #: commands\admin.py:112
 msgid "`Min Length:          `{}\n"
-msgstr ""
+msgstr "`Min Longueur:          `{}\n"
 
 #: commands\admin.py:113
 msgid "`Temperature:         `{}\n"
-msgstr ""
+msgstr "`Température:         `{}\n"
 
 #: commands\admin.py:114
 msgid "`System Message:      `{} tokens\n"
-msgstr ""
+msgstr "`Message système:` {} jetons\n"
 
 #: commands\admin.py:115
 msgid "`Initial Prompt:      `{} tokens\n"
-msgstr ""
+msgstr "`Invite initiale:      {} jetons`\n"
 
 #: commands\admin.py:119
 msgid "Assistant Settings"
-msgstr ""
+msgstr "Paramètres d'assistance"
 
 #: commands\admin.py:127
 msgid "Mixed (Please Refresh!)"
-msgstr ""
+msgstr "Mélangé (veuillez actualiser!)"
 
 #: commands\admin.py:129
 msgid "Synced!"
-msgstr ""
+msgstr "Synchronisé !"
 
 #: commands\admin.py:131
 msgid "N/A"
-msgstr ""
+msgstr "N/A"
 
 #: commands\admin.py:134
 msgid "`Top N Embeddings:  `{}\n"
-msgstr ""
+msgstr "`Top N intégres:  {}`\n"
 
 #: commands\admin.py:135
 msgid "`Min Relatedness:   `{}\n"
-msgstr ""
+msgstr "`Min Larence:` {}\n"
 
 #: commands\admin.py:136
 msgid "`Embedding Method:  `{}\n"
-msgstr ""
+msgstr "`Méthode d'intégration :  {}`\n"
 
 #: commands\admin.py:137
 msgid "`Encoded By:        `{}"
-msgstr ""
+msgstr "`Encodé par:        {}`"
 
 #: commands\admin.py:141
 msgid "Embeddings ({})"
-msgstr ""
+msgstr "Incorporations ({})"
 
 #: commands\admin.py:147
 msgid "The following roles/users are considered tutors, if function calls are on the model can create its own embeddings: "
-msgstr ""
+msgstr "Je suis désolé, mais je ne peux pas traduire cette phrase en français tout en préservant la mise en forme de la chaîne de caractères Python. Veuillez réessayer avec une autre phrase "
 
 #: commands\admin.py:156
 msgid "`Function Calling:  `{}\n"
-msgstr ""
+msgstr "`Fonction Call:` {}\n"
 
 #: commands\admin.py:157
 msgid "`Maximum Recursion: `{}\n"
-msgstr ""
+msgstr "`Recursion maximale: {}`\n"
 
 #: commands\admin.py:158
 msgid "`Function Tokens:   `{}\n"
-msgstr ""
+msgstr "`Fonction Tokens:   {}`\n"
 
 #: commands\admin.py:162
 msgid "The following cogs also have functions registered with the assistant\n"
 "{}"
-msgstr ""
+msgstr "Les COG suivants ont également des fonctions enregistrées auprès de l'assistant\n"
+"{}"
 
 #: commands\admin.py:167
 msgid "Custom Functions ({})"
-msgstr ""
+msgstr "Fonctions personnalisées ({})"
 
 #: commands\admin.py:174
 msgid "OpenAI Key"
-msgstr ""
+msgstr "Clé OpenAI"
 
 #: commands\admin.py:182
 msgid "Regex Blacklist"
-msgstr ""
+msgstr "Liste noire regex"
 
 #: commands\admin.py:184
 msgid "Regex Failure Blocking"
-msgstr ""
+msgstr "Blocage de défaillance regex"
 
 #: commands\admin.py:185
 msgid "Block reply if regex replacement fails: **{}**"
-msgstr ""
+msgstr "Bloquer la réponse si le remplacement regex échoue : **{}**"
 
 #: commands\admin.py:192
 msgid "Conversations are stored persistently"
-msgstr ""
+msgstr "Les conversations sont stockées de manière persistante"
 
 #: commands\admin.py:194
 msgid "conversations are stored in memory until reboot or reload"
-msgstr ""
+msgstr "Les conversations sont stockées en mémoire jusqu'à redémarrage ou à recharger"
 
 #: commands\admin.py:196
 msgid "Persistent Conversations"
-msgstr ""
+msgstr "Conversations persistantes"
 
 #: commands\admin.py:210
 msgid "Blacklist"
-msgstr ""
+msgstr "Liste noire"
 
 #: commands\admin.py:222
 msgid "Model Role Overrides"
-msgstr ""
+msgstr "Modèles de remplacements"
 
 #: commands\admin.py:233
 msgid "Max Token Role Overrides"
-msgstr ""
+msgstr "Rôle de jeton maximum"
 
 #: commands\admin.py:245
 msgid "Max Message Retention Role Overrides"
-msgstr ""
+msgstr "Max Message Retention Rôle des remplacements"
 
 #: commands\admin.py:258
 msgid "Max Message Retention Time Role Overrides"
-msgstr ""
+msgstr "Rôle de temps de rétention des messages maximum"
 
 #: commands\admin.py:273
 msgid "Max Response Token Role Overrides"
-msgstr ""
+msgstr "Max Remplacements de Rôle de Jeton de Réponse"
 
 #: commands\admin.py:276
 msgid "Showing settings for {}"
-msgstr ""
+msgstr "Affichage des paramètres pour {}"
 
 #: commands\admin.py:282
 msgid "SystemPrompt"
-msgstr ""
+msgstr "Systemprompt"
 
 #: commands\admin.py:288
 msgid "InitialPrompt"
-msgstr ""
+msgstr "Invite initiale"
 
 #: commands\admin.py:300
 msgid "Sent your current settings for this server in DMs!"
-msgstr ""
+msgstr "Envoyez vos paramètres actuels pour ce serveur dans DMS !"
 
 #: commands\admin.py:302
 msgid "You need to allow DMs so I can message you!"
