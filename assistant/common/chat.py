@@ -232,20 +232,6 @@ class ChatHandler(MixinMeta):
         def pop_schema(name: str, calls: List[dict]):
             return [func for func in calls if func["name"] != name]
 
-        # I think this is fixed now
-        # def recompile_functions(existing: List[dict]):
-        #     """
-        #     Functions somehow double up and grow uncontrollably.
-        #     I havent figured out why so this is a crappy workaround for now
-        #     """
-        #     names = []
-        #     recompiled = []
-        #     for i in existing:
-        #         if i["name"] not in names:
-        #             names.append(i["name"])
-        #             recompiled.append(i)
-        #     return recompiled
-
         # Don't include if user is not a tutor
         if "create_embedding" in function_map and author.id not in conf.tutors:
             if not any([role.id in conf.tutors for role in author.roles]):
@@ -270,13 +256,8 @@ class ChatHandler(MixinMeta):
             function_calls,
         )
         reply = _("Failed to get response!")
-        # last_function_response = ""
-        # last_function_name = ""
         calls = 0
-        # repeats = 0
         while True:
-            # function_calls = recompile_functions(function_calls)
-
             if calls >= conf.max_function_calls:
                 function_calls = []
 
@@ -489,15 +470,21 @@ class ChatHandler(MixinMeta):
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
-            embeddings.append(f'"""{i[1]}"""')
+            embeddings.append(i[1])
 
         if embeddings:
             joined = "\n".join(embeddings)
+            role = "function" if function_calls else "user"
+            name = (
+                "search_embeddings"
+                if function_calls
+                else process_username(author.name)
+                if author
+                else None
+            )
 
             if conf.embed_method == "static":
-                conversation.update_messages(
-                    joined, "user", process_username(author.name) if author else None
-                )
+                conversation.update_messages(joined, role, name)
 
             elif conf.embed_method == "dynamic":
                 initial_prompt += f"\n\n{joined}"
@@ -505,12 +492,13 @@ class ChatHandler(MixinMeta):
             else:  # Hybrid embedding
                 if len(embeddings) > 1:
                     initial_prompt += f"\n\n{embeddings[1:]}"
-                conversation.update_messages(
-                    embeddings[0], "user", process_username(author.name) if author else None
-                )
+                conversation.update_messages(embeddings[0], role, name)
 
         messages = conversation.prepare_chat(
-            message, initial_prompt.strip(), system_prompt.strip()
+            message,
+            initial_prompt.strip(),
+            system_prompt.strip(),
+            name=process_username(author.name) if author else None,
         )
         return messages
 
