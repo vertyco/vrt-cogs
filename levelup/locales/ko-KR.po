@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 03:41\n"
+"PO-Revision-Date: 2023-07-23 18:00\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -150,11 +150,11 @@ msgstr "\"\"\"\n"
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "첨부 파일을 찾을 수 없었습니다."
 
 #: base.py:328
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "이는 유효한 형식이 아니며 다음 확장자 중 하나여야 합니다:"
 
 #: base.py:337 base.py:397
 msgid "I was not able to get the file from Discord"
@@ -162,20 +162,20 @@ msgstr "Discord에서 파일을 가져올 수 없습니다."
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "사용자 정의 배경이 저장되었습니다."
 
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "COG의 배경 폴더에서 기본 배경을 제거하세요."
 
 #: base.py:355
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "그 이름을 가진 배경 이미지를 찾을 수 없었습니다."
 
 #: base.py:360 base.py:420
 msgid "Could not delete file: "
-msgstr ""
+msgstr "파일을 삭제할 수 없습니다."
 
 #: base.py:361
 msgid "Background `"
@@ -183,11 +183,11 @@ msgstr "배경"
 
 #: base.py:361 base.py:421
 msgid "` Has been removed!"
-msgstr ""
+msgstr "`제거되었습니다!`"
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "사용자 정의 글꼴 폴더 경로는 다음과 같습니다.\n"
 
 #: base.py:374
 #, docstring
@@ -197,24 +197,28 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\n"
+"불화에서 톱니에 맞춤 글꼴을 추가하십시오\n\n"
+"        **인수**\n"
+"        `preferred_filename` - 이름이 주어지면 파일 이름 대신 이 이름으로 저장됩니다.\n"
+"        **참고:** 선호하는 이름에 파일 확장자를 포함하지 마십시오. 자동으로 추가됩니다."
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "이는 유효한 형식이 아니며 `.ttf` 또는 `.otf` 확장자여야 합니다."
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "사용자 정의 글꼴 파일이 저장되었습니다"
 
 #: base.py:409
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "COG의 글꼴 폴더에서 글꼴을 제거하십시오"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "그 이름을 가진 글꼴을 찾을 수 없었습니다"
 
 #: base.py:421
 msgid "Font `"
