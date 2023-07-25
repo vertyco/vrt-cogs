@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-07-25 18:43\n"
+"PO-Revision-Date: 2023-07-25 20:12\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -42,15 +42,15 @@ msgstr "Silinecek veri yok"
 
 #: autodocs.py:57
 msgid "name"
-msgstr ""
+msgstr "isim"
 
 #: autodocs.py:57
 msgid "text"
-msgstr ""
+msgstr "metin"
 
 #: autodocs.py:66
 msgid "{} cog description"
-msgstr ""
+msgstr "{} dişli açıklaması"
 
 #: autodocs.py:116
 msgid "Create docs for a cog"
@@ -78,11 +78,11 @@ msgstr "Gizli komutları dahil edin"
 
 #: autodocs.py:123
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
-msgstr ""
+msgstr "Belirtilen ayrıcalık seviyesinin üzerindeki komutları gizle (kullanıcı, mod, yönetici, lonca sahibi, bot sahibi)"
 
 #: autodocs.py:126
 msgid "Include a csv with each command isolated per row"
-msgstr ""
+msgstr "Her komutu ayrı bir satırda izole edilmiş bir csv dosyası ekleyin"
 
 #: autodocs.py:141
 #, docstring
@@ -100,7 +100,18 @@ msgid "\n"
 "        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
 "        them and sent in a zip file\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Bir dişli için Markdown dokümanları sayfası oluşturun ve discord'a gönderin.\n\n"
+"**Argümanlar**\n"
+"`cog_name:           `(str) Dokümantasyonunu oluşturmak istediğiniz dişlinin adı (Büyük/Küçük Harfe Duyarlı)\n"
+"`replace_prefix:     `(bool) Eğer True ise, `prefix` yer tutucusunu botun önekiyle değiştirir\n"
+"`replace_botname:    `(bool) Eğer True ise, `botname` yer tutucusunu botun adıyla değiştirir\n"
+"`extended_info:      `(bool) Eğer True ise, dönüştürücüler ve doküman dizeleri gibi ekstra bilgileri içerir\n"
+"`include_hidden:     `(bool) Eğer True ise, gizli komutları içerir\n"
+"`privilege_level:    `(str) Belirtilen ayrıcalık düzeyinin üzerindeki komutları gizler\n"
+"- (kullanıcı, mod, yönetici, lonca sahibi, bot sahibi)\n"
+"`csv_export:         `(bool) Gömülü olarak kullanılmak üzere her komutu ayrı bir satırda içeren bir csv ekler\n\n"
+"**Not** Eğer cog_name için `all` belirtilirse, şu anda yüklenmiş olan çekirdek olmayan tüm dişliler için dokümantasyon oluşturulacak ve bir zip dosyası içinde gönderilecektir "
 
 #: autodocs.py:163
 msgid "AllCogDocs"
