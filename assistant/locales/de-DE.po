@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-07-22 18:29\n"
+"PO-Revision-Date: 2023-07-25 03:10\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -19,58 +19,61 @@ msgstr ""
 
 #: views.py:33
 msgid "Set OpenAI Key"
-msgstr ""
+msgstr "OpenAI-Schlüssel festlegen"
 
 #: views.py:35
 msgid "Enter your OpenAI Key below"
-msgstr ""
+msgstr "Geben Sie Ihren OpenAI-Schlüssel unten ein"
 
 #: views.py:56 views.py:140 views.py:465
 msgid "This isn't your menu!"
-msgstr ""
+msgstr "Das ist nicht Ihre Speisekarte!"
 
 #: views.py:77
 msgid "Entry name"
-msgstr ""
+msgstr "Name des Eintrags"
 
 #: views.py:84
 msgid "Training context"
-msgstr ""
+msgstr "Kontext des Trainings"
 
 #: views.py:101
 msgid "Search for an embedding"
-msgstr ""
+msgstr "Suche nach einer Einbettung"
 
 #: views.py:103
 msgid "Search Query"
-msgstr ""
+msgstr "Suchanfrage"
 
 #: views.py:191
 msgid "Failed to process embedding `{}`\n"
 "Content: ```\n"
 "{}\n"
 "```"
-msgstr ""
+msgstr "Die Einbettung `{}` konnte nicht verarbeitet werden.\n"
+"Inhalt: ```\n"
+"{}\n"
+"```"
 
 #: views.py:195
 msgid "An embedding with the name `{}` already exists!"
-msgstr ""
+msgstr "Eine Einbettung mit dem Namen `{}` existiert bereits!"
 
 #: views.py:201
 msgid "Your embedding labeled `{}` has been processed!"
-msgstr ""
+msgstr "Ihre Einbettung mit der Bezeichnung `{}` wurde verarbeitet!"
 
 #: views.py:214
 msgid "No embeddings to inspect!"
-msgstr ""
+msgstr "Keine Einbettungen zur Überprüfung vorhanden!"
 
 #: views.py:237
 msgid "No embeddings to edit!"
-msgstr ""
+msgstr "Keine Einbettungen zum Bearbeiten vorhanden!"
 
 #: views.py:249
 msgid "Failed to edit that embedding, please try again later"
-msgstr ""
+msgstr "Diese Einbettung konnte nicht bearbeitet werden, bitte versuchen Sie es später erneut"
 
 #: views.py:256
 msgid "Your embedding has been modified!"
