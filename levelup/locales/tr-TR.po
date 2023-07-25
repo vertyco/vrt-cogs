@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-25 18:42\n"
+"PO-Revision-Date: 2023-07-25 20:12\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -66,7 +66,7 @@ msgstr "Bu kullanıcı için veri bulunmadı!"
 
 #: base.py:211
 msgid "You just gave a star to {}!"
-msgstr ""
+msgstr "Az önce {}'e bir yıldız verdin!"
 
 #: base.py:216
 #, docstring
@@ -628,7 +628,7 @@ msgstr "Kaydedilmiş bir haftalık gömme kaydedilmedi"
 
 #: base.py:1159
 msgid "Last Weekly Winners"
-msgstr ""
+msgstr "Son Haftalık Kazananlar"
 
 #: base.py:1160
 msgid "{}\n"
@@ -678,7 +678,9 @@ msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
-msgstr ""
+msgstr "\n"
+"Dostane mahalle seviye sistemi\n\n"
+"Metin ve ses kanallarında sohbet ederek deneyim kazanın, arkadaşlarınızla seviyeleri karşılaştırın, profilinizi özelleştirin ve çeşitli liderlik tablolarını görüntüleyin! "
 
 #: levelup.py:235
 msgid "Monday"
@@ -714,11 +716,11 @@ msgstr "sadece bir yıldız verdi"
 
 #: levelup.py:630
 msgid "You have just reached level {level} in {guild}!"
-msgstr ""
+msgstr "Az önce {level} seviyesine {guild} içinde ulaştınız!"
 
 #: levelup.py:640
 msgid "Just reached level {level}!"
-msgstr ""
+msgstr "Az önce {level} seviyesine ulaştım!"
 
 #: levelup.py:673
 msgid "You just leveled up in "
@@ -726,7 +728,7 @@ msgstr "Az önce seviye atladın "
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
-msgstr ""
+msgstr "**{kullanıcı} az önce seviye atladı!**"
 
 #: levelup.py:998
 #, docstring
@@ -1166,23 +1168,31 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Malarne'nin Leveler çarkından seviye ve exp aktarma\n\n"
+"        **Argümanlar**\n"
+"        `export_by` - hangi istatistiğe öncelik verileceği (`level` veya `exp`)\n"
+"        Eğer exp girilmişse, deneyimlerini içe aktaracak ve yeni seviyelerini buna göre hesaplayacaktır.\n"
+"        Eğer seviye girilmişse, kullanıcının seviyesini alır ve exp'sini buna göre hesaplar.\n"
+"        `replace` - (True/False) True ise kullanıcının exp'sini veya seviyesini değiştirir, aksi takdirde ekler\n"
+"        `i_agree` - (Evet/Hayır) Sadece bu komutu çalıştırmak istediğinizden emin olmak için ekstra bir seçenek\n"
+"        "
 
 #: levelup.py:1499
 msgid "Not importing levels"
-msgstr ""
+msgstr "Seviyeler içe aktarılmıyor"
 
 #: levelup.py:1502
 msgid "No config found for Malarne's Leveler cog!"
-msgstr ""
+msgstr "Malarne'nin Leveler çarkı için yapılandırma bulunamadı!"
 
 #: levelup.py:1548
 msgid "There were no profiles to import"
-msgstr ""
+msgstr "İçe aktarılacak profil yoktu"
 
 #: levelup.py:1549
 msgid "Imported {} profile(s)"
-msgstr ""
+msgstr "İçe aktarılan {} profil(ler)"
 
 #: levelup.py:1582
 #, docstring
@@ -1196,7 +1206,15 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"MEE6'dan seviyeleri ve deneyimi içe aktarın.\n\n"
+"**Loncanızın liderlik tablosunun herkese açık olduğundan emin olun!**\n\n"
+"**Argümanlar**\n"
+"`import_by` - öncelik verilecek istatistik (`level` veya `exp`)\n"
+"Eğer exp girilirse, deneyimlerini içe aktaracak ve yeni seviyelerini buna göre hesaplayacak.\n"
+"Eğer level girilirse, seviyelerini içe aktaracak ve deneyimlerini buna göre hesaplayacak.\n"
+"`replace` - (True/False) True ise kullanıcının deneyimini veya seviyesini değiştirir, aksi takdirde ekler.\n"
+"`i_agree` - (Evet/Hayır) Bu komutu gerçekleştirmek istediğinizden emin olmak için ek bir seçenek "
 
 #: levelup.py:1595
 msgid "Not importing MEE6 levels"
@@ -1204,7 +1222,7 @@ msgstr "MEE6 seviyeleri içe aktarılmıyor"
 
 #: levelup.py:1597
 msgid "Fetching mee6 leaderboard data, please wait..."
-msgstr ""
+msgstr "Mee6 liderlik tablosu verileri alınıyor, lütfen bekleyin..."
 
 #: levelup.py:1618
 msgid "Your leaderboard needs to be set to public!"
@@ -1216,15 +1234,15 @@ msgstr "Veri bulunamadı!"
 
 #: levelup.py:1631
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
-msgstr ""
+msgstr "{} sayfaları mee6 api'den getirilemedi, daha fazla bilgi için günlükleri kontrol edin"
 
 #: levelup.py:1636
 msgid "No leaderboard data found!"
-msgstr ""
+msgstr "Liderlik tablosu verisi bulunamadı!"
 
 #: levelup.py:1638
 msgid "Data retrieved, importing..."
-msgstr ""
+msgstr "Veri alındı, içe aktarılıyor..."
 
 #: levelup.py:1682
 msgid "No MEE6 stats were found"
@@ -1232,11 +1250,11 @@ msgstr "MEE6 istatistikleri bulunamadı"
 
 #: levelup.py:1684
 msgid "Imported {} User(s)"
-msgstr ""
+msgstr "İthal {} Kullanıcı(lar)"
 
 #: levelup.py:1686
 msgid " ({} failed)"
-msgstr ""
+msgstr " ({} başarısız)"
 
 #: levelup.py:1695
 #, docstring
@@ -1246,7 +1264,11 @@ msgid "\n"
 "        It will also import XP range level roles, and ignored channels\n"
 "        *Obviously you will need MongoDB running while you run this command*\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Fixator'ın Leveler çarkından veri aktarımı\n\n"
+"Bu, mevcut LevelUp seviye veri ve yıldızlarını üzerine yazacaktır\n"
+"Ayrıca XP aralığı düzeyindeki rolleri ve yok sayılan kanalları da içe aktaracaktır\n"
+"*Bu komutu çalıştırırken MongoDB'nin çalışıyor olması gerekmektedir* "
 
 #: levelup.py:1703
 msgid "Not importing users"
@@ -1254,11 +1276,11 @@ msgstr "Kullanıcılar içe aktarılmıyor"
 
 #: levelup.py:1707
 msgid "No config found for Fixator's Leveler cog!"
-msgstr ""
+msgstr "Fixator'un Leveler dişlisi için yapılandırma bulunamadı!"
 
 #: levelup.py:1731
 msgid "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo` and `{}pipinstall motor`"
-msgstr ""
+msgstr "`pymongo` ve `motor` kütüphaneleri içe aktarılamadı. `{}pipinstall pymongo` ve `{}pipinstall motor` komutlarını çalıştırın"
 
 #: levelup.py:1755
 msgid "Failed to connect to MongoDB"
@@ -1631,11 +1653,11 @@ msgstr "\n"
 
 #: levelup.py:2235
 msgid "Your exponent needs to be higher than 0"
-msgstr ""
+msgstr "Üs değeri 0'dan büyük olmalıdır"
 
 #: levelup.py:2237
 msgid "Your exponent needs to be 10 or lower"
-msgstr ""
+msgstr "Üs değeri 10 veya daha düşük olmalıdır"
 
 #: levelup.py:2244
 #, docstring
@@ -1889,7 +1911,7 @@ msgstr "Ayarla"
 
 #: levelup.py:2603
 msgid " has been "
-msgstr ""
+msgstr " olmuştur "
 
 #: levelup.py:2603
 msgid " as "
@@ -2224,7 +2246,8 @@ msgstr "En fazla 25 kazanan olabilir!"
 msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
 "        "
-msgstr ""
+msgstr "Haftalık kazanan duyuru kanalı\n"
+"        Otomatik sıfırlama etkinleştirildiğinde haftalık kazananların duyurulacağı kanalı ayarlayın "
 
 #: levelup.py:2912
 msgid "I do not have permission to send messages to that channel!"
@@ -2263,7 +2286,8 @@ msgstr "Haftalık istatistik sıfırlamasında listelenen tüm en iyi üyeler ha
 msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
 "        "
-msgstr ""
+msgstr "Her seferinde bir rol sahibi\n"
+"Yeni bir kazanan seçildiğinde, önceki sahibinden kazanan rolünün kaldırılıp kaldırılmayacağını değiştirin "
 
 #: levelup.py:2955
 msgid "Auto role removal from previous winner has been **Disabled**"
