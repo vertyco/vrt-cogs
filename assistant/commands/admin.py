@@ -50,7 +50,7 @@ class Admin(MixinMeta):
 
         You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.
 
-        This cog comes with a pre-trained **[self-hosted model](https://huggingface.co/deepset/roberta-base-squad2)** (Q&A Only)
+        This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.
         """
         pass
 
