@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 18:00\n"
+"PO-Revision-Date: 2023-07-25 17:00\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -216,41 +216,41 @@ msgstr "Não consegui encontrar nenhuma fonte com esse nome"
 
 #: base.py:421
 msgid "Font `"
-msgstr ""
+msgstr "Fonte `"
 
 #: base.py:427
 #, docstring
 msgid "View the default backgrounds"
-msgstr ""
+msgstr "Ver os fundos padrão"
 
 #: base.py:430 base.py:461
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "Os perfis de imagem estão desativados neste servidor, portanto este comando está desligado"
 
 #: base.py:435 base.py:466
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "Falha ao gerar amostras de fundo"
 
 #: base.py:445
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "Aqui estão os fundos padrão atuais, para definir um permanentemente você pode usar o "
 
 #: base.py:448 base.py:477
 msgid "command"
-msgstr ""
+msgstr "comando"
 
 #: base.py:452
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "Não foi possível enviar o collage de fundo, o tamanho do arquivo pode ser muito grande."
 
 #: base.py:458
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "Visualizar fontes disponíveis para uso"
 
 #: base.py:476
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "Aqui estão as fontes atuais, para definir uma permanentemente você pode usar o "
 
 #: base.py:481
 msgid "Could not send font collage, file size may be too large."
