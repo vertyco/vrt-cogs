@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-06-23 23:23\n"
+"PO-Revision-Date: 2023-07-25 15:30\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -23,7 +23,9 @@ msgid "\n"
 "    Document your cogs with ease!\n\n"
 "    Easily create documentation for any cog in Markdown format.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"쉽게 코그를 문서화하세요!\n\n"
+"마크다운 형식으로 어떤 코그든지 쉽게 문서를 작성할 수 있습니다 "
 
 #: autodocs.py:35
 msgid "{}\n"
@@ -34,7 +36,7 @@ msgstr ""
 #: autodocs.py:41
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "삭제할 데이터가 없습니다"
 
 #: autodocs.py:57
 msgid "name"
@@ -50,27 +52,27 @@ msgstr ""
 
 #: autodocs.py:116
 msgid "Create docs for a cog"
-msgstr ""
+msgstr "톱니바퀴 코그에 대한 문서를 작성하세요"
 
 #: autodocs.py:118
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
-msgstr ""
+msgstr "문서를 만들려는 코그의 이름(대소문자 구분)"
 
 #: autodocs.py:119
 msgid "Replace all occurrences of [p] with the bots prefix"
-msgstr ""
+msgstr "[P]가 나오는 모든 부분을 봇의 접두사로 바꿉니다"
 
 #: autodocs.py:120
 msgid "Replace all occurrences of [botname] with the bots name"
-msgstr ""
+msgstr "봇 이름]의 모든 항목을 봇 이름으로 바꿉니다"
 
 #: autodocs.py:121
 msgid "Include extra info like converters and their docstrings"
-msgstr ""
+msgstr "변환기 및 해당 문서 문자열과 같은 추가 정보를 포함하세요"
 
 #: autodocs.py:122
 msgid "Include hidden commands"
-msgstr ""
+msgstr "숨겨진 명령어 포함 여부를 확인하십시오"
 
 #: autodocs.py:123
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
@@ -100,75 +102,75 @@ msgstr ""
 
 #: autodocs.py:163
 msgid "AllCogDocs"
-msgstr ""
+msgstr "AllCogDocs"
 
 #: autodocs.py:203
 msgid "Here are the docs for all of your currently loaded cogs!"
-msgstr ""
+msgstr "현재로드된 모든 코그에 대한 문서가 여기에 있습니다!"
 
 #: autodocs.py:207
 msgid "I could not find that cog, maybe it is not loaded?"
-msgstr ""
+msgstr "톱니바퀴를 찾을 수 없습니다. 로드되지 않은 것일까요?"
 
 #: autodocs.py:229
 msgid "Here are your docs for {}!"
-msgstr ""
+msgstr "여기 {}에 대한 문서가 있습니다!"
 
 #: converters.py:62
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
-msgstr ""
+msgstr "슬래시를 사용하지 않고 여러 단어가 필요한 경우 따옴표(예: \"Hello world\")를 사용하여 입력합니다."
 
 #: converters.py:65
 msgid "A number without decimal places."
-msgstr ""
+msgstr "소수 자릿수가 없는 숫자입니다."
 
 #: converters.py:66
 msgid "A number with or without decimal places."
-msgstr ""
+msgstr "소수점 이하 자릿수가 있는지 여부에 상관없이 숫자입니다."
 
 #: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
-msgstr ""
+msgstr "1, 0, 참, 거짓, t, f일 수 있습니다"
 
 #: formatter.py:18
 msgid "Help"
-msgstr ""
+msgstr "도움말"
 
 #: formatter.py:19
 msgid "Usage"
-msgstr ""
+msgstr "사용법"
 
 #: formatter.py:20
 msgid "Aliases"
-msgstr ""
+msgstr "별칭"
 
 #: formatter.py:21
 msgid "Required"
-msgstr ""
+msgstr "필수"
 
 #: formatter.py:22
 msgid "Autocomplete"
-msgstr ""
+msgstr "자동 완성"
 
 #: formatter.py:23
 msgid "Choices"
-msgstr ""
+msgstr "선택 사항"
 
 #: formatter.py:24
 msgid "Optional"
-msgstr ""
+msgstr "선택 사항"
 
 #: formatter.py:25
 msgid "Default"
-msgstr ""
+msgstr "기본값"
 
 #: formatter.py:26
 msgid "Slash"
-msgstr ""
+msgstr "슬래시"
 
 #: formatter.py:27
 msgid "Hybrid"
-msgstr ""
+msgstr "하이브리드"
 
 #: formatter.py:28
 msgid "Command"
@@ -176,36 +178,36 @@ msgstr ""
 
 #: formatter.py:29
 msgid "Restricted to"
-msgstr ""
+msgstr "다음 대상으로 제한됩니다"
 
 #: formatter.py:30
 msgid "Server Only"
-msgstr ""
+msgstr "서버 전용"
 
 #: formatter.py:31
 msgid "per"
-msgstr ""
+msgstr "당"
 
 #: formatter.py:32
 msgid "seconds"
-msgstr ""
+msgstr "초"
 
 #: formatter.py:33
 msgid "second"
-msgstr ""
+msgstr "두 번째"
 
 #: formatter.py:34
 msgid "Cooldown"
-msgstr ""
+msgstr "재사용 대기시간"
 
 #: formatter.py:35
 msgid "Checks"
-msgstr ""
+msgstr "수표"
 
 #: formatter.py:59
 #, docstring
 msgid "Formats documentation for a single command"
-msgstr ""
+msgstr "단일 명령에 대한 문서 형식을 지정합니다"
 
 #: formatter.py:221
 msgid "Could not get docstring or class for {} converter"
@@ -225,5 +227,5 @@ msgstr ""
 
 #: formatter.py:311
 msgid "Extended Arg Info\n"
-msgstr ""
+msgstr "확장된 인수 정보\n"
 
