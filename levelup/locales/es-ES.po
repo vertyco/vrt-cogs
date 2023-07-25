@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-25 00:18\n"
+"PO-Revision-Date: 2023-07-25 00:26\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -64,7 +64,7 @@ msgstr "¡No hay datos disponibles para ese usuario todavía!"
 
 #: base.py:211
 msgid "You just gave a star to {}!"
-msgstr ""
+msgstr "¡Acabas de darle una estrella a {}!"
 
 #: base.py:216
 #, docstring
@@ -112,7 +112,7 @@ msgstr "`Antecedentes:`"
 
 #: base.py:279
 msgid "`Blur:            `"
-msgstr ""
+msgstr "`Desenfoque:            `"
 
 #: base.py:282
 msgid "Your Profile Settings"
@@ -417,11 +417,12 @@ msgstr "El tipo de letra de tu perfil ha sido establecido como "
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Activa un ligero efecto de desenfoque en la imagen de fondo donde se muestra el texto "
 
 #: base.py:769
 msgid "Your profile background blur has been set to "
-msgstr ""
+msgstr "El desenfoque de fondo de tu perfil se ha establecido en "
 
 #: base.py:775
 #, docstring
@@ -609,20 +610,21 @@ msgstr "Todavía no hay datos para la clasificación semanal, por favor, chatea 
 #: base.py:1152
 #, docstring
 msgid "View the last weekly embed"
-msgstr ""
+msgstr "Ver la última incrustación semanal"
 
 #: base.py:1157
 msgid "There is no recorded weekly embed saved"
-msgstr ""
+msgstr "No hay ningún registro semanal guardado"
 
 #: base.py:1159
 msgid "Last Weekly Winners"
-msgstr ""
+msgstr "Últimos ganadores semanales"
 
 #: base.py:1160
 msgid "{}\n"
 "`Last Reset:     `{}"
-msgstr ""
+msgstr "{}\n"
+"`Último reinicio:     {}`"
 
 #: generator.py:213 generator.py:620
 msgid "Rank: #"
@@ -667,7 +669,9 @@ msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
-msgstr ""
+msgstr "\n"
+"El sistema de nivelación amigable de tu vecindario\n\n"
+"Gana experiencia chateando en canales de texto y voz, compara niveles con tus amigos, personaliza tu perfil y visualiza varias tablas de clasificación "
 
 #: levelup.py:235
 msgid "Monday"
@@ -703,11 +707,11 @@ msgstr "acaba de dar una estrella a"
 
 #: levelup.py:630
 msgid "You have just reached level {level} in {guild}!"
-msgstr ""
+msgstr "¡Acabas de alcanzar el nivel {level} en {guild}!"
 
 #: levelup.py:640
 msgid "Just reached level {level}!"
-msgstr ""
+msgstr "¡Acaba de alcanzar el nivel {nivel}!"
 
 #: levelup.py:673
 msgid "You just leveled up in "
@@ -715,7 +719,7 @@ msgstr "Acabas de subir de nivel en "
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
-msgstr ""
+msgstr "{usuario} ¡acaba de subir de nivel!"
 
 #: levelup.py:998
 #, docstring
@@ -782,7 +786,7 @@ msgstr "Insertar"
 
 #: levelup.py:1146
 msgid "**Main**\n"
-msgstr ""
+msgstr "Principal\n"
 
 #: levelup.py:1147
 msgid "`Profile Type:      `"
@@ -920,7 +924,7 @@ msgstr "Canales de bonificación de voz XP"
 
 #: levelup.py:1219
 msgid "Stream XP Bonus"
-msgstr ""
+msgstr "Bono de XP de transmisión"
 
 #: levelup.py:1228
 msgid "Message XP Bonus Roles"
@@ -1157,19 +1161,26 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Importar niveles y exp del engranaje Nivelador de Malarne\n\n"
+"        **Argumentos**\n"
+"        `export_by` - qué estadística priorizar (`level` o `exp`)\n"
+"        Si se introduce exp, importará su experiencia y basará su nuevo nivel en ella.\n"
+"        Si se introduce el nivel, se importará su nivel y se calculará su exp basándose en él.\n"
+"        `replace` - (True/False) si es True, reemplazará la exp o el nivel del usuario, si no, lo añadirá\n"
+"        `i_agree` - (Yes/No) Sólo una opción extra para asegurarse de que desea ejecutar este comando "
 
 #: levelup.py:1499
 msgid "Not importing levels"
-msgstr ""
+msgstr "No se están importando niveles"
 
 #: levelup.py:1502
 msgid "No config found for Malarne's Leveler cog!"
-msgstr ""
+msgstr "¡No se encontró ninguna configuración para el engranaje nivelador de Malarne!"
 
 #: levelup.py:1548
 msgid "There were no profiles to import"
-msgstr ""
+msgstr "No había perfiles para importar"
 
 #: levelup.py:1549
 msgid "Imported {} profile(s)"
@@ -1187,7 +1198,15 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Importar niveles y exp de MEE6\n\n"
+"        **Asegúrate de que el tablero de clasificación de tu gremio sea público!**\n\n"
+"        **Argumentos**\n"
+"        `import_by` - qué estadística priorizar (`level` o `exp`)\n"
+"        Si se ingresa exp, importará su experiencia y basará su nuevo nivel en ella.\n"
+"        Si se ingresa level, importará su nivel y calculará su exp en base a eso.\n"
+"        `replace` - (Verdadero/Falso) si es Verdadero, reemplazará la exp o el nivel del usuario, de lo contrario lo agregará\n"
+"        `i_agree` - (Sí/No) Solo una opción adicional para asegurarse de que desea ejecutar este comando "
 
 #: levelup.py:1595
 msgid "Not importing MEE6 levels"
@@ -1195,7 +1214,7 @@ msgstr "No se importan los niveles MEE6"
 
 #: levelup.py:1597
 msgid "Fetching mee6 leaderboard data, please wait..."
-msgstr ""
+msgstr "Obteniendo datos de la clasificación de mee6, por favor espere..."
 
 #: levelup.py:1618
 msgid "Your leaderboard needs to be set to public!"
@@ -1207,15 +1226,15 @@ msgstr "No se encontraron datos"
 
 #: levelup.py:1631
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
-msgstr ""
+msgstr "No se pudieron obtener {} páginas de la API de Mee6, revise los registros para obtener más información"
 
 #: levelup.py:1636
 msgid "No leaderboard data found!"
-msgstr ""
+msgstr "¡No se encontraron datos de la tabla de clasificación!"
 
 #: levelup.py:1638
 msgid "Data retrieved, importing..."
-msgstr ""
+msgstr "Datos recuperados, importando..."
 
 #: levelup.py:1682
 msgid "No MEE6 stats were found"
@@ -1223,11 +1242,11 @@ msgstr "No se encontraron estadísticas de MEE6"
 
 #: levelup.py:1684
 msgid "Imported {} User(s)"
-msgstr ""
+msgstr "Importado {} Usuario(s)"
 
 #: levelup.py:1686
 msgid " ({} failed)"
-msgstr ""
+msgstr " ({} fallido)"
 
 #: levelup.py:1695
 #, docstring
@@ -1237,7 +1256,11 @@ msgid "\n"
 "        It will also import XP range level roles, and ignored channels\n"
 "        *Obviously you will need MongoDB running while you run this command*\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Importar datos del engranaje Nivelador del Fijador\n\n"
+"        Esto sobrescribirá los datos de nivel y las estrellas existentes en LevelUp\n"
+"        También importará los roles de nivel de rango XP y los canales ignorados\n"
+"        *Obviamente necesitarás MongoDB ejecutándose mientras ejecutas este comando* "
 
 #: levelup.py:1703
 msgid "Not importing users"
@@ -1245,11 +1268,11 @@ msgstr "No importando usuarios"
 
 #: levelup.py:1707
 msgid "No config found for Fixator's Leveler cog!"
-msgstr ""
+msgstr "¡No se encontró ninguna configuración para el engranaje nivelador de Fixator!"
 
 #: levelup.py:1731
 msgid "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo` and `{}pipinstall motor`"
-msgstr ""
+msgstr "Error al importar las librerías `pymongo` y `motor`. Ejecuta `{}pipinstall pymongo` y `{}pipinstall motor`"
 
 #: levelup.py:1755
 msgid "Failed to connect to MongoDB"
@@ -1439,19 +1462,22 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the bonus\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Agregar un rango de bonificación de XP a los usuarios que están transmitiendo en Discord.\n\n"
+"Esta bonificación se aplica al tiempo de voz XP.\n\n"
+"Establecer tanto el mínimo como el máximo en 0 para eliminar la bonificación "
 
 #: levelup.py:2064
 msgid "There is no stream bonus set yet"
-msgstr ""
+msgstr "Todavía no hay ningún conjunto de bonificación por transmisión"
 
 #: levelup.py:2066
 msgid "Stream bonus has been removed"
-msgstr ""
+msgstr "Se ha eliminado el bono de transmisión"
 
 #: levelup.py:2069
 msgid "Stream bonus has been set to "
-msgstr ""
+msgstr "La bonificación por flujo se ha fijado en "
 
 #: levelup.py:2074
 #, docstring
@@ -1577,11 +1603,13 @@ msgid "\n"
 "        Set a user to a specific prestige level\n\n"
 "        Prestige roles will need to be manually added/removed when using this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Establecer un usuario en un nivel de prestigio específico\n\n"
+"Los roles de prestigio deberán añadirse/eliminarse manualmente al utilizar este comando "
 
 #: levelup.py:2204
 msgid "That prestige level isn't set!"
-msgstr ""
+msgstr "¡Ese nivel de prestigio no está establecido!"
 
 #: levelup.py:2213
 #, docstring
@@ -1610,11 +1638,11 @@ msgstr "\n"
 
 #: levelup.py:2235
 msgid "Your exponent needs to be higher than 0"
-msgstr ""
+msgstr "El exponente debe ser mayor que 0"
 
 #: levelup.py:2237
 msgid "Your exponent needs to be 10 or lower"
-msgstr ""
+msgstr "El exponente debe ser 10 o menor"
 
 #: levelup.py:2244
 #, docstring
@@ -1867,7 +1895,7 @@ msgstr "Establecer"
 
 #: levelup.py:2603
 msgid " has been "
-msgstr ""
+msgstr " ha sido "
 
 #: levelup.py:2603
 msgid " as "
@@ -2201,7 +2229,8 @@ msgstr "¡Solo puede haber hasta 25 ganadores!"
 msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
 "        "
-msgstr ""
+msgstr "Canal de anuncio de los ganadores semanales\n"
+"establece el canal en el que se anunciarán los ganadores semanales cuando esté habilitado el reinicio automático "
 
 #: levelup.py:2912
 msgid "I do not have permission to send messages to that channel!"
@@ -2240,7 +2269,8 @@ msgstr "Todos los miembros principales enumerados en el reinicio semanal de esta
 msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
 "        "
-msgstr ""
+msgstr "Un titular de rol a la vez\n"
+"Alternar si se elimina el rol de ganador del titular anterior cuando se selecciona un nuevo ganador "
 
 #: levelup.py:2955
 msgid "Auto role removal from previous winner has been **Disabled**"
