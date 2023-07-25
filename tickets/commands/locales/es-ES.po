@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-22 18:28\n"
+"PO-Revision-Date: 2023-07-25 00:26\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -20,203 +20,205 @@ msgstr ""
 #: commands\admin.py:24
 #, docstring
 msgid "Base support ticket settings"
-msgstr ""
+msgstr "Configuración base de tickets de soporte"
 
 #: commands\admin.py:29 commands\admin.py:36
 #, docstring
 msgid "Ticket Setup Guide"
-msgstr ""
+msgstr "Guía de configuración de tickets"
 
 #: commands\admin.py:31
 msgid "To create a support ticket panel, type "
-msgstr ""
+msgstr "Para crear un panel de tickets de soporte, escriba "
 
 #: commands\admin.py:33
 msgid " <panel_name>`"
-msgstr ""
+msgstr " <nombre_del_panel>`"
 
 #: commands\admin.py:40
 msgid "Set the category ID that new tickets will be created under if using channel tickets.\n"
-msgstr ""
+msgstr "Establezca el ID de categoría bajo el cual se crearán los nuevos tickets si se utilizan tickets de canal.\n"
 
 #: commands\admin.py:43
 msgid "<panel_name> <category_id>`"
-msgstr ""
+msgstr "<nombre_panel> <id_categoría>`"
 
 #: commands\admin.py:44
 msgid "Step 1"
-msgstr ""
+msgstr "Primer paso"
 
 #: commands\admin.py:45
 msgid "Set the channel that the bots ticket panel will be located in.\n"
-msgstr ""
+msgstr "Establece el canal en el que se ubicará el panel de tickets de los bots.\n"
 
 #: commands\admin.py:46
 msgid "<panel_name> <channel_id>`"
-msgstr ""
+msgstr "<nombre_panel> <id_canal>`"
 
 #: commands\admin.py:47
 msgid "Step 2"
-msgstr ""
+msgstr "Paso 2"
 
 #: commands\admin.py:48
 msgid "Set the ID of the bots ticket panel message.\n"
-msgstr ""
+msgstr "Establece el ID del mensaje del panel de tickets de bots.\n"
 
 #: commands\admin.py:49
 msgid "<panel_name> <message_id>`\n"
-msgstr ""
+msgstr "<nombre_panel> <id_mensaje>`\n"
 
 #: commands\admin.py:50
 msgid "At this point the ticket panel will be activated, all following steps are for extra customization.\n"
 "If you need a message to add the buttons to, you can use the `{}tickets embed` command.\n"
-msgstr ""
+msgstr "En este punto se activará el panel de tickets, todos los pasos siguientes son para personalización extra.\n"
+"Si necesita un mensaje para añadir los botones, puede utilizar el comando `{}tickets embed`.\n"
 
 #: commands\admin.py:55
 msgid "If the bot is having trouble finding the message, run the command in the same channel as it."
-msgstr ""
+msgstr "Si el bot tiene problemas para encontrar el mensaje, ejecuta el comando en el mismo canal que él."
 
 #: commands\admin.py:58
 msgid "Step 3"
-msgstr ""
+msgstr "Paso 3"
 
 #: commands\admin.py:59
 msgid "Set the text of the ticket panel button.\n"
-msgstr ""
+msgstr "Establecer el texto del botón del panel de tickets.\n"
 
 #: commands\admin.py:60
 msgid "<panel_name> <button_text>`"
-msgstr ""
+msgstr "<nombre_panel> <texto_botón>`"
 
 #: commands\admin.py:61
 msgid "Button Text"
-msgstr ""
+msgstr "Texto del botón"
 
 #: commands\admin.py:62
 msgid "Set the ticket panel button color.\n"
-msgstr ""
+msgstr "Establezca el color del botón del panel de tickets.\n"
 
 #: commands\admin.py:63
 msgid "Valid colors are "
-msgstr ""
+msgstr "Los colores válidos son\n"
+"Los colores válidos son "
 
 #: commands\admin.py:64
 msgid "<panel_name> <button_color>`"
-msgstr ""
+msgstr "<nombre_panel> <color_botón>`"
 
 #: commands\admin.py:65
 msgid "Button Color"
-msgstr ""
+msgstr "Color de los botones"
 
 #: commands\admin.py:66
 msgid "Set the button emoji for the ticket panel.\n"
-msgstr ""
+msgstr "Establezca el emoji del botón para el panel de entradas.\n"
 
 #: commands\admin.py:67
 msgid "<panel_name> <emoji>`"
-msgstr ""
+msgstr "<nombre_del_panel> <emoji>`"
 
 #: commands\admin.py:68
 msgid "Button Emoji"
-msgstr ""
+msgstr "Emoji de botón"
 
 #: commands\admin.py:70
 msgid "Use threads instead of channels for tickets\n"
-msgstr ""
+msgstr "Utilizar hilos en lugar de canales para los tickets.\n"
 
 #: commands\admin.py:71 commands\admin.py:75 commands\admin.py:79
 msgid "<panel_name>`"
-msgstr ""
+msgstr "<nombre_del_panel>`"
 
 #: commands\admin.py:72
 msgid "Thread Tickets"
-msgstr ""
+msgstr "Entradas de hilo"
 
 #: commands\admin.py:74
 msgid "Add a message the bot sends to the user in their ticket.\n"
-msgstr ""
+msgstr "Añade un mensaje que el bot envía al usuario en su ticket.\n"
 
 #: commands\admin.py:76
 msgid "Ticket Messages"
-msgstr ""
+msgstr "Mensajes de Ticket"
 
 #: commands\admin.py:78
 msgid "View and remove a messages the bot sends to the user in their ticket.\n"
-msgstr ""
+msgstr "Ver y eliminar los mensajes que el bot envía al usuario en su ticket.\n"
 
 #: commands\admin.py:80
 msgid "Remove/View Ticket Messages"
-msgstr ""
+msgstr "Eliminar/Ver mensajes de tickets"
 
 #: commands\admin.py:82
 msgid "Set the naming format for ticket channels that are opened.\n"
-msgstr ""
+msgstr "Establezca el formato de denominación para los canales de tickets que se abren.\n"
 
 #: commands\admin.py:83
 msgid "<panel_name> <name_format>`"
-msgstr ""
+msgstr "<nombre_panel> <formato_nombre>`"
 
 #: commands\admin.py:84
 msgid "Ticket Channel Name"
-msgstr ""
+msgstr "Nombre del canal de tickets"
 
 #: commands\admin.py:85
 msgid "Set log channel for a ticket panel.\n"
-msgstr ""
+msgstr "Establecer canal de registro para un panel de tickets.\n"
 
 #: commands\admin.py:86
 msgid "<panel_name> <channel>`"
-msgstr ""
+msgstr "<nombre_panel> <canal>`"
 
 #: commands\admin.py:87
 msgid "Log Channel"
-msgstr ""
+msgstr "Canal de registro"
 
 #: commands\admin.py:89
 msgid "Tip: you can create multiple support panels using the same message for a multi-button panel"
-msgstr ""
+msgstr "Consejo: puedes crear múltiples paneles de soporte utilizando el mismo mensaje para un panel de varios botones"
 
 #: commands\admin.py:97
 #, docstring
 msgid "Add a support ticket panel"
-msgstr ""
+msgstr "Añadir un panel de tickets de soporte"
 
 #: commands\admin.py:100
 msgid " Panel Saved"
-msgstr ""
+msgstr " Panel Guardado"
 
 #: commands\admin.py:101
 msgid "Your panel has been added and will need to be configured."
-msgstr ""
+msgstr "Su panel ha sido añadido y necesitará ser configurado."
 
 #: commands\admin.py:106
 msgid "Panel already exists!"
-msgstr ""
+msgstr "¡El panel ya existe!"
 
 #: commands\admin.py:117
 #, docstring
 msgid "Set the category ID for a ticket panel"
-msgstr ""
+msgstr "Establecer el ID de categoría para un panel de tickets"
 
 #: commands\admin.py:121
 msgid "I need the `manage channels` permission to set this category"
-msgstr ""
+msgstr "Necesito el permiso `manage channels` para establecer esta categoría"
 
 #: commands\admin.py:124
 msgid "I need `manage permissions` enabled in this category"
-msgstr ""
+msgstr "Necesito habilitar `manage permissions` en esta categoría"
 
 #: commands\admin.py:126
 msgid "I need the `attach files` permission to set this category"
-msgstr ""
+msgstr "Necesito el permiso `adjuntar archivos` para establecer esta categoría"
 
 #: commands\admin.py:128
 msgid "I cannot see that category!"
-msgstr ""
+msgstr "No puedo ver esa categoría"
 
 #: commands\admin.py:130
 msgid "I cannot see message history in that category!"
-msgstr ""
+msgstr "No puedo ver el historial de mensajes en esa categoría"
 
 #: commands\admin.py:133 commands\admin.py:153 commands\admin.py:168
 #: commands\admin.py:193 commands\admin.py:215 commands\admin.py:242
@@ -226,11 +228,11 @@ msgstr ""
 #: commands\admin.py:1041 commands\admin.py:1081 commands\admin.py:1098
 #: commands\admin.py:1111
 msgid "Panel does not exist!"
-msgstr ""
+msgstr "El panel no existe"
 
 #: commands\admin.py:136
 msgid "New tickets will now be opened under that category!"
-msgstr ""
+msgstr "¡Las nuevas entradas ahora se abrirán bajo esa categoría!"
 
 #: commands\admin.py:145
 #, docstring
