@@ -28,10 +28,17 @@ class CustomFunction(BaseModel):
         return globals()[self.jsonschema["name"]]
 
 
+class Usage(BaseModel):
+    total_tokens: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+
 class GuildSettings(BaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
     embeddings: Dict[str, Embedding] = {}
+    usage: Dict[str, Usage] = {}
     blacklist: List[int] = []  # Channel/Role/User IDs
     tutors: List[int] = []  # Role or user IDs
     top_n: int = 3
@@ -64,6 +71,7 @@ class GuildSettings(BaseModel):
 
     image_tools: bool = True
     image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
+
     use_function_calls: bool = False
     max_function_calls: int = 10  # Max calls in a row
     disabled_functions: List[str] = []
@@ -94,6 +102,19 @@ class GuildSettings(BaseModel):
             return []
         strings_and_relatedness.sort(key=lambda x: x[2], reverse=True)
         return strings_and_relatedness[: top_n_override or self.top_n]
+
+    def update_usage(
+        self,
+        model: str,
+        total_tokens: int,
+        input_tokens: int,
+        output_tokens: int,
+    ) -> None:
+        if model not in self.usage:
+            self.usage[model] = Usage()
+        self.usage[model].total_tokens += total_tokens
+        self.usage[model].input_tokens += input_tokens
+        self.usage[model].output_tokens += output_tokens
 
     def get_user_model(self, member: Optional[discord.Member] = None) -> str:
         if not member or not self.model_role_overrides:

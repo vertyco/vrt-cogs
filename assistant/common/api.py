@@ -53,10 +53,10 @@ class API(MixinMeta):
         diff = min(max_model_tokens - convo_tokens, max_convo_tokens - convo_tokens)
         if diff < 1:
             diff = max_model_tokens - convo_tokens
-        max_tokens = min(max_response_tokens, max(diff, 10))
+        max_tokens = min(max_response_tokens, max(diff, 0))
 
         if model in CHAT:
-            return await request_chat_completion_raw(
+            response = await request_chat_completion_raw(
                 model=model,
                 messages=messages,
                 temperature=conf.temperature,
@@ -65,20 +65,31 @@ class API(MixinMeta):
                 api_base=api_base,
                 functions=functions,
             )
+            message = response["choices"][0]["message"]
+        else:
+            compiled = compile_messages(messages)
+            prompt = await self.cut_text_by_tokens(
+                compiled, conf, self.get_max_tokens(conf, member)
+            )
+            response = await request_completion_raw(
+                model=model,
+                prompt=prompt,
+                temperature=conf.temperature,
+                api_key=api_key,
+                max_tokens=max_tokens,
+                api_base=api_base,
+            )
+            text = response["choices"][0]["text"]
+            for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
+                text = text.replace(i, "").strip()
+            message = {"content": text, "role": "assistant"}
 
-        compiled = compile_messages(messages)
-        prompt = await self.cut_text_by_tokens(compiled, conf, self.get_max_tokens(conf, member))
-        response = await request_completion_raw(
-            model=model,
-            prompt=prompt,
-            temperature=conf.temperature,
-            api_key=api_key,
-            max_tokens=max_tokens,
-            api_base=api_base,
-        )
-        for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
-            response = response.replace(i, "").strip()
-        return {"content": response}
+        total_tokens = response["usage"].get("total_tokens", 0)
+        prompt_tokens = response["usage"].get("prompt_tokens", 0)
+        completion_tokens = response["usage"].get("completion_tokens", 0)
+        conf.update_usage(model, total_tokens, prompt_tokens, completion_tokens)
+
+        return message
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
         if conf.api_key:
@@ -88,8 +99,13 @@ class API(MixinMeta):
             log.debug("Using external embedder")
             api_base = conf.endpoint_override or self.db.endpoint_override
             api_key = "unset"
-        embedding = await request_embedding_raw(text, api_key, api_base)
-        return embedding
+
+        response = await request_embedding_raw(text, api_key, api_base)
+
+        prompt_tokens = response["usage"].get("prompt_tokens", 0)
+        total_tokens = response["usage"].get("total_tokens", 0)
+        conf.update_usage("text-embedding-ada-002", total_tokens, prompt_tokens, 0)
+        return response["data"][0]["embedding"]
 
     # -------------------------------------------------------
     # -------------------------------------------------------

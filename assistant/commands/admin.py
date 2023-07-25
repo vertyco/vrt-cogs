@@ -30,7 +30,7 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.calls import request_model
-from ..common.constants import CHAT, COMPLETION
+from ..common.constants import CHAT, COMPLETION, MODELS, PRICES
 from ..common.models import DB, Embedding
 from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
@@ -302,6 +302,90 @@ class Admin(MixinMeta):
                 await ctx.send(_("You need to allow DMs so I can message you!"))
         else:
             await ctx.send(embed=embed, files=files)
+
+    @assistant.command(name="usage")
+    @commands.bot_has_permissions(embed_links=True)
+    async def view_usage(self, ctx: commands.Context):
+        """View the token usage stats for this server"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.usage:
+            return await ctx.send(_("There is no usage data yet!"))
+        embed = discord.Embed(color=ctx.author.color)
+
+        overall_input = 0
+        overall_output = 0
+        overall_tokens = 0
+
+        total_input_cost = 0
+        total_output_cost = 0
+        total_cost = 0
+
+        usage_data = conf.usage.copy()
+        for model_name, usage in usage_data.items():
+            input_price, output_price = PRICES.get(model_name, [0, 0])
+            input_cost = (usage.input_tokens / 1000) * input_price
+            output_cost = (usage.output_tokens / 1000) * output_price
+            model_cost = input_cost + output_cost
+
+            overall_tokens += usage.total_tokens
+            overall_input += usage.input_tokens
+            overall_output += usage.output_tokens
+            total_cost += model_cost
+            total_input_cost += input_cost
+            total_output_cost += output_cost
+
+            if model_name == "text-embedding-ada-002":
+                field = _("`Total:  `{} (${} @ ${}/1k tokens)").format(
+                    humanize_number(usage.input_tokens), round(input_cost, 2), input_price
+                )
+                embed.add_field(name=model_name, value=field, inline=False)
+                continue
+
+            if model_name not in MODELS:
+                field = _("Free/Self-Hosted")
+                embed.add_field(name=model_name, value=field, inline=False)
+                continue
+
+            field = _(
+                "`Input:  `{} (${} @ ${}/1k tokens)\n"
+                "`Output: `{} (${} @ ${}/1k tokens)\n"
+                "`Total:  `{} (${})"
+            ).format(
+                humanize_number(usage.input_tokens),
+                round(input_cost, 2),
+                input_price,
+                humanize_number(usage.output_tokens),
+                round(output_cost, 2),
+                output_price,
+                humanize_number(usage.total_tokens),
+                round(model_cost, 2),
+            )
+            embed.add_field(name=model_name, value=field, inline=False)
+
+        desc = _(
+            "**Overall Token Usage and Cost**\n"
+            "`Input:  `{} (${})\n"
+            "`Output: `{} (${})\n"
+            "`Total:  `{} (${})"
+        ).format(
+            humanize_number(overall_input),
+            round(total_input_cost, 2),
+            humanize_number(overall_output),
+            round(total_output_cost, 2),
+            humanize_number(overall_tokens),
+            round(total_cost, 2),
+        )
+        embed.description = desc
+        return await ctx.send(embed=embed)
+
+    @assistant.command(name="resetusage")
+    @commands.bot_has_permissions(embed_links=True)
+    async def reset_usage(self, ctx: commands.Context):
+        """Reset the token usage stats for this server"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.usage = {}
+        await ctx.send(_("Token usage stats have been reset!"))
+        await self.save_conf()
 
     @assistant.command(name="openaikey", aliases=["key"])
     @commands.bot_has_permissions(embed_links=True)
