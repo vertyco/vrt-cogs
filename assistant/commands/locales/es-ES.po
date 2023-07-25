@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:42-0400\n"
-"PO-Revision-Date: 2023-07-25 01:04\n"
+"PO-Revision-Date: 2023-07-25 02:09\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +24,10 @@ msgid "\n"
 "        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n\n"
 "        This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Configurar el asistente\n\n"
+"Necesitarás una **[clave api](https://platform.openai.com/account/api-keys)** de OpenAI para usar ChatGPT y sus otros modelos.\n\n"
+"Este engranaje admite establecer una anulación de punto final para modelos [self-hosted](https://github.com/vertyco/gpt-api) "
 
 #: commands\admin.py:60
 #, docstring
@@ -58,11 +61,11 @@ msgstr "`Habilitado:             `{}\n"
 
 #: commands\admin.py:104
 msgid "`Timezone:            `{}\n"
-msgstr ""
+msgstr "`Zona horaria:            {}`\n"
 
 #: commands\admin.py:105
 msgid "`Channel:             `{}\n"
-msgstr ""
+msgstr "`Canal:             {}`\n"
 
 #: commands\admin.py:106
 msgid "`? Required:          `{}\n"
@@ -78,7 +81,7 @@ msgstr "`Máxima retención:       `{}\n"
 
 #: commands\admin.py:109
 msgid "`Retention Expire:    `{}s\n"
-msgstr ""
+msgstr "`Caducidad de la retención:    `{}s\n"
 
 #: commands\admin.py:110
 msgid "`Max Tokens:          `{}\n"
@@ -98,7 +101,7 @@ msgstr "`Temperatura:         `{}\n"
 
 #: commands\admin.py:114
 msgid "`System Message:      `{} tokens\n"
-msgstr ""
+msgstr "`mensaje del sistema:      `{} tokens\n"
 
 #: commands\admin.py:115
 msgid "`Initial Prompt:      `{} tokens\n"
@@ -122,7 +125,7 @@ msgstr "N/A"
 
 #: commands\admin.py:134
 msgid "`Top N Embeddings:  `{}\n"
-msgstr ""
+msgstr "`Top N Embeddings:  {}`\n"
 
 #: commands\admin.py:135
 msgid "`Min Relatedness:   `{}\n"
@@ -146,7 +149,7 @@ msgstr "Los siguientes roles/usuarios se consideran tutores, si las llamadas de 
 
 #: commands\admin.py:156
 msgid "`Function Calling:  `{}\n"
-msgstr ""
+msgstr "Llamada a función: `{}`\n"
 
 #: commands\admin.py:157
 msgid "`Maximum Recursion: `{}\n"
@@ -259,7 +262,9 @@ msgstr "Gratuito/Autoalojado"
 msgid "`Input:  `{} (${} @ ${}/1k tokens)\n"
 "`Output: `{} (${} @ ${}/1k tokens)\n"
 "`Total:  `{} (${})"
-msgstr ""
+msgstr "`Entrada:  `{:.2f} (${} @ ${}/1k tokens)\n"
+"`Salida:   `{:.2f} (${} @ ${}/1k tokens)\n"
+"`Total:    `{:.2f} (${})"
 
 #: commands\admin.py:365
 msgid "**Overall Token Usage and Cost**\n"
@@ -1048,7 +1053,8 @@ msgstr "sobrescribiendo"
 #: commands\admin.py:1135
 msgid "{}\n"
 "`Currently {}: `**{}** ({}/{})"
-msgstr ""
+msgstr "{}\n"
+"`Actualmente {}: `**{}** ({}/{})"
 
 #: commands\admin.py:1141
 msgid "Failed to process embedding: `{}`"
@@ -1057,7 +1063,9 @@ msgstr "Error al procesar la incrustación: `{}`"
 #: commands\admin.py:1146
 msgid "{}\n"
 "**COMPLETE**"
-msgstr ""
+msgstr "{}\n"
+"**COMPLETAR**\n"
+"**COMPLETADO**"
 
 #: commands\admin.py:1147
 msgid "Successfully imported {} embeddings!"
@@ -1540,7 +1548,7 @@ msgstr "No se han podido relacionar incrustaciones con esta consulta utilizando 
 
 #: commands\base.py:175
 msgid "`Entry Name:  `{}\n"
-msgstr ""
+msgstr "nombre de entrada:  `{}`\n"
 
 #: commands\base.py:176
 msgid "`Relatedness: `{}\n"
@@ -1548,7 +1556,7 @@ msgstr "`Relación: `{}\n"
 
 #: commands\base.py:177
 msgid "`Dimensions:  `{}\n"
-msgstr ""
+msgstr "`Dimensiones:  `{}\n"
 
 #: commands\base.py:189
 #, docstring
