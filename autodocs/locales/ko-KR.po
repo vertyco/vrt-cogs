@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-07-25 15:30\n"
+"PO-Revision-Date: 2023-07-25 17:00\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -31,7 +31,9 @@ msgstr "\n"
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "{}\n"
+"코그 버전: {}\n"
+"작성자: {}"
 
 #: autodocs.py:41
 #, docstring
@@ -40,15 +42,15 @@ msgstr "삭제할 데이터가 없습니다"
 
 #: autodocs.py:57
 msgid "name"
-msgstr ""
+msgstr "이름"
 
 #: autodocs.py:57
 msgid "text"
-msgstr ""
+msgstr "텍스트"
 
 #: autodocs.py:66
 msgid "{} cog description"
-msgstr ""
+msgstr "{} 코그 설명"
 
 #: autodocs.py:116
 msgid "Create docs for a cog"
@@ -76,11 +78,11 @@ msgstr "숨겨진 명령어 포함 여부를 확인하십시오"
 
 #: autodocs.py:123
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
-msgstr ""
+msgstr "지정된 권한 수준(사용자, 모드, 관리자, 길드 소유자, 봇 소유자) 이상의 명령을 숨깁니다"
 
 #: autodocs.py:126
 msgid "Include a csv with each command isolated per row"
-msgstr ""
+msgstr "각 명령이 행별로 분리된 CSV를 포함하세요"
 
 #: autodocs.py:141
 #, docstring
@@ -98,7 +100,19 @@ msgid "\n"
 "        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
 "        them and sent in a zip file\n"
 "        "
-msgstr ""
+msgstr "\n"
+"톱니바퀴에 대한 마크다운 문서 페이지를 만들어 Discord로 보내기\n\n"
+"**인수**\n"
+"`cog_name:           `(문자열) 문서를 만들고자 하는 코그의 이름(대소문자 구분)\n"
+"`replace_prefix:     `(bool) True인 경우, `prefix` 자리 표시자를 봇의 접두사로 대체합니다\n"
+"`replace_botname:    `(bool) True인 경우, `botname` 자리 표시자를 봇의 이름으로 대체합니다\n"
+"`extended_info:      `(bool) True인 경우, 변환기 및 해당 독스트링과 같은 추가 정보를 포함합니다\n"
+"`include_hidden:     `(bool) True인 경우, 숨겨진 명령을 포함합니다\n"
+"`privilege_level:    `(str) 지정된 권한 수준 이상의 명령을 숨깁니다\n"
+"- (사용자, 모드, 관리자, 길드 소유자, 봇 소유자)\n"
+"`csv_export:         `(bool) 각 명령을 행별로 분리하여 임베딩으로 사용할 수 있는 csv를 포함합니다\n\n"
+"**참고** cog_name에 `all`이 지정되면, 현재 로드된 모든 비핵심 코그에 대한 문서가 생성되어\n"
+"zip 파일로 전송됩니다 "
 
 #: autodocs.py:163
 msgid "AllCogDocs"
@@ -211,19 +225,19 @@ msgstr "단일 명령에 대한 문서 형식을 지정합니다"
 
 #: formatter.py:221
 msgid "Could not get docstring or class for {} converter"
-msgstr ""
+msgstr "{converter} 변환기에 대한 문서 문자열 또는 클래스를 가져올 수 없습니다"
 
 #: formatter.py:225 formatter.py:284
 msgid "Could not get docstring for {} converter"
-msgstr ""
+msgstr "{} 변환기에 대한 문서 문자열을 가져올 수 없습니다"
 
 #: formatter.py:229
 msgid "Could not get class for {} converter"
-msgstr ""
+msgstr "변환기 {converter}에 대한 클래스를 가져올 수 없습니다"
 
 #: formatter.py:274
 msgid "Could not find {} for the {} argument of the {} command"
-msgstr ""
+msgstr "{} 명령의 {} 인수에 대한 {}을(를) 찾을 수 없습니다"
 
 #: formatter.py:311
 msgid "Extended Arg Info\n"
