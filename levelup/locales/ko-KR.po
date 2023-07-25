@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-25 17:00\n"
+"PO-Revision-Date: 2023-07-25 18:42\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -752,7 +752,7 @@ msgstr "주간 최고 경험치 획득자"
 
 #: levelup.py:1018
 msgid "`Total Exp:      `"
-msgstr ""
+msgstr "`총 경험치:      `"
 
 #: levelup.py:1019
 msgid "`Total Messages: `"
