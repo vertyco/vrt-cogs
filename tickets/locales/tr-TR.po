@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-25 18:43\n"
+"PO-Revision-Date: 2023-07-25 20:12\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -72,7 +72,9 @@ msgstr "**{}-{}** tarafından oluşturulan bilet kapatıldı.\n"
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
-msgstr ""
+msgstr "Bilet Kapalı\n"
+"{}\n"
+"Şu anda bu kanala yerleştirme göndermek için izinler eksik!"
 
 #: utils.py:126
 msgid "Ticket Closed"
@@ -89,7 +91,8 @@ msgstr "Bu kanal tamamlandığında silinecektir"
 #: utils.py:146
 msgid "Question: {}\n"
 "Response: {}\n"
-msgstr ""
+msgstr "Soru: {}\n"
+"Yanıt: {}\n"
 
 #: utils.py:157
 msgid "Files uploaded: "
@@ -145,19 +148,19 @@ msgstr "iptal et"
 
 #: views.py:130
 msgid "Closing your ticket"
-msgstr ""
+msgstr "Biletinizi kapatma"
 
 #: views.py:132
 msgid "Reason for closing"
-msgstr ""
+msgstr "Kapanış nedeni"
 
 #: views.py:174
 msgid "You do not have permissions to close this ticket"
-msgstr ""
+msgstr "Bu bileti kapatmak için izniniz yok"
 
 #: views.py:186 views.py:188
 msgid "Closing..."
-msgstr ""
+msgstr "Kapatıyorum."
 
 #: views.py:259
 msgid "You been blacklisted from creating tickets!"
@@ -169,7 +172,7 @@ msgstr "Destek talebi oluşturması kara listeye alınmış bir rolünüz var!"
 
 #: views.py:277
 msgid "You must have one of the following roles to open this ticket: "
-msgstr ""
+msgstr "Bu bileti açmak için aşağıdaki rollerden birine sahip olmanız gerekir: "
 
 #: views.py:290
 msgid "You have the maximum amount of tickets opened already!"
@@ -210,11 +213,11 @@ msgstr "\n"
 
 #: views.py:512
 msgid "Ticket form questions"
-msgstr ""
+msgstr "Bilet formu soruları"
 
 #: views.py:515
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
-msgstr ""
+msgstr "Yanıt mesajını sabitlemeye çalıştım ancak mesajları yönetme izinlerim yok!"
 
 #: views.py:520
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
@@ -227,7 +230,12 @@ msgid "`Created By: `{user}\n"
 "`Ticket:     `{channelname}\n"
 "`Panel Name: `{panelname}\n"
 "**[Click to Jump!]({jumpurl})**"
-msgstr ""
+msgstr "`Oluşturan: `{kullanıcı}\n"
+"`Kullanıcı Kimliği:    `{userid}\n"
+"`Açıldı:     `{timestamp}\n"
+"`Bilet:     `{kanaladı}\n"
+"`Panel Adı: `{panelname}\n"
+"**[Atlamak için Tıklayınız!]({jumpurl})**"
 
 #: views.py:547
 msgid "Ticket Opened"
