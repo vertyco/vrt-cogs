@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:34-0400\n"
-"PO-Revision-Date: 2023-07-18 13:49\n"
+"PO-Revision-Date: 2023-07-25 15:30\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -19,102 +19,102 @@ msgstr ""
 
 #: utils\formatter.py:86
 msgid "None"
-msgstr ""
+msgstr "없음"
 
 #: utils\formatter.py:89
 msgid " second"
-msgstr ""
+msgstr " 두 번째"
 
 #: utils\formatter.py:91
 msgid " seconds"
-msgstr ""
+msgstr " 초"
 
 #: utils\formatter.py:94
 msgid " minute"
-msgstr ""
+msgstr " 분"
 
 #: utils\formatter.py:96
 msgid " minutes"
-msgstr ""
+msgstr " 분"
 
 #: utils\formatter.py:113
 #, docstring
 msgid "Get all attachments from context"
-msgstr ""
+msgstr "컨텍스트에서 모든 첨부 파일을 가져옵니다"
 
 #: utils\formatter.py:132
 msgid "Weekly "
-msgstr ""
+msgstr "주간 "
 
 #: utils\formatter.py:135
 msgid "LevelUp "
-msgstr ""
+msgstr "레벨업 "
 
 #: utils\formatter.py:148
 msgid "Voice Leaderboard"
-msgstr ""
+msgstr "음성 리더보드"
 
 #: utils\formatter.py:150
 msgid "Voicetime"
-msgstr ""
+msgstr "보이스타임"
 
 #: utils\formatter.py:155
 msgid "Message Leaderboard"
-msgstr ""
+msgstr "메시지 리더보드"
 
 #: utils\formatter.py:157
 msgid "Messages"
-msgstr ""
+msgstr "메시지"
 
 #: utils\formatter.py:162
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "스타 리더보드"
 
 #: utils\formatter.py:164
 msgid "Stars"
-msgstr ""
+msgstr "별"
 
 #: utils\formatter.py:169
 msgid "Exp Leaderboard"
-msgstr ""
+msgstr "경험치 순위표"
 
 #: utils\formatter.py:171
 msgid "Exp"
-msgstr ""
+msgstr "경험치"
 
 #: utils\formatter.py:177
 msgid "Total "
-msgstr ""
+msgstr "합계 "
 
 #: utils\formatter.py:178
 msgid "Last Reset: "
-msgstr ""
+msgstr "마지막 재설정: "
 
 #: utils\formatter.py:181
 msgid "Next Reset: "
-msgstr ""
+msgstr "다음 재설정: "
 
 #: utils\formatter.py:183
 msgid "Total"
-msgstr ""
+msgstr "합계"
 
 #: utils\formatter.py:191
 msgid "There is no data for the weekly "
-msgstr ""
+msgstr "주간에 대한 데이터가 없습니다 "
 
 #: utils\formatter.py:191 utils\formatter.py:193
 msgid " leaderboard yet"
-msgstr ""
+msgstr " 아직 리더보드가 없습니다"
 
 #: utils\formatter.py:193
 msgid "There is no data for the "
-msgstr ""
+msgstr "에 대한 데이터가 없습니다 "
 
 #: utils\formatter.py:199
 msgid "You: "
-msgstr ""
+msgstr "안녕하세요! 어떻게 도와드릴까요? "
 
 #: utils\formatter.py:256 utils\formatter.py:258
 msgid "Pages "
-msgstr ""
+msgstr "페이지 "
 
