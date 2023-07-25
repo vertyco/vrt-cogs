@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:42-0400\n"
-"PO-Revision-Date: 2023-07-25 18:42\n"
+"PO-Revision-Date: 2023-07-25 20:12\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -1064,7 +1064,8 @@ msgstr "Falha ao processar a incorporação: `{}`"
 #: commands\admin.py:1146
 msgid "{}\n"
 "**COMPLETE**"
-msgstr ""
+msgstr "{}\n"
+"**COMPLETO**"
 
 #: commands\admin.py:1147
 msgid "Successfully imported {} embeddings!"
