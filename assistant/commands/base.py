@@ -21,6 +21,7 @@ class Base(MixinMeta):
         name="chat",
         aliases=[
             "ask",
+            "escribir",
             "razgovor",
             "discuter",
             "plaudern",
