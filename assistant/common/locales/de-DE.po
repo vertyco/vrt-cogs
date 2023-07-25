@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 00:18\n"
+"PO-Revision-Date: 2023-07-25 03:10\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -19,46 +19,47 @@ msgstr ""
 
 #: common\api.py:126
 msgid "There are no API keys set!\n"
-msgstr ""
+msgstr "Es sind keine API-Schlüssel gesetzt!\n"
 
 #: common\api.py:128
 msgid "- Set your OpenAI key with `{}`\n"
-msgstr ""
+msgstr "- Setzen Sie Ihren OpenAI-Schlüssel mit `{}`\n"
 
 #: common\api.py:131
 msgid "- Or set an endpoint override to your self-hosted LLM with `{}`\n"
-msgstr ""
+msgstr "- Oder setzen Sie eine Endpunktüberschreibung für Ihren selbst gehosteten LLM mit `{}`\n"
 
 #: common\api.py:135
 msgid "- Alternatively you can set a global endpoint with `{}`"
-msgstr ""
+msgstr "- Alternativ können Sie einen globalen Endpunkt mit `{}` setzen"
 
 #: common\api.py:143
 #, docstring
 msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
-msgstr ""
+msgstr "Einbettungen anpassen, um den aktuellen Abmessungen zu entsprechen.\n\n"
+"Nimmt ein Beispiel mit der aktuellen Einbettungsmethode und passt den Rest an, um den Abmessungen anzupassen "
 
 #: common\api.py:184
 #, docstring
 msgid "Get token list from text"
-msgstr ""
+msgstr "Tokenliste aus Text abrufen"
 
 #: common\api.py:202
 #, docstring
 msgid "Get text from token list"
-msgstr ""
+msgstr "Text aus der Tokenliste holen"
 
 #: common\api.py:212
 #, docstring
 msgid "Fetch token count of stored messages"
-msgstr ""
+msgstr "Abrufen der Anzahl der Token der gespeicherten Nachrichten"
 
 #: common\api.py:227
 #, docstring
 msgid "Fetch token count of system and initial prompts"
-msgstr ""
+msgstr "Abrufen der Tokenanzahl des Systems und der ersten Aufforderungen"
 
 #: common\api.py:253
 #, docstring
@@ -70,60 +71,66 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "        Returns:\n"
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
-msgstr ""
+msgstr "Iterativ degradieren Sie eine Konversationsnutzlast, wobei neuere Nachrichten und kritischer Kontext priorisiert werden\n\n"
+"        Args:\n"
+"            messages (List[dict]): Nachrichteneinträge, die an die API gesendet wurden\n"
+"            function_list (List[dict]): Liste der JSON-Funktionsschemata für das Modell\n"
+"            conf: (GuildSettings): aktuelle Einstellungen\n\n"
+"        Rückgabe:\n"
+"            Tuple[List[dict], List[dict], bool]: aktualisierte Nachrichtenliste, Funktionsliste und ob die Konversation degradiert wurde "
 
 #: common\api.py:367
 #, docstring
 msgid "Pagify a long string by tokens rather than characters"
-msgstr ""
+msgstr "Paginieren Sie eine lange Zeichenkette nach Tokens anstelle von Zeichen"
 
 #: common\api.py:423
 msgid "Custom Functions"
-msgstr ""
+msgstr "Benutzerdefinierte Funktionen"
 
 #: common\api.py:429
 msgid "3rd Party"
-msgstr ""
+msgstr "3. Partei"
 
 #: common\api.py:430
 msgid "This function is managed by the `{}` cog"
-msgstr ""
+msgstr "Diese Funktion wird vom `{}`-Zahnrad verwaltet"
 
 #: common\api.py:435
 msgid "Internal Function"
-msgstr ""
+msgstr "Interne Funktion"
 
 #: common\api.py:436
 msgid "This is an internal command that can only be used when interacting with a tutor"
-msgstr ""
+msgstr "Dies ist ein interner Befehl, der nur verwendet werden kann, wenn man mit einem Tutor interagiert"
 
 #: common\api.py:444
 msgid "This function consumes `{}` input tokens each call\n"
-msgstr ""
+msgstr "Diese Funktion verbraucht bei jedem Aufruf `{}`-Eingabe-Token.\n"
 
 #: common\api.py:461
 msgid "Hidden..."
-msgstr ""
+msgstr "Versteckt..."
 
 #: common\api.py:463
 msgid "Schema"
-msgstr ""
+msgstr "Schema"
 
 #: common\api.py:464
 msgid "Code"
-msgstr ""
+msgstr "Code"
 
 #: common\api.py:466 common\api.py:490
 msgid "Page {}/{}"
-msgstr ""
+msgstr "Seite {}/{}"
 
 #: common\api.py:473
 msgid "No custom code has been added yet!"
-msgstr ""
+msgstr "Es wurde noch kein benutzerdefinierter Code hinzugefügt!"
 
 #: common\api.py:489
 msgid "Embeddings"
-msgstr ""
+msgstr "Einbettungen"
 
 #: common\api.py:501
 msgid "`Tokens:     `{}\n"
@@ -131,61 +138,64 @@ msgstr ""
 
 #: common\api.py:502
 msgid "`Dimensions: `{}\n"
-msgstr ""
+msgstr "`Abmessungen: {}`\n"
 
 #: common\api.py:517
 msgid "No embeddings have been added!"
-msgstr ""
+msgstr "Es wurden keine Einbettungen hinzugefügt!"
 
 #: common\chat.py:105
 msgid "No message history!"
-msgstr ""
+msgstr "Kein Nachrichtenverlauf!\n"
+"Kein Nachrichtenverlauf!"
 
 #: common\chat.py:113
 msgid "Failed to communicate with endpoint!"
-msgstr ""
+msgstr "Kommunikation mit dem Endpunkt fehlgeschlagen!"
 
 #: common\chat.py:118
 msgid "Error: {}"
-msgstr ""
+msgstr "Fehler: {}"
 
 #: common\chat.py:127
 msgid "Invalid API key, please set a new valid key!"
-msgstr ""
+msgstr "Ungültiger API-Schlüssel, bitte geben Sie einen neuen gültigen Schlüssel ein!"
 
 #: common\chat.py:129
 msgid "Uh oh, looks like my API key is invalid!"
-msgstr ""
+msgstr "Oh oh, mein API-Schlüssel scheint ungültig zu sein!"
 
 #: common\chat.py:133
 msgid "**KeyError in prompt or system message**\n"
 "{}"
-msgstr ""
+msgstr "**KeyError in Eingabeaufforderung oder Systemmeldung**\n"
+"{}"
 
 #: common\chat.py:140
 msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
-msgstr ""
+msgstr "Oh oh, etwas ist schiefgegangen! Der Bot-Besitzer kann `{}` verwenden, um den Fehler anzuzeigen."
 
 #: common\chat.py:172
 msgid "No results found"
-msgstr ""
+msgstr "Keine Ergebnisse gefunden"
 
 #: common\chat.py:191
 #, docstring
 msgid "Call the API asynchronously"
-msgstr ""
+msgstr "Asynchroner Aufruf der API\n"
+"Asynchroner Aufruf der API"
 
 #: common\chat.py:272
 msgid "Failed to get response!"
-msgstr ""
+msgstr "Keine Antwort erhalten!"
 
 #: common\chat.py:312
 msgid "Too many functions called"
-msgstr ""
+msgstr "Zu viele Funktionen aufgerufen"
 
 #: common\chat.py:419
 msgid "Response failed due to invalid regex, check logs for more info."
-msgstr ""
+msgstr "Die Antwort ist aufgrund einer ungültigen Regex fehlgeschlagen. Überprüfen Sie die Protokolle für weitere Informationen."
 
 #: common\chat.py:450
 #, docstring
@@ -201,7 +211,17 @@ msgid "Prepare content for calling the GPT API\n\n"
 "        Returns:\n"
 "            List[dict]: list of messages prepped for api\n"
 "        "
-msgstr ""
+msgstr "Inhalt für den Aufruf der GPT-API vorbereiten\n\n"
+"Args:\n"
+"    message (str): Frage oder Chat-Nachricht\n"
+"    guild (discord.Guild): Gilde, die mit dem Chat verknüpft ist\n"
+"    conf (GuildSettings): Konfigurationsdaten\n"
+"    conversation (Conversation): Objekt des Benutzergesprächs für den Chatverlauf\n"
+"    author (Optional[discord.Member]): Benutzer, der mit dem Bot chattet\n"
+"    channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): Kanal für den Kontext\n"
+"    query_embedding List[float]: Gewichtungen der Nachrichteneinbettung\n\n"
+"Rückgabe:\n"
+"    List[dict]: Liste der für die API vorbereiteten Nachrichten "
 
 #: common\chat.py:468
 #, docstring
@@ -211,34 +231,35 @@ msgstr ""
 #: common\chat.py:529
 msgid "\n"
 "Missing 'attach files' permissions!"
-msgstr ""
+msgstr "\n"
+"Fehlende Berechtigung zum Anhängen von Dateien!"
 
 #: common\utils.py:19
 #, docstring
 msgid "Get all attachments from context"
-msgstr ""
+msgstr "Alle Anhänge aus dem Kontext abrufen"
 
 #: common\utils.py:40
 msgid "Canceled"
-msgstr ""
+msgstr "Abgesagt"
 
 #: common\utils.py:53
 msgid "You have been blacklisted from using this command!"
-msgstr ""
+msgstr "Sie wurden von der Verwendung dieses Befehls auf die schwarze Liste gesetzt!"
 
 #: common\utils.py:58
 msgid "You have a blacklisted role and cannot use this command!"
-msgstr ""
+msgstr "Sie haben eine gesperrte Rolle und können diesen Befehl nicht verwenden!"
 
 #: common\utils.py:63
 msgid "You cannot use that command in this channel!"
-msgstr ""
+msgstr "In diesem Kanal können Sie diesen Befehl nicht verwenden!"
 
 #: common\utils.py:68
 msgid "You cannot use that command in any channels under this category"
-msgstr ""
+msgstr "Sie können diesen Befehl in keiner Kanal unter dieser Kategorie verwenden"
 
 #: common\utils.py:115 common\utils.py:116
 msgid "[Code Removed]"
-msgstr ""
+msgstr "[Code entfernt]"
 
