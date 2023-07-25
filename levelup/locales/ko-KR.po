@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 18:00\n"
+"PO-Revision-Date: 2023-07-25 04:15\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -222,24 +222,25 @@ msgstr "그 이름을 가진 글꼴을 찾을 수 없었습니다"
 
 #: base.py:421
 msgid "Font `"
-msgstr ""
+msgstr "글꼴 `"
 
 #: base.py:427
 #, docstring
 msgid "View the default backgrounds"
-msgstr ""
+msgstr "기본 배경을 확인하세요"
 
 #: base.py:430 base.py:461
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "이 서버에서는 이미지 프로필이 비활성화되어 있으므로 이 명령은 꺼져 있습니다"
 
 #: base.py:435 base.py:466
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "배경 샘플을 생성하지 못했습니다"
 
 #: base.py:445
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "현재 기본 배경은 다음과 같으며, 영구적으로 배경을 설정하려면 다음을 사용할 수 있습니다.\n"
+"현재 기본 배경은 다음과 같으며, 영구적으로 배경을 설정하려면 다음을 사용할 수 있습니다 "
 
 #: base.py:448 base.py:477
 msgid "command"
@@ -247,20 +248,21 @@ msgstr "명령어"
 
 #: base.py:452
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "파일 크기가 너무 크기 때문에 배경 콜라주를 보낼 수 없습니다."
 
 #: base.py:458
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "사용 가능한 글꼴을 확인하세요"
 
 #: base.py:476
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "현재 사용 가능한 폰트는 다음과 같습니다. 영구적으로 하나를 설정하려면 다음을 사용할 수 있습니다 "
 
 #: base.py:481
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "글꼴 콜라주를 보낼 수 없습니다. 파일 크기가 너무 클 수 있습니다.\n"
+"글꼴 콜라주를 보낼 수 없습니다. 파일 크기가 너무 크다는 것 같습니다."
 
 #: base.py:485
 #, docstring
