@@ -215,7 +215,11 @@ class Conversation(BaseModel):
         self.refresh()
 
     def prepare_chat(
-        self, user_message: str, initial_prompt: str, system_prompt: str
+        self,
+        user_message: str,
+        initial_prompt: str,
+        system_prompt: str,
+        name: str = None,
     ) -> List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
@@ -225,6 +229,8 @@ class Conversation(BaseModel):
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
         user_message = {"role": "user", "content": user_message}
+        if name:
+            user_message["name"] = name
         prepared.append(user_message)
         self.messages.append(user_message)
         self.refresh()
