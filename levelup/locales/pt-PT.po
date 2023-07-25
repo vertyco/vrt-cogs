@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 03:41\n"
+"PO-Revision-Date: 2023-07-23 18:00\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -144,44 +144,44 @@ msgstr "\"\"\"\n"
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "Não pude encontrar nenhum anexo."
 
 #: base.py:328
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "Esse não é um formato válido, deve estar nas seguintes extensões:"
 
 #: base.py:337 base.py:397
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Não consegui obter o arquivo da discórdia"
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Sua formação personalizada foi salva como"
 
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Remova um fundo padrão da pasta de fundos do Cog"
 
 #: base.py:355
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "Eu não consegui encontrar nenhuma imagem de fundo com esse nome"
 
 #: base.py:360 base.py:420
 msgid "Could not delete file: "
-msgstr ""
+msgstr "Não foi possível excluir o arquivo:"
 
 #: base.py:361
 msgid "Background `"
-msgstr ""
+msgstr "Antecedentes `"
 
 #: base.py:361 base.py:421
 msgid "` Has been removed!"
-msgstr ""
+msgstr "`Foi removido!"
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Seu caminho de pasta de fonte personalizado é\n"
 
 #: base.py:374
 #, docstring
@@ -191,24 +191,28 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Adicione uma fonte personalizada ao cog da Discord\n\n"
+"        **Argumentos**\n"
+"        `preferred_filename` - Se um nome for fornecido, ele será salvo com esse nome em vez do nome do arquivo\n"
+"        **Nota:** não inclua a extensão do arquivo no nome preferido, ela será adicionada automaticamente"
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "Esse não é um formato válido, deve ser `.ttf` ou `.otf` extensões"
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Seu arquivo de fonte personalizado foi salvo como"
 
 #: base.py:409
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Remova uma fonte da pasta de fontes do Cog"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Não consegui encontrar nenhuma fonte com esse nome"
 
 #: base.py:421
 msgid "Font `"

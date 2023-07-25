@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-23 03:41\n"
+"PO-Revision-Date: 2023-07-23 18:00\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -146,36 +146,36 @@ msgstr "Fügen Sie dem COG von Discord einen benutzerdefinierten Hintergrund hin
 
 #: base.py:322 base.py:383
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "Ich konnte keine Anhänge finden."
 
 #: base.py:328
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "Das ist kein gültiges Format, muss von den folgenden Erweiterungen sein:"
 
 #: base.py:337 base.py:397
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Ich konnte die Datei nicht von Discord bekommen."
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Ihr benutzerdefinierter Hintergrund wurde gespeichert."
 
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Entfernen Sie einen Standardhintergrund aus dem Ordner der Hintergründe des Cogs."
 
 #: base.py:355
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "Ich konnte keine Hintergrundbilder mit diesem Namen finden."
 
 #: base.py:360 base.py:420
 msgid "Could not delete file: "
-msgstr ""
+msgstr "Die Datei konnte nicht gelöscht werden:"
 
 #: base.py:361
 msgid "Background `"
-msgstr ""
+msgstr "Hintergrund `"
 
 #: base.py:361 base.py:421
 msgid "` Has been removed!"
@@ -183,7 +183,7 @@ msgstr ""
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Ihr benutzerdefinierter Schriftartenpfad ist\n"
 
 #: base.py:374
 #, docstring
@@ -193,24 +193,28 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Fügen Sie dem Zahnrad von Discord eine benutzerdefinierte Schriftart hinzu\n\n"
+"        **Argumente**\n"
+"        `preferred_filename` - Wenn ein Name angegeben ist, wird er als dieser Name anstelle des Dateinamens gespeichert\n"
+"        **Hinweis:** Fügen Sie die Dateierweiterung nicht in den bevorzugten Namen ein, sie wird automatisch hinzugefügt"
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "Das ist kein gültiges Format, es müssen `.ttf` oder `.otf` Erweiterungen sein."
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Ihre benutzerdefinierte Schriftart wurde als gespeichert."
 
 #: base.py:409
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Entfernen Sie eine Schriftart aus dem Schriftordner des Zahnrads"
 
 #: base.py:415
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Ich konnte keine Schriftarten mit diesem Namen finden"
 
 #: base.py:421
 msgid "Font `"
