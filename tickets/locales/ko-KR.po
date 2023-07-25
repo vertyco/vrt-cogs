@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-18 13:49\n"
+"PO-Revision-Date: 2023-07-25 15:30\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -19,31 +19,32 @@ msgstr ""
 
 #: menu.py:65 views.py:76
 msgid "You are not allowed to interact with this button."
-msgstr ""
+msgstr "이 버튼은 상호작용할 수 없습니다."
 
 #: tickets.py:28
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
-msgstr ""
+msgstr "\n"
+"다중 패널 기능을 갖춘 티켓 시스템 지원 "
 
 #: tickets.py:41
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "삭제할 데이터가 없습니다"
 
 #: tickets.py:297
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
-msgstr ""
+msgstr "20분 이내에 이 티켓에 응답하지 않으면 자동으로 티켓이 닫힙니다."
 
 #: tickets.py:313
 msgid "(Auto-Close) Opened ticket with no response for "
-msgstr ""
+msgstr "(자동 종료) 응답이 없는 티켓을 열었습니다 "
 
 #: tickets.py:362
 msgid "User left guild(Auto-Close)"
-msgstr ""
+msgstr "길드를 떠난 사용자(자동 폐쇄)"
 
 #: utils.py:95
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
@@ -70,15 +71,15 @@ msgstr ""
 
 #: utils.py:126
 msgid "Ticket Closed"
-msgstr ""
+msgstr "티켓이 마감되었습니다"
 
 #: utils.py:137
 msgid "Archiving channel..."
-msgstr ""
+msgstr "아카이빙 채널..."
 
 #: utils.py:140
 msgid "This channel will be deleted once complete"
-msgstr ""
+msgstr "이 채널은 완료되면 삭제됩니다"
 
 #: utils.py:146
 msgid "Question: {}\n"
@@ -95,11 +96,11 @@ msgstr ""
 
 #: utils.py:277
 msgid "ticket"
-msgstr ""
+msgstr "티켓"
 
 #: utils.py:277
 msgid "tickets"
-msgstr ""
+msgstr "티켓"
 
 #: utils.py:278
 msgid "Pruned `{}` invalid {}"
@@ -130,7 +131,7 @@ msgstr ""
 
 #: views.py:38
 msgid "cancel"
-msgstr ""
+msgstr "취소"
 
 #: views.py:130
 msgid "Closing your ticket"
@@ -150,11 +151,11 @@ msgstr ""
 
 #: views.py:259
 msgid "You been blacklisted from creating tickets!"
-msgstr ""
+msgstr "티켓 생성이 금지되었습니다!"
 
 #: views.py:265
 msgid "You have a role that has been blacklisted from creating tickets!"
-msgstr ""
+msgstr "티켓을 만들 수 없도록 블랙리스트에 등록된 역할이 있습니다!"
 
 #: views.py:277
 msgid "You must have one of the following roles to open this ticket: "
@@ -162,20 +163,21 @@ msgstr ""
 
 #: views.py:290
 msgid "You have the maximum amount of tickets opened already!"
-msgstr ""
+msgstr "이미 최대 티켓 수량을 초과했습니다!"
 
 #: views.py:297
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
-msgstr ""
+msgstr "이 지원 패널의 카테고리를 찾을 수 없습니다!\n"
+"관리자에게 문의하세요!"
 
 #: views.py:312
 msgid "Submission Info"
-msgstr ""
+msgstr "제출 정보"
 
 #: views.py:330
 msgid "Unanswered"
-msgstr ""
+msgstr "답변 없음"
 
 #: views.py:419
 msgid "{} ticket for {}"
@@ -188,7 +190,7 @@ msgstr ""
 
 #: views.py:458
 msgid "Welcome to your ticket channel "
-msgstr ""
+msgstr "티켓 채널에 오신 것을 환영합니다 "
 
 #: views.py:460
 msgid "\n"
@@ -205,7 +207,7 @@ msgstr ""
 
 #: views.py:520
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
-msgstr ""
+msgstr "티켓 채널이 생성되었습니다. **[여기를 클릭하세요]({})**"
 
 #: views.py:538
 msgid "`Created By: `{user}\n"
