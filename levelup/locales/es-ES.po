@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-24 23:23\n"
+"PO-Revision-Date: 2023-07-25 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -542,15 +542,20 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Ver la clasificación\n\n"
+"**Argumentos**\n"
+"`stat`: Qué tipo de estadística mostrar en la clasificación semanal\n"
+"Las opciones válidas son `exp`, `messages` y `voice`\n"
+"También se pueden utilizar abreviaturas de estos argumentos "
 
 #: base.py:1023
 msgid "Use the `"
-msgstr ""
+msgstr "Utiliza el `"
 
 #: base.py:1023
 msgid "startop` command for that"
-msgstr ""
+msgstr "startop` comando para eso"
 
 #: base.py:1032 base.py:1115
 msgid "No user data yet!"
@@ -654,7 +659,7 @@ msgstr " Prestigio "
 #: generator.py:1100
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr ""
+msgstr "Obtener la duración promedio de la secuencia de fotogramas de un gif"
 
 #: levelup.py:83
 #, docstring
@@ -715,7 +720,7 @@ msgstr ""
 #: levelup.py:998
 #, docstring
 msgid "Announce and reset the weekly leaderboard"
-msgstr ""
+msgstr "Anunciar y restablecer la clasificación semanal"
 
 #: levelup.py:1008
 msgid "There are no users with exp"
@@ -743,7 +748,7 @@ msgstr "`Voz total:    `"
 
 #: levelup.py:1045
 msgid "`Exp:      `"
-msgstr ""
+msgstr "`Exp: `"
 
 #: levelup.py:1046
 msgid "`Messages: `"
@@ -751,7 +756,7 @@ msgstr "`Mensajes: `"
 
 #: levelup.py:1047
 msgid "`Stars:    `"
-msgstr ""
+msgstr "`Estrellas: `"
 
 #: levelup.py:1048
 msgid "`Voice:    `"
@@ -1186,7 +1191,7 @@ msgstr ""
 
 #: levelup.py:1595
 msgid "Not importing MEE6 levels"
-msgstr ""
+msgstr "No se importan los niveles MEE6"
 
 #: levelup.py:1597
 msgid "Fetching mee6 leaderboard data, please wait..."
@@ -1194,11 +1199,11 @@ msgstr ""
 
 #: levelup.py:1618
 msgid "Your leaderboard needs to be set to public!"
-msgstr ""
+msgstr "Tu tabla de clasificación debe ser pública"
 
 #: levelup.py:1622
 msgid "No data found!"
-msgstr ""
+msgstr "No se encontraron datos"
 
 #: levelup.py:1631
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
@@ -1214,7 +1219,7 @@ msgstr ""
 
 #: levelup.py:1682
 msgid "No MEE6 stats were found"
-msgstr ""
+msgstr "No se encontraron estadísticas de MEE6"
 
 #: levelup.py:1684
 msgid "Imported {} User(s)"
@@ -1282,7 +1287,7 @@ msgstr "Eliminado "
 
 #: levelup.py:1858
 msgid " user IDs from the config that are no longer in the server."
-msgstr ""
+msgstr " iDs de usuario de la configuración que ya no están en el servidor."
 
 #: levelup.py:1865
 #, docstring
@@ -1923,7 +1928,7 @@ msgstr "¡prestige_level debe ser un número!"
 #: levelup.py:2682
 #, docstring
 msgid "Test emojis to see if the bot is able to get a valid url for them"
-msgstr ""
+msgstr "Prueba los emojis para ver si el bot es capaz de obtener una URL válida para ellos"
 
 #: levelup.py:2691
 #, docstring
@@ -2047,11 +2052,11 @@ msgstr "Configuración semanal de LevelUp"
 
 #: levelup.py:2808
 msgid "`Winner Count:   `"
-msgstr ""
+msgstr "`Cuento de ganadores:   `"
 
 #: levelup.py:2810
 msgid "`Last Winner(s): `"
-msgstr ""
+msgstr "`Último(s) ganador(es): `"
 
 #: levelup.py:2811 levelup.py:2814 levelup.py:2815
 msgid "None"
@@ -2059,23 +2064,24 @@ msgstr "Ninguno"
 
 #: levelup.py:2814
 msgid "`Channel:        `"
-msgstr ""
+msgstr "canal: `\n"
+"canal:        `"
 
 #: levelup.py:2815
 msgid "`Role:           `"
-msgstr ""
+msgstr "`Papel:           `"
 
 #: levelup.py:2816
 msgid "`RoleAllWinners: `"
-msgstr ""
+msgstr "`RoleAllWinners: `"
 
 #: levelup.py:2817
 msgid "`Auto Remove:    `"
-msgstr ""
+msgstr "`Auto Remove: `"
 
 #: levelup.py:2818
 msgid "`Bonus Exp:      `"
-msgstr ""
+msgstr "`Bonificación Exp:      `"
 
 #: levelup.py:2819
 msgid "Settings"
@@ -2142,7 +2148,9 @@ msgid "\n"
 "        What hour the weekly stats reset\n"
 "        Set the hour (0 - 23 in UTC) for the weekly reset to take place\n"
 "        "
-msgstr ""
+msgstr "\n"
+"A qué hora se reinician las estadísticas semanales\n"
+"Establezca la hora (0 - 23 en UTC) para que se realice el reinicio semanal "
 
 #: levelup.py:2871
 msgid "Hour must be 0 to 23"
@@ -2158,7 +2166,9 @@ msgid "\n"
 "        What day of the week the weekly stats reset\n"
 "        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place\n"
 "        "
-msgstr ""
+msgstr "\n"
+"¿En qué día de la semana se reinician las estadísticas semanales?\n"
+"Establece el día de la semana (0 - 6 = lunes - domingo) en el que se llevará a cabo el reinicio semanal "
 
 #: levelup.py:2885
 msgid "Day must be 0 to 6 (Monday to Sunday)"
@@ -2174,7 +2184,9 @@ msgid "\n"
 "        Top weekly member count\n"
 "        Set amount of members to include in the weekly top leaderboard\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Recuento semanal de miembros principales\n"
+"        Establecer la cantidad de miembros a incluir en la clasificación semanal principal "
 
 #: levelup.py:2899
 msgid "There must be at least one winner!"
@@ -2182,7 +2194,7 @@ msgstr "Debe haber al menos un ganador"
 
 #: levelup.py:2901
 msgid "There can only be up to 25 winners!"
-msgstr ""
+msgstr "¡Solo puede haber hasta 25 ganadores!"
 
 #: levelup.py:2908
 #, docstring
@@ -2193,34 +2205,35 @@ msgstr ""
 
 #: levelup.py:2912
 msgid "I do not have permission to send messages to that channel!"
-msgstr ""
+msgstr "No tengo permiso para enviar mensajes a ese canal"
 
 #: levelup.py:2914
 msgid "I do not have permission to send embeds to that channel!"
-msgstr ""
+msgstr "No tengo permiso para enviar archivos incrustados a ese canal"
 
 #: levelup.py:2921
 #, docstring
 msgid "Weekly winner role reward\n"
 "        Set the role awarded to the top member of the weekly leaderboard"
-msgstr ""
+msgstr "Recompensa de rol para el ganador semanal\n"
+"Establece el rol otorgado al miembro principal de la tabla de clasificación semanal"
 
 #: levelup.py:2924
 msgid "I do not have permission to manage roles!"
-msgstr ""
+msgstr "No tengo permiso para gestionar roles"
 
 #: levelup.py:2931
 #, docstring
 msgid "Toggle whether to give the weekly winner role to all winners or only 1st place"
-msgstr ""
+msgstr "Alternar si otorgar el rol de ganador semanal a todos los ganadores o solo al primer lugar"
 
 #: levelup.py:2936
 msgid "Only the 1st place winner of the weekly stats reset will receive the weekly role"
-msgstr ""
+msgstr "Solo el ganador del primer lugar del reinicio semanal de estadísticas recibirá el rol semanal"
 
 #: levelup.py:2943
 msgid "All top members listed in the weekly stat reset will receive the weekly role"
-msgstr ""
+msgstr "Todos los miembros principales enumerados en el reinicio semanal de estadísticas recibirán el rol semanal"
 
 #: levelup.py:2949
 #, docstring
@@ -2231,11 +2244,11 @@ msgstr ""
 
 #: levelup.py:2955
 msgid "Auto role removal from previous winner has been **Disabled**"
-msgstr ""
+msgstr "La eliminación automática de roles del ganador anterior ha sido **Desactivada**"
 
 #: levelup.py:2958
 msgid "Auto role removal from previous winner has been **Enabled**"
-msgstr ""
+msgstr "Se ha **activado** la eliminación automática de roles del ganador anterior"
 
 #: levelup.py:2963
 #, docstring
@@ -2243,7 +2256,9 @@ msgid "\n"
 "        Weekly winners bonus experience points\n"
 "        Set to 0 to disable exp bonus\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Bonificación semanal de puntos de experiencia para los ganadores\n"
+"Establecer en 0 para desactivar la bonificación de experiencia "
 
 #: levelup.py:2975
 #, docstring
