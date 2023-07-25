@@ -87,7 +87,7 @@ class API(MixinMeta):
         total_tokens = response["usage"].get("total_tokens", 0)
         prompt_tokens = response["usage"].get("prompt_tokens", 0)
         completion_tokens = response["usage"].get("completion_tokens", 0)
-        conf.update_usage(model, total_tokens, prompt_tokens, completion_tokens)
+        conf.update_usage(response["model"], total_tokens, prompt_tokens, completion_tokens)
 
         return message
 
@@ -104,7 +104,7 @@ class API(MixinMeta):
 
         prompt_tokens = response["usage"].get("prompt_tokens", 0)
         total_tokens = response["usage"].get("total_tokens", 0)
-        conf.update_usage("text-embedding-ada-002", total_tokens, prompt_tokens, 0)
+        conf.update_usage(response["model"], total_tokens, prompt_tokens, 0)
         return response["data"][0]["embedding"]
 
     # -------------------------------------------------------
