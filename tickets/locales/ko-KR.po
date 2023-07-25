@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-25 15:30\n"
+"PO-Revision-Date: 2023-07-25 17:00\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -48,11 +48,11 @@ msgstr "길드를 떠난 사용자(자동 폐쇄)"
 
 #: utils.py:95
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
-msgstr ""
+msgstr "이 티켓을 종료하기 위해선 `채널 관리` 권한이 필요합니다!"
 
 #: utils.py:99
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
-msgstr ""
+msgstr "이 티켓을 닫기 위해선 `스레드 관리` 권한이 필요합니다!"
 
 #: utils.py:106
 msgid "Ticket created by **{}-{}** has been closed.\n"
@@ -61,13 +61,20 @@ msgid "Ticket created by **{}-{}** has been closed.\n"
 "`Closed on: `<t:{}:F>\n"
 "`Closed by: `{}\n"
 "`Reason:    `{}\n"
-msgstr ""
+msgstr "**{}-{}**가 만든 티켓이 종료되었습니다.\n"
+"`패널 유형: `{}\n"
+"`열었습니다: `<t:{}:F>\n"
+"`닫힘: `<t:{}:F>\n"
+"`닫는 사람: `{}\n"
+"`이유:    `{}\n"
 
 #: utils.py:122
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
-msgstr ""
+msgstr "티켓이 마감되었습니다.\n"
+"{}\n"
+"현재 이 채널에 임베드를 보낼 권한이 없습니다!"
 
 #: utils.py:126
 msgid "Ticket Closed"
@@ -84,15 +91,16 @@ msgstr "이 채널은 완료되면 삭제됩니다"
 #: utils.py:146
 msgid "Question: {}\n"
 "Response: {}\n"
-msgstr ""
+msgstr "질문: {}\n"
+"응답: {}\n"
 
 #: utils.py:157
 msgid "Files uploaded: "
-msgstr ""
+msgstr "파일이 업로드되었습니다: "
 
 #: utils.py:247
 msgid "There are no tickets stored in the database."
-msgstr ""
+msgstr "데이터베이스에 저장된 티켓이 없습니다."
 
 #: utils.py:277
 msgid "ticket"
@@ -104,19 +112,19 @@ msgstr "티켓"
 
 #: utils.py:278
 msgid "Pruned `{}` invalid {}"
-msgstr ""
+msgstr "잘린 `{}` 잘못된 {}"
 
 #: utils.py:281
 msgid "There are no tickets to prune"
-msgstr ""
+msgstr "가지 치기 티켓이 없습니다"
 
 #: utils.py:289
 msgid "Ticket Overview"
-msgstr ""
+msgstr "티켓 개요"
 
 #: utils.py:314
 msgid "There are no active tickets."
-msgstr ""
+msgstr "활성 티켓이 없습니다."
 
 #: utils.py:343
 #, docstring
@@ -127,7 +135,12 @@ msgid "Update active ticket overview\n\n"
 "    Returns:\n"
 "        int: Message ID of the overview panel\n"
 "    "
-msgstr ""
+msgstr "활성 티켓 개요 업데이트\n\n"
+"    Args:\n"
+"        guild (discord.Guild): 디스코드 서버\n"
+"        conf (dict): 길드 설정\n\n"
+"    Returns:\n"
+"        int: 개요 패널의 메시지 ID "
 
 #: views.py:38
 msgid "cancel"
@@ -135,19 +148,19 @@ msgstr "취소"
 
 #: views.py:130
 msgid "Closing your ticket"
-msgstr ""
+msgstr "티켓을 닫습니다"
 
 #: views.py:132
 msgid "Reason for closing"
-msgstr ""
+msgstr "폐쇄 이유"
 
 #: views.py:174
 msgid "You do not have permissions to close this ticket"
-msgstr ""
+msgstr "이 티켓을 닫을 수 있는 권한이 없습니다"
 
 #: views.py:186 views.py:188
 msgid "Closing..."
-msgstr ""
+msgstr "마감..."
 
 #: views.py:259
 msgid "You been blacklisted from creating tickets!"
@@ -159,7 +172,7 @@ msgstr "티켓을 만들 수 없도록 블랙리스트에 등록된 역할이 �
 
 #: views.py:277
 msgid "You must have one of the following roles to open this ticket: "
-msgstr ""
+msgstr "이 티켓을 열려면 다음 역할 중 하나가 있어야 합니다: "
 
 #: views.py:290
 msgid "You have the maximum amount of tickets opened already!"
@@ -181,12 +194,12 @@ msgstr "답변 없음"
 
 #: views.py:419
 msgid "{} ticket for {}"
-msgstr ""
+msgstr "{} 티켓에 대한 {}"
 
 #: views.py:444
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
-msgstr ""
+msgstr "티켓을 준비하는 동안 오류가 발생했습니다. 관리자에게 문의하세요! {}"
 
 #: views.py:458
 msgid "Welcome to your ticket channel "
@@ -195,15 +208,16 @@ msgstr "티켓 채널에 오신 것을 환영합니다 "
 #: views.py:460
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
-msgstr ""
+msgstr "\n"
+"사용자 또는 관리자는 `{}close` 명령을 사용하여 이를 닫을 수 있습니다"
 
 #: views.py:512
 msgid "Ticket form questions"
-msgstr ""
+msgstr "티켓 양식 질문"
 
 #: views.py:515
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
-msgstr ""
+msgstr "응답 메시지를 고정하려고 했는데 메시지 관리 권한이 없습니다!"
 
 #: views.py:520
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
@@ -216,25 +230,30 @@ msgid "`Created By: `{user}\n"
 "`Ticket:     `{channelname}\n"
 "`Panel Name: `{panelname}\n"
 "**[Click to Jump!]({jumpurl})**"
-msgstr ""
+msgstr "`작성자: `{user}\n"
+"`사용자 ID:    `{userid}\n"
+"`열림:     `{timestamp}\n"
+"`티켓:     `{channelname}\n"
+"`패널 이름: `{panelname}\n"
+"**[클릭하여 이동!]({jumpurl})**"
 
 #: views.py:547
 msgid "Ticket Opened"
-msgstr ""
+msgstr "티켓이 열렸습니다"
 
 #: views.py:619
 msgid "You have already been added to the ticket **{}**!"
-msgstr ""
+msgstr "이미 티켓에 추가되었습니다 **{}**!"
 
 #: views.py:630
 msgid "You already have access to the ticket **{}**!"
-msgstr ""
+msgstr "이미 **{}** 티켓에 액세스할 수 있습니다!"
 
 #: views.py:635
 msgid "{} was added to the ticket"
-msgstr ""
+msgstr "티켓에 {}이 추가되었습니다"
 
 #: views.py:640
 msgid "You have been added to the ticket **{}**"
-msgstr ""
+msgstr "티켓에 추가되었습니다 **{}**"
 
