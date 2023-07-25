@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 03:10\n"
+"PO-Revision-Date: 2023-07-25 04:15\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -134,7 +134,7 @@ msgstr "Einbettungen"
 
 #: common\api.py:501
 msgid "`Tokens:     `{}\n"
-msgstr ""
+msgstr "`Token:     `{}\n"
 
 #: common\api.py:502
 msgid "`Dimensions: `{}\n"
@@ -226,7 +226,7 @@ msgstr "Inhalt für den Aufruf der GPT-API vorbereiten\n\n"
 #: common\chat.py:468
 #, docstring
 msgid "Instead of format(**params) possibly giving a KeyError if prompt has code in it"
-msgstr ""
+msgstr "Anstatt dass `format(**params)` möglicherweise einen KeyError auslöst, wenn die Eingabeaufforderung Code enthält"
 
 #: common\chat.py:529
 msgid "\n"
