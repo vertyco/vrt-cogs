@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 00:18\n"
+"PO-Revision-Date: 2023-07-25 00:26\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -244,41 +244,46 @@ msgstr "Vous devez autoriser les DM pour que je puisse vous envoyer un message !
 #: commands\admin.py:309
 #, docstring
 msgid "View the token usage stats for this server"
-msgstr ""
+msgstr "Afficher les statistiques d'utilisation des jetons pour ce serveur"
 
 #: commands\admin.py:312
 msgid "There is no usage data yet!"
-msgstr ""
+msgstr "Il n'y a pas encore de données d'utilisation !"
 
 #: commands\admin.py:338
 msgid "`Total:  `{} (${} @ ${}/1k tokens)"
-msgstr ""
+msgstr "`Total : `{} (${} @ ${}/1k tokens)"
 
 #: commands\admin.py:345
 msgid "Free/Self-Hosted"
-msgstr ""
+msgstr "Gratuit / auto-hébergé"
 
 #: commands\admin.py:349
 msgid "`Input:  `{} (${} @ ${}/1k tokens)\n"
 "`Output: `{} (${} @ ${}/1k tokens)\n"
 "`Total:  `{} (${})"
-msgstr ""
+msgstr "`Entrée :  `{} (${} @ ${}/1k tokens)\n"
+"`Sortie : `{} (${} @ ${}/1k tokens)\n"
+"`Total :  `{} (${})"
 
 #: commands\admin.py:365
 msgid "**Overall Token Usage and Cost**\n"
 "`Input:  `{} (${})\n"
 "`Output: `{} (${})\n"
 "`Total:  `{} (${})"
-msgstr ""
+msgstr "**Utilisation et coût globaux des jetons**\n"
+"`Entrée :  `{} (${})\n"
+"`Sortie : `{} (${})\n"
+"`Total :  `{} (${})"
 
 #: commands\admin.py:384
 #, docstring
 msgid "Reset the token usage stats for this server"
-msgstr ""
+msgstr "Réinitialiser les statistiques d'utilisation des jetons pour ce serveur"
 
 #: commands\admin.py:387
 msgid "Token usage stats have been reset!"
-msgstr ""
+msgstr "Les statistiques d'utilisation des jetons ont été réinitialisées !"
 
 #: commands\admin.py:393
 #, docstring
@@ -1280,7 +1285,10 @@ msgid "\n"
 "        Set to 0 for response tokens to be dynamic\n\n"
 "        *Specify same role and token count to remove the override*\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Attribuer une substitution de jeton de réponse maximale à un rôle\n\n"
+"Définir à 0 pour que les jetons de réponse soient dynamiques\n\n"
+"*Spécifier le même rôle et le même nombre de jetons pour supprimer la substitution* "
 
 #: commands\admin.py:1556
 msgid "Max response token override for {} removed!"
