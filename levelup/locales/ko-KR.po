@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-25 15:30\n"
+"PO-Revision-Date: 2023-07-25 17:00\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -70,7 +70,7 @@ msgstr "아직 해당 사용자에 대한 데이터가 없습니다!"
 
 #: base.py:211
 msgid "You just gave a star to {}!"
-msgstr ""
+msgstr "방금 {}에게 별을 주셨습니다!"
 
 #: base.py:216
 #, docstring
@@ -118,7 +118,7 @@ msgstr "`배경 :`"
 
 #: base.py:279
 msgid "`Blur:            `"
-msgstr ""
+msgstr "`흐림:            `"
 
 #: base.py:282
 msgid "Your Profile Settings"
@@ -428,11 +428,12 @@ msgstr "프로필 글꼴이 다음과 같이 설정되었습니다 "
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"텍스트가 표시되는 배경 이미지에 약간의 흐림 효과를 토글합니다 "
 
 #: base.py:769
 msgid "Your profile background blur has been set to "
-msgstr ""
+msgstr "프로필 배경 흐림 효과가 다음과 같이 설정되어 있습니다 "
 
 #: base.py:775
 #, docstring
@@ -623,20 +624,21 @@ msgstr "아직 주간 순위표에 대한 데이터가 없으니 잠시만 기�
 #: base.py:1152
 #, docstring
 msgid "View the last weekly embed"
-msgstr ""
+msgstr "지난 주간 임베드를 확인하세요"
 
 #: base.py:1157
 msgid "There is no recorded weekly embed saved"
-msgstr ""
+msgstr "저장된 주간 임베드 기록이 없습니다"
 
 #: base.py:1159
 msgid "Last Weekly Winners"
-msgstr ""
+msgstr "지난 주간 우승자"
 
 #: base.py:1160
 msgid "{}\n"
 "`Last Reset:     `{}"
-msgstr ""
+msgstr "{}\n"
+"`마지막 재설정:     `{}"
 
 #: generator.py:213 generator.py:620
 msgid "Rank: #"
@@ -683,7 +685,9 @@ msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
-msgstr ""
+msgstr "\n"
+"친근한 이웃 레벨링 시스템\n\n"
+"문자 및 음성 채널에서 채팅을 통해 경험을 쌓고, 친구들과 레벨을 비교하고, 프로필을 커스터마이징하고, 다양한 리더 보드를 확인하세요! "
 
 #: levelup.py:235
 msgid "Monday"
@@ -719,7 +723,7 @@ msgstr "방금 별을 준"
 
 #: levelup.py:630
 msgid "You have just reached level {level} in {guild}!"
-msgstr ""
+msgstr "당신은 방금 {guild}에서 레벨 {level}에 도달했습니다!"
 
 #: levelup.py:640
 msgid "Just reached level {level}!"
@@ -731,7 +735,7 @@ msgstr "방금 레벨을 올렸습니다 "
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
-msgstr ""
+msgstr "**{user}가 방금 레벨을 올렸습니다!**"
 
 #: levelup.py:998
 #, docstring
@@ -752,11 +756,11 @@ msgstr ""
 
 #: levelup.py:1019
 msgid "`Total Messages: `"
-msgstr ""
+msgstr "`총 메시지 수: `"
 
 #: levelup.py:1020
 msgid "`Total Stars:    `"
-msgstr ""
+msgstr "`총 별:    `"
 
 #: levelup.py:1021
 msgid "`Total Voice:    `"
@@ -772,7 +776,7 @@ msgstr "`메시지: `"
 
 #: levelup.py:1047
 msgid "`Stars:    `"
-msgstr ""
+msgstr "`별:    `"
 
 #: levelup.py:1048
 msgid "`Voice:    `"
@@ -798,7 +802,7 @@ msgstr "퍼가기"
 
 #: levelup.py:1146
 msgid "**Main**\n"
-msgstr ""
+msgstr "**메인**\n"
 
 #: levelup.py:1147
 msgid "`Profile Type:      `"
@@ -936,7 +940,7 @@ msgstr "음성 XP 보너스 채널"
 
 #: levelup.py:1219
 msgid "Stream XP Bonus"
-msgstr ""
+msgstr "스트림 XP 보너스"
 
 #: levelup.py:1228
 msgid "Message XP Bonus Roles"
@@ -1071,7 +1075,7 @@ msgstr "코그 통계"
 
 #: levelup.py:1380
 msgid "`Voice Checker: `"
-msgstr ""
+msgstr "`음성 검사기: `"
 
 #: levelup.py:1381
 msgid "`Cache Dumping: `"
@@ -1173,23 +1177,30 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"말라르네의 레벨러 톱니바퀴에서 레벨과 경험치를 가져옵니다.\n\n"
+"**인수**\n"
+"`export_by` - 어떤 스탯을 우선순위로 할지 선택합니다 (`level` 또는 `exp`)\n"
+"exp를 입력하면 경험치를 가져와서 새로운 레벨을 계산합니다.\n"
+"level을 입력하면 레벨을 가져와서 경험치를 계산합니다.\n"
+"`replace` - (True/False) True인 경우 사용자의 경험치 또는 레벨을 대체하고, 그렇지 않으면 추가합니다.\n"
+"`i_agree` - (예/아니요) 이 명령을 실행하려는지 확인하기 위한 추가 옵션입니다 "
 
 #: levelup.py:1499
 msgid "Not importing levels"
-msgstr ""
+msgstr "레벨을 가져오지 않습니다"
 
 #: levelup.py:1502
 msgid "No config found for Malarne's Leveler cog!"
-msgstr ""
+msgstr "말라르네의 레벨러 코그에 대한 설정이 없습니다!"
 
 #: levelup.py:1548
 msgid "There were no profiles to import"
-msgstr ""
+msgstr "가져올 프로필이 없습니다"
 
 #: levelup.py:1549
 msgid "Imported {} profile(s)"
-msgstr ""
+msgstr "가져온 {} 프로필(들)"
 
 #: levelup.py:1582
 #, docstring
@@ -1203,7 +1214,15 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"MEE6에서 레벨 및 경험치를 가져옵니다.\n\n"
+"**길드 순위표가 공개되어 있는지 확인하세요!**\n\n"
+"**인수**\n"
+"`import_by` - 우선순위를 지정할 스탯(`레벨` 또는 `경험치`)\n"
+"경험치를 입력하면 경험치를 가져와서 이를 기준으로 새 레벨을 설정합니다.\n"
+"레벨을 입력하면 레벨을 가져와서 이를 기준으로 경험치를 계산합니다.\n"
+"`replace` - (True/False) True이면 사용자의 경험치 또는 레벨을 바꾸고, 그렇지 않으면 더합니다\n"
+"`i_agree` - (예/아니요) 이 명령을 실행할 것인지 확인하기 위한 추가 옵션입니다 "
 
 #: levelup.py:1595
 msgid "Not importing MEE6 levels"
@@ -1211,7 +1230,7 @@ msgstr "MEE6 레벨 가져오기를 하지 않습니다"
 
 #: levelup.py:1597
 msgid "Fetching mee6 leaderboard data, please wait..."
-msgstr ""
+msgstr "Mee6 리더보드 데이터를 가져오는 중입니다... 잠시만 기다려주세요..."
 
 #: levelup.py:1618
 msgid "Your leaderboard needs to be set to public!"
@@ -1223,15 +1242,15 @@ msgstr "데이터를 찾을 수 없습니다!"
 
 #: levelup.py:1631
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
-msgstr ""
+msgstr "mee6 API에서 {} 페이지를 가져오지 못했습니다. 자세한 내용은 로그를 확인하세요"
 
 #: levelup.py:1636
 msgid "No leaderboard data found!"
-msgstr ""
+msgstr "리더보드 데이터를 찾을 수 없습니다!"
 
 #: levelup.py:1638
 msgid "Data retrieved, importing..."
-msgstr ""
+msgstr "데이터 검색, 가져오기..."
 
 #: levelup.py:1682
 msgid "No MEE6 stats were found"
@@ -1239,11 +1258,11 @@ msgstr "MEE6 통계가 발견되지 않았습니다"
 
 #: levelup.py:1684
 msgid "Imported {} User(s)"
-msgstr ""
+msgstr "가져온 {} 사용자(들)"
 
 #: levelup.py:1686
 msgid " ({} failed)"
-msgstr ""
+msgstr " ({} 실패)"
 
 #: levelup.py:1695
 #, docstring
@@ -1253,7 +1272,11 @@ msgid "\n"
 "        It will also import XP range level roles, and ignored channels\n"
 "        *Obviously you will need MongoDB running while you run this command*\n"
 "        "
-msgstr ""
+msgstr "\n"
+"픽스처의 레벨러 톱니바퀴에서 데이터를 가져옵니다.\n\n"
+"기존의 LevelUp 레벨 데이터와 별을 덮어쓸 것입니다.\n"
+"또한 XP 범위 레벨 역할과 무시된 채널도 가져올 것입니다.\n"
+"*이 명령을 실행하는 동안 MongoDB가 실행 중이어야 합니다.* "
 
 #: levelup.py:1703
 msgid "Not importing users"
@@ -1261,11 +1284,11 @@ msgstr "사용자 가져오기 안 함"
 
 #: levelup.py:1707
 msgid "No config found for Fixator's Leveler cog!"
-msgstr ""
+msgstr "픽스터의 레벨러 코그에 대한 설정이 없습니다!"
 
 #: levelup.py:1731
 msgid "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo` and `{}pipinstall motor`"
-msgstr ""
+msgstr "실패했습니다. `pymongo`와 `motor` 라이브러리를 가져오지 못했습니다. `{}pip install pymongo`와 `{}pip install motor`를 실행하세요"
 
 #: levelup.py:1755
 msgid "Failed to connect to MongoDB"
@@ -1455,19 +1478,22 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the bonus\n"
 "        "
-msgstr ""
+msgstr "\n"
+"Discord 스트리밍 중인 사용자에게 다양한 보너스 경험치를 추가합니다.\n\n"
+"이 보너스는 음성 시간 XP에 적용됩니다.\n\n"
+"보너스를 제거하려면 최소값과 최대값을 모두 0으로 설정하세요 "
 
 #: levelup.py:2064
 msgid "There is no stream bonus set yet"
-msgstr ""
+msgstr "아직 스트림 보너스 세트가 없습니다"
 
 #: levelup.py:2066
 msgid "Stream bonus has been removed"
-msgstr ""
+msgstr "스트림 보너스가 제거되었습니다"
 
 #: levelup.py:2069
 msgid "Stream bonus has been set to "
-msgstr ""
+msgstr "스트림 보너스가 다음과 같이 설정되었습니다 "
 
 #: levelup.py:2074
 #, docstring
@@ -1593,11 +1619,13 @@ msgid "\n"
 "        Set a user to a specific prestige level\n\n"
 "        Prestige roles will need to be manually added/removed when using this command\n"
 "        "
-msgstr ""
+msgstr "\n"
+"사용자를 특정 명성 레벨로 설정합니다.\n\n"
+"이 명령을 사용할 때는 프레스티지 역할을 수동으로 추가/제거해야 합니다 "
 
 #: levelup.py:2204
 msgid "That prestige level isn't set!"
-msgstr ""
+msgstr "명성 레벨이 설정되지 않았습니다!"
 
 #: levelup.py:2213
 #, docstring
@@ -1626,11 +1654,11 @@ msgstr "\n"
 
 #: levelup.py:2235
 msgid "Your exponent needs to be higher than 0"
-msgstr ""
+msgstr "지수는 0보다 커야 합니다"
 
 #: levelup.py:2237
 msgid "Your exponent needs to be 10 or lower"
-msgstr ""
+msgstr "지수는 10 이하여야 합니다"
 
 #: levelup.py:2244
 #, docstring
@@ -1883,7 +1911,7 @@ msgstr "설정"
 
 #: levelup.py:2603
 msgid " has been "
-msgstr ""
+msgstr " 된 것입니다 "
 
 #: levelup.py:2603
 msgid " as "
@@ -2068,11 +2096,11 @@ msgstr "주간 레벨업 설정"
 
 #: levelup.py:2808
 msgid "`Winner Count:   `"
-msgstr ""
+msgstr "`승자 수:   `"
 
 #: levelup.py:2810
 msgid "`Last Winner(s): `"
-msgstr ""
+msgstr "`최종 우승자: `"
 
 #: levelup.py:2811 levelup.py:2814 levelup.py:2815
 msgid "None"
@@ -2084,7 +2112,7 @@ msgstr "`채널: `"
 
 #: levelup.py:2815
 msgid "`Role:           `"
-msgstr ""
+msgstr "`역할:           `"
 
 #: levelup.py:2816
 msgid "`RoleAllWinners: `"
@@ -2096,7 +2124,7 @@ msgstr "`자동 제거:    `"
 
 #: levelup.py:2818
 msgid "`Bonus Exp:      `"
-msgstr ""
+msgstr "`보너스 경험치: `"
 
 #: levelup.py:2819
 msgid "Settings"
@@ -2112,7 +2140,7 @@ msgstr "`리셋 시간: `"
 
 #: levelup.py:2824
 msgid "`Last Reset: `"
-msgstr ""
+msgstr "`마지막 재설정: `"
 
 #: levelup.py:2826
 msgid "`Next Reset: `"
@@ -2216,7 +2244,8 @@ msgstr "당첨자는 최대 25명까지만 가능합니다!"
 msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
 "        "
-msgstr ""
+msgstr "주간 당첨자 발표 채널\n"
+"자동 재설정이 활성화된 경우 주간 당첨자 발표를 위한 채널을 설정하세요 "
 
 #: levelup.py:2912
 msgid "I do not have permission to send messages to that channel!"
@@ -2255,7 +2284,8 @@ msgstr "주간 스탯 초기화에 나열된 모든 상위 멤버는 주간 역�
 msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
 "        "
-msgstr ""
+msgstr "한 번에 한 명의 역할 보유자\n"
+"새로운 우승자가 선택될 때 이전 우승자의 역할이 제거되는지 여부를 토글하세요 "
 
 #: levelup.py:2955
 msgid "Auto role removal from previous winner has been **Disabled**"
