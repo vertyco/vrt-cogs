@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-07-22 18:29\n"
+"PO-Revision-Date: 2023-07-25 18:43\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -19,180 +19,185 @@ msgstr ""
 
 #: views.py:33
 msgid "Set OpenAI Key"
-msgstr ""
+msgstr "Definir chave OpenAI"
 
 #: views.py:35
 msgid "Enter your OpenAI Key below"
-msgstr ""
+msgstr "Introduza a sua chave OpenAI abaixo"
 
 #: views.py:56 views.py:140 views.py:465
 msgid "This isn't your menu!"
-msgstr ""
+msgstr "Este não é o vosso menu!"
 
 #: views.py:77
 msgid "Entry name"
-msgstr ""
+msgstr "Nome da entrada"
 
 #: views.py:84
 msgid "Training context"
-msgstr ""
+msgstr "Contexto de treinamento"
 
 #: views.py:101
 msgid "Search for an embedding"
-msgstr ""
+msgstr "Procurar uma incorporação"
 
 #: views.py:103
 msgid "Search Query"
-msgstr ""
+msgstr "Consulta de pesquisa"
 
 #: views.py:191
 msgid "Failed to process embedding `{}`\n"
 "Content: ```\n"
 "{}\n"
 "```"
-msgstr ""
+msgstr "Falha ao processar a incorporação `{}`\n"
+"Conteúdo: ```\n"
+"{}\n"
+"```"
 
 #: views.py:195
 msgid "An embedding with the name `{}` already exists!"
-msgstr ""
+msgstr "Já existe uma incorporação com o nome `{}`!"
 
 #: views.py:201
 msgid "Your embedding labeled `{}` has been processed!"
-msgstr ""
+msgstr "A sua incorporação com a etiqueta `{}` foi processada!"
 
 #: views.py:214
 msgid "No embeddings to inspect!"
-msgstr ""
+msgstr "Não há embeddings para inspecionar!"
 
 #: views.py:237
 msgid "No embeddings to edit!"
-msgstr ""
+msgstr "Não há embeddings para editar!"
 
 #: views.py:249
 msgid "Failed to edit that embedding, please try again later"
-msgstr ""
+msgstr "Falha ao editar essa incorporação, por favor tente novamente mais tarde"
 
 #: views.py:256
 msgid "Your embedding has been modified!"
-msgstr ""
+msgstr "A sua incorporação foi modificada!"
 
 #: views.py:297
 msgid "Add an embedding"
-msgstr ""
+msgstr "Adicionar uma incorporação"
 
 #: views.py:304
 msgid "Your embedding is processing and will appear when ready!"
-msgstr ""
+msgstr "A sua incorporação está a ser processada e aparecerá quando estiver pronta!"
 
 #: views.py:324
 msgid "No embeddings to delete!"
-msgstr ""
+msgstr "Não há incorporações para excluir!"
 
 #: views.py:328
 msgid "Deleted `{}` embedding."
-msgstr ""
+msgstr "Eliminada a incorporação `{}`."
 
 #: views.py:356
 msgid "No embeddings to search!"
-msgstr ""
+msgstr "Não há embeddings para pesquisar!"
 
 #: views.py:372
 msgid "Search result: **{}**"
-msgstr ""
+msgstr "Resultado da pesquisa: **{}**"
 
 #: views.py:403
 msgid "Function Edit"
-msgstr ""
+msgstr "Função Editar"
 
 #: views.py:409
 msgid "JSON Schema"
-msgstr ""
+msgstr "Esquema JSON"
 
 #: views.py:416
 msgid "Code"
-msgstr ""
+msgstr "Código"
 
 #: views.py:580
 msgid "No code to inspect!"
-msgstr ""
+msgstr "Não há código para inspecionar!"
 
 #: views.py:599
 msgid "Here are your custom functions"
-msgstr ""
+msgstr "Aqui estão suas funções personalizadas"
 
 #: views.py:604
 msgid "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
-msgstr ""
+msgstr "Responda a esta mensagem com o esquema json para a sua função\n"
+"- [Exemplo de Funções](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 
 #: views.py:625 views.py:707
 msgid "SchemaError\n"
 "{}"
-msgstr ""
+msgstr "Erro de Esquema {}"
 
 #: views.py:627 views.py:710
 msgid "Empty schema!"
-msgstr ""
+msgstr "Esquema vazio!"
 
 #: views.py:631 views.py:713
 msgid "Invalid schema!\n"
 "**Missing**\n"
 "{}"
-msgstr ""
+msgstr "Esquema inválido!\n"
+"**Falta** {}"
 
 #: views.py:636
 msgid "Reply to this message with the custom code"
-msgstr ""
+msgstr "Responder a esta mensagem com o código personalizado"
 
 #: views.py:651 views.py:719
 msgid "Invalid function"
-msgstr ""
+msgstr "Função inválida"
 
 #: views.py:655
 msgid "`{}` has been overwritten!"
-msgstr ""
+msgstr "`{}` foi substituído!"
 
 #: views.py:657
 msgid "`{}` has been created!"
-msgstr ""
+msgstr "`{}` foi criado!"
 
 #: views.py:668
 msgid "No code to edit!"
-msgstr ""
+msgstr "Não há código para editar!"
 
 #: views.py:677 views.py:747
 msgid "Could not find function!"
-msgstr ""
+msgstr "Não foi possível encontrar a função!"
 
 #: views.py:680
 msgid "This function is managed by the `{}` cog and cannot be edited"
-msgstr ""
+msgstr "Esta função é gerida pela engrenagem `{}` e não pode ser editada"
 
 #: views.py:686
 msgid "The json schema for this function is too long, you'll need to re-upload it to modify"
-msgstr ""
+msgstr "O esquema json para esta função é muito longo, você precisará fazer o upload novamente para modificá-lo"
 
 #: views.py:693
 msgid "The code for this function is too long, you'll need to re-upload it to modify"
-msgstr ""
+msgstr "O código para esta função é muito longo, você precisará fazer o upload novamente para modificá-lo"
 
 #: views.py:728
 msgid "`{}` function updated!"
-msgstr ""
+msgstr "função `{}` atualizada!"
 
 #: views.py:739
 msgid "No code to delete!"
-msgstr ""
+msgstr "Nenhum código para excluir!"
 
 #: views.py:750
 msgid "This function is managed by the `{}` cog and cannot be deleted"
-msgstr ""
+msgstr "Esta função é gerida pela engrenagem `{}` e não pode ser eliminada"
 
 #: views.py:758
 msgid "`{}` has been deleted!"
-msgstr ""
+msgstr "`{}` foi eliminado!"
 
 #: views.py:766
 msgid "No code to toggle!"
-msgstr ""
+msgstr "Sem código para alternar!"
 
