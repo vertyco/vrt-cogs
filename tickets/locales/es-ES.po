@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-26 04:40\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -26,8 +26,7 @@ msgstr "No está permitido interactuar con este botón."
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
-msgstr "\n"
-"Sistema de tickets de soporte con funcionalidad multipanel   "
+msgstr "Sistema de tickets de soporte con funcionalidad multipanel    "
 
 #: tickets.py:41
 #, docstring
@@ -140,7 +139,7 @@ msgstr "Actualizar resumen de tickets activos\n\n"
 "        guild (discord.Guild): servidor de Discord\n"
 "        conf (dict): configuración para el servidor\n\n"
 "    Devuelve:\n"
-"        int: ID del mensaje del panel de resumen"
+"        int: ID del mensaje del panel de resumen    "
 
 #: views.py:38
 msgid "cancel"
