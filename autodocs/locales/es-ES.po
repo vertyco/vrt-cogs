@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-07-26 04:40\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -23,9 +23,8 @@ msgid "\n"
 "    Document your cogs with ease!\n\n"
 "    Easily create documentation for any cog in Markdown format.\n"
 "    "
-msgstr "\n"
-"¡Documenta tus cogs con facilidad!\n\n"
-"Crea fácilmente documentación para cualquier cog en formato Markdown"
+msgstr "¡Documenta tus cogs con facilidad!\n\n"
+"Crea fácilmente documentación para cualquier cog en formato Markdown    "
 
 #: autodocs.py:35
 msgid "{}\n"
@@ -82,7 +81,7 @@ msgstr "Ocultar comandos por encima del nivel de privilegio especificado (usuari
 
 #: autodocs.py:126
 msgid "Include a csv with each command isolated per row"
-msgstr "Incluye un archivo CSV con cada comando aislado en una fila"
+msgstr "incluye un archivo csv con cada comando aislado en una fila"
 
 #: autodocs.py:141
 #, docstring
@@ -100,10 +99,9 @@ msgid "\n"
 "        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
 "        them and sent in a zip file\n"
 "        "
-msgstr "\n"
-"Crear una página de documentos Markdown para un cog y enviar a Discord\n\n"
+msgstr "Crear una página de documentos Markdown para un cog y enviar a Discord\n\n"
 "**Argumentos**\n"
-"`cog_name:           `(str) El nombre del cog para el que deseas crear los documentos (sensible a mayúsculas y minúsculas)\n"
+"`cog_name:           `(str) El nombre del cog para el cual deseas crear los documentos (sensible a mayúsculas y minúsculas)\n"
 "`replace_prefix:     `(bool) Si es verdadero, reemplaza el marcador de posición `prefix` con el prefijo del bot\n"
 "`replace_botname:    `(bool) Si es verdadero, reemplaza el marcador de posición `botname` con el nombre del bot\n"
 "`extended_info:      `(bool) Si es verdadero, incluye información adicional como convertidores y sus docstrings\n"
@@ -111,7 +109,7 @@ msgstr "\n"
 "`privilege_level:    `(str) Oculta comandos por encima del nivel de privilegio especificado\n"
 "- (usuario, mod, admin, guildowner, botowner)\n"
 "`csv_export:         `(bool) Incluye un archivo CSV con cada comando aislado por fila para usarlo como incrustaciones\n\n"
-"**Nota** Si se especifica `all` para cog_name, se generarán documentos para todos los cogs no principales cargados actualmente y se enviarán en un archivo zip        "
+"**Nota** Si se especifica `all` para `cog_name`, se generarán documentos para todos los cogs no principales cargados actualmente y se enviarán en un archivo zip        "
 
 #: autodocs.py:163
 msgid "AllCogDocs"
