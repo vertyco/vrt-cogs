@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-26 03:43\n"
+"PO-Revision-Date: 2023-07-26 13:12\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -193,11 +193,10 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr "\n"
-"Fügen Sie dem Zahnrad von Discord eine benutzerdefinierte Schriftart hinzu\n\n"
+msgstr "Fügen Sie dem Zahnrad von Discord eine benutzerdefinierte Schriftart hinzu.\n\n"
 "**Argumente**\n"
-"`preferred_filename` - Wenn ein Name angegeben ist, wird er als dieser Name anstelle des Dateinamens gespeichert\n"
-"**Hinweis:** Fügen Sie die Dateierweiterung nicht in den bevorzugten Namen ein, sie wird automatisch hinzugefügt                "
+"`preferred_filename` - Wenn ein Name angegeben ist, wird er als dieser Name anstelle des Dateinamens gespeichert.\n"
+"**Hinweis:** Fügen Sie die Dateierweiterung nicht in den bevorzugten Namen ein, sie wird automatisch hinzugefügt        "
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
@@ -205,7 +204,7 @@ msgstr "Das ist kein gültiges Format, es müssen `.ttf` oder `.otf` Erweiterung
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr "Ihre benutzerdefinierte Schriftart wurde als gespeichert"
+msgstr "Ihre benutzerdefinierte Schriftart wurde als gespeichert "
 
 #: base.py:409
 #, docstring
@@ -252,7 +251,7 @@ msgstr "Verfügbare Schriftarten anzeigen"
 
 #: base.py:476
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr "Hier sind die aktuellen Schriftarten. Um eine dauerhafte Einstellung vorzunehmen, können Sie die folgende verwenden"
+msgstr "Hier sind die aktuellen Schriftarten. Um eine dauerhafte Einstellung vorzunehmen, können Sie die folgende verwenden "
 
 #: base.py:481
 msgid "Could not send font collage, file size may be too large."
@@ -296,10 +295,10 @@ msgid "\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
 msgstr "\n"
-"Setzen Sie eine Hex-Farbe für Ihren Benutzernamen fest\n\n"
+"Setzen Sie eine Hex-Farbe für Ihren Benutzernamen fest.\n\n"
 "Hier ist ein Link zu Googles Farbwähler:\n"
 "**[Hex-Farbwähler](https://htmlcolorcodes.com/)**\n\n"
-"Setzen Sie auf `default`, um die Farbe Ihres Namens bei jedem Ausführen des Befehls zufällig zu wählen               "
+"Setzen Sie auf `default`, um die Farbe Ihres Namens bei jedem Ausführen des Befehls zufällig zu wählen        "
 
 #: base.py:532
 msgid "Your name color has been reset to default"
@@ -321,11 +320,10 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr "\n"
-"Setzen Sie eine Hex-Farbe für Ihre Serverstatistiken fest\n\n"
+msgstr "Setzen Sie eine Hex-Farbe für Ihre Serverstatistiken fest.\n\n"
 "Hier ist ein Link zu Googles Farbwähler:\n"
 "**[Hex-Farbwähler](https://htmlcolorcodes.com/)**\n\n"
-"Setzen Sie auf `default`, um die Farbe Ihres Namens bei jedem Ausführen des Befehls zufällig zu wählen               "
+"Setzen Sie auf `default`, um die Farbe Ihres Namens bei jedem Ausführen des Befehls zufällig zu wählen        "
 
 #: base.py:577
 msgid "Your stats color has been reset to default"
@@ -368,8 +366,7 @@ msgid "\n"
 "         - `random` will randomly select from a pool of default backgrounds each time\n"
 "         - `filename` run `[p]mypf backgrounds` to view default options you can use by including their filename\n"
 "        "
-msgstr "\n"
-"Setzen Sie einen Hintergrund für Ihr Profil\n\n"
+msgstr "Setzen Sie einen Hintergrund für Ihr Profil\n\n"
 "Dies überschreibt Ihr Profilbanner als Hintergrund\n\n"
 "**WARNUNG**\n"
 "Profilhintergründe sind breite Landschaften (1050 mal 450 Pixel) mit einem Seitenverhältnis von 21:9\n"
@@ -383,7 +380,7 @@ msgstr "\n"
 "**Zusätzliche Optionen**\n"
 "- Lassen Sie die image_url leer, um wieder Ihren Profilbanner zu verwenden (oder zufällig, wenn Sie keinen haben)\n"
 "- `random` wählt jedes Mal zufällig aus einem Pool von Standardhintergründen aus\n"
-"- `filename` führen Sie `[p]mypf backgrounds` aus, um Standardoptionen anzuzeigen, die Sie durch Angabe ihres Dateinamens verwenden können               "
+"- `filename` führen Sie `[p]mypf backgrounds` aus, um Standardoptionen anzuzeigen, die Sie durch Angabe ihres Dateinamens verwenden können        "
 
 #: base.py:712 base.py:714
 msgid "Your background image has been set!"
@@ -422,8 +419,7 @@ msgstr "Die Schriftart Ihres Profils wurde eingestellt auf "
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr "\n"
-"Schaltet einen leichten Unschärfeeffekt für das Hintergrundbild ein, in dem der Text angezeigt wird.               "
+msgstr "Schaltet einen leichten Unschärfeeffekt für das Hintergrundbild ein, in dem der Text angezeigt wird.        "
 
 #: base.py:769
 msgid "Your profile background blur has been set to "
@@ -494,8 +490,7 @@ msgid "\n"
 "        reset your level and experience to gain a prestige level and any perks associated with it\n\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
-msgstr "\n"
-"prestige deinen Rang!\n"
+msgstr "prestige deinen Rang!\n"
 "Sobald du das Prestige-Level dieses Servers erreicht hast, kannst du dein Level und deine Erfahrung zurücksetzen, um ein Prestige-Level und alle damit verbundenen Vorteile zu erhalten.\n\n"
 "Wenn du beim Prestige über Level und XP bist, werden deine XP und Level übertragen        "
 
@@ -548,11 +543,10 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr "\n"
-"Ansicht der Rangliste\n\n"
-"**Argumente**\n"
-"`stat`: Für welche Art von Statistik soll die wöchentliche Rangliste angezeigt werden?\n"
-"Gültige Optionen sind `exp`, `messages` und `voice`\n"
+msgstr "Ansicht der Rangliste        \n\n"
+"**Argumente**        \n"
+"`stat`: Für welche Art von Statistik soll die wöchentliche Rangliste angezeigt werden?        \n"
+"Gültige Optionen sind `exp`, `messages` und `voice`        \n"
 "Abkürzungen dieser Argumente können ebenfalls verwendet werden               "
 
 #: base.py:1023
@@ -597,11 +591,10 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, `stars`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr "\n"
-"Die wöchentliche Rangliste anzeigen\n\n"
-"**Argumente**\n"
-"`stat`: Welche Art von Statistik soll für die wöchentliche Rangliste angezeigt werden?\n"
-"Gültige Optionen sind `exp`, `messages`, `stars` und `voice`\n"
+msgstr "Die wöchentliche Rangliste anzeigen        \n\n"
+"**Argumente**        \n"
+"`stat`: Welche Art von Statistik soll für die wöchentliche Rangliste angezeigt werden?        \n"
+"Gültige Optionen sind `exp`, `messages`, `stars` und `voice`        \n"
 "Es können auch Abkürzungen dieser Argumente verwendet werden               "
 
 #: base.py:1133 base.py:1155
@@ -666,7 +659,7 @@ msgstr " Prestige "
 #: generator.py:1100
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr "Ermitteln Sie die durchschnittliche Dauer der Sequenz von GIF-Bildern."
+msgstr "ermitteln Sie die durchschnittliche Dauer der Sequenz von GIF-Bildern"
 
 #: levelup.py:83
 #, docstring
@@ -957,8 +950,7 @@ msgid "\n"
 "        Cog admin commands\n\n"
 "        Reset levels, backup and restore cog data\n"
 "        "
-msgstr "\n"
-"Koggenverwaltungsbefehle\n\n"
+msgstr "Koggen-Admin-Befehle\n\n"
 "Ebenen zurücksetzen, Koggen-Daten sichern und wiederherstellen               "
 
 #: levelup.py:1278
@@ -1029,7 +1021,7 @@ msgstr "Alle Exp und Level zurücksetzen"
 
 #: levelup.py:1343
 msgid "Are you sure you want to reset "
-msgstr "Sind Sie sicher, dass Sie zurücksetzen möchten?"
+msgstr "Sind Sie sicher, dass Sie zurücksetzen möchten "
 
 #: levelup.py:1343
 msgid " users' stats?"
@@ -1166,14 +1158,13 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr "\n"
-"Importiere Level und Erfahrung aus Malarne's Leveler-Kogge\n\n"
+msgstr "Importiere Level und Erfahrung aus Malarne's Leveler-Kogge\n\n"
 "**Argumente**\n"
 "`export_by` - Welche Statistik priorisiert werden soll (`level` oder `exp`)\n"
 "Wenn \"exp\" eingegeben wird, wird die Erfahrung importiert und die neue Stufe basiert darauf berechnet.\n"
 "Wenn \"level\" eingegeben wird, wird das Level importiert und die Erfahrung basiert darauf berechnet.\n"
 "`replace` - (Wahr/Falsch) Wenn \"Wahr\", wird die Erfahrung oder das Level des Benutzers ersetzt, ansonsten wird es hinzugefügt.\n"
-"`i_agree` - (Ja/Nein) Nur eine zusätzliche Option, um sicherzustellen, dass Sie diesen Befehl ausführen möchten               "
+"`i_agree` - (Ja/Nein) Nur eine zusätzliche Option, um sicherzustellen, dass Sie diesen Befehl ausführen möchten        "
 
 #: levelup.py:1499
 msgid "Not importing levels"
@@ -1330,7 +1321,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "XP-Bereich für Nachrichten festlegen        \n"
-"Legen Sie den Mindest- und Höchstbetrag an XP fest, den eine Nachricht erhalten kann               "
+"Legen Sie den Mindest- und Höchstbetrag an XP fest, den eine Nachricht erhalten kann        "
 
 #: levelup.py:1876
 msgid "Message XP range has been set to "
@@ -1405,8 +1396,7 @@ msgid "\n"
 "        When a user sends a message they will have to wait X seconds before their message\n"
 "        counts as XP gained\n"
 "        "
-msgstr "\n"
-"Cooldown-Schwelle für Nachrichten-XP\n\n"
+msgstr "Cooldown-Schwelle für Nachrichten-XP\n\n"
 "Wenn ein Benutzer eine Nachricht sendet, müssen sie X Sekunden warten, bevor ihre Nachricht als gewonnene XP zählt               "
 
 #: levelup.py:1960
@@ -1432,8 +1422,7 @@ msgid "\n"
 "        Set voice XP gain\n"
 "        Sets the amount of XP gained per minute in a voice channel (default is 2)\n"
 "        "
-msgstr "\n"
-"XP-Gewinn pro Sprachkanal einstellen\n"
+msgstr "XP-Gewinn pro Sprachkanal einstellen\n"
 "Legt die Menge an XP fest, die pro Minute in einem Sprachkanal gewonnen werden (Standardwert ist 2)               "
 
 #: levelup.py:1993
@@ -1467,10 +1456,9 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the bonus\n"
 "        "
-msgstr "\n"
-"Fügen Sie eine Reihe von Bonus-EP für Benutzer hinzu, die Discord-Streaming betreiben.\n\n"
+msgstr "Fügen Sie eine Reihe von Bonus-EP für Benutzer hinzu, die Discord-Streaming betreiben.\n\n"
 "Dieser Bonus gilt für Sprachzeit-XP.\n\n"
-"Setzen Sie sowohl min als auch max auf 0, um den Bonus zu entfernen               "
+"Setzen Sie sowohl min als auch max auf 0, um den Bonus zu entfernen        "
 
 #: levelup.py:2064
 msgid "There is no stream bonus set yet"
@@ -1490,8 +1478,7 @@ msgid "\n"
 "        Ignore muted voice users\n"
 "        Toggle whether self-muted users in a voice channel can gain voice XP\n"
 "        "
-msgstr "\n"
-"Ignoriere stummgeschaltete Sprachbenutzer\n"
+msgstr "Ignoriere stummgeschaltete Sprachbenutzer\n"
 "Aktiviere/deaktiviere, ob selbst stummgeschaltete Benutzer in einem Sprachkanal Sprach-EP erhalten können               "
 
 #: levelup.py:2081
@@ -1526,9 +1513,8 @@ msgid "\n"
 "        Ignore deafened voice users\n"
 "        Toggle whether deafened users in a voice channel can gain voice XP\n"
 "        "
-msgstr "\n"
-"Ignoriere taube Sprachbenutzer\n"
-"Aktiviere/deaktiviere, ob taube Benutzer in einem Sprachkanal Sprach-EP erhalten können               "
+msgstr "Ignoriere taube Sprachbenutzer\n"
+"Aktiviere/deaktiviere, ob taube Benutzer in einem Sprachkanal Sprach-EP erhalten können        "
 
 #: levelup.py:2111
 msgid "Deafened users can now gain XP while in a voice channel"
@@ -1637,8 +1623,7 @@ msgid "\n"
 "        Exponent multiplier for the leveling algorithm\n\n"
 "        Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)\n"
 "        "
-msgstr "\n"
-"Exponentenmultiplikator für den Leveling-Algorithmus\n\n"
+msgstr "Exponentenmultiplikator für den Leveling-Algorithmus\n\n"
 "Beeinflusst das Leveling auf einer exponentiellen Skala (höhere Werte lassen das Leveling exponentiell länger dauern)               "
 
 #: levelup.py:2235
@@ -1685,9 +1670,8 @@ msgid "\n"
 "        Test the level algorithm\n"
 "        View the first 20 levels using the current algorithm to test experience curve\n"
 "        "
-msgstr "\n"
-"Teste den Level-Algorithmus\n"
-"Zeige die ersten 20 Level mit dem aktuellen Algorithmus an, um die Erfahrungskurve zu testen               "
+msgstr "Teste den Level-Algorithmus\n"
+"Zeige die ersten 20 Level mit dem aktuellen Algorithmus an, um die Erfahrungskurve zu testen        "
 
 #: levelup.py:2289
 msgid "XP required for a level = Base * Level^Exp\n\n"
@@ -1866,7 +1850,7 @@ msgstr "Initialisierung abgeschlossen! Hinzugefügt "
 
 #: levelup.py:2568
 msgid " roles and removed "
-msgstr "Rollen und entfernt"
+msgstr " Rollen und entfernt"
 
 #: levelup.py:2576
 #, docstring
@@ -1949,10 +1933,9 @@ msgid "\n"
 "        Add a role and emoji associated with a specific prestige level\n\n"
 "        When a user prestiges, they will get that role and the emoji will show on their profile\n"
 "        "
-msgstr "\n"
-"Fügen Sie eine Prestige-Rolle hinzu\n"
+msgstr "Fügen Sie eine Prestige-Rolle hinzu\n"
 "Fügen Sie eine Rolle und ein Emoji hinzu, die mit einem bestimmten Prestige-Level verbunden sind\n\n"
-"Wenn ein Benutzer prestigeträchtig wird, erhält er diese Rolle und das Emoji wird in seinem Profil angezeigt               "
+"Wenn ein Benutzer prestigeträchtig wird, erhält er diese Rolle und das Emoji wird in seinem Profil angezeigt        "
 
 #: levelup.py:2671 levelup.py:2693
 msgid "prestige_level must be a number!"
@@ -2047,7 +2030,7 @@ msgid "\n"
 msgstr "\n"
 "Mitglied zur Ignorierliste hinzufügen/entfernen\n"
 "Mitglieder auf der Ignorierliste erhalten keine XP\n\n"
-"Verwenden Sie den Befehl, um ein Mitglied, das sich bereits auf der Ignorierliste befindet, zu entfernen               "
+"Verwenden Sie den Befehl, um ein Mitglied, das sich bereits auf der Ignorierliste befindet, zu entfernen        "
 
 #: levelup.py:2774
 msgid "Member removed from ignore list"
@@ -2180,8 +2163,7 @@ msgid "\n"
 "        What hour the weekly stats reset\n"
 "        Set the hour (0 - 23 in UTC) for the weekly reset to take place\n"
 "        "
-msgstr "\n"
-"Um welche Uhrzeit werden die wöchentlichen Statistiken zurückgesetzt?\n"
+msgstr "Um welche Uhrzeit werden die wöchentlichen Statistiken zurückgesetzt?\n"
 "Legen Sie die Stunde (0 - 23 in UTC) für den wöchentlichen Reset fest               "
 
 #: levelup.py:2871
@@ -2234,7 +2216,7 @@ msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
 "        "
 msgstr "Wöchentlicher Gewinner-Benachrichtigungskanal\n"
-"Legen Sie den Kanal fest, in dem die wöchentlichen Gewinner bekannt gegeben werden, wenn die automatische Zurücksetzung aktiviert ist               "
+"Legen Sie den Kanal fest, in dem die wöchentlichen Gewinner bekannt gegeben werden, wenn die automatische Zurücksetzung aktiviert ist"
 
 #: levelup.py:2912
 msgid "I do not have permission to send messages to that channel!"
@@ -2290,8 +2272,7 @@ msgid "\n"
 "        Weekly winners bonus experience points\n"
 "        Set to 0 to disable exp bonus\n"
 "        "
-msgstr "\n"
-"Wöchentlicher Gewinner Bonus Erfahrungspunkte\n"
+msgstr "Wöchentlicher Gewinner Bonus Erfahrungspunkte        \n"
 "Auf 0 setzen, um den Erfahrungspunkte-Bonus zu deaktivieren               "
 
 #: levelup.py:2975
@@ -2314,7 +2295,7 @@ msgstr "De-Leveling eines Benutzers oder von sich selbst erzwingen"
 
 #: levelup.py:3017
 msgid " to level down!"
-msgstr "Nach unten nivellieren!"
+msgstr "Herunterstufen!"
 
 #: levelup.py:3025
 #, docstring
