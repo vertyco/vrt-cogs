@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-25 18:42\n"
+"PO-Revision-Date: 2023-07-26 01:11\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -879,7 +879,7 @@ msgstr "`Remoção automática de funções:  `"
 
 #: levelup.py:1168
 msgid "`LevelUp Channel:   `"
-msgstr ""
+msgstr "`Canal LevelUp:   `"
 
 #: levelup.py:1169
 msgid "**Stars**\n"
@@ -2096,7 +2096,7 @@ msgstr "Nenhum"
 
 #: levelup.py:2814
 msgid "`Channel:        `"
-msgstr ""
+msgstr "`Canal:        `"
 
 #: levelup.py:2815
 msgid "`Role:           `"
