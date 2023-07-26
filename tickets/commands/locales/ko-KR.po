@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-26 04:40\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -33,7 +33,7 @@ msgstr "지원 티켓 패널을 만들려면 다음과 같이 입력하세요 "
 
 #: commands\admin.py:33
 msgid " <panel_name>`"
-msgstr "<패널_이름>"
+msgstr " <panel_name>"
 
 #: commands\admin.py:40
 msgid "Set the category ID that new tickets will be created under if using channel tickets.\n"
@@ -53,7 +53,7 @@ msgstr "봇 티켓 패널이 위치할 채널을 설정합니다.\n"
 
 #: commands\admin.py:46
 msgid "<panel_name> <channel_id>`"
-msgstr "<패널_이름> <채널_ID>"
+msgstr "<panel_name> <channel_id>"
 
 #: commands\admin.py:47
 msgid "Step 2"
@@ -155,7 +155,7 @@ msgstr "개설되는 티켓 채널의 이름 지정 형식을 설정합니다.\n
 
 #: commands\admin.py:83
 msgid "<panel_name> <name_format>`"
-msgstr "<패널_이름> <이름_형식>"
+msgstr "<패널_이름> <이름_형식> 형식 태그가 누락된 것 같습니다. 번역을 수정하여 업데이트된 버전만 반환하겠습니다"
 
 #: commands\admin.py:84
 msgid "Ticket Channel Name"
@@ -252,9 +252,8 @@ msgid "\n"
 "        Set the message ID of a ticket panel\n"
 "        Run this command in the same channel as the ticket panel message\n"
 "        "
-msgstr "\n"
-"티켓 패널의 메시지 ID를 설정하세요\n"
-"이 명령은 티켓 패널 메시지와 동일한 채널에서 실행하세요               "
+msgstr "티켓 패널의 메시지 ID를 설정하세요.\n"
+"이 명령은 티켓 패널 메시지와 동일한 채널에서 실행하세요.        "
 
 #: commands\admin.py:170
 msgid "Category ID must be set for this panel first!"
@@ -313,8 +312,7 @@ msgid "\n"
 "        `{time}` - hh-mm AM/PM according to bot host system time\n\n"
 "        You can set this to {default} to use default \"Ticket-Username\n"
 "        "
-msgstr "\n"
-"패널의 기본 티켓 채널 이름을 설정하세요.\n\n"
+msgstr "패널의 기본 티켓 채널 이름을 설정하세요.\n\n"
 "이름에 다음을 포함할 수 있습니다.\n"
 "`{num}` - 티켓 번호\n"
 "`{user}` - 사용자 이름\n"
@@ -420,7 +418,7 @@ msgstr "\n"
 "**참고**\n"
 "`field_name`은 구성에 저장된 필드의 이름일 뿐입니다.\n"
 "모달에 표시되지 않으며 공백이 없어야 합니다.\n\n"
-"기존 필드 이름을 지정하여 모달 필드를 삭제하세요(대소문자 구분 없음)               "
+"기존 필드 이름을 지정하여 모달 필드를 삭제하세요(대소문자 구분 없음)        "
 
 #: commands\admin.py:400
 msgid "Field for {} panel has been removed!"
@@ -563,8 +561,7 @@ msgid "\n"
 "        `{id}` - This is the ID of the user that created the ticket\n\n"
 "        The bot will walk you through a few steps to set up the embed\n"
 "        "
-msgstr "\n"
-"티켓이 열릴 때 보낼 메시지 임베드를 추가하세요.\n\n"
+msgstr "티켓이 열릴 때 보낼 메시지 임베드를 추가하세요.\n\n"
 "다음 중 하나를 임베드에 포함하여 메시지가 전송될 때 해당 값으로 대체할 수 있습니다.\n"
 "\"<b>{사용자 이름}</b>\" - 사용자의 Discord 사용자 이름\n"
 "\"<b>{멘션}</b>\" - 사용자를 멘션합니다\n"
@@ -837,10 +834,9 @@ msgid "\n"
 "        **Optional**: include `true` for mention to have that role mentioned when a ticket is opened\n\n"
 "        To remove a role, simply run this command with it again to remove it\n"
 "        "
-msgstr "\n"
-"티켓 지원 역할을 추가/제거합니다 (한 번에 하나씩)\n\n"
+msgstr "티켓 지원 역할을 추가/제거합니다 (한 번에 하나씩)\n\n"
 "**선택 사항**: 티켓이 열릴 때 해당 역할이 언급되도록 멘션에 `true`를 포함하세요\n\n"
-"역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하기만 하면 됩니다               "
+"역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하기만 하면 됩니다        "
 
 #: commands\admin.py:983
 msgid "{} has been removed from support roles"
@@ -859,12 +855,11 @@ msgid "\n"
 "        These roles are a specialized subset of the main support roles.\n"
 "        Use this role type if you want to isolate specific groups to a certain panel.\n"
 "        "
-msgstr "\n"
-"특정 패널에 대한 역할을 추가/제거하세요.\n\n"
+msgstr "특정 패널에 대한 역할을 추가/제거하세요.\n\n"
 "역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하면 됩니다.\n\n"
 "**선택 사항**: 티켓이 열릴 때 해당 역할이 언급되도록 멘션에 `true`를 포함하세요.\n\n"
 "이러한 역할은 기본 지원 역할의 전문화된 하위 집합입니다.\n"
-"특정 그룹을 특정 패널에 격리하려는 경우에는 이 역할 유형을 사용하세요.               "
+"특정 그룹을 특정 패널에 격리하려는 경우에는 이 역할 유형을 사용하세요.        "
 
 #: commands\admin.py:1019
 msgid "{} has been removed from the {} panel roles"
@@ -872,7 +867,7 @@ msgstr "{}이(가){}패널 역할에서 제거되었습니다"
 
 #: commands\admin.py:1027
 msgid " has been added to the {} panel roles"
-msgstr "패널 역할에 {}이(가) 추가되었습니다"
+msgstr "패널 역할에 {}가 추가되었습니다"
 
 #: commands\admin.py:1033
 #, docstring
@@ -880,8 +875,7 @@ msgid "\n"
 "        Add/Remove roles required to open a ticket for a specific panel\n\n"
 "        Specify the same role to remove it\n"
 "        "
-msgstr "\n"
-"특정 패널에 대한 티켓을 여는 데 필요한 역할을 추가/제거하세요\n\n"
+msgstr "특정 패널에 대한 티켓을 여는 데 필요한 역할을 추가/제거하세요\n\n"
 "제거하려면 동일한 역할을 지정하세요               "
 
 #: commands\admin.py:1048
@@ -901,12 +895,11 @@ msgid "\n"
 "        If the panel is a channel type and a channel is used, the bot will use the category associated with the channel.\n\n"
 "        To remove the alt channel, specify the existing one\n"
 "        "
-msgstr "\n"
-"패널을 위해 티켓이 열릴 대체 채널을 설정하세요.\n\n"
+msgstr "패널을 위해 티켓이 열릴 대체 채널을 설정하세요.\n\n"
 "패널이 스레드를 사용하는 경우, 일반 텍스트 채널을 사용해야 합니다.\n"
 "패널이 채널을 사용하는 경우, 카테고리를 사용해야 합니다.\n\n"
 "패널이 채널 유형이고 채널을 사용하는 경우, 봇은 해당 채널과 연결된 카테고리를 사용합니다.\n\n"
-"대체 채널을 제거하려면 기존 채널을 지정하세요.               "
+"대체 채널을 제거하려면 기존 채널을 지정하세요.        "
 
 #: commands\admin.py:1085
 msgid "Alt channel has been removed for this panel!"
@@ -952,9 +945,8 @@ msgid "\n"
 "        Add/Remove users or roles from the blacklist\n\n"
 "        Users and roles in the blacklist will not be able to create a ticket\n"
 "        "
-msgstr "\n"
-"블랙리스트에서 사용자 또는 역할을 추가/제거하세요.\n\n"
-"블랙리스트에 있는 사용자 및 역할은 티켓을 만들 수 없습니다.               "
+msgstr "블랙리스트에서 사용자 또는 역할을 추가/제거하세요.\n\n"
+"블랙리스트에 있는 사용자 및 역할은 티켓을 만들 수 없습니다        "
 
 #: commands\admin.py:1150
 msgid " has been removed from the blacklist"
@@ -970,8 +962,7 @@ msgid "\n"
 "        Auto-close ticket if opener doesn't say anything after X hours of opening\n\n"
 "        Set to 0 to disable this\n"
 "        "
-msgstr "\n"
-"개봉 후 X시간이 지나도 개봉자가 아무 말도 하지 않으면 티켓이 자동으로 종료됩니다.\n\n"
+msgstr "개봉 후 X시간이 지나도 개봉자가 아무 말도 하지 않으면 티켓이 자동으로 종료됩니다.\n\n"
 "이 기능을 사용하지 않으려면 0으로 설정하세요               "
 
 #: commands\admin.py:1172
@@ -980,8 +971,7 @@ msgid "\n"
 "        Set a channel for the live overview message\n\n"
 "        The overview message shows all active tickets across all configured panels for a server.\n"
 "        "
-msgstr "\n"
-"실시간 개요 메시지의 채널을 설정하세요.\n\n"
+msgstr "실시간 개요 메시지의 채널을 설정하세요.\n\n"
 "개요 메시지는 서버의 모든 구성된 패널에서 활성 티켓을 모두 보여줍니다.               "
 
 #: commands\admin.py:1178
@@ -1055,8 +1045,7 @@ msgid "\n"
 "        (Toggle) If users can manage their own tickets\n\n"
 "        Users will be able to add/remove others to their support ticket\n"
 "        "
-msgstr "\n"
-"(토글) 사용자가 직접 티켓을 관리할 수 있는 경우\n\n"
+msgstr "(토글) 사용자가 직접 티켓을 관리할 수 있는 경우\n\n"
 "사용자는 자신의 지원 티켓에 다른 사람을 추가/제거할 수 있습니다               "
 
 #: commands\admin.py:1250
@@ -1073,8 +1062,7 @@ msgid "\n"
 "        (Toggle) Auto-add support and panel roles to thread tickets\n\n"
 "        Adding a user to a thread pings them, so this is off by default\n"
 "        "
-msgstr "\n"
-"(토글) 스레드 티켓에 지원 및 패널 역할 자동 추가하기\n\n"
+msgstr "(토글) 스레드 티켓에 지원 및 패널 역할 자동 추가하기\n\n"
 "사용자를 스레드에 추가하면 해당 사용자에게 핑을 보내므로 기본적으로 이 기능은 꺼져 있습니다               "
 
 #: commands\admin.py:1266
@@ -1091,9 +1079,8 @@ msgid "\n"
 "        (Toggle) Ticket transcripts\n\n"
 "        Closed tickets will have their transcripts uploaded to the log channel\n"
 "        "
-msgstr "\n"
-"(토글) 티켓 기록\n\n"
-"종료된 티켓은 로그 채널에 기록이 업로드됩니다               "
+msgstr "(토글) 티켓 기록\n\n"
+"종료된 티켓은 로그 채널에 기록이 업로드됩니다        "
 
 #: commands\admin.py:1282
 msgid "Transcripts of closed tickets will no longer be saved"
@@ -1217,13 +1204,12 @@ msgid "\n"
 "        `[p]close 1h` - closes in 1 hour with no reason attached\n"
 "        `[p]close 1m thanks for helping!` - closes in 1 minute with reason \"thanks for helping!\"\n"
 "        "
-msgstr "\n"
-"티켓을 닫으세요\n\n"
+msgstr "티켓을 닫으세요\n\n"
 "**예시**\n"
 "`[p]close` - 이유 없이 티켓을 닫습니다\n"
 "`[p]close thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 티켓을 닫습니다\n"
 "`[p]close 1h` - 이유 없이 1시간 후에 티켓을 닫습니다\n"
-"`[p]close 1m thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 1분 후에 티켓을 닫습니다               "
+"`[p]close 1m thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 1분 후에 티켓을 닫습니다        "
 
 #: commands\base.py:120
 msgid "Cannot find the owner of this ticket! Maybe it was removed from config?"
