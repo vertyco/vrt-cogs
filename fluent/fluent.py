@@ -23,11 +23,15 @@ class Fluent(commands.Cog):
     """
     Seamless translation between two languages in one channel. Or manual translation to various languages.
 
-    Fluent supports the [Deepl](https://www.deepl.com/pro#developer) tranlsation api.
+    Fluent uses google translate by default, with [Flowery](https://flowery.pw/) as a fallback.
+
+    Fluent also supports the [Deepl](https://www.deepl.com/pro#developer) tranlsation api.
     1. Register your free Deepl account **[Here](https://www.deepl.com/pro#developer)**.
     2. Obtain your API key **[Here](https://www.deepl.com/account/summary)**.
     3. Set your API key with:
     `[p]set api deepl key YOUR_KEY_HERE`
+
+    If a deepl key is set, it will use that before falling back to google translate and then flowery.
     """
 
     __author__ = "Vertyco"
