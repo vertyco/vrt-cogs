@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-26 04:40\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -26,8 +26,7 @@ msgstr "이 버튼은 상호작용할 수 없습니다."
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
-msgstr "\n"
-"다중 패널 기능을 갖춘 티켓 시스템 지원"
+msgstr "지원 티켓 시스템의 다중 패널 기능    "
 
 #: tickets.py:41
 #, docstring
@@ -140,7 +139,7 @@ msgstr "활성 티켓 개요 업데이트\n\n"
 "    guild (discord.Guild): 디스코드 서버\n"
 "    conf (dict): 길드 설정\n\n"
 "Returns:\n"
-"    int: 개요 패널의 메시지 ID"
+"    int: 개요 패널의 메시지 ID    "
 
 #: views.py:38
 msgid "cancel"
