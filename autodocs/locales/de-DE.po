@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-07-25 02:09\n"
+"PO-Revision-Date: 2023-07-26 03:43\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -25,7 +25,7 @@ msgid "\n"
 "    "
 msgstr "\n"
 "Dokumentieren Sie Ihre Koggen mit Leichtigkeit!\n\n"
-"Erstellen Sie mühelos Dokumentationen für jedes Zahnrad im Markdown-Format "
+"Erstellen Sie mühelos Dokumentationen für jedes Zahnrad im Markdown-Format."
 
 #: autodocs.py:35
 msgid "{}\n"
@@ -81,7 +81,7 @@ msgstr "Ausblenden von Befehlen oberhalb einer bestimmten Berechtigungsstufe (Us
 
 #: autodocs.py:126
 msgid "Include a csv with each command isolated per row"
-msgstr "Fügen Sie eine CSV-Datei ein, bei der jeder Befehl pro Zeile isoliert ist"
+msgstr "Fügen Sie eine CSV-Datei ein, bei der jeder Befehl pro Zeile isoliert ist."
 
 #: autodocs.py:141
 #, docstring
@@ -103,14 +103,14 @@ msgstr "\n"
 "Erstelle eine Markdown-Dokumentationsseite für ein Cog und sende sie an Discord.\n\n"
 "**Argumente**\n"
 "`cog_name:           `(str) Der Name des Cogs, für das du die Dokumentation erstellen möchtest (Groß-/Kleinschreibung beachten)\n"
-"`replace_prefix:     `(bool) Wenn True, wird der Platzhalter `prefix` durch den Präfix des Bots ersetzt\n"
-"`replace_botname:    `(bool) Wenn True, wird der Platzhalter `botname` durch den Namen des Bots ersetzt\n"
-"`extended_info:      `(bool) Wenn True, werden zusätzliche Informationen wie Konverter und ihre Dokumentationszeichenfolgen einbezogen\n"
-"`include_hidden:     `(bool) Wenn True, werden versteckte Befehle einbezogen\n"
+"`replace_prefix:     `(bool) Wenn true, wird der Platzhalter `prefix` durch den Präfix des Bots ersetzt\n"
+"`replace_botname:    `(bool) Wenn true, wird der Platzhalter `botname` durch den Namen des Bots ersetzt\n"
+"`extended_info:      `(bool) Wenn true, werden zusätzliche Informationen wie Konverter und ihre Dokumentationszeichenfolgen einbezogen\n"
+"`include_hidden:     `(bool) Wenn true, werden versteckte Befehle einbezogen\n"
 "`privilege_level:    `(str) Verbirgt Befehle über der angegebenen Privilegstufe\n"
 "- (user, mod, admin, guildowner, botowner)\n"
 "`csv_export:         `(bool) Enthält eine CSV-Datei mit jedem Befehl isoliert pro Zeile zur Verwendung als Einbettung\n\n"
-"**Hinweis** Wenn `all` für cog_name angegeben ist, werden für alle derzeit geladenen Nicht-Kern-Cogs Dokumentationen generiert und in einer Zip-Datei verschickt "
+"**Hinweis** Wenn `all` für `cog_name` angegeben ist, werden für alle derzeit geladenen Nicht-Kern-Cogs Dokumentationen generiert und in einer Zip-Datei verschickt        "
 
 #: autodocs.py:163
 msgid "AllCogDocs"
