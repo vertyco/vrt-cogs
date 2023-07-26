@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-25 02:09\n"
+"PO-Revision-Date: 2023-07-26 03:43\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -154,20 +154,20 @@ msgstr "No pude obtener el archivo de Discord"
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr "Su fondo personalizado se ha guardado como"
+msgstr "Su fondo personalizado se ha guardado como "
 
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr "Elimine un fondo predeterminado de la carpeta de fondos del COG"
+msgstr "elimine un fondo predeterminado de la carpeta de fondos del COG"
 
 #: base.py:355
 msgid "I could not find any background images with that name"
-msgstr "No pude encontrar ninguna imagen de fondo con ese nombre."
+msgstr "No pude encontrar ninguna imagen de fondo con ese nombre"
 
 #: base.py:360 base.py:420
 msgid "Could not delete file: "
-msgstr "No se pudo eliminar el archivo:"
+msgstr "No se pudo eliminar el archivo: "
 
 #: base.py:361
 msgid "Background `"
@@ -191,9 +191,9 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Agregue una fuente personalizada al engranaje de Discord.\n\n"
-"        **Argumentos**\n"
-"        `preferred_filename` - Si se proporciona un nombre, se guardará con este nombre en lugar del nombre de archivo.\n"
-"        **Nota:** No incluya la extensión del archivo en el nombre preferido, se agregará automáticamente."
+"**Argumentos**\n"
+"`preferred_filename` - Si se proporciona un nombre, se guardará con este nombre en lugar del nombre de archivo.\n"
+"**Nota:** No incluya la extensión del archivo en el nombre preferido, se agregará automáticamente        "
 
 #: base.py:389
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
@@ -201,7 +201,7 @@ msgstr "Ese no es un formato válido, debe ser extensiones `.ttf` o `.otf`"
 
 #: base.py:404
 msgid "Your custom font file has been saved as "
-msgstr "Su archivo de fuente personalizada se ha guardado como"
+msgstr "Su archivo de fuente personalizada se ha guardado como "
 
 #: base.py:409
 #, docstring
@@ -235,7 +235,8 @@ msgstr "Aquí están los fondos predeterminados actuales, para establecer uno de
 
 #: base.py:448 base.py:477
 msgid "command"
-msgstr "Traduce el siguiente texto al español"
+msgstr "Primera letra en el texto original y la traducción tienen un caso diferente.\n"
+"Por favor, revise su traducción y devuelva solo la versión corregida"
 
 #: base.py:452
 msgid "Could not send background collage, file size may be too large."
@@ -264,7 +265,7 @@ msgid "\n"
 msgstr "\n"
 "Alternar el tipo de imagen de perfil (completa/delgada)\n\n"
 "La versión completa incluye tu saldo, el icono de tu rol y el icono de prestigio.\n"
-"La versión delgada es una versión más pequeña y simplificada "
+"La versión delgada es una versión más pequeña y simplificada.               "
 
 #: base.py:493 base.py:523 base.py:568 base.py:614 base.py:674 base.py:730
 #: base.py:759
@@ -295,7 +296,7 @@ msgstr "\n"
 "Establece un color hexadecimal para tu nombre de usuario.\n\n"
 "Aquí tienes un enlace al selector de colores de Google:\n"
 "**[Selector de colores hexadecimal](https://htmlcolorcodes.com/)**\n\n"
-"Establece a `default` para que el color de tu nombre se genere aleatoriamente cada vez que ejecutes el comando "
+"Establece a `default` para que el color de tu nombre se genere aleatoriamente cada vez que ejecutes el comando        "
 
 #: base.py:532
 msgid "Your name color has been reset to default"
@@ -320,7 +321,7 @@ msgid "\n"
 msgstr "\n"
 "Establezca un color hexadecimal para las estadísticas de su servidor.\n\n"
 "Aquí está el enlace al selector de colores hexadecimal de Google: **[Selector de color hexadecimal](https://htmlcolorcodes.com/)**.\n\n"
-"Establezca en `default` para que el color de su nombre se genere aleatoriamente cada vez que ejecute el comando "
+"Establezca en `default` para que el color de su nombre se genere aleatoriamente cada vez que ejecute el comando        "
 
 #: base.py:577
 msgid "Your stats color has been reset to default"
@@ -338,7 +339,7 @@ msgstr "\n"
 "Establece un color hexadecimal para tu barra de nivel.\n\n"
 "Aquí tienes un enlace al selector de colores hexadecimal de Google:\n"
 "**[Selector de colores hexadecimal](https://htmlcolorcodes.com/)**.\n\n"
-"Establece a `default` para que el color de tu nombre se genere aleatoriamente cada vez que ejecutes el comando "
+"Establece a `default` para que el color de tu nombre se genere aleatoriamente cada vez que ejecutes el comando        "
 
 #: base.py:623
 msgid "Your level bar color has been reset to default"
@@ -378,7 +379,7 @@ msgstr "\n"
 "**Opciones adicionales**\n"
 "- Deja image_url en blanco para volver a usar el banner de tu perfil (o aleatorio si no tienes uno)\n"
 "- `random` seleccionará aleatoriamente de un grupo de fondos por defecto cada vez\n"
-"- `filename` ejecuta `[p]mypf backgrounds` para ver las opciones por defecto que puedes usar incluyendo su nombre de archivo "
+"- `filename` ejecuta `[p]mypf backgrounds` para ver las opciones por defecto que puedes usar incluyendo su nombre de archivo               "
 
 #: base.py:712 base.py:714
 msgid "Your background image has been set!"
@@ -386,7 +387,7 @@ msgstr "¡Tu imagen de fondo ha sido configurada!"
 
 #: base.py:717
 msgid "Your background has been removed since you did not specify a url!"
-msgstr "¡Se ha eliminado tu fondo ya que no especificaste una URL!"
+msgstr "Se ha eliminado tu fondo ya que no especificaste una URL"
 
 #: base.py:722
 #, docstring
@@ -398,7 +399,7 @@ msgid "\n"
 msgstr "\n"
 "Establece un tipo de letra para tu perfil\n\n"
 "Para ver las fuentes disponibles, escribe `[p]myprofile fonts`\n"
-"Para volver a la fuente predeterminada, utiliza `default` para el argumento `font_name` "
+"Para volver a la fuente predeterminada, utiliza `default` para el argumento `font_name`        "
 
 #: base.py:740
 msgid "Your profile font has been reverted to default"
@@ -431,7 +432,7 @@ msgstr "Ver tu perfil"
 
 #: base.py:793
 msgid "No information available yet!"
-msgstr "Aún no hay información disponible"
+msgstr "¡Aún no hay información disponible!"
 
 #: base.py:796
 msgid "I do not have permission to send images to this channel"
@@ -490,9 +491,9 @@ msgid "\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
 msgstr "\n"
-"        ¡Prestigia tu rango!\n"
-"        Una vez que hayas alcanzado el requisito de nivel de prestigio de este servidor, puedes reiniciar tu nivel y experiencia para obtener un nivel de prestigio y cualquier ventaja asociada a él.\n\n"
-"        Si tienes un nivel y experiencia superiores cuando prestigies, tu experiencia y niveles se mantendrán "
+"¡Prestigia tu rango!\n"
+"Una vez que hayas alcanzado el requisito de nivel de prestigio de este servidor, puedes reiniciar tu nivel y experiencia para obtener un nivel de prestigio y cualquier ventaja asociada a él.\n\n"
+"Si tienes un nivel y experiencia superiores cuando prestigies, tu experiencia y niveles se mantendrán               "
 
 #: base.py:948
 msgid "Prestige is disabled on this server!"
@@ -894,7 +895,7 @@ msgstr "Niveles\n"
 
 #: levelup.py:1181
 msgid "`Level "
-msgstr "`nivel"
+msgstr "nivel"
 
 #: levelup.py:1183
 msgid "**Prestige**\n"
@@ -908,7 +909,7 @@ msgstr "`Nivel Req:  `"
 
 #: levelup.py:1193
 msgid "`Prestige "
-msgstr "`Prestigio"
+msgstr "Prestigio"
 
 #: levelup.py:1195
 msgid "LevelUp Settings"
@@ -954,7 +955,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Comandos de administración de Cog\n\n"
-"Restablecer niveles, hacer copia de seguridad y restaurar datos de Cog "
+"Restablecer niveles, hacer copia de seguridad y restaurar datos de Cog               "
 
 #: levelup.py:1278
 #, docstring
@@ -968,7 +969,7 @@ msgstr "\n"
 "Establecer cuánto tiempo mantener las imágenes de perfil en caché\n"
 "Cuando un usuario ejecuta el comando de perfil, su imagen generada se almacenará en caché para ser reutilizada durante X segundos\n\n"
 "Si las incrustaciones de perfil están habilitadas, esta configuración no tendrá ningún efecto\n"
-"Cualquier valor inferior a 5 segundos desactivará efectivamente la caché "
+"Cualquier valor inferior a 5 segundos desactivará efectivamente la caché               "
 
 #: levelup.py:1292
 #, docstring
@@ -1024,7 +1025,7 @@ msgstr "Reinicia la experiencia y el nivel de todos"
 
 #: levelup.py:1343
 msgid "Are you sure you want to reset "
-msgstr "¿Está seguro de que desea restablecer? "
+msgstr "¿Está seguro de que desea restablecer"
 
 #: levelup.py:1343
 msgid " users' stats?"
@@ -1099,7 +1100,7 @@ msgstr "Los perfiles serán estáticos independientemente de si el usuario tiene
 
 #: levelup.py:1394 levelup.py:2827
 msgid "(Enabled)"
-msgstr "Habilitado"
+msgstr "<b>Habilitado</b>"
 
 #: levelup.py:1395
 msgid "Users with animated profiles will render as a gif"
@@ -1122,7 +1123,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Restaurar una copia de seguridad global\n\n"
-"Adjunta el archivo .json al mensaje de comando para importar "
+"Adjunta el archivo .json al mensaje de comando para importar        "
 
 #: levelup.py:1434 levelup.py:1463
 msgid "Attach your backup file to the message when using this command."
@@ -1130,7 +1131,7 @@ msgstr "Adjunte su archivo de respaldo al mensaje al usar este comando."
 
 #: levelup.py:1440
 msgid "This is an invalid global config!"
-msgstr "Esta es una configuración global no válida"
+msgstr "¡Esta es una configuración global no válida!"
 
 #: levelup.py:1450 levelup.py:1476
 msgid "Config restored from backup file!"
