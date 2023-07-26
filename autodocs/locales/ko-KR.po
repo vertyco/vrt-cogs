@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-07-26 04:40\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -25,7 +25,7 @@ msgid "\n"
 "    "
 msgstr "\n"
 "쉽게 코그를 문서화하세요!\n\n"
-"마크다운 형식으로 어떤 코그든지 쉽게 문서를 작성할 수 있습니다.   "
+"마크다운 형식으로 어떤 코그든지 쉽게 문서를 작성할 수 있습니다    "
 
 #: autodocs.py:35
 msgid "{}\n"
@@ -66,7 +66,7 @@ msgstr "모든 \"[p]\"를 봇의 접두사로 대체합니다"
 
 #: autodocs.py:120
 msgid "Replace all occurrences of [botname] with the bots name"
-msgstr "봇이름]의 모든 항목을 봇이름으로 바꿉니다"
+msgstr "봇 이름을 [botname]으로 대체합니다"
 
 #: autodocs.py:121
 msgid "Include extra info like converters and their docstrings"
@@ -100,8 +100,7 @@ msgid "\n"
 "        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
 "        them and sent in a zip file\n"
 "        "
-msgstr "\n"
-"톱니바퀴에 대한 마크다운 문서 페이지를 만들어 Discord로 보내기\n\n"
+msgstr "톱니바퀴에 대한 마크다운 문서 페이지를 만들어 Discord로 보내기\n\n"
 "**인수**\n"
 "`cog_name:           `(문자열) 문서를 만들고자 하는 코그의 이름(대소문자 구분)\n"
 "`replace_prefix:     `(bool) True인 경우, `prefix` 자리 표시자를 봇의 접두사로 대체합니다\n"
@@ -112,7 +111,7 @@ msgstr "\n"
 "- (사용자, 모드, 관리자, 길드 소유자, 봇 소유자)\n"
 "`csv_export:         `(bool) 각 명령을 행별로 분리하여 임베딩으로 사용할 수 있는 csv를 포함합니다\n\n"
 "**참고** cog_name에 `all`이 지정되면, 현재 로드된 모든 비핵심 코그에 대한 문서가 생성되어\n"
-"zip 파일로 전송됩니다               "
+"zip 파일로 전송됩니다        "
 
 #: autodocs.py:163
 msgid "AllCogDocs"
@@ -132,7 +131,7 @@ msgstr "여기 {}에 대한 문서가 있습니다!"
 
 #: converters.py:62
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
-msgstr "슬래시를 사용하지 않고 여러 단어가 필요한 경우 따옴표(예: \"Hello world\")를 사용하여 입력합니다."
+msgstr "슬래시를 사용하지 않고 여러 단어가 필요한 경우, 따옴표를 사용하여 입력합니다. 예: \"Hello world\"."
 
 #: converters.py:65
 msgid "A number without decimal places."
