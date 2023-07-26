@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-25 01:04\n"
+"PO-Revision-Date: 2023-07-25 02:09\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -517,7 +517,7 @@ msgstr ""
 
 #: commands\admin.py:628
 msgid "`Style: `{}\n"
-msgstr ""
+msgstr "`Estilo: {}`\n"
 
 #: commands\admin.py:629
 msgid "`Placeholder: `{}\n"
@@ -679,11 +679,11 @@ msgstr "`ButtonColor: `"
 
 #: commands\admin.py:858
 msgid "`ButtonEmoji:    `"
-msgstr ""
+msgstr "`botónEmoji:    `"
 
 #: commands\admin.py:859
 msgid "`TicketNum:      `"
-msgstr ""
+msgstr "`TicketNum:      `"
 
 #: commands\admin.py:860
 msgid "`Use Threads:    `"
@@ -691,7 +691,7 @@ msgstr "`Hilos de uso:`"
 
 #: commands\admin.py:861
 msgid "`TicketMessages: `"
-msgstr ""
+msgstr "`TicketMessages: `"
 
 #: commands\admin.py:862
 msgid "`TicketName:     `"
@@ -768,7 +768,7 @@ msgstr "`Máximo de entradas: `"
 
 #: commands\admin.py:915
 msgid "`DM Alerts:        `"
-msgstr ""
+msgstr "`DM Alerts:        `"
 
 #: commands\admin.py:916
 msgid "`Users can Rename: `"

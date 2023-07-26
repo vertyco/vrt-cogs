@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:34-0400\n"
-"PO-Revision-Date: 2023-07-18 13:50\n"
+"PO-Revision-Date: 2023-07-25 18:43\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -19,102 +19,102 @@ msgstr ""
 
 #: utils\formatter.py:86
 msgid "None"
-msgstr ""
+msgstr "Hiçbiri"
 
 #: utils\formatter.py:89
 msgid " second"
-msgstr ""
+msgstr " ikinci"
 
 #: utils\formatter.py:91
 msgid " seconds"
-msgstr ""
+msgstr " saniye"
 
 #: utils\formatter.py:94
 msgid " minute"
-msgstr ""
+msgstr " dakika"
 
 #: utils\formatter.py:96
 msgid " minutes"
-msgstr ""
+msgstr " dakika"
 
 #: utils\formatter.py:113
 #, docstring
 msgid "Get all attachments from context"
-msgstr ""
+msgstr "Bağlamdan tüm ekleri alın"
 
 #: utils\formatter.py:132
 msgid "Weekly "
-msgstr ""
+msgstr "Haftalık "
 
 #: utils\formatter.py:135
 msgid "LevelUp "
-msgstr ""
+msgstr "LevelUp "
 
 #: utils\formatter.py:148
 msgid "Voice Leaderboard"
-msgstr ""
+msgstr "Ses Liderlik Tablosu"
 
 #: utils\formatter.py:150
 msgid "Voicetime"
-msgstr ""
+msgstr "Voicetime"
 
 #: utils\formatter.py:155
 msgid "Message Leaderboard"
-msgstr ""
+msgstr "Mesaj Liderlik Tablosu"
 
 #: utils\formatter.py:157
 msgid "Messages"
-msgstr ""
+msgstr "Mesajlar"
 
 #: utils\formatter.py:162
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "Yıldız Liderlik Tablosu"
 
 #: utils\formatter.py:164
 msgid "Stars"
-msgstr ""
+msgstr "Yıldızlar"
 
 #: utils\formatter.py:169
 msgid "Exp Leaderboard"
-msgstr ""
+msgstr "Exp Liderlik Tablosu"
 
 #: utils\formatter.py:171
 msgid "Exp"
-msgstr ""
+msgstr "Exp"
 
 #: utils\formatter.py:177
 msgid "Total "
-msgstr ""
+msgstr "Toplam "
 
 #: utils\formatter.py:178
 msgid "Last Reset: "
-msgstr ""
+msgstr "Son Sıfırlama: "
 
 #: utils\formatter.py:181
 msgid "Next Reset: "
-msgstr ""
+msgstr "Sonraki Sıfırlama: "
 
 #: utils\formatter.py:183
 msgid "Total"
-msgstr ""
+msgstr "Toplam"
 
 #: utils\formatter.py:191
 msgid "There is no data for the weekly "
-msgstr ""
+msgstr "Haftalık veri bulunmamaktadır "
 
 #: utils\formatter.py:191 utils\formatter.py:193
 msgid " leaderboard yet"
-msgstr ""
+msgstr " henüz liderlik tablosu"
 
 #: utils\formatter.py:193
 msgid "There is no data for the "
-msgstr ""
+msgstr "Için herhangi bir veri bulunmamaktadır "
 
 #: utils\formatter.py:199
 msgid "You: "
-msgstr ""
+msgstr "Sen: "
 
 #: utils\formatter.py:256 utils\formatter.py:258
 msgid "Pages "
-msgstr ""
+msgstr "Sayfalar "
 

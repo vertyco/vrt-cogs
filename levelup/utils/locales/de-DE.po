@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:34-0400\n"
-"PO-Revision-Date: 2023-07-25 01:04\n"
+"PO-Revision-Date: 2023-07-26 03:43\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -27,94 +27,94 @@ msgstr " zweite"
 
 #: utils\formatter.py:91
 msgid " seconds"
-msgstr " Sekunden"
+msgstr "Sekunden"
 
 #: utils\formatter.py:94
 msgid " minute"
-msgstr " Minute"
+msgstr "Minute"
 
 #: utils\formatter.py:96
 msgid " minutes"
-msgstr " Minuten"
+msgstr "Minuten"
 
 #: utils\formatter.py:113
 #, docstring
 msgid "Get all attachments from context"
-msgstr ""
+msgstr "Alle Anhänge aus dem Kontext holen"
 
 #: utils\formatter.py:132
 msgid "Weekly "
-msgstr ""
+msgstr "Wöchentlich "
 
 #: utils\formatter.py:135
 msgid "LevelUp "
-msgstr ""
+msgstr "LevelUp "
 
 #: utils\formatter.py:148
 msgid "Voice Leaderboard"
-msgstr ""
+msgstr "Stimmen-Rangliste"
 
 #: utils\formatter.py:150
 msgid "Voicetime"
-msgstr ""
+msgstr "Voicetime"
 
 #: utils\formatter.py:155
 msgid "Message Leaderboard"
-msgstr ""
+msgstr "Nachrichten-Leaderboard"
 
 #: utils\formatter.py:157
 msgid "Messages"
-msgstr ""
+msgstr "Nachrichten"
 
 #: utils\formatter.py:162
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "Star-Leaderboard"
 
 #: utils\formatter.py:164
 msgid "Stars"
-msgstr ""
+msgstr "Sterne"
 
 #: utils\formatter.py:169
 msgid "Exp Leaderboard"
-msgstr ""
+msgstr "Exp-Rangliste"
 
 #: utils\formatter.py:171
 msgid "Exp"
-msgstr ""
+msgstr "Exp"
 
 #: utils\formatter.py:177
 msgid "Total "
-msgstr ""
+msgstr "Insgesamt "
 
 #: utils\formatter.py:178
 msgid "Last Reset: "
-msgstr ""
+msgstr "Letzter Reset: "
 
 #: utils\formatter.py:181
 msgid "Next Reset: "
-msgstr ""
+msgstr "Nächster Reset: "
 
 #: utils\formatter.py:183
 msgid "Total"
-msgstr ""
+msgstr "Insgesamt"
 
 #: utils\formatter.py:191
 msgid "There is no data for the weekly "
-msgstr ""
+msgstr "Es gibt keine Daten für die wöchentliche "
 
 #: utils\formatter.py:191 utils\formatter.py:193
 msgid " leaderboard yet"
-msgstr ""
+msgstr " Rangliste noch nicht verfügbar"
 
 #: utils\formatter.py:193
 msgid "There is no data for the "
-msgstr ""
+msgstr "Es gibt keine Daten für die "
 
 #: utils\formatter.py:199
 msgid "You: "
-msgstr ""
+msgstr "Sie: "
 
 #: utils\formatter.py:256 utils\formatter.py:258
 msgid "Pages "
-msgstr ""
+msgstr "Seiten "
 

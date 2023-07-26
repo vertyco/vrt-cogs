@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-22 18:28\n"
+"PO-Revision-Date: 2023-07-25 17:00\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -20,203 +20,204 @@ msgstr ""
 #: commands\admin.py:24
 #, docstring
 msgid "Base support ticket settings"
-msgstr ""
+msgstr "기본 지원 티켓 설정"
 
 #: commands\admin.py:29 commands\admin.py:36
 #, docstring
 msgid "Ticket Setup Guide"
-msgstr ""
+msgstr "티켓 설정 가이드"
 
 #: commands\admin.py:31
 msgid "To create a support ticket panel, type "
-msgstr ""
+msgstr "지원 티켓 패널을 만들려면 다음과 같이 입력하세요 "
 
 #: commands\admin.py:33
 msgid " <panel_name>`"
-msgstr ""
+msgstr " <패널_이름>`"
 
 #: commands\admin.py:40
 msgid "Set the category ID that new tickets will be created under if using channel tickets.\n"
-msgstr ""
+msgstr "채널 티켓을 사용하는 경우에는 새로운 티켓이 생성될 때 사용할 카테고리 ID를 설정하세요.\n"
 
 #: commands\admin.py:43
 msgid "<panel_name> <category_id>`"
-msgstr ""
+msgstr "<패널_이름> <카테고리_ID>`"
 
 #: commands\admin.py:44
 msgid "Step 1"
-msgstr ""
+msgstr "1단계"
 
 #: commands\admin.py:45
 msgid "Set the channel that the bots ticket panel will be located in.\n"
-msgstr ""
+msgstr "봇 티켓 패널이 위치할 채널을 설정합니다.\n"
 
 #: commands\admin.py:46
 msgid "<panel_name> <channel_id>`"
-msgstr ""
+msgstr "<패널_이름> <채널_ID>`"
 
 #: commands\admin.py:47
 msgid "Step 2"
-msgstr ""
+msgstr "2단계"
 
 #: commands\admin.py:48
 msgid "Set the ID of the bots ticket panel message.\n"
-msgstr ""
+msgstr "봇 티켓 패널 메시지의 ID를 설정하세요.\n"
 
 #: commands\admin.py:49
 msgid "<panel_name> <message_id>`\n"
-msgstr ""
+msgstr "<패널_이름> <메시지_ID>`\n"
 
 #: commands\admin.py:50
 msgid "At this point the ticket panel will be activated, all following steps are for extra customization.\n"
 "If you need a message to add the buttons to, you can use the `{}tickets embed` command.\n"
-msgstr ""
+msgstr "이 시점에서 티켓 패널이 활성화됩니다. 이후의 모든 단계는 추가적인 사용자 정의를 위한 것입니다.\n"
+"버튼을 추가할 메시지가 필요하면 `{}tickets embed` 명령을 사용할 수 있습니다.\n"
 
 #: commands\admin.py:55
 msgid "If the bot is having trouble finding the message, run the command in the same channel as it."
-msgstr ""
+msgstr "봇이 메시지를 찾는 데 문제가 있는 경우, 봇과 동일한 채널에서 명령을 실행하세요."
 
 #: commands\admin.py:58
 msgid "Step 3"
-msgstr ""
+msgstr "3단계"
 
 #: commands\admin.py:59
 msgid "Set the text of the ticket panel button.\n"
-msgstr ""
+msgstr "티켓 패널 버튼의 텍스트를 설정하세요.\n"
 
 #: commands\admin.py:60
 msgid "<panel_name> <button_text>`"
-msgstr ""
+msgstr "<패널_이름> <버튼_텍스트>`"
 
 #: commands\admin.py:61
 msgid "Button Text"
-msgstr ""
+msgstr "버튼 텍스트"
 
 #: commands\admin.py:62
 msgid "Set the ticket panel button color.\n"
-msgstr ""
+msgstr "티켓 패널 버튼 색상을 설정합니다.\n"
 
 #: commands\admin.py:63
 msgid "Valid colors are "
-msgstr ""
+msgstr "유효한 색상은 다음과 같습니다 "
 
 #: commands\admin.py:64
 msgid "<panel_name> <button_color>`"
-msgstr ""
+msgstr "<패널_이름> <버튼_색상>`"
 
 #: commands\admin.py:65
 msgid "Button Color"
-msgstr ""
+msgstr "버튼 색상"
 
 #: commands\admin.py:66
 msgid "Set the button emoji for the ticket panel.\n"
-msgstr ""
+msgstr "티켓 패널의 버튼 이모지를 설정하세요.\n"
 
 #: commands\admin.py:67
 msgid "<panel_name> <emoji>`"
-msgstr ""
+msgstr "<panel_name> <emoji>`"
 
 #: commands\admin.py:68
 msgid "Button Emoji"
-msgstr ""
+msgstr "버튼 이모티콘"
 
 #: commands\admin.py:70
 msgid "Use threads instead of channels for tickets\n"
-msgstr ""
+msgstr "티켓에 채널 대신 스레드를 사용하세요.\n"
 
 #: commands\admin.py:71 commands\admin.py:75 commands\admin.py:79
 msgid "<panel_name>`"
-msgstr ""
+msgstr "<패널_이름>`"
 
 #: commands\admin.py:72
 msgid "Thread Tickets"
-msgstr ""
+msgstr "스레드 티켓"
 
 #: commands\admin.py:74
 msgid "Add a message the bot sends to the user in their ticket.\n"
-msgstr ""
+msgstr "사용자 티켓에 봇이 보내는 메시지를 추가하세요.\n"
 
 #: commands\admin.py:76
 msgid "Ticket Messages"
-msgstr ""
+msgstr "티켓 메시지"
 
 #: commands\admin.py:78
 msgid "View and remove a messages the bot sends to the user in their ticket.\n"
-msgstr ""
+msgstr "사용자에게 티켓에서 봇이 보내는 메시지를 보고 삭제하세요.\n"
 
 #: commands\admin.py:80
 msgid "Remove/View Ticket Messages"
-msgstr ""
+msgstr "티켓 메시지 삭제/보기"
 
 #: commands\admin.py:82
 msgid "Set the naming format for ticket channels that are opened.\n"
-msgstr ""
+msgstr "개설되는 티켓 채널의 이름 지정 형식을 설정합니다.\n"
 
 #: commands\admin.py:83
 msgid "<panel_name> <name_format>`"
-msgstr ""
+msgstr "<패널_이름> <이름_형식>`"
 
 #: commands\admin.py:84
 msgid "Ticket Channel Name"
-msgstr ""
+msgstr "티켓 채널 이름"
 
 #: commands\admin.py:85
 msgid "Set log channel for a ticket panel.\n"
-msgstr ""
+msgstr "티켓 패널의 로그 채널을 설정합니다.\n"
 
 #: commands\admin.py:86
 msgid "<panel_name> <channel>`"
-msgstr ""
+msgstr "<패널_이름> <채널>`"
 
 #: commands\admin.py:87
 msgid "Log Channel"
-msgstr ""
+msgstr "로그 채널"
 
 #: commands\admin.py:89
 msgid "Tip: you can create multiple support panels using the same message for a multi-button panel"
-msgstr ""
+msgstr "팁: 여러 개의 지원 패널을 만들기 위해 동일한 메시지를 사용하여 다중 버튼 패널을 생성할 수 있습니다"
 
 #: commands\admin.py:97
 #, docstring
 msgid "Add a support ticket panel"
-msgstr ""
+msgstr "지원 티켓 패널을 추가하세요"
 
 #: commands\admin.py:100
 msgid " Panel Saved"
-msgstr ""
+msgstr " 패널 저장되었습니다"
 
 #: commands\admin.py:101
 msgid "Your panel has been added and will need to be configured."
-msgstr ""
+msgstr "패널이 추가되었으므로 구성해야 합니다."
 
 #: commands\admin.py:106
 msgid "Panel already exists!"
-msgstr ""
+msgstr "패널이 이미 존재합니다!"
 
 #: commands\admin.py:117
 #, docstring
 msgid "Set the category ID for a ticket panel"
-msgstr ""
+msgstr "티켓 패널의 카테고리 ID를 설정하세요"
 
 #: commands\admin.py:121
 msgid "I need the `manage channels` permission to set this category"
-msgstr ""
+msgstr "이 카테고리를 설정하려면 `채널 관리` 권한이 필요합니다"
 
 #: commands\admin.py:124
 msgid "I need `manage permissions` enabled in this category"
-msgstr ""
+msgstr "이 카테고리에서 `관리 권한`이 활성화되어 있어야 합니다"
 
 #: commands\admin.py:126
 msgid "I need the `attach files` permission to set this category"
-msgstr ""
+msgstr "이 카테고리를 설정하려면 `파일 첨부` 권한이 필요합니다"
 
 #: commands\admin.py:128
 msgid "I cannot see that category!"
-msgstr ""
+msgstr "해당 카테고리가 보이지 않습니다!"
 
 #: commands\admin.py:130
 msgid "I cannot see message history in that category!"
-msgstr ""
+msgstr "해당 카테고리의 메시지 기록을 볼 수 없습니다!"
 
 #: commands\admin.py:133 commands\admin.py:153 commands\admin.py:168
 #: commands\admin.py:193 commands\admin.py:215 commands\admin.py:242
@@ -226,24 +227,24 @@ msgstr ""
 #: commands\admin.py:1041 commands\admin.py:1081 commands\admin.py:1098
 #: commands\admin.py:1111
 msgid "Panel does not exist!"
-msgstr ""
+msgstr "패널이 존재하지 않습니다!"
 
 #: commands\admin.py:136
 msgid "New tickets will now be opened under that category!"
-msgstr ""
+msgstr "이제 해당 카테고리에서 새로운 티켓이 열릴 것입니다!"
 
 #: commands\admin.py:145
 #, docstring
 msgid "Set the channel ID where a ticket panel is located"
-msgstr ""
+msgstr "티켓 패널이 위치한 채널 ID를 설정하세요"
 
 #: commands\admin.py:148 commands\admin.py:326
 msgid "I cannot see that channel!"
-msgstr ""
+msgstr "해당 채널이 보이지 않습니다!"
 
 #: commands\admin.py:150 commands\admin.py:328
 msgid "I cannot see message history in that channel!"
-msgstr ""
+msgstr "해당 채널에서 메시지 기록을 볼 수 없습니다!"
 
 #: commands\admin.py:159
 #, docstring
@@ -251,50 +252,52 @@ msgid "\n"
 "        Set the message ID of a ticket panel\n"
 "        Run this command in the same channel as the ticket panel message\n"
 "        "
-msgstr ""
+msgstr "\n"
+"티켓 패널의 메시지 ID를 설정하세요\n"
+"이 명령은 티켓 패널 메시지와 동일한 채널에서 실행하세요 "
 
 #: commands\admin.py:170
 msgid "Category ID must be set for this panel first!"
-msgstr ""
+msgstr "먼저 이 패널에 카테고리 ID를 설정해야 합니다!"
 
 #: commands\admin.py:180
 #, docstring
 msgid "Set the button text for a support ticket panel"
-msgstr ""
+msgstr "지원 티켓 패널의 버튼 텍스트를 설정하세요"
 
 #: commands\admin.py:184
 msgid "The text content of a button must be less than 80 characters!"
-msgstr ""
+msgstr "버튼의 텍스트 콘텐츠는 80자 미만이어야 합니다!"
 
 #: commands\admin.py:188
 msgid "This is what your button will look like with this text!"
-msgstr ""
+msgstr "이 텍스트가 표시된 버튼의 모습은 다음과 같습니다!"
 
 #: commands\admin.py:200
 #, docstring
 msgid "Set the button color for a support ticket panel"
-msgstr ""
+msgstr "지원 티켓 패널의 버튼 색상을 설정하세요"
 
 #: commands\admin.py:206
 msgid " is not valid, must be one of the following\n"
-msgstr ""
+msgstr " 가 유효하지 않습니다. 다음 중 하나여야 합니다.\n"
 
 #: commands\admin.py:210
 msgid "This is what your button will look like with this color!"
-msgstr ""
+msgstr "이 색상을 사용하면 버튼이 이렇게 생깁니다!"
 
 #: commands\admin.py:228
 #, docstring
 msgid "Set the button emoji for a support ticket panel"
-msgstr ""
+msgstr "지원 티켓 패널에 버튼 이모지를 설정하세요"
 
 #: commands\admin.py:233
 msgid "This is what your button will look like with this emoji!"
-msgstr ""
+msgstr "이 이모티콘을 사용하면 버튼이 이렇게 생깁니다!"
 
 #: commands\admin.py:238
 msgid "Failed to create test button. Error:\n"
-msgstr ""
+msgstr "테스트 버튼을 만들지 못했습니다. 오류입니다:\n"
 
 #: commands\admin.py:249
 #, docstring
@@ -310,79 +313,89 @@ msgid "\n"
 "        `{time}` - hh-mm AM/PM according to bot host system time\n\n"
 "        You can set this to {default} to use default \"Ticket-Username\n"
 "        "
-msgstr ""
+msgstr "\n"
+"패널의 기본 티켓 채널 이름을 설정하세요.\n\n"
+"이름에 다음을 포함할 수 있습니다.\n"
+"`{num}` - 티켓 번호\n"
+"`{user}` - 사용자 이름\n"
+"`{displayname}` - 사용자의 표시 이름\n"
+"`{id}` - 사용자의 ID\n"
+"`{shortdate}` - mm-dd\n"
+"`{longdate}` - mm-dd-yyyy\n"
+"`{time}` - 봇 호스트 시스템 시간에 따른 hh-mm AM/PM\n\n"
+"기본 \"티켓-사용자이름\"을 사용하려면 {default}로 설정하세요 "
 
 #: commands\admin.py:274
 #, docstring
 msgid "Toggle whether a certain panel uses threads or channels"
-msgstr ""
+msgstr "특정 패널에서 스레드 또는 채널 사용 여부를 전환하세요"
 
 #: commands\admin.py:281
 msgid "Set a panel channel first!"
-msgstr ""
+msgstr "먼저 패널 채널을 설정하세요!"
 
 #: commands\admin.py:284
 msgid "I am missing the `Create Private Threads` permission!"
-msgstr ""
+msgstr "`비공개 스레드 만들기` 권한이 없습니다!"
 
 #: commands\admin.py:286
 msgid "I am missing the `Send Messages in Threads` permission!"
-msgstr ""
+msgstr "저는 `스레드에서 메시지 보내기` 권한이 없습니다!"
 
 #: commands\admin.py:290
 msgid "The {} panel will no longer use threads"
-msgstr ""
+msgstr "패널에서 더 이상 {} 스레드를 사용하지 않습니다"
 
 #: commands\admin.py:293
 msgid "The {} panel will now use threads"
-msgstr ""
+msgstr "이제 {} 패널에서 스레드를 사용합니다"
 
 #: commands\admin.py:298
 #, docstring
 msgid "Throw a modal when the close button is clicked to enter a reason"
-msgstr ""
+msgstr "닫기 버튼을 클릭하면 이유를 입력하기 위해 모달을 띄우세요"
 
 #: commands\admin.py:307
 msgid "The {} panel will no longer show a close reason modal"
-msgstr ""
+msgstr "{} 패널에 더 이상 닫기 이유 모달이 표시되지 않습니다"
 
 #: commands\admin.py:312
 msgid "The {} panel will now show a close reason modal"
-msgstr ""
+msgstr "이제 {} 패널에 닫기 이유 모달이 표시됩니다"
 
 #: commands\admin.py:323
 #, docstring
 msgid "Set the logging channel for each panel's tickets"
-msgstr ""
+msgstr "각 패널의 티켓에 대한 로깅 채널을 설정하세요"
 
 #: commands\admin.py:330
 msgid "I cannot send messages in that channel!"
-msgstr ""
+msgstr "해당 채널에서 메시지를 보낼 수 없습니다!"
 
 #: commands\admin.py:332
 msgid "I cannot embed links in that channel!"
-msgstr ""
+msgstr "해당 채널에 링크를 삽입할 수 없습니다!"
 
 #: commands\admin.py:334
 msgid "I cannot attach files in that channel!"
-msgstr ""
+msgstr "해당 채널에 파일을 첨부할 수 없습니다!"
 
 #: commands\admin.py:344
 #, docstring
 msgid "Set a title for a ticket panel's modal"
-msgstr ""
+msgstr "티켓 패널의 모달 제목 설정하기"
 
 #: commands\admin.py:346
 msgid "The max length is 45!"
-msgstr ""
+msgstr "최대 길이는 45입니다!"
 
 #: commands\admin.py:353
 msgid "Modal title set!"
-msgstr ""
+msgstr "모달 제목이 설정되었습니다!"
 
 #: commands\admin.py:356
 msgid "Modal title removed!"
-msgstr ""
+msgstr "모달 제목이 제거되었습니다!"
 
 #: commands\admin.py:361
 #, docstring
@@ -398,137 +411,147 @@ msgid "\n"
 "        it won't be shown in the modal and should not have spaces in it\n\n\n"
 "        Specify an existing field name to delete a modal field (non-case-sensitive)\n"
 "        "
-msgstr ""
+msgstr "\n"
+"티켓 패널에 모달 필드를 추가하세요.\n\n"
+"사용자가 티켓을 열기 전에 작성할 수 있는 모달당 최대 5개의 필드가 티켓 패널에 있을 수 있습니다.\n"
+"모달 필드가 추가되고 필수 필드가 있는 경우, 사용자는 티켓을 열기 전에 이 필드를 작성해야 합니다.\n\n"
+"모달에 대한 토글은 없으며, 패널에 모달이 있으면 모달을 사용하고, 없으면 그냥 티켓을 엽니다.\n"
+"티켓이 열리면 티켓 메시지 아래에 모달 필드 응답을 임베드로 전송합니다.\n\n"
+"**참고**\n"
+"`field_name`은 구성에 저장된 필드의 이름일 뿐입니다.\n"
+"모달에 표시되지 않으며 공백이 없어야 합니다.\n\n"
+"기존 필드 이름을 지정하여 모달 필드를 삭제하세요(대소문자 구분 없음) "
 
 #: commands\admin.py:400
 msgid "Field for {} panel has been removed!"
-msgstr ""
+msgstr "패널의 {} 필드가 제거되었습니다!"
 
 #: commands\admin.py:420
 msgid "type 'cancel' to cancel at any time"
-msgstr ""
+msgstr "언제든지 취소하려면 '취소'를 입력하세요"
 
 #: commands\admin.py:429
 msgid "What would you like the field label to be? (45 chars or less)"
-msgstr ""
+msgstr "필드 레이블은 무엇으로 하시겠습니까? (45자 이하)"
 
 #: commands\admin.py:439
 msgid "Modal field labels must be 45 characters or less!"
-msgstr ""
+msgstr "모달 필드 레이블은 45자 이하여야 합니다!"
 
 #: commands\admin.py:452
 msgid "What style would you like the text box to be? (long/short)"
-msgstr ""
+msgstr "텍스트 상자를 어떤 스타일로 만들고 싶으신가요? (긴/짧은)"
 
 #: commands\admin.py:462
 msgid "Style must be long or short!"
-msgstr ""
+msgstr "스타일은 길거나 짧아야 합니다!"
 
 #: commands\admin.py:471
 msgid "Would you like to set a placeholder for the text field?\n"
 "This is text that shows up in the box before the user types."
-msgstr ""
+msgstr "텍스트 필드에 플레이스홀더를 설정하시겠습니까?\n"
+"사용자가 입력하기 전에 상자에 표시되는 텍스트입니다."
 
 #: commands\admin.py:483
 msgid "Type your desired placeholder below (100 chars max)"
-msgstr ""
+msgstr "아래에 원하는 자리 표시자를 입력하세요 (최대 100자)"
 
 #: commands\admin.py:493
 msgid "Placeholders must be 100 characters or less!"
-msgstr ""
+msgstr "자리 표시자는 100자 이내여야 합니다!"
 
 #: commands\admin.py:502
 msgid "Would you like to set a default value for the text field?"
-msgstr ""
+msgstr "텍스트 필드의 기본값을 설정하시겠습니까?"
 
 #: commands\admin.py:511
 msgid "Type your desired default value below"
-msgstr ""
+msgstr "아래에 원하는 기본값을 입력하세요"
 
 #: commands\admin.py:524
 msgid "Would you like to make this field required?"
-msgstr ""
+msgstr "이 필드를 필수로 설정하시겠습니까?"
 
 #: commands\admin.py:537
 msgid "Would you like to set a minimum length for this field?"
-msgstr ""
+msgstr "이 필드에 대해 최소 길이를 설정하시겠습니까?"
 
 #: commands\admin.py:546
 msgid "Type the minimum length for this field below (less than 4000)"
-msgstr ""
+msgstr "아래에 이 필드의 최소 길이를 입력하세요 (4000 미만)"
 
 #: commands\admin.py:556 commands\admin.py:586
 msgid "That is not a number!"
-msgstr ""
+msgstr "숫자가 아닙니다!"
 
 #: commands\admin.py:567
 msgid "Would you like to set a maximum length for this field?"
-msgstr ""
+msgstr "이 필드에 대해 최대 길이를 설정하시겠습니까?"
 
 #: commands\admin.py:576
 msgid "Type the maximum length for this field below (up to 4000)"
-msgstr ""
+msgstr "아래에 이 필드의 최대 길이를 입력하세요 (최대 4000)"
 
 #: commands\admin.py:604
 msgid "Your modal field has been added!"
-msgstr ""
+msgstr "모달 필드가 추가되었습니다!"
 
 #: commands\admin.py:606
 msgid "Your modal field has been edited!"
-msgstr ""
+msgstr "모달 필드가 편집되었습니다!"
 
 #: commands\admin.py:616 commands\admin.py:772
 #, docstring
 msgid "View/Delete a ticket message for a support ticket panel"
-msgstr ""
+msgstr "지원 티켓 패널에서 티켓 메시지를 보거나 삭제하세요"
 
 #: commands\admin.py:623
 msgid "This panel does not have any modal fields set!"
-msgstr ""
+msgstr "이 패널에는 모달 필드가 설정되어 있지 않습니다!"
 
 #: commands\admin.py:627
 msgid "`Label: `{}\n"
-msgstr ""
+msgstr "`라벨: `{}\n"
 
 #: commands\admin.py:628
 msgid "`Style: `{}\n"
-msgstr ""
+msgstr "`스타일: `{}\n"
 
 #: commands\admin.py:629
 msgid "`Placeholder: `{}\n"
-msgstr ""
+msgstr "`자리표시자: `{}\n"
 
 #: commands\admin.py:630
 msgid "`Default:     `{}\n"
-msgstr ""
+msgstr "`기본값입니다:     `{}\n"
 
 #: commands\admin.py:631
 msgid "`Required:    `{}\n"
-msgstr ""
+msgstr "`필수:    `{}\n"
 
 #: commands\admin.py:632
 msgid "`Min Length:  `{}\n"
-msgstr ""
+msgstr "`최소 길이:  `{}\n"
 
 #: commands\admin.py:633
 msgid "`Max Length:  `{}\n"
-msgstr ""
+msgstr "`최대 길이:  `{}\n"
 
 #: commands\admin.py:636 commands\admin.py:790
 msgid "Page"
-msgstr ""
+msgstr "페이지"
 
 #: commands\admin.py:639
 msgid "Modal Fields for {}"
-msgstr ""
+msgstr "{}에 대한 모달 필드"
 
 #: commands\admin.py:657
 msgid "Editing {} modal field for {}!"
-msgstr ""
+msgstr "{} 모달 필드를 {}에 대해 편집 중입니다!"
 
 #: commands\admin.py:669
 msgid "Modal field has been deleted from "
-msgstr ""
+msgstr "모달 필드가 삭제되었습니다 "
 
 #: commands\admin.py:691
 #, docstring
@@ -540,265 +563,272 @@ msgid "\n"
 "        `{id}` - This is the ID of the user that created the ticket\n\n"
 "        The bot will walk you through a few steps to set up the embed\n"
 "        "
-msgstr ""
+msgstr "\n"
+"티켓이 열릴 때 보낼 메시지 임베드를 추가하세요.\n\n"
+"다음 중 하나를 임베드에 포함하여 메시지가 전송될 때 해당 값으로 대체할 수 있습니다.\n"
+"`{사용자 이름}` - 사용자의 Discord 사용자 이름\n"
+"`{멘션}` - 사용자를 멘션합니다\n"
+"`{id}` - 티켓을 생성한 사용자의 ID입니다.\n\n"
+"봇이 임베드 설정을 위해 몇 가지 단계를 안내할 것입니다 "
 
 #: commands\admin.py:705
 msgid "type 'cancel' to cancel the setup"
-msgstr ""
+msgstr "설정을 취소하려면 '취소'를 입력하세요"
 
 #: commands\admin.py:709
 msgid "Would you like this ticket embed to have a title?"
-msgstr ""
+msgstr "티켓 임베드에 제목을 붙이시겠습니까?"
 
 #: commands\admin.py:717
 msgid "Type your desired title below"
-msgstr ""
+msgstr "아래에 원하는 제목을 입력하세요"
 
 #: commands\admin.py:722 commands\admin.py:735 commands\admin.py:738
 #: commands\admin.py:756
 msgid "Ticket message addition cancelled"
-msgstr ""
+msgstr "티켓 메시지 추가가 취소되었습니다"
 
 #: commands\admin.py:728
 msgid "Type your desired ticket message below"
-msgstr ""
+msgstr "아래에 원하는 티켓 메시지를 입력하세요"
 
 #: commands\admin.py:734 commands\admin.py:755 commands\admin.py:1329
 #: commands\admin.py:1348 commands\admin.py:1367
 msgid "cancel"
-msgstr ""
+msgstr "취소"
 
 #: commands\admin.py:742
 msgid "Would you like this ticket embed to have a footer?"
-msgstr ""
+msgstr "이 티켓 임베드에 바닥글을 추가하시겠습니까?"
 
 #: commands\admin.py:751
 msgid "Type your footer"
-msgstr ""
+msgstr "바닥글을 입력하세요"
 
 #: commands\admin.py:766
 msgid "Your ticket message has been added!"
-msgstr ""
+msgstr "티켓 메시지가 추가되었습니다!"
 
 #: commands\admin.py:779
 msgid "This panel does not have any messages added!"
-msgstr ""
+msgstr "이 패널에는 추가된 메시지가 없습니다!"
 
 #: commands\admin.py:782
 msgid "**Title**\n"
-msgstr ""
+msgstr "**제목**\n"
 
 #: commands\admin.py:783
 msgid "**Description**\n"
-msgstr ""
+msgstr "**설명**\n"
 
 #: commands\admin.py:784
 msgid "**Footer**\n"
-msgstr ""
+msgstr "**푸터**\n"
 
 #: commands\admin.py:786 commands\admin.py:799
 msgid "Ticket Messages for: "
-msgstr ""
+msgstr "티켓 메시지 대상: "
 
 #: commands\admin.py:802
 msgid "Ticket message has been deleted from "
-msgstr ""
+msgstr "티켓 메시지가 삭제되었습니다 "
 
 #: commands\admin.py:816
 #, docstring
 msgid "View/Delete currently configured support ticket panels"
-msgstr ""
+msgstr "현재 구성된 지원 티켓 패널을 보거나 삭제하세요"
 
 #: commands\admin.py:820
 msgid "There are no panels available!\n"
 "Use "
-msgstr ""
+msgstr "사용 가능한 패널이 없습니다!\n"
+"사용하세요 "
 
 #: commands\admin.py:822
 msgid "to create one."
-msgstr ""
+msgstr "하나를 생성하려면 클릭하세요."
 
 #: commands\admin.py:834
 msgid "(alt)"
-msgstr ""
+msgstr "(alt)를 한국어로 번역하면 \"(구)\"입니다"
 
 #: commands\admin.py:853
 msgid "`Category:       `"
-msgstr ""
+msgstr "`카테고리:       `"
 
 #: commands\admin.py:854
 msgid "`Channel:        `"
-msgstr ""
+msgstr "`채널:        `"
 
 #: commands\admin.py:855
 msgid "`MessageID:      `"
-msgstr ""
+msgstr "`메시지ID:      `"
 
 #: commands\admin.py:856
 msgid "`ButtonText:     `"
-msgstr ""
+msgstr "`버튼 텍스트:     `"
 
 #: commands\admin.py:857
 msgid "`ButtonColor:    `"
-msgstr ""
+msgstr "`버튼 색상: `"
 
 #: commands\admin.py:858
 msgid "`ButtonEmoji:    `"
-msgstr ""
+msgstr "`버튼이모지: `"
 
 #: commands\admin.py:859
 msgid "`TicketNum:      `"
-msgstr ""
+msgstr "`티켓번호:      `"
 
 #: commands\admin.py:860
 msgid "`Use Threads:    `"
-msgstr ""
+msgstr "`스레드를 사용합니다:    `"
 
 #: commands\admin.py:861
 msgid "`TicketMessages: `"
-msgstr ""
+msgstr "`티켓 메시지: `"
 
 #: commands\admin.py:862
 msgid "`TicketName:     `"
-msgstr ""
+msgstr "`티켓 이름:     `"
 
 #: commands\admin.py:863
 msgid "`Modal Fields:   `"
-msgstr ""
+msgstr "`모달 필드:   `"
 
 #: commands\admin.py:864
 msgid "`Modal Title:    `"
-msgstr ""
+msgstr "`모달 제목:    `"
 
 #: commands\admin.py:865
 msgid "`LogChannel:     `"
-msgstr ""
+msgstr "`로그 채널: `"
 
 #: commands\admin.py:866
 msgid "`Priority:       `"
-msgstr ""
+msgstr "`우선순위:       `"
 
 #: commands\admin.py:867
 msgid "`Button Row:     `"
-msgstr ""
+msgstr "`버튼 행:     `"
 
 #: commands\admin.py:868
 msgid "`Reason Modal:   `"
-msgstr ""
+msgstr "`이유 모달:   `"
 
 #: commands\admin.py:871
 msgid "Panel: "
-msgstr ""
+msgstr "패널: "
 
 #: commands\admin.py:876
 msgid "Panel Roles(Mention)"
-msgstr ""
+msgstr "패널 역할(언급)"
 
 #: commands\admin.py:878
 msgid "Required Roles to Open"
-msgstr ""
+msgstr "열기 위해 필요한 역할들입니다"
 
 #: commands\admin.py:879
 msgid "Page "
-msgstr ""
+msgstr "페이지 "
 
 #: commands\admin.py:891
 msgid " panel has been deleted!"
-msgstr ""
+msgstr " 패널이 삭제되었습니다!"
 
 #: commands\admin.py:899
 msgid "There are no more panels configured!"
-msgstr ""
+msgstr "더 이상 구성된 패널이 없습니다!"
 
 #: commands\admin.py:906
 #, docstring
 msgid "View support ticket settings"
-msgstr ""
+msgstr "지원 티켓 설정 보기"
 
 #: commands\admin.py:909
 msgid "hours"
-msgstr ""
+msgstr "시간"
 
 #: commands\admin.py:910
 msgid "hour"
-msgstr ""
+msgstr "시간"
 
 #: commands\admin.py:913
 msgid "Disabled"
-msgstr ""
+msgstr "장애인"
 
 #: commands\admin.py:914
 msgid "`Max Tickets:      `"
-msgstr ""
+msgstr "`최대 티켓 수: `"
 
 #: commands\admin.py:915
 msgid "`DM Alerts:        `"
-msgstr ""
+msgstr "`DM 알림:        `"
 
 #: commands\admin.py:916
 msgid "`Users can Rename: `"
-msgstr ""
+msgstr "`사용자는 이름을 바꿀 수 있습니다: `"
 
 #: commands\admin.py:917
 msgid "`Users can Close:  `"
-msgstr ""
+msgstr "`사용자가 닫을 수 있습니다:  `"
 
 #: commands\admin.py:918
 msgid "`Users can Manage: `"
-msgstr ""
+msgstr "`사용자가 관리할 수 있습니다: `"
 
 #: commands\admin.py:919
 msgid "`Save Transcripts: `"
-msgstr ""
+msgstr "`대본을 저장합니다: `"
 
 #: commands\admin.py:920
 msgid "`Auto Close:       `"
-msgstr ""
+msgstr "`자동 닫기:       `"
 
 #: commands\admin.py:920
 msgid "On"
-msgstr ""
+msgstr "켜기"
 
 #: commands\admin.py:920
 msgid "Off"
-msgstr ""
+msgstr "꺼짐"
 
 #: commands\admin.py:921
 msgid "`NoResponseDelete: `"
-msgstr ""
+msgstr "`NoResponseDelete: `"
 
 #: commands\admin.py:938
 msgid "Invalid"
-msgstr ""
+msgstr "유효하지 않습니다"
 
 #: commands\admin.py:940
 msgid "Tickets Core Settings"
-msgstr ""
+msgstr "티켓 핵심 설정"
 
 #: commands\admin.py:945
 msgid "Support Roles(Mention)"
-msgstr ""
+msgstr "지원 역할(언급)"
 
 #: commands\admin.py:947
 msgid "Blacklist"
-msgstr ""
+msgstr "블랙리스트"
 
 #: commands\admin.py:949
 msgid "Thread Ticket Auto-Add"
-msgstr ""
+msgstr "스레드 티켓 자동 추가"
 
 #: commands\admin.py:950
 msgid "Auto-add support and panel roles to tickets that use threads: **{}**"
-msgstr ""
+msgstr "스레드를 사용하는 티켓에 자동으로 지원 및 패널 역할을 추가합니다: **{}**"
 
 #: commands\admin.py:958
 #, docstring
 msgid "Set the max tickets a user can have open at one time of any kind"
-msgstr ""
+msgstr "사용자가 어떤 종류의 티켓이든 한 번에 열 수 있는 최대 티켓 수를 설정하세요"
 
 #: commands\admin.py:960
 msgid "Max ticket amount must be greater than 0!"
-msgstr ""
+msgstr "최대 티켓 수량은 0보다 커야 합니다!"
 
 #: commands\admin.py:971
 #, docstring
@@ -807,15 +837,18 @@ msgid "\n"
 "        **Optional**: include `true` for mention to have that role mentioned when a ticket is opened\n\n"
 "        To remove a role, simply run this command with it again to remove it\n"
 "        "
-msgstr ""
+msgstr "\n"
+"티켓 지원 역할을 추가/제거합니다 (한 번에 하나씩)\n\n"
+"**선택 사항**: 티켓이 열릴 때 해당 역할이 언급되도록 멘션에 `true`를 포함하세요\n\n"
+"역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하기만 하면 됩니다 "
 
 #: commands\admin.py:983
 msgid "{} has been removed from support roles"
-msgstr ""
+msgstr "지원 역할에서 {}이(가) 제거되었습니다"
 
 #: commands\admin.py:987
 msgid " has been added to support roles"
-msgstr ""
+msgstr " 지원 역할에 추가되었습니다"
 
 #: commands\admin.py:998
 #, docstring
@@ -826,15 +859,20 @@ msgid "\n"
 "        These roles are a specialized subset of the main support roles.\n"
 "        Use this role type if you want to isolate specific groups to a certain panel.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"특정 패널에 대한 역할을 추가/제거하세요.\n\n"
+"역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하면 됩니다.\n\n"
+"**선택 사항**: 티켓이 열릴 때 해당 역할이 언급되도록 멘션에 `true`를 포함하세요.\n\n"
+"이러한 역할은 기본 지원 역할의 전문화된 하위 집합입니다.\n"
+"특정 그룹을 특정 패널에 격리하려는 경우에는 이 역할 유형을 사용하세요 "
 
 #: commands\admin.py:1019
 msgid "{} has been removed from the {} panel roles"
-msgstr ""
+msgstr "{}이(가) {} 패널 역할에서 제거되었습니다"
 
 #: commands\admin.py:1027
 msgid " has been added to the {} panel roles"
-msgstr ""
+msgstr " 패널 역할에 {}이(가) 추가되었습니다"
 
 #: commands\admin.py:1033
 #, docstring
@@ -842,15 +880,17 @@ msgid "\n"
 "        Add/Remove roles required to open a ticket for a specific panel\n\n"
 "        Specify the same role to remove it\n"
 "        "
-msgstr ""
+msgstr "\n"
+"특정 패널에 대한 티켓을 여는 데 필요한 역할을 추가/제거하세요\n\n"
+"제거하려면 동일한 역할을 지정하세요 "
 
 #: commands\admin.py:1048
 msgid "{} has been removed from the {} panel's required open roles"
-msgstr ""
+msgstr "{}이(가) {} 패널의 필수 개방 역할에서 제거되었습니다"
 
 #: commands\admin.py:1056
 msgid " has been added to the {} panel's required open roles"
-msgstr ""
+msgstr " 패널의 필수 개방 역할에 {0}이(가) 추가되었습니다"
 
 #: commands\admin.py:1068
 #, docstring
@@ -861,45 +901,50 @@ msgid "\n"
 "        If the panel is a channel type and a channel is used, the bot will use the category associated with the channel.\n\n"
 "        To remove the alt channel, specify the existing one\n"
 "        "
-msgstr ""
+msgstr "\n"
+"패널을 위해 티켓이 열릴 대체 채널을 설정하세요.\n\n"
+"패널이 스레드를 사용하는 경우, 일반 텍스트 채널을 사용해야 합니다.\n"
+"패널이 채널을 사용하는 경우, 카테고리를 사용해야 합니다.\n\n"
+"패널이 채널 유형이고 채널을 사용하는 경우, 봇은 해당 채널과 연결된 카테고리를 사용합니다.\n\n"
+"대체 채널을 제거하려면 기존 채널을 지정하세요 "
 
 #: commands\admin.py:1085
 msgid "Alt channel has been removed for this panel!"
-msgstr ""
+msgstr "이 패널의 대체 채널이 제거되었습니다!"
 
 #: commands\admin.py:1087
 msgid "Alt channel has been set to {}!"
-msgstr ""
+msgstr "대체 채널이 {}로 설정되었습니다!"
 
 #: commands\admin.py:1092
 #, docstring
 msgid "Set the priority order of a panel's button"
-msgstr ""
+msgstr "패널 버튼의 우선 순위를 설정하세요"
 
 #: commands\admin.py:1094
 msgid "Priority needs to be between 1 and 25"
-msgstr ""
+msgstr "우선 순위는 1에서 25 사이여야 합니다"
 
 #: commands\admin.py:1100
 msgid "Priority for this panel has been set to {}!"
-msgstr ""
+msgstr "이 패널의 우선 순위가 {}로 설정되었습니다!"
 
 #: commands\admin.py:1105
 #, docstring
 msgid "Set the row of a panel's button (0 - 4)"
-msgstr ""
+msgstr "패널의 버튼 행을 설정하세요 (0 - 4)"
 
 #: commands\admin.py:1107
 msgid "Row needs to be between 0 and 4"
-msgstr ""
+msgstr "행은 0과 4 사이여야 합니다"
 
 #: commands\admin.py:1127
 msgid "This panel message already has the max amount of buttons for that specific row"
-msgstr ""
+msgstr "이 패널 메시지에는 이미 해당 특정 행에 대한 최대 버튼 수가 있습니다"
 
 #: commands\admin.py:1132
 msgid "The row number for this panel has been set to {}!"
-msgstr ""
+msgstr "이 패널의 행 번호가 {}로 설정되었습니다!"
 
 #: commands\admin.py:1142
 #, docstring
@@ -907,15 +952,17 @@ msgid "\n"
 "        Add/Remove users or roles from the blacklist\n\n"
 "        Users and roles in the blacklist will not be able to create a ticket\n"
 "        "
-msgstr ""
+msgstr "\n"
+"블랙리스트에서 사용자 또는 역할을 추가/제거하세요.\n\n"
+"블랙리스트에 있는 사용자 및 역할은 티켓을 만들 수 없습니다 "
 
 #: commands\admin.py:1150
 msgid " has been removed from the blacklist"
-msgstr ""
+msgstr " 블랙리스트에서 삭제되었습니다"
 
 #: commands\admin.py:1153
 msgid " has been added to the blacklist"
-msgstr ""
+msgstr " 가 블랙리스트에 추가되었습니다"
 
 #: commands\admin.py:1157
 #, docstring
@@ -923,7 +970,9 @@ msgid "\n"
 "        Auto-close ticket if opener doesn't say anything after X hours of opening\n\n"
 "        Set to 0 to disable this\n"
 "        "
-msgstr ""
+msgstr "\n"
+"개봉 후 X시간이 지나도 개봉자가 아무 말도 하지 않으면 티켓이 자동으로 종료됩니다.\n\n"
+"이 기능을 사용하지 않으려면 0으로 설정하세요 "
 
 #: commands\admin.py:1172
 #, docstring
@@ -931,72 +980,74 @@ msgid "\n"
 "        Set a channel for the live overview message\n\n"
 "        The overview message shows all active tickets across all configured panels for a server.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"실시간 개요 메시지의 채널을 설정하세요.\n\n"
+"개요 메시지는 서버의 모든 구성된 패널에서 활성 티켓을 모두 보여줍니다 "
 
 #: commands\admin.py:1178
 msgid "Overview channel has been **Disabled**"
-msgstr ""
+msgstr "개요 채널이 **비활성화**되었습니다"
 
 #: commands\admin.py:1181
 msgid "Overview channel has been set to {}"
-msgstr ""
+msgstr "개요 채널이 {}로 설정되었습니다"
 
 #: commands\admin.py:1190
 #, docstring
 msgid "Cleanup tickets that no longer exist"
-msgstr ""
+msgstr "더 이상 존재하지 않는 티켓을 정리하세요"
 
 #: commands\admin.py:1198
 #, docstring
 msgid "(Toggle) The bot sending DM's for ticket alerts"
-msgstr ""
+msgstr "(토글) 티켓 알림을 위해 봇이 DM을 보내는 것입니다"
 
 #: commands\admin.py:1202
 msgid "DM alerts have been **Disabled**"
-msgstr ""
+msgstr "DM 알림이 **사용 안 함**으로 설정되었습니다"
 
 #: commands\admin.py:1205
 msgid "DM alerts have been **Enabled**"
-msgstr ""
+msgstr "DM 알림이 **활성화**되었습니다"
 
 #: commands\admin.py:1209
 #, docstring
 msgid "(Toggle) Thread tickets being closed & archived instead of deleted"
-msgstr ""
+msgstr "(토글) 스레드 티켓이 삭제되지 않고 종료 및 보관됩니다"
 
 #: commands\admin.py:1213
 msgid "Closed ticket threads will be **Deleted**"
-msgstr ""
+msgstr "종료된 티켓 스레드는 **삭제됨**으로 표시됩니다"
 
 #: commands\admin.py:1216
 msgid "Closed ticket threads will be **Closed & Archived**"
-msgstr ""
+msgstr "종료된 티켓 스레드는 **종료 및 보관됨**으로 표시됩니다"
 
 #: commands\admin.py:1220
 #, docstring
 msgid "(Toggle) If users can rename their own tickets"
-msgstr ""
+msgstr "(토글) 사용자가 자신의 티켓 이름을 변경할 수 있는 경우"
 
 #: commands\admin.py:1224
 msgid "User can no longer rename their support channel"
-msgstr ""
+msgstr "사용자는 더 이상 지원 채널의 이름을 변경할 수 없습니다"
 
 #: commands\admin.py:1227
 msgid "User can now rename their support channel"
-msgstr ""
+msgstr "이제 사용자는 지원 채널의 이름을 변경할 수 있습니다"
 
 #: commands\admin.py:1231
 #, docstring
 msgid "(Toggle) If users can close their own tickets"
-msgstr ""
+msgstr "(토글) 사용자가 직접 티켓을 종료할 수 있는 경우"
 
 #: commands\admin.py:1235
 msgid "User can no longer close their support ticket channel"
-msgstr ""
+msgstr "사용자는 더 이상 지원 티켓 채널을 닫을 수 없습니다"
 
 #: commands\admin.py:1238
 msgid "User can now close their support ticket channel"
-msgstr ""
+msgstr "이제 사용자는 지원 티켓 채널을 닫을 수 있습니다"
 
 #: commands\admin.py:1242
 #, docstring
@@ -1004,15 +1055,17 @@ msgid "\n"
 "        (Toggle) If users can manage their own tickets\n\n"
 "        Users will be able to add/remove others to their support ticket\n"
 "        "
-msgstr ""
+msgstr "\n"
+"(토글) 사용자가 직접 티켓을 관리할 수 있는 경우\n\n"
+"사용자는 자신의 지원 티켓에 다른 사람을 추가/제거할 수 있습니다 "
 
 #: commands\admin.py:1250
 msgid "User can no longer manage their support ticket channel"
-msgstr ""
+msgstr "사용자는 더 이상 지원 티켓 채널을 관리할 수 없습니다"
 
 #: commands\admin.py:1253
 msgid "User can now manage their support ticket channel"
-msgstr ""
+msgstr "이제 사용자는 자신의 지원 티켓 채널을 관리할 수 있습니다"
 
 #: commands\admin.py:1257
 #, docstring
@@ -1020,15 +1073,17 @@ msgid "\n"
 "        (Toggle) Auto-add support and panel roles to thread tickets\n\n"
 "        Adding a user to a thread pings them, so this is off by default\n"
 "        "
-msgstr ""
+msgstr "\n"
+"(토글) 스레드 티켓에 지원 및 패널 역할 자동 추가하기\n\n"
+"사용자를 스레드에 추가하면 해당 사용자에게 핑을 보내므로 기본적으로 이 기능은 꺼져 있습니다 "
 
 #: commands\admin.py:1266
 msgid "Support and panel roles will no longer be auto-added to thread tickets"
-msgstr ""
+msgstr "더 이상 스레드 티켓에 지원 및 패널 역할이 자동으로 추가되지 않습니다"
 
 #: commands\admin.py:1270
 msgid "Support and panel roles will be auto-added to thread tickets"
-msgstr ""
+msgstr "지원 및 패널 역할은 스레드 티켓에 자동으로 추가됩니다"
 
 #: commands\admin.py:1274
 #, docstring
@@ -1036,117 +1091,121 @@ msgid "\n"
 "        (Toggle) Ticket transcripts\n\n"
 "        Closed tickets will have their transcripts uploaded to the log channel\n"
 "        "
-msgstr ""
+msgstr "\n"
+"(토글) 티켓 기록\n\n"
+"종료된 티켓은 로그 채널에 기록이 업로드됩니다 "
 
 #: commands\admin.py:1282
 msgid "Transcripts of closed tickets will no longer be saved"
-msgstr ""
+msgstr "종료된 티켓의 대본은 더 이상 저장되지 않습니다"
 
 #: commands\admin.py:1285
 msgid "Transcripts of closed tickets will now be saved"
-msgstr ""
+msgstr "이제 종료된 티켓의 기록이 저장됩니다"
 
 #: commands\admin.py:1294
 #, docstring
 msgid "Update a message with another message (Target gets updated using the source)"
-msgstr ""
+msgstr "다른 메시지로 메시지를 업데이트합니다 (소스를 사용하여 대상이 업데이트됩니다)"
 
 #: commands\admin.py:1312
 #, docstring
 msgid "Create an embed for ticket panel buttons to be added to"
-msgstr ""
+msgstr "티켓 패널 버튼을 추가하기 위한 임베드를 만들어주세요"
 
 #: commands\admin.py:1313
 msgid "type 'cancel' to cancel"
-msgstr ""
+msgstr "취소하려면 '취소'를 입력하세요"
 
 #: commands\admin.py:1318
 msgid "Would you like this embed to have a footer?"
-msgstr ""
+msgstr "이 임베드에 바닥글을 포함하시겠습니까?"
 
 #: commands\admin.py:1325
 msgid "Enter the desired footer"
-msgstr ""
+msgstr "원하는 바닥글을 입력하세요"
 
 #: commands\admin.py:1330 commands\admin.py:1349 commands\admin.py:1368
 msgid "Embed creation cancelled"
-msgstr ""
+msgstr "임베드 생성이 취소되었습니다"
 
 #: commands\admin.py:1337
 msgid "Would you like this embed to have a thumbnail?"
-msgstr ""
+msgstr "이 임베드에 썸네일을 포함하시겠습니까?"
 
 #: commands\admin.py:1344
 msgid "Enter a url for the thumbnail"
-msgstr ""
+msgstr "미리보기 이미지의 URL을 입력하세요"
 
 #: commands\admin.py:1356
 msgid "Would you like this embed to have an image?"
-msgstr ""
+msgstr "이 임베드에 이미지를 포함하시겠습니까?"
 
 #: commands\admin.py:1363
 msgid "Enter a url for the image"
-msgstr ""
+msgstr "이미지의 URL을 입력하세요"
 
 #: commands\admin.py:1385
 msgid "Would you like to add a field to this embed?"
-msgstr ""
+msgstr "이 임베드에 필드를 추가하시겠습니까?"
 
 #: commands\admin.py:1390
 msgid "Would you like to add another field to this embed?\n"
 "*There are currently {} fields*"
-msgstr ""
+msgstr "이 임베드에 다른 필드를 추가하시겠습니까?\n"
+"*현재 {} 필드*가 있습니다"
 
 #: commands\admin.py:1398
 msgid "Enter the name of the field"
-msgstr ""
+msgstr "필드 이름을 입력하세요"
 
 #: commands\admin.py:1404
 msgid "Enter the value of the field"
-msgstr ""
+msgstr "필드 값을 입력하세요"
 
 #: commands\admin.py:1411
 msgid "Do you want this field to be inline?"
-msgstr ""
+msgstr "이 필드를 인라인으로 설정하시겠습니까?"
 
 #: commands\admin.py:1424
 msgid "Your embed has been sent!"
-msgstr ""
+msgstr "임베드가 전송되었습니다!"
 
 #: commands\admin.py:1426
 msgid "Failed to send embed!\n"
 "Exception: {}"
-msgstr ""
+msgstr "임베드 전송에 실패했습니다!\n"
+"예외입니다: {}"
 
 #: commands\base.py:26
 #, docstring
 msgid "Add a user to your ticket"
-msgstr ""
+msgstr "티켓에 사용자를 추가하세요"
 
 #: commands\base.py:32 commands\base.py:73
 msgid "This is not a ticket channel, or it has been removed from config"
-msgstr ""
+msgstr "티켓 채널이 아니거나 구성에서 제거되었습니다"
 
 #: commands\base.py:54
 msgid "You do not have permissions to add users to this ticket"
-msgstr ""
+msgstr "이 티켓에 사용자를 추가할 수 있는 권한이 없습니다"
 
 #: commands\base.py:61
 msgid "has been added to this ticket!"
-msgstr ""
+msgstr "이 티켓에 추가되었습니다!"
 
 #: commands\base.py:67
 #, docstring
 msgid "Rename your ticket channel"
-msgstr ""
+msgstr "티켓 채널의 이름을 바꿔주세요"
 
 #: commands\base.py:94
 msgid "You do not have permissions to rename this ticket"
-msgstr ""
+msgstr "이 티켓의 이름을 바꿀 수 있는 권한이 없습니다"
 
 #: commands\base.py:98
 msgid "Ticket has been renamed"
-msgstr ""
+msgstr "티켓 이름이 변경되었습니다"
 
 #: commands\base.py:106
 #, docstring
@@ -1158,25 +1217,31 @@ msgid "\n"
 "        `[p]close 1h` - closes in 1 hour with no reason attached\n"
 "        `[p]close 1m thanks for helping!` - closes in 1 minute with reason \"thanks for helping!\"\n"
 "        "
-msgstr ""
+msgstr "\n"
+"티켓을 닫으세요\n\n"
+"**예시**\n"
+"`[p]close` - 이유 없이 티켓을 닫습니다\n"
+"`[p]close thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 티켓을 닫습니다\n"
+"`[p]close 1h` - 이유 없이 1시간 후에 티켓을 닫습니다\n"
+"`[p]close 1m thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 1분 후에 티켓을 닫습니다 "
 
 #: commands\base.py:120
 msgid "Cannot find the owner of this ticket! Maybe it was removed from config?"
-msgstr ""
+msgstr "이 티켓의 소유자를 찾을 수 없습니다! 구성에서 제거된 것일까요?"
 
 #: commands\base.py:127
 msgid "You do not have permissions to close this ticket"
-msgstr ""
+msgstr "이 티켓을 닫을 수 있는 권한이 없습니다"
 
 #: commands\base.py:145
 msgid "This ticket will close {}"
-msgstr ""
+msgstr "이 티켓은 {}을(를) 종료합니다"
 
 #: commands\base.py:153
 msgid "Closing cancelled!"
-msgstr ""
+msgstr "마감이 취소되었습니다!"
 
 #: commands\base.py:158
 msgid "Closing..."
-msgstr ""
+msgstr "마감..."
 
