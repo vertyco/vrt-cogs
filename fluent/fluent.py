@@ -17,6 +17,7 @@ log = logging.getLogger("red.vrt.fluent")
 _ = Translator("Fluent", __file__)
 
 
+# redgettext -D fluent.py --command-docstring
 @cog_i18n(_)
 class Fluent(commands.Cog):
     """
