@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 18:42\n"
+"PO-Revision-Date: 2023-07-26 04:41\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -39,7 +39,7 @@ msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
 msgstr "Atualizar as incorporações para corresponder às dimensões atuais\n\n"
-"Obter uma amostra usando o método de incorporação atual e atualizar o restante para corresponder às dimensões "
+"Obter uma amostra usando o método de incorporação atual e atualizar o restante para corresponder às dimensões.               "
 
 #: common\api.py:184
 #, docstring
