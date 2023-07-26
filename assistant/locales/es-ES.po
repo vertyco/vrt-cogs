@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-07-25 02:09\n"
+"PO-Revision-Date: 2023-07-26 04:41\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -61,15 +61,15 @@ msgstr "¡Ya existe una incrustación con el nombre `{}`!"
 
 #: views.py:201
 msgid "Your embedding labeled `{}` has been processed!"
-msgstr "Su incrustación etiquetada `{}` ha sido procesada"
+msgstr "¡Su incrustación etiquetada `{}` ha sido procesada!"
 
 #: views.py:214
 msgid "No embeddings to inspect!"
-msgstr "No hay incrustaciones para inspeccionar"
+msgstr "¡No hay incrustaciones para inspeccionar!"
 
 #: views.py:237
 msgid "No embeddings to edit!"
-msgstr "No hay incrustaciones para editar"
+msgstr "¡No hay incrustaciones para editar!"
 
 #: views.py:249
 msgid "Failed to edit that embedding, please try again later"
@@ -117,7 +117,7 @@ msgstr "Código"
 
 #: views.py:580
 msgid "No code to inspect!"
-msgstr "No hay código para inspeccionar"
+msgstr "¡No hay código para inspeccionar!"
 
 #: views.py:599
 msgid "Here are your custom functions"
@@ -163,11 +163,11 @@ msgstr "¡`{}` ha sido creado!"
 
 #: views.py:668
 msgid "No code to edit!"
-msgstr "No hay código para editar"
+msgstr "¡No hay código para editar!"
 
 #: views.py:677 views.py:747
 msgid "Could not find function!"
-msgstr "No se pudo encontrar la función"
+msgstr "¡No se pudo encontrar la función!"
 
 #: views.py:680
 msgid "This function is managed by the `{}` cog and cannot be edited"
@@ -187,7 +187,7 @@ msgstr "¡Función `{}` actualizada!"
 
 #: views.py:739
 msgid "No code to delete!"
-msgstr "No hay código para eliminar"
+msgstr "¡No hay código para eliminar!"
 
 #: views.py:750
 msgid "This function is managed by the `{}` cog and cannot be deleted"
@@ -199,5 +199,5 @@ msgstr "¡`{}` ha sido borrado!"
 
 #: views.py:766
 msgid "No code to toggle!"
-msgstr "No hay código para alternar"
+msgstr "¡No hay código para alternar!"
 
