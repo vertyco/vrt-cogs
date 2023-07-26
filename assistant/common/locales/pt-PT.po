@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 18:42\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -38,8 +38,8 @@ msgstr "- Em alternativa, pode definir um ponto final global com `{}`"
 msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
-msgstr "Atualizar as incorporações para corresponder às dimensões atuais\n\n"
-"Obter uma amostra usando o método de incorporação atual e atualizar o restante para corresponder às dimensões "
+msgstr "Atualize as incorporações para corresponder às dimensões atuais.\n\n"
+"Obtenha uma amostra usando o método de incorporação atual e atualize o restante para corresponder às dimensões        "
 
 #: common\api.py:184
 #, docstring
@@ -72,12 +72,12 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
 msgstr "Degradar iterativamente uma carga de conversa, priorizando mensagens mais recentes e contexto crítico\n\n"
-"        Argumentos:\n"
-"            mensagens (List[dict]): entradas de mensagens enviadas para a API\n"
-"            lista_de_funções (List[dict]): lista de esquemas de funções JSON para o modelo\n"
-"            conf: (GuildSettings): configurações atuais\n\n"
-"        Retorna:\n"
-"            Tuple[List[dict], List[dict], bool]: lista de mensagens atualizada, lista de funções e se a conversa foi degradada "
+"Argumentos:\n"
+"    mensagens (List[dict]): entradas de mensagens enviadas para a API\n"
+"    lista_de_funções (List[dict]): lista de esquemas de funções JSON para o modelo\n"
+"    conf: (GuildSettings): configurações atuais\n\n"
+"Retorna:\n"
+"    Tuple[List[dict], List[dict], bool]: lista de mensagens atualizada, lista de funções e se a conversa foi degradada        "
 
 #: common\api.py:367
 #, docstring

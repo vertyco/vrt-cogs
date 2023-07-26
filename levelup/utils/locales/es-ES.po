@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:34-0400\n"
-"PO-Revision-Date: 2023-07-25 00:18\n"
+"PO-Revision-Date: 2023-07-26 04:40\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -112,7 +112,7 @@ msgstr "No hay datos para el "
 
 #: utils\formatter.py:199
 msgid "You: "
-msgstr "Traduce el siguiente texto al español "
+msgstr "Tú:"
 
 #: utils\formatter.py:256 utils\formatter.py:258
 msgid "Pages "
