@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 17:00\n"
+"PO-Revision-Date: 2023-07-26 04:41\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -39,7 +39,7 @@ msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
 msgstr "현재 차원과 일치하도록 임베드를 업데이트합니다.\n\n"
-"현재 임베드 방법을 사용하여 샘플을 가져와 나머지를 차원에 맞게 업데이트합니다 "
+"현재 임베드 방법을 사용하여 샘플을 가져와 나머지를 차원에 맞게 업데이트합니다.               "
 
 #: common\api.py:184
 #, docstring
@@ -72,12 +72,12 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
 msgstr "대화 페이로드를 순차적으로 저하시키되, 최근 메시지와 중요한 맥락을 우선으로 처리합니다.\n\n"
-"        인수:\n"
-"            messages (List[dict]): API에 전송된 메시지 항목들\n"
-"            function_list (List[dict]): 모델에 대한 JSON 함수 스키마 목록\n"
-"            conf: (GuildSettings): 현재 설정\n\n"
-"        반환값:\n"
-"            Tuple[List[dict], List[dict], bool]: 업데이트된 메시지 목록, 함수 목록, 대화가 저하되었는지 여부 "
+"인수:\n"
+"    messages (List[dict]): API에 전송된 메시지 항목들\n"
+"    function_list (List[dict]): 모델에 대한 JSON 함수 스키마 목록\n"
+"    conf: (GuildSettings): 현재 설정\n\n"
+"반환값:\n"
+"    tuple[list[dict], list[dict], bool]: 업데이트된 메시지 목록, 함수 목록, 대화가 저하되었는지 여부        "
 
 #: common\api.py:367
 #, docstring
@@ -86,7 +86,7 @@ msgstr "토큰 대신 문자로 긴 문자열을 페이지로 나누세요"
 
 #: common\api.py:423
 msgid "Custom Functions"
-msgstr "I apologize for any confusion. As an AI translator, my goal is to provide accurate translations while preserving the core meaning of the source text. I will make sure to revise and return only the updated translation without adding any unwarranted extra content. Please let me know if there is anything specific you would like me to translate for you"
+msgstr "사용자 정의 함수"
 
 #: common\api.py:429
 msgid "3rd Party"
@@ -168,7 +168,7 @@ msgstr "앗, API 키가 유효하지 않은 것 같아요!"
 #: common\chat.py:133
 msgid "**KeyError in prompt or system message**\n"
 "{}"
-msgstr "번역에 소스 텍스트와 동일한 양의 자리 표시자({})가 있는지 확인하고 번역을 수정한 다음 업데이트된 버전만 제공하세요"
+msgstr "번역에 \"<b>(</b>\"라는 추가 기호가 포함되어 있습니다. 번역을 수정하고 업데이트된 버전만 반환하세요"
 
 #: common\chat.py:140
 msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
@@ -219,7 +219,7 @@ msgstr "GPT API를 호출하기 위한 콘텐츠를 준비합니다.\n\n"
 "            channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): 컨텍스트를 위한 채널\n"
 "            query_embedding List[float]: 메시지 임베딩 가중치\n\n"
 "        Returns:\n"
-"            List[dict]: API에 준비된 메시지 목록 "
+"            List[dict]: API에 준비된 메시지 목록               "
 
 #: common\chat.py:468
 #, docstring
@@ -235,7 +235,7 @@ msgstr "\n"
 #: common\utils.py:19
 #, docstring
 msgid "Get all attachments from context"
-msgstr "context에서 모든 첨부 파일을 가져옵니다"
+msgstr "Context에서 모든 첨부 파일을 가져옵니다"
 
 #: common\utils.py:40
 msgid "Canceled"
