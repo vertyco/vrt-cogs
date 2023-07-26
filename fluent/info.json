@@ -21,8 +21,7 @@
     "googletrans-py",
     "aiocache",
     "ujson",
-    "msgpack",
-    "pytest"
+    "msgpack"
   ],
   "short": "Auto translation between two languages.",
   "tags": [
