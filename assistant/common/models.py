@@ -248,12 +248,7 @@ class DB(BaseModel):
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
-
-        if gid in self.configs:
-            return self.configs[gid]
-
-        self.configs[gid] = GuildSettings()
-        return self.configs[gid]
+        return self.configs.setdefault(gid, GuildSettings())
 
     def get_conversation(
         self,
