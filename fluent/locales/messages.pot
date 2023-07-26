@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-07-26 19:06-0400\n"
+"POT-Creation-Date: 2023-07-26 19:16-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -47,7 +47,7 @@ msgid "Translate a message"
 msgstr ""
 
 #: fluent.py:75
-msgid "The target language `{}` was not found"
+msgid "The target language `{}` was not found."
 msgstr ""
 
 #: fluent.py:84
@@ -59,7 +59,7 @@ msgid "An error occured while translating, Check logs for more info."
 msgstr ""
 
 #: fluent.py:97
-msgid "❌ Translation failed"
+msgid "❌ Translation failed."
 msgstr ""
 
 #: fluent.py:122
@@ -117,7 +117,7 @@ msgid "View all fluent channels"
 msgstr ""
 
 #: fluent.py:211
-msgid "There are no fluent channels at this time"
+msgid "There are no fluent channels at this time."
 msgstr ""
 
 #: fluent.py:212
