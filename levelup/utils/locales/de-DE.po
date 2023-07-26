@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:34-0400\n"
-"PO-Revision-Date: 2023-07-25 02:09\n"
+"PO-Revision-Date: 2023-07-26 03:43\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -27,15 +27,15 @@ msgstr " zweite"
 
 #: utils\formatter.py:91
 msgid " seconds"
-msgstr " Sekunden"
+msgstr "Sekunden"
 
 #: utils\formatter.py:94
 msgid " minute"
-msgstr " Minute"
+msgstr "Minute"
 
 #: utils\formatter.py:96
 msgid " minutes"
-msgstr " Minuten"
+msgstr "Minuten"
 
 #: utils\formatter.py:113
 #, docstring
@@ -104,7 +104,7 @@ msgstr "Es gibt keine Daten für die wöchentliche "
 
 #: utils\formatter.py:191 utils\formatter.py:193
 msgid " leaderboard yet"
-msgstr " Rangliste noch nicht"
+msgstr " Rangliste noch nicht verfügbar"
 
 #: utils\formatter.py:193
 msgid "There is no data for the "
