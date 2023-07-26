@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-26 03:43\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -159,7 +159,7 @@ msgstr "Su fondo personalizado se ha guardado como "
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr "elimine un fondo predeterminado de la carpeta de fondos del COG"
+msgstr "Elimine un fondo predeterminado de la carpeta de fondos del Cog"
 
 #: base.py:355
 msgid "I could not find any background images with that name"
@@ -235,8 +235,7 @@ msgstr "Aquí están los fondos predeterminados actuales, para establecer uno de
 
 #: base.py:448 base.py:477
 msgid "command"
-msgstr "Primera letra en el texto original y la traducción tienen un caso diferente.\n"
-"Por favor, revise su traducción y devuelva solo la versión corregida"
+msgstr "comando"
 
 #: base.py:452
 msgid "Could not send background collage, file size may be too large."
@@ -262,10 +261,9 @@ msgid "\n"
 "        Full size includes your balance, role icon and prestige icon\n"
 "        Slim is a smaller slimmed down version\n"
 "        "
-msgstr "\n"
-"Alternar el tipo de imagen de perfil (completa/delgada)\n\n"
+msgstr "Alternar el tipo de imagen de perfil (completa/delgada)\n\n"
 "La versión completa incluye tu saldo, el icono de tu rol y el icono de prestigio.\n"
-"La versión delgada es una versión más pequeña y simplificada.               "
+"La versión delgada es una versión más pequeña y simplificada        "
 
 #: base.py:493 base.py:523 base.py:568 base.py:614 base.py:674 base.py:730
 #: base.py:759
@@ -364,8 +362,7 @@ msgid "\n"
 "         - `random` will randomly select from a pool of default backgrounds each time\n"
 "         - `filename` run `[p]mypf backgrounds` to view default options you can use by including their filename\n"
 "        "
-msgstr "\n"
-"Establece un fondo para tu perfil\n\n"
+msgstr "Establece un fondo para tu perfil\n\n"
 "Esto reemplazará el banner de tu perfil como fondo\n\n"
 "**ADVERTENCIA**\n"
 "Los fondos de perfil son paisajes anchos (1050 por 450 píxeles) con una relación de aspecto de 21:9\n"
@@ -379,7 +376,7 @@ msgstr "\n"
 "**Opciones adicionales**\n"
 "- Deja image_url en blanco para volver a usar el banner de tu perfil (o aleatorio si no tienes uno)\n"
 "- `random` seleccionará aleatoriamente de un grupo de fondos por defecto cada vez\n"
-"- `filename` ejecuta `[p]mypf backgrounds` para ver las opciones por defecto que puedes usar incluyendo su nombre de archivo               "
+"- `filename` ejecuta `[p]mypf backgrounds` para ver las opciones por defecto que puedes usar incluyendo su nombre de archivo        "
 
 #: base.py:712 base.py:714
 msgid "Your background image has been set!"
@@ -387,7 +384,7 @@ msgstr "¡Tu imagen de fondo ha sido configurada!"
 
 #: base.py:717
 msgid "Your background has been removed since you did not specify a url!"
-msgstr "Se ha eliminado tu fondo ya que no especificaste una URL"
+msgstr "Se ha eliminado tu fondo ya que no especificaste una URL!"
 
 #: base.py:722
 #, docstring
@@ -418,8 +415,7 @@ msgstr "El tipo de letra de tu perfil ha sido establecido como "
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr "\n"
-"Activa un ligero efecto de desenfoque en la imagen de fondo donde se muestra el texto "
+msgstr "Activa un ligero efecto de desenfoque en la imagen de fondo donde se muestra el texto        "
 
 #: base.py:769
 msgid "Your profile background blur has been set to "
@@ -490,10 +486,9 @@ msgid "\n"
 "        reset your level and experience to gain a prestige level and any perks associated with it\n\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
-msgstr "\n"
-"¡Prestigia tu rango!\n"
+msgstr "¡Prestigia tu rango!\n"
 "Una vez que hayas alcanzado el requisito de nivel de prestigio de este servidor, puedes reiniciar tu nivel y experiencia para obtener un nivel de prestigio y cualquier ventaja asociada a él.\n\n"
-"Si tienes un nivel y experiencia superiores cuando prestigies, tu experiencia y niveles se mantendrán               "
+"Si tienes un nivel y experiencia superiores cuando prestigies, tu experiencia y niveles se mantendrán.        "
 
 #: base.py:948
 msgid "Prestige is disabled on this server!"
@@ -549,7 +544,7 @@ msgstr "\n"
 "**Argumentos**\n"
 "`stat`: Qué tipo de estadística mostrar en la clasificación semanal\n"
 "Las opciones válidas son `exp`, `messages` y `voice`\n"
-"También se pueden utilizar abreviaturas de estos argumentos "
+"También se pueden utilizar abreviaturas de estos argumentos        "
 
 #: base.py:1023
 msgid "Use the `"
@@ -598,7 +593,7 @@ msgstr "\n"
 "**Argumentos**\n"
 "`stat`: Qué tipo de estadística mostrar en la clasificación semanal\n"
 "Las opciones válidas son `exp`, `messages`, `stars` y `voice`\n"
-"También se pueden utilizar abreviaturas de esos argumentos "
+"También se pueden utilizar abreviaturas de esos argumentos        "
 
 #: base.py:1133 base.py:1155
 msgid "Weekly stats are disabled for this guild"
@@ -670,9 +665,8 @@ msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
-msgstr "\n"
-"El sistema de nivelación amigable de tu vecindario\n\n"
-"Gana experiencia chateando en canales de texto y voz, compara niveles con tus amigos, personaliza tu perfil y visualiza varias tablas de clasificación "
+msgstr "El sistema de nivelación amigable de tu vecindario\n\n"
+"Gana experiencia chateando en canales de texto y voz, compara niveles con tus amigos, personaliza tu perfil y visualiza varias tablas de clasificación!    "
 
 #: levelup.py:235
 msgid "Monday"
@@ -712,7 +706,7 @@ msgstr "¡Acabas de alcanzar el nivel {level} en {guild}!"
 
 #: levelup.py:640
 msgid "Just reached level {level}!"
-msgstr "¡Acaba de alcanzar el nivel {nivel}!"
+msgstr "¡Acabo de alcanzar el nivel {level}!"
 
 #: levelup.py:673
 msgid "You just leveled up in "
@@ -720,7 +714,7 @@ msgstr "Acabas de subir de nivel en "
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
-msgstr "{usuario} ¡acaba de subir de nivel!"
+msgstr "**¡{user} acaba de subir de nivel!**"
 
 #: levelup.py:998
 #, docstring
@@ -953,9 +947,8 @@ msgid "\n"
 "        Cog admin commands\n\n"
 "        Reset levels, backup and restore cog data\n"
 "        "
-msgstr "\n"
-"Comandos de administración de Cog\n\n"
-"Restablecer niveles, hacer copia de seguridad y restaurar datos de Cog               "
+msgstr "Comandos de administración de Cog\n\n"
+"Restablecer niveles, hacer copia de seguridad y restaurar datos de Cog        "
 
 #: levelup.py:1278
 #, docstring
@@ -969,7 +962,7 @@ msgstr "\n"
 "Establecer cuánto tiempo mantener las imágenes de perfil en caché\n"
 "Cuando un usuario ejecuta el comando de perfil, su imagen generada se almacenará en caché para ser reutilizada durante X segundos\n\n"
 "Si las incrustaciones de perfil están habilitadas, esta configuración no tendrá ningún efecto\n"
-"Cualquier valor inferior a 5 segundos desactivará efectivamente la caché               "
+"Cualquier valor inferior a 5 segundos desactivará efectivamente la caché        "
 
 #: levelup.py:1292
 #, docstring
@@ -1025,7 +1018,7 @@ msgstr "Reinicia la experiencia y el nivel de todos"
 
 #: levelup.py:1343
 msgid "Are you sure you want to reset "
-msgstr "¿Está seguro de que desea restablecer"
+msgstr "¿Está seguro de que desea restablecer?"
 
 #: levelup.py:1343
 msgid " users' stats?"
@@ -1145,7 +1138,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Restaurar una copia de seguridad del gremio\n\n"
-"Adjunta el archivo .json al mensaje de comando para importarlo "
+"Adjunta el archivo .json al mensaje de comando para importarlo        "
 
 #: levelup.py:1470
 msgid "This is an invalid guild config!"
@@ -1163,13 +1156,13 @@ msgid "\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
 msgstr "\n"
-"        Importar niveles y exp del engranaje Nivelador de Malarne\n\n"
-"        **Argumentos**\n"
-"        `export_by` - qué estadística priorizar (`level` o `exp`)\n"
-"        Si se introduce exp, importará su experiencia y basará su nuevo nivel en ella.\n"
-"        Si se introduce el nivel, se importará su nivel y se calculará su exp basándose en él.\n"
-"        `replace` - (True/False) si es True, reemplazará la exp o el nivel del usuario, si no, lo añadirá\n"
-"        `i_agree` - (Yes/No) Sólo una opción extra para asegurarse de que desea ejecutar este comando "
+"Importar niveles y exp del engranaje Nivelador de Malarne\n\n"
+"**Argumentos**\n"
+"`export_by` - qué estadística priorizar (`level` o `exp`)\n"
+"Si se introduce exp, importará su experiencia y basará su nuevo nivel en ella.\n"
+"Si se introduce el nivel, se importará su nivel y se calculará su exp basándose en él.\n"
+"`replace` - (True/False) si es True, reemplazará la exp o el nivel del usuario, si no, lo añadirá\n"
+"`i_agree` - (Yes/No) Sólo una opción extra para asegurarse de que desea ejecutar este comando        "
 
 #: levelup.py:1499
 msgid "Not importing levels"
@@ -1200,14 +1193,14 @@ msgid "\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
 msgstr "\n"
-"        Importar niveles y exp de MEE6\n\n"
-"        **Asegúrate de que el tablero de clasificación de tu gremio sea público!**\n\n"
-"        **Argumentos**\n"
-"        `import_by` - qué estadística priorizar (`level` o `exp`)\n"
-"        Si se ingresa exp, importará su experiencia y basará su nuevo nivel en ella.\n"
-"        Si se ingresa level, importará su nivel y calculará su exp en base a eso.\n"
-"        `replace` - (Verdadero/Falso) si es Verdadero, reemplazará la exp o el nivel del usuario, de lo contrario lo agregará\n"
-"        `i_agree` - (Sí/No) Solo una opción adicional para asegurarse de que desea ejecutar este comando "
+"Importar niveles y exp de MEE6\n\n"
+"**¡Asegúrate de que el tablero de clasificación de tu gremio sea público!**\n\n"
+"**Argumentos**\n"
+"`import_by` - qué estadística priorizar (`level` o `exp`)\n"
+"Si se ingresa exp, importará su experiencia y basará su nuevo nivel en ella.\n"
+"Si se ingresa level, importará su nivel y calculará su exp en base a eso.\n"
+"`replace` - (Verdadero/Falso) si es Verdadero, reemplazará la exp o el nivel del usuario, de lo contrario lo agregará\n"
+"`i_agree` - (Sí/No) Solo una opción adicional para asegurarse de que desea ejecutar este comando        "
 
 #: levelup.py:1595
 msgid "Not importing MEE6 levels"
@@ -1219,15 +1212,15 @@ msgstr "Obteniendo datos de la clasificación de mee6, por favor espere..."
 
 #: levelup.py:1618
 msgid "Your leaderboard needs to be set to public!"
-msgstr "Tu tabla de clasificación debe ser pública"
+msgstr "¡Tu tabla de clasificación debe ser pública!"
 
 #: levelup.py:1622
 msgid "No data found!"
-msgstr "No se encontraron datos"
+msgstr "¡No se encontraron datos!"
 
 #: levelup.py:1631
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
-msgstr "No se pudieron obtener {} páginas de la API de Mee6, revise los registros para obtener más información"
+msgstr "{} páginas no se pudieron obtener de la API de Mee6, revisa los registros para obtener más información"
 
 #: levelup.py:1636
 msgid "No leaderboard data found!"
@@ -1258,10 +1251,10 @@ msgid "\n"
 "        *Obviously you will need MongoDB running while you run this command*\n"
 "        "
 msgstr "\n"
-"        Importar datos del engranaje Nivelador del Fijador\n\n"
-"        Esto sobrescribirá los datos de nivel y las estrellas existentes en LevelUp\n"
-"        También importará los roles de nivel de rango XP y los canales ignorados\n"
-"        *Obviamente necesitarás MongoDB ejecutándose mientras ejecutas este comando* "
+"Importar datos del engranaje Nivelador del Fijador\n\n"
+"Esto sobrescribirá los datos de nivel y las estrellas existentes en LevelUp\n"
+"También importará los roles de nivel de rango XP y los canales ignorados\n"
+"*Obviamente necesitarás MongoDB ejecutándose mientras ejecutas este comando*        "
 
 #: levelup.py:1703
 msgid "Not importing users"
@@ -1299,7 +1292,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Eliminar usuarios que ya no están en el servidor\n\n"
-"También limpia cualquier clave que falte o discrepancias en la configuración "
+"También limpia cualquier clave que falte o discrepancias en la configuración        "
 
 #: levelup.py:1853
 msgid "Nothing to clean"
@@ -1326,7 +1319,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Establecer el rango de XP del mensaje\n"
-"Establecer la cantidad mínima y máxima de XP que un mensaje puede ganar "
+"Establecer la cantidad mínima y máxima de XP que un mensaje puede ganar        "
 
 #: levelup.py:1876
 msgid "Message XP range has been set to "
@@ -1346,7 +1339,7 @@ msgid "\n"
 msgstr "\n"
 "Añadir un rango de bonus XP para aplicar a ciertos roles.\n\n"
 "Este bonus se aplica a los XP de los mensajes.\n\n"
-"Establecer tanto el mínimo como el máximo a 0 para eliminar el bonus de rol "
+"Establecer tanto el mínimo como el máximo a 0 para eliminar el bonus de rol        "
 
 #: levelup.py:1898 levelup.py:2001 levelup.py:2033
 msgid "I cannot find that role"
@@ -1384,7 +1377,7 @@ msgid "\n"
 msgstr "\n"
 "Añadir un rango de bonificación de XP para aplicar a ciertos canales\n\n"
 "Esta bonificación se aplica a los XP de mensajes\n\n"
-"Establecer tanto el mínimo como el máximo en 0 para eliminar la bonificación de rol "
+"Establecer tanto el mínimo como el máximo en 0 para eliminar la bonificación de rol        "
 
 #: levelup.py:1930
 msgid "I cannot find that channel"
@@ -1401,9 +1394,8 @@ msgid "\n"
 "        When a user sends a message they will have to wait X seconds before their message\n"
 "        counts as XP gained\n"
 "        "
-msgstr "\n"
-"Umbral de enfriamiento para XP de mensajes\n\n"
-"Cuando un usuario envía un mensaje, deberá esperar X segundos antes de que su mensaje se cuente como XP ganada "
+msgstr "Umbral de enfriamiento para XP de mensajes\n\n"
+"Cuando un usuario envía un mensaje, deberá esperar X segundos antes de que su mensaje se cuente como XP ganada        "
 
 #: levelup.py:1960
 #, docstring
@@ -1415,7 +1407,7 @@ msgid "\n"
 msgstr "\n"
 "Establecer longitud mínima de mensaje para XP\n"
 "Longitud mínima que debe tener un mensaje para contar para XP obtenida\n\n"
-"Establecer en 0 para desactivar "
+"Establecer en 0 para desactivar        "
 
 #: levelup.py:1972
 #, docstring
@@ -1430,7 +1422,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Establecer ganancia de XP por voz\n"
-"Establece la cantidad de XP ganada por minuto en un canal de voz (por defecto es 2) "
+"Establece la cantidad de XP ganada por minuto en un canal de voz (por defecto es 2)        "
 
 #: levelup.py:1993
 #, docstring
@@ -1439,10 +1431,9 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr "\n"
-"Añadir un rango de bonus XP para aplicar a ciertos roles.\n\n"
+msgstr "Añadir un rango de bonus XP para aplicar a ciertos roles.\n\n"
 "Este bonus se aplica al tiempo de voz xp.\n\n"
-"Establecer tanto el mínimo como el máximo a 0 para eliminar el bonus de rol "
+"Establecer tanto el mínimo como el máximo a 0 para eliminar el bonus de rol        "
 
 #: levelup.py:2025
 #, docstring
@@ -1451,10 +1442,9 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr "\n"
-"Añadir un rango de XP de bonificación para aplicar a ciertos canales.\n\n"
+msgstr "Añadir un rango de bonificación de XP para aplicar a ciertos canales.\n\n"
 "Esta bonificación se aplica al tiempo de voz xp.\n\n"
-"Establece tanto el mínimo como el máximo a 0 para eliminar la bonificación de rol "
+"Establecer tanto el mínimo como el máximo a 0 para eliminar la bonificación de rol        "
 
 #: levelup.py:2051
 #, docstring
@@ -1466,7 +1456,7 @@ msgid "\n"
 msgstr "\n"
 "Agregar un rango de bonificación de XP a los usuarios que están transmitiendo en Discord.\n\n"
 "Esta bonificación se aplica al tiempo de voz XP.\n\n"
-"Establecer tanto el mínimo como el máximo en 0 para eliminar la bonificación "
+"Establecer tanto el mínimo como el máximo en 0 para eliminar la bonificación        "
 
 #: levelup.py:2064
 msgid "There is no stream bonus set yet"
@@ -1486,9 +1476,8 @@ msgid "\n"
 "        Ignore muted voice users\n"
 "        Toggle whether self-muted users in a voice channel can gain voice XP\n"
 "        "
-msgstr "\n"
-"Ignorar usuarios de voz silenciados\n"
-"Alternar si los usuarios silenciados en un canal de voz pueden ganar XP de voz "
+msgstr "Ignorar usuarios con voz silenciada\n"
+"Alternar si los usuarios con voz silenciada en un canal de voz pueden obtener experiencia de voz        "
 
 #: levelup.py:2081
 msgid "Self-Muted users can now gain XP while in a voice channel"
@@ -1506,7 +1495,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Ignorar usuarios solitarios\n"
-"Alternar si los usuarios solitarios en un canal de voz pueden obtener XP de voz "
+"Alternar si los usuarios solitarios en un canal de voz pueden obtener XP de voz        "
 
 #: levelup.py:2096
 msgid "Solo users can now gain XP while in a voice channel"
@@ -1523,8 +1512,8 @@ msgid "\n"
 "        Toggle whether deafened users in a voice channel can gain voice XP\n"
 "        "
 msgstr "\n"
-"Ignorar usuarios sordos\n"
-"Alternar si los usuarios sordos en un canal de voz pueden ganar XP de voz "
+"Ignorar usuarios con voz silenciada\n"
+"Alternar si los usuarios con voz silenciada en un canal de voz pueden obtener XP de voz        "
 
 #: levelup.py:2111
 msgid "Deafened users can now gain XP while in a voice channel"
@@ -1542,7 +1531,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Ignorar usuarios de voz invisibles\n"
-"Alternar si los usuarios invisibles en un canal de voz pueden ganar XP de voz "
+"Alternar si los usuarios invisibles en un canal de voz pueden ganar XP de voz        "
 
 #: levelup.py:2126
 msgid "Invisible users can now gain XP while in a voice channel"
@@ -1588,7 +1577,7 @@ msgstr "Asignar un usuario a un nivel específico"
 
 #: levelup.py:2178 levelup.py:2198
 msgid "There is no data for that user!"
-msgstr "No hay datos para ese usuario"
+msgstr "¡No hay datos para ese usuario!"
 
 #: levelup.py:2185
 msgid "User "
@@ -1604,9 +1593,8 @@ msgid "\n"
 "        Set a user to a specific prestige level\n\n"
 "        Prestige roles will need to be manually added/removed when using this command\n"
 "        "
-msgstr "\n"
-"Establecer un usuario en un nivel de prestigio específico\n\n"
-"Los roles de prestigio deberán añadirse/eliminarse manualmente al utilizar este comando "
+msgstr "Establecer un usuario en un nivel de prestigio específico\n\n"
+"Los roles de prestigio deberán añadirse/eliminarse manualmente al utilizar este comando        "
 
 #: levelup.py:2204
 msgid "That prestige level isn't set!"
@@ -1623,9 +1611,8 @@ msgid "\n"
 "        Base multiplier for the leveling algorithm\n\n"
 "        Affects leveling on a more linear scale(higher values makes leveling take longer)\n"
 "        "
-msgstr "\n"
-"Multiplicador base para el algoritmo de nivelación\n\n"
-"Afecta a la nivelación en una escala más lineal (valores más altos hacen que la nivelación tome más tiempo) "
+msgstr "Multiplicador base para el algoritmo de nivelación\n\n"
+"Afecta a la nivelación en una escala más lineal (valores más altos hacen que la nivelación tome más tiempo)        "
 
 #: levelup.py:2229
 #, docstring
@@ -1634,8 +1621,8 @@ msgid "\n"
 "        Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)\n"
 "        "
 msgstr "\n"
-"Multiplicador del exponente para el algoritmo de nivelación\n\n"
-"Afecta a la nivelación en una escala exponencial (valores más altos hacen que la nivelación tome exponencialmente más tiempo) "
+"        Multiplicador del exponente para el algoritmo de nivelación\n\n"
+"        Afecta a la nivelación en una escala exponencial (valores más altos hacen que la nivelación tome exponencialmente más tiempo)        "
 
 #: levelup.py:2235
 msgid "Your exponent needs to be higher than 0"
@@ -1683,7 +1670,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Prueba el algoritmo de niveles\n"
-"Visualiza los primeros 20 niveles utilizando el algoritmo actual para probar la curva de experiencia "
+"Visualiza los primeros 20 niveles utilizando el algoritmo actual para probar la curva de experiencia        "
 
 #: levelup.py:2289
 msgid "XP required for a level = Base * Level^Exp\n\n"
@@ -1713,9 +1700,8 @@ msgid "\n"
 "        Toggle DM notifications\n"
 "        Toggle whether LevelUp messages are DM'd to the user\n"
 "        "
-msgstr "\n"
-"Activar las notificaciones de DM\n"
-"Alternar si los mensajes LevelUp son DM'd al usuario "
+msgstr "Activar las notificaciones de DM\n"
+"Alternar si los mensajes de LevelUp se envían por DM al usuario        "
 
 #: levelup.py:2352
 msgid "Users will no longer be DM'd when they level up"
@@ -1733,7 +1719,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Alternar menciones de LevelUp\n"
-"Alternar si el usuario es mencionado en los mensajes de LevelUp "
+"Alternar si el usuario es mencionado en los mensajes de LevelUp        "
 
 #: levelup.py:2367
 msgid "Mentions **Disabled**"
@@ -1751,7 +1737,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Alternar menciones de reacción con estrella\n"
-"Alternar si el bot menciona que un usuario reaccionó a un mensaje con una estrella "
+"Alternar si el bot menciona que un usuario reaccionó a un mensaje con una estrella        "
 
 #: levelup.py:2382
 msgid "Star reaction mentions **Disabled**"
@@ -1769,7 +1755,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Alternar si el bot elimina automáticamente las menciones de estrellas.\n"
-"Establecer en 0 para desactivar el borrado automático "
+"Establecer en 0 para desactivar el borrado automático        "
 
 #: levelup.py:2397
 msgid "Star reaction mentions will auto-delete after "
@@ -1791,7 +1777,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "Establecer canal de mensajes LevelUP\n"
-"Establecer un canal para que todos los mensajes de subida de nivel se envíen a "
+"Establecer un canal para que todos los mensajes de subida de nivel se envíen a        "
 
 #: levelup.py:2418
 msgid "LevelUp channel has been **Disabled**\n"
@@ -1831,9 +1817,8 @@ msgid "\n"
 "        Set the star cooldown\n\n"
 "        Users can give another user a star every X seconds\n"
 "        "
-msgstr "\n"
-"Establecer el tiempo de espera de las estrellas\n\n"
-"Los usuarios pueden darle una estrella a otro usuario cada X segundos "
+msgstr "Establecer el tiempo de espera de las estrellas\n\n"
+"Los usuarios pueden darle una estrella a otro usuario cada X segundos        "
 
 #: levelup.py:2471
 #, docstring
@@ -1847,14 +1832,13 @@ msgid "\n"
 "        This command is for if you added level roles after users have achieved that level,\n"
 "        it will apply all necessary roles to a user according to their level and prestige\n"
 "        "
-msgstr "\n"
-"Inicializar roles de nivel\n\n"
+msgstr "Inicializar roles de nivel\n\n"
 "Este comando es para cuando agregas roles de nivel después de que los usuarios hayan alcanzado ese nivel,\n"
-"se aplicarán todos los roles necesarios a un usuario según su nivel y prestigio "
+"se aplicarán todos los roles necesarios a un usuario según su nivel y prestigio        "
 
 #: levelup.py:2485
 msgid "I dont have the proper permissions to manage roles!"
-msgstr "No tengo los permisos adecuados para gestionar roles"
+msgstr "¡No tengo los permisos adecuados para gestionar roles!"
 
 #: levelup.py:2566
 msgid "Initialization complete! Added "
@@ -1908,7 +1892,7 @@ msgstr "¡El rol de nivel ha sido eliminado!"
 
 #: levelup.py:2615
 msgid "Level doesnt exist!"
-msgstr "El nivel no existe"
+msgstr "¡El nivel no existe!"
 
 #: levelup.py:2619
 #, docstring
@@ -1921,9 +1905,8 @@ msgid "\n"
 "        Set the level required to prestige\n"
 "        Set to 0 to disable prestige\n"
 "        "
-msgstr "\n"
-"Establecer el nivel requerido para el prestigio\n"
-"Establecer en 0 para desactivar el prestigio "
+msgstr "Establecer el nivel requerido para el prestigio\n"
+"Establecer en 0 para desactivar el prestigio        "
 
 #: levelup.py:2634
 #, docstring
@@ -1948,7 +1931,7 @@ msgid "\n"
 msgstr "\n"
 "Añadir un rol de nivel de prestigio\n"
 "Añadir un rol y un emoji asociados con un nivel de prestigio específico\n\n"
-"Cuando un usuario gane prestigio, obtendrá ese rol y el emoji se mostrará en su perfil "
+"Cuando un usuario gane prestigio, obtendrá ese rol y el emoji se mostrará en su perfil        "
 
 #: levelup.py:2671 levelup.py:2693
 msgid "prestige_level must be a number!"
@@ -1983,7 +1966,7 @@ msgid "\n"
 msgstr "\n"
 "Añadir/Eliminar un gremio en la lista de ignorados\n\n"
 "**ESTA ES UNA CONFIGURACIÓN GLOBAL QUE SOLO LOS PROPIETARIOS DEL BOT PUEDEN USAR**\n\n"
-"Utiliza el comando con un gremio que ya esté en la lista de ignorados para eliminarlo "
+"Utiliza el comando con un gremio que ya esté en la lista de ignorados para eliminarlo        "
 
 #: levelup.py:2719
 msgid "Guild removed from ignore list"
@@ -2003,7 +1986,7 @@ msgid "\n"
 msgstr "\n"
 "Añadir/Eliminar un canal en la lista de ignorados\n"
 "Los canales en la lista de ignorados no ganan XP\n\n"
-"Utiliza el comando con un canal que ya esté en la lista de ignorados para eliminarlo "
+"Utiliza el comando con un canal que ya esté en la lista de ignorados para eliminarlo        "
 
 #: levelup.py:2740
 msgid "Channel removed from ignore list"
@@ -2023,7 +2006,7 @@ msgid "\n"
 msgstr "\n"
 "Añadir/Eliminar un rol de la lista de ignorados\n"
 "Los roles en la lista de ignorados no ganan XP\n\n"
-"Usa el comando con un rol que ya esté en la lista de ignorados para eliminarlo "
+"Usa el comando con un rol que ya esté en la lista de ignorados para eliminarlo        "
 
 #: levelup.py:2757
 msgid "Role removed from ignore list"
@@ -2043,7 +2026,7 @@ msgid "\n"
 msgstr "\n"
 "Añadir/Eliminar un miembro de la lista de ignorados\n"
 "Los miembros en la lista de ignorados no ganan XP\n\n"
-"Utilice el comando con un miembro ya en la lista de ignorados para eliminarlo "
+"Utilice el comando con un miembro ya en la lista de ignorados para eliminarlo        "
 
 #: levelup.py:2774
 msgid "Member removed from ignore list"
@@ -2085,7 +2068,7 @@ msgstr "`Cuento de ganadores:   `"
 
 #: levelup.py:2810
 msgid "`Last Winner(s): `"
-msgstr "`Último(s) ganador(es): `"
+msgstr "`Último(s) ganador(es):`"
 
 #: levelup.py:2811 levelup.py:2814 levelup.py:2815
 msgid "None"
@@ -2177,9 +2160,8 @@ msgid "\n"
 "        What hour the weekly stats reset\n"
 "        Set the hour (0 - 23 in UTC) for the weekly reset to take place\n"
 "        "
-msgstr "\n"
-"A qué hora se reinician las estadísticas semanales\n"
-"Establezca la hora (0 - 23 en UTC) para que se realice el reinicio semanal "
+msgstr "¿A qué hora se reinician las estadísticas semanales?\n\n"
+"Establezca la hora (0 - 23 en UTC) para que se realice el reinicio semanal        "
 
 #: levelup.py:2871
 msgid "Hour must be 0 to 23"
@@ -2195,9 +2177,8 @@ msgid "\n"
 "        What day of the week the weekly stats reset\n"
 "        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place\n"
 "        "
-msgstr "\n"
-"¿En qué día de la semana se reinician las estadísticas semanales?\n"
-"Establece el día de la semana (0 - 6 = lunes - domingo) en el que se llevará a cabo el reinicio semanal "
+msgstr "¿En qué día de la semana se reinician las estadísticas semanales?\n\n"
+"Establece el día de la semana (0 - 6 = lunes - domingo) en el que se llevará a cabo el reinicio semanal        "
 
 #: levelup.py:2885
 msgid "Day must be 0 to 6 (Monday to Sunday)"
@@ -2214,12 +2195,12 @@ msgid "\n"
 "        Set amount of members to include in the weekly top leaderboard\n"
 "        "
 msgstr "\n"
-"        Recuento semanal de miembros principales\n"
-"        Establecer la cantidad de miembros a incluir en la clasificación semanal principal "
+"Recuento semanal de miembros principales\n"
+"Establecer la cantidad de miembros a incluir en la clasificación semanal principal        "
 
 #: levelup.py:2899
 msgid "There must be at least one winner!"
-msgstr "Debe haber al menos un ganador"
+msgstr "¡Debe haber al menos un ganador!"
 
 #: levelup.py:2901
 msgid "There can only be up to 25 winners!"
@@ -2231,15 +2212,15 @@ msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
 "        "
 msgstr "Canal de anuncio de los ganadores semanales\n"
-"establece el canal en el que se anunciarán los ganadores semanales cuando esté habilitado el reinicio automático "
+"establece el canal en el que se anunciarán los ganadores semanales cuando esté habilitado el reinicio automático               "
 
 #: levelup.py:2912
 msgid "I do not have permission to send messages to that channel!"
-msgstr "No tengo permiso para enviar mensajes a ese canal"
+msgstr "¡No tengo permiso para enviar mensajes a ese canal!"
 
 #: levelup.py:2914
 msgid "I do not have permission to send embeds to that channel!"
-msgstr "No tengo permiso para enviar archivos incrustados a ese canal"
+msgstr "¡No tengo permiso para enviar archivos incrustados a ese canal!"
 
 #: levelup.py:2921
 #, docstring
@@ -2250,7 +2231,7 @@ msgstr "Recompensa de rol para el ganador semanal\n"
 
 #: levelup.py:2924
 msgid "I do not have permission to manage roles!"
-msgstr "No tengo permiso para gestionar roles"
+msgstr "¡No tengo permiso para gestionar roles!"
 
 #: levelup.py:2931
 #, docstring
@@ -2271,7 +2252,7 @@ msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
 "        "
 msgstr "Un titular de rol a la vez\n"
-"Alternar si se elimina el rol de ganador del titular anterior cuando se selecciona un nuevo ganador "
+"Alternar si se elimina el rol de ganador del titular anterior cuando se selecciona un nuevo ganador               "
 
 #: levelup.py:2955
 msgid "Auto role removal from previous winner has been **Disabled**"
@@ -2287,9 +2268,8 @@ msgid "\n"
 "        Weekly winners bonus experience points\n"
 "        Set to 0 to disable exp bonus\n"
 "        "
-msgstr "\n"
-"Bonificación semanal de puntos de experiencia para los ganadores\n"
-"Establecer en 0 para desactivar la bonificación de experiencia "
+msgstr "Bonificación semanal de puntos de experiencia para los ganadores\n"
+"Establecer en 0 para desactivar la bonificación de experiencia        "
 
 #: levelup.py:2975
 #, docstring

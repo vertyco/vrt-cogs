@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-25 00:26\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -26,8 +26,7 @@ msgstr "No está permitido interactuar con este botón."
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
-msgstr "\n"
-"Sistema de tickets de soporte con funcionalidad multipanel "
+msgstr "Sistema de tickets de soporte con funcionalidad multipanel    "
 
 #: tickets.py:41
 #, docstring
@@ -52,7 +51,7 @@ msgstr "¡Me falta el permiso `Manage Channels` para cerrar este ticket!"
 
 #: utils.py:99
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
-msgstr "Me falta el permiso `Manage Threads` para cerrar este ticket"
+msgstr "¡Me falta el permiso `Manage Threads` para cerrar este ticket!"
 
 #: utils.py:106
 msgid "Ticket created by **{}-{}** has been closed.\n"
@@ -72,9 +71,9 @@ msgstr "El ticket creado por **{}-{}** ha sido cerrado.\n"
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
-msgstr "Ticket Cerrado\n"
+msgstr "¡Ticket Cerrado!\n"
 "{}\n"
-"Actualmente faltan permisos para enviar incrustaciones a este canal"
+"¡Actualmente faltan permisos para enviar incrustaciones a este canal!"
 
 #: utils.py:126
 msgid "Ticket Closed"
@@ -140,7 +139,7 @@ msgstr "Actualizar resumen de tickets activos\n\n"
 "        guild (discord.Guild): servidor de Discord\n"
 "        conf (dict): configuración para el servidor\n\n"
 "    Devuelve:\n"
-"        int: ID del mensaje del panel de resumen "
+"        int: ID del mensaje del panel de resumen    "
 
 #: views.py:38
 msgid "cancel"
@@ -216,7 +215,7 @@ msgstr "Preguntas del formulario de tickets"
 
 #: views.py:515
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
-msgstr "He intentado fijar el mensaje de respuesta, pero no tengo los permisos para gestionar mensajes"
+msgstr "¡He intentado fijar el mensaje de respuesta, pero no tengo los permisos para gestionar mensajes!"
 
 #: views.py:520
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"

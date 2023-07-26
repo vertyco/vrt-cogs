@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 01:04\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -39,7 +39,7 @@ msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
 msgstr "Actualizar las incrustaciones para que coincidan con las dimensiones actuales.\n\n"
-"Toma una muestra utilizando el método de incrustación actual y actualiza el resto para que coincidan con las dimensiones "
+"Toma una muestra utilizando el método de incrustación actual y actualiza el resto para que coincidan con las dimensiones        "
 
 #: common\api.py:184
 #, docstring
@@ -72,12 +72,12 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
 msgstr "Degradar de forma iterativa una carga de conversación, priorizando los mensajes más recientes y el contexto crítico.\n\n"
-"        Args:\n"
-"            mensajes (List[dict]): entradas de mensajes enviados a la API\n"
-"            lista_de_funciones (List[dict]): lista de esquemas de funciones JSON para el modelo\n"
-"            conf: (GuildSettings): configuración actual\n\n"
-"        Devuelve:\n"
-"            Tuple[List[dict], List[dict], bool]: lista de mensajes actualizada, lista de funciones y si se degradó la conversación "
+"Args:\n"
+"    mensajes (List[dict]): entradas de mensajes enviados a la API\n"
+"    function_list (List[dict]): lista de esquemas de funciones JSON para el modelo\n"
+"    conf: (GuildSettings): configuración actual\n\n"
+"Devuelve:\n"
+"    Tuple[List[dict], List[dict], bool]: lista de mensajes actualizada, lista de funciones y si se degradó la conversación        "
 
 #: common\api.py:367
 #, docstring
@@ -106,7 +106,7 @@ msgstr "Este es un comando interno que solo se puede utilizar al interactuar con
 
 #: common\api.py:444
 msgid "This function consumes `{}` input tokens each call\n"
-msgstr "Esta función consume `{}` tokens de entrada en cada llamada.\n"
+msgstr "Esta función consume {} tokens de entrada en cada llamada.\n"
 
 #: common\api.py:461
 msgid "Hidden..."
@@ -126,7 +126,7 @@ msgstr "Página {}/{}"
 
 #: common\api.py:473
 msgid "No custom code has been added yet!"
-msgstr "Aún no se ha añadido ningún código personalizado"
+msgstr "¡Aún no se ha añadido ningún código personalizado!"
 
 #: common\api.py:489
 msgid "Embeddings"
@@ -146,11 +146,11 @@ msgstr "¡No se han añadido incrustaciones!"
 
 #: common\chat.py:105
 msgid "No message history!"
-msgstr "Sin historial de mensajes"
+msgstr "¡Sin historial de mensajes!"
 
 #: common\chat.py:113
 msgid "Failed to communicate with endpoint!"
-msgstr "No se ha podido establecer la comunicación con el punto final"
+msgstr "¡No se ha podido comunicar con el punto final!"
 
 #: common\chat.py:118
 msgid "Error: {}"
@@ -158,11 +158,11 @@ msgstr "Error: {}"
 
 #: common\chat.py:127
 msgid "Invalid API key, please set a new valid key!"
-msgstr "Clave API no válida, por favor establezca una nueva clave válida"
+msgstr "¡Clave API no válida, por favor establezca una nueva clave válida!"
 
 #: common\chat.py:129
 msgid "Uh oh, looks like my API key is invalid!"
-msgstr "Parece que mi clave API no es válida"
+msgstr "¡Parece que mi clave API no es válida!"
 
 #: common\chat.py:133
 msgid "**KeyError in prompt or system message**\n"
@@ -184,7 +184,7 @@ msgstr "Llamar a la API de forma asíncrona"
 
 #: common\chat.py:272
 msgid "Failed to get response!"
-msgstr "No se pudo obtener respuesta"
+msgstr "¡No se pudo obtener respuesta!"
 
 #: common\chat.py:312
 msgid "Too many functions called"
@@ -218,7 +218,7 @@ msgstr "Preparar el contenido para llamar a la API GPT\n\n"
 "            channel (Opcional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): canal para el contexto\n"
 "            query_embedding List[float]: pesos de incrustación del mensaje\n\n"
 "        Devuelve:\n"
-"            List[dict]: lista de mensajes preparados para api "
+"            List[dict]: lista de mensajes preparados para api        "
 
 #: common\chat.py:468
 #, docstring
@@ -242,15 +242,15 @@ msgstr "Cancelado"
 
 #: common\utils.py:53
 msgid "You have been blacklisted from using this command!"
-msgstr "Has sido incluido en la lista negra de usuarios de este comando"
+msgstr "¡Has sido incluido en la lista negra de usuarios de este comando!"
 
 #: common\utils.py:58
 msgid "You have a blacklisted role and cannot use this command!"
-msgstr "Tienes un rol en la lista negra y no puedes usar este comando"
+msgstr "¡Tienes un rol en la lista negra y no puedes usar este comando!"
 
 #: common\utils.py:63
 msgid "You cannot use that command in this channel!"
-msgstr "No puedes usar ese comando en este canal"
+msgstr "¡No puedes usar ese comando en este canal!"
 
 #: common\utils.py:68
 msgid "You cannot use that command in any channels under this category"

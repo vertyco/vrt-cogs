@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-26 03:44\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -39,7 +39,7 @@ msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
 msgstr "Einbettungen anpassen, um den aktuellen Abmessungen zu entsprechen.\n\n"
-"Nimmt ein Beispiel mit der aktuellen Einbettungsmethode und passt den Rest an, um den Abmessungen anzupassen.               "
+"Nimmt ein Beispiel mit der aktuellen Einbettungsmethode und passt den Rest an, um den Abmessungen anzupassen        "
 
 #: common\api.py:184
 #, docstring
@@ -71,13 +71,13 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "        Returns:\n"
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
-msgstr "iterativ degradieren Sie eine Konversationsnutzlast, wobei neuere Nachrichten und kritischer Kontext priorisiert werden\n\n"
+msgstr "iterativ degradieren Sie eine Konversationsnutzlast, wobei neuere Nachrichten und kritischer Kontext priorisiert werden.\n\n"
 "args:\n"
 "    messages (List[dict]): Nachrichteneinträge, die an die API gesendet wurden\n"
 "    function_list (List[dict]): Liste der JSON-Funktionsschemata für das Modell\n"
 "    conf: (GuildSettings): aktuelle Einstellungen\n\n"
 "rückgabe:\n"
-"    Tuple[List[dict], List[dict], bool]: aktualisierte Nachrichtenliste, Funktionsliste und ob die Konversation degradiert wurde        "
+"    (List[dict], List[dict], bool): aktualisierte Nachrichtenliste, Funktionsliste und ob die Konversation degradiert wurde        "
 
 #: common\api.py:367
 #, docstring
