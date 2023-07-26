@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-26 03:43\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -41,7 +41,7 @@ msgstr "Legen Sie die Kategorie-ID fest, unter der neue Tickets erstellt werden 
 
 #: commands\admin.py:43
 msgid "<panel_name> <category_id>`"
-msgstr "<Panel_name> <Kategorie_id>"
+msgstr "<panel_name> <category_id>"
 
 #: commands\admin.py:44
 msgid "Step 1"
@@ -53,7 +53,7 @@ msgstr "Legen Sie den Kanal fest, in dem sich das Bots-Ticket-Panel befinden wir
 
 #: commands\admin.py:46
 msgid "<panel_name> <channel_id>`"
-msgstr "<Panel_name> <Kanal_id>"
+msgstr "<panel_name> <channel_id>"
 
 #: commands\admin.py:47
 msgid "Step 2"
@@ -155,7 +155,7 @@ msgstr "Legen Sie das Benennungsformat für geöffnete Ticketkanäle fest.\n"
 
 #: commands\admin.py:83
 msgid "<panel_name> <name_format>`"
-msgstr "<Panel_name> <Name_format>"
+msgstr "<panel_name> <name_format>"
 
 #: commands\admin.py:84
 msgid "Ticket Channel Name"
@@ -167,7 +167,7 @@ msgstr "Protokollkanal für ein Ticket-Panel festlegen.\n"
 
 #: commands\admin.py:86
 msgid "<panel_name> <channel>`"
-msgstr "<Panel_name> <Kanal>"
+msgstr "<panel_name> <channel>"
 
 #: commands\admin.py:87
 msgid "Log Channel"
@@ -411,8 +411,7 @@ msgid "\n"
 "        it won't be shown in the modal and should not have spaces in it\n\n\n"
 "        Specify an existing field name to delete a modal field (non-case-sensitive)\n"
 "        "
-msgstr "\n"
-"Fügen Sie ein modales Feld zu einem Ticket-Panel hinzu.\n\n"
+msgstr "Fügen Sie ein modales Feld zu einem Ticket-Panel hinzu.\n\n"
 "Ticket-Panels können bis zu 5 Felder pro Modal haben, die der Benutzer vor dem Öffnen eines Tickets ausfüllen muss.\n"
 "Wenn modale Felder hinzugefügt werden und Pflichtfelder enthalten, muss der Benutzer sie ausfüllen, bevor er ein Ticket öffnen kann.\n\n"
 "Es gibt keinen Schalter für Modals, wenn ein Panel sie hat, werden sie verwendet, wenn nicht, wird einfach das Ticket geöffnet.\n"
@@ -420,7 +419,7 @@ msgstr "\n"
 "**Hinweis**\n"
 "`field_name` ist der Name des Feldes in der Konfiguration.\n"
 "Es wird nicht im Modal angezeigt und sollte keine Leerzeichen enthalten.\n\n"
-"Geben Sie einen vorhandenen Feldnamen an, um ein Modalfeld zu löschen (Groß- und Kleinschreibung wird nicht beachtet)               "
+"Geben Sie einen vorhandenen Feldnamen an, um ein Modalfeld zu löschen (Groß- und Kleinschreibung wird nicht beachtet)        "
 
 #: commands\admin.py:400
 msgid "Field for {} panel has been removed!"
@@ -860,12 +859,11 @@ msgid "\n"
 "        These roles are a specialized subset of the main support roles.\n"
 "        Use this role type if you want to isolate specific groups to a certain panel.\n"
 "        "
-msgstr "\n"
-"Rollen für ein bestimmtes Panel hinzufügen/entfernen.        \n\n"
-"Um eine Rolle zu entfernen, führen Sie diesen Befehl erneut aus, um sie zu entfernen.        \n\n"
-"**Optional**: Fügen Sie `true` hinzu, um die Rolle zu erwähnen, wenn ein Ticket geöffnet wird.        \n\n"
-"Diese Rollen sind eine spezialisierte Untermenge der Haupt-Supportrollen.        \n"
-"Verwenden Sie diesen Rollentyp, um bestimmte Gruppen einem bestimmten Panel zuzuordnen.               "
+msgstr "Rollen für ein bestimmtes Panel hinzufügen/entfernen.\n\n"
+"Um eine Rolle zu entfernen, führen Sie diesen Befehl erneut aus, um sie zu entfernen.\n\n"
+"**Optional**: Fügen Sie `true` hinzu, um die Rolle zu erwähnen, wenn ein Ticket geöffnet wird.\n\n"
+"Diese Rollen sind eine spezialisierte Untermenge der Haupt-Supportrollen.\n"
+"Verwenden Sie diesen Rollentyp, um bestimmte Gruppen einem bestimmten Panel zuzuordnen.        "
 
 #: commands\admin.py:1019
 msgid "{} has been removed from the {} panel roles"
@@ -881,9 +879,8 @@ msgid "\n"
 "        Add/Remove roles required to open a ticket for a specific panel\n\n"
 "        Specify the same role to remove it\n"
 "        "
-msgstr "\n"
-"Fügen Sie/Rufen Sie Rollen hinzu oder entfernen Sie sie, die erforderlich sind, um ein Ticket für ein bestimmtes Panel zu öffnen        \n\n"
-"Geben Sie die gleiche Rolle an, um sie zu entfernen               "
+msgstr "Fügen Sie/Rufen Sie Rollen hinzu oder entfernen Sie sie, die erforderlich sind, um ein Ticket für ein bestimmtes Panel zu öffnen.        \n\n"
+"Geben Sie die gleiche Rolle an, um sie zu entfernen        "
 
 #: commands\admin.py:1048
 msgid "{} has been removed from the {} panel's required open roles"
@@ -953,8 +950,7 @@ msgid "\n"
 "        Add/Remove users or roles from the blacklist\n\n"
 "        Users and roles in the blacklist will not be able to create a ticket\n"
 "        "
-msgstr "\n"
-"Benutzer und Rollen in der schwarzen Liste können keine Tickets erstellen               "
+msgstr "Benutzer und Rollen in der schwarzen Liste können keine Tickets erstellen.        "
 
 #: commands\admin.py:1150
 msgid " has been removed from the blacklist"
@@ -970,9 +966,8 @@ msgid "\n"
 "        Auto-close ticket if opener doesn't say anything after X hours of opening\n\n"
 "        Set to 0 to disable this\n"
 "        "
-msgstr "\n"
-"Auto-Ticket schließen, wenn der Öffner nach X Stunden nichts sagt\n\n"
-"Auf 0 setzen, um dies zu deaktivieren               "
+msgstr "Auto-Ticket schließen, wenn der Öffner nach X Stunden nichts sagt\n\n"
+"Auf 0 setzen, um dies zu deaktivieren        "
 
 #: commands\admin.py:1172
 #, docstring
@@ -980,9 +975,8 @@ msgid "\n"
 "        Set a channel for the live overview message\n\n"
 "        The overview message shows all active tickets across all configured panels for a server.\n"
 "        "
-msgstr "\n"
-"Einen Kanal für die Live-Übersichtsmeldung festlegen.        \n\n"
-"Die Übersichtsmeldung zeigt alle aktiven Tickets über alle konfigurierten Panels für einen Server an.               "
+msgstr "Setze einen Kanal für die Live-Übersichtsmeldung.\n\n"
+"Die Übersichtsmeldung zeigt alle aktiven Tickets über alle konfigurierten Panels für einen Server an.        "
 
 #: commands\admin.py:1178
 msgid "Overview channel has been **Disabled**"
@@ -1055,9 +1049,8 @@ msgid "\n"
 "        (Toggle) If users can manage their own tickets\n\n"
 "        Users will be able to add/remove others to their support ticket\n"
 "        "
-msgstr "\n"
-"(Umschalten) Wenn Benutzer ihre eigenen Tickets verwalten können\n\n"
-"Benutzer können andere Personen zu ihrem Support-Ticket hinzufügen/entfernen               "
+msgstr "(Umschalten) Wenn Benutzer ihre eigenen Tickets verwalten können\n\n"
+"Benutzer können andere Personen zu ihrem Support-Ticket hinzufügen/entfernen        "
 
 #: commands\admin.py:1250
 msgid "User can no longer manage their support ticket channel"
@@ -1073,9 +1066,8 @@ msgid "\n"
 "        (Toggle) Auto-add support and panel roles to thread tickets\n\n"
 "        Adding a user to a thread pings them, so this is off by default\n"
 "        "
-msgstr "\n"
-"(Umschalten) Automatisches Hinzufügen von Support- und Panel-Rollen zu Thread-Tickets\n\n"
-"Das Hinzufügen eines Benutzers zu einem Thread pingt ihn an, daher ist dies standardmäßig deaktiviert               "
+msgstr "(Umschalten) Auto-Addieren von Support- und Panel-Rollen zu Thread-Tickets\n\n"
+"Das Hinzufügen eines Benutzers zu einem Thread pingt sie an, daher ist dies standardmäßig deaktiviert        "
 
 #: commands\admin.py:1266
 msgid "Support and panel roles will no longer be auto-added to thread tickets"
@@ -1091,9 +1083,8 @@ msgid "\n"
 "        (Toggle) Ticket transcripts\n\n"
 "        Closed tickets will have their transcripts uploaded to the log channel\n"
 "        "
-msgstr "\n"
-"(Umschalten) Ticket-Transkripte\n\n"
-"Geschlossene Tickets werden ihre Transkripte im Protokollkanal hochladen               "
+msgstr "(Umschalten) Ticket-Transkripte\n\n"
+"Geschlossene Tickets werden ihre Transkripte im Protokollkanal hochladen        "
 
 #: commands\admin.py:1282
 msgid "Transcripts of closed tickets will no longer be saved"
@@ -1223,7 +1214,7 @@ msgstr "\n"
 "`[p]close` - schließt das Ticket ohne Angabe von Gründen        \n"
 "`[p]close thanks for helping!` - schließt das Ticket mit dem Grund \"Danke für die Hilfe!\"        \n"
 "`[p]close 1h` - schließt das Ticket in 1 Stunde ohne Angabe von Gründen        \n"
-"`[p]close 1m thanks for helping!` - schließt das Ticket in 1 Minute mit dem Grund \"Danke für die Hilfe!\"               "
+"`[p]close 1m thanks for helping!` - schließt das Ticket in 1 Minute mit dem Grund \"Danke für die Hilfe!\"        "
 
 #: commands\base.py:120
 msgid "Cannot find the owner of this ticket! Maybe it was removed from config?"
