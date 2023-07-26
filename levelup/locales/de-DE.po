@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-26 13:12\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -366,7 +366,8 @@ msgid "\n"
 "         - `random` will randomly select from a pool of default backgrounds each time\n"
 "         - `filename` run `[p]mypf backgrounds` to view default options you can use by including their filename\n"
 "        "
-msgstr "Setzen Sie einen Hintergrund für Ihr Profil\n\n"
+msgstr "\n"
+"Setzen Sie einen Hintergrund für Ihr Profil\n\n"
 "Dies überschreibt Ihr Profilbanner als Hintergrund\n\n"
 "**WARNUNG**\n"
 "Profilhintergründe sind breite Landschaften (1050 mal 450 Pixel) mit einem Seitenverhältnis von 21:9\n"
@@ -419,7 +420,7 @@ msgstr "Die Schriftart Ihres Profils wurde eingestellt auf "
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr "Schaltet einen leichten Unschärfeeffekt für das Hintergrundbild ein, in dem der Text angezeigt wird.        "
+msgstr "Schalte einen leichten Unschärfeeffekt auf dem Hintergrundbild ein, wo der Text angezeigt wird        "
 
 #: base.py:769
 msgid "Your profile background blur has been set to "
@@ -543,11 +544,12 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr "Ansicht der Rangliste        \n\n"
+msgstr "\n"
+"Ansicht der Rangliste        \n\n"
 "**Argumente**        \n"
 "`stat`: Für welche Art von Statistik soll die wöchentliche Rangliste angezeigt werden?        \n"
 "Gültige Optionen sind `exp`, `messages` und `voice`        \n"
-"Abkürzungen dieser Argumente können ebenfalls verwendet werden               "
+"Abkürzungen dieser Argumente können ebenfalls verwendet werden        "
 
 #: base.py:1023
 msgid "Use the `"
@@ -595,7 +597,7 @@ msgstr "Die wöchentliche Rangliste anzeigen        \n\n"
 "**Argumente**        \n"
 "`stat`: Welche Art von Statistik soll für die wöchentliche Rangliste angezeigt werden?        \n"
 "Gültige Optionen sind `exp`, `messages`, `stars` und `voice`        \n"
-"Es können auch Abkürzungen dieser Argumente verwendet werden               "
+"Es können auch Abkürzungen dieser Argumente verwendet werden        "
 
 #: base.py:1133 base.py:1155
 msgid "Weekly stats are disabled for this guild"
@@ -667,9 +669,8 @@ msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
-msgstr "\n"
-"Ihr freundliches Leveling-System aus der Nachbarschaft\n\n"
-"Verdiene Erfahrung, indem du in Text- und Sprachkanälen chattest, vergleiche Level mit deinen Freunden, passe dein Profil an und sieh dir verschiedene Bestenlisten an!   "
+msgstr "Ihr freundliches Leveling-System aus der Nachbarschaft\n\n"
+"Verdiene Erfahrung, indem du in Text- und Sprachkanälen chattest, vergleiche Level mit deinen Freunden, passe dein Profil an und sieh dir verschiedene Bestenlisten an!    "
 
 #: levelup.py:235
 msgid "Monday"
@@ -951,7 +952,7 @@ msgid "\n"
 "        Reset levels, backup and restore cog data\n"
 "        "
 msgstr "Koggen-Admin-Befehle\n\n"
-"Ebenen zurücksetzen, Koggen-Daten sichern und wiederherstellen               "
+"Ebenen zurücksetzen, Koggen-Daten sichern und wiederherstellen        "
 
 #: levelup.py:1278
 #, docstring
@@ -1194,15 +1195,14 @@ msgid "\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "        "
-msgstr "\n"
-"Importiere Level und Exp von MEE6\n\n"
+msgstr "Importiere Level und Exp von MEE6\n\n"
 "**Stelle sicher, dass die Bestenliste deines Servers öffentlich ist!**\n\n"
 "**Argumente**\n"
 "`import_by` - welche Statistik priorisiert werden soll (`level` oder `exp`)\n"
 "Wenn \"exp\" eingegeben wird, werden ihre Erfahrungspunkte importiert und ihr neues Level basiert darauf.\n"
 "Wenn \"level\" eingegeben wird, wird ihr Level importiert und ihre Erfahrungspunkte basieren darauf.\n"
 "`replace` - (True/False) Wenn \"True\", werden die Erfahrungspunkte oder das Level des Benutzers ersetzt, ansonsten werden sie hinzugefügt.\n"
-"`i_agree` - (Ja/Nein) Nur eine zusätzliche Option, um sicherzustellen, dass du diesen Befehl ausführen möchtest               "
+"`i_agree` - (Ja/Nein) Nur eine zusätzliche Option, um sicherzustellen, dass du diesen Befehl ausführen möchtest        "
 
 #: levelup.py:1595
 msgid "Not importing MEE6 levels"
@@ -1397,7 +1397,7 @@ msgid "\n"
 "        counts as XP gained\n"
 "        "
 msgstr "Cooldown-Schwelle für Nachrichten-XP\n\n"
-"Wenn ein Benutzer eine Nachricht sendet, müssen sie X Sekunden warten, bevor ihre Nachricht als gewonnene XP zählt               "
+"Wenn ein Benutzer eine Nachricht sendet, müssen sie X Sekunden warten, bevor ihre Nachricht als gewonnene XP zählt.        "
 
 #: levelup.py:1960
 #, docstring
@@ -1423,7 +1423,7 @@ msgid "\n"
 "        Sets the amount of XP gained per minute in a voice channel (default is 2)\n"
 "        "
 msgstr "XP-Gewinn pro Sprachkanal einstellen\n"
-"Legt die Menge an XP fest, die pro Minute in einem Sprachkanal gewonnen werden (Standardwert ist 2)               "
+"Legt die Menge an XP fest, die pro Minute in einem Sprachkanal gewonnen werden (Standardwert ist 2)        "
 
 #: levelup.py:1993
 #, docstring
@@ -1478,8 +1478,9 @@ msgid "\n"
 "        Ignore muted voice users\n"
 "        Toggle whether self-muted users in a voice channel can gain voice XP\n"
 "        "
-msgstr "Ignoriere stummgeschaltete Sprachbenutzer\n"
-"Aktiviere/deaktiviere, ob selbst stummgeschaltete Benutzer in einem Sprachkanal Sprach-EP erhalten können               "
+msgstr "\n"
+"        Ignoriere stummgeschaltete Sprachbenutzer\n"
+"        Aktiviere/deaktiviere, ob selbst stummgeschaltete Benutzer in einem Sprachkanal Sprach-EP erhalten können        "
 
 #: levelup.py:2081
 msgid "Self-Muted users can now gain XP while in a voice channel"
@@ -1513,7 +1514,8 @@ msgid "\n"
 "        Ignore deafened voice users\n"
 "        Toggle whether deafened users in a voice channel can gain voice XP\n"
 "        "
-msgstr "Ignoriere taube Sprachbenutzer\n"
+msgstr "\n"
+"Ignoriere taube Sprachbenutzer\n"
 "Aktiviere/deaktiviere, ob taube Benutzer in einem Sprachkanal Sprach-EP erhalten können        "
 
 #: levelup.py:2111
@@ -1623,8 +1625,9 @@ msgid "\n"
 "        Exponent multiplier for the leveling algorithm\n\n"
 "        Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)\n"
 "        "
-msgstr "Exponentenmultiplikator für den Leveling-Algorithmus\n\n"
-"Beeinflusst das Leveling auf einer exponentiellen Skala (höhere Werte lassen das Leveling exponentiell länger dauern)               "
+msgstr "\n"
+"Exponentenmultiplikator für den Leveling-Algorithmus\n\n"
+"Beeinflusst das Leveling auf einer exponentiellen Skala (höhere Werte lassen das Leveling exponentiell länger dauern)        "
 
 #: levelup.py:2235
 msgid "Your exponent needs to be higher than 0"
@@ -1850,7 +1853,7 @@ msgstr "Initialisierung abgeschlossen! Hinzugefügt "
 
 #: levelup.py:2568
 msgid " roles and removed "
-msgstr " Rollen und entfernt"
+msgstr "Rollen und entfernen"
 
 #: levelup.py:2576
 #, docstring
@@ -2163,8 +2166,8 @@ msgid "\n"
 "        What hour the weekly stats reset\n"
 "        Set the hour (0 - 23 in UTC) for the weekly reset to take place\n"
 "        "
-msgstr "Um welche Uhrzeit werden die wöchentlichen Statistiken zurückgesetzt?\n"
-"Legen Sie die Stunde (0 - 23 in UTC) für den wöchentlichen Reset fest               "
+msgstr "Um welche Uhrzeit werden die wöchentlichen Statistiken zurückgesetzt?\n\n"
+"Legen Sie die Stunde (0 - 23 in UTC) für den wöchentlichen Reset fest        "
 
 #: levelup.py:2871
 msgid "Hour must be 0 to 23"
@@ -2255,7 +2258,7 @@ msgstr "Alle Top-Mitglieder, die in der wöchentlichen Statistikrücksetzung auf
 msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
 "        "
-msgstr "Jeweils ein Rolleninhaber zur gleichen Zeit\n"
+msgstr "Ein Rolleninhaber zur gleichen Zeit\n"
 "Umschalten, ob die Gewinnerrolle dem vorherigen Inhaber entzogen wird, wenn ein neuer Gewinner ausgewählt wird               "
 
 #: levelup.py:2955
@@ -2272,7 +2275,7 @@ msgid "\n"
 "        Weekly winners bonus experience points\n"
 "        Set to 0 to disable exp bonus\n"
 "        "
-msgstr "Wöchentlicher Gewinner Bonus Erfahrungspunkte        \n"
+msgstr "Wöchentlicher Gewinner Bonus Erfahrungspunkte\n"
 "Auf 0 setzen, um den Erfahrungspunkte-Bonus zu deaktivieren               "
 
 #: levelup.py:2975
@@ -2295,7 +2298,7 @@ msgstr "De-Leveling eines Benutzers oder von sich selbst erzwingen"
 
 #: levelup.py:3017
 msgid " to level down!"
-msgstr "Herunterstufen!"
+msgstr " Herunterstufen!"
 
 #: levelup.py:3025
 #, docstring
