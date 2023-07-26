@@ -72,7 +72,7 @@ class Fluent(commands.Cog):
         """Translate a message"""
         lang = await self.converter(to_language)
         if not lang:
-            txt = _("The target language `{}` was not found").format(to_language)
+            txt = _("The target language `{}` was not found.").format(to_language)
             return await ctx.send(txt)
 
         if not message and hasattr(ctx.message, "reference"):
@@ -94,7 +94,7 @@ class Fluent(commands.Cog):
             return
 
         if trans is None:
-            txt = _("❌ Translation failed")
+            txt = _("❌ Translation failed.")
             return await ctx.send(txt)
 
         embed = discord.Embed(description=trans.text, color=ctx.author.color)
@@ -208,7 +208,7 @@ class Fluent(commands.Cog):
             msg += f"{channel.mention} `({l1} <-> {l2})`\n"
 
         if not msg:
-            return await ctx.send(_("There are no fluent channels at this time"))
+            return await ctx.send(_("There are no fluent channels at this time."))
         final = _("**Fluent Settings**\n{}").format(msg.strip())
         for p in pagify(final, page_length=1000):
             await ctx.send(p)
