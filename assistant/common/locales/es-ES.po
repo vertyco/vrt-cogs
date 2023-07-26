@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-26 04:41\n"
+"PO-Revision-Date: 2023-07-26 14:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -39,7 +39,7 @@ msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
 msgstr "Actualizar las incrustaciones para que coincidan con las dimensiones actuales.\n\n"
-"Toma una muestra utilizando el método de incrustación actual y actualiza el resto para que coincidan con las dimensiones.        "
+"Toma una muestra utilizando el método de incrustación actual y actualiza el resto para que coincidan con las dimensiones        "
 
 #: common\api.py:184
 #, docstring
@@ -71,12 +71,12 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "        Returns:\n"
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
-msgstr "degradar de forma iterativa una carga de conversación, priorizando los mensajes más recientes y el contexto crítico.\n\n"
-"args:\n"
+msgstr "Degradar de forma iterativa una carga de conversación, priorizando los mensajes más recientes y el contexto crítico.\n\n"
+"Args:\n"
 "    mensajes (List[dict]): entradas de mensajes enviados a la API\n"
-"    lista_de_funciones (List[dict]): lista de esquemas de funciones JSON para el modelo\n"
+"    function_list (List[dict]): lista de esquemas de funciones JSON para el modelo\n"
 "    conf: (GuildSettings): configuración actual\n\n"
-"devuelve:\n"
+"Devuelve:\n"
 "    Tuple[List[dict], List[dict], bool]: lista de mensajes actualizada, lista de funciones y si se degradó la conversación        "
 
 #: common\api.py:367
@@ -218,7 +218,7 @@ msgstr "Preparar el contenido para llamar a la API GPT\n\n"
 "            channel (Opcional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): canal para el contexto\n"
 "            query_embedding List[float]: pesos de incrustación del mensaje\n\n"
 "        Devuelve:\n"
-"            List[dict]: lista de mensajes preparados para api               "
+"            List[dict]: lista de mensajes preparados para api        "
 
 #: common\chat.py:468
 #, docstring
