@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-25 17:00\n"
+"PO-Revision-Date: 2023-07-26 04:40\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -33,7 +33,7 @@ msgstr "지원 티켓 패널을 만들려면 다음과 같이 입력하세요 "
 
 #: commands\admin.py:33
 msgid " <panel_name>`"
-msgstr " <패널_이름>`"
+msgstr "<패널_이름>"
 
 #: commands\admin.py:40
 msgid "Set the category ID that new tickets will be created under if using channel tickets.\n"
@@ -41,7 +41,7 @@ msgstr "채널 티켓을 사용하는 경우에는 새로운 티켓이 생성될
 
 #: commands\admin.py:43
 msgid "<panel_name> <category_id>`"
-msgstr "<패널_이름> <카테고리_ID>`"
+msgstr "<panel_name> <category_id>"
 
 #: commands\admin.py:44
 msgid "Step 1"
@@ -53,7 +53,7 @@ msgstr "봇 티켓 패널이 위치할 채널을 설정합니다.\n"
 
 #: commands\admin.py:46
 msgid "<panel_name> <channel_id>`"
-msgstr "<패널_이름> <채널_ID>`"
+msgstr "<패널_이름> <채널_ID>"
 
 #: commands\admin.py:47
 msgid "Step 2"
@@ -65,7 +65,7 @@ msgstr "봇 티켓 패널 메시지의 ID를 설정하세요.\n"
 
 #: commands\admin.py:49
 msgid "<panel_name> <message_id>`\n"
-msgstr "<패널_이름> <메시지_ID>`\n"
+msgstr "<패널_이름> <메시지_ID>\n"
 
 #: commands\admin.py:50
 msgid "At this point the ticket panel will be activated, all following steps are for extra customization.\n"
@@ -87,7 +87,7 @@ msgstr "티켓 패널 버튼의 텍스트를 설정하세요.\n"
 
 #: commands\admin.py:60
 msgid "<panel_name> <button_text>`"
-msgstr "<패널_이름> <버튼_텍스트>`"
+msgstr "<패널_이름> <버튼_텍스트>"
 
 #: commands\admin.py:61
 msgid "Button Text"
@@ -103,7 +103,7 @@ msgstr "유효한 색상은 다음과 같습니다 "
 
 #: commands\admin.py:64
 msgid "<panel_name> <button_color>`"
-msgstr "<패널_이름> <버튼_색상>`"
+msgstr "<패널_이름> <버튼_색상>"
 
 #: commands\admin.py:65
 msgid "Button Color"
@@ -127,7 +127,7 @@ msgstr "티켓에 채널 대신 스레드를 사용하세요.\n"
 
 #: commands\admin.py:71 commands\admin.py:75 commands\admin.py:79
 msgid "<panel_name>`"
-msgstr "<패널_이름>`"
+msgstr "<패널_이름>"
 
 #: commands\admin.py:72
 msgid "Thread Tickets"
@@ -155,7 +155,7 @@ msgstr "개설되는 티켓 채널의 이름 지정 형식을 설정합니다.\n
 
 #: commands\admin.py:83
 msgid "<panel_name> <name_format>`"
-msgstr "<패널_이름> <이름_형식>`"
+msgstr "<패널_이름> <이름_형식>"
 
 #: commands\admin.py:84
 msgid "Ticket Channel Name"
@@ -167,7 +167,7 @@ msgstr "티켓 패널의 로그 채널을 설정합니다.\n"
 
 #: commands\admin.py:86
 msgid "<panel_name> <channel>`"
-msgstr "<패널_이름> <채널>`"
+msgstr "<패널_이름> <채널>"
 
 #: commands\admin.py:87
 msgid "Log Channel"
@@ -254,7 +254,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "티켓 패널의 메시지 ID를 설정하세요\n"
-"이 명령은 티켓 패널 메시지와 동일한 채널에서 실행하세요 "
+"이 명령은 티켓 패널 메시지와 동일한 채널에서 실행하세요               "
 
 #: commands\admin.py:170
 msgid "Category ID must be set for this panel first!"
@@ -323,7 +323,7 @@ msgstr "\n"
 "`{shortdate}` - mm-dd\n"
 "`{longdate}` - mm-dd-yyyy\n"
 "`{time}` - 봇 호스트 시스템 시간에 따른 hh-mm AM/PM\n\n"
-"기본 \"티켓-사용자이름\"을 사용하려면 {default}로 설정하세요 "
+"기본 \"티켓-사용자이름\"을 사용하려면 {default}로 설정하세요        "
 
 #: commands\admin.py:274
 #, docstring
@@ -420,7 +420,7 @@ msgstr "\n"
 "**참고**\n"
 "`field_name`은 구성에 저장된 필드의 이름일 뿐입니다.\n"
 "모달에 표시되지 않으며 공백이 없어야 합니다.\n\n"
-"기존 필드 이름을 지정하여 모달 필드를 삭제하세요(대소문자 구분 없음) "
+"기존 필드 이름을 지정하여 모달 필드를 삭제하세요(대소문자 구분 없음)               "
 
 #: commands\admin.py:400
 msgid "Field for {} panel has been removed!"
@@ -566,10 +566,10 @@ msgid "\n"
 msgstr "\n"
 "티켓이 열릴 때 보낼 메시지 임베드를 추가하세요.\n\n"
 "다음 중 하나를 임베드에 포함하여 메시지가 전송될 때 해당 값으로 대체할 수 있습니다.\n"
-"`{사용자 이름}` - 사용자의 Discord 사용자 이름\n"
-"`{멘션}` - 사용자를 멘션합니다\n"
-"`{id}` - 티켓을 생성한 사용자의 ID입니다.\n\n"
-"봇이 임베드 설정을 위해 몇 가지 단계를 안내할 것입니다 "
+"\"<b>{사용자 이름}</b>\" - 사용자의 Discord 사용자 이름\n"
+"\"<b>{멘션}</b>\" - 사용자를 멘션합니다\n"
+"\"{id}\" - 티켓을 생성한 사용자의 ID입니다.\n\n"
+"봇이 임베드 설정을 위해 몇 가지 단계를 안내할 것입니다        "
 
 #: commands\admin.py:705
 msgid "type 'cancel' to cancel the setup"
@@ -650,7 +650,7 @@ msgstr "하나를 생성하려면 클릭하세요."
 
 #: commands\admin.py:834
 msgid "(alt)"
-msgstr "(alt)를 한국어로 번역하면 \"(구)\"입니다"
+msgstr "(구)"
 
 #: commands\admin.py:853
 msgid "`Category:       `"
@@ -840,11 +840,11 @@ msgid "\n"
 msgstr "\n"
 "티켓 지원 역할을 추가/제거합니다 (한 번에 하나씩)\n\n"
 "**선택 사항**: 티켓이 열릴 때 해당 역할이 언급되도록 멘션에 `true`를 포함하세요\n\n"
-"역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하기만 하면 됩니다 "
+"역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하기만 하면 됩니다               "
 
 #: commands\admin.py:983
 msgid "{} has been removed from support roles"
-msgstr "지원 역할에서 {}이(가) 제거되었습니다"
+msgstr "{}이(가) 지원 역할에서 제거되었습니다"
 
 #: commands\admin.py:987
 msgid " has been added to support roles"
@@ -864,15 +864,15 @@ msgstr "\n"
 "역할을 제거하려면 해당 역할과 함께 이 명령을 다시 실행하여 제거하면 됩니다.\n\n"
 "**선택 사항**: 티켓이 열릴 때 해당 역할이 언급되도록 멘션에 `true`를 포함하세요.\n\n"
 "이러한 역할은 기본 지원 역할의 전문화된 하위 집합입니다.\n"
-"특정 그룹을 특정 패널에 격리하려는 경우에는 이 역할 유형을 사용하세요 "
+"특정 그룹을 특정 패널에 격리하려는 경우에는 이 역할 유형을 사용하세요.               "
 
 #: commands\admin.py:1019
 msgid "{} has been removed from the {} panel roles"
-msgstr "{}이(가) {} 패널 역할에서 제거되었습니다"
+msgstr "{}이(가){}패널 역할에서 제거되었습니다"
 
 #: commands\admin.py:1027
 msgid " has been added to the {} panel roles"
-msgstr " 패널 역할에 {}이(가) 추가되었습니다"
+msgstr "패널 역할에 {}이(가) 추가되었습니다"
 
 #: commands\admin.py:1033
 #, docstring
@@ -882,15 +882,15 @@ msgid "\n"
 "        "
 msgstr "\n"
 "특정 패널에 대한 티켓을 여는 데 필요한 역할을 추가/제거하세요\n\n"
-"제거하려면 동일한 역할을 지정하세요 "
+"제거하려면 동일한 역할을 지정하세요               "
 
 #: commands\admin.py:1048
 msgid "{} has been removed from the {} panel's required open roles"
-msgstr "{}이(가) {} 패널의 필수 개방 역할에서 제거되었습니다"
+msgstr "{}이(가) {}패널의 필수 개방 역할에서 제거되었습니다"
 
 #: commands\admin.py:1056
 msgid " has been added to the {} panel's required open roles"
-msgstr " 패널의 필수 개방 역할에 {0}이(가) 추가되었습니다"
+msgstr "패널의 필수 개방 역할에 {0}이(가) 추가되었습니다"
 
 #: commands\admin.py:1068
 #, docstring
@@ -906,7 +906,7 @@ msgstr "\n"
 "패널이 스레드를 사용하는 경우, 일반 텍스트 채널을 사용해야 합니다.\n"
 "패널이 채널을 사용하는 경우, 카테고리를 사용해야 합니다.\n\n"
 "패널이 채널 유형이고 채널을 사용하는 경우, 봇은 해당 채널과 연결된 카테고리를 사용합니다.\n\n"
-"대체 채널을 제거하려면 기존 채널을 지정하세요 "
+"대체 채널을 제거하려면 기존 채널을 지정하세요.               "
 
 #: commands\admin.py:1085
 msgid "Alt channel has been removed for this panel!"
@@ -954,7 +954,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "블랙리스트에서 사용자 또는 역할을 추가/제거하세요.\n\n"
-"블랙리스트에 있는 사용자 및 역할은 티켓을 만들 수 없습니다 "
+"블랙리스트에 있는 사용자 및 역할은 티켓을 만들 수 없습니다.               "
 
 #: commands\admin.py:1150
 msgid " has been removed from the blacklist"
@@ -972,7 +972,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "개봉 후 X시간이 지나도 개봉자가 아무 말도 하지 않으면 티켓이 자동으로 종료됩니다.\n\n"
-"이 기능을 사용하지 않으려면 0으로 설정하세요 "
+"이 기능을 사용하지 않으려면 0으로 설정하세요               "
 
 #: commands\admin.py:1172
 #, docstring
@@ -982,7 +982,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "실시간 개요 메시지의 채널을 설정하세요.\n\n"
-"개요 메시지는 서버의 모든 구성된 패널에서 활성 티켓을 모두 보여줍니다 "
+"개요 메시지는 서버의 모든 구성된 패널에서 활성 티켓을 모두 보여줍니다.               "
 
 #: commands\admin.py:1178
 msgid "Overview channel has been **Disabled**"
@@ -1057,7 +1057,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "(토글) 사용자가 직접 티켓을 관리할 수 있는 경우\n\n"
-"사용자는 자신의 지원 티켓에 다른 사람을 추가/제거할 수 있습니다 "
+"사용자는 자신의 지원 티켓에 다른 사람을 추가/제거할 수 있습니다               "
 
 #: commands\admin.py:1250
 msgid "User can no longer manage their support ticket channel"
@@ -1075,7 +1075,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "(토글) 스레드 티켓에 지원 및 패널 역할 자동 추가하기\n\n"
-"사용자를 스레드에 추가하면 해당 사용자에게 핑을 보내므로 기본적으로 이 기능은 꺼져 있습니다 "
+"사용자를 스레드에 추가하면 해당 사용자에게 핑을 보내므로 기본적으로 이 기능은 꺼져 있습니다               "
 
 #: commands\admin.py:1266
 msgid "Support and panel roles will no longer be auto-added to thread tickets"
@@ -1093,7 +1093,7 @@ msgid "\n"
 "        "
 msgstr "\n"
 "(토글) 티켓 기록\n\n"
-"종료된 티켓은 로그 채널에 기록이 업로드됩니다 "
+"종료된 티켓은 로그 채널에 기록이 업로드됩니다               "
 
 #: commands\admin.py:1282
 msgid "Transcripts of closed tickets will no longer be saved"
@@ -1223,7 +1223,7 @@ msgstr "\n"
 "`[p]close` - 이유 없이 티켓을 닫습니다\n"
 "`[p]close thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 티켓을 닫습니다\n"
 "`[p]close 1h` - 이유 없이 1시간 후에 티켓을 닫습니다\n"
-"`[p]close 1m thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 1분 후에 티켓을 닫습니다 "
+"`[p]close 1m thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 1분 후에 티켓을 닫습니다               "
 
 #: commands\base.py:120
 msgid "Cannot find the owner of this ticket! Maybe it was removed from config?"
@@ -1235,7 +1235,7 @@ msgstr "이 티켓을 닫을 수 있는 권한이 없습니다"
 
 #: commands\base.py:145
 msgid "This ticket will close {}"
-msgstr "이 티켓은 {}을(를) 종료합니다"
+msgstr "이 티켓은 {}을 종료합니다"
 
 #: commands\base.py:153
 msgid "Closing cancelled!"
