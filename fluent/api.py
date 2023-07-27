@@ -48,9 +48,9 @@ class TranslateManager:
         language = language.strip().lower()
         if language == "chinese":
             language = "chinese (simplified)"
-        elif language == "pt":
+        elif self.deepl_key and language == "pt":
             language = "PT-PT"
-        elif language == "portuguese":
+        elif self.deepl_key and language == "portuguese":
             language = "PT-PT"
 
         if self.deepl_key:

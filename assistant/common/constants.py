@@ -16,6 +16,8 @@ MODELS = {
     "text-curie-001": 2049,
     "text-babbage-001": 2049,
     "text-ada-001": 2049,
+    "text-embedding-ada-002": 8191,
+    "text-embedding-ada-002-v2": 8191,
 }
 PRICES = {
     "gpt-3.5-turbo": [0.0015, 0.002],
@@ -36,6 +38,7 @@ PRICES = {
     "text-davinci-003": [0.03, 0.12],
     "code-davinci-002": [0.03, 0.12],
     "text-embedding-ada-002": [0.0001, 0.0001],
+    "text-embedding-ada-002-v2": [0.0001, 0.0001],
 }
 SUPPORTS_FUNCTIONS = [
     "gpt-3.5-turbo",
