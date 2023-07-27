@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-26 19:16-0400\n"
-"PO-Revision-Date: 2023-07-27 16:26\n"
+"PO-Revision-Date: 2023-07-27 23:06\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -35,17 +35,20 @@ msgstr ""
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "Version Cog : {}\n"
+"Auteur : {}\n"
+"Version Cog : {}\n"
+"Auteur : {}"
 
 #: fluent.py:47
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Pas de données à supprimer"
 
 #: fluent.py:72
 #, docstring
 msgid "Translate a message"
-msgstr ""
+msgstr "Traduire un message"
 
 #: fluent.py:75
 msgid "The target language `{}` was not found."
