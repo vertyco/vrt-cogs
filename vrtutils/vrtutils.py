@@ -62,7 +62,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.6.10"
+    __version__ = "1.7.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -338,6 +338,8 @@ class VrtUtils(commands.Cog):
         cpu_perc: List[float] = psutil.cpu_percent(interval=3, percpu=True)
         cpu_avg = round(sum(cpu_perc) / len(cpu_perc), 1)
         cpu_freq: list = psutil.cpu_freq(percpu=True)  # List of Objects
+        if not cpu_freq:
+            cpu_freq = [psutil.cpu_freq(percpu=False)]
         cpu_info: dict = cpuinfo.get_cpu_info()  # Dict
         cpu_type = cpu_info.get("brand_raw", "Unknown")
 
@@ -427,24 +429,33 @@ class VrtUtils(commands.Cog):
 
         cpustats = f"CPU: {cpu_type}\n"
         cpustats += f"Bot: {bot_cpu_used}%\nOverall: {cpu_avg}%\nCores: {cpu_count}"
-        clock, clockmax = round(cpu_freq[0].current), round(cpu_freq[0].max)
-        if clockmax:
-            cpustats += f" @ {clock}/{clockmax} MHz\n"
+        if cpu_freq:
+            clock, clockmax = round(cpu_freq[0].current), round(cpu_freq[0].max)
+            if clockmax:
+                cpustats += f" @ {clock}/{clockmax} MHz\n"
+            else:
+                cpustats += f" @ {clock} MHz\n"
         else:
-            cpustats += f" @ {clock} MHz\n"
+            cpustats += "\n"
 
         preformat = []
         for i, perc in enumerate(cpu_perc):
             space = "" if i >= 10 or len(cpu_perc) < 10 else " "
-            index = i if len(cpu_freq) > i else 0
             bar = self.get_bar(0, 0, perc, width=14)
-            speed = round(cpu_freq[index].current)
-            preformat.append((f"c{i}:{space} {bar}", f"{speed} MHz"))
+            speed_text = None
+            if cpu_freq:
+                index = i if len(cpu_freq) > i else 0
+                speed = round(cpu_freq[index].current)
+                speed_text = f"{speed} MHz"
+            preformat.append((f"c{i}:{space} {bar}", speed_text))
 
         max_width = max([len(i[0]) for i in preformat])
         for usage, speed in preformat:
             space = (max_width - len(usage)) * " " if len(usage) < max_width else ""
-            cpustats += f"{usage}{space} @ {speed}\n"
+            if speed is not None:
+                cpustats += f"{usage}{space} @ {speed}\n"
+            else:
+                cpustats += f"{usage}{space}\n"
 
         for p in pagify(cpustats, page_length=1024):
             embed.add_field(
