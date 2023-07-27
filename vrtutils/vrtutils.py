@@ -339,7 +339,9 @@ class VrtUtils(commands.Cog):
         cpu_avg = round(sum(cpu_perc) / len(cpu_perc), 1)
         cpu_freq: list = psutil.cpu_freq(percpu=True)  # List of Objects
         if not cpu_freq:
-            cpu_freq = [psutil.cpu_freq(percpu=False)]
+            freq = psutil.cpu_freq(percpu=False)
+            if freq:
+                cpu_freq = [freq]
         cpu_info: dict = cpuinfo.get_cpu_info()  # Dict
         cpu_type = cpu_info.get("brand_raw", "Unknown")
 
