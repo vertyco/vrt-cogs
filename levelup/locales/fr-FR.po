@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-24 14:02\n"
+"PO-Revision-Date: 2023-07-27 23:06\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -159,7 +159,7 @@ msgstr "Votre arrière-plan personnalisé a été enregistré."
 #: base.py:349
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Suppression d'un arrière-plan par défaut dans le dossier des arrière-plans de la cog"
 
 #: base.py:355
 msgid "I could not find any background images with that name"
@@ -175,7 +175,7 @@ msgstr "Contexte `"
 
 #: base.py:361 base.py:421
 msgid "` Has been removed!"
-msgstr ""
+msgstr "` a été supprimé !"
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
@@ -711,7 +711,7 @@ msgstr "Vous venez d'atteindre le niveau {level} dans {guild} !"
 
 #: levelup.py:640
 msgid "Just reached level {level}!"
-msgstr ""
+msgstr "Je viens d'atteindre le niveau {niveau} !"
 
 #: levelup.py:673
 msgid "You just leveled up in "
@@ -2037,7 +2037,8 @@ msgid "\n"
 "        Members in the ignore list don't gain XP\n\n"
 "        Use the command with a member already in the ignore list to remove them\n"
 "        "
-msgstr ""
+msgstr "         Ajouter/Retirer un membre de la liste des ignorés         Les membres de la liste des ignorés ne gagnent pas d'XP\n"
+"         Utiliser la commande avec un membre déjà dans la liste des ignorés pour le supprimer                 "
 
 #: levelup.py:2774
 msgid "Member removed from ignore list"
