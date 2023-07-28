@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-28 00:01\n"
+"PO-Revision-Date: 2023-07-28 18:11\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -310,7 +310,7 @@ msgstr "잘못된 색상입니다. 유효한 정수 색상 코드 또는 16진�
 
 #: base.py:548 base.py:594 base.py:640
 msgid "Failed to set color, the following error occurred:\n"
-msgstr ""
+msgstr "색상을 설정하지 못했습니다. 다음 오류가 발생했습니다:\n"
 
 #: base.py:558
 #, docstring
