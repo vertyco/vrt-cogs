@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-26 14:13\n"
+"PO-Revision-Date: 2023-07-28 02:20\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -2064,7 +2064,7 @@ msgstr "`Canal:        `"
 
 #: levelup.py:2815
 msgid "`Role:           `"
-msgstr ""
+msgstr "`Função:           `"
 
 #: levelup.py:2816
 msgid "`RoleAllWinners: `"
@@ -2096,7 +2096,7 @@ msgstr "`Última reinicialização: `"
 
 #: levelup.py:2826
 msgid "`Next Reset: `"
-msgstr ""
+msgstr "`Próxima reposição: `"
 
 #: levelup.py:2828
 msgid "Auto Reset "
