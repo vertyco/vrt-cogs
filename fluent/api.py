@@ -52,6 +52,10 @@ class TranslateManager:
             language = "PT-PT"
         elif self.deepl_key and language == "portuguese":
             language = "PT-PT"
+        elif self.deepl_key and language == "en":
+            language = "EN-US"
+        elif self.deepl_key and language == "english":
+            language = "EN-US"
 
         if self.deepl_key:
             translator = deepl.Translator(self.deepl_key, send_platform_info=False)
