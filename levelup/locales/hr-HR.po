@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-24 02:35\n"
+"PO-Revision-Date: 2023-07-28 18:11\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -158,7 +158,7 @@ msgstr "Nisam bio u mogućnosti dobiti datoteku od nesklada"
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Vaša prilagođena pozadina spremljena je kao"
 
 #: base.py:349
 #, docstring
@@ -860,7 +860,7 @@ msgstr "**LevelUps**\n"
 
 #: levelup.py:1164
 msgid "`LevelUp Notify:    `"
-msgstr ""
+msgstr "`LevelUp Obavijest:    `"
 
 #: levelup.py:1165
 msgid "`Notify in DMs:     `"
