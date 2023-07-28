@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-26 19:16-0400\n"
-"PO-Revision-Date: 2023-07-28 01:16\n"
+"PO-Revision-Date: 2023-07-28 02:20\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -38,7 +38,9 @@ msgstr "     하나의 채널에서 두 언어 간의 원활한 번역. 또는 �
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "{}\n"
+"코그 버전: {}\n"
+"작성자: {}"
 
 #: fluent.py:47
 #, docstring
@@ -126,7 +128,8 @@ msgstr "현재 유창한 채널이 없습니다."
 #: fluent.py:212
 msgid "**Fluent Settings**\n"
 "{}"
-msgstr ""
+msgstr "**유창한 설정**\n"
+"{}"
 
 #: fluent.py:257
 msgid "Unable to finish translation, perhaps the API is down."
