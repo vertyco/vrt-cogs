@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-25 20:12\n"
+"PO-Revision-Date: 2023-07-28 02:21\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -201,11 +201,11 @@ msgstr "Bir bilet paneli için kategori ID'sini ayarla"
 
 #: commands\admin.py:121
 msgid "I need the `manage channels` permission to set this category"
-msgstr ""
+msgstr "Bu kategoriyi ayarlamak için `kanalları yönet` iznine ihtiyacım var"
 
 #: commands\admin.py:124
 msgid "I need `manage permissions` enabled in this category"
-msgstr ""
+msgstr "Bu kategoride `yönetim izinlerinin` etkinleştirilmesine ihtiyacım var"
 
 #: commands\admin.py:126
 msgid "I need the `attach files` permission to set this category"
@@ -336,7 +336,7 @@ msgstr "Önce bir panel kanalı ayarlayın!"
 
 #: commands\admin.py:284
 msgid "I am missing the `Create Private Threads` permission!"
-msgstr ""
+msgstr "`Özel Konu Oluşturma` iznini kaçırıyorum!"
 
 #: commands\admin.py:286
 msgid "I am missing the `Send Messages in Threads` permission!"
