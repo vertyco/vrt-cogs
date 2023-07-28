@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-27 23:06\n"
+"PO-Revision-Date: 2023-07-28 18:11\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -711,7 +711,7 @@ msgstr "Vous venez d'atteindre le niveau {level} dans {guild} !"
 
 #: levelup.py:640
 msgid "Just reached level {level}!"
-msgstr "Je viens d'atteindre le niveau {niveau} !"
+msgstr ""
 
 #: levelup.py:673
 msgid "You just leveled up in "
