@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-26 14:13\n"
+"PO-Revision-Date: 2023-07-28 00:01\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -175,7 +175,7 @@ msgstr "Antecedentes `"
 
 #: base.py:361 base.py:421
 msgid "` Has been removed!"
-msgstr ""
+msgstr "¡` ha sido eliminado!"
 
 #: base.py:368
 msgid "Your custom font folder path is \n"
@@ -632,7 +632,7 @@ msgstr "Nivel: "
 
 #: generator.py:216
 msgid "Exp: "
-msgstr ""
+msgstr "Exp:"
 
 #: generator.py:219 generator.py:625
 msgid "Messages: "

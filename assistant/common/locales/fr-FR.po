@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 00:18\n"
+"PO-Revision-Date: 2023-07-27 23:06\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -167,7 +167,7 @@ msgstr "On dirait que ma clé API n'est pas valide !"
 #: common\chat.py:133
 msgid "**KeyError in prompt or system message**\n"
 "{}"
-msgstr ""
+msgstr "**KeyError in prompt or system message** (erreur de touche dans l'invite ou le message système)"
 
 #: common\chat.py:140
 msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."

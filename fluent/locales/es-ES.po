@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-07-26 18:53-0400\n"
-"PO-Revision-Date: 2023-07-26 22:55\n"
+"POT-Creation-Date: 2023-07-26 19:16-0400\n"
+"PO-Revision-Date: 2023-07-28 13:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -21,112 +21,121 @@ msgstr ""
 #, docstring
 msgid "\n"
 "    Seamless translation between two languages in one channel. Or manual translation to various languages.\n\n"
-"    Fluent supports the [Deepl](https://www.deepl.com/pro#developer) tranlsation api.\n"
+"    Fluent uses google translate by default, with [Flowery](https://flowery.pw/) as a fallback.\n\n"
+"    Fluent also supports the [Deepl](https://www.deepl.com/pro#developer) tranlsation api.\n"
 "    1. Register your free Deepl account **[Here](https://www.deepl.com/pro#developer)**.\n"
 "    2. Obtain your API key **[Here](https://www.deepl.com/account/summary)**.\n"
 "    3. Set your API key with:\n"
-"    `[p]set api deepl key YOUR_KEY_HERE`\n"
+"    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
+"    If a deepl key is set, it will use that before falling back to google translate and then flowery.\n"
 "    "
-msgstr ""
+msgstr "     Traducción sin fisuras entre dos idiomas en un solo canal. O traducción manual a varios idiomas.\n"
+"     Fluent utiliza Google Translate por defecto, con [Flowery](https://flowery.pw/) como alternativa.\n"
+"     Fluent también admite la API de traducción [Deepl](https://www.deepl.com/pro#developer).     1. Registra tu cuenta gratuita en Deepl **[Aquí](https://www.deepl.com/pro#developer)**.     2. Obtén tu clave de API **[Aquí](https://www.deepl.com/account/summary)**.     3. Configura tu clave de API con:     `[p]set api deepl key YOUR_KEY_HERE`\n"
+"     Si se establece una clave de Deepl, se utilizará antes de recurrir a Google Translate y luego a Flowery    "
 
-#: fluent.py:38
+#: fluent.py:42
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "{}\n"
+"Versión Cog: {}\n"
+"Autor: {}"
 
-#: fluent.py:43
+#: fluent.py:47
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "No hay datos que borrar"
 
-#: fluent.py:68
+#: fluent.py:72
 #, docstring
 msgid "Translate a message"
-msgstr ""
+msgstr "Traducir un mensaje"
 
-#: fluent.py:71
-msgid "The target language `{}` was not found"
-msgstr ""
+#: fluent.py:75
+msgid "The target language `{}` was not found."
+msgstr "El idioma de destino `{}` no fue encontrado."
 
-#: fluent.py:80
+#: fluent.py:84
 msgid "Could not find any content to translate!"
-msgstr ""
+msgstr "No pude encontrar ningún contenido para traducir!"
 
-#: fluent.py:86
+#: fluent.py:90
 msgid "An error occured while translating, Check logs for more info."
-msgstr ""
+msgstr "Se ha producido un error al traducir, compruebe los registros para obtener más información."
 
-#: fluent.py:93
-msgid "❌ Translation failed"
-msgstr ""
+#: fluent.py:97
+msgid "❌ Translation failed."
+msgstr "❌ Traducción fallida."
 
-#: fluent.py:118
+#: fluent.py:122
 #, docstring
 msgid "Base command"
-msgstr ""
+msgstr "Comando base"
 
-#: fluent.py:136
+#: fluent.py:140
 #, docstring
 msgid "\n"
 "        Add a channel and languages to translate between\n\n"
 "        Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be\n"
 "        in english, then make english language 2 to use less api calls.\n"
 "        "
-msgstr ""
+msgstr "         Añadir un canal e idiomas entre los que traducir\n"
+"         Consejo: El idioma 1 es el primero en ser convertido. Por ejemplo, si esperas que la mayor parte de la conversación sea         en inglés, entonces haz del inglés el idioma 2 para usar menos llamadas a la API.                 "
 
-#: fluent.py:149
+#: fluent.py:153
 msgid "Both of those languages are invalid."
-msgstr ""
+msgstr "Ambos idiomas no son válidos."
 
-#: fluent.py:152
+#: fluent.py:156
 msgid "Language 1 is invalid."
-msgstr ""
+msgstr "El idioma 1 no es válido."
 
-#: fluent.py:155
+#: fluent.py:159
 msgid "Language 2 is invalid."
-msgstr ""
-
-#: fluent.py:161
-msgid "❌ {} is already a fluent channel."
-msgstr ""
+msgstr "La lengua 2 no es válida."
 
 #: fluent.py:165
-msgid "✅ Fluent channel has been set!"
-msgstr ""
+msgid "❌ {} is already a fluent channel."
+msgstr "❌ {} ya es un canal fluido."
 
-#: fluent.py:181
+#: fluent.py:169
+msgid "✅ Fluent channel has been set!"
+msgstr "✅ ¡Canal fluido ha sido configurado!"
+
+#: fluent.py:185
 #, docstring
 msgid "Remove a channel from Fluent"
-msgstr ""
+msgstr "Eliminar un canal de Fluent"
 
-#: fluent.py:189
+#: fluent.py:193
 msgid "✅ Fluent channel has been deleted!"
-msgstr ""
-
-#: fluent.py:191
-msgid "❌ {} isn't a fluent channel!"
-msgstr ""
+msgstr "✅ ¡El canal Fluent ha sido eliminado!"
 
 #: fluent.py:195
+msgid "❌ {} isn't a fluent channel!"
+msgstr "❌ {} ¡no es un canal fluido!"
+
+#: fluent.py:199
 #, docstring
 msgid "View all fluent channels"
-msgstr ""
+msgstr "Ver todos los canales fluidos"
 
-#: fluent.py:207
-msgid "There are no fluent channels at this time"
-msgstr ""
+#: fluent.py:211
+msgid "There are no fluent channels at this time."
+msgstr "En este momento no hay canales fluidos."
 
-#: fluent.py:208
+#: fluent.py:212
 msgid "**Fluent Settings**\n"
 "{}"
-msgstr ""
+msgstr "**Configuración fluida**\n"
+"{}"
 
-#: fluent.py:253
+#: fluent.py:257
 msgid "Unable to finish translation, perhaps the API is down."
-msgstr ""
+msgstr "No se ha podido terminar la traducción, quizás la API no funciona."
 
-#: fluent.py:294
+#: fluent.py:298
 msgid "Invalid target language"
-msgstr ""
+msgstr "Lengua de destino no válida"
 
