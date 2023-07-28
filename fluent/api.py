@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import typing as t
 
 import deepl
@@ -10,6 +11,8 @@ from aiohttp import (
     ClientTimeout,
 )
 from httpx import ReadTimeout
+
+log = logging.getLogger("red.vrt.fluent")
 
 
 class Result:
@@ -32,40 +35,49 @@ class TranslateManager:
         target_lang: str,
         formality: t.Optional[str] = None,
     ) -> t.Optional[Result]:
-        lang = await asyncio.to_thread(self.convert, target_lang)
+        lang = await self.convert(target_lang)
         if not lang:
+            log.info("Failed to fetch target language")
             return
         res = None
         if self.deepl_key:
             res = await self.deepl(text, lang, formality)
         if res is None:
+            log.debug("Calling google translate")
             res = await self.google(text, lang)
             if res is None:
+                log.debug("Calling flowery as fallback")
                 res = await self.flowery(text, lang)
         return res
 
-    def convert(self, language: str) -> t.Optional[str]:
-        language = language.strip().lower()
-        if language == "chinese":
-            language = "chinese (simplified)"
-        elif self.deepl_key and language == "pt":
-            language = "PT-PT"
-        elif self.deepl_key and language == "portuguese":
-            language = "PT-PT"
-        elif self.deepl_key and language == "en":
-            language = "EN-US"
-        elif self.deepl_key and language == "english":
-            language = "EN-US"
+    async def convert(self, language: str) -> t.Optional[str]:
+        lang = await self.get_deepl_lang(language)
+        if not lang:
+            lang = await self.get_lang(language)
+        return lang
 
-        if self.deepl_key:
-            translator = deepl.Translator(self.deepl_key, send_platform_info=False)
-            for lang_obj in translator.get_target_languages():
-                if language == lang_obj.name.lower() or language == lang_obj.code.lower():
-                    return lang_obj.code
-
+    async def get_lang(self, target_language: str) -> t.Optional[str]:
+        language = target_language.strip().lower()
         for key, value in googletrans.LANGUAGES.items():
             if language == value.lower() or language == key.lower():
                 return key
+
+    async def get_deepl_lang(self, target_language: str) -> t.Optional[str]:
+        if not self.deepl_key:
+            return
+        language = target_language.strip().lower()
+        if language in ["pt", "portuguese"]:
+            language = "portuguese (brazilian)"
+        elif language in ["en", "english"]:
+            language = "english (american)"
+        elif language in ["chinese", "zh"]:
+            language = "chinese (simplified)"
+
+        translator = deepl.Translator(self.deepl_key, send_platform_info=False)
+        languages = await asyncio.to_thread(translator.get_target_languages)
+        for lang_obj in languages:
+            if language == lang_obj.name.lower() or language == lang_obj.code.lower():
+                return lang_obj
 
     async def deepl(
         self,
@@ -78,17 +90,9 @@ class TranslateManager:
         if usage.any_limit_reached:
             return None
         res = await asyncio.to_thread(
-            translator.translate_text,
-            text=text,
-            target_lang=target_lang,
-            formality=formality,
-            preserve_formatting=True,
+            translator.translate_text, text=text, target_lang=target_lang, formality=formality
         )
-        return Result(
-            text=res.text,
-            src=res.detected_source_lang,
-            dest=target_lang,
-        )
+        return Result(text=res.text, src=res.detected_source_lang, dest=target_lang)
 
     async def google(self, text: str, target_lang: str) -> t.Optional[Result]:
         translator = googletrans.Translator()
