@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-25 20:12\n"
+"PO-Revision-Date: 2023-07-28 18:11\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -633,7 +633,8 @@ msgstr "Son Haftalık Kazananlar"
 #: base.py:1160
 msgid "{}\n"
 "`Last Reset:     `{}"
-msgstr ""
+msgstr "{}\n"
+"`Son Sıfırlama: `{}"
 
 #: generator.py:213 generator.py:620
 msgid "Rank: #"
@@ -815,7 +816,7 @@ msgstr "**Mesajlar**\n"
 
 #: levelup.py:1151
 msgid "`Message XP:        `"
-msgstr ""
+msgstr "`Mesaj XP:        `"
 
 #: levelup.py:1152
 msgid "`Min Msg Length:    `"
