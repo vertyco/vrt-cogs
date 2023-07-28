@@ -40,7 +40,7 @@ class TranslateManager:
             res = await self.deepl(text, lang, formality)
         if res is None:
             res = await self.google(text, lang)
-            if res is None or res.text == text:
+            if res is None:
                 res = await self.flowery(text, lang)
         return res
 
