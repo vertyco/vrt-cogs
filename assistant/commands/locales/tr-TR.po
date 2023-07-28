@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:42-0400\n"
-"PO-Revision-Date: 2023-07-25 20:12\n"
+"PO-Revision-Date: 2023-07-28 18:11\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +24,9 @@ msgid "\n"
 "        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n\n"
 "        This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.\n"
 "        "
-msgstr ""
+msgstr "        Asistanı ayarlayın\n\n"
+"        ChatGPT ve diğer modellerini kullanmak için OpenAI'den bir **[api anahtarı](https://platform.openai.com/account/api-keys)** almanız gerekecektir.\n\n"
+"        Bu dişli, [self-hosted](https://github.com/vertyco/gpt-api) modeller için bir uç nokta geçersiz kılma ayarını destekler        "
 
 #: commands\admin.py:60
 #, docstring
@@ -241,41 +243,46 @@ msgstr "Size mesaj gönderebilmem için DM'lere izin vermelisiniz!"
 #: commands\admin.py:309
 #, docstring
 msgid "View the token usage stats for this server"
-msgstr ""
+msgstr "Bu sunucunun belirteç kullanım istatistiklerini görüntüleyin"
 
 #: commands\admin.py:312
 msgid "There is no usage data yet!"
-msgstr ""
+msgstr "Henüz kullanım verisi yok!"
 
 #: commands\admin.py:338
 msgid "`Total:  `{} (${} @ ${}/1k tokens)"
-msgstr ""
+msgstr "`Toplam: `{} (${} @ ${}/1k belirteç)"
 
 #: commands\admin.py:345
 msgid "Free/Self-Hosted"
-msgstr ""
+msgstr "Ücretsiz/Self-Hosted"
 
 #: commands\admin.py:349
 msgid "`Input:  `{} (${} @ ${}/1k tokens)\n"
 "`Output: `{} (${} @ ${}/1k tokens)\n"
 "`Total:  `{} (${})"
-msgstr ""
+msgstr "`Girdi: `{} (${} @ ${}/1k belirteç)\n"
+"`Çıktı: `{} (${} @ ${}/1k belirteç)\n"
+"`Toplam: `{} (${})"
 
 #: commands\admin.py:365
 msgid "**Overall Token Usage and Cost**\n"
 "`Input:  `{} (${})\n"
 "`Output: `{} (${})\n"
 "`Total:  `{} (${})"
-msgstr ""
+msgstr "**Toplam Token Kullanımı ve Maliyeti**\n"
+"`Girdi:  `{0} ({1})\n"
+"`Çıktı: `{2} ({3})\n"
+"`Toplam: `{4} ({5})"
 
 #: commands\admin.py:384
 #, docstring
 msgid "Reset the token usage stats for this server"
-msgstr ""
+msgstr "Bu sunucu için belirteç kullanım istatistiklerini sıfırlayın"
 
 #: commands\admin.py:387
 msgid "Token usage stats have been reset!"
-msgstr ""
+msgstr "Token kullanım istatistikleri sıfırlandı!"
 
 #: commands\admin.py:393
 #, docstring
@@ -745,11 +752,12 @@ msgid "\n"
 "        Set the max response tokens the model can respond with\n\n"
 "        Set to 0 for response tokens to be dynamic\n"
 "        "
-msgstr ""
+msgstr "        Modelin yanıt verebileceği maksimum yanıt belirteçlerini ayarlayın\n\n"
+"        Yanıt belirteçlerinin dinamik olması için 0 olarak ayarlayın        "
 
 #: commands\admin.py:833 commands\admin.py:1549
 msgid "Cannot be a negative number!"
-msgstr ""
+msgstr "Negatif bir sayı olamaz!"
 
 #: commands\admin.py:837
 msgid "The maximum amount of tokens in the models responses will be {}."
@@ -757,7 +765,7 @@ msgstr "Model yanıtlarındaki maksimum belirteç miktarı {} olacaktır."
 
 #: commands\admin.py:841
 msgid "Response tokens will now be dynamic"
-msgstr ""
+msgstr "Yanıt belirteçleri artık dinamik olacak"
 
 #: commands\admin.py:847
 #, docstring
@@ -1047,7 +1055,8 @@ msgstr "üzerine yazma"
 #: commands\admin.py:1135
 msgid "{}\n"
 "`Currently {}: `**{}** ({}/{})"
-msgstr ""
+msgstr "{}\n"
+"`Şu anda {}: `**{}** ({}/{})"
 
 #: commands\admin.py:1141
 msgid "Failed to process embedding: `{}`"
@@ -1284,7 +1293,9 @@ msgid "\n"
 "        Set to 0 for response tokens to be dynamic\n\n"
 "        *Specify same role and token count to remove the override*\n"
 "        "
-msgstr ""
+msgstr "        Bir role maksimum yanıt belirteci geçersiz kılma atama\n\n"
+"        Yanıt belirteçlerinin dinamik olması için 0 olarak ayarlayın\n\n"
+"        *Geçersiz kılmayı kaldırmak için aynı rolü ve belirteç sayısını belirtin*        "
 
 #: commands\admin.py:1556
 msgid "Max response token override for {} removed!"
