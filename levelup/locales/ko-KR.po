@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-20 11:26-0400\n"
-"PO-Revision-Date: 2023-07-26 14:13\n"
+"PO-Revision-Date: 2023-07-28 00:01\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -35,7 +35,7 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "         선한 면에게 보상하기         선한 면이 되어준 사용자에게 별을 선물하기                 "
 
 #: base.py:175
 msgid "Cache not loaded yet, wait a few more seconds."
@@ -452,7 +452,7 @@ msgstr "레벨\n"
 
 #: base.py:841 generator.py:223
 msgid "Prestige "
-msgstr ""
+msgstr "프레스티지"
 
 #: base.py:842
 msgid " stars\n"
@@ -477,7 +477,8 @@ msgstr ", 와 함께 "
 
 #: base.py:854
 msgid "% of global server Exp"
-msgstr ""
+msgstr "글로벌 서버 경험치의 %\n"
+"글로벌 서버 경험치의 %"
 
 #: base.py:857
 msgid "Progress"
