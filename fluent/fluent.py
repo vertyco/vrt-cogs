@@ -35,7 +35,7 @@ class Fluent(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -51,13 +51,13 @@ class Fluent(commands.Cog):
         self.config = Config.get_conf(self, identifier=11701170)
         self.config.register_guild(channels={})
 
-    @cached(ttl=1800)
+    # @cached(ttl=1800)
     async def translate(self, msg: str, dest: str):
         deepl_key = await self.bot.get_shared_api_tokens("deepl")
         translator = TranslateManager(deepl_key=deepl_key.get("key"))
         return await translator.translate(msg, dest)
 
-    @cached(ttl=1800)
+    # @cached(ttl=1800)
     async def converter(self, language: str):
         deepl_key = await self.bot.get_shared_api_tokens("deepl")
         translator = TranslateManager(deepl_key=deepl_key.get("key"))
@@ -228,6 +228,7 @@ class Fluent(commands.Cog):
         channel_id = str(message.channel.id)
         if channel_id not in channels:
             return
+
         lang1 = channels[channel_id]["lang1"]
         lang2 = channels[channel_id]["lang2"]
         channel = message.channel
@@ -241,6 +242,7 @@ class Fluent(commands.Cog):
             return
 
         if trans is None:
+            print("no translation")
             return
 
         # If the source language is also language1, translate into language2
