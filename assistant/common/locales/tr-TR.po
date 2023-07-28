@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-25 20:12\n"
+"PO-Revision-Date: 2023-07-28 02:21\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -71,32 +71,46 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "        Returns:\n"
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
-msgstr ""
+msgstr "Daha yeni mesajlara ve kritik içeriğe öncelik vererek bir konuşma yükünü yinelemeli olarak düşürme\n\n"
+"        Args:\n"
+"            messages (Liste[dict]): api'ye gönderilen mesaj girdileri\n"
+"            function_list (Liste[dict]): model için json fonksiyon şemalarının listesi\n"
+"            conf: (GuildSettings): geçerli ayarlar\n\n"
+"        Döndürür:\n"
+"            Tuple[List[dict], List[dict], bool]: güncellenmiş mesaj listesi, fonksiyon listesi ve görüşmenin düşürülüp düşürülmediği\n"
+"        \n"
+"Konuşma yükünü yavaş yavaş azaltarak, daha yeni mesajlara ve kritik bağlama öncelik verin.\n\n"
+"        Args:\n"
+"            messages (List[dict]): api'ye gönderilen mesaj girişleri\n"
+"            function_list (List[dict]): model için json fonksiyon şemalarının listesi\n"
+"            conf: (GuildSettings): mevcut ayarlar\n\n"
+"        Returns:\n"
+"            Tuple[List[dict], List[dict], bool]: güncellenmiş mesaj listesi, fonksiyon listesi ve konuşmanın azaltılıp azaltılmadığı bilgisi        "
 
 #: common\api.py:367
 #, docstring
 msgid "Pagify a long string by tokens rather than characters"
-msgstr ""
+msgstr "Uzun bir dizeyi karakterler yerine belirteçlere göre sayfalandırın"
 
 #: common\api.py:423
 msgid "Custom Functions"
-msgstr ""
+msgstr "Özel Fonksiyonlar"
 
 #: common\api.py:429
 msgid "3rd Party"
-msgstr ""
+msgstr "3. Taraf"
 
 #: common\api.py:430
 msgid "This function is managed by the `{}` cog"
-msgstr ""
+msgstr "Bu işlev `{}` dişlisi tarafından yönetilir"
 
 #: common\api.py:435
 msgid "Internal Function"
-msgstr ""
+msgstr "Dahili Fonksiyon"
 
 #: common\api.py:436
 msgid "This is an internal command that can only be used when interacting with a tutor"
-msgstr ""
+msgstr "Bu, yalnızca bir eğitmenle etkileşim halindeyken kullanılabilen dahili bir komuttur"
 
 #: common\api.py:444
 msgid "This function consumes `{}` input tokens each call\n"
