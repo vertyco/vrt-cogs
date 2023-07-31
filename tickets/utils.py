@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 from datetime import datetime
 from io import BytesIO
 from typing import List, Optional, Union
@@ -155,7 +156,8 @@ async def close_ticket(
                 text += f"{msg.author.name}: {msg.content}\n"
             if att:
                 text += _("Files uploaded: ") + humanize_list(att) + "\n"
-        await temp_message.delete()
+        with suppress(discord.HTTPException):
+            await temp_message.delete()
     else:
         history = await fetch_channel_history(channel, limit=1)
 
