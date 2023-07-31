@@ -153,6 +153,13 @@ class BaseCommands(MixinMeta):
                     cancelled = _("Closing cancelled!")
                     await msg.edit(content=cancelled)
                     return
+
+                conf = await self.config.guild(ctx.guild).all()
+                owner_id = get_ticket_owner(conf["opened"], str(ctx.channel.id))
+                if not owner_id:
+                    # Ticket already closed...
+                    return
+
         if ctx.interaction:
             await ctx.interaction.response.send_message(
                 _("Closing..."), ephemeral=True, delete_after=4
