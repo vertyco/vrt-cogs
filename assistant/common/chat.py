@@ -256,7 +256,10 @@ class ChatHandler(MixinMeta):
             function_calls,
         )
         reply = _("Failed to get response!")
+
         calls = 0
+        last_func = None
+        repeats = 0
         while True:
             if calls >= conf.max_function_calls:
                 function_calls = []
@@ -318,6 +321,17 @@ class ChatHandler(MixinMeta):
             calls += 1
 
             function_name = function_call["name"]
+            if last_func is None:
+                last_func = function_name
+            elif last_func == function_name:
+                repeats += 1
+                if repeats > 4:  # Skip before calling same function a 5th time
+                    log.error(f"Too many repeats: {function_name}")
+                    function_calls = pop_schema(function_name, function_calls)
+                    continue
+            else:
+                repeats = 0
+
             if function_name not in function_map:
                 log.error(f"GPT suggested a function not provided: {function_name}")
                 function_calls = pop_schema(function_name, function_calls)  # Just in case
@@ -377,6 +391,7 @@ class ChatHandler(MixinMeta):
             )
             log.info(info)
             messages.append({"role": "function", "name": function_name, "content": result})
+            conversation.update_messages(result, "function", function_name)
 
         # Handle the rest of the reply
         if calls > 1:
