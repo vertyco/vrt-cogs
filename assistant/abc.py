@@ -112,6 +112,17 @@ class MixinMeta(metaclass=ABCMeta):
     # -------------------------------------------------------
 
     @abstractmethod
+    async def add_embedding(
+        self,
+        guild: discord.Guild,
+        name: str,
+        text: str,
+        overwrite: bool = False,
+        ai_created: bool = False,
+    ) -> Optional[List[float]]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_chat_response(
         self,
         message: str,

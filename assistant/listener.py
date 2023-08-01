@@ -2,11 +2,13 @@ import logging
 
 import discord
 from redbot.core import commands
+from redbot.core.i18n import Translator
 
 from .abc import MixinMeta
 from .common.utils import can_use, embed_to_content
 
 log = logging.getLogger("red.vrt.assistant.listener")
+_ = Translator("Assistant", __file__)
 
 
 class AssistantListener(MixinMeta):
@@ -85,3 +87,73 @@ class AssistantListener(MixinMeta):
             log.info(f"Bot removed from {guild.name}, cleaning up...")
             del self.db.configs[guild.id]
             await self.save_conf()
+
+    @commands.Cog.listener("on_raw_reaction_add")
+    async def remember(self, payload: discord.RawReactionActionEvent):
+        """Save messages as embeddings when reacted to with :brain: emoji"""
+        emoji = str(payload.emoji)
+        if emoji != "\N{BRAIN}":
+            return
+        if payload.user_id == self.bot.user.id:
+            return
+        if not payload.guild_id:
+            return
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
+        user = payload.member
+        if not user:
+            return
+        # Ignore reactions added by other bots
+        if user.bot:
+            return
+        channel = guild.get_channel(payload.channel_id)
+        if not channel:
+            return
+
+        message = await channel.fetch_message(payload.message_id)
+        if not message:
+            return
+        if not message.content:
+            return
+        conf = self.db.get_conf(guild)
+        if not conf.enabled:
+            return
+        no_api = [not conf.api_key, not conf.endpoint_override, not self.db.endpoint_override]
+        if all(no_api):
+            return
+        # Check if cog is disabled
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
+            return
+
+        messages = [
+            {"role": "system", "content": _("Your job is to summarize text")},
+            {
+                "role": "user",
+                "content": _(
+                    'In less than 4000 characters, summarize the following text delimited by triple quotes: """{} said: {}"""'
+                ).format(message.author.name, message.content),
+            },
+        ]
+        success = True
+        try:
+            embed_response = await self.request_response(messages=messages, conf=conf)
+            messages.append(embed_response)
+            title_response = await self.request_response(messages=messages, conf=conf)
+            embedding = await self.add_embedding(
+                guild, title_response["content"], embed_response["content"]
+            )
+            if embedding is None:
+                success = False
+            else:
+                log.info(f"Created embedding in {guild.name}: {embed_response['content']}")
+        except Exception as e:
+            log.warning(f"Failed to save embed memory in {guild.name}", exc_info=e)
+            success = False
+
+        if success:
+            await message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+        else:
+            await message.add_reaction("\N{CROSS MARK}")
