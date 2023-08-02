@@ -85,7 +85,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.4.0"
+    __version__ = "3.4.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2516,7 +2516,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         roles_added = 0
         roles_removed = 0
         embed = discord.Embed(
-            description="Adding roles, this may take a while...",
+            description=_("Adding roles, this may take a while..."),
             color=discord.Color.magenta(),
         )
         embed.set_thumbnail(url=self.loading)
@@ -2589,7 +2589,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     roles_removed += len(removing)
                 except discord.Forbidden:
                     log.warning(
-                        f"Failed to remove the following roles from {user} in {guild}: {humanize_list([r.name for r in adding])}"
+                        f"Failed to remove the following roles from {user} in {guild}: {humanize_list([r.name for r in removing])}"
                     )
 
         desc = (
@@ -2618,10 +2618,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         """Assign a role to a level"""
         if role >= ctx.author.top_role:
             return await ctx.send(
-                "The role you are trying to set is higher than the one you currently have!"
+                _("The role you are trying to set is higher than the one you currently have!")
             )
         if role >= ctx.me.top_role:
-            return await ctx.send("I cannot assign roles higher than my own!")
+            return await ctx.send(_("I cannot assign roles higher than my own!"))
         perms = ctx.guild.me.guild_permissions.manage_roles
         if not perms:
             return await ctx.send(_("I do not have permission to manage roles"))
