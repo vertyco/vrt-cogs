@@ -55,6 +55,12 @@ class API(MixinMeta):
             diff = max_model_tokens - convo_tokens
         max_tokens = min(max_response_tokens, max(diff, 0))
 
+        # Dynamically adjust to lower model to save on cost
+        if "-16k" in model and convo_tokens < 4096:
+            model = model.replace("-16k", "")
+        if "-32k" in model and convo_tokens < 8192:
+            model = model.replace("-32k", "")
+
         if model in CHAT:
             response = await request_chat_completion_raw(
                 model=model,
