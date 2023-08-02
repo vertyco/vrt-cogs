@@ -70,12 +70,21 @@ class ChatHandler(MixinMeta):
                 and has_extension
             ):
                 continue
-            file_bytes = await i.read()
-            if has_extension:
-                text = file_bytes.decode()
+
+            text = await i.read()
+
+            if isinstance(text, bytes):
+                try:
+                    text = text.decode()
+                except UnicodeDecodeError:
+                    pass
+                except Exception as e:
+                    log.info(f"Failed to decode content of {i.filename}", exc_info=e)
+
+            if i.filename == "message.txt":
+                question += f"\n\n### Uploaded File:\n{text}\n"
             else:
-                text = file_bytes
-            question += f'\n\nUploaded File ({i.filename})\n"""\n{text}\n"""\n'
+                question += f"\n\n### Uploaded File ({i.filename}):\n{text}\n"
 
         # If referencing a message that isnt part of the user's conversation, include the context
         if hasattr(message, "reference") and message.reference:
@@ -367,9 +376,9 @@ class ChatHandler(MixinMeta):
             func = function_map[function_name]
             try:
                 if iscoroutinefunction(func):
-                    result = await func(**kwargs)
+                    func_result = await func(**kwargs)
                 else:
-                    result = await asyncio.to_thread(func, **kwargs)
+                    func_result = await asyncio.to_thread(func, **kwargs)
             except Exception as e:
                 log.error(
                     f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
@@ -378,10 +387,15 @@ class ChatHandler(MixinMeta):
                 function_calls = pop_schema(function_name, function_calls)
                 continue
 
-            if isinstance(result, bytes):
-                result = result.decode()
-            elif not isinstance(result, str):
-                result = str(result)
+            if isinstance(func_result, dict):
+                result = func_result.get("content", "No reply!")
+                func_result.get("file_name", "unknown")
+                func_result.get("data")
+
+            if isinstance(func_result, bytes):
+                result = func_result.decode()
+            else:  # Is a string
+                result = str(func_result)
 
             # Ensure response isnt too large
             result = await self.cut_text_by_tokens(result, conf, max_tokens)
@@ -408,9 +422,8 @@ class ChatHandler(MixinMeta):
                     block = True
                 continue
 
-        conversation.update_messages(
-            reply, "assistant", process_username(author.name) if author else None
-        )
+        conversation.update_messages(reply, "assistant", process_username(self.bot.user.name))
+
         if block:
             reply = _("Response failed due to invalid regex, check logs for more info.")
         conversation.cleanup(conf, author)
