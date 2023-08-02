@@ -69,7 +69,7 @@ def get_ticket_owner(opened: dict, channel_id: str) -> Optional[str]:
 async def close_ticket(
     member: Union[discord.Member, discord.User],
     guild: discord.Guild,
-    channel: discord.TextChannel,
+    channel: Union[discord.TextChannel, discord.Thread],
     conf: dict,
     reason: str,
     closedby: str,
@@ -89,13 +89,17 @@ async def close_ticket(
     pfp = ticket["pfp"]
     panel_name = ticket["panel"]
     panel = conf["panels"][panel_name]
-    threads = panel.get("threads")
+    panel.get("threads")
 
-    if not channel.permissions_for(guild.me).manage_channels and not threads:
+    if not channel.permissions_for(guild.me).manage_channels and isinstance(
+        channel, discord.TextChannel
+    ):
         return await channel.send(
             _("I am missing the `Manage Channels` permission to close this ticket!")
         )
-    if not channel.permissions_for(guild.me).manage_threads and threads:
+    if not channel.permissions_for(guild.me).manage_threads and isinstance(
+        channel, discord.Thread
+    ):
         return await channel.send(
             _("I am missing the `Manage Threads` permission to close this ticket!")
         )

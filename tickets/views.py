@@ -436,9 +436,20 @@ class SupportButton(Button):
                     elif alt_channel and isinstance(alt_channel, discord.TextChannel):
                         if alt_channel.category:
                             category = alt_channel.category
-                channel_or_thread = await category.create_text_channel(
+                channel_or_thread: discord.TextChannel = await category.create_text_channel(
                     channel_name, overwrites=overwrite
                 )
+        except discord.Forbidden:
+            txt = _(
+                "I am missing the required permissions to create a ticket for you. "
+                "Please contact an admin so they may fix my permissions."
+            )
+            em = discord.Embed(description=txt, color=discord.Color.red())
+            if modal:
+                return await interaction.followup.send(embed=em, ephemeral=True)
+            else:
+                return await interaction.response.send_message(embed=em, ephemeral=True)
+
         except Exception as e:
             em = discord.Embed(
                 description=_(
