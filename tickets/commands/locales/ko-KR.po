@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-26 14:13\n"
+"POT-Creation-Date: 2023-08-02 14:01-0400\n"
+"PO-Revision-Date: 2023-08-02 18:07\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -1227,7 +1227,7 @@ msgstr "이 티켓은 {}을 종료합니다"
 msgid "Closing cancelled!"
 msgstr "마감이 취소되었습니다!"
 
-#: commands\base.py:158
+#: commands\base.py:165
 msgid "Closing..."
 msgstr "마감..."
 
