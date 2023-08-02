@@ -334,7 +334,7 @@ class Admin(MixinMeta):
             total_input_cost += input_cost
             total_output_cost += output_cost
 
-            if model_name == "text-embedding-ada-002":
+            if model_name in ["text-embedding-ada-002", "text-embedding-ada-002-v2"]:
                 field = _("`Total:  `{} (${} @ ${}/1k tokens)").format(
                     humanize_number(usage.input_tokens), round(input_cost, 2), input_price
                 )

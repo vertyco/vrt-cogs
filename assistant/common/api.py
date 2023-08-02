@@ -6,7 +6,6 @@ import math
 from typing import Dict, List, Optional, Tuple
 
 import discord
-import orjson
 from aiohttp import ClientConnectionError
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
@@ -225,9 +224,7 @@ class API(MixinMeta):
         )
 
     async def payload_token_count(self, conf: GuildSettings, messages: List[dict]):
-        return sum(
-            [(await self.get_token_count(i["content"], conf)) for i in messages if i["content"]]
-        )
+        return sum([(await self.get_token_count(json.dumps(i), conf)) for i in messages])
 
     async def prompt_token_count(self, conf: GuildSettings) -> int:
         """Fetch token count of system and initial prompts"""
@@ -269,13 +266,11 @@ class API(MixinMeta):
         # Calculate the initial total token count
         total_tokens = 0
         for message in messages:
-            if not message["content"]:
-                continue
-            count = await self.get_token_count(message["content"], conf)
+            count = await self.get_token_count(json.dumps(message), conf)
             total_tokens += count
 
         for function in function_list:
-            count = await self.get_token_count(orjson.dumps(function), conf)
+            count = await self.get_token_count(json.dumps(function), conf)
             total_tokens += count
 
         # Check if the total token count is already under the max token limit
@@ -298,7 +293,7 @@ class API(MixinMeta):
         # Degrade function_list first
         while total_tokens > max_tokens and len(function_list) > 0:
             popped = function_list.pop(0)
-            total_tokens -= await self.get_token_count(orjson.dumps(popped), conf)
+            total_tokens -= await self.get_token_count(json.dumps(popped), conf)
             if total_tokens <= max_tokens:
                 return messages, function_list, True
 
