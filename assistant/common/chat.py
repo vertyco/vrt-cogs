@@ -126,7 +126,8 @@ class ChatHandler(MixinMeta):
                     # OpenAI related error, doesn't need to be restricted to bot owner only
                     reply = _("Error: {}").format(error["message"])
                     log.error(
-                        f"Invalid Request Error (From listener: {listener})\n{error}", exc_info=e
+                        f"Invalid Request Error (From listener: {listener})\nERROR: {error}",
+                        exc_info=e,
                     )
                 else:
                     log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
@@ -305,11 +306,15 @@ class ChatHandler(MixinMeta):
                         await channel.send(_("Too many functions called"), file=file)
                     except discord.HTTPException:
                         pass
-                response = await self.request_response(
-                    messages=messages,
-                    conf=conf,
-                    member=author,
-                )
+                try:
+                    response = await self.request_response(
+                        messages=messages,
+                        conf=conf,
+                        member=author,
+                    )
+                except InvalidRequestError as e:
+                    log.error(f"MESSAGES: {json.dumps(messages)}", exc_info=e)
+                    raise e
             except Exception as e:
                 log.error(
                     f"Exception occured for chat response.\nMessages: {messages}", exc_info=e
@@ -387,6 +392,7 @@ class ChatHandler(MixinMeta):
                 function_calls = pop_schema(function_name, function_calls)
                 continue
 
+            # Prep framework for alternative response types!
             if isinstance(func_result, dict):
                 result = func_result.get("content", "No reply!")
                 func_result.get("file_name", "unknown")
