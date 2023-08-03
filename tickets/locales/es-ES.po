@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
-"PO-Revision-Date: 2023-08-02 18:07\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
+"PO-Revision-Date: 2023-08-03 17:11\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -45,15 +45,15 @@ msgstr "(Cierre automático) Ticket abierto sin respuesta durante "
 msgid "User left guild(Auto-Close)"
 msgstr "Usuario abandonó gremio (Auto-Cerrar)"
 
-#: utils.py:98
+#: utils.py:103
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
 msgstr "¡Me falta el permiso `Manage Channels` para cerrar este ticket!"
 
-#: utils.py:104
+#: utils.py:109
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
 msgstr "¡Me falta el permiso `Manage Threads` para cerrar este ticket!"
 
-#: utils.py:111
+#: utils.py:116
 msgid "Ticket created by **{}-{}** has been closed.\n"
 "`PanelType: `{}\n"
 "`Opened on: `<t:{}:F>\n"
@@ -67,7 +67,7 @@ msgstr "El ticket creado por **{}-{}** ha sido cerrado.\n"
 "`Cerrado por: `{}\n"
 "`Motivo:    `{}\n"
 
-#: utils.py:127
+#: utils.py:132
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
@@ -75,57 +75,57 @@ msgstr "¡Ticket Cerrado!\n"
 "{}\n"
 "¡Actualmente faltan permisos para enviar incrustaciones a este canal!"
 
-#: utils.py:131
+#: utils.py:136
 msgid "Ticket Closed"
 msgstr "Billete cerrado"
 
-#: utils.py:142
+#: utils.py:147
 msgid "Archiving channel..."
 msgstr "Archivando canal..."
 
-#: utils.py:145
+#: utils.py:150
 msgid "This channel will be deleted once complete"
 msgstr "Este canal será eliminado una vez completado"
 
-#: utils.py:151
+#: utils.py:156
 msgid "Question: {}\n"
 "Response: {}\n"
 msgstr "Pregunta: {}\n"
 "Respuesta: {}\n"
 
-#: utils.py:162
+#: utils.py:167
 msgid "Files uploaded: "
 msgstr "Archivos cargados: "
 
-#: utils.py:253
+#: utils.py:258
 msgid "There are no tickets stored in the database."
 msgstr "No hay entradas almacenadas en la base de datos."
 
-#: utils.py:283
+#: utils.py:288
 msgid "ticket"
 msgstr "billete"
 
-#: utils.py:283
+#: utils.py:288
 msgid "tickets"
 msgstr "entradas"
 
-#: utils.py:284
+#: utils.py:289
 msgid "Pruned `{}` invalid {}"
 msgstr "Podado `{}` inválido {}"
 
-#: utils.py:287
+#: utils.py:292
 msgid "There are no tickets to prune"
 msgstr "No hay entradas para podar"
 
-#: utils.py:295
+#: utils.py:300
 msgid "Ticket Overview"
 msgstr "Resumen de tickets"
 
-#: utils.py:320
+#: utils.py:325
 msgid "There are no active tickets."
 msgstr "No hay entradas activas."
 
-#: utils.py:349
+#: utils.py:354
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
