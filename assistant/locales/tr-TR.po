@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-07-22 18:29\n"
+"PO-Revision-Date: 2023-07-28 18:11\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -19,180 +19,187 @@ msgstr ""
 
 #: views.py:33
 msgid "Set OpenAI Key"
-msgstr ""
+msgstr "OpenAI Anahtarını Ayarla"
 
 #: views.py:35
 msgid "Enter your OpenAI Key below"
-msgstr ""
+msgstr "OpenAI Anahtarınızı aşağıya girin"
 
 #: views.py:56 views.py:140 views.py:465
 msgid "This isn't your menu!"
-msgstr ""
+msgstr "Bu senin menün değil!"
 
 #: views.py:77
 msgid "Entry name"
-msgstr ""
+msgstr "Giriş adı"
 
 #: views.py:84
 msgid "Training context"
-msgstr ""
+msgstr "Eğitim bağlamı"
 
 #: views.py:101
 msgid "Search for an embedding"
-msgstr ""
+msgstr "Bir yerleştirme arayın"
 
 #: views.py:103
 msgid "Search Query"
-msgstr ""
+msgstr "Arama Sorgusu"
 
 #: views.py:191
 msgid "Failed to process embedding `{}`\n"
 "Content: ```\n"
 "{}\n"
 "```"
-msgstr ""
+msgstr "`{}` gömme işlemi başarısız oldu\n"
+"İçerik: ```\n"
+"{}\n"
+"```"
 
 #: views.py:195
 msgid "An embedding with the name `{}` already exists!"
-msgstr ""
+msgstr "`{}` adında bir gömme zaten mevcut!"
 
 #: views.py:201
 msgid "Your embedding labeled `{}` has been processed!"
-msgstr ""
+msgstr "`{}` etiketli gömme işleminiz işlendi!"
 
 #: views.py:214
 msgid "No embeddings to inspect!"
-msgstr ""
+msgstr "İncelenecek gömme yok!"
 
 #: views.py:237
 msgid "No embeddings to edit!"
-msgstr ""
+msgstr "Düzenlenecek gömme yok!"
 
 #: views.py:249
 msgid "Failed to edit that embedding, please try again later"
-msgstr ""
+msgstr "Bu yerleştirme düzenlenemedi, lütfen daha sonra tekrar deneyin"
 
 #: views.py:256
 msgid "Your embedding has been modified!"
-msgstr ""
+msgstr "Yerleştirmeniz değiştirildi!"
 
 #: views.py:297
 msgid "Add an embedding"
-msgstr ""
+msgstr "Bir yerleştirme ekleyin"
 
 #: views.py:304
 msgid "Your embedding is processing and will appear when ready!"
-msgstr ""
+msgstr "Yerleştirmeniz işleniyor ve hazır olduğunda görünecek!"
 
 #: views.py:324
 msgid "No embeddings to delete!"
-msgstr ""
+msgstr "Silinecek gömme yok!"
 
 #: views.py:328
 msgid "Deleted `{}` embedding."
-msgstr ""
+msgstr "`{}` katıştırması silindi."
 
 #: views.py:356
 msgid "No embeddings to search!"
-msgstr ""
+msgstr "Aranacak gömme yok!"
 
 #: views.py:372
 msgid "Search result: **{}**"
-msgstr ""
+msgstr "Arama sonucu: **{}**"
 
 #: views.py:403
 msgid "Function Edit"
-msgstr ""
+msgstr "İşlev Düzenleme"
 
 #: views.py:409
 msgid "JSON Schema"
-msgstr ""
+msgstr "JSON Şeması"
 
 #: views.py:416
 msgid "Code"
-msgstr ""
+msgstr "Kod"
 
 #: views.py:580
 msgid "No code to inspect!"
-msgstr ""
+msgstr "İncelenecek kod yok!"
 
 #: views.py:599
 msgid "Here are your custom functions"
-msgstr ""
+msgstr "İşte özel işlevleriniz"
 
 #: views.py:604
 msgid "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
-msgstr ""
+msgstr "Bu mesaja fonksiyonunuzun json şeması ile yanıt verin\n"
+"- [Örnek Fonksiyonlar](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 
 #: views.py:625 views.py:707
 msgid "SchemaError\n"
 "{}"
-msgstr ""
+msgstr "Error de esquema\n"
+"{}"
 
 #: views.py:627 views.py:710
 msgid "Empty schema!"
-msgstr ""
+msgstr "Boş şema!"
 
 #: views.py:631 views.py:713
 msgid "Invalid schema!\n"
 "**Missing**\n"
 "{}"
-msgstr ""
+msgstr "Geçersiz şema!\n"
+"**Eksik**\n"
+"{}"
 
 #: views.py:636
 msgid "Reply to this message with the custom code"
-msgstr ""
+msgstr "Bu mesaja özel kod ile yanıt verin"
 
 #: views.py:651 views.py:719
 msgid "Invalid function"
-msgstr ""
+msgstr "Geçersiz fonksiyon"
 
 #: views.py:655
 msgid "`{}` has been overwritten!"
-msgstr ""
+msgstr "`{}` üzerine yazıldı!"
 
 #: views.py:657
 msgid "`{}` has been created!"
-msgstr ""
+msgstr "`{}` oluşturuldu!"
 
 #: views.py:668
 msgid "No code to edit!"
-msgstr ""
+msgstr "Düzenlenecek kod yok!"
 
 #: views.py:677 views.py:747
 msgid "Could not find function!"
-msgstr ""
+msgstr "Fonksiyon bulunamadı!"
 
 #: views.py:680
 msgid "This function is managed by the `{}` cog and cannot be edited"
-msgstr ""
+msgstr "Bu işlev `{}` dişlisi tarafından yönetilmektedir ve düzenlenemez"
 
 #: views.py:686
 msgid "The json schema for this function is too long, you'll need to re-upload it to modify"
-msgstr ""
+msgstr "Bu işlev için json şeması çok uzun, değiştirmek için yeniden yüklemeniz gerekecek"
 
 #: views.py:693
 msgid "The code for this function is too long, you'll need to re-upload it to modify"
-msgstr ""
+msgstr "Bu işlevin kodu çok uzun, değiştirmek için yeniden yüklemeniz gerekecek"
 
 #: views.py:728
 msgid "`{}` function updated!"
-msgstr ""
+msgstr "`{}` fonksiyonu güncellendi!"
 
 #: views.py:739
 msgid "No code to delete!"
-msgstr ""
+msgstr "Silinecek kod yok!"
 
 #: views.py:750
 msgid "This function is managed by the `{}` cog and cannot be deleted"
-msgstr ""
+msgstr "Bu işlev `{}` dişlisi tarafından yönetilmektedir ve silinemez"
 
 #: views.py:758
 msgid "`{}` has been deleted!"
-msgstr ""
+msgstr "`{}` silindi!"
 
 #: views.py:766
 msgid "No code to toggle!"
-msgstr ""
+msgstr "Değiştirmek için kod yok!"
 

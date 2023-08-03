@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-26 19:16-0400\n"
-"PO-Revision-Date: 2023-07-27 16:26\n"
+"PO-Revision-Date: 2023-07-28 18:11\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -29,44 +29,53 @@ msgid "\n"
 "    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
 "    If a deepl key is set, it will use that before falling back to google translate and then flowery.\n"
 "    "
-msgstr ""
+msgstr "    Tek kanalda iki dil arasında sorunsuz çeviri. Veya çeşitli dillere manuel çeviri.\n\n"
+"    Fluent varsayılan olarak google translate'i kullanır ve [Flowery](https://flowery.pw/) bir yedektir.\n\n"
+"    Fluent ayrıca [Deepl](https://www.deepl.com/pro#developer) çeviri api'sini de destekler.\n"
+"    1. Ücretsiz Deepl hesabınızı **[Buradan](https://www.deepl.com/pro#developer)** kaydedin.\n"
+"    2. API anahtarınızı **[Buradan](https://www.deepl.com/account/summary)** edinin.\n"
+"    3. API anahtarınızı şu şekilde ayarlayın:\n"
+"    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
+"    Bir deepl anahtarı ayarlanmışsa, google translate'e ve ardından flowery'ye geri dönmeden önce bunu kullanacaktır    "
 
 #: fluent.py:42
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "{}\n"
+"Cog Versiyonu: {}\n"
+"Yazar: {}"
 
 #: fluent.py:47
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Silinecek veri yok"
 
 #: fluent.py:72
 #, docstring
 msgid "Translate a message"
-msgstr ""
+msgstr "Bir mesajı çevirin"
 
 #: fluent.py:75
 msgid "The target language `{}` was not found."
-msgstr ""
+msgstr "Hedef dil `{}` bulunamadı."
 
 #: fluent.py:84
 msgid "Could not find any content to translate!"
-msgstr ""
+msgstr "Çevrilecek herhangi bir içerik bulunamadı!"
 
 #: fluent.py:90
 msgid "An error occured while translating, Check logs for more info."
-msgstr ""
+msgstr "Çeviri sırasında bir hata oluştu, daha fazla bilgi için günlükleri kontrol edin."
 
 #: fluent.py:97
 msgid "❌ Translation failed."
-msgstr ""
+msgstr "❌ Çeviri başarısız oldu."
 
 #: fluent.py:122
 #, docstring
 msgid "Base command"
-msgstr ""
+msgstr "Temel komut"
 
 #: fluent.py:140
 #, docstring
@@ -75,60 +84,62 @@ msgid "\n"
 "        Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be\n"
 "        in english, then make english language 2 to use less api calls.\n"
 "        "
-msgstr ""
+msgstr "        Bir kanal ve çeviri yapmak için diller ekleyin\n\n"
+"        İpucu: Dil 1 ilk dönüştürülecek dildir. Örneğin, konuşmanın çoğunun İngilizce olmasını bekliyorsanız, İngilizce dilini 2. dil olarak ekleyin ve daha az API çağrısı yapın        "
 
 #: fluent.py:153
 msgid "Both of those languages are invalid."
-msgstr ""
+msgstr "Her ikisi de geçersiz dillerdir."
 
 #: fluent.py:156
 msgid "Language 1 is invalid."
-msgstr ""
+msgstr "Dil 1 geçersiz."
 
 #: fluent.py:159
 msgid "Language 2 is invalid."
-msgstr ""
+msgstr "Dil 2 geçersizdir."
 
 #: fluent.py:165
 msgid "❌ {} is already a fluent channel."
-msgstr ""
+msgstr "❌ {} zaten akıcı bir kanaldır."
 
 #: fluent.py:169
 msgid "✅ Fluent channel has been set!"
-msgstr ""
+msgstr "✅ Akıcı kanal ayarlandı!"
 
 #: fluent.py:185
 #, docstring
 msgid "Remove a channel from Fluent"
-msgstr ""
+msgstr "Fluent'ten bir kanalı kaldırın"
 
 #: fluent.py:193
 msgid "✅ Fluent channel has been deleted!"
-msgstr ""
+msgstr "✅ Fluent kanalı silindi!"
 
 #: fluent.py:195
 msgid "❌ {} isn't a fluent channel!"
-msgstr ""
+msgstr "❌ {} akıcı bir kanal değil!"
 
 #: fluent.py:199
 #, docstring
 msgid "View all fluent channels"
-msgstr ""
+msgstr "Tüm akıcı kanalları görüntüle"
 
 #: fluent.py:211
 msgid "There are no fluent channels at this time."
-msgstr ""
+msgstr "Şu anda akıcı kanallar bulunmamaktadır."
 
 #: fluent.py:212
 msgid "**Fluent Settings**\n"
 "{}"
-msgstr ""
+msgstr "**Akıcı Ayarlar**\n"
+"{}"
 
 #: fluent.py:257
 msgid "Unable to finish translation, perhaps the API is down."
-msgstr ""
+msgstr "Çeviri tamamlanamıyor, belki de API çalışmıyor."
 
 #: fluent.py:298
 msgid "Invalid target language"
-msgstr ""
+msgstr "Geçersiz hedef dil"
 
