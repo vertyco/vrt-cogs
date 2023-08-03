@@ -163,7 +163,7 @@ class GuildSettings(BaseModel):
 
 
 class Conversation(BaseModel):
-    messages: list[dict[str, str]] = []
+    messages: List[dict] = []
     last_updated: float = 0.0
 
     def function_count(self) -> int:

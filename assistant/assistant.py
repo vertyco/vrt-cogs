@@ -7,6 +7,7 @@ from typing import Callable, Dict, List, Optional, Union
 import discord
 import tiktoken
 from discord.ext import tasks
+from pydantic.error_wrappers import ValidationError
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
@@ -50,7 +51,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.9.5"
+    __version__ = "4.9.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -90,7 +91,14 @@ class Assistant(
         await self.bot.wait_until_red_ready()
         start = perf_counter()
         data = await self.config.db()
-        self.db = await asyncio.to_thread(DB.parse_obj, data)
+        try:
+            self.db = await asyncio.to_thread(DB.parse_obj, data)
+        except ValidationError:
+            # Try clearing conversations
+            if "conversations" in data:
+                del data["conversations"]
+            self.db = await asyncio.to_thread(DB.parse_obj, data)
+
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         await asyncio.to_thread(self._cleanup_db)
 
