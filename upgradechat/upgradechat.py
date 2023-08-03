@@ -21,7 +21,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.0.15"
+    __version__ = "0.1.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -160,30 +160,39 @@ class UpgradeChat(commands.Cog):
             await ctx.send(f"Claim log channel has been set to `{channel.name}`")
 
     @upgradechat.command()
-    async def purchases(self, ctx: commands.Context):
+    async def purchases(self, ctx: commands.Context, *, member: discord.Member = None):
         """View user purchase history"""
         users = await self.config.guild(ctx.guild).users()
 
         embeds = []
-        for uid, purchases in users.items():
-            user = ctx.guild.get_member(int(uid)) if ctx.guild.get_member(int(uid)) else None
+        page = 0
+        pages = len(list(users.keys()))
+        for index, user_id in enumerate(users.keys()):
+            purchases = users[user_id]
+            user = ctx.guild.get_member(int(user_id))
+            if member and user and user.id == member.id:
+                page = index
 
-            desc = f"**Purchases from {user if user else uid}**\n"
+            name = f"{user.name} ({user.id})" if user else user_id
+
+            em = discord.Embed(color=await self.bot.get_embed_color(ctx))
+            em.set_author(
+                name=f"{name}'s Purchases",
+                icon_url=user.display_avatar if user else None,
+            )
+
+            total = 0
+            desc = ""
             for transaction_id, purchase in purchases.items():
                 price = purchase["price"]
                 date = int(datetime.fromisoformat(purchase["date"]).timestamp())
-                desc += f"`${price}: `<t:{date}:D> (<t:{date}:R>)\n"
-
-            em = discord.Embed(description=desc)
-            if user and user.avatar:
-                em.set_thumbnail(url=user.display_avatar.url)
-            embeds.append(em)
-        for ind, i in enumerate(embeds):
-            i.set_footer(text=f"Page {ind + 1}/{len(list(users.keys()))}")
+                total += price
+                desc += f"`${price} - {transaction_id}:`<t:{date}:D> (<t:{date}:R>)\n"
+            em.set_footer(text=f"Page {index + 1}/{pages} | ${total} total")
 
         if not embeds:
             return await ctx.send("There are no purchases saved!")
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        await menu(ctx, embeds, DEFAULT_CONTROLS, page=page)
 
     @upgradechat.command()
     async def view(self, ctx: commands.Context):
