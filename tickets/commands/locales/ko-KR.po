@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
-"PO-Revision-Date: 2023-08-02 18:07\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
+"PO-Revision-Date: 2023-08-03 17:11\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -589,11 +589,6 @@ msgstr "티켓 메시지 추가가 취소되었습니다"
 msgid "Type your desired ticket message below"
 msgstr "아래에 원하는 티켓 메시지를 입력하세요"
 
-#: commands\admin.py:734 commands\admin.py:755 commands\admin.py:1329
-#: commands\admin.py:1348 commands\admin.py:1367
-msgid "cancel"
-msgstr "취소"
-
 #: commands\admin.py:742
 msgid "Would you like this ticket embed to have a footer?"
 msgstr "이 티켓 임베드에 바닥글을 추가하시겠습니까?"
@@ -601,6 +596,11 @@ msgstr "이 티켓 임베드에 바닥글을 추가하시겠습니까?"
 #: commands\admin.py:751
 msgid "Type your footer"
 msgstr "바닥글을 입력하세요"
+
+#: commands\admin.py:755 commands\admin.py:1329 commands\admin.py:1348
+#: commands\admin.py:1367
+msgid "cancel"
+msgstr "취소"
 
 #: commands\admin.py:766
 msgid "Your ticket message has been added!"
