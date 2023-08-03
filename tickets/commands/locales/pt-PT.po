@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
-"PO-Revision-Date: 2023-08-02 18:07\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
+"PO-Revision-Date: 2023-08-03 17:11\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -591,11 +591,6 @@ msgstr "Adição de mensagem de bilhete cancelada"
 msgid "Type your desired ticket message below"
 msgstr "Digite sua mensagem de bilhete desejada abaixo"
 
-#: commands\admin.py:734 commands\admin.py:755 commands\admin.py:1329
-#: commands\admin.py:1348 commands\admin.py:1367
-msgid "cancel"
-msgstr "cancelar"
-
 #: commands\admin.py:742
 msgid "Would you like this ticket embed to have a footer?"
 msgstr "Gostaria que esta incorporação de bilhete tivesse um rodapé?"
@@ -603,6 +598,11 @@ msgstr "Gostaria que esta incorporação de bilhete tivesse um rodapé?"
 #: commands\admin.py:751
 msgid "Type your footer"
 msgstr "Escreva o seu rodapé"
+
+#: commands\admin.py:755 commands\admin.py:1329 commands\admin.py:1348
+#: commands\admin.py:1367
+msgid "cancel"
+msgstr "cancelar"
 
 #: commands\admin.py:766
 msgid "Your ticket message has been added!"
