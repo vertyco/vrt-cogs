@@ -939,6 +939,7 @@ class UserCommands(MixinMeta, ABC):
         perms = ctx.channel.permissions_for(ctx.guild.me).manage_roles
         if not perms:
             log.warning("Insufficient perms to assign prestige ranks!")
+
         required_level = conf["prestige"]
         if not required_level:
             return await ctx.send(_("Prestige is disabled on this server!"))
@@ -967,15 +968,16 @@ class UserCommands(MixinMeta, ABC):
             )
 
         role_id = prestige_data[pending_prestige]["role"]
-        role = ctx.guild.get_role(role_id) if role_id else None
+        prestige_role = ctx.guild.get_role(role_id) if role_id else None
         emoji = prestige_data[pending_prestige]["emoji"]
-        if perms and role:
+        if perms and prestige_role:
             try:
-                await ctx.author.add_roles(role)
+                await ctx.author.add_roles(prestige_role)
             except discord.Forbidden:
                 await ctx.send(
-                    _("I do not have the proper permissions to assign you to the role ")
-                    + role.mention
+                    _("I do not have the proper permissions to assign you to the {} role!").format(
+                        prestige_role.mention
+                    )
                 )
 
         current_xp = user["xp"]
@@ -1000,6 +1002,14 @@ class UserCommands(MixinMeta, ABC):
                 role = ctx.guild.get_role(role_id)
                 if role and perms:
                     await ctx.author.remove_roles(role)
+
+        # Remove all level roles from user
+        level_role_ids = [int(role_id) for role_id in conf["levelroles"].values()]
+        to_remove = [role for role in ctx.author.roles if role.id in level_role_ids]
+        try:
+            await ctx.author.remove_roles(*to_remove)
+        except discord.Forbidden:
+            await ctx.send(_("I don't have permissions to remove your old roles!"))
 
     @commands.command(name="lvltop", aliases=["topstats", "membertop", "topranks"])
     @commands.guild_only()
