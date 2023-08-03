@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
-"PO-Revision-Date: 2023-08-02 18:07\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
+"PO-Revision-Date: 2023-08-03 17:11\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -596,11 +596,6 @@ msgstr "Addition du message de billet annulé"
 msgid "Type your desired ticket message below"
 msgstr "Tapez le message de billet souhaité ci-dessous"
 
-#: commands\admin.py:734 commands\admin.py:755 commands\admin.py:1329
-#: commands\admin.py:1348 commands\admin.py:1367
-msgid "cancel"
-msgstr "Annuler"
-
 #: commands\admin.py:742
 msgid "Would you like this ticket embed to have a footer?"
 msgstr "Souhaitez-vous que ce billet intégre un pied de page ?"
@@ -608,6 +603,11 @@ msgstr "Souhaitez-vous que ce billet intégre un pied de page ?"
 #: commands\admin.py:751
 msgid "Type your footer"
 msgstr "Tapez votre pied de page"
+
+#: commands\admin.py:755 commands\admin.py:1329 commands\admin.py:1348
+#: commands\admin.py:1367
+msgid "cancel"
+msgstr "Annuler"
 
 #: commands\admin.py:766
 msgid "Your ticket message has been added!"

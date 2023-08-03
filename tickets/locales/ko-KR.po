@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
-"PO-Revision-Date: 2023-08-02 18:07\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
+"PO-Revision-Date: 2023-08-03 17:11\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -45,15 +45,15 @@ msgstr "(자동 종료) 응답이 없는 티켓을 열었습니다 "
 msgid "User left guild(Auto-Close)"
 msgstr "길드를 떠난 사용자(자동 폐쇄)"
 
-#: utils.py:98
+#: utils.py:103
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
 msgstr "이 티켓을 종료하기 위해선 `채널 관리` 권한이 필요합니다!"
 
-#: utils.py:104
+#: utils.py:109
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
 msgstr "이 티켓을 닫기 위해선 `스레드 관리` 권한이 필요합니다!"
 
-#: utils.py:111
+#: utils.py:116
 msgid "Ticket created by **{}-{}** has been closed.\n"
 "`PanelType: `{}\n"
 "`Opened on: `<t:{}:F>\n"
@@ -67,7 +67,7 @@ msgstr "**{}-{}**가 만든 티켓이 종료되었습니다.\n"
 "`닫는 사람: `{}\n"
 "`이유:    `{}\n"
 
-#: utils.py:127
+#: utils.py:132
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
@@ -75,57 +75,57 @@ msgstr "티켓이 마감되었습니다.\n"
 "{}\n"
 "현재 이 채널에 임베드를 보낼 권한이 없습니다!"
 
-#: utils.py:131
+#: utils.py:136
 msgid "Ticket Closed"
 msgstr "티켓이 마감되었습니다"
 
-#: utils.py:142
+#: utils.py:147
 msgid "Archiving channel..."
 msgstr "아카이빙 채널..."
 
-#: utils.py:145
+#: utils.py:150
 msgid "This channel will be deleted once complete"
 msgstr "이 채널은 완료되면 삭제됩니다"
 
-#: utils.py:151
+#: utils.py:156
 msgid "Question: {}\n"
 "Response: {}\n"
 msgstr "질문: {}\n"
 "응답: {}\n"
 
-#: utils.py:162
+#: utils.py:167
 msgid "Files uploaded: "
 msgstr "파일이 업로드되었습니다: "
 
-#: utils.py:253
+#: utils.py:258
 msgid "There are no tickets stored in the database."
 msgstr "데이터베이스에 저장된 티켓이 없습니다."
 
-#: utils.py:283
+#: utils.py:288
 msgid "ticket"
 msgstr "티켓"
 
-#: utils.py:283
+#: utils.py:288
 msgid "tickets"
 msgstr "티켓"
 
-#: utils.py:284
+#: utils.py:289
 msgid "Pruned `{}` invalid {}"
 msgstr "잘린 `{}` 잘못된 {}"
 
-#: utils.py:287
+#: utils.py:292
 msgid "There are no tickets to prune"
 msgstr "가지 치기 티켓이 없습니다"
 
-#: utils.py:295
+#: utils.py:300
 msgid "Ticket Overview"
 msgstr "티켓 개요"
 
-#: utils.py:320
+#: utils.py:325
 msgid "There are no active tickets."
 msgstr "활성 티켓이 없습니다."
 
-#: utils.py:349
+#: utils.py:354
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
