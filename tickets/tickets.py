@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 import logging
+import typing as t
+from time import perf_counter
 
 import discord
 from discord.ext import tasks
@@ -30,7 +32,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.0.11"
+    __version__ = "2.0.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -102,157 +104,183 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             "answer": None,  # (Optional)
         }
 
+        # Cache
         self.valid = []  # Valid ticket channels
         self.views = []  # Saved views to end on reload
+        self.view_cache: t.Dict[int, t.List[discord.ui.View]] = {}  # Saved views to end on reload
+        self.initializing = False
 
         self.auto_close.start()
 
     async def cog_load(self) -> None:
-        asyncio.create_task(self.startup())
+        asyncio.create_task(self._startup())
 
     async def cog_unload(self) -> None:
         self.auto_close.cancel()
         for view in self.views:
             view.stop()
 
-    async def startup(self) -> None:
+    async def _startup(self) -> None:
         await self.bot.wait_until_red_ready()
+        await asyncio.sleep(6)
         await self.initialize()
 
     async def initialize(self, target_guild: discord.Guild = None) -> None:
+        if target_guild:
+            data = await self.config.guild(target_guild).all()
+            return await self._init_guild(target_guild, data)
+
+        t1 = perf_counter()
         conf = await self.config.all_guilds()
         for gid, data in conf.items():
             if not data:
                 continue
-            if target_guild and target_guild.id != gid:
-                continue
             guild = self.bot.get_guild(gid)
             if not guild:
                 continue
-            pruned = await prune_invalid_tickets(guild, data, self.config)
-            if pruned:
-                data = await self.config.guild(guild).all()
-            # Refresh overview panel
-            new_id = await update_active_overview(guild, data)
-            if new_id:
-                await self.config.guild(guild).overview_msg.set(new_id)
+            try:
+                await self._init_guild(guild, data)
+            except Exception as e:
+                log.error(f"Failed to initialize tickets for {guild.name}", exc_info=e)
 
-            # v1.14.0 Migration, new support role schema
-            cleaned = []
-            for i in data["support_roles"]:
-                if isinstance(i, int):
-                    cleaned.append([i, False])
-            if cleaned:
-                await self.config.guild(guild).support_roles.set(cleaned)
+        td = (perf_counter() - t1) * 1000
+        log.info(f"Tickets initialized in {round(td, 1)}ms")
 
-            # Refresh buttons for all panels
-            migrations = False
-            all_panels = data["panels"]
-            to_deploy = {}  # Message ID keys for multi-button support
-            for panel_name, panel in all_panels.items():
-                catid = panel["category_id"]
-                cid = panel["channel_id"]
-                mid = panel["message_id"]
-                if any([not catid, not cid, not mid]):
-                    continue
+    async def _init_guild(self, guild: discord.Guild, data: dict) -> None:
+        # Stop and clear guild views from cache
+        views = self.view_cache.setdefault(guild.id, [])
+        for view in views:
+            view.stop()
+        self.view_cache[guild.id].clear()
 
-                cat = guild.get_channel(catid)
-                chan = guild.get_channel(cid)
-                if any([not cat, not chan]):
-                    continue
+        pruned = await prune_invalid_tickets(guild, data, self.config)
+        if pruned:
+            data = await self.config.guild(guild).all()
 
+        # Refresh overview panel
+        new_id = await update_active_overview(guild, data)
+        if new_id:
+            await self.config.guild(guild).overview_msg.set(new_id)
+
+        # v1.14.0 Migration, new support role schema
+        cleaned = []
+        for i in data["support_roles"]:
+            if isinstance(i, int):
+                cleaned.append([i, False])
+        if cleaned:
+            await self.config.guild(guild).support_roles.set(cleaned)
+
+        # Refresh buttons for all panels
+        migrations = False
+        all_panels = data["panels"]
+        prefetched = []
+        to_deploy = {}  # Message ID keys for multi-button support
+        for panel_name, panel in all_panels.items():
+            category_id = panel["category_id"]
+            channel_id = panel["channel_id"]
+            message_id = panel["message_id"]
+            if any([not category_id, not channel_id, not message_id]):
+                continue
+
+            category = guild.get_channel(category_id)
+            channel_obj = guild.get_channel(channel_id)
+            if any([not category, not channel_obj]):
+                continue
+
+            if message_id not in prefetched:
                 try:
-                    await chan.fetch_message(mid)
+                    await channel_obj.fetch_message(message_id)
+                    prefetched.append(message_id)
                 except discord.NotFound:
                     continue
                 except discord.Forbidden:
                     log.info(f"I can no longer see a set panel channel in {guild.name}")
                     continue
 
-                # v1.3.10 schema update (Modals)
-                if "modals" not in panel:
-                    panel["modals"] = {}
-                    migrations = True
-                # Schema update (Sub support roles)
-                if "roles" not in panel:
-                    panel["roles"] = []
-                    migrations = True
-                # v1.14.0 Schema update (Mentionable support roles + alt channel)
-                cleaned = []
-                for i in panel["roles"]:
-                    if isinstance(i, int):
-                        cleaned.append([i, False])
-                if cleaned:
-                    panel["roles"] = cleaned
-                    migrations = True
-                if "alt_channel" not in panel:
-                    panel["alt_channel"] = 0
-                    migrations = True
-                # v1.15.0 schema update (Button priority and rows)
-                if "row" not in panel or "priority" not in panel:
-                    panel["row"] = None
-                    panel["priority"] = 1
-                    migrations = True
+            # v1.3.10 schema update (Modals)
+            if "modals" not in panel:
+                panel["modals"] = {}
+                migrations = True
+            # Schema update (Sub support roles)
+            if "roles" not in panel:
+                panel["roles"] = []
+                migrations = True
+            # v1.14.0 Schema update (Mentionable support roles + alt channel)
+            cleaned = []
+            for i in panel["roles"]:
+                if isinstance(i, int):
+                    cleaned.append([i, False])
+            if cleaned:
+                panel["roles"] = cleaned
+                migrations = True
+            if "alt_channel" not in panel:
+                panel["alt_channel"] = 0
+                migrations = True
+            # v1.15.0 schema update (Button priority and rows)
+            if "row" not in panel or "priority" not in panel:
+                panel["row"] = None
+                panel["priority"] = 1
+                migrations = True
 
-                panel["name"] = panel_name
-                key = f"{cid}-{mid}"
-                if key in to_deploy:
-                    to_deploy[key].append(panel)
-                else:
-                    to_deploy[key] = [panel]
+            panel["name"] = panel_name
+            key = f"{channel_id}-{message_id}"
+            if key in to_deploy:
+                to_deploy[key].append(panel)
+            else:
+                to_deploy[key] = [panel]
 
-            if not to_deploy:
+        if not to_deploy:
+            return
+
+        # Update config for any migrations
+        if migrations:
+            await self.config.guild(guild).panels.set(all_panels)
+
+        try:
+            for panels in to_deploy.values():
+                sorted_panels = sorted(panels, key=lambda x: x["priority"])
+                panelview = PanelView(self.bot, guild, self.config, sorted_panels)
+                # Panels can change so we want to edit every time
+                await panelview.start()
+                self.view_cache[guild.id].append(panelview)
+        except discord.NotFound:
+            log.warning(f"Failed to refresh panels in {guild.name}")
+
+        # Refresh view for logs of opened tickets (v1.8.18 update)
+        for uid, opened_tickets in data["opened"].items():
+            member = guild.get_member(int(uid))
+            if not member:
                 continue
-
-            # Update config for any migrations
-            if migrations:
-                await self.config.guild(guild).panels.set(all_panels)
-
-            try:
-                for panels in to_deploy.values():
-                    sorted_panels = sorted(panels, key=lambda x: x["priority"])
-                    panelview = PanelView(self.bot, guild, self.config, sorted_panels)
-                    await panelview.start()
-                    self.views.append(panelview)
-            except discord.NotFound:
-                log.warning(f"Failed to refresh panels in {guild.name}")
-
-            # Refresh view for logs of opened tickets (v1.8.18 update)
-            for uid, opened_tickets in data["opened"].items():
-                member = guild.get_member(int(uid))
-                if not member:
+            for ticket_channel_id, ticket_info in opened_tickets.items():
+                ticket_channel = guild.get_channel_or_thread(int(ticket_channel_id))
+                if not ticket_channel:
                     continue
-                for ticket_channel_id, ticket_info in opened_tickets.items():
-                    ticket_channel = guild.get_channel_or_thread(int(ticket_channel_id))
-                    if not ticket_channel:
-                        continue
 
-                    # v2.0.0 stores message id for close button to re-init views on reload
-                    if message_id := ticket_info.get("message_id"):
-                        view = CloseView(self.bot, self.config, int(uid), ticket_channel)
-                        self.bot.add_view(view, message_id=message_id)
-                        self.views.append(view)
+                # v2.0.0 stores message id for close button to re-init views on reload
+                if message_id := ticket_info.get("message_id"):
+                    view = CloseView(self.bot, self.config, int(uid), ticket_channel)
+                    self.bot.add_view(view, message_id=message_id)
+                    self.view_cache[guild.id].append(view)
 
-                    if not ticket_info["logmsg"]:
-                        continue
-                    panel_name = ticket_info["panel"]
-                    if panel_name not in all_panels:
-                        continue
-                    panel = all_panels[panel_name]
-                    if not panel["log_channel"]:
-                        continue
-                    log_channel = guild.get_channel(int(panel["log_channel"]))
-                    if not log_channel:
-                        log.warning(
-                            f"Log channel no longer exits for {member.display_name}'s ticket in {guild.name}"
-                        )
-                        continue
-                    try:
-                        logmsg = await log_channel.fetch_message(ticket_info["logmsg"])
-                        view = LogView(guild, ticket_channel)
-                        await logmsg.edit(view=view)
-                    except discord.NotFound:
-                        log.warning(f"Failed to get log channel message in {guild.name}")
+                if not ticket_info["logmsg"]:
+                    continue
+
+                panel_name = ticket_info["panel"]
+                if panel_name not in all_panels:
+                    continue
+                panel = all_panels[panel_name]
+                if not panel["log_channel"]:
+                    continue
+                log_channel = guild.get_channel(int(panel["log_channel"]))
+                if not log_channel:
+                    log.warning(
+                        f"Log channel no longer exits for {member.display_name}'s ticket in {guild.name}"
+                    )
+                    continue
+
+                logview = LogView(guild, ticket_channel)
+                self.bot.add_view(logview, message_id=ticket_info["logmsg"])
+                self.view_cache[guild.id].append(logview)
 
     @tasks.loop(minutes=20)
     async def auto_close(self):

@@ -602,10 +602,10 @@ class PanelView(View):
         self.guild = guild
         self.config = config
         self.panels = panels
-
-    async def start(self):
         for panel in self.panels:
             self.add_item(SupportButton(panel))
+
+    async def start(self):
         chan = self.guild.get_channel(self.panels[0]["channel_id"])
         message = await chan.fetch_message(self.panels[0]["message_id"])
         await message.edit(view=self)
