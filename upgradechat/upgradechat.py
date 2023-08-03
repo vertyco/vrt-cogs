@@ -188,6 +188,8 @@ class UpgradeChat(commands.Cog):
                 date = int(datetime.fromisoformat(purchase["date"]).timestamp())
                 total += price
                 desc += f"`${price} - {transaction_id}:`<t:{date}:D> (<t:{date}:R>)\n"
+
+            em.description = desc
             em.set_footer(text=f"Page {index + 1}/{pages} | ${total} total")
             embeds.append(em)
 
