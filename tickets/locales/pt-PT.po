@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
-"PO-Revision-Date: 2023-08-02 18:07\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
+"PO-Revision-Date: 2023-08-03 17:11\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -45,15 +45,15 @@ msgstr "(Fecho automático) Bilhete aberto sem resposta para "
 msgid "User left guild(Auto-Close)"
 msgstr "O utilizador saiu da guilda (Auto-Close)"
 
-#: utils.py:98
+#: utils.py:103
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
 msgstr "Falta-me a permissão `Gerenciar Canais` para fechar este ticket!"
 
-#: utils.py:104
+#: utils.py:109
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
 msgstr "Falta-me a permissão `Manage Threads` para fechar este bilhete!"
 
-#: utils.py:111
+#: utils.py:116
 msgid "Ticket created by **{}-{}** has been closed.\n"
 "`PanelType: `{}\n"
 "`Opened on: `<t:{}:F>\n"
@@ -67,7 +67,7 @@ msgstr "O bilhete criado por **{}-{}** foi encerrado.\n"
 "`Fechado por: `{}\n"
 "`Razão:    `{}\n"
 
-#: utils.py:127
+#: utils.py:132
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
@@ -75,58 +75,58 @@ msgstr "Bilhete fechado\n"
 "{}\n"
 "Atualmente, faltam permissões para enviar incorporações para este canal!"
 
-#: utils.py:131
+#: utils.py:136
 msgid "Ticket Closed"
 msgstr "Bilhete fechado"
 
-#: utils.py:142
+#: utils.py:147
 msgid "Archiving channel..."
 msgstr "Arquivando canal..."
 
-#: utils.py:145
+#: utils.py:150
 msgid "This channel will be deleted once complete"
 msgstr "Este canal será excluído assim que estiver completo"
 
-#: utils.py:151
+#: utils.py:156
 msgid "Question: {}\n"
 "Response: {}\n"
 msgstr "Pergunta: {}\n"
 "Resposta: {}\n"
 
-#: utils.py:162
+#: utils.py:167
 msgid "Files uploaded: "
 msgstr "Ficheiros carregados:\n"
 "Arquivos enviados: "
 
-#: utils.py:253
+#: utils.py:258
 msgid "There are no tickets stored in the database."
 msgstr "Não existem bilhetes armazenados na base de dados."
 
-#: utils.py:283
+#: utils.py:288
 msgid "ticket"
 msgstr "bilhete"
 
-#: utils.py:283
+#: utils.py:288
 msgid "tickets"
 msgstr "bilhetes"
 
-#: utils.py:284
+#: utils.py:289
 msgid "Pruned `{}` invalid {}"
 msgstr "Podado `{}` inválido {}"
 
-#: utils.py:287
+#: utils.py:292
 msgid "There are no tickets to prune"
 msgstr "Não há bilhetes para podar"
 
-#: utils.py:295
+#: utils.py:300
 msgid "Ticket Overview"
 msgstr "Visão Geral dos Bilhetes"
 
-#: utils.py:320
+#: utils.py:325
 msgid "There are no active tickets."
 msgstr "Não existem bilhetes ativos."
 
-#: utils.py:349
+#: utils.py:354
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
