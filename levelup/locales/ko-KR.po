@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-01 22:19-0400\n"
-"PO-Revision-Date: 2023-08-02 02:25\n"
+"POT-Creation-Date: 2023-08-03 10:18-0400\n"
+"PO-Revision-Date: 2023-08-03 15:18\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -480,15 +480,15 @@ msgid "% of global server Exp"
 msgstr "글로벌 서버 경험치의 %\n"
 "글로벌 서버 경험치의 %"
 
-#: base.py:857
+#: base.py:856
+msgid "{}'s Profile"
+msgstr ""
+
+#: base.py:859
 msgid "Progress"
 msgstr "진행 중입니다"
 
-#: base.py:858
-msgid "Profile"
-msgstr "프로필"
-
-#: base.py:935
+#: base.py:931
 #, docstring
 msgid "\n"
 "        Prestige your rank!\n"
@@ -501,47 +501,47 @@ msgstr "\n"
 "이 서버의 프레스티지 레벨 요구 사항을 달성하면 레벨과 경험치를 초기화하여 프레스티지 레벨과 관련된 혜택을 얻을 수 있습니다.\n\n"
 "프레스티지를 하면 현재 레벨과 경험치가 유지됩니다        "
 
-#: base.py:948
+#: base.py:944
 msgid "Prestige is disabled on this server!"
 msgstr "이 서버에서는 명성 시스템이 비활성화되었습니다!"
 
-#: base.py:951 levelup.py:2231
+#: base.py:947 levelup.py:2231
 msgid "Prestige levels have not been set yet!"
 msgstr "명성 레벨은 아직 설정되지 않았습니다!"
 
-#: base.py:955
+#: base.py:951
 msgid "No information available for you yet!"
 msgstr "아직까지는 당신에 대한 정보가 없습니다!"
 
-#: base.py:962
+#: base.py:958
 msgid "**You are not eligible to prestige yet!**\n"
 msgstr "**아직 프레스티지 등급을 받을 수 없습니다!**\n"
 
-#: base.py:963
+#: base.py:959
 msgid "`Your level:     `"
 msgstr "`사용자 레벨:     `"
 
-#: base.py:964
+#: base.py:960
 msgid "`Required Level: `"
 msgstr "`필요 레벨: `"
 
-#: base.py:970
+#: base.py:966
 msgid "Prestige level "
 msgstr "명성 레벨 "
 
-#: base.py:970
+#: base.py:966
 msgid " has not been set yet!"
 msgstr " 아직 설정되지 않았습니다!"
 
-#: base.py:981
+#: base.py:977
 msgid "I do not have the proper permissions to assign you to the role "
 msgstr "귀하는 역할에 할당할 적절한 권한이 없습니다 "
 
-#: base.py:995
+#: base.py:991
 msgid "You have reached Prestige "
 msgstr "프레스티지에 도달하셨습니다 "
 
-#: base.py:1012
+#: base.py:1008
 #, docstring
 msgid "\n"
 "        View the Leaderboard\n\n"
@@ -557,40 +557,40 @@ msgstr "\n"
 "유효한 옵션은 `exp`, `메시지`, `음성`입니다\n"
 "해당 인수의 약어도 사용할 수 있습니다        "
 
-#: base.py:1023
+#: base.py:1019
 msgid "Use the `"
 msgstr "`를 사용하세요"
 
-#: base.py:1023
+#: base.py:1019
 msgid "startop` command for that"
 msgstr "startop` 명령어를 사용하여 해당 작업을 시작하세요"
 
-#: base.py:1032 base.py:1115
+#: base.py:1028 base.py:1111
 msgid "No user data yet!"
 msgstr "아직 사용자 데이터가 없습니다!"
 
-#: base.py:1044
+#: base.py:1040
 #, docstring
 msgid "View the star leaderboard"
 msgstr "스타 리더보드 보기"
 
-#: base.py:1056
+#: base.py:1052
 msgid "Nobody has stars yet 😕"
 msgstr "아직 아무도 별을 가지고 있지 않습니다 😕"
 
-#: base.py:1071
+#: base.py:1067
 msgid "**Star Leaderboard**\n"
 msgstr "**스타 리더보드**\n"
 
-#: base.py:1072
+#: base.py:1068
 msgid "**Total ⭐'s: "
 msgstr "**총 ⭐의 수: "
 
-#: base.py:1102 base.py:1104
+#: base.py:1098 base.py:1100
 msgid "Pages "
 msgstr "페이지 "
 
-#: base.py:1121
+#: base.py:1117
 #, docstring
 msgid "\n"
 "        View the weekly leaderboard\n\n"
@@ -605,28 +605,28 @@ msgstr "주간 순위표 보기\n\n"
 "유효한 옵션은 `exp`, `messages`, `stars`, 그리고 `voice`입니다\n"
 "이러한 인수의 약자도 사용할 수 있습니다        "
 
-#: base.py:1133 base.py:1155
+#: base.py:1129 base.py:1151
 msgid "Weekly stats are disabled for this guild"
 msgstr "이 길드에서는 주간 통계가 비활성화되어 있습니다"
 
-#: base.py:1136
+#: base.py:1132
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr "아직 주간 순위표에 대한 데이터가 없으니 잠시만 기다려 주세요."
 
-#: base.py:1152
+#: base.py:1148
 #, docstring
 msgid "View the last weekly embed"
 msgstr "지난 주간 임베드를 확인하세요"
 
-#: base.py:1157
+#: base.py:1153
 msgid "There is no recorded weekly embed saved"
 msgstr "저장된 주간 임베드 기록이 없습니다"
 
-#: base.py:1159
+#: base.py:1155
 msgid "Last Weekly Winners"
 msgstr "지난 주간 우승자"
 
-#: base.py:1160
+#: base.py:1156
 msgid "{}\n"
 "`Last Reset:     `{}"
 msgstr "{}\n"
