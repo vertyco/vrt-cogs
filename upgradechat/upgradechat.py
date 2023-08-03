@@ -189,6 +189,7 @@ class UpgradeChat(commands.Cog):
                 total += price
                 desc += f"`${price} - {transaction_id}:`<t:{date}:D> (<t:{date}:R>)\n"
             em.set_footer(text=f"Page {index + 1}/{pages} | ${total} total")
+            embeds.append(em)
 
         if not embeds:
             return await ctx.send("There are no purchases saved!")
