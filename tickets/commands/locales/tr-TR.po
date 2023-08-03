@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-07-18 09:35-0400\n"
-"PO-Revision-Date: 2023-07-28 02:21\n"
+"POT-Creation-Date: 2023-08-02 14:01-0400\n"
+"PO-Revision-Date: 2023-08-02 18:07\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -1243,7 +1243,7 @@ msgstr "Bu bilet kapanacak {}"
 msgid "Closing cancelled!"
 msgstr "Kapanış iptal edildi!"
 
-#: commands\base.py:158
+#: commands\base.py:165
 msgid "Closing..."
 msgstr "Kapatıyorum."
 
