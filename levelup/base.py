@@ -801,7 +801,7 @@ class UserCommands(MixinMeta, ABC):
         currency_name = await bank.get_currency_name(ctx.guild)
 
         if DPY2:
-            pfp = user.display_avatar.url
+            pfp = user.display_avatar
             role_icon = user.top_role.display_icon
         else:
             pfp = user.avatar_url
@@ -853,15 +853,11 @@ class UserCommands(MixinMeta, ABC):
                     + str(percentage)
                     + _("% of global server Exp")
                 )
-                em.set_footer(text=footer)
+                author_name = _("{}'s Profile").format(user.display_name)
+                em.set_author(name=author_name, icon_url=pfp)
+                em.set_footer(text=footer, icon_url=role_icon)
                 em.add_field(name=_("Progress"), value=box(lvlbar, "py"))
-                txt = _("Profile")
-                if role_icon:
-                    em.set_author(name=f"{user.name}'s {txt}", icon_url=role_icon)
-                else:
-                    em.set_author(name=f"{user.name}'s {txt}")
-                if pfp:
-                    em.set_thumbnail(url=pfp)
+
                 try:
                     await ctx.reply(embed=em, mention_author=mention)
                 except discord.HTTPException:
