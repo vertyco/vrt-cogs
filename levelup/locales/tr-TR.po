@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-01 22:19-0400\n"
-"PO-Revision-Date: 2023-08-02 02:25\n"
+"POT-Creation-Date: 2023-08-03 10:18-0400\n"
+"PO-Revision-Date: 2023-08-03 15:18\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -482,15 +482,15 @@ msgstr ", ile "
 msgid "% of global server Exp"
 msgstr "Küresel sunucunun %'si Exp"
 
-#: base.py:857
+#: base.py:856
+msgid "{}'s Profile"
+msgstr ""
+
+#: base.py:859
 msgid "Progress"
 msgstr "İlerleme"
 
-#: base.py:858
-msgid "Profile"
-msgstr "Profil"
-
-#: base.py:935
+#: base.py:931
 #, docstring
 msgid "\n"
 "        Prestige your rank!\n"
@@ -504,47 +504,47 @@ msgstr "\n"
 "        bir prestij seviyesi ve bununla ilişkili tüm avantajları kazanmak için seviyenizi ve deneyiminizi sıfırlayın\n\n"
 "        Prestij kazandığınızda seviye ve xp'niz fazlaysa, xp'niz ve seviyeleriniz devam eder "
 
-#: base.py:948
+#: base.py:944
 msgid "Prestige is disabled on this server!"
 msgstr "Prestij bu sunucuda devre dışı bırakıldı!"
 
-#: base.py:951 levelup.py:2231
+#: base.py:947 levelup.py:2231
 msgid "Prestige levels have not been set yet!"
 msgstr "Prestij seviyeleri henüz belirlenmedi!"
 
-#: base.py:955
+#: base.py:951
 msgid "No information available for you yet!"
 msgstr "Sizin için henüz bir bilgi mevcut değil!"
 
-#: base.py:962
+#: base.py:958
 msgid "**You are not eligible to prestige yet!**\n"
 msgstr "**Henüz prestij kazanmaya uygun değilsiniz!**\n"
 
-#: base.py:963
+#: base.py:959
 msgid "`Your level:     `"
 msgstr "`Seviyeniz:     `"
 
-#: base.py:964
+#: base.py:960
 msgid "`Required Level: `"
 msgstr "`Gerekli Seviye: `"
 
-#: base.py:970
+#: base.py:966
 msgid "Prestige level "
 msgstr "Prestij seviyesi "
 
-#: base.py:970
+#: base.py:966
 msgid " has not been set yet!"
 msgstr " henüz belirlenmedi!"
 
-#: base.py:981
+#: base.py:977
 msgid "I do not have the proper permissions to assign you to the role "
 msgstr "Sizi role atamak için uygun izinlere sahip değilim "
 
-#: base.py:995
+#: base.py:991
 msgid "You have reached Prestige "
 msgstr "Prestige'e ulaştınız "
 
-#: base.py:1012
+#: base.py:1008
 #, docstring
 msgid "\n"
 "        View the Leaderboard\n\n"
@@ -560,40 +560,40 @@ msgstr "\n"
 "        Geçerli seçenekler şunlardır: `exp`, `messages` ve `voice`\n"
 "        Bu argümanların kısaltmaları da kullanılabilir "
 
-#: base.py:1023
+#: base.py:1019
 msgid "Use the `"
 msgstr "` düğmesini kullanın"
 
-#: base.py:1023
+#: base.py:1019
 msgid "startop` command for that"
 msgstr "bunun için startop` komutu"
 
-#: base.py:1032 base.py:1115
+#: base.py:1028 base.py:1111
 msgid "No user data yet!"
 msgstr "Henüz kullanıcı verisi yok!"
 
-#: base.py:1044
+#: base.py:1040
 #, docstring
 msgid "View the star leaderboard"
 msgstr "Yıldız lider tablosunu görüntüleyin"
 
-#: base.py:1056
+#: base.py:1052
 msgid "Nobody has stars yet 😕"
 msgstr "Henüz kimsenin yıldızı yok 😕"
 
-#: base.py:1071
+#: base.py:1067
 msgid "**Star Leaderboard**\n"
 msgstr "**Yıldız Liderlik Tablosu**\n"
 
-#: base.py:1072
+#: base.py:1068
 msgid "**Total ⭐'s: "
 msgstr "**Toplam ⭐'ler: "
 
-#: base.py:1102 base.py:1104
+#: base.py:1098 base.py:1100
 msgid "Pages "
 msgstr "Sayfalar "
 
-#: base.py:1121
+#: base.py:1117
 #, docstring
 msgid "\n"
 "        View the weekly leaderboard\n\n"
@@ -609,28 +609,28 @@ msgstr "\n"
 "        Geçerli seçenekler şunlardır: `exp`, `messages`, `stars` ve `voice`\n"
 "        Bu argümanların kısaltmaları da kullanılabilir "
 
-#: base.py:1133 base.py:1155
+#: base.py:1129 base.py:1151
 msgid "Weekly stats are disabled for this guild"
 msgstr "Haftalık istatistikler bu lonca için devre dışı bırakıldı"
 
-#: base.py:1136
+#: base.py:1132
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr "Haftalık liderlik tablosu için henüz veri yok, lütfen önce biraz sohbet edin."
 
-#: base.py:1152
+#: base.py:1148
 #, docstring
 msgid "View the last weekly embed"
 msgstr "Son haftalık yerleştirmeyi görüntüleyin"
 
-#: base.py:1157
+#: base.py:1153
 msgid "There is no recorded weekly embed saved"
 msgstr "Kaydedilmiş bir haftalık gömme kaydedilmedi"
 
-#: base.py:1159
+#: base.py:1155
 msgid "Last Weekly Winners"
 msgstr "Son Haftalık Kazananlar"
 
-#: base.py:1160
+#: base.py:1156
 msgid "{}\n"
 "`Last Reset:     `{}"
 msgstr "{}\n"
