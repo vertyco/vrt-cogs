@@ -12,7 +12,12 @@ from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import pytz
-from openai.error import APIConnectionError, AuthenticationError, InvalidRequestError
+from openai.error import (
+    APIConnectionError,
+    AuthenticationError,
+    InvalidRequestError,
+    RateLimitError,
+)
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
@@ -137,6 +142,8 @@ class ChatHandler(MixinMeta):
                     reply = _("Invalid API key, please set a new valid key!")
                 else:
                     reply = _("Uh oh, looks like my API key is invalid!")
+            except RateLimitError as e:
+                reply = str(e)
             except KeyError as e:
                 log.debug("get_chat_response error", exc_info=e)
                 await message.channel.send(
