@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-01 22:19-0400\n"
-"PO-Revision-Date: 2023-08-02 02:25\n"
+"POT-Creation-Date: 2023-08-03 10:18-0400\n"
+"PO-Revision-Date: 2023-08-03 15:18\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -472,15 +472,15 @@ msgstr ", com "
 msgid "% of global server Exp"
 msgstr "% da despesa global do servidor"
 
-#: base.py:857
+#: base.py:856
+msgid "{}'s Profile"
+msgstr ""
+
+#: base.py:859
 msgid "Progress"
 msgstr "Progresso"
 
-#: base.py:858
-msgid "Profile"
-msgstr "Perfil"
-
-#: base.py:935
+#: base.py:931
 #, docstring
 msgid "\n"
 "        Prestige your rank!\n"
@@ -493,47 +493,47 @@ msgstr "prestigie o seu ranking!\n"
 "redefinir o seu nível e experiência para ganhar um nível de prestígio e quaisquer vantagens associadas a ele.\n\n"
 "se você estiver acima do nível e experiência quando prestigiar, seu xp e níveis serão mantidos        "
 
-#: base.py:948
+#: base.py:944
 msgid "Prestige is disabled on this server!"
 msgstr "O prestígio está desativado neste servidor!"
 
-#: base.py:951 levelup.py:2231
+#: base.py:947 levelup.py:2231
 msgid "Prestige levels have not been set yet!"
 msgstr "Os níveis de prestígio ainda não foram definidos!"
 
-#: base.py:955
+#: base.py:951
 msgid "No information available for you yet!"
 msgstr "Nenhuma informação disponível para você ainda!"
 
-#: base.py:962
+#: base.py:958
 msgid "**You are not eligible to prestige yet!**\n"
 msgstr "**Ainda não é elegível para o prestígio!**\n"
 
-#: base.py:963
+#: base.py:959
 msgid "`Your level:     `"
 msgstr "`O seu nível:     `"
 
-#: base.py:964
+#: base.py:960
 msgid "`Required Level: `"
 msgstr "`Nível exigido: `"
 
-#: base.py:970
+#: base.py:966
 msgid "Prestige level "
 msgstr "Nível de prestígio "
 
-#: base.py:970
+#: base.py:966
 msgid " has not been set yet!"
 msgstr " ainda não foi definido!"
 
-#: base.py:981
+#: base.py:977
 msgid "I do not have the proper permissions to assign you to the role "
 msgstr "Não tenho as permissões adequadas para atribuir você ao cargo "
 
-#: base.py:995
+#: base.py:991
 msgid "You have reached Prestige "
 msgstr "Você chegou ao Prestige "
 
-#: base.py:1012
+#: base.py:1008
 #, docstring
 msgid "\n"
 "        View the Leaderboard\n\n"
@@ -548,40 +548,40 @@ msgstr "Ver a Tabela de Classificação\n\n"
 "Opções válidas são `exp`, `mensagens` e `voz`\n"
 "Abreviações desses argumentos também podem ser usadas        "
 
-#: base.py:1023
+#: base.py:1019
 msgid "Use the `"
 msgstr "Utilize o `"
 
-#: base.py:1023
+#: base.py:1019
 msgid "startop` command for that"
 msgstr "comando startop` para isso"
 
-#: base.py:1032 base.py:1115
+#: base.py:1028 base.py:1111
 msgid "No user data yet!"
 msgstr "Ainda não há dados do usuário!"
 
-#: base.py:1044
+#: base.py:1040
 #, docstring
 msgid "View the star leaderboard"
 msgstr "Ver a tabela de classificação das estrelas"
 
-#: base.py:1056
+#: base.py:1052
 msgid "Nobody has stars yet 😕"
 msgstr "Ainda ninguém tem estrelas 😕"
 
-#: base.py:1071
+#: base.py:1067
 msgid "**Star Leaderboard**\n"
 msgstr "**Classificação das Estrelas**\n"
 
-#: base.py:1072
+#: base.py:1068
 msgid "**Total ⭐'s: "
 msgstr "**Total de ⭐'s: "
 
-#: base.py:1102 base.py:1104
+#: base.py:1098 base.py:1100
 msgid "Pages "
 msgstr "Páginas "
 
-#: base.py:1121
+#: base.py:1117
 #, docstring
 msgid "\n"
 "        View the weekly leaderboard\n\n"
@@ -596,28 +596,28 @@ msgstr "Ver a tabela de classificação semanal\n\n"
 "As opções válidas são `exp`, `mensagens`, `estrelas` e `voz`\n"
 "Abreviações desses argumentos também podem ser usadas               "
 
-#: base.py:1133 base.py:1155
+#: base.py:1129 base.py:1151
 msgid "Weekly stats are disabled for this guild"
 msgstr "As estatísticas semanais estão desativadas para esta guilda"
 
-#: base.py:1136
+#: base.py:1132
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr "Ainda não existem dados para a tabela de classificação semanal, por favor converse um pouco primeiro."
 
-#: base.py:1152
+#: base.py:1148
 #, docstring
 msgid "View the last weekly embed"
 msgstr "Ver a última incorporação semanal"
 
-#: base.py:1157
+#: base.py:1153
 msgid "There is no recorded weekly embed saved"
 msgstr "Não há nenhum registro semanal de incorporação salvo"
 
-#: base.py:1159
+#: base.py:1155
 msgid "Last Weekly Winners"
 msgstr "Últimos Vencedores Semanais"
 
-#: base.py:1160
+#: base.py:1156
 msgid "{}\n"
 "`Last Reset:     `{}"
 msgstr "{}\n"
