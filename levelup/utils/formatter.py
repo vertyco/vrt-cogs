@@ -66,12 +66,14 @@ def int_to_rgb(color: int) -> tuple:
 
 
 def get_bar(progress, total, perc=None, width: int = 20) -> str:
+    fill = "▰"
+    space = "▱"
     if perc is not None:
         ratio = perc / 100
     else:
         ratio = progress / total
-    bar = "█" * round(ratio * width) + "-" * round(width - (ratio * width))
-    return f"|{bar}| {round(100 * ratio, 1)}%"
+    bar = fill * round(ratio * width) + space * round(width - (ratio * width))
+    return f"{bar} {round(100 * ratio, 1)}%"
 
 
 # Format time from total seconds and format into readable string
