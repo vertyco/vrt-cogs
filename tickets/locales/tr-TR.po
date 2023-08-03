@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
-"PO-Revision-Date: 2023-08-02 18:07\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
+"PO-Revision-Date: 2023-08-03 17:11\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -46,15 +46,15 @@ msgstr "(Otomatik Kapanış) Açılan bilet için yanıt yok "
 msgid "User left guild(Auto-Close)"
 msgstr "Kullanıcı loncadan ayrıldı (Otomatik Kapat)"
 
-#: utils.py:98
+#: utils.py:103
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
 msgstr "Bu bileti kapatmak için `Kanalları Yönet` iznini kaçırıyorum!"
 
-#: utils.py:104
+#: utils.py:109
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
 msgstr "Bu bileti kapatmak için `Konuları Yönet` iznini kaçırıyorum!"
 
-#: utils.py:111
+#: utils.py:116
 msgid "Ticket created by **{}-{}** has been closed.\n"
 "`PanelType: `{}\n"
 "`Opened on: `<t:{}:F>\n"
@@ -68,7 +68,7 @@ msgstr "**{}-{}** tarafından oluşturulan bilet kapatıldı.\n"
 "`Kapanış tarafından: `{}\n"
 "`Neden:    `{}\n"
 
-#: utils.py:127
+#: utils.py:132
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
@@ -76,57 +76,57 @@ msgstr "Bilet Kapalı\n"
 "{}\n"
 "Şu anda bu kanala yerleştirme göndermek için izinler eksik!"
 
-#: utils.py:131
+#: utils.py:136
 msgid "Ticket Closed"
 msgstr "Bilet Kapatıldı"
 
-#: utils.py:142
+#: utils.py:147
 msgid "Archiving channel..."
 msgstr "Kanal arşivleniyor..."
 
-#: utils.py:145
+#: utils.py:150
 msgid "This channel will be deleted once complete"
 msgstr "Bu kanal tamamlandığında silinecektir"
 
-#: utils.py:151
+#: utils.py:156
 msgid "Question: {}\n"
 "Response: {}\n"
 msgstr "Soru: {}\n"
 "Yanıt: {}\n"
 
-#: utils.py:162
+#: utils.py:167
 msgid "Files uploaded: "
 msgstr "Dosyalar yüklendi: "
 
-#: utils.py:253
+#: utils.py:258
 msgid "There are no tickets stored in the database."
 msgstr "Veritabanında kayıtlı bilet bulunmamaktadır."
 
-#: utils.py:283
+#: utils.py:288
 msgid "ticket"
 msgstr "bilet"
 
-#: utils.py:283
+#: utils.py:288
 msgid "tickets"
 msgstr "biletler"
 
-#: utils.py:284
+#: utils.py:289
 msgid "Pruned `{}` invalid {}"
 msgstr "Budanmış `{}` geçersiz {}"
 
-#: utils.py:287
+#: utils.py:292
 msgid "There are no tickets to prune"
 msgstr "Budamak için hiç bilet yok"
 
-#: utils.py:295
+#: utils.py:300
 msgid "Ticket Overview"
 msgstr "Bilet Genel Bakışı"
 
-#: utils.py:320
+#: utils.py:325
 msgid "There are no active tickets."
 msgstr "Aktif bilet bulunmamaktadır."
 
-#: utils.py:349
+#: utils.py:354
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
