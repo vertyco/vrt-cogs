@@ -390,7 +390,11 @@ class Admin(MixinMeta):
     @assistant.command(name="openaikey", aliases=["key"])
     @commands.bot_has_permissions(embed_links=True)
     async def set_openai_key(self, ctx: commands.Context):
-        """Set your OpenAI key"""
+        """
+        Set your OpenAI key
+
+        Setting this will disable any endpoint overrides you have for this server.
+        """
         conf = self.db.get_conf(ctx.guild)
 
         view = SetAPI(ctx.author, conf.api_key)
@@ -895,6 +899,8 @@ class Admin(MixinMeta):
         Set a custom endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api)
 
         Example: `http://localhost:8000/v1`
+
+        Endpoint overrides will not be used if there is an API key set.
         """
         conf = self.db.get_conf(ctx.guild)
         if conf.endpoint_override and not endpoint:
@@ -916,6 +922,8 @@ class Admin(MixinMeta):
         Set a custom global endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api) for all guilds as a fallback
 
         Example: `http://localhost:8000/v1`
+
+        Endpoint overrides will not be used if there is an API key set.
         """
         if self.db.endpoint_override and not endpoint:
             self.db.endpoint_override = None
