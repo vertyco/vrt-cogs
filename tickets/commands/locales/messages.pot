@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-08-02 14:01-0400\n"
+"POT-Creation-Date: 2023-08-03 11:36-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -578,17 +578,17 @@ msgstr ""
 msgid "Type your desired ticket message below"
 msgstr ""
 
-#: commands\admin.py:734 commands\admin.py:755 commands\admin.py:1329
-#: commands\admin.py:1348 commands\admin.py:1367
-msgid "cancel"
-msgstr ""
-
 #: commands\admin.py:742
 msgid "Would you like this ticket embed to have a footer?"
 msgstr ""
 
 #: commands\admin.py:751
 msgid "Type your footer"
+msgstr ""
+
+#: commands\admin.py:755 commands\admin.py:1329 commands\admin.py:1348
+#: commands\admin.py:1367
+msgid "cancel"
 msgstr ""
 
 #: commands\admin.py:766

@@ -731,7 +731,7 @@ class AdminCommands(MixinMeta):
         em.set_footer(text=foot)
         await msg.edit(embed=em)
         desc = await wait_reply(ctx, 600)
-        if desc and desc.lower().strip() == _("cancel"):
+        if desc and desc.lower().strip() == "cancel":
             em = Embed(description=_("Ticket message addition cancelled"))
             return await msg.edit(embed=em)
         if desc is None:
