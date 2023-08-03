@@ -25,6 +25,11 @@ async def can_close(
     owner_id: str,
     conf: dict,
 ):
+    if str(owner_id) not in conf["opened"]:
+        return False
+    if str(channel.id) not in conf["opened"][str(owner_id)]:
+        return False
+
     panel_name = conf["opened"][str(owner_id)][str(channel.id)]["panel"]
     panel_roles = conf["panels"][panel_name]["roles"]
     user_roles = [r.id for r in author.roles]
