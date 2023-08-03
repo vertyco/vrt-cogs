@@ -1003,13 +1003,34 @@ class UserCommands(MixinMeta, ABC):
                 if role and perms:
                     await ctx.author.remove_roles(role)
 
+        # Handle roles
+        level_roles = conf["levelroles"]
+
         # Remove all level roles from user
-        level_role_ids = [int(role_id) for role_id in conf["levelroles"].values()]
-        to_remove = [role for role in ctx.author.roles if role.id in level_role_ids]
+        role_ids_to_remove = [
+            int(role_id) for level, role_id in level_roles.items() if int(level) > newlevel
+        ]
+        to_remove = [role for role in ctx.author.roles if role.id in role_ids_to_remove]
         try:
             await ctx.author.remove_roles(*to_remove)
         except discord.Forbidden:
             await ctx.send(_("I don't have permissions to remove your old roles!"))
+
+        # If autoremove is on then the new highest role might need to be reassigned
+        highest_level = 0
+        for level, role_id in level_roles.items():
+            if newlevel >= int(level) >= highest_level:
+                highest_level = int(level)
+
+        if highest_level:
+            role_id = level_roles[str(highest_level)]
+            role = ctx.guild.get_role(role_id)
+            try:
+                await ctx.author.add_roles(role)
+            except discord.Forbidden:
+                await ctx.send(
+                    _("I was not able to re-add the {} role to your profile!").format(role.mention)
+                )
 
     @commands.command(name="lvltop", aliases=["topstats", "membertop", "topranks"])
     @commands.guild_only()
