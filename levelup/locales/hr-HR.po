@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-01 22:19-0400\n"
-"PO-Revision-Date: 2023-08-02 02:26\n"
+"POT-Creation-Date: 2023-08-03 10:18-0400\n"
+"PO-Revision-Date: 2023-08-03 15:18\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -477,15 +477,15 @@ msgstr ", sa "
 msgid "% of global server Exp"
 msgstr "% globalnog servera Exp"
 
-#: base.py:857
+#: base.py:856
+msgid "{}'s Profile"
+msgstr ""
+
+#: base.py:859
 msgid "Progress"
 msgstr "Napredak"
 
-#: base.py:858
-msgid "Profile"
-msgstr "Profil"
-
-#: base.py:935
+#: base.py:931
 #, docstring
 msgid "\n"
 "        Prestige your rank!\n"
@@ -498,47 +498,47 @@ msgstr "\n"
 "Nakon što dostignete zahtjev za prestižnom razinom ovog poslužitelja, možete resetirati svoju razinu i iskustvo kako biste stekli prestižnu razinu i sve pogodnosti povezane s njom.\n\n"
 "Ako imate više razine i XP-a kada prestižete, vaš XP i razine će se prenijeti "
 
-#: base.py:948
+#: base.py:944
 msgid "Prestige is disabled on this server!"
 msgstr "Prestige je onemogućen u ovom serveru!"
 
-#: base.py:951 levelup.py:2231
+#: base.py:947 levelup.py:2231
 msgid "Prestige levels have not been set yet!"
 msgstr "Razine prestiža još nisu postavljene!"
 
-#: base.py:955
+#: base.py:951
 msgid "No information available for you yet!"
 msgstr "Nema dostupnih informacija za vas još!"
 
-#: base.py:962
+#: base.py:958
 msgid "**You are not eligible to prestige yet!**\n"
 msgstr "Niste još spremni za prestiž!\n"
 
-#: base.py:963
+#: base.py:959
 msgid "`Your level:     `"
 msgstr "`Vaša razina:     `"
 
-#: base.py:964
+#: base.py:960
 msgid "`Required Level: `"
 msgstr "`Potrebna razina: `"
 
-#: base.py:970
+#: base.py:966
 msgid "Prestige level "
 msgstr "Prestižna razina "
 
-#: base.py:970
+#: base.py:966
 msgid " has not been set yet!"
 msgstr " još nije postavljeno!"
 
-#: base.py:981
+#: base.py:977
 msgid "I do not have the proper permissions to assign you to the role "
 msgstr "Nemam odgovarajuća dopuštenja da vam dodijelim ulogu "
 
-#: base.py:995
+#: base.py:991
 msgid "You have reached Prestige "
 msgstr "Dosegli ste Prestižu "
 
-#: base.py:1012
+#: base.py:1008
 #, docstring
 msgid "\n"
 "        View the Leaderboard\n\n"
@@ -554,40 +554,40 @@ msgstr "\n"
 "        Valide opcije su `exp`, `poruke` i `glasovi`\n"
 "        Također se mogu koristiti skraćenice za ove argumente "
 
-#: base.py:1023
+#: base.py:1019
 msgid "Use the `"
 msgstr "Koristite `"
 
-#: base.py:1023
+#: base.py:1019
 msgid "startop` command for that"
 msgstr "naredba `startop` za to"
 
-#: base.py:1032 base.py:1115
+#: base.py:1028 base.py:1111
 msgid "No user data yet!"
 msgstr "Nema još korisničkih podataka!"
 
-#: base.py:1044
+#: base.py:1040
 #, docstring
 msgid "View the star leaderboard"
 msgstr "Pogledaj ljestvicu zvijezda"
 
-#: base.py:1056
+#: base.py:1052
 msgid "Nobody has stars yet 😕"
 msgstr "Još nitko nema zvijezde 😕"
 
-#: base.py:1071
+#: base.py:1067
 msgid "**Star Leaderboard**\n"
 msgstr "**Ljestvica za zvijezde**\n"
 
-#: base.py:1072
+#: base.py:1068
 msgid "**Total ⭐'s: "
 msgstr "**Ukupno ⭐: "
 
-#: base.py:1102 base.py:1104
+#: base.py:1098 base.py:1100
 msgid "Pages "
 msgstr "Stranica "
 
-#: base.py:1121
+#: base.py:1117
 #, docstring
 msgid "\n"
 "        View the weekly leaderboard\n\n"
@@ -604,28 +604,28 @@ msgstr "\n"
 "        Mogu se koristiti i kratice tih argumenata\n"
 "        "
 
-#: base.py:1133 base.py:1155
+#: base.py:1129 base.py:1151
 msgid "Weekly stats are disabled for this guild"
 msgstr "Tjedne statistike su onemogućene u ovom guildu"
 
-#: base.py:1136
+#: base.py:1132
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr "Još nema podataka za tjednu ljestvicu, prvo napišite nešto."
 
-#: base.py:1152
+#: base.py:1148
 #, docstring
 msgid "View the last weekly embed"
 msgstr ""
 
-#: base.py:1157
+#: base.py:1153
 msgid "There is no recorded weekly embed saved"
 msgstr ""
 
-#: base.py:1159
+#: base.py:1155
 msgid "Last Weekly Winners"
 msgstr ""
 
-#: base.py:1160
+#: base.py:1156
 msgid "{}\n"
 "`Last Reset:     `{}"
 msgstr ""
