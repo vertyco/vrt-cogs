@@ -2633,6 +2633,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             if remove_fails:
                 desc += _(" (`{}` failed)").format(remove_fails)
 
+        if not roles_added and not roles_removed:
+            desc += _("\nNo roles needed to be added or removed!")
+
         embed = discord.Embed(description=desc, color=discord.Color.green())
         td = round(perf_counter() - start)
         delta = humanize_timedelta(seconds=td)
