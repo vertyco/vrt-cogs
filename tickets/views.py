@@ -621,6 +621,7 @@ class LogView(View):
         self.guild = guild
         self.channel = channel
         self.added = set()
+        self.join_ticket.custom_id = str(channel.id)
 
     @discord.ui.button(label="Join Ticket", style=ButtonStyle.green)
     async def join_ticket(self, interaction: Interaction, button: Button):
