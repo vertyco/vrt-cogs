@@ -240,6 +240,9 @@ async def close_ticket(
         if cid not in tickets[uid]:
             return
         del tickets[uid][cid]
+        # If user has no more tickets, clean up their key from the config
+        if not tickets[uid]:
+            del tickets[uid]
 
         new_id = await update_active_overview(guild, conf)
         if new_id:
