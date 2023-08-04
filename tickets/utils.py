@@ -281,7 +281,7 @@ async def prune_invalid_tickets(
         if valid_user_tickets:
             valid_opened_tickets[user_id] = valid_user_tickets
 
-    if valid_opened_tickets and count:
+    if count:
         await config.guild(guild).opened.set(valid_opened_tickets)
 
     if count and ctx:

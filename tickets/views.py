@@ -282,8 +282,6 @@ class SupportButton(Button):
 
         max_tickets = conf["max_tickets"]
         opened = conf["opened"]
-        user_can_close = conf["user_can_close"]
-        logchannel = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
         uid = str(user.id)
         if uid in opened and max_tickets <= len(opened[uid]):
             em = discord.Embed(
@@ -291,6 +289,7 @@ class SupportButton(Button):
                 color=discord.Color.red(),
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
+
         category = guild.get_channel(panel["category_id"]) if panel["category_id"] else None
         if not category:
             em = discord.Embed(
@@ -301,6 +300,9 @@ class SupportButton(Button):
                 color=discord.Color.red(),
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
+
+        user_can_close = conf["user_can_close"]
+        logchannel = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
 
         # Throw modal before creating ticket if the panel has one
         form_embed = discord.Embed()
