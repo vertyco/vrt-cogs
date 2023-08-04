@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-08-03 11:36-0400\n"
-"PO-Revision-Date: 2023-08-03 17:11\n"
+"PO-Revision-Date: 2023-08-04 00:04\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -197,7 +197,7 @@ msgstr "{} 티켓에 대한 {}"
 
 #: views.py:443
 msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
-msgstr ""
+msgstr "티켓을 만드는 데 필요한 권한이 없습니다. 관리자에게 문의하여 권한을 수정할 수 있도록 해주세요."
 
 #: views.py:455
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
