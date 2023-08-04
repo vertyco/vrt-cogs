@@ -10,6 +10,9 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+**Cog Version***
+Specify the version of the cog you are using.
+
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
