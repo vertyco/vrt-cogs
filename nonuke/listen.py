@@ -247,6 +247,15 @@ class Listen:
             await self.action_cooldown(guild, user)
 
     @commands.Cog.listener()
+    async def on_thread_delete(self, old_channel: discord.Thread):
+        guild = old_channel.guild
+        user = await self.get_audit_log_reason(
+            guild, old_channel, discord.AuditLogAction.channel_delete
+        )
+        if user:
+            await self.action_cooldown(guild, user)
+
+    @commands.Cog.listener()
     async def on_guild_channel_update(
         self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel
     ):
