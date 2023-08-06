@@ -116,7 +116,7 @@ CREATE_EMBEDDING = {
         "properties": {
             "embedding_name": {
                 "type": "string",
-                "description": "Short unique name for the embedding entry",
+                "description": "Name of the embedding entry, 250 characters or less.",
             },
             "embedding_text": {
                 "type": "string",

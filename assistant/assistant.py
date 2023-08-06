@@ -51,7 +51,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.10.8"
+    __version__ = "4.11.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -218,7 +218,7 @@ class Assistant(
         try:
             embedding = await self.add_embedding(
                 guild,
-                embedding_name,
+                embedding_name[:250],
                 embedding_text,
                 overwrite=False,
                 ai_created=True,
