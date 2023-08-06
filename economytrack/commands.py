@@ -128,13 +128,28 @@ class EconomyTrackCommands(MixinMeta):
     @commands.guildowner()
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
-    async def remoutliers(self, ctx: commands.Context, max_value: int):
-        """Cleanup data above a certain total economy balance"""
-        is_global = await bank.is_global()
-        if is_global:
-            data = await self.config.data()
+    async def remoutliers(self, ctx: commands.Context, max_value: int, datatype: str = "bank"):
+        """
+        Cleanup data above a certain total economy balance
+
+        **Arguments**
+        datatype: either `bank` or `member`
+        """
+        if datatype.lower() in ["b", "bank", "bnk"]:
+            bank = True
         else:
-            data = await self.config.guild(ctx.guild).data()
+            bank = False
+
+        is_global = await bank.is_global()
+
+        if bank:
+            if is_global:
+                data = await self.config.data()
+            else:
+                data = await self.config.guild(ctx.guild).data()
+        else:
+            data = await self.config.guild(ctx.guild).member_data()
+
         if len(data) < 10:
             embed = discord.Embed(
                 description="There is not enough data collected. Try again later.",
@@ -146,11 +161,15 @@ class EconomyTrackCommands(MixinMeta):
         deleted = len(data) - len(newrows)
         if not deleted:
             return await ctx.send("No data to delete")
+
         async with ctx.typing():
-            if is_global:
-                await self.config.data.set(newrows)
+            if bank:
+                if is_global:
+                    await self.config.data.set(newrows)
+                else:
+                    await self.config.guild(ctx.guild).data.set(newrows)
             else:
-                await self.config.guild(ctx.guild).data.set(newrows)
+                await self.config.guild(ctx.guild).member_data.set(newrows)
             await ctx.send("Deleted all data points above " + str(max_value))
 
     @commands.command(aliases=["bgraph"])
