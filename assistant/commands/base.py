@@ -9,6 +9,7 @@ from redbot.core.utils.chat_formatting import box, escape, pagify
 
 from ..abc import MixinMeta
 from ..common.calls import request_model
+from ..common.constants import READ_EXTENSIONS
 from ..common.utils import can_use
 
 log = logging.getLogger("red.vrt.assistant.base")
@@ -17,6 +18,51 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class Base(MixinMeta):
+    @commands.command(name="chathelp")
+    async def chat_help(self, ctx: commands.Context):
+        """Get help using assistant"""
+        txt = (
+            _(
+                """
+# How to Use
+
+### Commands
+`[p]convostats` - view your conversation message count/token usage for that convo.
+`[p]clearconvo` - reset your conversation for the current channel/thread/forum.
+`[p]showconvo` - get a json dump of your current conversation (this is mostly for debugging)
+`[p]chat` or `[p]ask` - command prefix for chatting with the bot outside of the live chat, or just @ it.
+
+### Chat Arguments
+`[p]chat --last` - resend the last message of the conversation.
+`[p]chat --extract` - extract all markdown text to be sent as a separate message.
+`[p]chat --outputfile <filename>` - sends the reply as a file instead.
+
+### Argument Use-Cases
+`[p]chat --last --outpufile test.py` - output the last message the bot sent as a file.
+`[p]chat write a python script to do X... --extract --outputfile test.py` - all code blocks from the output will be sent as a file in addition to the reply.
+`[p]chat --last --extract --outputfile test.py` - extract code blocks from the last message to send as a file.
+
+### File Comprehension
+Files may be uploaded with the chat command to be included with the question or query, so rather than pasting snippets, the entire file can be uploaded so that you can ask a question about it.
+At the moment the bot is capable of reading the following file extensions.
+```json
+{}
+```
+If a file has no extension it will still try to read it only if it can be decoded to utf-8.
+### Tips
+- Replying to someone else's message while using the `[p]chat` command will include their message in *your* conversation, useful if someone says something helpful and you want to include it in your current convo with GPT.
+- Replying to a message with a file attachment will have that file be read and included in your conversation. Useful if you upload a file and forget to use the chat command with it, or if someone else uploads a file you want to query the bot with.
+- Conversations are *Per* user *Per* channel, so each channel you interact with GPT in is a different convo.
+- Talking to the bot like a person rather than a search engine generally yields better results. The more verbose you can be, the better.
+- Conversations are persistent, if you want the bot to forget the convo so far, use the `[p]clearconvo` command
+        """
+            )
+            .replace("[p]", ctx.clean_prefix)
+            .format(", ".join(READ_EXTENSIONS))
+        )
+        embed = discord.Embed(description=txt.strip(), color=ctx.me.color)
+        await ctx.send(embed=embed)
+
     @commands.command(
         name="chat",
         aliases=[
