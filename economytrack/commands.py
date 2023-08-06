@@ -136,13 +136,13 @@ class EconomyTrackCommands(MixinMeta):
         datatype: either `bank` or `member`
         """
         if datatype.lower() in ["b", "bank", "bnk"]:
-            bank = True
+            banktype = True
         else:
-            bank = False
+            banktype = False
 
         is_global = await bank.is_global()
 
-        if bank:
+        if banktype:
             if is_global:
                 data = await self.config.data()
             else:
