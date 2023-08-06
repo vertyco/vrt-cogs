@@ -163,7 +163,7 @@ class EconomyTrackCommands(MixinMeta):
             return await ctx.send("No data to delete")
 
         async with ctx.typing():
-            if bank:
+            if banktype:
                 if is_global:
                     await self.config.data.set(newrows)
                 else:
