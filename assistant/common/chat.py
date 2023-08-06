@@ -437,7 +437,7 @@ class ChatHandler(MixinMeta):
             conversation.update_messages(result, "function", function_name)
             if message_obj and function_name == "create_embedding":
                 try:
-                    await message.add_reaction("\N{BRAIN}")
+                    await message_obj.add_reaction("\N{BRAIN}")
                 except (discord.Forbidden, discord.NotFound):
                     pass
 
