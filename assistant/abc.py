@@ -133,6 +133,7 @@ class MixinMeta(metaclass=ABCMeta):
         function_calls: Optional[List[dict]] = None,
         function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
+        message_obj: Optional[discord.Message] = None,
     ) -> str:
         raise NotImplementedError
 

@@ -265,7 +265,7 @@ class API(MixinMeta):
         """
         # Calculate the initial total token count
         total_tokens = await self.get_token_count(json.dumps(messages), conf)
-        total_tokens += await self.get_token_count(json.dumps(function_list, conf))
+        total_tokens += await self.get_token_count(json.dumps(function_list), conf)
 
         # Check if the total token count is already under the max token limit
         max_response_tokens = conf.get_user_max_response_tokens(user)
@@ -508,8 +508,9 @@ class API(MixinMeta):
                     + _("`Dimensions: `{}\n").format(len(embedding.embedding))
                     + text
                 )
+                fieldname = f"➣ {name}" if place == num else name
                 embed.add_field(
-                    name=f"➣ {name}" if place == num else name,
+                    name=fieldname[:250],
                     value=val,
                     inline=False,
                 )
