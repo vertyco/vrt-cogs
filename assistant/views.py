@@ -78,6 +78,7 @@ class EmbeddingModal(discord.ui.Modal):
             style=discord.TextStyle.short,
             default=name,
             required=True,
+            max_length=250,
         )
         self.add_item(self.name_field)
         self.text_field = discord.ui.TextInput(
