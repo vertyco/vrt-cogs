@@ -121,7 +121,12 @@ class ChatHandler(MixinMeta):
         else:
             try:
                 reply = await self.get_chat_response(
-                    question, message.author, message.guild, message.channel, conf
+                    question,
+                    message.author,
+                    message.guild,
+                    message.channel,
+                    conf,
+                    message_obj=message,
                 )
             except APIConnectionError as e:
                 reply = _("Failed to communicate with endpoint!")
@@ -207,6 +212,7 @@ class ChatHandler(MixinMeta):
         function_calls: Optional[List[dict]] = None,
         function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
+        message_obj: Optional[discord.Message] = None,
     ) -> str:
         """Call the API asynchronously"""
         if function_calls is None:
@@ -429,6 +435,11 @@ class ChatHandler(MixinMeta):
             log.info(info)
             messages.append({"role": "function", "name": function_name, "content": result})
             conversation.update_messages(result, "function", function_name)
+            if message_obj and function_name == "create_embedding":
+                try:
+                    await message.add_reaction("\N{BRAIN}")
+                except (discord.Forbidden, discord.NotFound):
+                    pass
 
         # Handle the rest of the reply
         if calls > 1:

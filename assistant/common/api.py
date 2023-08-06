@@ -508,8 +508,9 @@ class API(MixinMeta):
                     + _("`Dimensions: `{}\n").format(len(embedding.embedding))
                     + text
                 )
+                fieldname = f"➣ {name}" if place == num else name
                 embed.add_field(
-                    name=f"➣ {name}" if place == num else name,
+                    name=fieldname[:250],
                     value=val,
                     inline=False,
                 )
