@@ -158,6 +158,9 @@ class ChatHandler(MixinMeta):
                     "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
                 ).format(f"{prefix}traceback")
 
+        if reply is None:
+            return
+
         files = None
         to_send = []
         if outputfile and not extract:
@@ -401,9 +404,16 @@ class ChatHandler(MixinMeta):
 
             # Prep framework for alternative response types!
             if isinstance(func_result, dict):
-                result = func_result.get("content", "No reply!")
-                func_result.get("file_name", "unknown")
-                func_result.get("data")
+                result = func_result["content"]
+                file = discord.File(
+                    BytesIO(func_result["file_bytes"]),
+                    filename=func_result["file_name"],
+                )
+                try:
+                    await channel.send(file=file)
+                except discord.Forbidden:
+                    result = "You do not have permissions to upload files in this channel"
+                    function_calls = pop_schema(function_name, function_calls)
 
             if isinstance(func_result, bytes):
                 result = func_result.decode()

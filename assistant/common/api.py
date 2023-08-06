@@ -264,14 +264,8 @@ class API(MixinMeta):
             Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded
         """
         # Calculate the initial total token count
-        total_tokens = 0
-        for message in messages:
-            count = await self.get_token_count(json.dumps(message), conf)
-            total_tokens += count
-
-        for function in function_list:
-            count = await self.get_token_count(json.dumps(function), conf)
-            total_tokens += count
+        total_tokens = await self.get_token_count(json.dumps(messages), conf)
+        total_tokens += await self.get_token_count(json.dumps(function_list, conf))
 
         # Check if the total token count is already under the max token limit
         max_response_tokens = conf.get_user_max_response_tokens(user)
@@ -313,6 +307,14 @@ class API(MixinMeta):
             ):
                 break
 
+        # Clear out function calls (not the result, just the message of it being called)
+        i = 0
+        while total_tokens > max_tokens and i < len(messages):
+            if messages[i]["content"]:
+                i += 1
+                continue
+            messages.pop(i)
+
         log.debug(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
         # Degrade the conversation except for the most recent user, assistant, and function messages
         i = 0
@@ -326,8 +328,11 @@ class API(MixinMeta):
                 i += 1
                 continue
 
-            if not messages[i]["content"] and "function_call" not in messages[i]:
-                messages.pop(i)
+            if not messages[i]["content"]:
+                if "function_call" not in messages[i]:
+                    messages.pop(i)
+                else:
+                    i += 1
                 continue
 
             degraded_content = _degrade_message(messages[i]["content"])
