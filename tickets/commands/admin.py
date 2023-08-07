@@ -1111,10 +1111,10 @@ class AdminCommands(MixinMeta):
                 return await ctx.send(_("Panel does not exist!"))
 
             panel = panels[panel_name]
-            panel_key = f"{panel['channel-id']}{panel['messaage_id']}"
+            panel_key = f"{panel['channel_id']}{panel['message_id']}"
             count = 0
             for i in panels.values():
-                panel_key2 = f"{i['channel-id']}{i['messaage_id']}"
+                panel_key2 = f"{i['channel_id']}{i['message_id']}"
                 if panel_key != panel_key2:
                     continue
                 if not i["row"]:
