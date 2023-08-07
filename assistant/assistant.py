@@ -51,7 +51,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.11.14"
+    __version__ = "4.11.15"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -330,7 +330,7 @@ class Assistant(
             str: the reply from ChatGPT (may need to be pagified)
         """
         conf = self.db.get_conf(guild)
-        if not self.can_call_llm(conf):
+        if not await self.can_call_llm(conf):
             raise NoAPIKey("OpenAI key has not been set for this server!")
         return await self.get_chat_response(
             message,

@@ -1476,7 +1476,12 @@ class Admin(MixinMeta):
 
     @assistant.group(name="override")
     async def override(self, ctx: commands.Context):
-        """Override settings for specific roles"""
+        """
+        Override settings for specific roles
+
+        **NOTE**
+        If a user has two roles with override settings, override associated with the higher role will be used.
+        """
 
     @override.command(name="model")
     async def model_role_override(self, ctx: commands.Context, model: str, *, role: discord.Role):
@@ -1487,7 +1492,7 @@ class Admin(MixinMeta):
         """
         model = model.lower().strip()
         conf = self.db.get_conf(ctx.guild)
-        if not self.can_call_llm(conf, ctx):
+        if not await self.can_call_llm(conf, ctx):
             return
 
         if model not in CHAT + COMPLETION:

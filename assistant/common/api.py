@@ -224,7 +224,10 @@ class API(MixinMeta):
         )
 
     async def payload_token_count(self, conf: GuildSettings, messages: List[dict]):
-        return sum([(await self.get_token_count(json.dumps(i), conf)) for i in messages])
+        total = 0
+        for message in messages:
+            total += await self.get_token_count(json.dumps(message), conf)
+        return total
 
     async def prompt_token_count(self, conf: GuildSettings) -> int:
         """Fetch token count of system and initial prompts"""
