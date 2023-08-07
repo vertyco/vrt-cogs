@@ -108,6 +108,9 @@ READ_EXTENSIONS = [
     ".shell",
     ".env",
 ]
+REACT_SYSTEM_MESSAGE = """
+Your job is to summarize text to use as embeddings. Respond only with the summary of the text.
+"""
 CREATE_EMBEDDING = {
     "name": "create_embedding",
     "description": "Use this function to save information about something outside of the context of the current conversation, and can be referenced later. useful when someone corrects you or tells you something new.",
@@ -116,11 +119,11 @@ CREATE_EMBEDDING = {
         "properties": {
             "embedding_name": {
                 "type": "string",
-                "description": "Name of the embedding entry, 250 characters or less.",
+                "description": "A short unique name for the embedding entry, this should be a descriptive name and contain less than 100 characters, or less than 4 separate words.",
             },
             "embedding_text": {
                 "type": "string",
-                "description": "Detailed summary of information to be stored based on the context of the conversation or correction.",
+                "description": "Detailed summary of information to be stored based on the context of the conversation or correction. Write it as if you are the one telling someone the information.",
             },
         },
         "required": ["embedding_name", "embedding_text"],
