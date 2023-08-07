@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, List, Optional, Union
 
 import aiohttp
@@ -20,6 +21,8 @@ from tenacity import (
 
 from .constants import SUPPORTS_FUNCTIONS
 
+log = logging.getLogger("red.vrt.assistant.calls")
+
 
 @retry(
     retry=retry_if_exception_type(
@@ -40,6 +43,7 @@ async def request_embedding_raw(
     api_key: str,
     api_base: Optional[str] = None,
 ) -> List[float]:
+    log.debug("request_embedding_raw")
     return await openai.Embedding.acreate(
         input=text,
         model="text-embedding-ada-002",
@@ -73,6 +77,7 @@ async def request_chat_completion_raw(
     functions: Optional[List[dict]] = None,
     timeout: int = 60,
 ) -> Dict[str, str]:
+    log.debug(f"request_chat_completion_raw: {model}")
     kwargs = {
         "model": model,
         "messages": messages,
@@ -112,6 +117,7 @@ async def request_completion_raw(
     api_base: Optional[str] = None,
     timeout: int = 60,
 ) -> str:
+    log.debug(f"request_completion_raw: {model}")
     kwargs = {
         "model": model,
         "prompt": prompt,
