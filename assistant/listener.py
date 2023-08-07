@@ -5,7 +5,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 
 from .abc import MixinMeta
-from .common.constants import REACT_SYSTEM_MESSAGE
+from .common.constants import REACT_NAME_MESSAGE, REACT_SUMMARY_MESSAGE
 from .common.utils import can_use, embed_to_content
 
 log = logging.getLogger("red.vrt.assistant.listener")
@@ -130,23 +130,33 @@ class AssistantListener(MixinMeta):
             return
 
         messages = [
-            {"role": "system", "content": REACT_SYSTEM_MESSAGE.strip()},
-            {"role": "user", "content": f"{message.author.name} said: My birthday is April 10th"},
-            {"role": "assistant", "content": f"{message.author.name}'s birthday is April 10th"},
+            {"role": "system", "content": REACT_SUMMARY_MESSAGE.strip()},
+            {"role": "user", "content": "Bob said: My favorite color is red"},
+            {"role": "assistant", "content": "Bob's favorite color is red"},
             {"role": "user", "content": f"{message.author.name} said: {message.content}"},
         ]
         success = True
         try:
             embed_response = await self.request_response(messages=messages, conf=conf)
             messages.append(embed_response)
-            title_response = await self.request_response(messages=messages, conf=conf)
+            messages.append({"role": "user", "content": REACT_NAME_MESSAGE})
+
+            messages = [
+                {"role": "system", "content": REACT_NAME_MESSAGE.strip()},
+                {"role": "user", "content": "Bob's favorite color is red"},
+                {"role": "assistant", "content": "Bobs fav color"},
+                {"role": "user", "content": embed_response["content"]},
+            ]
+            name_response = await self.request_response(messages=messages, conf=conf)
             embedding = await self.add_embedding(
-                guild, title_response["content"], embed_response["content"]
+                guild, name_response["content"], embed_response["content"]
             )
             if embedding is None:
                 success = False
             else:
-                log.info(f"Created embedding in {guild.name}: {embed_response['content']}")
+                log.info(
+                    f"Created embedding in {guild.name}\nName: {name_response['content']}\nEntry: {embed_response['content']}"
+                )
         except Exception as e:
             log.warning(f"Failed to save embed memory in {guild.name}", exc_info=e)
             success = False

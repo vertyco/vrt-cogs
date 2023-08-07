@@ -108,8 +108,11 @@ READ_EXTENSIONS = [
     ".shell",
     ".env",
 ]
-REACT_SYSTEM_MESSAGE = """
+REACT_SUMMARY_MESSAGE = """
 Your job is to summarize text to use as embeddings. Respond only with the summary of the text.
+"""
+REACT_NAME_MESSAGE = """
+Your job is to read a summary and come up with a short descriptive name for it. Only respond with the name of the summary.
 """
 CREATE_EMBEDDING = {
     "name": "create_embedding",
