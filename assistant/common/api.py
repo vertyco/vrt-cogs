@@ -42,23 +42,32 @@ class API(MixinMeta):
             api_base = None
             api_key = conf.api_key
 
-        max_response_tokens = conf.get_user_max_response_tokens(member)
-        model = conf.get_user_model(member)
-        # Overestimate by 5%
-        convo_tokens = await self.payload_token_count(conf, messages)
-        convo_tokens = round(convo_tokens * 1.05)
         max_convo_tokens = self.get_max_tokens(conf, member)
-        max_model_tokens = MODELS[model]
-        diff = min(max_model_tokens - convo_tokens, max_convo_tokens - convo_tokens)
-        if diff < 1:
-            diff = max_model_tokens - convo_tokens
-        max_tokens = min(max_response_tokens, max(diff, 0))
+        max_response_tokens = conf.get_user_max_response_tokens(member)
 
+        # Overestimate by 5%
+        current_convo_tokens = await self.payload_token_count(conf, messages)
+        current_convo_tokens = round(current_convo_tokens * 1.05)
+
+        model = conf.get_user_model(member)
         # Dynamically adjust to lower model to save on cost
-        if "-16k" in model and convo_tokens < 4096:
+        if "-16k" in model and current_convo_tokens < 2000:
             model = model.replace("-16k", "")
-        if "-32k" in model and convo_tokens < 8192:
+        if "-32k" in model and current_convo_tokens < 4000:
             model = model.replace("-32k", "")
+
+        max_model_tokens = MODELS[model]
+
+        # Ensure that user doesn't set max response tokens higher than model can handle
+        response_tokens = 0  # Dynamic
+        if max_response_tokens:
+            # Calculate max response tokens
+            response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
+            # If current convo exceeds the max convo tokens for that user, use max model tokens
+            if not response_tokens:
+                response_tokens = max(max_model_tokens - current_convo_tokens, 0)
+            # Use the lesser of caculated vs set response tokens
+            response_tokens = min(response_tokens, max_response_tokens)
 
         if model in CHAT:
             response = await request_chat_completion_raw(
@@ -66,7 +75,7 @@ class API(MixinMeta):
                 messages=messages,
                 temperature=conf.temperature,
                 api_key=api_key,
-                max_tokens=max_tokens,
+                max_tokens=response_tokens,
                 api_base=api_base,
                 functions=functions,
             )
@@ -81,7 +90,7 @@ class API(MixinMeta):
                 prompt=prompt,
                 temperature=conf.temperature,
                 api_key=api_key,
-                max_tokens=max_tokens,
+                max_tokens=response_tokens,
                 api_base=api_base,
             )
             text = response["choices"][0]["text"]
