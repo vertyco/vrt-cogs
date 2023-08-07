@@ -129,18 +129,24 @@ class AssistantListener(MixinMeta):
         if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
             return
 
-        messages = [
-            {"role": "system", "content": REACT_SUMMARY_MESSAGE.strip()},
-            {"role": "user", "content": "Bob said: My favorite color is red"},
-            {"role": "assistant", "content": "Bob's favorite color is red"},
-            {"role": "user", "content": f"{message.author.name} said: {message.content}"},
-        ]
+        initial_content = f"{message.author.name} said: {message.content}"
+        if message.author.bot:
+            initial_content = message.content
+
         success = True
         try:
+            # Get embedding content first
+            messages = [
+                {"role": "system", "content": REACT_SUMMARY_MESSAGE.strip()},
+                {"role": "user", "content": "Bob said: My favorite color is red"},
+                {"role": "assistant", "content": "Bob's favorite color is red"},
+                {"role": "user", "content": initial_content},
+            ]
             embed_response = await self.request_response(messages=messages, conf=conf)
             messages.append(embed_response)
             messages.append({"role": "user", "content": REACT_NAME_MESSAGE})
 
+            # Create a name for the embedding
             messages = [
                 {"role": "system", "content": REACT_NAME_MESSAGE.strip()},
                 {"role": "user", "content": "Bob's favorite color is red"},
