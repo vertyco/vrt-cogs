@@ -129,11 +129,16 @@ class AssistantListener(MixinMeta):
             return
 
         messages = [
-            {"role": "system", "content": _("Your job is to summarize text")},
+            {
+                "role": "system",
+                "content": _(
+                    "Your job is to summarize text, respond only with the summarization, include details in your response."
+                ),
+            },
             {
                 "role": "user",
                 "content": _(
-                    'In less than 4000 characters, summarize the following text delimited by triple quotes: """{} said: {}"""'
+                    'Write an informative summary of the following text delimited by triple quotes: """{} said: {}"""'
                 ).format(message.author.name, message.content),
             },
         ]
