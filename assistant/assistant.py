@@ -51,7 +51,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.11.12"
+    __version__ = "4.11.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -191,6 +191,15 @@ class Assistant(
                     log.debug("Cleaning up invalid blacklisted ID")
                     conf.blacklist.remove(obj_id)
                     cleaned = True
+
+            # Ensure embedding entry names arent too long
+            new_embeddings = {}
+            for entry_name, embedding in conf.embeddings.items():
+                if len(entry_name) > 100:
+                    log.debug(f"Embed entry more than 100 characters, truncating: {entry_name}")
+                    cleaned = True
+                new_embeddings[entry_name[:100]] = embedding
+            conf.embeddings = new_embeddings
 
         health = "BAD (Cleaned)" if cleaned else "GOOD"
         log.info(f"Config health: {health}")

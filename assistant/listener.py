@@ -5,6 +5,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 
 from .abc import MixinMeta
+from .common.constants import REACT_SYSTEM_MESSAGE
 from .common.utils import can_use, embed_to_content
 
 log = logging.getLogger("red.vrt.assistant.listener")
@@ -129,18 +130,10 @@ class AssistantListener(MixinMeta):
             return
 
         messages = [
-            {
-                "role": "system",
-                "content": _(
-                    "Your job is to summarize text, respond only with the summarization, include details in your response."
-                ),
-            },
-            {
-                "role": "user",
-                "content": _(
-                    'Write an informative summary of the following text delimited by triple quotes: """{} said: {}"""'
-                ).format(message.author.name, message.content),
-            },
+            {"role": "system", "content": REACT_SYSTEM_MESSAGE.strip()},
+            {"role": "user", "content": f"{message.author.name} said: My birthday is April 10th"},
+            {"role": "assistant", "content": f"{message.author.name}'s birthday is April 10th"},
+            {"role": "user", "content": f"{message.author.name} said: {message.content}"},
         ]
         success = True
         try:
