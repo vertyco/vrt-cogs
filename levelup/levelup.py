@@ -86,7 +86,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.5.2"
+    __version__ = "3.6.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1565,6 +1565,24 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 data = await res.json(content_type=None)
                 return data, status
 
+    @retry(
+        retry=retry_if_exception_type(json.JSONDecodeError),
+        wait=wait_random_exponential(min=120, max=600),
+        stop=stop_after_attempt(6),
+        reraise=True,
+    )
+    async def fetch_amari_payload(self, guild_id: int, page: int, key: str):
+        url = f"https://amaribot.com/api/v1/guild/leaderboard/{guild_id}?page={page}&limit=1000"
+        headers = {"Accept": "application/json", "Authorization": key}
+        timeout = ClientTimeout(total=60)
+        async with ClientSession(timeout=timeout) as session:
+            async with session.get(url, headers=headers) as res:
+                status = res.status
+                if status == 429:
+                    log.warning("amari import is being rate limited!")
+                data = await res.json(content_type=None)
+                return data, status
+
     @admin_group.command(name="importmee6")
     @commands.guildowner()
     @commands.bot_has_permissions(embed_links=True)
@@ -1709,6 +1727,152 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         if not imported and not failed:
             await msg.edit(content=_("No MEE6 stats were found"))
+        else:
+            txt = _("Imported {} User(s)").format(str(imported))
+            if failed:
+                txt += _(" ({} skipped since they are no longer in the discord)").format(
+                    str(failed)
+                )
+            await msg.edit(content=txt)
+            await ctx.tick()
+            await self.save_cache(ctx.guild)
+
+    @admin_group.command(name="importamari")
+    @commands.guildowner()
+    @commands.bot_has_permissions(embed_links=True)
+    async def import_from_amari(
+        self, ctx: commands.Context, import_by: str, replace: bool, i_agree: bool, api_key: str
+    ):
+        """
+        Import levels and exp from AmariBot
+
+        **Arguments**
+        `import_by` - which stat to prioritize (`level` or `exp`)
+        If exp is entered, it will import their experience and base their new level off of that.
+        If level is entered, it will import their level and calculate their exp based off of that.
+        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it
+        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
+        `api_key` - Your [AmariBot API Key](https://docs.google.com/forms/d/e/1FAIpQLScQDCsIqaTb1QR9BfzbeohlUJYA3Etwr-iSb0CRKbgjA-fq7Q/viewform?usp=send_form)
+
+        **Note**
+        Instead of typing true/false
+        1 = True
+        0 = False
+        """
+        if not i_agree:
+            return await ctx.send(_("Not importing AmariBot levels"))
+
+        msg = await ctx.send(_("Fetching AmariBot leaderboard data, this could take a while..."))
+
+        conf = self.data[ctx.guild.id]
+        base = conf["base"]
+        exp = conf["exp"]
+
+        pages = math.ceil(len(ctx.guild.members) / 1000)
+        players: List[dict] = []
+        failed_pages = 0
+
+        with contextlib.suppress(discord.Forbidden, discord.HTTPException):
+            await ctx.message.delete()
+
+        async with ctx.typing():
+            async for i in AsyncIter(range(pages), delay=5):
+                try:
+                    data, status = await self.fetch_amari_payload(ctx.guild.id, i, api_key)
+                except Exception as e:
+                    log.warning(
+                        f"Failed to import page {i} of AmariBot leaderboard data in {ctx.guild}",
+                        exc_info=e,
+                    )
+                    await ctx.send(f"Failed to import page {i} of AmariBot leaderboard data: {e}")
+                    failed_pages += 1
+                    if isinstance(e, json.JSONDecodeError):
+                        await msg.edit(
+                            content=_("AmariBot is rate limiting too heavily! Import Failed!")
+                        )
+                        return
+                    continue
+
+                error_msg = data.get("error", None)
+                if status == 501:
+                    # No more users
+                    break
+
+                if status != 200:
+                    if error_msg:
+                        return await ctx.send(error_msg)
+                    else:
+                        return await ctx.send(_("No data found!"))
+
+                player_data = data.get("data")
+                if not player_data:
+                    break
+
+                players.extend(player_data)
+
+        if failed_pages:
+            await ctx.send(
+                _("{} pages failed to fetch from AmariBot api, check logs for more info").format(
+                    str(failed_pages)
+                )
+            )
+        if not players:
+            return await ctx.send(_("No leaderboard data found!"))
+
+        await msg.edit(content=_("Data retrieved, importing..."))
+        imported = 0
+        failed = 0
+        async with ctx.typing():
+            async for user in AsyncIter(players):
+                uid = user["id"]
+                # username = user["username"]
+                xp = user["exp"]
+                lvl = user["level"]
+                weekly_exp = user["weeklyExp"]
+
+                member = ctx.guild.get_member(int(uid))
+                if not member:
+                    failed += 1
+                    continue
+
+                if uid not in self.data[ctx.guild.id]["users"]:
+                    self.init_user(ctx.guild.id, uid)
+
+                weekly_on = self.data[ctx.guild.id]["weekly"]["on"]
+
+                if weekly_on and uid not in self.data[ctx.guild.id]["weekly"]["users"]:
+                    self.init_user_weekly(ctx.guild.id, uid)
+
+                if replace:  # Replace stats
+                    if "l" in import_by.lower():
+                        self.data[ctx.guild.id]["users"][uid]["level"] = lvl
+                        newxp = get_xp(lvl, base, exp)
+                        self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
+                    else:
+                        self.data[ctx.guild.id]["users"][uid]["xp"] = xp
+                        newlvl = get_level(xp, base, exp)
+                        self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
+
+                    if weekly_on:
+                        self.data[ctx.guild.id]["weekly"]["users"][uid]["xp"] = weekly_exp
+
+                else:  # Add stats
+                    if "l" in import_by.lower():
+                        self.data[ctx.guild.id]["users"][uid]["level"] += lvl
+                        newxp = get_xp(self.data[ctx.guild.id]["users"][uid]["level"], base, exp)
+                        self.data[ctx.guild.id]["users"][uid]["xp"] = newxp
+                    else:
+                        self.data[ctx.guild.id]["users"][uid]["xp"] += xp
+                        newlvl = get_level(self.data[ctx.guild.id]["users"][uid]["xp"], base, exp)
+                        self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
+
+                    if weekly_on:
+                        self.data[ctx.guild.id]["weekly"]["users"][uid]["xp"] += weekly_exp
+
+                imported += 1
+
+        if not imported and not failed:
+            await msg.edit(content=_("No AmariBot stats were found"))
         else:
             txt = _("Imported {} User(s)").format(str(imported))
             if failed:
