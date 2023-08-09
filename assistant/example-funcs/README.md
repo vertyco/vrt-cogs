@@ -2,7 +2,7 @@
 
 Some GPT models are trained in a way that allows us to specify certain functions available to them, and enable them to call those functions at any time.
 
-Only these two models can use function calls as of now:
+Only these models can use function calls as of now:
 
 - gpt-3.5-turbo-0613
 - gpt-3.5-turbo-16k-0613

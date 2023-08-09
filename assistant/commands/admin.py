@@ -1354,7 +1354,7 @@ class Admin(MixinMeta):
         - [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_with_chat_models.ipynb)
         - [JSON Schema Reference](https://json-schema.org/understanding-json-schema/)
 
-        Only these two models can use function calls as of now:
+        Only these models can use function calls as of now:
         - gpt-3.5-turbo
         - gpt-3.5-turbo-16k
         - gpt-4
