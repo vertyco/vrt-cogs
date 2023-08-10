@@ -86,7 +86,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.6.2"
+    __version__ = "3.6.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -742,7 +742,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         conf = self.data[gid]
         xpmin = int(conf["xp"][0])
         xpmax = int(conf["xp"][1]) + 1
-        xp = random.choice(range(xpmin, xpmax))
+        xp = random.choice(range(xpmin, xpmax + 1))
         bonuses = conf["rolebonuses"]["msg"]
         channel_bonuses = conf["channelbonuses"]["msg"]
         bonusrole = None
@@ -791,7 +791,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 bonusrange = bonuses[bonusrole]
                 bmin = int(bonusrange[0])
                 bmax = int(bonusrange[1]) + 1
-                bxp = random.choice(range(bmin, bmax))
+                bxp = random.choice(range(bmin, bmax + 1))
                 xp_to_give += bxp
             cid = str(message.channel.id)
             cat_cid = str(message.channel.category.id) if message.channel.category else "0"
@@ -800,7 +800,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 bonuschannelrange = channel_bonuses[bonus_id]
                 bmin = int(bonuschannelrange[0])
                 bmax = int(bonuschannelrange[1]) + 1
-                bxp = random.choice(range(bmin, bmax))
+                bxp = random.choice(range(bmin, bmax + 1))
                 xp_to_give += bxp
             self.lastmsg[gid][uid] = now
             self.data[gid]["users"][uid]["xp"] += xp_to_give
@@ -885,19 +885,19 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     bonusrange = bonuses[bonusrole]
                     bmin = int(bonusrange[0])
                     bmax = int(bonusrange[1]) + 1
-                    bxp = random.choice(range(bmin, bmax))
+                    bxp = random.choice(range(bmin, bmax + 1))
                     xp_to_give += bxp
                 cid = str(voice_state.channel.id)
                 if cid in channel_bonuses:
                     bonuschannelrange = channel_bonuses[cid]
                     bmin = int(bonuschannelrange[0])
                     bmax = int(bonuschannelrange[1]) + 1
-                    bxp = random.choice(range(bmin, bmax))
+                    bxp = random.choice(range(bmin, bmax + 1))
                     xp_to_give += bxp
                 if stream_bonus and voice_state.self_stream:
                     bmin = int(stream_bonus[0])
                     bmax = int(stream_bonus[1]) + 1
-                    bxp = random.choice(range(bmin, bmax))
+                    bxp = random.choice(range(bmin, bmax + 1))
                     xp_to_give += bxp
                 self.data[gid]["users"][uid]["xp"] += xp_to_give
                 if weekly_on:
