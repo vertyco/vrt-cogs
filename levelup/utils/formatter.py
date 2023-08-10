@@ -39,7 +39,7 @@ def time_to_level(
     xp_obtained = 0
     time_to_reach_level = 0  # Seconds
     while True:
-        xp = random.choice(range(xp_range[0], xp_range[1]))
+        xp = random.choice(range(xp_range[0], xp_range[1] + 1))
         xp_obtained += xp
 
         if random.random() < 0.5:
