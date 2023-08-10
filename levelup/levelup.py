@@ -86,7 +86,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.6.2"
+    __version__ = "3.6.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2482,7 +2482,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         file = discord.File(BytesIO(file_bytes), filename="lvlexample.png")
         img = "attachment://lvlexample.png"
         example = _(
-            "XP required for a level = Base * Level^Exp\n\n"
+            "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
             "Approx time is the time it would take for a user to reach a level with randomized breaks"
         )
         desc = _("`Base Multiplier:  `") + f"{base}\n"
