@@ -2483,9 +2483,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         img = "attachment://lvlexample.png"
         example = _(
             "XP required for a level = Base * Level^Exp\n\n"
-            "Approx time is the time it would take for a user to reach a level if they "
-            "typed every time the cooldown expired non stop without sleeping or taking "
-            "potty breaks."
+            "Approx time is the time it would take for a user to reach a level with randomized breaks"
         )
         desc = _("`Base Multiplier:  `") + f"{base}\n"
         desc += _("`Exp Multiplier:   `") + f"{exp}\n"
