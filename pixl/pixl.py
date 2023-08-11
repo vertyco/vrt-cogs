@@ -41,7 +41,7 @@ class Pixl(commands.Cog):
     """Guess pictures for points"""
 
     __author__ = "Vertyco"
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -529,27 +529,31 @@ class Pixl(commands.Cog):
                 file = attachments[0]
                 if not file.filename.endswith(".txt"):
                     return await ctx.send("This does not look like a `.txt` file!")
+
                 text = (await file.read()).decode("utf-8").strip()
                 lines = [line.strip() for line in text.split("\n")]
-                for i, line in enumerate(lines):
+                for index, line in enumerate(lines):
                     if not line:  # Skip empty lines
                         continue
                     parts = [p.strip().lower() for p in line.split(",") if p.strip()]
                     if len(parts) < 2:
-                        failed.append(f"Line {i + 1}(Invalid Format): {line}")
+                        failed.append(f"Line {index + 1}(Invalid Format): {line}")
                         continue
-                    url = parts[0]
+                    url = parts.pop(0)
                     if any([g["url"] == url for g in global_images]):
-                        failed.append(f"Line {i + 1}(Already Exists): {line}")
+                        failed.append(f"Line {index + 1}(Already Exists): {line}")
                         continue
                     image = await get_content_from_url(url)
                     if not image:
-                        failed.append(f"Line {i + 1}(Invalid URL): {line}")
+                        failed.append(f"Line {index + 1}(Invalid URL): {line}")
                         continue
-                    answers = parts[1:]
+                    answers = parts
                     to_add.append({"url": url, "answers": answers})
+
                 added = len(to_add)
-                for i in to_add:
+                for index, i in enumerate(to_add):
+                    if index == 4:
+                        break
                     embed = discord.Embed(
                         description=f"{added} Images Added!",
                         color=ctx.author.color,
@@ -558,8 +562,10 @@ class Pixl(commands.Cog):
                     if added > 4 and dpy2:
                         embed.set_footer(text="Showing first 4 images in the list")
                     embeds.append(embed)
+
                 async with self.config.images() as images:
                     images.extend(to_add)
+
                 if failed:
                     txt = "\n".join(failed)
                     await ctx.send("The following lines failed!")
@@ -633,7 +639,7 @@ class Pixl(commands.Cog):
                     if len(parts) < 2:
                         failed.append(f"Line {i + 1}(Invalid Format): {line}")
                         continue
-                    url = parts[0]
+                    url = parts.pop(0)
                     if any([g["url"] == url for g in guild_images]):
                         failed.append(f"Line {i + 1}(Already Exists): {line}")
                         continue
@@ -641,10 +647,12 @@ class Pixl(commands.Cog):
                     if not image:
                         failed.append(f"Line {i + 1}(Invalid URL): {line}")
                         continue
-                    answers = parts[1:]
+                    answers = parts
                     to_add.append({"url": url, "answers": answers})
                 added = len(to_add)
-                for i in to_add:
+                for index, i in enumerate(to_add):
+                    if index == 4:
+                        break
                     embed = discord.Embed(
                         description=f"{added} Images Added!",
                         color=ctx.author.color,
