@@ -366,11 +366,7 @@ class ChatHandler(MixinMeta):
                 log.error(f"GPT suggested a function not provided: {function_name}")
                 function_calls = pop_schema(function_name, function_calls)  # Just in case
                 messages.append(
-                    {
-                        "role": "system",
-                        "content": f"{function_name} is not a valid function",
-                        "name": function_name,
-                    }
+                    {"role": "system", "content": f"{function_name} is not a valid function"}
                 )
                 continue
 
@@ -434,7 +430,7 @@ class ChatHandler(MixinMeta):
             )
             log.info(info)
             messages.append({"role": "function", "name": function_name, "content": result})
-            conversation.update_messages(result, "function", function_name)
+            conversation.update_messages(result, "function", process_username(function_name))
             if message_obj and function_name == "create_embedding":
                 try:
                     await message_obj.add_reaction("\N{BRAIN}")
