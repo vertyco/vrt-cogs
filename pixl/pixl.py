@@ -41,7 +41,7 @@ class Pixl(commands.Cog):
     """Guess pictures for points"""
 
     __author__ = "Vertyco"
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -535,7 +535,7 @@ class Pixl(commands.Cog):
                 for index, line in enumerate(lines):
                     if not line:  # Skip empty lines
                         continue
-                    parts = [p.strip().lower() for p in line.split(",") if p.strip()]
+                    parts = [p.strip() for p in line.split(",") if p.strip()]
                     if len(parts) < 2:
                         failed.append(f"Line {index + 1}(Invalid Format): {line}")
                         continue
@@ -631,7 +631,7 @@ class Pixl(commands.Cog):
                 if not file.filename.endswith(".txt"):
                     return await ctx.send("This does not look like a `.txt` file!")
                 text = (await file.read()).decode("utf-8").strip()
-                lines = [line.strip().lower() for line in text.split("\n")]
+                lines = [line.strip() for line in text.split("\n")]
                 for i, line in enumerate(lines):
                     if not line:  # Skip empty lines
                         continue
