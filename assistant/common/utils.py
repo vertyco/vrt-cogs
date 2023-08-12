@@ -86,6 +86,7 @@ def embed_to_content(message: discord.Message) -> None:
 
 
 def process_username(username: str):
+    username = username.replace(".", "")
     pattern = re.compile("^[a-zA-Z0-9_-]{1,64}$")
     if not pattern.match(username):
         # Username is not valid, replace invalid characters
