@@ -730,10 +730,9 @@ class Generator(MixinMeta, ABC):
 
         xp_ratio = user_xp_progress / next_xp_diff
         end_of_inner_bar = ((bar_end - bar_start) * xp_ratio) + bar_start
-
-        progress_bar_draw.rectangle(
-            (bar_start + 2, 203, end_of_inner_bar - 2, 212), fill=statcolor
-        )
+        barx, barlength = bar_start + 2, end_of_inner_bar - 2
+        if barlength > barx:
+            progress_bar_draw.rectangle((barx, 203, barlength, 212), fill=statcolor)
 
         # pfp border - draw at 4x and resample down to 1x for nice smooth circles
         circle_img = Image.new("RGBA", (800, 800))
