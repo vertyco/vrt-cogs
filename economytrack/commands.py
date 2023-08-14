@@ -54,8 +54,8 @@ class EconomyTrackCommands(MixinMeta):
         **Arguments**
         `<max_points>` Maximum amount of data points to store
 
-        The loop runs every minute, so 1440 points equals 1 day
-        The default is 43200 (30 days)
+        The loop runs every 2 minutes, so 720 points equals 1 day
+        The default is 21600 (30 days)
         Set to 0 to store data indefinitely (Not Recommended)
         """
         await self.config.max_points.set(max_points)
