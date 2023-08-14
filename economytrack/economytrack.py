@@ -31,7 +31,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.5.3"
+    __version__ = "0.5.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -45,7 +45,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
-        default_global = {"max_points": 43200, "data": []}
+        default_global = {"max_points": 21600, "data": []}
         default_guild = {
             "timezone": "UTC",
             "data": [],
@@ -61,13 +61,13 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
     def cog_unload(self):
         self.bank_loop.cancel()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=2)
     async def bank_loop(self):
         start = monotonic()
         is_global = await bank.is_global()
         max_points = await self.config.max_points()
         if max_points == 0:  # 0 is no limit
-            max_points = 52560000  # 100 years is plenty
+            max_points = 26280000  # 100 years is plenty
         now = datetime.now().replace(microsecond=0, second=0).timestamp()
         if is_global:
             total = await self.get_total_bal()
@@ -114,7 +114,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
     @bank_loop.before_loop
     async def before_bank_loop(self):
         await self.bot.wait_until_red_ready()
-        await asyncio.sleep(60)
+        await asyncio.sleep(120)
         log.info("EconomyTrack Ready")
 
     @commands.Cog.listener()
