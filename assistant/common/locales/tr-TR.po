@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-07-28 02:21\n"
+"PO-Revision-Date: 2023-08-16 19:37\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -71,21 +71,7 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "        Returns:\n"
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
-msgstr "Daha yeni mesajlara ve kritik içeriğe öncelik vererek bir konuşma yükünü yinelemeli olarak düşürme\n\n"
-"        Args:\n"
-"            messages (Liste[dict]): api'ye gönderilen mesaj girdileri\n"
-"            function_list (Liste[dict]): model için json fonksiyon şemalarının listesi\n"
-"            conf: (GuildSettings): geçerli ayarlar\n\n"
-"        Döndürür:\n"
-"            Tuple[List[dict], List[dict], bool]: güncellenmiş mesaj listesi, fonksiyon listesi ve görüşmenin düşürülüp düşürülmediği\n"
-"        \n"
-"Konuşma yükünü yavaş yavaş azaltarak, daha yeni mesajlara ve kritik bağlama öncelik verin.\n\n"
-"        Args:\n"
-"            messages (List[dict]): api'ye gönderilen mesaj girişleri\n"
-"            function_list (List[dict]): model için json fonksiyon şemalarının listesi\n"
-"            conf: (GuildSettings): mevcut ayarlar\n\n"
-"        Returns:\n"
-"            Tuple[List[dict], List[dict], bool]: güncellenmiş mesaj listesi, fonksiyon listesi ve konuşmanın azaltılıp azaltılmadığı bilgisi        "
+msgstr ""
 
 #: common\api.py:367
 #, docstring
@@ -114,93 +100,93 @@ msgstr "Bu, yalnızca bir eğitmenle etkileşim halindeyken kullanılabilen dahi
 
 #: common\api.py:444
 msgid "This function consumes `{}` input tokens each call\n"
-msgstr ""
+msgstr "Bu işlev her çağrıda `{}` girdi belirteçlerini tüketir\n"
 
 #: common\api.py:461
 msgid "Hidden..."
-msgstr ""
+msgstr "Gizli..."
 
 #: common\api.py:463
 msgid "Schema"
-msgstr ""
+msgstr "Şema"
 
 #: common\api.py:464
 msgid "Code"
-msgstr ""
+msgstr "Kod"
 
 #: common\api.py:466 common\api.py:490
 msgid "Page {}/{}"
-msgstr ""
+msgstr "Sayfa {}/{}"
 
 #: common\api.py:473
 msgid "No custom code has been added yet!"
-msgstr ""
+msgstr "Henüz hiçbir özel kod eklenmedi!"
 
 #: common\api.py:489
 msgid "Embeddings"
-msgstr ""
+msgstr "Gömüler"
 
 #: common\api.py:501
 msgid "`Tokens:     `{}\n"
-msgstr ""
+msgstr "`Tokenler:     {}`\n"
 
 #: common\api.py:502
 msgid "`Dimensions: `{}\n"
-msgstr ""
+msgstr "boyutlar: `{}`\n"
 
 #: common\api.py:517
 msgid "No embeddings have been added!"
-msgstr ""
+msgstr "Hiçbir yerleştirme eklenmedi!"
 
 #: common\chat.py:105
 msgid "No message history!"
-msgstr ""
+msgstr "Mesaj geçmişi yok!"
 
 #: common\chat.py:113
 msgid "Failed to communicate with endpoint!"
-msgstr ""
+msgstr "Uç nokta ile iletişim kurulamadı!"
 
 #: common\chat.py:118
 msgid "Error: {}"
-msgstr ""
+msgstr "Hata: {}"
 
 #: common\chat.py:127
 msgid "Invalid API key, please set a new valid key!"
-msgstr ""
+msgstr "Geçersiz API anahtarı, lütfen yeni bir geçerli anahtar ayarlayın!"
 
 #: common\chat.py:129
 msgid "Uh oh, looks like my API key is invalid!"
-msgstr ""
+msgstr "Uh oh, görünüşe göre API anahtarım geçersiz!"
 
 #: common\chat.py:133
 msgid "**KeyError in prompt or system message**\n"
 "{}"
-msgstr ""
+msgstr "*komut isteminde veya sistem mesajında **TuşHatası**\\n{}"
 
 #: common\chat.py:140
 msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
-msgstr ""
+msgstr "Uh oh, bir şeyler ters gitti! Bot sahibi hatayı görüntülemek için `{}` kullanabilir."
 
 #: common\chat.py:172
 msgid "No results found"
-msgstr ""
+msgstr "Sonuç bulunamadı"
 
 #: common\chat.py:191
 #, docstring
 msgid "Call the API asynchronously"
-msgstr ""
+msgstr "API'yi eşzamanlı olarak çağırın"
 
 #: common\chat.py:272
 msgid "Failed to get response!"
-msgstr ""
+msgstr "Yanıt alınamadı!"
 
 #: common\chat.py:312
 msgid "Too many functions called"
-msgstr ""
+msgstr "Çok fazla fonksiyon çağrıldı"
 
 #: common\chat.py:419
 msgid "Response failed due to invalid regex, check logs for more info."
-msgstr ""
+msgstr "Yanıt geçersiz regex nedeniyle başarısız oldu, daha fazla bilgi için günlüklere bakın."
 
 #: common\chat.py:450
 #, docstring
@@ -216,44 +202,55 @@ msgid "Prepare content for calling the GPT API\n\n"
 "        Returns:\n"
 "            List[dict]: list of messages prepped for api\n"
 "        "
-msgstr ""
+msgstr "GPT API'sini çağırmak için içeriği hazırlayın\n\n"
+"        Args:\n"
+"            message (str): soru veya sohbet mesajı\n"
+"            guild (discord.Guild): sohbetle ilişkili lonca\n"
+"            conf (GuildSettings): yapılandırma verileri\n"
+"            conversation (Conversation): kullanıcının sohbet geçmişi için konuşma nesnesi\n"
+"            author (Optional[discord.Member]): bot ile sohbet eden kullanıcı\n"
+"            channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): bağlam için kanal\n"
+"            query_embedding List[float]: mesajın gömme ağırlıkları\n\n"
+"        Döndürür:\n"
+"            List[dict]: API için hazırlanan mesajların listesi\n"
+"        "
 
 #: common\chat.py:468
 #, docstring
 msgid "Instead of format(**params) possibly giving a KeyError if prompt has code in it"
-msgstr ""
+msgstr "Format(**params) yerine, istem içinde kod bulunuyorsa olası bir KeyError hatası verebilir"
 
 #: common\chat.py:529
 msgid "\n"
 "Missing 'attach files' permissions!"
-msgstr ""
+msgstr "Eksik 'dosya ekle' izinleri!"
 
 #: common\utils.py:19
 #, docstring
 msgid "Get all attachments from context"
-msgstr ""
+msgstr "Bağlamdan tüm ekleri alın"
 
 #: common\utils.py:40
 msgid "Canceled"
-msgstr ""
+msgstr "İptal edildi"
 
 #: common\utils.py:53
 msgid "You have been blacklisted from using this command!"
-msgstr ""
+msgstr "Bu komutu kullanmanız için kara listeye alındınız!"
 
 #: common\utils.py:58
 msgid "You have a blacklisted role and cannot use this command!"
-msgstr ""
+msgstr "Kara listeye alınmış bir role sahipsiniz ve bu komutu kullanamazsınız!"
 
 #: common\utils.py:63
 msgid "You cannot use that command in this channel!"
-msgstr ""
+msgstr "Bu komutu bu kanalda kullanamazsınız!"
 
 #: common\utils.py:68
 msgid "You cannot use that command in any channels under this category"
-msgstr ""
+msgstr "Bu komutu bu kategori altındaki hiçbir kanalda kullanamazsınız"
 
 #: common\utils.py:115 common\utils.py:116
 msgid "[Code Removed]"
-msgstr ""
+msgstr "[Kod Kaldırıldı]"
 
