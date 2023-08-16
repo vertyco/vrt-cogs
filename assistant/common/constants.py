@@ -126,7 +126,7 @@ CREATE_EMBEDDING = {
             },
             "embedding_text": {
                 "type": "string",
-                "description": "Detailed summary of information to be stored based on the context of the conversation or correction. Write it as if you are the one telling someone the information.",
+                "description": "Detailed summary of information to be stored based on the context of the conversation or correction. Write it as if you are the one telling yourself the information to remember later.",
             },
         },
         "required": ["embedding_name", "embedding_text"],
