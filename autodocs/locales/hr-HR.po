@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-08-04 00:04\n"
+"PO-Revision-Date: 2023-08-12 16:11\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -31,14 +31,12 @@ msgstr "\n"
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
-msgstr "{}\n"
-"COG verzija: {}\n"
-"Autor: {}"
+msgstr ""
 
 #: autodocs.py:41
 #, docstring
 msgid "No data to delete"
-msgstr "Nema podataka za brisanje"
+msgstr ""
 
 #: autodocs.py:57
 msgid "name"
@@ -54,7 +52,7 @@ msgstr ""
 
 #: autodocs.py:116
 msgid "Create docs for a cog"
-msgstr "Stvorite dokumente za zupčani"
+msgstr ""
 
 #: autodocs.py:118
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
@@ -136,19 +134,19 @@ msgstr ""
 
 #: formatter.py:18
 msgid "Help"
-msgstr "Pomoć"
+msgstr ""
 
 #: formatter.py:19
 msgid "Usage"
-msgstr "Uporaba"
+msgstr ""
 
 #: formatter.py:20
 msgid "Aliases"
-msgstr "Alias"
+msgstr ""
 
 #: formatter.py:21
 msgid "Required"
-msgstr "Potrebno"
+msgstr ""
 
 #: formatter.py:22
 msgid "Autocomplete"
@@ -160,7 +158,7 @@ msgstr ""
 
 #: formatter.py:24
 msgid "Optional"
-msgstr "Neobavezno"
+msgstr ""
 
 #: formatter.py:25
 msgid "Default"
@@ -168,11 +166,11 @@ msgstr ""
 
 #: formatter.py:26
 msgid "Slash"
-msgstr "Kosa"
+msgstr ""
 
 #: formatter.py:27
 msgid "Hybrid"
-msgstr "Hibrid"
+msgstr ""
 
 #: formatter.py:28
 msgid "Command"

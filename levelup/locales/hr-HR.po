@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-08-03 19:15-0400\n"
-"PO-Revision-Date: 2023-08-04 00:04\n"
+"PO-Revision-Date: 2023-08-16 19:37\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -158,7 +158,7 @@ msgstr "Nisam bio u mogućnosti dobiti datoteku od nesklada"
 
 #: base.py:344
 msgid "Your custom background has been saved as "
-msgstr "Vaša prilagođena pozadina spremljena je kao"
+msgstr ""
 
 #: base.py:349
 #, docstring
@@ -580,16 +580,16 @@ msgid "View the star leaderboard"
 msgstr "Pogledaj ljestvicu zvijezda"
 
 #: base.py:1083
-msgid "Nobody has stars yet 😕"
-msgstr "Još nitko nema zvijezde 😕"
+msgid "Nobody has stars yet ЁЯШХ"
+msgstr ""
 
 #: base.py:1098
 msgid "**Star Leaderboard**\n"
 msgstr "**Ljestvica za zvijezde**\n"
 
 #: base.py:1099
-msgid "**Total ⭐'s: "
-msgstr "**Ukupno ⭐: "
+msgid "**Total тнР's: "
+msgstr ""
 
 #: base.py:1129 base.py:1131
 msgid "Pages "
@@ -868,7 +868,7 @@ msgstr "**LevelUps**\n"
 
 #: levelup.py:1163
 msgid "`LevelUp Notify:    `"
-msgstr "`LevelUp Obavijest:    `"
+msgstr ""
 
 #: levelup.py:1164
 msgid "`Notify in DMs:     `"

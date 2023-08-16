@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-08-03 19:15-0400\n"
-"PO-Revision-Date: 2023-08-04 00:04\n"
+"PO-Revision-Date: 2023-08-16 19:37\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -577,16 +577,16 @@ msgid "View the star leaderboard"
 msgstr "Voir le classement des étoiles"
 
 #: base.py:1083
-msgid "Nobody has stars yet 😕"
-msgstr "Personne n'a encore des étoiles 😕"
+msgid "Nobody has stars yet ЁЯШХ"
+msgstr ""
 
 #: base.py:1098
 msgid "**Star Leaderboard**\n"
 msgstr "**Classement des étoiles**\n"
 
 #: base.py:1099
-msgid "**Total ⭐'s: "
-msgstr "**Total des ⭐:"
+msgid "**Total тнР's: "
+msgstr ""
 
 #: base.py:1129 base.py:1131
 msgid "Pages "
