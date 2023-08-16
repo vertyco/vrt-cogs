@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-08-03 19:15-0400\n"
-"PO-Revision-Date: 2023-08-04 00:04\n"
+"PO-Revision-Date: 2023-08-16 19:37\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -583,16 +583,16 @@ msgid "View the star leaderboard"
 msgstr "스타 리더보드 보기"
 
 #: base.py:1083
-msgid "Nobody has stars yet 😕"
-msgstr "아직 아무도 별을 가지고 있지 않습니다 😕"
+msgid "Nobody has stars yet ЁЯШХ"
+msgstr ""
 
 #: base.py:1098
 msgid "**Star Leaderboard**\n"
 msgstr "**스타 리더보드**\n"
 
 #: base.py:1099
-msgid "**Total ⭐'s: "
-msgstr "**총 ⭐의 수: "
+msgid "**Total тнР's: "
+msgstr ""
 
 #: base.py:1129 base.py:1131
 msgid "Pages "
