@@ -35,6 +35,7 @@ class API(MixinMeta):
         conf: GuildSettings,
         functions: Optional[List[dict]] = None,
         member: Optional[discord.Member] = None,
+        response_token_override: int = None,
     ) -> Dict[str, str]:
         api_base = conf.endpoint_override or self.db.endpoint_override
         api_key = "unset"
@@ -59,15 +60,18 @@ class API(MixinMeta):
         max_model_tokens = MODELS[model]
 
         # Ensure that user doesn't set max response tokens higher than model can handle
-        response_tokens = 0  # Dynamic
-        if max_response_tokens:
-            # Calculate max response tokens
-            response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
-            # If current convo exceeds the max convo tokens for that user, use max model tokens
-            if not response_tokens:
-                response_tokens = max(max_model_tokens - current_convo_tokens, 0)
-            # Use the lesser of caculated vs set response tokens
-            response_tokens = min(response_tokens, max_response_tokens)
+        if response_token_override:
+            response_tokens = response_token_override
+        else:
+            response_tokens = 0  # Dynamic
+            if max_response_tokens:
+                # Calculate max response tokens
+                response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
+                # If current convo exceeds the max convo tokens for that user, use max model tokens
+                if not response_tokens:
+                    response_tokens = max(max_model_tokens - current_convo_tokens, 0)
+                # Use the lesser of caculated vs set response tokens
+                response_tokens = min(response_tokens, max_response_tokens)
 
         if model in CHAT:
             response = await request_chat_completion_raw(

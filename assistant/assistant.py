@@ -51,7 +51,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.11.17"
+    __version__ = "4.11.18"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -127,8 +127,6 @@ class Assistant(
             if self.first_run:
                 log.info(txt)
                 self.first_run = False
-            else:
-                log.debug(txt)
         except Exception as e:
             log.error("Failed to save config", exc_info=e)
         finally:
@@ -308,6 +306,7 @@ class Assistant(
         function_calls: Optional[List[dict]] = None,
         function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
+        message_obj: Optional[discord.Message] = None,
     ) -> str:
         """
         Method for other cogs to call the chat API
@@ -322,6 +321,7 @@ class Assistant(
             functions (Optional[List[dict]]): custom functions that the api can call (see https://platform.openai.com/docs/guides/gpt/function-calling)
             function_map (Optional[Dict[str, Callable]]): mappings for custom functions {"FunctionName": Callable}
             extend_function_calls (bool=[False]): If True, configured functions are used in addition to the ones provided
+            message_obj (Optional[discord.Message]): actual message object associated with the question
 
         Raises:
             NoAPIKey: If the specified guild has no api key associated with it
@@ -341,6 +341,7 @@ class Assistant(
             function_calls,
             function_map,
             extend_function_calls,
+            message_obj,
         )
 
     # ------------------ 3rd PARTY FUNCTION REGISTRY ------------------

@@ -62,12 +62,16 @@ class ChatHandler(MixinMeta):
         extract = bool(extract_match)
         get_last_message = bool(get_last_message_match)
 
+        question = question.replace(self.bot.user.mention, self.bot.user.display_name)
+
         for mention in message.mentions:
-            question = question.replace(f"<@{mention.id}>", f"@{mention.display_name}")
+            question = question.replace(
+                f"<@{mention.id}>", f"[User Mention: {mention.display_name}]"
+            )
         for mention in message.channel_mentions:
-            question = question.replace(f"<#{mention.id}>", f"#{mention.name}")
+            question = question.replace(f"<#{mention.id}>", f"[Channel Mention: {mention.name}]")
         for mention in message.role_mentions:
-            question = question.replace(f"<@&{mention.id}>", f"@{mention.name}")
+            question = question.replace(f"<@&{mention.id}>", f"[Role Mention: {mention.name}]")
         for i in get_attachments(message):
             has_extension = i.filename.count(".") > 0
             if (
