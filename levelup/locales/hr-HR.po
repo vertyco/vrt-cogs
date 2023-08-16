@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-08-03 19:15-0400\n"
-"PO-Revision-Date: 2023-08-12 16:11\n"
+"PO-Revision-Date: 2023-08-16 19:37\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -580,16 +580,16 @@ msgid "View the star leaderboard"
 msgstr "Pogledaj ljestvicu zvijezda"
 
 #: base.py:1083
-msgid "Nobody has stars yet 😕"
-msgstr "Još nitko nema zvijezde 😕"
+msgid "Nobody has stars yet ЁЯШХ"
+msgstr ""
 
 #: base.py:1098
 msgid "**Star Leaderboard**\n"
 msgstr "**Ljestvica za zvijezde**\n"
 
 #: base.py:1099
-msgid "**Total ⭐'s: "
-msgstr "**Ukupno ⭐: "
+msgid "**Total тнР's: "
+msgstr ""
 
 #: base.py:1129 base.py:1131
 msgid "Pages "
