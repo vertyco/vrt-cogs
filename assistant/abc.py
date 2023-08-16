@@ -32,6 +32,7 @@ class MixinMeta(metaclass=ABCMeta):
         conf: GuildSettings,
         functions: Optional[List[dict]] = None,
         member: discord.Member = None,
+        response_token_override: int = None,
     ) -> Dict[str, str]:
         raise NotImplementedError
 
