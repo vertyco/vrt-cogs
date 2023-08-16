@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-26 19:16-0400\n"
-"PO-Revision-Date: 2023-07-28 18:11\n"
+"PO-Revision-Date: 2023-08-16 19:38\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -62,8 +62,8 @@ msgid "An error occured while translating, Check logs for more info."
 msgstr "Ocorreu um erro ao traduzir. Verifique os logs para mais informações."
 
 #: fluent.py:97
-msgid "❌ Translation failed."
-msgstr "❌ A tradução falhou."
+msgid "вќЊ Translation failed."
+msgstr ""
 
 #: fluent.py:122
 #, docstring
@@ -93,12 +93,12 @@ msgid "Language 2 is invalid."
 msgstr "A língua 2 não é válida."
 
 #: fluent.py:165
-msgid "❌ {} is already a fluent channel."
-msgstr "❌ {} já é um canal fluente."
+msgid "вќЊ {} is already a fluent channel."
+msgstr ""
 
 #: fluent.py:169
-msgid "✅ Fluent channel has been set!"
-msgstr "✅ O canal fluente foi definido!"
+msgid "вњ… Fluent channel has been set!"
+msgstr ""
 
 #: fluent.py:185
 #, docstring
@@ -106,12 +106,12 @@ msgid "Remove a channel from Fluent"
 msgstr "Remover um canal do Fluent"
 
 #: fluent.py:193
-msgid "✅ Fluent channel has been deleted!"
-msgstr "✅ O canal Fluent foi eliminado!"
+msgid "вњ… Fluent channel has been deleted!"
+msgstr ""
 
 #: fluent.py:195
-msgid "❌ {} isn't a fluent channel!"
-msgstr "❌ {} não é um canal fluente!"
+msgid "вќЊ {} isn't a fluent channel!"
+msgstr ""
 
 #: fluent.py:199
 #, docstring
