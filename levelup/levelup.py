@@ -86,7 +86,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.6.4"
+    __version__ = "3.7.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -131,7 +131,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 "voice": {},
             },  # ChannelID keys, list values for bonus xp range
             "streambonus": [],  # Bonus voice XP for streaming in voice
-            "cooldown": 60,  # Only gives XP every 30 seconds
+            "cooldown": 60,  # Only gives XP every 60 seconds
             "base": 100,  # Base denominator for level algorithm, higher takes longer to level
             "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve
             "length": 0,  # Minimum length of message to be considered eligible for XP gain
@@ -1583,6 +1583,23 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 data = await res.json(content_type=None)
                 return data, status
 
+    @retry(
+        retry=retry_if_exception_type(json.JSONDecodeError),
+        wait=wait_random_exponential(min=120, max=600),
+        stop=stop_after_attempt(6),
+        reraise=True,
+    )
+    async def fetch_polaris_payload(self, guild_id: int, page: int):
+        url = f"https://gdcolon.com/polaris/api/leaderboard/{guild_id}?page={page}"
+        timeout = ClientTimeout(total=60)
+        async with ClientSession(timeout=timeout) as session:
+            async with session.get(url, headers={"Accept": "application/json"}) as res:
+                status = res.status
+                if status == 429:
+                    log.warning("polaris import is being rate limited!")
+                data = await res.json(content_type=None)
+                return data, status
+
     @admin_group.command(name="importmee6")
     @commands.guildowner()
     @commands.bot_has_permissions(embed_links=True)
@@ -1873,6 +1890,150 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         if not imported and not failed:
             await msg.edit(content=_("No AmariBot stats were found"))
+        else:
+            txt = _("Imported {} User(s)").format(str(imported))
+            if failed:
+                txt += _(" ({} skipped since they are no longer in the discord)").format(
+                    str(failed)
+                )
+            await msg.edit(content=txt)
+            await ctx.tick()
+            await self.save_cache(ctx.guild)
+
+    @admin_group.command(name="importpolaris")
+    @commands.guildowner()
+    @commands.bot_has_permissions(embed_links=True)
+    async def import_from_polaris(
+        self,
+        ctx: commands.Context,
+        replace: bool,
+        include_settings: bool,
+        i_agree: bool,
+    ):
+        """
+        Import levels and exp from [Polaris](https://gdcolon.com/polaris/)
+
+        **Make sure your guild's leaderboard is public!**
+
+        **Arguments**
+        `replace` - (True/False) if True, it will replace the user's exp, otherwise it will add it
+        `include_settings` - import level roles and exp settings from Polaris
+        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
+
+        **Note**
+        Instead of typing true/false
+        1 = True
+        0 = False
+        """
+        if not i_agree:
+            return await ctx.send(_("Not importing Polaris levels"))
+
+        msg = await ctx.send(_("Fetching Polaris leaderboard data, this could take a while..."))
+
+        conf = self.data[ctx.guild.id]
+        base = conf["base"]
+        exp = conf["exp"]
+
+        players: List[dict] = []
+        failed_pages = 0
+        settings_imported = False
+
+        async with ctx.typing():
+            async for i in AsyncIter(range(10), delay=5):
+                page = i + 1
+                try:
+                    data, status = await self.fetch_polaris_payload(ctx.guild.id, page)
+                except Exception as e:
+                    log.warning(
+                        f"Failed to import page {page} of Polaris leaderboard data in {ctx.guild}",
+                        exc_info=e,
+                    )
+                    await ctx.send(
+                        f"Failed to import page {page} of Polaris leaderboard data: {e}"
+                    )
+                    failed_pages += 1
+                    if isinstance(e, json.JSONDecodeError):
+                        await msg.edit(
+                            content=_("Polaris is rate limiting too heavily! Import Failed!")
+                        )
+                        return
+                    continue
+
+                error = data.get("error", {})
+                error_msg = error.get("message", None)
+                if status != 200:
+                    if status == 401:
+                        return await ctx.send(_("Your leaderboard needs to be set to public!"))
+                    elif error_msg:
+                        return await ctx.send(error_msg)
+                    else:
+                        return await ctx.send(_("No data found!"))
+
+                if include_settings and not settings_imported:
+                    settings_imported = True
+                    if settings := data.get("settings"):
+                        if gain := settings.get("gain"):
+                            self.data[ctx.guild.id]["xp"] = [gain["min"], gain["max"]]
+                            self.data[ctx.guild.id]["cooldown"] = gain["time"]
+
+                        if curve := settings.get("curve"):
+                            # The cubic curve doesn't translate to quadratic easily, so we won't import this
+                            # cubed = curve["3"]
+                            # squared = curve["2"]
+                            # base = curve["1"]
+                            self.data[ctx.guild.id]["base"] = curve["1"]
+
+                    if role_rewards := data.get("rewards"):
+                        for entry in role_rewards:
+                            self.data[ctx.guild.id]["levelroles"][str(entry["level"])] = int(
+                                entry["id"]
+                            )
+
+                    await ctx.send("Settings imported!")
+
+                player_data = data.get("leaderboard")
+                if not player_data:
+                    break
+
+                players.extend(player_data)
+
+        if failed_pages:
+            await ctx.send(
+                _("{} pages failed to fetch from Polaris api, check logs for more info").format(
+                    str(failed_pages)
+                )
+            )
+        if not players:
+            return await ctx.send(_("No leaderboard data found!"))
+
+        await msg.edit(content=_("Data retrieved, importing..."))
+        imported = 0
+        failed = 0
+        async with ctx.typing():
+            async for user in AsyncIter(players):
+                uid = str(user["id"])
+                member = ctx.guild.get_member(int(uid))
+                if not member:
+                    failed += 1
+                    continue
+
+                xp = user["xp"]
+                if uid not in self.data[ctx.guild.id]["users"]:
+                    self.init_user(ctx.guild.id, uid)
+
+                if replace:  # Replace stats
+                    self.data[ctx.guild.id]["users"][uid]["xp"] = xp
+                    newlvl = get_level(xp, base, exp)
+                    self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
+                else:  # Add stats
+                    self.data[ctx.guild.id]["users"][uid]["xp"] += xp
+                    newlvl = get_level(self.data[ctx.guild.id]["users"][uid]["xp"], base, exp)
+                    self.data[ctx.guild.id]["users"][uid]["level"] = newlvl
+
+                imported += 1
+
+        if not imported and not failed:
+            await msg.edit(content=_("No Polaris stats were found"))
         else:
             txt = _("Imported {} User(s)").format(str(imported))
             if failed:
