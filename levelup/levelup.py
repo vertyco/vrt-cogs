@@ -42,6 +42,7 @@ from levelup.utils.formatter import (
     get_content_from_url,
     get_level,
     get_next_reset,
+    get_twemoji,
     get_xp,
     hex_to_rgb,
     time_formatter,
@@ -86,7 +87,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.0"
+    __version__ = "3.7.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -3036,18 +3037,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             await ctx.send(_("Automatic prestige role removal **Enabled**"))
         await self.save_cache(ctx.guild)
 
-    @staticmethod
-    def get_twemoji(emoji: str):
-        # Thanks Fixator!
-        emoji_unicode = []
-        for char in emoji:
-            char = hex(ord(char))[2:]
-            emoji_unicode.append(char)
-        if "200d" not in emoji_unicode:
-            emoji_unicode = list(filter(lambda c: c != "fe0f", emoji_unicode))
-        emoji_unicode = "-".join(emoji_unicode)
-        return f"https://twemoji.maxcdn.com/v/latest/72x72/{emoji_unicode}.png"
-
     @prestige_settings.command(name="add")
     async def add_pres_data(
         self,
@@ -3064,7 +3053,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         """
         if not prestige_level.isdigit():
             return await ctx.send(_("prestige_level must be a number!"))
-        url = self.get_twemoji(emoji) if isinstance(emoji, str) else emoji.url
+        url = get_twemoji(emoji) if isinstance(emoji, str) else emoji.url
         self.data[ctx.guild.id]["prestigedata"][prestige_level] = {
             "role": role.id,
             "emoji": {"str": str(emoji), "url": url},
@@ -3076,7 +3065,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     async def e_test(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
         """Test emojis to see if the bot is able to get a valid url for them"""
         if isinstance(emoji, str):
-            em = self.get_twemoji(emoji)
+            em = get_twemoji(emoji)
             await ctx.send(em)
         else:
             await ctx.send(emoji.url)
