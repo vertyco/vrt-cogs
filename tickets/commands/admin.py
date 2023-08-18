@@ -945,6 +945,13 @@ class AdminCommands(MixinMeta):
             embed.add_field(name=_("Support Roles(Mention)"), value=suproles, inline=False)
         if blacklisted:
             embed.add_field(name=_("Blacklist"), value=blacklisted, inline=False)
+
+        if conf["thread_close"]:
+            txt = _("Thread tickets will be closed/archived rather than deleted")
+        else:
+            txt = _("Thread tickets will be deleted instead of closed/archived")
+        embed.add_field(name=_("Thread Tickets"), value=txt, inline=False)
+
         embed.add_field(
             name=_("Thread Ticket Auto-Add"),
             value=_("Auto-add support and panel roles to tickets that use threads: **{}**").format(
