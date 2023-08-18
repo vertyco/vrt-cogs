@@ -114,35 +114,58 @@ Your job is to summarize text to use as embeddings. Respond only with the summar
 REACT_NAME_MESSAGE = """
 Your job is to read a snippet of text and come up with a short descriptive name for it. Only respond with the name of the summary.
 """
-CREATE_EMBEDDING = {
-    "name": "create_embedding",
-    "description": "Use this function to save information about something outside of the context of the current conversation, and can be referenced later. useful when someone corrects you or tells you something new.",
+
+CREATE_MEMORY = {
+    "name": "create_memory",
+    "description": "Use this to remember things. Useful when someone corrects you or tells you something new.",
     "parameters": {
         "type": "object",
         "properties": {
-            "embedding_name": {
+            "memory_name": {
                 "type": "string",
-                "description": "A short unique name for the embedding entry, this should be a descriptive name and contain less than 100 characters, or less than 4 separate words.",
+                "description": "This should be a short, unique, and descriptive name for the memory entry in less than 100 characters",
             },
-            "embedding_text": {
+            "memory_text": {
                 "type": "string",
-                "description": "Detailed summary of information to be stored based on the context of the conversation or correction. Write it as if you are the one telling yourself the information to remember later.",
+                "description": "The text content of the memory, this should be written as if you are telling yourself the information to remember",
             },
         },
-        "required": ["embedding_name", "embedding_text"],
+        "required": ["memory_name", "memory_text"],
     },
 }
-SEARCH_EMBEDDINGS = {
-    "name": "search_embeddings",
-    "description": "Use this function to search embeddings for related info",
+SEARCH_MEMORIES = {
+    "name": "search_memories",
+    "description": "Use this to find information about something, always use this if you are unsure about the answer to a question",
     "parameters": {
         "type": "object",
         "properties": {
             "search_query": {
                 "type": "string",
-                "description": "The context you wish to search for",
-            }
+                "description": "the keyword or query you want to find information about",
+            },
+            "amount": {
+                "type": "integer",
+                "description": "Max amount of memories to fetch. Defaults to 2",
+            },
         },
         "required": ["search_query"],
+    },
+}
+EDIT_MEMORY = {
+    "name": "edit_memory",
+    "description": "Use this to edit existing memories, useful for correcting inaccurate memories",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "memory_name": {
+                "type": "string",
+                "description": "The name of the memory entry, case sensitive",
+            },
+            "memory_text": {
+                "type": "string",
+                "description": "The new text that will replace the current content of the memory",
+            },
+        },
+        "required": ["memory_name", "memory_text"],
     },
 }

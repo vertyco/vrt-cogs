@@ -263,15 +263,23 @@ class ChatHandler(MixinMeta):
             return [func for func in calls if func["name"] != name]
 
         # Don't include if user is not a tutor
-        if "create_embedding" in function_map and author.id not in conf.tutors:
-            if not any([role.id in conf.tutors for role in author.roles]):
-                function_calls = pop_schema("create_embedding", function_calls)
-                del function_map["create_embedding"]
+        not_tutor = [
+            author.id not in conf.tutors,
+            not any([role.id in conf.tutors for role in author.roles]),
+        ]
+        if all(not_tutor):
+            if "create_memory" in function_map:
+                function_calls = pop_schema("create_memory", function_calls)
+                del function_map["create_memory"]
+
+        if "edit_memory" in function_map and (not conf.embeddings or all(not_tutor)):
+            function_calls = pop_schema("edit_memory", function_calls)
+            del function_map["edit_memory"]
 
         # Don't include if there are no embeddings
-        if "search_embeddings" in function_map and (not conf.top_n or not conf.embeddings):
-            function_calls = pop_schema("search_embeddings", function_calls)
-            del function_map["search_embeddings"]
+        if "search_memories" in function_map and not conf.embeddings:
+            function_calls = pop_schema("search_memories", function_calls)
+            del function_map["search_memories"]
 
         max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(
@@ -349,9 +357,6 @@ class ChatHandler(MixinMeta):
             if not function_call:
                 continue
 
-            # Add function call to messages
-            messages.append(response)
-
             calls += 1
 
             function_name = function_call["name"]
@@ -370,9 +375,15 @@ class ChatHandler(MixinMeta):
                 log.error(f"GPT suggested a function not provided: {function_name}")
                 function_calls = pop_schema(function_name, function_calls)  # Just in case
                 messages.append(
-                    {"role": "system", "content": f"{function_name} is not a valid function"}
+                    {
+                        "role": "system",
+                        "content": f"{function_name} is not a valid function name",
+                    }
                 )
                 continue
+
+            # Add function call to messages
+            messages.append(response)
 
             arguments = function_call.get("arguments", "{}")
             try:
@@ -435,7 +446,7 @@ class ChatHandler(MixinMeta):
             log.info(info)
             messages.append({"role": "function", "name": function_name, "content": result})
             conversation.update_messages(result, "function", process_username(function_name))
-            if message_obj and function_name == "create_embedding":
+            if message_obj and function_name in ["create_memory", "edit_memory"]:
                 try:
                     await message_obj.add_reaction("\N{BRAIN}")
                 except (discord.Forbidden, discord.NotFound):
@@ -448,7 +459,6 @@ class ChatHandler(MixinMeta):
         block = False
         for regex in conf.regex_blacklist:
             try:
-                # reply = re.sub(regex, "", reply).strip()
                 reply = await self.safe_regex(regex, reply)
             except (asyncio.TimeoutError, mp.TimeoutError):
                 log.error(f"Regex {regex} in {guild.name} took too long to process. Skipping...")
@@ -538,7 +548,7 @@ class ChatHandler(MixinMeta):
             joined = "\n".join(embeddings)
             role = "function" if function_calls else "user"
             name = (
-                "search_embeddings"
+                "search_memories"
                 if function_calls
                 else process_username(author.name)
                 if author
