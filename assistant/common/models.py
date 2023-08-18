@@ -77,29 +77,33 @@ class GuildSettings(BaseModel):
     disabled_functions: List[str] = []
 
     def get_related_embeddings(
-        self, query_embedding: List[float], top_n_override: Optional[int] = None
+        self,
+        query_embedding: List[float],
+        top_n_override: Optional[int] = None,
+        relatedness_override: Optional[float] = None,
     ) -> List[Tuple[str, str, float]]:
         if not self.top_n or len(query_embedding) == 0 or not self.embeddings:
             return []
+
         strings_and_relatedness = []
         for name, em in self.embeddings.items():
             if len(query_embedding) != len(em.embedding):
                 continue
             try:
                 score = cosine_similarity(query_embedding, em.embedding)
+                strings_and_relatedness.append((name, em.text, score, len(em.embedding)))
             except ValueError as e:
                 log.error(
                     f"Failed to match '{name}' embedding {len(query_embedding)} - {len(em.embedding)}",
                     exc_info=e,
                 )
-                continue
-            strings_and_relatedness.append((name, em.text, score, len(em.embedding)))
 
-        strings_and_relatedness = [
-            i for i in strings_and_relatedness if i[2] >= self.min_relatedness
-        ]
+        min_relatedness = relatedness_override or self.min_relatedness
+        strings_and_relatedness = [i for i in strings_and_relatedness if i[2] >= min_relatedness]
+
         if not strings_and_relatedness:
             return []
+
         strings_and_relatedness.sort(key=lambda x: x[2], reverse=True)
         return strings_and_relatedness[: top_n_override or self.top_n]
 

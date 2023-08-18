@@ -60,6 +60,7 @@ async def request_embedding_raw(
             APIConnectionError,
             RateLimitError,
             ServiceUnavailableError,
+            APIError,
         ]
     ),
     wait=wait_random_exponential(min=5, max=15),
@@ -89,6 +90,7 @@ async def request_chat_completion_raw(
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
     if functions and VERSION >= "0.27.6" and model in SUPPORTS_FUNCTIONS:
+        log.debug(f"Calling model with {len(functions)} functions")
         kwargs["functions"] = functions
     return await openai.ChatCompletion.acreate(**kwargs)
 
