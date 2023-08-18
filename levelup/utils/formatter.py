@@ -111,6 +111,18 @@ def time_formatter(time_in_seconds) -> str:
     return tstring
 
 
+def get_twemoji(emoji: str):
+    # Thanks Fixator!
+    emoji_unicode = []
+    for char in emoji:
+        char = hex(ord(char))[2:]
+        emoji_unicode.append(char)
+    if "200d" not in emoji_unicode:
+        emoji_unicode = list(filter(lambda c: c != "fe0f", emoji_unicode))
+    emoji_unicode = "-".join(emoji_unicode)
+    return f"https://twemoji.maxcdn.com/v/latest/72x72/{emoji_unicode}.png"
+
+
 def get_next_reset(weekday: int, hour: int):
     now = datetime.utcnow()
     reset = now + timedelta((weekday - now.weekday()) % 7)

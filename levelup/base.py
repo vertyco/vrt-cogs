@@ -24,6 +24,7 @@ from levelup.utils.formatter import (
     get_content_from_url,
     get_leaderboard,
     get_level,
+    get_twemoji,
     get_user_position,
     get_xp,
     hex_to_rgb,
@@ -781,6 +782,7 @@ class UserCommands(MixinMeta, ABC):
         gid = ctx.guild.id
         if gid not in self.data:
             await self.initialize()
+
         # Main config stuff
         conf = self.data[gid]
         usepics = conf["usepics"]
@@ -803,6 +805,8 @@ class UserCommands(MixinMeta, ABC):
         if DPY2:
             pfp = user.display_avatar
             role_icon = user.top_role.display_icon
+            if isinstance(role_icon, str):
+                role_icon = get_twemoji(role_icon)
         else:
             pfp = user.avatar_url
             role_icon = None
