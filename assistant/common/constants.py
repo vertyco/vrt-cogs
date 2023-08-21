@@ -117,17 +117,17 @@ Your job is to read a snippet of text and come up with a short descriptive name 
 
 CREATE_MEMORY = {
     "name": "create_memory",
-    "description": "Use this to remember things. Useful when someone corrects you or tells you something new.",
+    "description": "Use this when someone corrects you, tells you something new, or tells you to remember something.",
     "parameters": {
         "type": "object",
         "properties": {
             "memory_name": {
                 "type": "string",
-                "description": "This should be a short, unique, and descriptive name for the memory entry in less than 100 characters",
+                "description": "A short name to describe the memory, perferrably less than 50 characters or 3 words tops",
             },
             "memory_text": {
                 "type": "string",
-                "description": "The text content of the memory, this should be written as if you are telling yourself the information to remember",
+                "description": "The information to remember, write as if you are informing yourself of the thing to remember.",
             },
         },
         "required": ["memory_name", "memory_text"],
@@ -153,7 +153,7 @@ SEARCH_MEMORIES = {
 }
 EDIT_MEMORY = {
     "name": "edit_memory",
-    "description": "Use this to edit existing memories, useful for correcting inaccurate memories",
+    "description": "Use this to edit existing memories, useful for correcting inaccurate memories after making them",
     "parameters": {
         "type": "object",
         "properties": {
