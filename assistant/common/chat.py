@@ -66,12 +66,20 @@ class ChatHandler(MixinMeta):
 
         for mention in message.mentions:
             question = question.replace(
-                f"<@{mention.id}>", f"[User Mention: {mention.display_name}]"
+                f"<@{mention.id}>",
+                f"[Username: {mention.name} | Displayname: {mention.display_name} | Mention: {mention.mention}]",
             )
         for mention in message.channel_mentions:
-            question = question.replace(f"<#{mention.id}>", f"[Channel Mention: {mention.name}]")
+            question = question.replace(
+                f"<#{mention.id}>",
+                f"[Channel: {mention.name} | Mention: {mention.mention}]",
+            )
         for mention in message.role_mentions:
-            question = question.replace(f"<@&{mention.id}>", f"[Role Mention: {mention.name}]")
+            mention.__dict__
+            question = question.replace(
+                f"<@&{mention.id}>",
+                f"[Role: {mention.name} | Mention: {mention.mention}]",
+            )
         for i in get_attachments(message):
             has_extension = i.filename.count(".") > 0
             if (
@@ -343,6 +351,9 @@ class ChatHandler(MixinMeta):
                 except InvalidRequestError as e:
                     log.error(f"MESSAGES: {json.dumps(messages)}", exc_info=e)
                     raise e
+            # except APIError as e:
+            #     reply = e.user_message
+            #     break
             except Exception as e:
                 log.error(
                     f"Exception occured for chat response.\nMessages: {messages}", exc_info=e
@@ -384,6 +395,8 @@ class ChatHandler(MixinMeta):
 
             # Add function call to messages
             messages.append(response)
+            conversation.messages.append(response)
+            conversation.refresh()
 
             arguments = function_call.get("arguments", "{}")
             try:
