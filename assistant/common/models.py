@@ -81,7 +81,9 @@ class GuildSettings(BaseModel):
         query_embedding: List[float],
         top_n_override: Optional[int] = None,
         relatedness_override: Optional[float] = None,
-    ) -> List[Tuple[str, str, float]]:
+    ) -> List[Tuple[str, str, float, int]]:
+        # Name, text, score, dimensions
+
         if not self.top_n or len(query_embedding) == 0 or not self.embeddings:
             return []
 

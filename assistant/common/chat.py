@@ -549,16 +549,20 @@ class ChatHandler(MixinMeta):
         related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
 
         embeddings = []
-        # Get related embeddings (Name, text, score)
+        # Get related embeddings (Name, text, score, dimensions)
         for i in related:
             embed_tokens = await self.get_token_count(i[1], conf)
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
-            embeddings.append(i[1])
+            embeddings.append(i)
 
         if embeddings:
-            joined = "\n".join(embeddings)
+            results = []
+            for embed in embeddings:
+                entry = {"memory name": embed[0], "relatedness": embed[2], "content": embed[1]}
+                results.append(entry)
+
             role = "function" if function_calls else "user"
             name = (
                 "search_memories"
@@ -569,15 +573,17 @@ class ChatHandler(MixinMeta):
             )
 
             if conf.embed_method == "static":
-                conversation.update_messages(joined, role, name)
+                conversation.update_messages(json.dumps(results, indent=2), role, name)
 
             elif conf.embed_method == "dynamic":
+                joined = "\n".join([i[1] for i in embeddings])
                 initial_prompt += f"\n\n{joined}"
 
             else:  # Hybrid embedding
+                conversation.update_messages(json.dumps(results[0], indent=2), role, name)
                 if len(embeddings) > 1:
-                    initial_prompt += f"\n\n{embeddings[1:]}"
-                conversation.update_messages(embeddings[0], role, name)
+                    joined = "\n".join([i[1] for i in embeddings[1:]])
+                    initial_prompt += f"\n\n{joined}"
 
         messages = conversation.prepare_chat(
             message,
