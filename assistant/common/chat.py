@@ -301,7 +301,7 @@ class ChatHandler(MixinMeta):
             extras,
             function_calls,
         )
-        reply = _("Failed to get response!")
+        reply = None
 
         calls = 0
         last_func = None
@@ -470,14 +470,20 @@ class ChatHandler(MixinMeta):
             log.info(f"Made {calls} function calls in a row")
 
         block = False
-        for regex in conf.regex_blacklist:
-            try:
-                reply = await self.safe_regex(regex, reply)
-            except (asyncio.TimeoutError, mp.TimeoutError):
-                log.error(f"Regex {regex} in {guild.name} took too long to process. Skipping...")
-                if conf.block_failed_regex:
-                    block = True
-                continue
+        if reply:
+            for regex in conf.regex_blacklist:
+                try:
+                    reply = await self.safe_regex(regex, reply)
+                except (asyncio.TimeoutError, mp.TimeoutError):
+                    log.error(
+                        f"Regex {regex} in {guild.name} took too long to process. Skipping..."
+                    )
+                    if conf.block_failed_regex:
+                        block = True
+                except Exception as e:
+                    log.error("Regex sub error", exc_info=e)
+        else:
+            reply = _("Failed to get response!")
 
         conversation.update_messages(reply, "assistant", process_username(self.bot.user.name))
 
