@@ -63,11 +63,10 @@ async def request_embedding_raw(
             APIError,
         ]
     ),
-    wait=wait_random_exponential(min=5, max=15),
-    stop=stop_after_attempt(3),
+    wait=wait_random_exponential(min=5, max=30),
+    stop=stop_after_attempt(4),
     reraise=True,
 )
-@cached(ttl=30)
 async def request_chat_completion_raw(
     model: str,
     messages: List[dict],
@@ -105,11 +104,10 @@ async def request_chat_completion_raw(
             ServiceUnavailableError,
         ]
     ),
-    wait=wait_random_exponential(min=5, max=15),
-    stop=stop_after_attempt(3),
+    wait=wait_random_exponential(min=5, max=30),
+    stop=stop_after_attempt(4),
     reraise=True,
 )
-@cached(ttl=30)
 async def request_completion_raw(
     model: str,
     prompt: str,
