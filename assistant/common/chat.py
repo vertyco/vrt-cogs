@@ -241,9 +241,9 @@ class ChatHandler(MixinMeta):
             function_map.update(prepped_function_map)
 
         conversation = self.db.get_conversation(
-            author if isinstance(author, int) else author.id,
-            channel if isinstance(channel, int) else channel.id,
-            guild.id,
+            member_id=author if isinstance(author, int) else author.id,
+            channel_id=channel if isinstance(channel, int) else channel.id,
+            guild_id=guild.id,
         )
         if isinstance(author, int):
             author = guild.get_member(author)
@@ -482,10 +482,8 @@ class ChatHandler(MixinMeta):
                         block = True
                 except Exception as e:
                     log.error("Regex sub error", exc_info=e)
-        else:
-            reply = _("Failed to get response!")
 
-        conversation.update_messages(reply, "assistant", process_username(self.bot.user.name))
+            conversation.update_messages(reply, "assistant", process_username(self.bot.user.name))
 
         if block:
             reply = _("Response failed due to invalid regex, check logs for more info.")
