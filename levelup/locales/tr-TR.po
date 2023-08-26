@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-03 19:15-0400\n"
-"PO-Revision-Date: 2023-08-16 19:37\n"
+"POT-Creation-Date: 2023-08-26 17:01-0400\n"
+"PO-Revision-Date: 2023-08-26 21:07\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -17,19 +17,19 @@ msgstr ""
 "X-Crowdin-File-ID: 11\n"
 "Language: tr_TR\n"
 
-#: base.py:76
+#: base.py:77
 msgid "Uh Oh, looks like that is not a valid URL"
 msgstr "Aman aman, bu düzgün bir URL gibi görünmüyor"
 
-#: base.py:86
+#: base.py:87
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
 msgstr "Amanın, bu geçerli bir fotoğraf gibi görünmüyor, dosya tanınmadı"
 
-#: base.py:91
+#: base.py:92
 msgid "Uh Oh, looks like that is not a valid image"
 msgstr "Aman aman, bu düzgün bir Url gibi görünmüyor"
 
-#: base.py:166
+#: base.py:167
 #, docstring
 msgid "\n"
 "        Reward a good noodle\n"
@@ -40,40 +40,40 @@ msgstr "\n"
 "        Bir kullanıcıya güzel bir noodle olduğu için yıldız ver\n"
 "        "
 
-#: base.py:175
+#: base.py:176
 msgid "Cache not loaded yet, wait a few more seconds."
 msgstr "Önbellek henüz yüklenmedi, birkaç saniye daha bekleyin."
 
-#: base.py:177
+#: base.py:178
 msgid "You can't give stars to yourself!"
 msgstr "Kendine yıldız veremezsin!"
 
-#: base.py:179
+#: base.py:180
 msgid "You can't give stars to a bot!"
 msgstr "Bota yıldız veremezsin!"
 
-#: base.py:195
+#: base.py:196
 msgid "You need to wait "
 msgstr "Beklemen gerekiyor "
 
-#: base.py:197
+#: base.py:198
 msgid " before you can give more stars!"
 msgstr " başka yıldızlar vermek için!"
 
-#: base.py:203
+#: base.py:204
 msgid "No data available for that user yet!"
 msgstr "Bu kullanıcı için veri bulunmadı!"
 
-#: base.py:211
+#: base.py:212
 msgid "You just gave a star to {}!"
 msgstr "Az önce {}'e bir yıldız verdin!"
 
-#: base.py:216
+#: base.py:217
 #, docstring
 msgid "Test levelup image gen"
 msgstr "Test LevelUp Görüntü Gen"
 
-#: base.py:250
+#: base.py:251
 #, docstring
 msgid "\n"
 "        Customize your profile colors\n\n"
@@ -87,52 +87,52 @@ msgstr "\n"
 "(https://htmlcolorcodes.com/)**\n"
 "        "
 
-#: base.py:267 base.py:268 base.py:269 base.py:270
+#: base.py:268 base.py:269 base.py:270 base.py:271
 msgid "Not Set"
 msgstr "Ayarlanmadı"
 
-#: base.py:273
+#: base.py:274
 msgid "`Profile Size:    `"
 msgstr "Profil boyutu"
 
-#: base.py:274
+#: base.py:275
 msgid "`Name Color:      `"
 msgstr "Renk adı"
 
-#: base.py:275
+#: base.py:276
 msgid "`Stat Color:      `"
 msgstr "Statü rengi"
 
-#: base.py:276
+#: base.py:277
 msgid "`Level Bar Color: `"
 msgstr "Level çubuğu rengi"
 
-#: base.py:277
+#: base.py:278
 msgid "`Font:            `"
 msgstr "Yazı tipi"
 
-#: base.py:278
+#: base.py:279
 msgid "`Background:      `"
 msgstr "Arkaplan"
 
-#: base.py:279
+#: base.py:280
 msgid "`Blur:            `"
 msgstr "`Bulanıklık:            `"
 
-#: base.py:282
+#: base.py:283
 msgid "Your Profile Settings"
 msgstr "Profil ayarların"
 
-#: base.py:305 base.py:366
+#: base.py:306 base.py:367
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
 msgstr "Bu klasörün varsayılan arkaplanları için yolu alın"
 
-#: base.py:307
+#: base.py:308
 msgid "Your default background folder path is \n"
 msgstr "Varsayılan arkaplan yolun \n"
 
-#: base.py:313
+#: base.py:314
 #, docstring
 msgid "\n"
 "        Add a custom background to the cog from discord\n\n"
@@ -147,48 +147,48 @@ msgstr "\n"
 "        **Not** dosya uzantısı eklemeyin otomaik olarak eklenecektir\n"
 "        "
 
-#: base.py:322 base.py:383
+#: base.py:323 base.py:384
 msgid "I was not able to find any attachments"
 msgstr "Hiç bir ek bulamadım"
 
-#: base.py:328
+#: base.py:329
 msgid "That is not a valid format, must be on of the following extensions: "
 msgstr "Geçerli dosya tipi değil, dosya tipi bunlardan biri olmalı: "
 
-#: base.py:337 base.py:397
+#: base.py:338 base.py:398
 msgid "I was not able to get the file from Discord"
 msgstr "Discorddan dosyayı alamadım"
 
-#: base.py:344
+#: base.py:345
 msgid "Your custom background has been saved as "
 msgstr "Özel arkaplanın kaydedildi ismi "
 
-#: base.py:349
+#: base.py:350
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
 msgstr "Özel bir arkaplanı kaldırın"
 
-#: base.py:355
+#: base.py:356
 msgid "I could not find any background images with that name"
 msgstr "Bu isimle arkaplan fotoğrafı bulamadım"
 
-#: base.py:360 base.py:420
+#: base.py:361 base.py:421
 msgid "Could not delete file: "
 msgstr "Dosya silinemedi: "
 
-#: base.py:361
+#: base.py:362
 msgid "Background `"
 msgstr "Arkaplan"
 
-#: base.py:361 base.py:421
+#: base.py:362 base.py:422
 msgid "` Has been removed!"
 msgstr "Kaldırıldı!"
 
-#: base.py:368
+#: base.py:369
 msgid "Your custom font folder path is \n"
 msgstr "Özel yazı tipi yolun \n"
 
-#: base.py:374
+#: base.py:375
 #, docstring
 msgid "\n"
 "        Add a custom font to the cog from discord\n\n"
@@ -203,66 +203,71 @@ msgstr "\n"
 "        **Not** dosya uzantısı eklemeyin otomatik olarak eklenecektir\n"
 "        "
 
-#: base.py:389
+#: base.py:390
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
 msgstr "Geçerli dosya tipi değil, dosya tipi bunlardan biri olmalı.ttf veya.otf"
 
-#: base.py:404
+#: base.py:405
 msgid "Your custom font file has been saved as "
 msgstr "Özel yazı tipi kaydedildi ismi "
 
-#: base.py:409
+#: base.py:410
 #, docstring
 msgid "Remove a font from the cog's font folder"
 msgstr "Özel yazı tipini kaldırın"
 
-#: base.py:415
+#: base.py:416
 msgid "I could not find any fonts with that name"
 msgstr "Bu isimle yazı tipi bulamadım"
 
-#: base.py:421
+#: base.py:422
 msgid "Font `"
 msgstr "Yazı tipi `"
 
-#: base.py:427
+#: base.py:428
 #, docstring
 msgid "View the default backgrounds"
 msgstr "Varsayılan arkaplanları göster"
 
-#: base.py:430 base.py:461
+#: base.py:430 base.py:465
 msgid "Image profiles are disabled on this server so this command is off"
 msgstr "Bu sunucuda görüntü profilleri devre dışı bırakılmıştır, bu nedenle bu komut kapalıdır"
 
-#: base.py:435 base.py:466
+#: base.py:432 base.py:467
+msgid "\n"
+"Use the `{}` command to toggle image profiles and enable this command."
+msgstr ""
+
+#: base.py:440 base.py:474
 msgid "Failed to generate background samples"
 msgstr "Arka plan örnekleri oluşturulamadı"
 
-#: base.py:445
+#: base.py:450
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
 msgstr "Mevcut arkaplanlar şunlardır kullanmak için "
 
-#: base.py:448 base.py:477
+#: base.py:453 base.py:485
 msgid "command"
 msgstr "komut"
 
-#: base.py:452
+#: base.py:457
 msgid "Could not send background collage, file size may be too large."
 msgstr "Arkaplan kolajı gönderilemedi, dosya boyutu çok büyük olabilir."
 
-#: base.py:458
+#: base.py:463
 #, docstring
 msgid "View available fonts to use"
 msgstr "Kullanılabilir yazı tiplerini görüntüleyin"
 
-#: base.py:476
+#: base.py:484
 msgid "Here are the current fonts, to set one permanently you can use the "
 msgstr "Mevcut arkaplanlar şunlardır kullanmak için "
 
-#: base.py:481
+#: base.py:489
 msgid "Could not send font collage, file size may be too large."
 msgstr "Yazı tipi kolajı gönderilemedi, dosya boyutu çok büyük olabilir."
 
-#: base.py:485
+#: base.py:493
 #, docstring
 msgid "\n"
 "        Toggle your profile image type (full/slim)\n\n"
@@ -274,24 +279,24 @@ msgstr "\n"
 "        Tam boy, bakiyenizi, rol simgenizi ve prestij simgenizi içerir\n"
 "        İnce, daha küçük ve inceltilmiş bir versiyondur "
 
-#: base.py:493 base.py:523 base.py:568 base.py:614 base.py:674 base.py:730
-#: base.py:759
+#: base.py:501 base.py:531 base.py:576 base.py:622 base.py:682 base.py:738
+#: base.py:767
 msgid "Image profiles are disabled on this server, this setting has no effect"
 msgstr "Görüntü profilleri bu sunucuda devre dışı bırakılmıştır, bu ayarın bir etkisi yoktur"
 
-#: base.py:499
+#: base.py:507
 msgid "You have no information stored about your account yet. Talk for a bit first"
 msgstr "Hesabınız hakkında henüz hiçbir bilginiz yok. Önce biraz konuşun"
 
-#: base.py:504
+#: base.py:512
 msgid "Your profile image has been set to **Slim**"
 msgstr "Profil resminiz **Slim** olarak ayarlandı"
 
-#: base.py:507
+#: base.py:515
 msgid "Your profile image has been set to **Full**"
 msgstr "Profil resminiz **Tam** olarak ayarlandı"
 
-#: base.py:513
+#: base.py:521
 #, docstring
 msgid "\n"
 "        Set a hex color for your username\n\n"
@@ -305,19 +310,19 @@ msgstr "\n"
 "        **[Hex Renk Seçici](https://htmlcolorcodes.com/)**\n\n"
 "        Komutu her çalıştırdığınızda ad renginizi rastgele belirlemek için `default` olarak ayarlayın "
 
-#: base.py:532
+#: base.py:540
 msgid "Your name color has been reset to default"
 msgstr "İsminizin rengi varsayılana sıfırlandı"
 
-#: base.py:538 base.py:583 base.py:629
+#: base.py:546 base.py:591 base.py:637
 msgid "That is an invalid color, please use a valid integer color code or hex color."
 msgstr "Bu geçersiz bir renktir, lütfen geçerli bir tamsayı renk kodu veya hex renk kullanın."
 
-#: base.py:548 base.py:594 base.py:640
+#: base.py:556 base.py:602 base.py:648
 msgid "Failed to set color, the following error occurred:\n"
 msgstr "Renk ayarlanamadı, aşağıdaki hata oluştu:\n"
 
-#: base.py:558
+#: base.py:566
 #, docstring
 msgid "\n"
 "        Set a hex color for your server stats\n\n"
@@ -331,11 +336,11 @@ msgstr "\n"
 "        **[Hex Renk Seçici](https://htmlcolorcodes.com/)**\n\n"
 "        Komutu her çalıştırdığınızda ad renginizi rastgele belirlemek için `default` olarak ayarlayın "
 
-#: base.py:577
+#: base.py:585
 msgid "Your stats color has been reset to default"
 msgstr "İstatistik renginiz varsayılana sıfırlandı"
 
-#: base.py:604
+#: base.py:612
 #, docstring
 msgid "\n"
 "        Set a hex color for your level bar\n\n"
@@ -349,11 +354,11 @@ msgstr "\n"
 "        **[Hex Renk Seçici](https://htmlcolorcodes.com/)**\n\n"
 "        Komutu her çalıştırdığınızda ad renginizi rastgele belirlemek için `default` olarak ayarlayın "
 
-#: base.py:623
+#: base.py:631
 msgid "Your level bar color has been reset to default"
 msgstr "Seviye çubuğunuzun rengi varsayılana sıfırlandı"
 
-#: base.py:650
+#: base.py:658
 #, docstring
 msgid "\n"
 "        Set a background for your profile\n\n"
@@ -389,15 +394,15 @@ msgstr "\n"
 "- `rastgele`, her seferinde varsayılan arka plan havuzundan rastgele bir seçim yapar.\n"
 "- `dosya adı` için varsayılan seçenekleri görüntülemek için `[p]mypf backgrounds` komutunu çalıştırın "
 
-#: base.py:712 base.py:714
+#: base.py:720 base.py:722
 msgid "Your background image has been set!"
 msgstr "Arka plan resminiz ayarlandı!"
 
-#: base.py:717
+#: base.py:725
 msgid "Your background has been removed since you did not specify a url!"
 msgstr "Arka planınızı belirtmediğiniz için kaldırıldı!"
 
-#: base.py:722
+#: base.py:730
 #, docstring
 msgid "\n"
 "        Set a font for your profile\n\n"
@@ -409,19 +414,19 @@ msgstr "\n"
 "        Kullanılabilir yazı tiplerini görüntülemek için `[p]myprofile fonts` yazın\n"
 "        Varsayılan yazı tipine geri dönmek için `font_name` argümanı için `default` kullanın "
 
-#: base.py:740
+#: base.py:748
 msgid "Your profile font has been reverted to default"
 msgstr "Profil yazı tipiniz varsayılana geri döndürüldü"
 
-#: base.py:747
+#: base.py:755
 msgid "I could not find a font file with that name"
 msgstr "Bu isimde bir yazı tipi dosyası bulamadım"
 
-#: base.py:750
+#: base.py:758
 msgid "Your profile font has been set to "
 msgstr "Profil yazı tipiniz ayarlandı "
 
-#: base.py:754
+#: base.py:762
 #, docstring
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
@@ -429,68 +434,68 @@ msgid "\n"
 msgstr "\n"
 "Metnin görüntülendiği arka plan görüntüsü üzerinde hafif bir bulanıklaştırma efektini değiştirin "
 
-#: base.py:769
+#: base.py:777
 msgid "Your profile background blur has been set to "
 msgstr "Profil arka plan bulanıklığınız şu şekilde ayarlandı: "
 
-#: base.py:775
+#: base.py:783
 #, docstring
 msgid "View your profile"
 msgstr "Profilinizi görüntüleyin"
 
-#: base.py:793
+#: base.py:802
 msgid "No information available yet!"
 msgstr "Henüz bilgi mevcut değil!"
 
-#: base.py:796
+#: base.py:805
 msgid "I do not have permission to send images to this channel"
 msgstr "Bu kanala görüntü göndermek için iznim yok"
 
-#: base.py:798
+#: base.py:807
 msgid "I do not have permission to send embeds to this channel"
 msgstr "Bu kanala yerleştirme göndermek için iznim yok"
 
-#: base.py:839 generator.py:824 levelup.py:2672
+#: base.py:850 generator.py:823 levelup.py:2999
 msgid "Level "
 msgstr "Seviye "
 
-#: base.py:841 generator.py:223
+#: base.py:852 generator.py:223
 msgid "Prestige "
 msgstr "Prestij "
 
-#: base.py:842
+#: base.py:853
 msgid " stars\n"
 msgstr " yıldızlar\n"
 
-#: base.py:843
+#: base.py:854
 msgid " messages sent\n"
 msgstr " gönderilen mesajlar\n"
 
-#: base.py:844
+#: base.py:855
 msgid " in voice\n"
 msgstr " seste\n"
 
-#: base.py:850
+#: base.py:861
 msgid "Rank "
 msgstr "Rütbe "
 
-#: base.py:852
+#: base.py:863
 msgid ", with "
 msgstr ", ile "
 
-#: base.py:854
+#: base.py:865
 msgid "% of global server Exp"
 msgstr "Küresel sunucunun %'si Exp"
 
-#: base.py:856
+#: base.py:867
 msgid "{}'s Profile"
 msgstr "{} adlı kullanıcının profili"
 
-#: base.py:859
+#: base.py:870
 msgid "Progress"
 msgstr "İlerleme"
 
-#: base.py:931
+#: base.py:942
 #, docstring
 msgid "\n"
 "        Prestige your rank!\n"
@@ -504,55 +509,55 @@ msgstr "\n"
 "        bir prestij seviyesi ve bununla ilişkili tüm avantajları kazanmak için seviyenizi ve deneyiminizi sıfırlayın\n\n"
 "        Prestij kazandığınızda seviye ve xp'niz fazlaysa, xp'niz ve seviyeleriniz devam eder "
 
-#: base.py:945
+#: base.py:956
 msgid "Prestige is disabled on this server!"
 msgstr "Prestij bu sunucuda devre dışı bırakıldı!"
 
-#: base.py:948 levelup.py:2232
+#: base.py:959 levelup.py:2558
 msgid "Prestige levels have not been set yet!"
 msgstr "Prestij seviyeleri henüz belirlenmedi!"
 
-#: base.py:952
+#: base.py:963
 msgid "No information available for you yet!"
 msgstr "Sizin için henüz bir bilgi mevcut değil!"
 
-#: base.py:959
+#: base.py:970
 msgid "**You are not eligible to prestige yet!**\n"
 msgstr "**Henüz prestij kazanmaya uygun değilsiniz!**\n"
 
-#: base.py:960
+#: base.py:971
 msgid "`Your level:     `"
 msgstr "`Seviyeniz:     `"
 
-#: base.py:961
+#: base.py:972
 msgid "`Required Level: `"
 msgstr "`Gerekli Seviye: `"
 
-#: base.py:967
+#: base.py:978
 msgid "Prestige level "
 msgstr "Prestij seviyesi "
 
-#: base.py:967
+#: base.py:978
 msgid " has not been set yet!"
 msgstr " henüz belirlenmedi!"
 
-#: base.py:978
+#: base.py:989
 msgid "I do not have the proper permissions to assign you to the {} role!"
 msgstr ""
 
-#: base.py:993
+#: base.py:1004
 msgid "You have reached Prestige "
 msgstr "Prestige'e ulaştınız "
 
-#: base.py:1017
+#: base.py:1028
 msgid "I don't have permissions to remove your old roles!"
 msgstr ""
 
-#: base.py:1032
+#: base.py:1043
 msgid "I was not able to re-add the {} role to your profile!"
 msgstr ""
 
-#: base.py:1039
+#: base.py:1050
 #, docstring
 msgid "\n"
 "        View the Leaderboard\n\n"
@@ -568,40 +573,40 @@ msgstr "\n"
 "        Geçerli seçenekler şunlardır: `exp`, `messages` ve `voice`\n"
 "        Bu argümanların kısaltmaları da kullanılabilir "
 
-#: base.py:1050
+#: base.py:1061
 msgid "Use the `"
 msgstr "` düğmesini kullanın"
 
-#: base.py:1050
+#: base.py:1061
 msgid "startop` command for that"
 msgstr "bunun için startop` komutu"
 
-#: base.py:1059 base.py:1142
+#: base.py:1070 base.py:1153
 msgid "No user data yet!"
 msgstr "Henüz kullanıcı verisi yok!"
 
-#: base.py:1071
+#: base.py:1082
 #, docstring
 msgid "View the star leaderboard"
 msgstr "Yıldız lider tablosunu görüntüleyin"
 
-#: base.py:1083
-msgid "Nobody has stars yet ЁЯШХ"
-msgstr ""
+#: base.py:1094
+msgid "Nobody has stars yet 😕"
+msgstr "Henüz kimsenin yıldızı yok 😕"
 
-#: base.py:1098
+#: base.py:1109
 msgid "**Star Leaderboard**\n"
 msgstr "**Yıldız Liderlik Tablosu**\n"
 
-#: base.py:1099
-msgid "**Total тнР's: "
-msgstr ""
+#: base.py:1110
+msgid "**Total ⭐'s: "
+msgstr "**Toplam ⭐'ler: "
 
-#: base.py:1129 base.py:1131
+#: base.py:1140 base.py:1142
 msgid "Pages "
 msgstr "Sayfalar "
 
-#: base.py:1148
+#: base.py:1159
 #, docstring
 msgid "\n"
 "        View the weekly leaderboard\n\n"
@@ -617,28 +622,28 @@ msgstr "\n"
 "        Geçerli seçenekler şunlardır: `exp`, `messages`, `stars` ve `voice`\n"
 "        Bu argümanların kısaltmaları da kullanılabilir "
 
-#: base.py:1160 base.py:1182
+#: base.py:1171 base.py:1193
 msgid "Weekly stats are disabled for this guild"
 msgstr "Haftalık istatistikler bu lonca için devre dışı bırakıldı"
 
-#: base.py:1163
+#: base.py:1174
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr "Haftalık liderlik tablosu için henüz veri yok, lütfen önce biraz sohbet edin."
 
-#: base.py:1179
+#: base.py:1190
 #, docstring
 msgid "View the last weekly embed"
 msgstr "Son haftalık yerleştirmeyi görüntüleyin"
 
-#: base.py:1184
+#: base.py:1195
 msgid "There is no recorded weekly embed saved"
 msgstr "Kaydedilmiş bir haftalık gömme kaydedilmedi"
 
-#: base.py:1186
+#: base.py:1197
 msgid "Last Weekly Winners"
 msgstr "Son Haftalık Kazananlar"
 
-#: base.py:1187
+#: base.py:1198
 msgid "{}\n"
 "`Last Reset:     `{}"
 msgstr "{}\n"
@@ -676,12 +681,12 @@ msgstr "Ses Zamanı: "
 msgid " - Prestige "
 msgstr " - Prestij "
 
-#: generator.py:1104
+#: generator.py:1103
 #, docstring
 msgid "Get average duration sequence of gif frames"
 msgstr "GIF karelerinin ortalama süre dizisini alın"
 
-#: levelup.py:82
+#: levelup.py:83
 #, docstring
 msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
@@ -691,280 +696,280 @@ msgstr "\n"
 "Dostane mahalle seviye sistemi\n\n"
 "Metin ve ses kanallarında sohbet ederek deneyim kazanın, arkadaşlarınızla seviyeleri karşılaştırın, profilinizi özelleştirin ve çeşitli liderlik tablolarını görüntüleyin! "
 
-#: levelup.py:234
+#: levelup.py:235
 msgid "Monday"
 msgstr "Pazartesi"
 
-#: levelup.py:235
+#: levelup.py:236
 msgid "Tuesday"
 msgstr "Salı"
 
-#: levelup.py:236
+#: levelup.py:237
 msgid "Wednesday"
 msgstr "Çarşamba"
 
-#: levelup.py:237
+#: levelup.py:238
 msgid "Thursday"
 msgstr "Perşembe"
 
-#: levelup.py:238
+#: levelup.py:239
 msgid "Friday"
 msgstr "Cuma"
 
-#: levelup.py:239
+#: levelup.py:240
 msgid "Saturday"
 msgstr "Cumartesi"
 
-#: levelup.py:240
+#: levelup.py:241
 msgid "Sunday"
 msgstr "Pazar"
 
-#: levelup.py:356 levelup.py:360
+#: levelup.py:357 levelup.py:361
 msgid "just gave a star to"
 msgstr "sadece bir yıldız verdi"
 
-#: levelup.py:629
+#: levelup.py:630
 msgid "You have just reached level {level} in {guild}!"
 msgstr "Az önce {level} seviyesine {guild} içinde ulaştınız!"
 
-#: levelup.py:639
+#: levelup.py:640
 msgid "Just reached level {level}!"
 msgstr "Az önce {level} seviyesine ulaştım!"
 
-#: levelup.py:672
+#: levelup.py:673
 msgid "You just leveled up in "
 msgstr "Az önce seviye atladın "
 
-#: levelup.py:678
+#: levelup.py:679
 msgid "**{user} just leveled up!**"
 msgstr "**{kullanıcı} az önce seviye atladı!**"
 
-#: levelup.py:997
+#: levelup.py:998
 #, docstring
 msgid "Announce and reset the weekly leaderboard"
 msgstr "Haftalık liderlik tablosunu duyurun ve sıfırlayın"
 
-#: levelup.py:1007
+#: levelup.py:1008
 msgid "There are no users with exp"
 msgstr "Exp ile kullanıcı yok"
 
-#: levelup.py:1016
+#: levelup.py:1017
 msgid "Top Weekly Exp Earners"
 msgstr "Haftalık En Çok Kazananlar"
 
-#: levelup.py:1017
+#: levelup.py:1018
 msgid "`Total Exp:      `"
 msgstr "`Toplam Gider:      `"
 
-#: levelup.py:1018
+#: levelup.py:1019
 msgid "`Total Messages: `"
 msgstr "`Toplam Mesajlar: `"
 
-#: levelup.py:1019
+#: levelup.py:1020
 msgid "`Total Stars:    `"
 msgstr "`Toplam Yıldızlar:    `"
 
-#: levelup.py:1020
+#: levelup.py:1021
 msgid "`Total Voice:    `"
 msgstr "`Toplam Ses:    `"
 
-#: levelup.py:1044
+#: levelup.py:1045
 msgid "`Exp:      `"
 msgstr "`Örnek: `"
 
-#: levelup.py:1045
+#: levelup.py:1046
 msgid "`Messages: `"
 msgstr "`Mesajlar: `"
 
-#: levelup.py:1046
+#: levelup.py:1047
 msgid "`Stars:    `"
 msgstr "`Yıldızlar:    `"
 
-#: levelup.py:1047
+#: levelup.py:1048
 msgid "`Voice:    `"
 msgstr "`Ses:    `"
 
-#: levelup.py:1097
+#: levelup.py:1098
 #, docstring
 msgid "Access LevelUp setting commands"
 msgstr "LevelUp ayar komutlarına erişim"
 
-#: levelup.py:1103
+#: levelup.py:1104
 #, docstring
 msgid "View all LevelUP settings"
 msgstr "Tüm LevelUP ayarlarını görüntüle"
 
-#: levelup.py:1143
+#: levelup.py:1144
 msgid "Image"
 msgstr "Resim"
 
-#: levelup.py:1143
+#: levelup.py:1144
 msgid "Embed"
 msgstr "Gömmek"
 
-#: levelup.py:1145
+#: levelup.py:1146
 msgid "**Main**\n"
 msgstr "**Ana**\n"
 
-#: levelup.py:1146
+#: levelup.py:1147
 msgid "`Profile Type:      `"
 msgstr "`Profil Türü:      `"
 
-#: levelup.py:1147
+#: levelup.py:1148
 msgid "`Include Balance:   `"
 msgstr "`Dengeyi Dahil Et:   `"
 
-#: levelup.py:1148
+#: levelup.py:1149
 msgid "`Progress Bar:      `"
 msgstr "`İlerleme Çubuğu:      `"
 
-#: levelup.py:1149
+#: levelup.py:1150
 msgid "**Messages**\n"
 msgstr "**Mesajlar**\n"
 
-#: levelup.py:1150
+#: levelup.py:1151
 msgid "`Message XP:        `"
 msgstr "`Mesaj XP:        `"
 
-#: levelup.py:1151
+#: levelup.py:1152
 msgid "`Min Msg Length:    `"
 msgstr "`Min Msg Uzunluğu:    `"
 
-#: levelup.py:1152 levelup.py:1169
+#: levelup.py:1153 levelup.py:1170
 msgid "`Cooldown:          `"
 msgstr "`Soğuma süresi:          `"
 
-#: levelup.py:1153
+#: levelup.py:1154
 msgid "**Voice**\n"
 msgstr "**Ses**\n"
 
-#: levelup.py:1154
+#: levelup.py:1155
 msgid "`Voice XP:          `"
 msgstr "`Ses XP:          `"
 
-#: levelup.py:1155
+#: levelup.py:1156
 msgid "`Ignore Muted:      `"
 msgstr "`Görmezden Gel Sessiz:      `"
 
-#: levelup.py:1156
+#: levelup.py:1157
 msgid "`Ignore Solo:       `"
 msgstr "`Yalnızca Yoksay:       `"
 
-#: levelup.py:1157
+#: levelup.py:1158
 msgid "`Ignore Deafened:   `"
 msgstr "`Sağırlaştırılmışları Görmezden Gel:   `"
 
-#: levelup.py:1158
+#: levelup.py:1159
 msgid "`Ignore Invisible:  `"
 msgstr "`Görünmezi Yoksay:  `"
 
-#: levelup.py:1159
+#: levelup.py:1160
 msgid "**Level Algorithm**\n"
 msgstr "**Seviye Algoritması**\n"
 
-#: levelup.py:1160
+#: levelup.py:1161
 msgid "`Base Multiplier:   `"
 msgstr "`Taban Çarpanı:   `"
 
-#: levelup.py:1161
+#: levelup.py:1162
 msgid "`Exp Multiplier:    `"
 msgstr "`Exp Çarpma:    `"
 
-#: levelup.py:1162
+#: levelup.py:1163
 msgid "**LevelUps**\n"
 msgstr "**Seviye Atlamalar**\n"
 
-#: levelup.py:1163
+#: levelup.py:1164
 msgid "`LevelUp Notify:    `"
 msgstr "`LevelUp Bildirimi:    `"
 
-#: levelup.py:1164
+#: levelup.py:1165
 msgid "`Notify in DMs:     `"
 msgstr "`DM'lerde bildir:     `"
 
-#: levelup.py:1165
+#: levelup.py:1166
 msgid "`Mention User:      `"
 msgstr "`Mansiyon Kullanıcısı:      `"
 
-#: levelup.py:1166
+#: levelup.py:1167
 msgid "`AutoRemove Roles:  `"
 msgstr "`Rolleri Otomatik Kaldır:  `"
 
-#: levelup.py:1167
+#: levelup.py:1168
 msgid "`LevelUp Channel:   `"
 msgstr "`LevelUp Kanalı:   `"
 
-#: levelup.py:1168
+#: levelup.py:1169
 msgid "**Stars**\n"
 msgstr "**Yıldızlar**\n"
 
-#: levelup.py:1170
+#: levelup.py:1171
 msgid "`React Mention:     `"
 msgstr "`React Mention:     `"
 
-#: levelup.py:1171
+#: levelup.py:1172
 msgid "`MentionAutoDelete: `"
 msgstr "`MentionAutoDelete: `"
 
-#: levelup.py:1173
+#: levelup.py:1174
 msgid "**Levels**\n"
 msgstr "**Seviyeler**\n"
 
-#: levelup.py:1180
+#: levelup.py:1181
 msgid "`Level "
 msgstr "`Seviye "
 
-#: levelup.py:1182
+#: levelup.py:1183
 msgid "**Prestige**\n"
 "`Stack Roles: `"
 msgstr "**Prestij**\n"
 "`Yığın Rolleri: `"
 
-#: levelup.py:1183
+#: levelup.py:1184
 msgid "`Level Req:  `"
 msgstr "`Seviye Gereksinimi: `"
 
-#: levelup.py:1192
+#: levelup.py:1193
 msgid "`Prestige "
 msgstr "`Prestij "
 
-#: levelup.py:1194
+#: levelup.py:1195
 msgid "LevelUp Settings"
 msgstr "LevelUp Ayarları"
 
-#: levelup.py:1206
+#: levelup.py:1207
 msgid "Voice XP Bonus Roles"
 msgstr "Ses XP Bonus Rolleri"
 
-#: levelup.py:1215
+#: levelup.py:1216
 msgid "Voice XP Bonus Channels"
 msgstr "Voice XP Bonus Kanalları"
 
-#: levelup.py:1218
+#: levelup.py:1219
 msgid "Stream XP Bonus"
 msgstr "Akış XP Bonusu"
 
-#: levelup.py:1227
+#: levelup.py:1228
 msgid "Message XP Bonus Roles"
 msgstr "Mesaj XP Bonus Rolleri"
 
-#: levelup.py:1236
+#: levelup.py:1237
 msgid "Message XP Bonus Channels"
 msgstr "Mesaj XP Bonus Kanalları"
 
-#: levelup.py:1243
+#: levelup.py:1244
 msgid "Ignored Roles"
 msgstr "Gözardı Edilen Roller"
 
-#: levelup.py:1252
+#: levelup.py:1253
 msgid "Ignored Channels"
 msgstr "Yok Sayılan Kanallar"
 
-#: levelup.py:1259
+#: levelup.py:1260
 msgid "Ignored Users"
 msgstr "Yok Sayılan Kullanıcılar"
 
-#: levelup.py:1267
+#: levelup.py:1268
 #, docstring
 msgid "\n"
 "        Cog admin commands\n\n"
@@ -974,7 +979,7 @@ msgstr "\n"
 "        Cog yönetici komutları\n\n"
 "        Seviyeleri sıfırlayın, dişli verilerini yedekleyin ve geri yükleyin "
 
-#: levelup.py:1277
+#: levelup.py:1278
 #, docstring
 msgid "\n"
 "        Set how long to keep profile images in cache\n"
@@ -986,151 +991,151 @@ msgstr "\n"
 "Profil resimlerinin önbellekte ne kadar süreyle tutulacağını ayarlayın. Bir kullanıcı profil komutunu çalıştırdığında, oluşturulan görüntü X saniye boyunca önbellekte yeniden kullanılabilir.\n\n"
 "Profil yerleştirmeleri etkinleştirilmişse bu ayarın hiçbir etkisi olmayacaktır. 5 saniyeden daha kısa bir süre, önbelleği etkin bir şekilde devre dışı bırakacaktır "
 
-#: levelup.py:1291
+#: levelup.py:1292
 #, docstring
 msgid "Toggle whether to render profiles as gifs if the user's discord profile is animated"
 msgstr "Kullanıcının discord profili animasyonlu ise profillerin gif olarak işlenip işlenmeyeceğini değiştirin"
 
-#: levelup.py:1295
+#: levelup.py:1296
 msgid "I will no longer render profiles with GIFs"
 msgstr "Artık profilleri GIF'lerle oluşturmayacağım"
 
-#: levelup.py:1298
+#: levelup.py:1299
 msgid "I will now render GIFs with user profiles"
 msgstr "Artık kullanıcı profilleriyle GIF'leri oluşturacağım"
 
-#: levelup.py:1305
+#: levelup.py:1306
 #, docstring
 msgid "Reset cog data for all guilds"
 msgstr "Tüm loncalar için çark verilerini sıfırla"
 
-#: levelup.py:1307
+#: levelup.py:1308
 msgid "Are you sure you want to reset all stats and settings for the entire cog?"
 msgstr "Tüm çark için tüm istatistikleri ve ayarları sıfırlamak istediğinizden emin misiniz?"
 
-#: levelup.py:1313
+#: levelup.py:1314
 msgid "Not resetting all guilds"
 msgstr "Tüm loncaları sıfırlamamak"
 
-#: levelup.py:1317
+#: levelup.py:1318
 msgid "Settings and stats for all guilds have been reset"
 msgstr "Tüm loncaların ayarları ve istatistikleri sıfırlandı"
 
-#: levelup.py:1323
+#: levelup.py:1324
 #, docstring
 msgid "Reset cog data for this guild"
 msgstr "Bu lonca için çark verilerini sıfırla"
 
-#: levelup.py:1325
+#: levelup.py:1326
 msgid "Are you sure you want to reset all stats and settings for this guild?"
 msgstr "Bu lonca için tüm istatistikleri ve ayarları sıfırlamak istediğinizden emin misiniz?"
 
-#: levelup.py:1330
+#: levelup.py:1331
 msgid "Not resetting config"
 msgstr "Yapılandırma sıfırlanmıyor"
 
-#: levelup.py:1333
+#: levelup.py:1334
 msgid "All settings and stats reset"
 msgstr "Tüm ayarlar ve istatistikler sıfırlandı"
 
-#: levelup.py:1339
+#: levelup.py:1340
 #, docstring
 msgid "Reset everyone's exp and level"
 msgstr "Herkesin exp ve seviyesini sıfırla"
 
-#: levelup.py:1342
+#: levelup.py:1343
 msgid "Are you sure you want to reset "
 msgstr "Sıfırlamak istediğinizden emin misiniz? "
 
-#: levelup.py:1342
+#: levelup.py:1343
 msgid " users' stats?"
 msgstr " kullanıcıların istatistikleri?"
 
-#: levelup.py:1343
+#: levelup.py:1344
 msgid "\n"
 "This will reset their exp, voice time, messages, level, prestige and stars"
 msgstr "\n"
 "Bu onların exp'lerini, ses sürelerini, mesajlarını, seviyelerini, prestijlerini ve yıldızlarını sıfırlayacaktır"
 
-#: levelup.py:1347
+#: levelup.py:1348
 msgid "Not resetting user stats"
 msgstr "Kullanıcı istatistikleri sıfırlanmıyor"
 
-#: levelup.py:1359
+#: levelup.py:1360
 msgid "Reset stats for "
 msgstr "Şunlar için istatistikleri sıfırla "
 
-#: levelup.py:1359
+#: levelup.py:1360
 msgid " users"
 msgstr " kullanıcılar"
 
-#: levelup.py:1366
+#: levelup.py:1367
 #, docstring
 msgid "View current loop times and cached data"
 msgstr "Geçerli döngü sürelerini ve önbelleğe alınmış verileri görüntüleme"
 
-#: levelup.py:1377
+#: levelup.py:1378
 msgid "Cog Stats"
 msgstr "Cog İstatistikleri"
 
-#: levelup.py:1379
+#: levelup.py:1380
 msgid "`Voice Checker: `"
 msgstr "`Ses Denetleyicisi: `"
 
-#: levelup.py:1380
+#: levelup.py:1381
 msgid "`Cache Dumping: `"
 msgstr "`Önbellek Dampingi: `"
 
-#: levelup.py:1381
+#: levelup.py:1382
 msgid "`Lvl Assign:    `"
 msgstr "`Lvl Atama:    `"
 
-#: levelup.py:1382
+#: levelup.py:1383
 msgid "Loop Times"
 msgstr "Döngü Süreleri"
 
-#: levelup.py:1384
+#: levelup.py:1385
 msgid "`Profile Cache Time: `"
 msgstr "`Profil Önbellek Süresi: `"
 
-#: levelup.py:1385
+#: levelup.py:1386
 msgid "Disabled\n"
 msgstr "Engelli\n"
 
-#: levelup.py:1387
+#: levelup.py:1388
 msgid "`Cache Size:         `"
 msgstr "`Önbellek Boyutu:         `"
 
-#: levelup.py:1388
+#: levelup.py:1389
 msgid "Cache"
 msgstr "Önbellek"
 
-#: levelup.py:1390 levelup.py:2896
+#: levelup.py:1391 levelup.py:3211
 msgid "(Disabled)"
 msgstr "(Devre dışı)"
 
-#: levelup.py:1391
+#: levelup.py:1392
 msgid "Profiles will be static regardless of if the user has an animated profile"
 msgstr "Profiller, kullanıcının animasyonlu bir profili olup olmadığına bakılmaksızın statik olacaktır"
 
-#: levelup.py:1393 levelup.py:2896
+#: levelup.py:1394 levelup.py:3211
 msgid "(Enabled)"
 msgstr "(Etkin)"
 
-#: levelup.py:1394
+#: levelup.py:1395
 msgid "Users with animated profiles will render as a gif"
 msgstr "Animasyonlu profillere sahip kullanıcılar gif olarak işlenecektir"
 
-#: levelup.py:1396
+#: levelup.py:1397
 msgid "GIF Rendering "
 msgstr "GIF oluşturma "
 
-#: levelup.py:1404 levelup.py:1415
+#: levelup.py:1405 levelup.py:1416
 #, docstring
 msgid "Create a backup of the LevelUp config"
 msgstr "LevelUp yapılandırmasının bir yedeğini oluşturun"
 
-#: levelup.py:1425
+#: levelup.py:1426
 #, docstring
 msgid "\n"
 "        Restore a global backup\n\n"
@@ -1140,19 +1145,19 @@ msgstr "\n"
 "        Genel bir yedeği geri yükleme\n\n"
 "        İçe aktarmak için .json dosyasını komut iletisine ekleyin "
 
-#: levelup.py:1433 levelup.py:1462
+#: levelup.py:1434 levelup.py:1463
 msgid "Attach your backup file to the message when using this command."
 msgstr "Bu komutu kullanırken yedekleme dosyanızı mesaja ekleyin."
 
-#: levelup.py:1439
+#: levelup.py:1440
 msgid "This is an invalid global config!"
 msgstr "Bu geçersiz bir global yapılandırma!"
 
-#: levelup.py:1449 levelup.py:1475
+#: levelup.py:1450 levelup.py:1476
 msgid "Config restored from backup file!"
 msgstr "Konfigürasyon yedek dosyadan geri yüklendi!"
 
-#: levelup.py:1454
+#: levelup.py:1455
 #, docstring
 msgid "\n"
 "        Restore a guild backup\n\n"
@@ -1162,11 +1167,11 @@ msgstr "\n"
 "        Lonca yedeğini geri yükleme\n\n"
 "        İçe aktarmak için komut iletisine .json dosyasını ekleyin "
 
-#: levelup.py:1469
+#: levelup.py:1470
 msgid "This is an invalid guild config!"
 msgstr "Bu geçersiz bir lonca yapılandırması!"
 
-#: levelup.py:1487
+#: levelup.py:1488
 #, docstring
 msgid "\n"
 "        Import levels and exp from Malarne's Leveler cog\n\n"
@@ -1187,23 +1192,23 @@ msgstr "\n"
 "        `i_agree` - (Evet/Hayır) Sadece bu komutu çalıştırmak istediğinizden emin olmak için ekstra bir seçenek\n"
 "        "
 
-#: levelup.py:1498
+#: levelup.py:1499
 msgid "Not importing levels"
 msgstr "Seviyeler içe aktarılmıyor"
 
-#: levelup.py:1501
+#: levelup.py:1502
 msgid "No config found for Malarne's Leveler cog!"
 msgstr "Malarne'nin Leveler çarkı için yapılandırma bulunamadı!"
 
-#: levelup.py:1547
+#: levelup.py:1548
 msgid "There were no profiles to import"
 msgstr "İçe aktarılacak profil yoktu"
 
-#: levelup.py:1548
+#: levelup.py:1549
 msgid "Imported {} profile(s)"
 msgstr "İçe aktarılan {} profil(ler)"
 
-#: levelup.py:1579
+#: levelup.py:1615
 #, docstring
 msgid "\n"
 "        Import levels and exp from MEE6\n\n"
@@ -1234,51 +1239,125 @@ msgstr "        MEE6'dan seviyeleri ve deneyimleri içe aktarın\n\n"
 "        1 = True\n"
 "        0 = False        "
 
-#: levelup.py:1598
+#: levelup.py:1634
 msgid "Not importing MEE6 levels"
 msgstr "MEE6 seviyeleri içe aktarılmıyor"
 
-#: levelup.py:1600
+#: levelup.py:1636
 msgid "Fetching mee6 leaderboard data, this could take a while..."
 msgstr "Mee6 liderlik tablosu verilerini getiriyorum, bu biraz zaman alabilir..."
 
-#: levelup.py:1624
+#: levelup.py:1660
 msgid "Mee6 is rate limiting too heavily! Import Failed!"
 msgstr "Mee6 çok ağır oran sınırlaması yapıyor! İçe Aktarma Başarısız!"
 
-#: levelup.py:1633
+#: levelup.py:1669 levelup.py:1967
 msgid "Your leaderboard needs to be set to public!"
 msgstr "Liderlik tablonuz herkese açık olarak ayarlanmalıdır!"
 
-#: levelup.py:1637
+#: levelup.py:1673 levelup.py:1823 levelup.py:1971
 msgid "No data found!"
 msgstr "Veri bulunamadı!"
 
-#: levelup.py:1664
+#: levelup.py:1700
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
 msgstr "{} sayfaları mee6 api'den getirilemedi, daha fazla bilgi için günlükleri kontrol edin"
 
-#: levelup.py:1669
+#: levelup.py:1705 levelup.py:1838 levelup.py:2008
 msgid "No leaderboard data found!"
 msgstr "Liderlik tablosu verisi bulunamadı!"
 
-#: levelup.py:1671
+#: levelup.py:1707 levelup.py:1840 levelup.py:2010
 msgid "Data retrieved, importing..."
 msgstr "Veri alındı, içe aktarılıyor..."
 
-#: levelup.py:1711
+#: levelup.py:1747
 msgid "No MEE6 stats were found"
 msgstr "MEE6 istatistikleri bulunamadı"
 
-#: levelup.py:1713
+#: levelup.py:1749 levelup.py:1895 levelup.py:2039
 msgid "Imported {} User(s)"
 msgstr "İthal {} Kullanıcı(lar)"
 
-#: levelup.py:1715
+#: levelup.py:1751 levelup.py:1897 levelup.py:2041
 msgid " ({} skipped since they are no longer in the discord)"
 msgstr " ({} artık discord'da olmadıkları için atlandı)"
 
-#: levelup.py:1726
+#: levelup.py:1764
+#, docstring
+msgid "\n"
+"        Import levels and exp from AmariBot\n\n"
+"        **Arguments**\n"
+"        `import_by` - which stat to prioritize (`level` or `exp`)\n"
+"        If exp is entered, it will import their experience and base their new level off of that.\n"
+"        If level is entered, it will import their level and calculate their exp based off of that.\n"
+"        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
+"        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
+"        `api_key` - Your [AmariBot API Key](https://docs.google.com/forms/d/e/1FAIpQLScQDCsIqaTb1QR9BfzbeohlUJYA3Etwr-iSb0CRKbgjA-fq7Q/viewform?usp=send_form)\n\n"
+"        **Note**\n"
+"        Instead of typing true/false\n"
+"        1 = True\n"
+"        0 = False\n"
+"        "
+msgstr ""
+
+#: levelup.py:1781
+msgid "Not importing AmariBot levels"
+msgstr ""
+
+#: levelup.py:1783
+msgid "Fetching AmariBot leaderboard data, this could take a while..."
+msgstr ""
+
+#: levelup.py:1809
+msgid "AmariBot is rate limiting too heavily! Import Failed!"
+msgstr ""
+
+#: levelup.py:1833
+msgid "{} pages failed to fetch from AmariBot api, check logs for more info"
+msgstr ""
+
+#: levelup.py:1893
+msgid "No AmariBot stats were found"
+msgstr ""
+
+#: levelup.py:1914
+#, docstring
+msgid "\n"
+"        Import levels and exp from [Polaris](https://gdcolon.com/polaris/)\n\n"
+"        **Make sure your guild's leaderboard is public!**\n\n"
+"        **Arguments**\n"
+"        `replace` - (True/False) if True, it will replace the user's exp, otherwise it will add it\n"
+"        `include_settings` - import level roles and exp settings from Polaris\n"
+"        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n\n"
+"        **Note**\n"
+"        Instead of typing true/false\n"
+"        1 = True\n"
+"        0 = False\n"
+"        "
+msgstr ""
+
+#: levelup.py:1930
+msgid "Not importing Polaris levels"
+msgstr ""
+
+#: levelup.py:1932
+msgid "Fetching Polaris leaderboard data, this could take a while..."
+msgstr ""
+
+#: levelup.py:1958
+msgid "Polaris is rate limiting too heavily! Import Failed!"
+msgstr ""
+
+#: levelup.py:2003
+msgid "{} pages failed to fetch from Polaris api, check logs for more info"
+msgstr ""
+
+#: levelup.py:2037
+msgid "No Polaris stats were found"
+msgstr ""
+
+#: levelup.py:2052
 #, docstring
 msgid "\n"
 "        Import data from Fixator's Leveler cog\n\n"
@@ -1292,35 +1371,35 @@ msgstr "\n"
 "Ayrıca XP aralığı düzeyindeki rolleri ve yok sayılan kanalları da içe aktaracaktır\n"
 "*Bu komutu çalıştırırken MongoDB'nin çalışıyor olması gerekmektedir* "
 
-#: levelup.py:1734
+#: levelup.py:2060
 msgid "Not importing users"
 msgstr "Kullanıcılar içe aktarılmıyor"
 
-#: levelup.py:1738
+#: levelup.py:2064
 msgid "No config found for Fixator's Leveler cog!"
 msgstr "Fixator'un Leveler dişlisi için yapılandırma bulunamadı!"
 
-#: levelup.py:1762
+#: levelup.py:2088
 msgid "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo` and `{}pipinstall motor`"
 msgstr "`pymongo` ve `motor` kütüphaneleri içe aktarılamadı. `{}pipinstall pymongo` ve `{}pipinstall motor` komutlarını çalıştırın"
 
-#: levelup.py:1786
+#: levelup.py:2112
 msgid "Failed to connect to MongoDB"
 msgstr "MongoDB'ye bağlantı başarısız oldu"
 
-#: levelup.py:1790
+#: levelup.py:2116
 msgid "Importing users from Leveler..."
 msgstr "Leveler'dan kullanıcıları içe aktarma..."
 
-#: levelup.py:1850
+#: levelup.py:2176
 msgid "Importing Complete!\n"
 msgstr "İçe Aktarma Tamamlandı!\n"
 
-#: levelup.py:1852
+#: levelup.py:2178
 msgid " users imported"
 msgstr " Kullanıcılar içe aktarıldı"
 
-#: levelup.py:1866
+#: levelup.py:2192
 #, docstring
 msgid "\n"
 "        Delete users no longer in the server\n\n"
@@ -1330,24 +1409,24 @@ msgstr "\n"
 "        Artık sunucuda olmayan kullanıcıları silme\n\n"
 "        Ayrıca yapılandırmadaki eksik anahtarları veya tutarsızlıkları da temizler "
 
-#: levelup.py:1884
+#: levelup.py:2210
 msgid "Nothing to clean"
 msgstr "Temizlenecek bir şey yok"
 
-#: levelup.py:1887
+#: levelup.py:2213
 msgid "Deleted "
 msgstr "Silinmiş "
 
-#: levelup.py:1889
+#: levelup.py:2215
 msgid " user IDs from the config that are no longer in the server."
 msgstr " artık sunucuda bulunmayan yapılandırmadaki kullanıcı kimlikleri."
 
-#: levelup.py:1896
+#: levelup.py:2222
 #, docstring
 msgid "Message settings"
 msgstr "Mesaj ayarları"
 
-#: levelup.py:1900
+#: levelup.py:2226
 #, docstring
 msgid "\n"
 "        Set message XP range\n"
@@ -1357,15 +1436,15 @@ msgstr "\n"
 "        Mesaj XP aralığını ayarla\n"
 "        Bir mesajın kazanabileceği Minimum ve Maksimum XP miktarını ayarla "
 
-#: levelup.py:1907
+#: levelup.py:2233
 msgid "Message XP range has been set to "
 msgstr "Mesaj XP aralığı şu şekilde ayarlanmıştır: "
 
-#: levelup.py:1909
+#: levelup.py:2235
 msgid " per valid message"
 msgstr " geçerli mesaj başına"
 
-#: levelup.py:1921
+#: levelup.py:2247
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain roles\n\n"
@@ -1378,33 +1457,33 @@ msgstr "\n"
 "        Rol bonusunu kaldırmak için hem min hem de maks değeri 0 olarak ayarlayın\n"
 "       "
 
-#: levelup.py:1929 levelup.py:2032 levelup.py:2064
+#: levelup.py:2255 levelup.py:2358 levelup.py:2390
 msgid "I cannot find that role"
 msgstr "O rolü bulamıyorum"
 
-#: levelup.py:1931 levelup.py:1963 levelup.py:2034 levelup.py:2066
-#: levelup.py:2090
+#: levelup.py:2257 levelup.py:2289 levelup.py:2360 levelup.py:2392
+#: levelup.py:2416
 msgid "Max xp needs to be higher than min xp"
 msgstr "Maksimum xp, minimum xp'den daha yüksek olmalıdır"
 
-#: levelup.py:1937 levelup.py:2040
+#: levelup.py:2263 levelup.py:2366
 msgid "That role has no bonus xp associated with it"
 msgstr "Bu rolün onunla ilişkili bonus xp'si yok"
 
-#: levelup.py:1939 levelup.py:1942 levelup.py:1971 levelup.py:1974
-#: levelup.py:2042 levelup.py:2045 levelup.py:2074 levelup.py:2077
+#: levelup.py:2265 levelup.py:2268 levelup.py:2297 levelup.py:2300
+#: levelup.py:2368 levelup.py:2371 levelup.py:2400 levelup.py:2403
 msgid "Bonus xp for "
 msgstr "Bonus xp için "
 
-#: levelup.py:1939 levelup.py:1971 levelup.py:2042 levelup.py:2074
+#: levelup.py:2265 levelup.py:2297 levelup.py:2368 levelup.py:2400
 msgid " has been removed"
 msgstr " kaldırılmıştır"
 
-#: levelup.py:1942 levelup.py:1974 levelup.py:2045 levelup.py:2077
+#: levelup.py:2268 levelup.py:2300 levelup.py:2371 levelup.py:2403
 msgid " has been set to "
 msgstr " olarak ayarlanmıştır "
 
-#: levelup.py:1953
+#: levelup.py:2279
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain channels\n\n"
@@ -1417,15 +1496,15 @@ msgstr "\n"
 "        Rol bonusunu kaldırmak için hem min hem de maks değeri 0 olarak ayarlayın\n"
 "       "
 
-#: levelup.py:1961
+#: levelup.py:2287
 msgid "I cannot find that channel"
 msgstr "O kanalı bulamıyorum"
 
-#: levelup.py:1969 levelup.py:2072
+#: levelup.py:2295 levelup.py:2398
 msgid "That channel has no bonus xp associated with it"
 msgstr "Bu kanalın onunla ilişkili bonus xp'si yok"
 
-#: levelup.py:1979
+#: levelup.py:2305
 #, docstring
 msgid "\n"
 "        Cooldown threshold for message XP\n\n"
@@ -1437,7 +1516,7 @@ msgstr "\n"
 "        Bir kullanıcı bir mesaj gönderdiğinde, mesajından önce X saniye beklemesi gerekecektir\n"
 "        kazanılan XP olarak sayılır "
 
-#: levelup.py:1991
+#: levelup.py:2317
 #, docstring
 msgid "\n"
 "        Set minimum message length for XP\n"
@@ -1449,12 +1528,12 @@ msgstr "\n"
 "        Bir mesajın kazanılan XP'ye sayılması için minimum uzunlukta olması gerekir\n\n"
 "        Devre dışı bırakmak için 0 olarak ayarlayın "
 
-#: levelup.py:2003
+#: levelup.py:2329
 #, docstring
 msgid "Voice settings"
 msgstr "Ses ayarları"
 
-#: levelup.py:2008
+#: levelup.py:2334
 #, docstring
 msgid "\n"
 "        Set voice XP gain\n"
@@ -1464,7 +1543,7 @@ msgstr "\n"
 "        Ses XP kazancını ayarlama\n"
 "        Bir ses kanalında dakika başına kazanılan XP miktarını ayarlar (varsayılan değer 2'dir) "
 
-#: levelup.py:2024
+#: levelup.py:2350
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain roles\n\n"
@@ -1477,7 +1556,7 @@ msgstr "\n"
 "        Rol bonusunu kaldırmak için hem min hem de maks değeri 0 olarak ayarlayın\n"
 "       "
 
-#: levelup.py:2056
+#: levelup.py:2382
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain channels\n\n"
@@ -1489,7 +1568,7 @@ msgstr "\n"
 "Bu bonus ses süresi xp'si için geçerlidir\n\n"
 "Rol bonusunu kaldırmak için hem min hem de maks değeri 0 olarak ayarlayın "
 
-#: levelup.py:2082
+#: levelup.py:2408
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to users who are Discord streaming\n\n"
@@ -1501,19 +1580,19 @@ msgstr "\n"
 "        Bu bonus ses süresi xp'si için geçerlidir\n\n"
 "        Bonusu kaldırmak için hem min hem de maks değeri 0 olarak ayarlayın "
 
-#: levelup.py:2095
+#: levelup.py:2421
 msgid "There is no stream bonus set yet"
 msgstr "Henüz akış bonusu seti yok"
 
-#: levelup.py:2097
+#: levelup.py:2423
 msgid "Stream bonus has been removed"
 msgstr "Akış bonusu kaldırıldı"
 
-#: levelup.py:2100
+#: levelup.py:2426
 msgid "Stream bonus has been set to "
 msgstr "Akış bonusu şu şekilde ayarlanmıştır: "
 
-#: levelup.py:2105
+#: levelup.py:2431
 #, docstring
 msgid "\n"
 "        Ignore muted voice users\n"
@@ -1523,15 +1602,15 @@ msgstr "\n"
 "Sessize alınmış ses kullanıcılarını görmezden gel\n"
 "Bir ses kanalındaki kendi sesini kapatan kullanıcıların ses XP kazanabilmesini açıp kapatma "
 
-#: levelup.py:2112
+#: levelup.py:2438
 msgid "Self-Muted users can now gain XP while in a voice channel"
 msgstr "Kendini Sessize Alan kullanıcılar artık bir ses kanalındayken XP kazanabilir"
 
-#: levelup.py:2115
+#: levelup.py:2441
 msgid "Self-Muted users can no longer gain XP while in a voice channel"
 msgstr "Kendinden Sessiz kullanıcılar, bir ses kanalında iken artık XP kazanamazlar"
 
-#: levelup.py:2120
+#: levelup.py:2446
 #, docstring
 msgid "\n"
 "        Ignore solo voice users\n"
@@ -1542,15 +1621,15 @@ msgstr "\n"
 "        Bir ses kanalındaki tek başına kullanıcıların ses XP'si kazanıp kazanamayacağını değiştirme\n"
 "        "
 
-#: levelup.py:2127
+#: levelup.py:2453
 msgid "Solo users can now gain XP while in a voice channel"
 msgstr "Solo kullanıcılar artık bir ses kanalında iken XP kazanabilir"
 
-#: levelup.py:2130
+#: levelup.py:2456
 msgid "Solo users can no longer gain XP while in a voice channel"
 msgstr "Solo kullanıcılar artık bir ses kanalında iken XP kazanamazlar"
 
-#: levelup.py:2135
+#: levelup.py:2461
 #, docstring
 msgid "\n"
 "        Ignore deafened voice users\n"
@@ -1561,15 +1640,15 @@ msgstr "\n"
 "        Bir ses kanalındaki sağır kullanıcıların ses XP'si kazanıp kazanamayacağını değiştirme\n"
 "        "
 
-#: levelup.py:2142
+#: levelup.py:2468
 msgid "Deafened users can now gain XP while in a voice channel"
 msgstr "Sağır kullanıcılar artık bir ses kanalındayken XP kazanabilir"
 
-#: levelup.py:2145
+#: levelup.py:2471
 msgid "Deafened users can no longer gain XP while in a voice channel"
 msgstr "Sağır kullanıcılar, bir ses kanalında iken artık XP kazanamazlar"
 
-#: levelup.py:2150
+#: levelup.py:2476
 #, docstring
 msgid "\n"
 "        Ignore invisible voice users\n"
@@ -1580,61 +1659,61 @@ msgstr "\n"
 "        Bir ses kanalındaki görünmez kullanıcıların ses XP'si kazanıp kazanamayacağını değiştirme\n"
 "        "
 
-#: levelup.py:2157
+#: levelup.py:2483
 msgid "Invisible users can now gain XP while in a voice channel"
 msgstr "Görünmez kullanıcılar artık bir ses kanalında iken XP kazanabilir"
 
-#: levelup.py:2160
+#: levelup.py:2486
 msgid "Invisible users can no longer gain XP while in a voice channel"
 msgstr "Görünmez kullanıcılar artık bir ses kanalında iken XP kazanamazlar"
 
-#: levelup.py:2170
+#: levelup.py:2496
 #, docstring
 msgid "Add XP to a user or role"
 msgstr "Bir kullanıcıya veya role XP ekleyin"
 
-#: levelup.py:2173
+#: levelup.py:2499
 msgid "I cannot find that user or role"
 msgstr "Bu kullanıcıyı veya rolü bulamıyorum"
 
-#: levelup.py:2179
+#: levelup.py:2505
 msgid "xp has been added to "
 msgstr "xp eklendi "
 
-#: levelup.py:2193
+#: levelup.py:2519
 msgid "Added "
 msgstr "Eklendi "
 
-#: levelup.py:2195
+#: levelup.py:2521
 msgid " xp to "
 msgstr " xp'ye "
 
-#: levelup.py:2197
+#: levelup.py:2523
 msgid " users that had the "
 msgstr " sahip olan kullanıcılar "
 
-#: levelup.py:2199
+#: levelup.py:2525
 msgid "role"
 msgstr "rol"
 
-#: levelup.py:2205
+#: levelup.py:2531
 #, docstring
 msgid "Set a user to a specific level"
 msgstr "Kullanıcıyı belirli bir seviyeye ayarla"
 
-#: levelup.py:2209 levelup.py:2229
+#: levelup.py:2535 levelup.py:2555
 msgid "There is no data for that user!"
 msgstr "Bu kullanıcı için veri yok!"
 
-#: levelup.py:2216
+#: levelup.py:2542
 msgid "User "
 msgstr "Kullanıcı "
 
-#: levelup.py:2216
+#: levelup.py:2542
 msgid " is now level "
 msgstr " şimdi seviye "
 
-#: levelup.py:2221
+#: levelup.py:2547
 #, docstring
 msgid "\n"
 "        Set a user to a specific prestige level\n\n"
@@ -1644,16 +1723,16 @@ msgstr "\n"
 "        Bir kullanıcıyı belirli bir prestij seviyesine ayarlama\n\n"
 "        Bu komut kullanılırken prestij rollerinin manuel olarak eklenmesi/kaldırılması gerekecektir "
 
-#: levelup.py:2235
+#: levelup.py:2561
 msgid "That prestige level isn't set!"
 msgstr "O prestij seviyesi ayarlanmadı!"
 
-#: levelup.py:2244
+#: levelup.py:2570
 #, docstring
 msgid "Customize the leveling algorithm for your guild"
 msgstr "Loncanız için seviye atlama algoritmasını özelleştirin"
 
-#: levelup.py:2249
+#: levelup.py:2575
 #, docstring
 msgid "\n"
 "        Base multiplier for the leveling algorithm\n\n"
@@ -1663,7 +1742,7 @@ msgstr "\n"
 "        Seviyelendirme algoritması için temel çarpan\n\n"
 "        Seviyelendirmeyi daha doğrusal bir ölçekte etkiler (daha yüksek değerler seviyelendirmeyi daha uzun sürer) "
 
-#: levelup.py:2260
+#: levelup.py:2586
 #, docstring
 msgid "\n"
 "        Exponent multiplier for the leveling algorithm\n\n"
@@ -1673,45 +1752,45 @@ msgstr "\n"
 "        Seviyelendirme algoritması için üs çarpanı\n\n"
 "        Seviyelendirmeyi üssel bir ölçekte etkiler (daha yüksek değerler seviyelendirmeyi üssel olarak daha uzun sürer) "
 
-#: levelup.py:2266
+#: levelup.py:2592
 msgid "Your exponent needs to be higher than 0"
 msgstr "Üs değeri 0'dan büyük olmalıdır"
 
-#: levelup.py:2268
+#: levelup.py:2594
 msgid "Your exponent needs to be 10 or lower"
 msgstr "Üs değeri 10 veya daha düşük olmalıdır"
 
-#: levelup.py:2275
+#: levelup.py:2601
 #, docstring
 msgid "Toggle using embeds or generated pics"
 msgstr "Yerleştirmeleri veya oluşturulan resimleri kullanarak geçişi aç/kapat"
 
-#: levelup.py:2279
+#: levelup.py:2605
 msgid "LevelUp will now use **embeds** instead of generated images"
 msgstr "LevelUp artık oluşturulan görüntüler yerine **embedleri** kullanacak"
 
-#: levelup.py:2282
+#: levelup.py:2608
 msgid "LevelUp will now use **generated images** instead of embeds"
 msgstr "LevelUp artık **oluşturulmuş görseller** yerine yerleştirmeler kullanacak"
 
-#: levelup.py:2287
+#: levelup.py:2613
 #, docstring
 msgid "Set the progress bar length for embed profiles"
 msgstr "Yerleştirme profilleri için ilerleme çubuğu uzunluğunu ayarlayın"
 
-#: levelup.py:2290
+#: levelup.py:2616
 msgid "Embed profiles are disabled. Enable them to set the progress bar length with "
 msgstr "Yerleştirme profilleri devre dışıdır. İlerleme çubuğu uzunluğunu ayarlamak için bunları etkinleştirin "
 
-#: levelup.py:2297
+#: levelup.py:2623
 msgid "Progress bar length must be a minimum of 15 and maximum of 40"
 msgstr "İlerleme çubuğu uzunluğu en az 15 ve en fazla 40 olmalıdır"
 
-#: levelup.py:2300
+#: levelup.py:2626
 msgid "Progress bar length has been set to "
 msgstr "İlerleme çubuğu uzunluğu şu şekilde ayarlanmıştır: "
 
-#: levelup.py:2306
+#: levelup.py:2632
 #, docstring
 msgid "\n"
 "        Test the level algorithm\n"
@@ -1721,29 +1800,28 @@ msgstr "\n"
 "        Seviye algoritmasını test edin\n"
 "        Deneyim eğrisini test etmek için mevcut algoritmayı kullanarak ilk 20 seviyeyi görüntüleyin "
 
-#: levelup.py:2320
-msgid "XP required for a level = Base * Level^Exp\n\n"
-"Approx time is the time it would take for a user to reach a level if they typed every time the cooldown expired non stop without sleeping or taking potty breaks."
-msgstr "Bir seviye için gereken XP = Temel * Seviye^Exp\n\n"
-"Yaklaşık süre, bir kullanıcının bekleme süresi sona erdiğinde uyumadan veya tuvalet molası vermeden durmadan yazması durumunda bir seviyeye ulaşması için gereken süredir."
+#: levelup.py:2646
+msgid "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
+"Approx time is the time it would take for a user to reach a level with randomized breaks"
+msgstr ""
 
-#: levelup.py:2326
+#: levelup.py:2650
 msgid "`Base Multiplier:  `"
 msgstr "`Taban Çarpanı: `"
 
-#: levelup.py:2327
+#: levelup.py:2651
 msgid "`Exp Multiplier:   `"
 msgstr "`Exp Çarpma:   `"
 
-#: levelup.py:2328
+#: levelup.py:2652
 msgid "`Experience Range: `"
 msgstr "`Deneyim Aralığı: `"
 
-#: levelup.py:2330
+#: levelup.py:2654
 msgid "`Message Cooldown: `"
 msgstr "`Mesaj Bekleme Süresi: `"
 
-#: levelup.py:2376
+#: levelup.py:2700
 #, docstring
 msgid "\n"
 "        Toggle DM notifications\n"
@@ -1753,15 +1831,15 @@ msgstr "\n"
 "        DM bildirimlerini aç / kapat\n"
 "        LevelUp mesajlarının kullanıcıya DM ile gönderilip gönderilmeyeceğini değiştir "
 
-#: levelup.py:2383
+#: levelup.py:2707
 msgid "Users will no longer be DM'd when they level up"
 msgstr "Kullanıcılar artık seviye atladıklarında DM'lenmeyecek"
 
-#: levelup.py:2386
+#: levelup.py:2710
 msgid "Users will now be DM'd when they level up"
 msgstr "Kullanıcılar artık seviye atladıklarında DM'lenecek"
 
-#: levelup.py:2391
+#: levelup.py:2715
 #, docstring
 msgid "\n"
 "        Toggle levelup mentions\n"
@@ -1771,15 +1849,15 @@ msgstr "\n"
 "        Seviye yükseltme bahsini aç / kapat\n"
 "        LevelUp mesajlarında kullanıcıdan bahsedilip bahsedilmediğini değiştir "
 
-#: levelup.py:2398
+#: levelup.py:2722
 msgid "Mentions **Disabled**"
 msgstr "Bahsedilenler **Engelliler**"
 
-#: levelup.py:2401
+#: levelup.py:2725
 msgid "Mentions **Enabled**"
 msgstr "Bahsedenler **Etkin**"
 
-#: levelup.py:2406
+#: levelup.py:2730
 #, docstring
 msgid "\n"
 "        Toggle star reaction mentions\n"
@@ -1790,15 +1868,15 @@ msgstr "\n"
 "        Botun, bir kullanıcının bir mesaja yıldızla tepki verdiğini belirtip belirtmemesini değiştirme\n"
 "        "
 
-#: levelup.py:2413
+#: levelup.py:2737
 msgid "Star reaction mentions **Disabled**"
 msgstr "Yıldız tepkisi **Engellilerden** bahseder"
 
-#: levelup.py:2416
+#: levelup.py:2740
 msgid "Star reaction mention **Enabled**"
 msgstr "Yıldız tepkisi sözü **Etkin**"
 
-#: levelup.py:2421
+#: levelup.py:2745
 #, docstring
 msgid "\n"
 "        Toggle whether the bot auto-deletes the star mentions\n"
@@ -1808,19 +1886,19 @@ msgstr "\n"
 "Botun yıldız bahsedenleri otomatik olarak silip silmeyeceğini değiştirin\n"
 "Otomatik silmeyi devre dışı bırakmak için 0 olarak ayarlayın "
 
-#: levelup.py:2428
+#: levelup.py:2752
 msgid "Star reaction mentions will auto-delete after "
 msgstr "Yıldız tepkisi bahsedenler şu tarihten sonra otomatik olarak silinecektir "
 
-#: levelup.py:2430
+#: levelup.py:2754
 msgid " seconds"
 msgstr " saniye"
 
-#: levelup.py:2433
+#: levelup.py:2757
 msgid "Star reaction mentions will not be deleted"
 msgstr "Yıldız tepkisi bahsederken silinmeyecektir"
 
-#: levelup.py:2442
+#: levelup.py:2766
 #, docstring
 msgid "\n"
 "        Set LevelUP message channel\n"
@@ -1830,39 +1908,39 @@ msgstr "\n"
 "        LevelUP mesaj kanalını ayarlayın\n"
 "        Tüm seviye atlama mesajlarının gönderileceği bir kanal ayarlayın "
 
-#: levelup.py:2449
+#: levelup.py:2773
 msgid "LevelUp channel has been **Disabled**\n"
 "level up messages will now happen in the channel the user is in"
 msgstr "LevelUp kanalı **Devre Dışı** bırakıldı\n"
 "seviye atlama mesajları artık kullanıcının bulunduğu kanalda gerçekleşecek"
 
-#: levelup.py:2458
+#: levelup.py:2782
 msgid "I do not have permission to send messages to that channel."
 msgstr "Bu kanala mesaj göndermek için iznim yok."
 
-#: levelup.py:2461
+#: levelup.py:2785
 msgid "LevelUp channel has been set to "
 msgstr "LevelUp kanalı şu şekilde ayarlanmıştır "
 
-#: levelup.py:2466
+#: levelup.py:2790
 #, docstring
 msgid "Toggle whether to show user's economy credit balance in their profile"
 msgstr "Kullanıcının ekonomi kredisi bakiyesinin profilinde gösterilip gösterilmeyeceğini değiştirme"
 
-#: levelup.py:2470
+#: levelup.py:2794
 msgid "I will no longer include economy balance in user profiles"
 msgstr "Artık kullanıcı profillerinde ekonomi dengesini dahil etmeyeceğim"
 
-#: levelup.py:2473
+#: levelup.py:2797
 msgid "I will now include economy balance in user profiles"
 msgstr "Artık kullanıcı profillerine ekonomi dengesini dahil edeceğim"
 
-#: levelup.py:2478
+#: levelup.py:2802
 #, docstring
 msgid "Toggle the level up message when a user levels up"
 msgstr "Bir kullanıcı seviye atladığında seviye atlama mesajını aç/kapat"
 
-#: levelup.py:2490
+#: levelup.py:2814
 #, docstring
 msgid "\n"
 "        Set the star cooldown\n\n"
@@ -1872,12 +1950,12 @@ msgstr "\n"
 "        Yıldız bekleme süresini ayarlayın\n\n"
 "        Kullanıcılar her X saniyede bir başka kullanıcıya yıldız verebilir "
 
-#: levelup.py:2502
+#: levelup.py:2826
 #, docstring
 msgid "Level role assignment"
 msgstr "Seviye rol ataması"
 
-#: levelup.py:2507
+#: levelup.py:2831
 #, docstring
 msgid "\n"
 "        Initialize level roles\n\n"
@@ -1889,100 +1967,105 @@ msgstr "\n"
 "        Bu komut, kullanıcılar seviye rollerini elde ettikten sonra seviye rolleri eklediyseniz kullanılır,\n"
 "        bir kullanıcıya seviyesine ve prestijine göre gerekli tüm rolleri uygulayacaktır "
 
-#: levelup.py:2517
+#: levelup.py:2841
 msgid "I dont have the proper permissions to manage roles!"
 msgstr "Rolleri yönetmek için uygun izinlere sahip değilim!"
 
-#: levelup.py:2521
+#: levelup.py:2845
 msgid "Calculating roles, this may take a while..."
 msgstr ""
 
-#: levelup.py:2585
+#: levelup.py:2909
 msgid "Assigning roles, this may take a while..."
 msgstr ""
 
-#: levelup.py:2625
+#: levelup.py:2949
 msgid "Role initialization completed!"
 msgstr ""
 
-#: levelup.py:2627
+#: levelup.py:2951
 msgid "\n"
 "Added `{}`"
 msgstr ""
 
-#: levelup.py:2629 levelup.py:2634
+#: levelup.py:2953 levelup.py:2958
 msgid " (`{}` failed)"
 msgstr ""
 
-#: levelup.py:2632
+#: levelup.py:2956
 msgid "\n"
 "Removed `{}`"
 msgstr ""
 
-#: levelup.py:2639
+#: levelup.py:2961
+msgid "\n"
+"No roles needed to be added or removed!"
+msgstr ""
+
+#: levelup.py:2966
 msgid "Initialization took {} to complete."
 msgstr ""
 
-#: levelup.py:2645
+#: levelup.py:2972
 #, docstring
 msgid "Automatic removal of previous level roles"
 msgstr "Önceki seviye rollerin otomatik olarak kaldırılması"
 
-#: levelup.py:2649
+#: levelup.py:2976
 msgid "Automatic role removal **Disabled**"
 msgstr "Otomatik rol kaldırma **Devre dışı**"
 
-#: levelup.py:2652
+#: levelup.py:2979
 msgid "Automatic role removal **Enabled**"
 msgstr "Otomatik rol kaldırma **Etkin**"
 
-#: levelup.py:2657 levelup.py:2678
+#: levelup.py:2984 levelup.py:3005
 #, docstring
 msgid "Assign a role to a level"
 msgstr "Bir seviyeye rol atama"
 
-#: levelup.py:2660
+#: levelup.py:2987
 msgid "The role you are trying to set is higher than the one you currently have!"
 msgstr "Belirlemeye çalıştığınız rol, şu anda sahip olduğunuz rolden daha yüksek!"
 
-#: levelup.py:2663
+#: levelup.py:2990
 msgid "I cannot assign roles higher than my own!"
 msgstr "Kendiminkinden daha yüksek roller atayamam!"
 
-#: levelup.py:2666
+#: levelup.py:2993
 msgid "I do not have permission to manage roles"
 msgstr "Rolleri yönetme iznim yok"
 
-#: levelup.py:2668
+#: levelup.py:2995
 msgid "Overwritten"
 msgstr "Üzerine yazıldı"
 
-#: levelup.py:2670
+#: levelup.py:2997
 msgid "Set"
 msgstr "Ayarla"
 
-#: levelup.py:2672
+#: levelup.py:2999
 msgid " has been "
 msgstr " olmuştur "
 
-#: levelup.py:2672
+#: levelup.py:2999
 msgid " as "
 msgstr " olarak "
 
-#: levelup.py:2681
+#: levelup.py:3008
 msgid "Level role has been deleted!"
 msgstr "Seviye rolü silindi!"
 
-#: levelup.py:2684
+#: levelup.py:3011
 msgid "Level doesnt exist!"
 msgstr "Seviye diye bir şey yok!"
 
-#: levelup.py:2688
+#: levelup.py:3015
 #, docstring
 msgid "Level Prestige Settings"
 msgstr "Seviye Prestij Ayarları"
 
-#: levelup.py:2693
+#: levelup.py:3020
 #, docstring
 msgid "\n"
 "        Set the level required to prestige\n"
@@ -1993,20 +2076,20 @@ msgstr "\n"
 "        Prestiji devre dışı bırakmak için 0 olarak ayarlayın\n"
 "        "
 
-#: levelup.py:2703
+#: levelup.py:3030
 #, docstring
 msgid "Automatic removal of previous prestige level roles"
 msgstr "Önceki prestij seviyesi rollerinin otomatik olarak kaldırılması"
 
-#: levelup.py:2707
+#: levelup.py:3034
 msgid "Automatic prestige role removal **Disabled**"
 msgstr "Otomatik prestij rolü kaldırma **Devre dışı**"
 
-#: levelup.py:2710
+#: levelup.py:3037
 msgid "Automatic prestige role removal **Enabled**"
 msgstr "Otomatik prestij rolü kaldırma **Etkin**"
 
-#: levelup.py:2733
+#: levelup.py:3048
 #, docstring
 msgid "\n"
 "        Add a prestige level role\n"
@@ -2018,30 +2101,30 @@ msgstr "\n"
 "        Belirli bir prestij seviyesiyle ilişkili bir rol ve emoji ekleyin\n\n"
 "        Bir kullanıcı prestij kazandığında, bu rolü alacak ve emoji profilinde gösterilecektir "
 
-#: levelup.py:2740 levelup.py:2762
+#: levelup.py:3055 levelup.py:3077
 msgid "prestige_level must be a number!"
 msgstr "prestij_seviyesi bir sayı olmalıdır!"
 
-#: levelup.py:2751
+#: levelup.py:3066
 #, docstring
 msgid "Test emojis to see if the bot is able to get a valid url for them"
 msgstr "Botun onlar için geçerli bir URL alıp alamadığını görmek için emojileri test edin"
 
-#: levelup.py:2760
+#: levelup.py:3075
 #, docstring
 msgid "Delete a prestige level role"
 msgstr "Bir prestij seviyesi rolünü silin"
 
-#: levelup.py:2767
+#: levelup.py:3082
 msgid "That prestige level doesnt exist!"
 msgstr "Böyle bir prestij seviyesi yok!"
 
-#: levelup.py:2773
+#: levelup.py:3088
 #, docstring
 msgid "Base command for all ignore lists"
 msgstr "Tüm yoksayma listeleri için temel komut"
 
-#: levelup.py:2779
+#: levelup.py:3094
 #, docstring
 msgid "\n"
 "        Add/Remove a guild in the ignore list\n\n"
@@ -2053,15 +2136,15 @@ msgstr "\n"
 "        **BU SADECE BOT SAHIPLERININ KULLANABILECEĞI GLOBAL BIR AYARDIR**\n\n"
 "        Halihazırda yoksayma listesinde bulunan bir loncayı kaldırmak için bu komutu kullanın "
 
-#: levelup.py:2788
+#: levelup.py:3103
 msgid "Guild removed from ignore list"
 msgstr "Lonca yok sayma listesinden çıkarıldı"
 
-#: levelup.py:2791
+#: levelup.py:3106
 msgid "Guild added to ignore list"
 msgstr "Guild görmezden gelinenler listesine eklendi"
 
-#: levelup.py:2800
+#: levelup.py:3115
 #, docstring
 msgid "\n"
 "        Add/Remove a channel in the ignore list\n"
@@ -2074,15 +2157,15 @@ msgstr "\n"
 "        Halihazırda yoksayma listesinde bulunan bir kanalı kaldırmak için bu komutu kullanın\n"
 "       "
 
-#: levelup.py:2809
+#: levelup.py:3124
 msgid "Channel removed from ignore list"
 msgstr "Kanal yok sayma listesinden çıkarıldı"
 
-#: levelup.py:2812
+#: levelup.py:3127
 msgid "Channel added to ignore list"
 msgstr "Kanal yok sayma listesine eklendi"
 
-#: levelup.py:2817
+#: levelup.py:3132
 #, docstring
 msgid "\n"
 "        Add/Remove a role from the ignore list\n"
@@ -2094,15 +2177,15 @@ msgstr "\n"
 "        Yoksay listesindeki roller XP kazanmaz\n\n"
 "        Zaten yoksayma listesinde bulunan bir rolü kaldırmak için bu komutu kullanın "
 
-#: levelup.py:2826
+#: levelup.py:3141
 msgid "Role removed from ignore list"
 msgstr "Rol yok sayma listesinden kaldırıldı"
 
-#: levelup.py:2829
+#: levelup.py:3144
 msgid "Role added to ignore list"
 msgstr "Yoksay listesine rol eklendi"
 
-#: levelup.py:2834
+#: levelup.py:3149
 #, docstring
 msgid "\n"
 "        Add/Remove a member from the ignore list\n"
@@ -2114,132 +2197,132 @@ msgstr "\n"
 "        Yoksay listesindeki üyeler XP kazanmaz\n\n"
 "        Halihazırda yoksayma listesinde bulunan bir üyeyi kaldırmak için bu komutu kullanın "
 
-#: levelup.py:2843
+#: levelup.py:3158
 msgid "Member removed from ignore list"
 msgstr "Üye yok sayma listesinden çıkarıldı"
 
-#: levelup.py:2846
+#: levelup.py:3161
 msgid "Member added to ignore list"
 msgstr "Yoksay listesine eklenen üye"
 
-#: levelup.py:2853
+#: levelup.py:3168
 #, docstring
 msgid "Access the weekly settings for levelUp"
 msgstr "LevelUp için haftalık ayarlara erişin"
 
-#: levelup.py:2859
+#: levelup.py:3174
 #, docstring
 msgid "View the current weekly settings"
 msgstr "Geçerli haftalık ayarları görüntüle"
 
-#: levelup.py:2861
+#: levelup.py:3176
 msgid "**Enabled**"
 msgstr "**Etkin**"
 
-#: levelup.py:2861
+#: levelup.py:3176
 msgid "**Disabled**"
 msgstr "**Devre dışı**"
 
-#: levelup.py:2862
+#: levelup.py:3177
 msgid "Weekly stat tracking is currently "
 msgstr "Haftalık istatistik takibi şu anda "
 
-#: levelup.py:2864
+#: levelup.py:3179
 msgid "Weekly LevelUp settings"
 msgstr "Haftalık LevelUp ayarları"
 
-#: levelup.py:2877
+#: levelup.py:3192
 msgid "`Winner Count:   `"
 msgstr "`Kazanan Sayısı:   `"
 
-#: levelup.py:2879
+#: levelup.py:3194
 msgid "`Last Winner(s): `"
 msgstr "`Son Kazanan(lar): `"
 
-#: levelup.py:2880 levelup.py:2883 levelup.py:2884
+#: levelup.py:3195 levelup.py:3198 levelup.py:3199
 msgid "None"
 msgstr "Hiçbiri"
 
-#: levelup.py:2883
+#: levelup.py:3198
 msgid "`Channel:        `"
 msgstr "`Kanal:        `"
 
-#: levelup.py:2884
+#: levelup.py:3199
 msgid "`Role:           `"
 msgstr "`Rol:           `"
 
-#: levelup.py:2885
+#: levelup.py:3200
 msgid "`RoleAllWinners: `"
 msgstr "`RoleAllWinners: `"
 
-#: levelup.py:2886
+#: levelup.py:3201
 msgid "`Auto Remove:    `"
 msgstr "`Otomatik Kaldır:    `"
 
-#: levelup.py:2887
+#: levelup.py:3202
 msgid "`Bonus Exp:      `"
 msgstr "`Bonus Exp: `"
 
-#: levelup.py:2888
+#: levelup.py:3203
 msgid "Settings"
 msgstr "Ayarlar"
 
-#: levelup.py:2891
+#: levelup.py:3206
 msgid "`Reset Day:  `"
 msgstr "`Sıfırlama Günü:  `"
 
-#: levelup.py:2892
+#: levelup.py:3207
 msgid "`Reset Hour: `"
 msgstr "`Saat Sıfırla: `"
 
-#: levelup.py:2893
+#: levelup.py:3208
 msgid "`Last Reset: `"
 msgstr "`Son Sıfırlama: `"
 
-#: levelup.py:2895
+#: levelup.py:3210
 msgid "`Next Reset: `"
 msgstr "`Sonraki Sıfırlama: `"
 
-#: levelup.py:2897
+#: levelup.py:3212
 msgid "Auto Reset "
 msgstr "Otomatik Sıfırlama "
 
-#: levelup.py:2903
+#: levelup.py:3218
 #, docstring
 msgid "Reset the weekly leaderboard manually and announce winners"
 msgstr "Haftalık liderlik tablosunu manuel olarak sıfırlayın ve kazananları duyurun"
 
-#: levelup.py:2905
+#: levelup.py:3220
 msgid "Not resetting weekly leaderboard"
 msgstr "Haftalık liderlik tablosu sıfırlanmıyor"
 
-#: levelup.py:2911
+#: levelup.py:3226
 #, docstring
 msgid "Toggle weekly stat tracking"
 msgstr "Haftalık istatistik takibini aç / kapat"
 
-#: levelup.py:2915
+#: levelup.py:3230
 msgid "Weekly stat tracking has been **Disabled**"
 msgstr "Haftalık istatistik takibi **Devre Dışı** bırakıldı"
 
-#: levelup.py:2918
+#: levelup.py:3233
 msgid "Weekly stat tracking has been **Enabled**"
 msgstr "Haftalık istatistik takibi **Etkinleştirildi**"
 
-#: levelup.py:2923
+#: levelup.py:3238
 #, docstring
 msgid "Toggle weekly auto-reset"
 msgstr "Haftalık otomatik sıfırlamayı aç / kapat"
 
-#: levelup.py:2927
+#: levelup.py:3242
 msgid "Weekly auto-reset has been **Disabled**"
 msgstr "Haftalık otomatik sıfırlama **Devre Dışı** bırakıldı"
 
-#: levelup.py:2930
+#: levelup.py:3245
 msgid "Weekly auto-reset has been **Enabled**"
 msgstr "Haftalık otomatik sıfırlama **Etkinleştirildi**"
 
-#: levelup.py:2935
+#: levelup.py:3250
 #, docstring
 msgid "\n"
 "        What hour the weekly stats reset\n"
@@ -2249,15 +2332,15 @@ msgstr "\n"
 "Haftalık istatistikler hangi saatte sıfırlanır?\n"
 "Haftalık sıfırlamanın gerçekleşeceği saati (UTC'de 0 - 23) ayarlayın "
 
-#: levelup.py:2940
+#: levelup.py:3255
 msgid "Hour must be 0 to 23"
 msgstr "Saat 0 ila 23 arasında olmalıdır"
 
-#: levelup.py:2942
+#: levelup.py:3257
 msgid "Weekly stats auto reset hour is now "
 msgstr "Haftalık istatistiklerin otomatik sıfırlanma saati artık "
 
-#: levelup.py:2949
+#: levelup.py:3264
 #, docstring
 msgid "\n"
 "        What day of the week the weekly stats reset\n"
@@ -2267,15 +2350,15 @@ msgstr "\n"
 "Haftalık istatistikler haftanın hangi günü sıfırlanır?\n"
 "Haftalık sıfırlamanın gerçekleşmesi için haftanın gününü ayarlayın (0 - 6 = Pazartesi - Pazar) "
 
-#: levelup.py:2954
+#: levelup.py:3269
 msgid "Day must be 0 to 6 (Monday to Sunday)"
 msgstr "Gün 0 ila 6 arasında olmalıdır (Pazartesi - Pazar)"
 
-#: levelup.py:2956
+#: levelup.py:3271
 msgid "Weekly stats auto reset day is now "
 msgstr "Haftalık istatistiklerin otomatik sıfırlanma günü artık "
 
-#: levelup.py:2963
+#: levelup.py:3278
 #, docstring
 msgid "\n"
 "        Top weekly member count\n"
@@ -2285,15 +2368,15 @@ msgstr "\n"
 "        En yüksek haftalık üye sayısı\n"
 "        Haftalık en iyi lider tablosuna dahil edilecek üye sayısını ayarlayın "
 
-#: levelup.py:2968
+#: levelup.py:3283
 msgid "There must be at least one winner!"
 msgstr "En az bir kazanan olmalı!"
 
-#: levelup.py:2970
+#: levelup.py:3285
 msgid "There can only be up to 25 winners!"
 msgstr "En fazla 25 kazanan olabilir!"
 
-#: levelup.py:2977
+#: levelup.py:3292
 #, docstring
 msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
@@ -2301,39 +2384,39 @@ msgid "Weekly winner announcement channel\n"
 msgstr "Haftalık kazanan duyuru kanalı\n"
 "        Otomatik sıfırlama etkinleştirildiğinde haftalık kazananların duyurulacağı kanalı ayarlayın "
 
-#: levelup.py:2981
+#: levelup.py:3296
 msgid "I do not have permission to send messages to that channel!"
 msgstr "Bu kanala mesaj göndermek için iznim yok!"
 
-#: levelup.py:2983
+#: levelup.py:3298
 msgid "I do not have permission to send embeds to that channel!"
 msgstr "Bu kanala yerleştirme göndermek için iznim yok!"
 
-#: levelup.py:2990
+#: levelup.py:3305
 #, docstring
 msgid "Weekly winner role reward\n"
 "        Set the role awarded to the top member of the weekly leaderboard"
 msgstr "Haftalık kazanan rol ödülü\n"
 "        Haftalık liderlik tablosunun en üstündeki üyeye verilen rolü ayarlayın"
 
-#: levelup.py:2993
+#: levelup.py:3308
 msgid "I do not have permission to manage roles!"
 msgstr "Rolleri yönetme iznim yok!"
 
-#: levelup.py:3000
+#: levelup.py:3315
 #, docstring
 msgid "Toggle whether to give the weekly winner role to all winners or only 1st place"
 msgstr "Haftalık kazanan rolünün tüm kazananlara mı yoksa sadece 1. sıradakilere mi verileceğini değiştirin"
 
-#: levelup.py:3005
+#: levelup.py:3320
 msgid "Only the 1st place winner of the weekly stats reset will receive the weekly role"
 msgstr "Sadece haftalık istatistiklerin sıfırlanmasının 1. sıradaki kazananı haftalık rolü alacaktır"
 
-#: levelup.py:3012
+#: levelup.py:3327
 msgid "All top members listed in the weekly stat reset will receive the weekly role"
 msgstr "Haftalık istatistik sıfırlamasında listelenen tüm en iyi üyeler haftalık rolü alacaktır"
 
-#: levelup.py:3018
+#: levelup.py:3333
 #, docstring
 msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
@@ -2341,15 +2424,15 @@ msgid "One role holder at a time\n"
 msgstr "Her seferinde bir rol sahibi\n"
 "Yeni bir kazanan seçildiğinde, önceki sahibinden kazanan rolünün kaldırılıp kaldırılmayacağını değiştirin "
 
-#: levelup.py:3024
+#: levelup.py:3339
 msgid "Auto role removal from previous winner has been **Disabled**"
 msgstr "Önceki kazananın otomatik rolünün kaldırılması **Devre Dışı** bırakıldı"
 
-#: levelup.py:3027
+#: levelup.py:3342
 msgid "Auto role removal from previous winner has been **Enabled**"
 msgstr "Önceki kazananın otomatik rol kaldırılması **Etkinleştirildi**"
 
-#: levelup.py:3032
+#: levelup.py:3347
 #, docstring
 msgid "\n"
 "        Weekly winners bonus experience points\n"
@@ -2360,34 +2443,34 @@ msgstr "\n"
 "        Exp bonusunu devre dışı bırakmak için 0 olarak ayarlayın\n"
 "        "
 
-#: levelup.py:3044
+#: levelup.py:3359
 #, docstring
 msgid "Force level a user or yourself"
 msgstr "Bir kullanıcıyı veya kendinizi seviyelemek için zorlayın"
 
-#: levelup.py:3061 levelup.py:3086
+#: levelup.py:3376 levelup.py:3401
 msgid "Forced "
 msgstr "Zorla "
 
-#: levelup.py:3061
+#: levelup.py:3376
 msgid " to level up!"
 msgstr " seviye atlamak için!"
 
-#: levelup.py:3069
+#: levelup.py:3384
 #, docstring
 msgid "Force de-level a user or yourself"
 msgstr "Bir kullanıcının veya kendinizin seviyesini düşürmeye zorlama"
 
-#: levelup.py:3086
+#: levelup.py:3401
 msgid " to level down!"
 msgstr " seviyeyi düşürmek için!"
 
-#: levelup.py:3094
+#: levelup.py:3409
 #, docstring
 msgid "Force Initialization"
 msgstr "Başlatmaya Zorla"
 
-#: levelup.py:3101
+#: levelup.py:3416
 #, docstring
 msgid "Force save the cache"
 msgstr "Önbelleği kaydetmeye zorla"
