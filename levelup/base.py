@@ -427,9 +427,13 @@ class UserCommands(MixinMeta, ABC):
     async def view_default_backgrounds(self, ctx: commands.Context):
         """View the default backgrounds"""
         if not self.data[ctx.guild.id]["usepics"]:
-            return await ctx.send(
-                _("Image profiles are disabled on this server so this command is off")
-            )
+            txt = _("Image profiles are disabled on this server so this command is off")
+            if ctx.author.guild_permissions.manage_messages:
+                txt += _(
+                    "\nUse the `{}` command to toggle image profiles and enable this command."
+                ).format(f"{ctx.clean_prefix}lset embeds")
+            await ctx.send(txt)
+
         async with ctx.typing():
             img = await self.get_or_fetch_backgrounds()
             if img is None:
@@ -458,9 +462,12 @@ class UserCommands(MixinMeta, ABC):
     async def view_fonts(self, ctx: commands.Context):
         """View available fonts to use"""
         if not self.data[ctx.guild.id]["usepics"]:
-            return await ctx.send(
-                _("Image profiles are disabled on this server so this command is off")
-            )
+            txt = _("Image profiles are disabled on this server so this command is off")
+            if ctx.author.guild_permissions.manage_messages:
+                txt += _(
+                    "\nUse the `{}` command to toggle image profiles and enable this command."
+                ).format(f"{ctx.clean_prefix}lset embeds")
+            await ctx.send(txt)
         async with ctx.typing():
             img = await self.get_or_fetch_fonts()
             if img is None:
