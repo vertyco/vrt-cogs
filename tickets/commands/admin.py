@@ -1299,12 +1299,18 @@ class AdminCommands(MixinMeta):
         target: discord.Message,
     ):
         """Update a message with another message (Target gets updated using the source)"""
-        await target.edit(
-            embeds=source.embeds,
-            content=target.content,
-            attachments=target.attachments,
-        )
-        await ctx.tick()
+        try:
+            await target.edit(
+                embeds=source.embeds,
+                content=target.content,
+                attachments=target.attachments,
+            )
+            await ctx.tick()
+        except discord.HTTPException as e:
+            if txt := e.text:
+                await ctx.send(txt)
+            else:
+                await ctx.send(_("Failed to update message!"))
 
     @tickets.command()
     async def embed(
