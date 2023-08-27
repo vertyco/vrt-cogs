@@ -1345,7 +1345,11 @@ class AdminCommands(MixinMeta):
             color=color,
         )
         em.set_footer(text=foot)
-        await msg.edit(embed=em)
+        try:
+            await msg.edit(embed=em)
+        except discord.NotFound:
+            # Message was deleted. Just cancel.
+            return
         yes = await confirm(ctx, msg)
         if yes:
             em = Embed(description=_("Enter a url for the thumbnail"), color=color)
