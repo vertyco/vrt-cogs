@@ -567,7 +567,7 @@ class SupportButton(Button):
             for question, answer in answers.items():
                 em.add_field(name=f"__{question}__", value=answer, inline=False)
 
-            view = LogView(guild, channel_or_thread)
+            view = LogView(guild, channel_or_thread, panel.get("max_claims", 0))
             log_message = await logchannel.send(embed=em, view=view)
         else:
             log_message = None
@@ -584,6 +584,7 @@ class SupportButton(Button):
                 "answers": answers,
                 "has_response": has_response,
                 "message_id": msg.id,
+                "max_claims": conf["panels"][self.panel_name].get("max_claims", 0),
             }
 
             new_id = await update_active_overview(guild, conf)
@@ -618,10 +619,13 @@ class LogView(View):
         self,
         guild: discord.Guild,
         channel: Union[discord.TextChannel, discord.Thread],
+        max_claims: int,
     ):
         super().__init__(timeout=None)
         self.guild = guild
         self.channel = channel
+        self.max_claims = max_claims
+
         self.added = set()
         self.join_ticket.custom_id = str(channel.id)
 
@@ -631,6 +635,12 @@ class LogView(View):
         if user.id in self.added:
             return await interaction.response.send_message(
                 _("You have already been added to the ticket **{}**!").format(self.channel.name),
+                ephemeral=True,
+                delete_after=60,
+            )
+        if self.max_claims and len(self.added) >= self.max_claims:
+            return await interaction.response.send_message(
+                _("The maximum amount of staff have claimed this ticket!"),
                 ephemeral=True,
                 delete_after=60,
             )

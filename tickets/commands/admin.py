@@ -865,7 +865,8 @@ class AdminCommands(MixinMeta):
             desc += _("`LogChannel:     `") + f"{logchannel}\n"
             desc += _("`Priority:       `") + f"{info.get('priority', 1)}\n"
             desc += _("`Button Row:     `") + f"{info.get('row')}\n"
-            desc += _("`Reason Modal:   `") + f"{info.get('close_reason', False)}"
+            desc += _("`Reason Modal:   `") + f"{info.get('close_reason', False)}\n"
+            desc += _("`Max Claims:     `") + f"{info.get('max_claims', 0)}"
 
             em = Embed(
                 title=_("Panel: ") + panel_name,
@@ -1033,6 +1034,20 @@ class AdminCommands(MixinMeta):
                 await ctx.send(
                     role.name + _(" has been added to the {} panel roles").format(panel_name)
                 )
+        await self.initialize(ctx.guild)
+
+    @tickets.command()
+    async def maxclaims(self, ctx: commands.Context, panel_name: str, amount: int):
+        """Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"""
+        panel_name = panel_name.lower()
+        if amount < 0:
+            return await ctx.send(_("Amount cannot be negative!"))
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+            panels[panel_name]["max_claims"] = amount
+
+        await ctx.send(_("Up to {} staff member(s) can claim a single ticket").format(amount))
         await self.initialize(ctx.guild)
 
     @tickets.command()
