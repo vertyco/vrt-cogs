@@ -32,7 +32,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.1.21"
+    __version__ = "2.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -89,6 +89,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             "modal_title": "",  # (Optional) Modal title
             "threads": False,  # Whether this panel makes a thread or channel
             "roles": [],  # Sub-support roles
+            "max_claims": 0,  # How many cooks in the kitchen (default infinite if 0)
             # Ticker
             "ticket_num": 1,
         }
@@ -278,7 +279,8 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
                     )
                     continue
 
-                logview = LogView(guild, ticket_channel)
+                max_claims = ticket_info.get("max_claims", 0)
+                logview = LogView(guild, ticket_channel, max_claims)
                 self.bot.add_view(logview, message_id=ticket_info["logmsg"])
                 self.view_cache[guild.id].append(logview)
 
