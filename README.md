@@ -80,8 +80,9 @@ If you are interested in contributing to translations for my cogs, [Click Here](
 # Feature Requests
 
 I am open to ideas or suggestions for new cogs and features!
-
-## Star History
+<br/>
+<br/>
+---
 
 <a href="https://star-history.com/#vertyco/vrt-cogs&Date">
   <picture>
@@ -91,4 +92,4 @@ I am open to ideas or suggestions for new cogs and features!
   </picture>
 </a>
 
-![Artwork](.github/ASSETS/Bottom_up.svg)
+![](.github/ASSETS/Bottom_up.svg)
