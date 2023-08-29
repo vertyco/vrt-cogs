@@ -11,7 +11,6 @@ Various useful and fun cogs for Red V3.
 
 ![Forks](https://img.shields.io/github/forks/Vertyco/Vrt-Cogs?style=for-the-badge&color=9cf)
 ![Stars](https://img.shields.io/github/stars/Vertyco/Vrt-Cogs?style=for-the-badge&color=yellow)
-![Lines of code](https://img.shields.io/tokei/lines/github/Vertyco/Vrt-Cogs?color=ff69b4&label=Lines&style=for-the-badge)
 
 [![Visitors](https://api.visitorbadge.io/api/daily?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Visitors%20Today&countColor=%230015b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Total&countColor=%230015b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
