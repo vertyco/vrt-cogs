@@ -9,11 +9,6 @@ Various useful and fun cogs for Red V3.
 ![Red-DiscordBot](https://img.shields.io/badge/Red%20DiscordBot-V3.5-red?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
 
-![Forks](https://img.shields.io/github/forks/Vertyco/Vrt-Cogs?style=for-the-badge&color=9cf)
-![Stars](https://img.shields.io/github/stars/Vertyco/Vrt-Cogs?style=for-the-badge&color=yellow)
-
-[![Visitors](https://api.visitorbadge.io/api/daily?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Visitors%20Today&countColor=%230015b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
-[![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Total&countColor=%230015b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
 
 I enjoy working with APIs and making cogs for game servers or other helpful use cases. Check out some of my projects
 below!
@@ -91,5 +86,10 @@ I am open to ideas or suggestions for new cogs and features!
     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=vertyco/vrt-cogs&type=Date" />
   </picture>
 </a>
+
+![Forks](https://img.shields.io/github/forks/Vertyco/Vrt-Cogs?style=for-the-badge&color=9cf)
+![Stars](https://img.shields.io/github/stars/Vertyco/Vrt-Cogs?style=for-the-badge&color=yellow)
+[![Visitors](https://api.visitorbadge.io/api/daily?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Visitors%20Today&countColor=%230015b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
+[![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs&label=Total&countColor=%239085b3)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Fvertyco%2Fvrt-cogs)
 
 ![](.github/ASSETS/Bottom_down.svg)
