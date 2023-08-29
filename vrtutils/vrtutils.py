@@ -6,11 +6,13 @@ import math
 import os
 import platform
 import random
+import string
 import subprocess
 import sys
+import typing as t
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from sys import executable
-from typing import List, Optional, Union
 
 import cpuinfo
 import discord
@@ -62,7 +64,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.7.0"
+    __version__ = "1.8.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -335,9 +337,9 @@ class VrtUtils(commands.Cog):
 
         # -/-/-/CPU-/-/-/
         cpu_count = psutil.cpu_count()  # Int
-        cpu_perc: List[float] = psutil.cpu_percent(interval=3, percpu=True)
+        cpu_perc: t.List[float] = psutil.cpu_percent(interval=3, percpu=True)
         cpu_avg = round(sum(cpu_perc) / len(cpu_perc), 1)
-        cpu_freq: list = psutil.cpu_freq(percpu=True)  # List of Objects
+        cpu_freq: list = psutil.cpu_freq(percpu=True)  # t.List of Objects
         if not cpu_freq:
             freq = psutil.cpu_freq(percpu=False)
             if freq:
@@ -501,7 +503,7 @@ class VrtUtils(commands.Cog):
         return embed
 
     @commands.command()
-    async def getuser(self, ctx, *, user_id: Union[int, discord.User]):
+    async def getuser(self, ctx, *, user_id: t.Union[int, discord.User]):
         """Find a user by ID"""
         if isinstance(user_id, int):
             try:
@@ -789,8 +791,8 @@ class VrtUtils(commands.Cog):
     async def oldestmembers(
         self,
         ctx,
-        amount: Optional[int] = 10,
-        include_bots: Optional[bool] = False,
+        amount: t.Optional[int] = 10,
+        include_bots: t.Optional[bool] = False,
     ):
         """
         See which users have been in the server the longest
@@ -821,8 +823,8 @@ class VrtUtils(commands.Cog):
     async def oldestaccounts(
         self,
         ctx,
-        amount: Optional[int] = 10,
-        include_bots: Optional[bool] = False,
+        amount: t.Optional[int] = 10,
+        include_bots: t.Optional[bool] = False,
     ):
         """
         See which users have the oldest Discord accounts
@@ -972,3 +974,52 @@ class VrtUtils(commands.Cog):
             return await ctx.send("Minimum needs to be lower than maximum!")
         num = random.randint(minimum, maximum)
         await ctx.send(f"Result: `{num}`")
+
+    @commands.command(name="einfo")
+    @commands.bot_has_permissions(embed_links=True)
+    async def emoji_info(
+        self, ctx: commands.Context, emoji: t.Union[discord.Emoji, discord.PartialEmoji, str]
+    ):
+        """Get info about an emoji"""
+
+        def _url():
+            emoji_unicode = []
+            for char in emoji:
+                char = hex(ord(char))[2:]
+                emoji_unicode.append(char)
+            if "200d" not in emoji_unicode:
+                emoji_unicode = list(filter(lambda c: c != "fe0f", emoji_unicode))
+            emoji_unicode = "-".join(emoji_unicode)
+            return f"https://twemoji.maxcdn.com/v/latest/72x72/{emoji_unicode}.png"
+
+        unescapable = string.ascii_letters + string.digits
+        embed = discord.Embed(color=ctx.author.color)
+        txt = ""
+        if isinstance(emoji, str):
+            fail = "Unable to get emoji name"
+            embed.title = "\n".join(map(lambda x: unicodedata.name(x, fail), emoji))
+            unicode = ", ".join(f"\\{i}" if i not in unescapable else i for i in emoji)
+            category = ", ".join(unicodedata.category(c) for c in emoji)
+            txt += f"`Unicode:   `{unicode}\n"
+            txt += f"`Category:  `{category}\n"
+            embed.set_image(url=_url())
+        else:
+            embed.title = emoji.name
+            txt += f"`ID:        `{emoji.id}\n"
+            txt += f"`Animated:  `{emoji.animated}\n"
+            txt += f"`Created:   `<t:{int(emoji.created_at.timestamp())}:F>\n"
+            embed.set_image(url=emoji.url)
+
+        if isinstance(emoji, discord.PartialEmoji):
+            txt += f"`Custom:    `{emoji.is_custom_emoji()}\n"
+        elif isinstance(emoji, discord.Emoji):
+            txt += f"`Managed:   `{emoji.managed}\n"
+            txt += f"`Server:    `{emoji.guild}\n"
+            txt += f"`Available: `{emoji.available}\n"
+            txt += f"`BotCanUse: `{emoji.is_usable()}\n"
+            if emoji.roles:
+                mentions = ", ".join([i.mention for i in emoji.roles])
+                embed.add_field(name="Roles", value=mentions)
+
+        embed.description = txt
+        await ctx.send(embed=embed)
