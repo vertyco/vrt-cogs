@@ -92,4 +92,4 @@ I am open to ideas or suggestions for new cogs and features!
   </picture>
 </a>
 
-![](.github/ASSETS/Bottom_up.svg)
+![](.github/ASSETS/Bottom_down.svg)
