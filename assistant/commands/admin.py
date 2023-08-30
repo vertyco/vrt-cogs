@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-import json
 import logging
 import re
 import traceback
@@ -1664,8 +1663,7 @@ class Admin(MixinMeta):
         def _dump():
             # Delete and convo data
             self.db.conversations.clear()
-            to_dict = self.db.dict()
-            return json.dumps(to_dict)
+            return self.db.json()
 
         dump = await asyncio.to_thread(_dump)
 
