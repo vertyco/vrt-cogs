@@ -13,6 +13,7 @@ import typing as t
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from sys import executable
+from time import perf_counter
 
 import cpuinfo
 import discord
@@ -36,6 +37,7 @@ from .dpymenu import DEFAULT_CONTROLS, confirm, menu
 
 log = logging.getLogger("red.vrt.vrtutils")
 DPY = discord.__version__
+old_ping = None
 
 
 async def wait_reply(ctx: commands.Context, timeout: int = 60):
@@ -64,7 +66,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.8.0"
+    __version__ = "1.9.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -77,7 +79,15 @@ class VrtUtils(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.path = cog_data_path(self)
-        self.threadpool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vrt_utils")
+
+    async def cog_unload(self):
+        global old_ping
+        if old_ping:
+            try:
+                self.bot.remove_command("ping")
+            except Exception as e:
+                log.info("Failed to remove custom ping", exc_info=e)
+            self.bot.add_command(old_ping)
 
     # -/-/-/-/-/-/-/-/FORMATTING-/-/-/-/-/-/-/-/
     @staticmethod
@@ -116,7 +126,7 @@ class VrtUtils(commands.Cog):
             )
             return results.stdout.decode("utf-8") or results.stderr.decode("utf-8")
 
-        res = await self.bot.loop.run_in_executor(self.threadpool, exe)
+        res = await asyncio.to_thread(exe)
         return res
 
     async def run_disk_speed(
@@ -251,13 +261,29 @@ class VrtUtils(commands.Cog):
                 results[f"read{stage + 1}"] = "Running..."
             await asyncio.sleep(1)
 
-    # @commands.command()
-    # async def latency(self, ctx: commands.Context):
-    #     """Check the bots latency"""
-    #     try:
-    #         socket_latency = round(self.bot.latency * 1000)
-    #     except OverflowError:
-    #         return await ctx.send("Bot is up but missed had connection issues the last few seconds.")
+    @commands.command(name="ping")
+    @commands.is_owner()
+    async def ping_overwrite(self, ctx: commands.Context):
+        latency = round(self.bot.latency * 1000, 2)
+        if latency > 100:
+            color = discord.Color.red()
+        elif latency > 60:
+            color = discord.Color.orange()
+        elif latency > 40:
+            color = discord.Color.yellow()
+        else:
+            color = discord.Color.green()
+
+        text = f"WS: `{humanize_number(latency)}ms`"
+        embed = discord.Embed(description=text, color=color)
+
+        start = perf_counter()
+        message = await ctx.send(embed=embed)
+        end = perf_counter()
+
+        message_latency = round((end - start) * 1000, 2)
+        embed.description += f"\nMsg: `{humanize_number(message_latency)}ms`"
+        await message.edit(embed=embed)
 
     @commands.command()
     @commands.is_owner()
@@ -1023,3 +1049,13 @@ class VrtUtils(commands.Cog):
 
         embed.description = txt
         await ctx.send(embed=embed)
+
+
+async def setup(bot: Red):
+    global old_ping
+    old_ping = bot.get_command("ping")
+    if old_ping:
+        bot.remove_command(old_ping.name)
+
+    cog = VrtUtils(bot)
+    await bot.add_cog(cog)
