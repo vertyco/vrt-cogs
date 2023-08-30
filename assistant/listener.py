@@ -66,6 +66,10 @@ class AssistantListener(MixinMeta):
             ref = message.reference.resolved
             if ref and ref.author.id != self.bot.user.id and self.bot.user.id not in mention_ids:
                 return
+            # Ignore common prefixes from other bots
+            ignore_prefixes = [",", ".", "+", "!", "-", ">"]
+            if any(message.content.startswith(i) for i in ignore_prefixes):
+                return
 
         if not await can_use(message, conf.blacklist, respond=False):
             return
