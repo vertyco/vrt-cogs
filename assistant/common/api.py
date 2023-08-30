@@ -519,11 +519,20 @@ class API(MixinMeta):
                     if len(embedding.text) > 33
                     else box(embedding.text.strip())
                 )
-                val = (
-                    _("`Tokens:     `{}\n").format(tokens)
-                    + _("`Dimensions: `{}\n").format(len(embedding.embedding))
-                    + text
+                val = _(
+                    "`Created:    `{}\n"
+                    "`Modified:   `{}\n"
+                    "`Tokens:     `{}\n"
+                    "`Dimensions: `{}\n"
+                    "`AI Created: `{}\n"
+                ).format(
+                    embedding.created_at(),
+                    embedding.modified_at(relative=True),
+                    tokens,
+                    len(embedding.embedding),
+                    embedding.ai_created,
                 )
+                val += text
                 fieldname = f"➣ {name}" if place == num else name
                 embed.add_field(
                     name=fieldname[:250],

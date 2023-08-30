@@ -1,10 +1,10 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 from openai.embeddings_utils import cosine_similarity
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
@@ -14,6 +14,19 @@ class Embedding(BaseModel):
     text: str
     embedding: List[float]
     ai_created: bool = False
+    created: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    modified: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+
+    def created_at(self, relative: bool = False):
+        t_type = "R" if relative else "F"
+        return f"<t:{int(self.created.timestamp())}:{t_type}>"
+
+    def modified_at(self, relative: bool = False):
+        t_type = "R" if relative else "F"
+        return f"<t:{int(self.modified.timestamp())}:{t_type}>"
+
+    def update(self):
+        self.modified = datetime.now(tz=timezone.utc)
 
 
 class CustomFunction(BaseModel):
