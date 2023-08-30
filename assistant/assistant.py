@@ -52,7 +52,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.12.5"
+    __version__ = "4.13.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -302,6 +302,8 @@ class Assistant(
 
         conf.embeddings[memory_name].text = memory_text
         conf.embeddings[memory_name].embedding = embedding
+        conf.embeddings[memory_name].update()
+        asyncio.create_task(self.save_conf())
         return "Your memory has been updated!"
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
