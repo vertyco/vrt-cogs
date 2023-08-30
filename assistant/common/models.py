@@ -28,6 +28,12 @@ class Embedding(BaseModel):
     def update(self):
         self.modified = datetime.now(tz=timezone.utc)
 
+    def dict(self, *args, **kwargs):
+        data = super().dict(*args, **kwargs)
+        data["created"] = self.created.isoformat()
+        data["modified"] = self.modified.isoformat()
+        return data
+
 
 class CustomFunction(BaseModel):
     """Functions added by bot owner via string"""
