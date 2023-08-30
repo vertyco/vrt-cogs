@@ -66,7 +66,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.9.0"
+    __version__ = "1.9.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -1001,7 +1001,7 @@ class VrtUtils(commands.Cog):
         num = random.randint(minimum, maximum)
         await ctx.send(f"Result: `{num}`")
 
-    @commands.command(name="einfo")
+    @commands.command(name="emojidata")
     @commands.bot_has_permissions(embed_links=True)
     async def emoji_info(
         self, ctx: commands.Context, emoji: t.Union[discord.Emoji, discord.PartialEmoji, str]
