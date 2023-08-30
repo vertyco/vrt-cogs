@@ -262,7 +262,7 @@ class VrtUtils(commands.Cog):
             await asyncio.sleep(1)
 
     @commands.command(name="ping")
-    @commands.is_owner()
+    @commands.bot_has_permissions(embed_links=True)
     async def ping_overwrite(self, ctx: commands.Context):
         latency = round(self.bot.latency * 1000, 2)
         if latency > 100:
