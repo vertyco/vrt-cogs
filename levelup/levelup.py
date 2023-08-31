@@ -87,7 +87,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.2"
+    __version__ = "3.7.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1410,7 +1410,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await ctx.send("Here is your LevelUp config", file=file)
 
     @admin_group.command(name="guildbackup")
-    @commands.is_owner()
+    @commands.guildowner()
     @commands.bot_has_permissions(attach_files=True)
     async def backup_guild(self, ctx):
         """Create a backup of the LevelUp config"""
