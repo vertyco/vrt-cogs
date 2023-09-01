@@ -331,7 +331,7 @@ class VrtUtils(commands.Cog):
 
             embed = await asyncio.to_thread(self.get_bot_info_embed, color)
 
-            latency_txt = f"Websocket: {humanize_number(latency)} ms"
+            latency_txt = f"Websocket: {humanize_number(round(latency, 2))} ms"
             embed.add_field(
                 name="\N{HIGH VOLTAGE SIGN} Latency",
                 value=box(latency_txt, lang="python"),
