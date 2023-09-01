@@ -12,7 +12,7 @@ from aiohttp import (
 )
 from httpx import ReadTimeout
 
-log = logging.getLogger("red.vrt.fluent")
+log = logging.getLogger("red.vrt.fluent.api")
 
 
 class Result:
