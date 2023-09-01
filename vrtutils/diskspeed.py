@@ -18,7 +18,7 @@ from time import perf_counter as time
 def get_write_speed(path, blocks_count=128, block_size=1048576):
     f = os.open(path, os.O_CREAT | os.O_WRONLY, 0o777)  # Low Level I/O
     w_times = []
-    for i in range(blocks_count):
+    for _ in range(blocks_count):
         buff = os.urandom(block_size)
         start = time()
         os.write(f, buff)
@@ -38,7 +38,7 @@ def get_read_speed(path, blocks_count=128, block_size=1048576):
     shuffle(offsets)
 
     r_times = []
-    for i, offset in enumerate(offsets, 1):
+    for offset in offsets:
         start = time()
         os.lseek(f, offset, os.SEEK_SET)  # Set Position
         buff = os.read(f, block_size)  # Read From Position
