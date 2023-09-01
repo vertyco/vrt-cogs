@@ -319,15 +319,15 @@ class VrtUtils(commands.Cog):
         Get info about the bot
         """
         async with ctx.typing():
-            latency = round(self.bot.latency * 1000, 2)
-            if latency > 100:
-                color = discord.Color.red()
-            elif latency > 60:
-                color = discord.Color.orange()
-            elif latency > 40:
-                color = discord.Color.yellow()
-            else:
-                color = discord.Color.green()
+            latency = self.bot.latency * 1000
+
+            latency_ratio = max(0.0, min(1.0, latency / 100))
+
+            # Calculate RGB values based on latency ratio
+            green = 255 - round(255 * latency_ratio) if latency_ratio > 0.5 else 255
+            red = 255 if latency_ratio > 0.5 else round(255 * latency_ratio)
+
+            color = discord.Color.from_rgb(red, green, 0)
 
             embed = await asyncio.to_thread(self.get_bot_info_embed, color)
 
