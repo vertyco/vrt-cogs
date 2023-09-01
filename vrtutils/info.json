@@ -4,7 +4,7 @@
   ],
   "description": "Random utility commands for viewing bot stats and users",
   "disabled": false,
-  "end_user_data_statement": "This cog does not store data about users.\nThis cog will also replace the built-in `ping` command.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/vrtutils/README.md",
+  "end_user_data_statement": "This cog does not store data about users.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/vrtutils/README.md",
   "hidden": false,
   "install_msg": "Thank you for installing!",
   "min_bot_version": "3.5.0",
@@ -17,8 +17,7 @@
   "required_cogs": {},
   "requirements": [
     "py-cpuinfo",
-    "speedtest-cli>=2.1.3",
-    "dislash.py"
+    "speedtest-cli>=2.1.3"
   ],
   "short": "Random utility commands",
   "tags": [
@@ -26,7 +25,9 @@
     "bot",
     "botstats",
     "botinfo",
-    "serverstats"
+    "serverstats",
+    "ping",
+    "latency"
   ],
   "type": "COG"
 }

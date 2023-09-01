@@ -37,7 +37,6 @@ from .dpymenu import DEFAULT_CONTROLS, confirm, menu
 
 log = logging.getLogger("red.vrt.vrtutils")
 DPY = discord.__version__
-old_ping = None
 
 
 async def wait_reply(ctx: commands.Context, timeout: int = 60):
@@ -66,7 +65,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.9.1"
+    __version__ = "1.10.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -79,15 +78,6 @@ class VrtUtils(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.path = cog_data_path(self)
-
-    async def cog_unload(self):
-        global old_ping
-        if old_ping:
-            try:
-                self.bot.remove_command("ping")
-            except Exception as e:
-                log.info("Failed to remove custom ping", exc_info=e)
-            self.bot.add_command(old_ping)
 
     # -/-/-/-/-/-/-/-/FORMATTING-/-/-/-/-/-/-/-/
     @staticmethod
@@ -261,30 +251,6 @@ class VrtUtils(commands.Cog):
                 results[f"read{stage + 1}"] = "Running..."
             await asyncio.sleep(1)
 
-    @commands.command(name="ping")
-    @commands.bot_has_permissions(embed_links=True)
-    async def ping_overwrite(self, ctx: commands.Context):
-        latency = round(self.bot.latency * 1000, 2)
-        if latency > 100:
-            color = discord.Color.red()
-        elif latency > 60:
-            color = discord.Color.orange()
-        elif latency > 40:
-            color = discord.Color.yellow()
-        else:
-            color = discord.Color.green()
-
-        text = f"WS: `{humanize_number(latency)}ms`"
-        embed = discord.Embed(description=text, color=color)
-
-        start = perf_counter()
-        message = await ctx.send(embed=embed)
-        end = perf_counter()
-
-        message_latency = round((end - start) * 1000, 2)
-        embed.description += f"\nMsg: `{humanize_number(message_latency)}ms`"
-        await message.edit(embed=embed)
-
     @commands.command()
     @commands.is_owner()
     async def pip(self, ctx, *, command: str):
@@ -347,15 +313,44 @@ class VrtUtils(commands.Cog):
     # https://github.com/kennnyshiwa/kennnyshiwa-cogs
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 15, commands.BucketType.user)
     async def botinfo(self, ctx: commands.Context):
         """
         Get info about the bot
         """
         async with ctx.typing():
-            color = await self.bot.get_embed_color(ctx)
+            latency = round(self.bot.latency * 1000, 2)
+            if latency > 100:
+                color = discord.Color.red()
+            elif latency > 60:
+                color = discord.Color.orange()
+            elif latency > 40:
+                color = discord.Color.yellow()
+            else:
+                color = discord.Color.green()
+
             embed = await asyncio.to_thread(self.get_bot_info_embed, color)
-            await ctx.send(embed=embed)
+
+            latency_txt = f"Websocket: {humanize_number(latency)} ms"
+            embed.add_field(
+                name="\N{HIGH VOLTAGE SIGN} Latency",
+                value=box(latency_txt, lang="python"),
+                inline=False,
+            )
+
+            start = perf_counter()
+            message = await ctx.send(embed=embed)
+            end = perf_counter()
+
+            field = embed.fields[-1]
+            latency_txt += f"\nMessage:   {humanize_number(round((end - start) * 1000, 2))} ms"
+            embed.set_field_at(
+                index=5,
+                name=field.name,
+                value=box(latency_txt, lang="python"),
+                inline=False,
+            )
+            await message.edit(embed=embed)
 
     def get_bot_info_embed(self, color: discord.Color) -> discord.Embed:
         process = psutil.Process(os.getpid())
@@ -437,6 +432,9 @@ class VrtUtils(commands.Cog):
             title=f"Stats for {self.bot.user.display_name}",
             description="Below are various stats about the bot and the system it runs on.",
             color=color,
+        )
+        embed.set_footer(
+            text=f"System: {ostype}\nUptime: {sys_uptime}", icon_url=self.bot.user.display_avatar
         )
 
         botstats = (
@@ -523,9 +521,6 @@ class VrtUtils(commands.Cog):
             inline=False,
         )
 
-        embed.set_footer(
-            text=f"System: {ostype}\nUptime: {sys_uptime}", icon_url=self.bot.user.display_avatar
-        )
         return embed
 
     @commands.command()
@@ -1049,13 +1044,3 @@ class VrtUtils(commands.Cog):
 
         embed.description = txt
         await ctx.send(embed=embed)
-
-
-async def setup(bot: Red):
-    global old_ping
-    old_ping = bot.get_command("ping")
-    if old_ping:
-        bot.remove_command(old_ping.name)
-
-    cog = VrtUtils(bot)
-    await bot.add_cog(cog)
