@@ -880,8 +880,12 @@ class Admin(MixinMeta):
         if conf.api_key:
             try:
                 await openai.Model.aretrieve(model, api_key=conf.api_key)
-            except openai.InvalidRequestError:
-                return await ctx.send(_("This model is not available for the API key provided!"))
+            except openai.InvalidRequestError as e:
+                err = e._message or ""
+                txt = _("This model is not available for the API key provided!{}").format(
+                    f"\n{err}" if err else ""
+                )
+                return await ctx.send(txt)
 
         if model not in valid_raw:
             return await ctx.send(
