@@ -28,7 +28,7 @@ class Meow(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -41,17 +41,17 @@ class Meow(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def meow(self, ctx: commands.Context, *, text: str = None):
-        if not text:
-            if hasattr(ctx.message, "reference") and ctx.message.reference:
-                try:
-                    text = ctx.message.reference.resolved.content
-                except AttributeError:
-                    pass
-            else:
-                async for msg in ctx.channel.history(limit=3, oldest_first=False):
-                    if text := msg.content:
-                        break
+    async def meow(self, ctx: commands.Context):
+        text = ""
+        if hasattr(ctx.message, "reference") and ctx.message.reference:
+            try:
+                text = ctx.message.reference.resolved.content
+            except AttributeError:
+                pass
+        else:
+            async for msg in ctx.channel.history(limit=3, oldest_first=False):
+                if text := msg.content:
+                    break
         await self.meowstring(text, ctx)
 
     async def meowstring(self, text: str, ctx: commands.Context):
