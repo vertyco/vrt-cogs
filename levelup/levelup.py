@@ -479,7 +479,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     continue
                 if isinstance(v, int) or isinstance(v, float):
                     continue
-                conf["users"][uid][k] = int(v) if v is not None else 0
+                conf["users"][uid][k] = int(v.replace(",", "")) if v is not None else 0
                 cleaned.append(f"{k} stat should be int")
 
             # Check prestige settings
