@@ -87,7 +87,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.3"
+    __version__ = "3.7.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -536,7 +536,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             "prestige": 0,
             "emoji": None,
             "stars": 0,
-            "background": None,
+            "background": "random",
             "full": True,
             "colors": {"name": None, "stat": None, "levelbar": None},
             "font": None,
