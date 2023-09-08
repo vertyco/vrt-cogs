@@ -41,7 +41,7 @@ class Pixl(commands.Cog):
     """Guess pictures for points"""
 
     __author__ = "Vertyco"
-    __version__ = "0.3.3"
+    __version__ = "0.3.4"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -290,7 +290,9 @@ class Pixl(commands.Cog):
                     await bank.deposit_credits(winner, reward)
                 except BalanceTooHigh as e:
                     await bank.set_balance(winner, e.max_balance)
-        for person in game.data["participants"]:
+
+        players = game.data.copy()["participants"]
+        for person in players:
             if person.bot:
                 continue
             stats = await self.config.member(person).all()
