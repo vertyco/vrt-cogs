@@ -87,7 +87,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.4"
+    __version__ = "3.7.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -3002,7 +3002,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @level_roles.command(name="del")
     async def del_level_role(self, ctx: commands.Context, level: str):
-        """Assign a role to a level"""
+        """Unassign a role from a level"""
         if level in self.data[ctx.guild.id]["levelroles"]:
             del self.data[ctx.guild.id]["levelroles"][level]
             await ctx.send(_("Level role has been deleted!"))

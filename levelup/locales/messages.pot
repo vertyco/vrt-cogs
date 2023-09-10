@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-08-26 17:01-0400\n"
+"POT-Creation-Date: 2023-09-10 11:17-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1969,7 +1969,7 @@ msgstr ""
 msgid "Automatic role removal **Enabled**"
 msgstr ""
 
-#: levelup.py:2984 levelup.py:3005
+#: levelup.py:2984
 #, docstring
 msgid "Assign a role to a level"
 msgstr ""
@@ -2001,6 +2001,11 @@ msgstr ""
 
 #: levelup.py:2999
 msgid " as "
+msgstr ""
+
+#: levelup.py:3005
+#, docstring
+msgid "Unassign a role from a level"
 msgstr ""
 
 #: levelup.py:3008
