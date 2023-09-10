@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-26 17:01-0400\n"
-"PO-Revision-Date: 2023-08-26 22:43\n"
+"POT-Creation-Date: 2023-09-10 11:17-0400\n"
+"PO-Revision-Date: 2023-09-10 15:46\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -1928,7 +1928,7 @@ msgstr "Automatsko uklanjanje uloga **onemogućeno**"
 msgid "Automatic role removal **Enabled**"
 msgstr "Automatsko uklanjanje uloga **omogućeno**"
 
-#: levelup.py:2984 levelup.py:3005
+#: levelup.py:2984
 #, docstring
 msgid "Assign a role to a level"
 msgstr "Dodijelite ulogu razini"
@@ -1960,6 +1960,11 @@ msgstr ""
 #: levelup.py:2999
 msgid " as "
 msgstr " kao "
+
+#: levelup.py:3005
+#, docstring
+msgid "Unassign a role from a level"
+msgstr ""
 
 #: levelup.py:3008
 msgid "Level role has been deleted!"
