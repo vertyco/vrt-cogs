@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-26 17:01-0400\n"
-"PO-Revision-Date: 2023-08-26 21:07\n"
+"POT-Creation-Date: 2023-09-10 11:17-0400\n"
+"PO-Revision-Date: 2023-09-10 15:46\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -408,7 +408,7 @@ msgstr ""
 
 #: base.py:807
 msgid "I do not have permission to send embeds to this channel"
-msgstr "Nemam dozvolu za slanje ugradnje na ovaj kanal"
+msgstr ""
 
 #: base.py:850 generator.py:823 levelup.py:2999
 msgid "Level "
@@ -416,11 +416,11 @@ msgstr "Level "
 
 #: base.py:852 generator.py:223
 msgid "Prestige "
-msgstr "Prestiž "
+msgstr ""
 
 #: base.py:853
 msgid " stars\n"
-msgstr " zvijezde\n"
+msgstr ""
 
 #: base.py:854
 msgid " messages sent\n"
@@ -436,11 +436,11 @@ msgstr "Rank "
 
 #: base.py:863
 msgid ", with "
-msgstr ", sa "
+msgstr ""
 
 #: base.py:865
 msgid "% of global server Exp"
-msgstr "% globalnog servera Exp"
+msgstr ""
 
 #: base.py:867
 msgid "{}'s Profile"
@@ -448,7 +448,7 @@ msgstr ""
 
 #: base.py:870
 msgid "Progress"
-msgstr "Napredak"
+msgstr ""
 
 #: base.py:942
 #, docstring
@@ -458,10 +458,7 @@ msgid "\n"
 "        reset your level and experience to gain a prestige level and any perks associated with it\n\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
-msgstr "\n"
-"Prestignite svoj rang!\n"
-"Nakon što dostignete zahtjev za prestižnom razinom ovog poslužitelja, možete resetirati svoju razinu i iskustvo kako biste stekli prestižnu razinu i sve pogodnosti povezane s njom.\n\n"
-"Ako imate više razine i XP-a kada prestižete, vaš XP i razine će se prenijeti "
+msgstr ""
 
 #: base.py:956
 msgid "Prestige is disabled on this server!"
@@ -469,31 +466,31 @@ msgstr "Prestige je onemogućen u ovom serveru!"
 
 #: base.py:959 levelup.py:2558
 msgid "Prestige levels have not been set yet!"
-msgstr "Razine prestiža još nisu postavljene!"
+msgstr ""
 
 #: base.py:963
 msgid "No information available for you yet!"
-msgstr "Nema dostupnih informacija za vas još!"
+msgstr ""
 
 #: base.py:970
 msgid "**You are not eligible to prestige yet!**\n"
-msgstr "Niste još spremni za prestiž!\n"
+msgstr ""
 
 #: base.py:971
 msgid "`Your level:     `"
-msgstr "`Vaša razina:     `"
+msgstr ""
 
 #: base.py:972
 msgid "`Required Level: `"
-msgstr "`Potrebna razina: `"
+msgstr ""
 
 #: base.py:978
 msgid "Prestige level "
-msgstr "Prestižna razina "
+msgstr ""
 
 #: base.py:978
 msgid " has not been set yet!"
-msgstr " još nije postavljeno!"
+msgstr ""
 
 #: base.py:989
 msgid "I do not have the proper permissions to assign you to the {} role!"
@@ -501,7 +498,7 @@ msgstr ""
 
 #: base.py:1004
 msgid "You have reached Prestige "
-msgstr "Dosegli ste Prestižu "
+msgstr ""
 
 #: base.py:1028
 msgid "I don't have permissions to remove your old roles!"
@@ -520,24 +517,19 @@ msgid "\n"
 "        Valid options are `exp`, `messages`, and `voice`\n"
 "        Abbreviations of those arguments may also be used\n"
 "        "
-msgstr "\n"
-"Pogledajte ploču s vođama\n\n"
-"        **Argumenti**\n"
-"        `stat`: Koju vrstu statistike prikazati na tjednoj ploči s vođama\n"
-"        Valide opcije su `exp`, `poruke` i `glasovi`\n"
-"        Također se mogu koristiti skraćenice za ove argumente "
+msgstr ""
 
 #: base.py:1061
 msgid "Use the `"
-msgstr "Koristite `"
+msgstr ""
 
 #: base.py:1061
 msgid "startop` command for that"
-msgstr "naredba `startop` za to"
+msgstr ""
 
 #: base.py:1070 base.py:1153
 msgid "No user data yet!"
-msgstr "Nema još korisničkih podataka!"
+msgstr ""
 
 #: base.py:1082
 #, docstring
@@ -546,7 +538,7 @@ msgstr "Pogledaj ljestvicu zvijezda"
 
 #: base.py:1094
 msgid "Nobody has stars yet 😕"
-msgstr "Još nitko nema zvijezde 😕"
+msgstr ""
 
 #: base.py:1109
 msgid "**Star Leaderboard**\n"
@@ -609,7 +601,7 @@ msgstr "Rank: #"
 
 #: generator.py:214 generator.py:625
 msgid "Level: "
-msgstr "Razina: "
+msgstr ""
 
 #: generator.py:216
 msgid "Exp: "
@@ -633,12 +625,12 @@ msgstr "Vrijeme u voiceu: "
 
 #: generator.py:633
 msgid " - Prestige "
-msgstr " - prestiž "
+msgstr ""
 
 #: generator.py:1103
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr "Dobijte prosječno trajanje sekvence GIF okvira"
+msgstr ""
 
 #: levelup.py:83
 #, docstring
@@ -678,7 +670,7 @@ msgstr "Nedjelja"
 
 #: levelup.py:357 levelup.py:361
 msgid "just gave a star to"
-msgstr "upravo sam dao zvijezdu"
+msgstr ""
 
 #: levelup.py:630
 msgid "You have just reached level {level} in {guild}!"
@@ -690,7 +682,7 @@ msgstr ""
 
 #: levelup.py:673
 msgid "You just leveled up in "
-msgstr "Upravo ste se upravo unaprijedili u "
+msgstr ""
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
@@ -699,7 +691,7 @@ msgstr ""
 #: levelup.py:998
 #, docstring
 msgid "Announce and reset the weekly leaderboard"
-msgstr "Najavite i resetirajte tjednu ploču s vodom"
+msgstr ""
 
 #: levelup.py:1008
 msgid "There are no users with exp"
@@ -753,11 +745,11 @@ msgstr "Pogledaj sve LevelUP postavke"
 
 #: levelup.py:1144
 msgid "Image"
-msgstr "Image"
+msgstr ""
 
 #: levelup.py:1144
 msgid "Embed"
-msgstr "Ugraditi"
+msgstr ""
 
 #: levelup.py:1146
 msgid "**Main**\n"
@@ -765,7 +757,7 @@ msgstr ""
 
 #: levelup.py:1147
 msgid "`Profile Type:      `"
-msgstr "`Vrsta profila:      `"
+msgstr ""
 
 #: levelup.py:1148
 msgid "`Include Balance:   `"
@@ -773,7 +765,7 @@ msgstr "`Uključi stanje računa:   `"
 
 #: levelup.py:1149
 msgid "`Progress Bar:      `"
-msgstr "`Traka napretka:      `"
+msgstr ""
 
 #: levelup.py:1150
 msgid "**Messages**\n"
@@ -781,15 +773,15 @@ msgstr "**Poruke**\n"
 
 #: levelup.py:1151
 msgid "`Message XP:        `"
-msgstr "`Poruka XP:`"
+msgstr ""
 
 #: levelup.py:1152
 msgid "`Min Msg Length:    `"
-msgstr "`Min Msg Length:    ` -> `Min duljina poruke:    `"
+msgstr ""
 
 #: levelup.py:1153 levelup.py:1170
 msgid "`Cooldown:          `"
-msgstr "`Hlađenje:          `"
+msgstr ""
 
 #: levelup.py:1154
 msgid "**Voice**\n"
@@ -801,35 +793,35 @@ msgstr "`Voice XP:          `"
 
 #: levelup.py:1156
 msgid "`Ignore Muted:      `"
-msgstr "`Zanemari prigušeno:`"
+msgstr ""
 
 #: levelup.py:1157
 msgid "`Ignore Solo:       `"
-msgstr "`Ignoriraj Solo:      `"
+msgstr ""
 
 #: levelup.py:1158
 msgid "`Ignore Deafened:   `"
-msgstr "`Zanemari se zagluše:`"
+msgstr ""
 
 #: levelup.py:1159
 msgid "`Ignore Invisible:  `"
-msgstr "`Zanemari nevidljivo:`"
+msgstr ""
 
 #: levelup.py:1160
 msgid "**Level Algorithm**\n"
-msgstr "**Algoritam razine**\n"
+msgstr ""
 
 #: levelup.py:1161
 msgid "`Base Multiplier:   `"
-msgstr "`Bazni multiplikator:   `"
+msgstr ""
 
 #: levelup.py:1162
 msgid "`Exp Multiplier:    `"
-msgstr "`EXP multiplikator:`"
+msgstr ""
 
 #: levelup.py:1163
 msgid "**LevelUps**\n"
-msgstr "**LevelUps**\n"
+msgstr ""
 
 #: levelup.py:1164
 msgid "`LevelUp Notify:    `"
@@ -837,36 +829,35 @@ msgstr ""
 
 #: levelup.py:1165
 msgid "`Notify in DMs:     `"
-msgstr "`Obavijesti u DMS:`"
+msgstr ""
 
 #: levelup.py:1166
 msgid "`Mention User:      `"
-msgstr "`Spomenite korisnik:`"
+msgstr ""
 
 #: levelup.py:1167
 msgid "`AutoRemove Roles:  `"
-msgstr "`Uloge za automatsko uklanjanje:`"
+msgstr ""
 
 #: levelup.py:1168
 msgid "`LevelUp Channel:   `"
-msgstr "`LevelUp Channel:   `"
+msgstr ""
 
 #: levelup.py:1169
 msgid "**Stars**\n"
-msgstr "**Zvijezde**\n"
+msgstr ""
 
 #: levelup.py:1171
 msgid "`React Mention:     `"
-msgstr "`React Spomenuti:`"
+msgstr ""
 
 #: levelup.py:1172
 msgid "`MentionAutoDelete: `"
-msgstr "`MentionAutoDelete: `\n\n"
-"`Spomenutoutodelete: `"
+msgstr ""
 
 #: levelup.py:1174
 msgid "**Levels**\n"
-msgstr "**Razine**\n"
+msgstr ""
 
 #: levelup.py:1181
 msgid "`Level "
@@ -875,8 +866,7 @@ msgstr "`Level "
 #: levelup.py:1183
 msgid "**Prestige**\n"
 "`Stack Roles: `"
-msgstr "**Prestiž**\n"
-"`Stack Uloge:`"
+msgstr ""
 
 #: levelup.py:1184
 msgid "`Level Req:  `"
@@ -1208,7 +1198,7 @@ msgstr ""
 
 #: levelup.py:1747
 msgid "No MEE6 stats were found"
-msgstr "Nisu pronađene statistike Mee6"
+msgstr ""
 
 #: levelup.py:1749 levelup.py:1895 levelup.py:2039
 msgid "Imported {} User(s)"
@@ -1304,7 +1294,7 @@ msgstr ""
 
 #: levelup.py:2060
 msgid "Not importing users"
-msgstr "Ne uvoze se korisnici"
+msgstr ""
 
 #: levelup.py:2064
 msgid "No config found for Fixator's Leveler cog!"
@@ -1316,19 +1306,19 @@ msgstr ""
 
 #: levelup.py:2112
 msgid "Failed to connect to MongoDB"
-msgstr "Nije uspio povezati se s MongoDB-om"
+msgstr ""
 
 #: levelup.py:2116
 msgid "Importing users from Leveler..."
-msgstr "Uvoz korisnika iz Leveler-a..."
+msgstr ""
 
 #: levelup.py:2176
 msgid "Importing Complete!\n"
-msgstr "Uvoz kompleta!\n"
+msgstr ""
 
 #: levelup.py:2178
 msgid " users imported"
-msgstr " Korisnici uvezeni"
+msgstr ""
 
 #: levelup.py:2192
 #, docstring
@@ -1336,9 +1326,7 @@ msgid "\n"
 "        Delete users no longer in the server\n\n"
 "        Also cleans up any missing keys or discrepancies in the config\n"
 "        "
-msgstr "\n"
-"Izbrišite korisnike koji više nisu na poslužitelju.\n\n"
-"        Također čisti sve nedostajuće ključeve ili neslaganja u konfiguraciji "
+msgstr ""
 
 #: levelup.py:2210
 msgid "Nothing to clean"
@@ -1940,7 +1928,7 @@ msgstr "Automatsko uklanjanje uloga **onemogućeno**"
 msgid "Automatic role removal **Enabled**"
 msgstr "Automatsko uklanjanje uloga **omogućeno**"
 
-#: levelup.py:2984 levelup.py:3005
+#: levelup.py:2984
 #, docstring
 msgid "Assign a role to a level"
 msgstr "Dodijelite ulogu razini"
@@ -1972,6 +1960,11 @@ msgstr ""
 #: levelup.py:2999
 msgid " as "
 msgstr " kao "
+
+#: levelup.py:3005
+#, docstring
+msgid "Unassign a role from a level"
+msgstr ""
 
 #: levelup.py:3008
 msgid "Level role has been deleted!"

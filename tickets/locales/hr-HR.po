@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-03 11:36-0400\n"
-"PO-Revision-Date: 2023-08-03 17:11\n"
+"POT-Creation-Date: 2023-09-10 11:41-0400\n"
+"PO-Revision-Date: 2023-09-10 15:46\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "You are not allowed to interact with this button."
 msgstr "Nije vam dopušteno komunicirati s ovim gumbom."
 
-#: tickets.py:28
+#: tickets.py:30
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
@@ -29,20 +29,20 @@ msgid "\n"
 msgstr "\n"
 "Sustav podrške ulaznicama s funkcionalnošću s više ploča "
 
-#: tickets.py:41
+#: tickets.py:43
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: tickets.py:297
+#: tickets.py:328
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr ""
 
-#: tickets.py:313
+#: tickets.py:344
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr "(Auto-close) otvorena karta bez odgovora za "
 
-#: tickets.py:362
+#: tickets.py:393
 msgid "User left guild(Auto-Close)"
 msgstr "Korisnik je napustio Ceh (Auto-Zatvaranje)"
 
@@ -90,35 +90,35 @@ msgstr ""
 msgid "Files uploaded: "
 msgstr ""
 
-#: utils.py:258
+#: utils.py:261
 msgid "There are no tickets stored in the database."
 msgstr ""
 
-#: utils.py:288
+#: utils.py:301
 msgid "ticket"
 msgstr "ulaznica"
 
-#: utils.py:288
+#: utils.py:301
 msgid "tickets"
 msgstr "ulaznice"
 
-#: utils.py:289
+#: utils.py:302
 msgid "Pruned `{}` invalid {}"
 msgstr ""
 
-#: utils.py:292
+#: utils.py:305
 msgid "There are no tickets to prune"
 msgstr ""
 
-#: utils.py:300
+#: utils.py:315
 msgid "Ticket Overview"
 msgstr ""
 
-#: utils.py:325
+#: utils.py:340
 msgid "There are no active tickets."
 msgstr ""
 
-#: utils.py:354
+#: utils.py:366
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
@@ -161,59 +161,59 @@ msgstr ""
 msgid "You must have one of the following roles to open this ticket: "
 msgstr ""
 
-#: views.py:290
+#: views.py:288
 msgid "You have the maximum amount of tickets opened already!"
 msgstr "Već ste otvorili maksimalni iznos ulaznica!"
 
-#: views.py:297
+#: views.py:296
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
 msgstr "Ne može se pronaći kategorija za ovaj panel za podršku!\n"
 "Molimo kontaktirajte administratora!"
 
-#: views.py:312
+#: views.py:314
 msgid "Submission Info"
 msgstr ""
 
-#: views.py:330
+#: views.py:332
 msgid "Unanswered"
 msgstr ""
 
-#: views.py:419
+#: views.py:421
 msgid "{} ticket for {}"
 msgstr ""
 
-#: views.py:443
+#: views.py:445
 msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
 msgstr ""
 
-#: views.py:455
+#: views.py:457
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
 msgstr ""
 
-#: views.py:469
+#: views.py:471
 msgid "Welcome to your ticket channel "
 msgstr "Dobrodošli na vaš kanal za kartu "
 
-#: views.py:471
+#: views.py:473
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
 msgstr ""
 
-#: views.py:523
+#: views.py:525
 msgid "Ticket form questions"
 msgstr ""
 
-#: views.py:526
+#: views.py:528
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
 msgstr ""
 
-#: views.py:531
+#: views.py:533
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
 msgstr ""
 
-#: views.py:549
+#: views.py:551
 msgid "`Created By: `{user}\n"
 "`User ID:    `{userid}\n"
 "`Opened:     `{timestamp}\n"
@@ -222,23 +222,27 @@ msgid "`Created By: `{user}\n"
 "**[Click to Jump!]({jumpurl})**"
 msgstr ""
 
-#: views.py:558
+#: views.py:560
 msgid "Ticket Opened"
 msgstr ""
 
-#: views.py:630
+#: views.py:637
 msgid "You have already been added to the ticket **{}**!"
 msgstr ""
 
-#: views.py:641
+#: views.py:643
+msgid "The maximum amount of staff have claimed this ticket!"
+msgstr ""
+
+#: views.py:654
 msgid "You already have access to the ticket **{}**!"
 msgstr ""
 
-#: views.py:646
+#: views.py:659
 msgid "{} was added to the ticket"
 msgstr ""
 
-#: views.py:651
+#: views.py:664
 msgid "You have been added to the ticket **{}**"
 msgstr ""
 

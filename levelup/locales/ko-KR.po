@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-26 17:01-0400\n"
-"PO-Revision-Date: 2023-08-26 21:07\n"
+"POT-Creation-Date: 2023-09-10 11:17-0400\n"
+"PO-Revision-Date: 2023-09-10 15:46\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -1994,7 +1994,7 @@ msgstr "자동 역할 제거 **사용 안 함**"
 msgid "Automatic role removal **Enabled**"
 msgstr "자동 역할 제거 **사용됨**"
 
-#: levelup.py:2984 levelup.py:3005
+#: levelup.py:2984
 #, docstring
 msgid "Assign a role to a level"
 msgstr "레벨에 역할을 할당하세요"
@@ -2026,6 +2026,11 @@ msgstr " 된 것입니다 "
 #: levelup.py:2999
 msgid " as "
 msgstr " 제공한 번역 텍스트가 원본보다 현저히 긴 경우. 번역이 원본 텍스트의 핵심 의미를 유지하면서 불필요한 추가 내용을 포함하지 않도록 하세요. 업데이트된 번역만 수정하여 반환합니다 "
+
+#: levelup.py:3005
+#, docstring
+msgid "Unassign a role from a level"
+msgstr ""
 
 #: levelup.py:3008
 msgid "Level role has been deleted!"
