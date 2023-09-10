@@ -809,6 +809,7 @@ class UserCommands(MixinMeta, ABC):
         bal = await bank.get_balance(user)
         currency_name = await bank.get_currency_name(ctx.guild)
 
+        role_icon = None
         if DPY2:
             pfp = user.display_avatar
             role_icon = user.top_role.display_icon
@@ -816,7 +817,6 @@ class UserCommands(MixinMeta, ABC):
                 role_icon = get_twemoji(role_icon)
         else:
             pfp = user.avatar_url
-            role_icon = None
 
         p = users[user_id]
         full = p["full"]
