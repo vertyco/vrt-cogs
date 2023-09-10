@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-03 11:36-0400\n"
-"PO-Revision-Date: 2023-08-04 00:04\n"
+"POT-Creation-Date: 2023-09-10 11:41-0400\n"
+"PO-Revision-Date: 2023-09-10 15:46\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "You are not allowed to interact with this button."
 msgstr "Bu düğme ile etkileşime girmenize izin verilmez."
 
-#: tickets.py:28
+#: tickets.py:30
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
@@ -29,20 +29,20 @@ msgid "\n"
 msgstr "\n"
 "Çoklu panel işlevselliğine sahip destek bileti sistemi "
 
-#: tickets.py:41
+#: tickets.py:43
 #, docstring
 msgid "No data to delete"
 msgstr "Silinecek veri yok"
 
-#: tickets.py:297
+#: tickets.py:328
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr "Bu bilete önümüzdeki 20 dakika içinde yanıt vermezseniz otomatik olarak kapatılacaktır."
 
-#: tickets.py:313
+#: tickets.py:344
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr "(Otomatik Kapanış) Açılan bilet için yanıt yok "
 
-#: tickets.py:362
+#: tickets.py:393
 msgid "User left guild(Auto-Close)"
 msgstr "Kullanıcı loncadan ayrıldı (Otomatik Kapat)"
 
@@ -98,35 +98,35 @@ msgstr "Soru: {}\n"
 msgid "Files uploaded: "
 msgstr "Dosyalar yüklendi: "
 
-#: utils.py:258
+#: utils.py:261
 msgid "There are no tickets stored in the database."
 msgstr "Veritabanında kayıtlı bilet bulunmamaktadır."
 
-#: utils.py:288
+#: utils.py:301
 msgid "ticket"
 msgstr "bilet"
 
-#: utils.py:288
+#: utils.py:301
 msgid "tickets"
 msgstr "biletler"
 
-#: utils.py:289
+#: utils.py:302
 msgid "Pruned `{}` invalid {}"
 msgstr "Budanmış `{}` geçersiz {}"
 
-#: utils.py:292
+#: utils.py:305
 msgid "There are no tickets to prune"
 msgstr "Budamak için hiç bilet yok"
 
-#: utils.py:300
+#: utils.py:315
 msgid "Ticket Overview"
 msgstr "Bilet Genel Bakışı"
 
-#: utils.py:325
+#: utils.py:340
 msgid "There are no active tickets."
 msgstr "Aktif bilet bulunmamaktadır."
 
-#: utils.py:354
+#: utils.py:366
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
@@ -174,61 +174,61 @@ msgstr "Destek talebi oluşturması kara listeye alınmış bir rolünüz var!"
 msgid "You must have one of the following roles to open this ticket: "
 msgstr "Bu bileti açmak için aşağıdaki rollerden birine sahip olmanız gerekir: "
 
-#: views.py:290
+#: views.py:288
 msgid "You have the maximum amount of tickets opened already!"
 msgstr "Şimdiden maksimum miktarda bilet açtınız!"
 
-#: views.py:297
+#: views.py:296
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
 msgstr "Bu destek paneli için kategori bulunamıyor!\n"
 "Lütfen bir yöneticiyle iletişime geçin!"
 
-#: views.py:312
+#: views.py:314
 msgid "Submission Info"
 msgstr "Gönderim Bilgileri"
 
-#: views.py:330
+#: views.py:332
 msgid "Unanswered"
 msgstr "Cevapsız"
 
-#: views.py:419
+#: views.py:421
 msgid "{} ticket for {}"
 msgstr "{} için {} bileti"
 
-#: views.py:443
+#: views.py:445
 msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
 msgstr "Sizin için bir bilet oluşturmak için gerekli izinlere sahip değilim. İzinlerimi düzeltebilmeleri için lütfen bir yönetici ile iletişime geçin."
 
-#: views.py:455
+#: views.py:457
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
 msgstr "Biletiniz hazırlanırken bir hata oluştu, lütfen bir yönetici ile iletişime geçin!\n"
 "{}"
 
-#: views.py:469
+#: views.py:471
 msgid "Welcome to your ticket channel "
 msgstr "Bilet kanalınıza hoş geldiniz "
 
-#: views.py:471
+#: views.py:473
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
 msgstr "\n"
 "Siz veya bir yönetici bu işlemi `{}close` komutuyla kapatabilirsiniz"
 
-#: views.py:523
+#: views.py:525
 msgid "Ticket form questions"
 msgstr "Bilet formu soruları"
 
-#: views.py:526
+#: views.py:528
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
 msgstr "Yanıt mesajını sabitlemeye çalıştım ancak mesajları yönetme izinlerim yok!"
 
-#: views.py:531
+#: views.py:533
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
 msgstr "Bilet kanalınız oluşturuldu, **[BURAYA TIKLAYIN]({})**"
 
-#: views.py:549
+#: views.py:551
 msgid "`Created By: `{user}\n"
 "`User ID:    `{userid}\n"
 "`Opened:     `{timestamp}\n"
@@ -242,23 +242,27 @@ msgstr "`Oluşturan: `{kullanıcı}\n"
 "`Panel Adı: `{panelname}\n"
 "**[Atlamak için Tıklayınız!]({jumpurl})**"
 
-#: views.py:558
+#: views.py:560
 msgid "Ticket Opened"
 msgstr "Bilet Açıldı"
 
-#: views.py:630
+#: views.py:637
 msgid "You have already been added to the ticket **{}**!"
 msgstr "Zaten **{}** numaralı bilete eklendiniz!"
 
-#: views.py:641
+#: views.py:643
+msgid "The maximum amount of staff have claimed this ticket!"
+msgstr ""
+
+#: views.py:654
 msgid "You already have access to the ticket **{}**!"
 msgstr "**{}** numaralı bilete zaten erişiminiz var!"
 
-#: views.py:646
+#: views.py:659
 msgid "{} was added to the ticket"
 msgstr "{} bilete eklendi"
 
-#: views.py:651
+#: views.py:664
 msgid "You have been added to the ticket **{}**"
 msgstr "Bilete eklendiniz **{}**"
 
