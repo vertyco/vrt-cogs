@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-26 17:01-0400\n"
-"PO-Revision-Date: 2023-08-26 21:07\n"
+"POT-Creation-Date: 2023-09-10 11:17-0400\n"
+"PO-Revision-Date: 2023-09-10 15:46\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -2019,7 +2019,7 @@ msgstr "Otomatik rol kaldırma **Devre dışı**"
 msgid "Automatic role removal **Enabled**"
 msgstr "Otomatik rol kaldırma **Etkin**"
 
-#: levelup.py:2984 levelup.py:3005
+#: levelup.py:2984
 #, docstring
 msgid "Assign a role to a level"
 msgstr "Bir seviyeye rol atama"
@@ -2051,6 +2051,11 @@ msgstr " olmuştur "
 #: levelup.py:2999
 msgid " as "
 msgstr " olarak "
+
+#: levelup.py:3005
+#, docstring
+msgid "Unassign a role from a level"
+msgstr ""
 
 #: levelup.py:3008
 msgid "Level role has been deleted!"
