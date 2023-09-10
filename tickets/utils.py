@@ -309,7 +309,9 @@ async def prune_invalid_tickets(
     return True if count else False
 
 
-def prep_overview_embeds(guild: discord.Guild, opened: dict) -> List[discord.Embed]:
+def prep_overview_embeds(
+    guild: discord.Guild, opened: dict, mention: bool = False
+) -> List[discord.Embed]:
     title = _("Ticket Overview")
     active = []
     for uid, opened_tickets in opened.items():
@@ -325,7 +327,7 @@ def prep_overview_embeds(guild: discord.Guild, opened: dict) -> List[discord.Emb
             panel_name = ticket_info["panel"]
 
             entry = [
-                channel.name,
+                channel.mention if mention else channel.name,
                 panel_name,
                 int(open_time_obj.timestamp()),
                 member.display_name,
@@ -345,11 +347,8 @@ def prep_overview_embeds(guild: discord.Guild, opened: dict) -> List[discord.Emb
 
     desc = ""
     for index, i in enumerate(sorted_active):
-        mention = i[0]
-        panel = i[1]
-        ts = i[2]
-        username = i[3]
-        desc += f"{index + 1}. {mention}({panel}) <t:{ts}:R> - {username}\n"
+        chan_mention, panel, ts, username = i
+        desc += f"{index + 1}. {chan_mention}({panel}) <t:{ts}:R> - {username}\n"
 
     embeds = []
     for p in pagify(desc, page_length=4000):
@@ -379,7 +378,7 @@ async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[i
     if not channel:
         return
 
-    embeds = prep_overview_embeds(guild, conf["opened"])
+    embeds = prep_overview_embeds(guild, conf["opened"], conf.get("overview_mention", False))
 
     message = None
     if msg_id := conf["overview_msg"]:

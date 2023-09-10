@@ -32,7 +32,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.2.0"
+    __version__ = "2.3.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -53,6 +53,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             "inactive": 0,  # Auto close tickets with X hours of inactivity (0 = disabled)
             "overview_channel": 0,  # Overview of open tickets across panels
             "overview_msg": 0,  # Message id of the overview info
+            "overview_mention": False,  # Whether the channel names are displayed or the name
             # Ticket data
             "opened": {},  # All opened tickets
             "panels": {},  # All ticket panels
