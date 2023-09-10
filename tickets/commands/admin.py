@@ -1208,6 +1208,18 @@ class AdminCommands(MixinMeta):
                 await self.config.guild(ctx.guild).overview_msg.set(new_id)
 
     @tickets.command()
+    async def overviewmention(self, ctx: commands.Context):
+        """Toggle whether channels are mentioned in the active ticket overview"""
+        toggle = await self.config.guild(ctx.guild).overview_mention()
+        if toggle:
+            await self.config.guild(ctx.guild).overview_mention.set(False)
+            txt = _("Ticket channels will no longer be mentioned in the active ticket channel")
+        else:
+            await self.config.guild(ctx.guild).overview_mention.set(True)
+            txt = _("Ticket channels now be mentioned in the active ticket channel")
+        await ctx.send(txt)
+
+    @tickets.command()
     async def cleanup(self, ctx: commands.Context):
         """Cleanup tickets that no longer exist"""
         async with ctx.typing():
