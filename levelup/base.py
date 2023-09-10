@@ -80,7 +80,7 @@ class UserCommands(MixinMeta, ABC):
             # Try running it through profile generator blind to see if it errors
 
             params = {"bg_image": image_url}
-            await asyncio.to_thread(self.generate_profile, kwargs=params)
+            await asyncio.to_thread(self.generate_profile, **params)
         except Exception as e:
             if "cannot identify image file" in str(e):
                 await ctx.send(
