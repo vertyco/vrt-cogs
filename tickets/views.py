@@ -536,7 +536,11 @@ class SupportButton(Button):
             with contextlib.suppress(discord.HTTPException):
                 await interaction.followup.send(embed=em, ephemeral=True)
         else:
-            await interaction.response.send_message(embed=em, ephemeral=True)
+            try:
+                await interaction.response.send_message(embed=em, ephemeral=True)
+            except discord.NotFound:
+                with contextlib.suppress(discord.HTTPException, discord.NotFound):
+                    await interaction.channel.send(embed=em, delete_after=5)
 
         if logchannel:
             ts = int(now.timestamp())
