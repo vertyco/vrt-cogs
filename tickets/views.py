@@ -429,7 +429,7 @@ class SupportButton(Button):
                 if conf["auto_add"] and not support_mentions:
                     for role in support_roles:
                         for member in role.members:
-                            await channel_or_thread.add_user(member)
+                            asyncio.create_task(channel_or_thread.add_user(member))
             else:
                 if alt_cid := panel.get("alt_channel"):
                     alt_channel = guild.get_channel(alt_cid)
