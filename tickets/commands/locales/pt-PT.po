@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-08-03 11:36-0400\n"
-"PO-Revision-Date: 2023-08-03 17:11\n"
+"POT-Creation-Date: 2023-09-10 11:41-0400\n"
+"PO-Revision-Date: 2023-09-10 15:46\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -130,7 +130,7 @@ msgstr "Utilize threads em vez de canais para os bilhetes.\n"
 msgid "<panel_name>`"
 msgstr "<panel_name>"
 
-#: commands\admin.py:72
+#: commands\admin.py:72 commands\admin.py:954
 msgid "Thread Tickets"
 msgstr "Bilhetes de Thread"
 
@@ -224,9 +224,9 @@ msgstr "Não consigo ver o histórico de mensagens nessa categoria!"
 #: commands\admin.py:193 commands\admin.py:215 commands\admin.py:242
 #: commands\admin.py:267 commands\admin.py:278 commands\admin.py:337
 #: commands\admin.py:350 commands\admin.py:393 commands\admin.py:620
-#: commands\admin.py:704 commands\admin.py:776 commands\admin.py:1012
-#: commands\admin.py:1041 commands\admin.py:1081 commands\admin.py:1098
-#: commands\admin.py:1111
+#: commands\admin.py:704 commands\admin.py:776 commands\admin.py:1020
+#: commands\admin.py:1047 commands\admin.py:1063 commands\admin.py:1103
+#: commands\admin.py:1120 commands\admin.py:1133
 msgid "Panel does not exist!"
 msgstr "O painel não existe!"
 
@@ -599,8 +599,8 @@ msgstr "Gostaria que esta incorporação de bilhete tivesse um rodapé?"
 msgid "Type your footer"
 msgstr "Escreva o seu rodapé"
 
-#: commands\admin.py:755 commands\admin.py:1329 commands\admin.py:1348
-#: commands\admin.py:1367
+#: commands\admin.py:755 commands\admin.py:1369 commands\admin.py:1392
+#: commands\admin.py:1411
 msgid "cancel"
 msgstr "cancelar"
 
@@ -715,121 +715,133 @@ msgstr "`Linha de botões: `"
 msgid "`Reason Modal:   `"
 msgstr "`Razão Modal: `"
 
-#: commands\admin.py:871
+#: commands\admin.py:869
+msgid "`Max Claims:     `"
+msgstr ""
+
+#: commands\admin.py:872
 msgid "Panel: "
 msgstr "Painel: "
 
-#: commands\admin.py:876
+#: commands\admin.py:877
 msgid "Panel Roles(Mention)"
 msgstr "Funções do painel (menção)"
 
-#: commands\admin.py:878
+#: commands\admin.py:879
 msgid "Required Roles to Open"
 msgstr "Funções necessárias para abrir"
 
-#: commands\admin.py:879
+#: commands\admin.py:880
 msgid "Page "
 msgstr "Página "
 
-#: commands\admin.py:891
+#: commands\admin.py:892
 msgid " panel has been deleted!"
 msgstr " O painel foi deletado!"
 
-#: commands\admin.py:899
+#: commands\admin.py:900
 msgid "There are no more panels configured!"
 msgstr "Não há mais painéis configurados!"
 
-#: commands\admin.py:906
+#: commands\admin.py:907
 #, docstring
 msgid "View support ticket settings"
 msgstr "Ver configurações dos bilhetes de suporte"
 
-#: commands\admin.py:909
+#: commands\admin.py:910
 msgid "hours"
 msgstr "horas"
 
-#: commands\admin.py:910
+#: commands\admin.py:911
 msgid "hour"
 msgstr "hora"
 
-#: commands\admin.py:913
+#: commands\admin.py:914
 msgid "Disabled"
 msgstr "Desativado"
 
-#: commands\admin.py:914
+#: commands\admin.py:915
 msgid "`Max Tickets:      `"
 msgstr "`Máximo de bilhetes:      `"
 
-#: commands\admin.py:915
+#: commands\admin.py:916
 msgid "`DM Alerts:        `"
 msgstr "`Alertas DM:        `"
 
-#: commands\admin.py:916
+#: commands\admin.py:917
 msgid "`Users can Rename: `"
 msgstr "`Os utilizadores podem mudar o nome: `"
 
-#: commands\admin.py:917
+#: commands\admin.py:918
 msgid "`Users can Close:  `"
 msgstr "`Os utilizadores podem Fechar:  `"
 
-#: commands\admin.py:918
+#: commands\admin.py:919
 msgid "`Users can Manage: `"
 msgstr "`Os utilizadores podem gerir: `"
 
-#: commands\admin.py:919
+#: commands\admin.py:920
 msgid "`Save Transcripts: `"
 msgstr "`Guardar Transcrições: `"
 
-#: commands\admin.py:920
+#: commands\admin.py:921
 msgid "`Auto Close:       `"
 msgstr "`Fechamento automático:       `"
 
-#: commands\admin.py:920
+#: commands\admin.py:921
 msgid "On"
 msgstr "Em"
 
-#: commands\admin.py:920
+#: commands\admin.py:921
 msgid "Off"
 msgstr "Desligado"
 
-#: commands\admin.py:921
+#: commands\admin.py:922
 msgid "`NoResponseDelete: `"
 msgstr "`NoResponseDelete: `"
 
-#: commands\admin.py:938
+#: commands\admin.py:939
 msgid "Invalid"
 msgstr "Inválido"
 
-#: commands\admin.py:940
+#: commands\admin.py:941
 msgid "Tickets Core Settings"
 msgstr "Configurações Principais dos Bilhetes"
 
-#: commands\admin.py:945
+#: commands\admin.py:946
 msgid "Support Roles(Mention)"
 msgstr "Funções de apoio (Mencionar)"
 
-#: commands\admin.py:947
+#: commands\admin.py:948
 msgid "Blacklist"
 msgstr "Lista negra"
 
-#: commands\admin.py:949
+#: commands\admin.py:951
+msgid "Thread tickets will be closed/archived rather than deleted"
+msgstr ""
+
+#: commands\admin.py:953
+msgid "Thread tickets will be deleted instead of closed/archived"
+msgstr ""
+
+#: commands\admin.py:957
 msgid "Thread Ticket Auto-Add"
 msgstr "Adição automática de bilhetes de discussão"
 
-#: commands\admin.py:950
+#: commands\admin.py:958
 msgid "Auto-add support and panel roles to tickets that use threads: **{}**"
 msgstr "Atribuir automaticamente funções de suporte e painel a tickets que usam threads: **{}**"
 
-#: commands\admin.py:958
+#: commands\admin.py:966
 #, docstring
 msgid "Set the max tickets a user can have open at one time of any kind"
 msgstr "Definir o número máximo de bilhetes que um usuário pode ter abertos ao mesmo tempo, de qualquer tipo"
 
-#: commands\admin.py:960
+#: commands\admin.py:968
 msgid "Max ticket amount must be greater than 0!"
 msgstr "O montante máximo do bilhete deve ser maior que 0!"
 
-#: commands\admin.py:971
+#: commands\admin.py:979
 #, docstring
 msgid "\n"
 "        Add/Remove ticket support roles (one at a time)\n\n"
@@ -841,15 +853,15 @@ msgstr "\n"
 "**Opcional**: incluir `true` para mencionar essa função quando um ticket for aberto\n\n"
 "Para remover uma função, basta executar este comando novamente com ela para removê-la        "
 
-#: commands\admin.py:983
+#: commands\admin.py:991
 msgid "{} has been removed from support roles"
 msgstr "{} foi removido das funções de suporte"
 
-#: commands\admin.py:987
+#: commands\admin.py:995
 msgid " has been added to support roles"
 msgstr " foi adicionido para suportar funções"
 
-#: commands\admin.py:998
+#: commands\admin.py:1006
 #, docstring
 msgid "\n"
 "        Add/Remove roles for a specific panel\n\n"
@@ -864,15 +876,28 @@ msgstr "Adicionar/Remover funções para um painel específico.\n\n"
 "Essas funções são um subconjunto especializado das principais funções de suporte.\n"
 "Use esse tipo de função se você deseja isolar grupos específicos para um determinado painel        "
 
-#: commands\admin.py:1019
+#: commands\admin.py:1027
 msgid "{} has been removed from the {} panel roles"
 msgstr "{} foi removido das funções do painel {}"
 
-#: commands\admin.py:1027
+#: commands\admin.py:1035
 msgid " has been added to the {} panel roles"
 msgstr " foi adicionado às funções do painel {}"
 
-#: commands\admin.py:1033
+#: commands\admin.py:1041
+#, docstring
+msgid "Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"
+msgstr ""
+
+#: commands\admin.py:1044
+msgid "Amount cannot be negative!"
+msgstr ""
+
+#: commands\admin.py:1050
+msgid "Up to {} staff member(s) can claim a single ticket"
+msgstr ""
+
+#: commands\admin.py:1055
 #, docstring
 msgid "\n"
 "        Add/Remove roles required to open a ticket for a specific panel\n\n"
@@ -881,15 +906,15 @@ msgid "\n"
 msgstr "Adicionar/Remover funções necessárias para abrir um ticket para um painel específico\n\n"
 "Especificar a mesma função para removê-la        "
 
-#: commands\admin.py:1048
+#: commands\admin.py:1070
 msgid "{} has been removed from the {} panel's required open roles"
 msgstr "{} foi removido das funções abertas obrigatórias do painel {}"
 
-#: commands\admin.py:1056
+#: commands\admin.py:1078
 msgid " has been added to the {} panel's required open roles"
 msgstr " foi adicionado às funções abertas obrigatórias do painel {}"
 
-#: commands\admin.py:1068
+#: commands\admin.py:1090
 #, docstring
 msgid "\n"
 "        Set an alternate channel that tickets will be opened under for a panel\n\n"
@@ -904,45 +929,45 @@ msgstr "Definir um canal alternativo no qual os bilhetes serão abertos para um 
 "Se o painel for do tipo canal e um canal for utilizado, o bot usará a categoria associada ao canal\n\n"
 "Para remover o canal alternativo, especifique o existente        "
 
-#: commands\admin.py:1085
+#: commands\admin.py:1107
 msgid "Alt channel has been removed for this panel!"
 msgstr "O canal Alt foi removido para este painel!"
 
-#: commands\admin.py:1087
+#: commands\admin.py:1109
 msgid "Alt channel has been set to {}!"
 msgstr "O canal alternativo foi definido para {}!"
 
-#: commands\admin.py:1092
+#: commands\admin.py:1114
 #, docstring
 msgid "Set the priority order of a panel's button"
 msgstr "Definir a ordem de prioridade dos botões de um painel"
 
-#: commands\admin.py:1094
+#: commands\admin.py:1116
 msgid "Priority needs to be between 1 and 25"
 msgstr "A prioridade precisa estar entre 1 e 25"
 
-#: commands\admin.py:1100
+#: commands\admin.py:1122
 msgid "Priority for this panel has been set to {}!"
 msgstr "A prioridade para este painel foi definida para {}!"
 
-#: commands\admin.py:1105
+#: commands\admin.py:1127
 #, docstring
 msgid "Set the row of a panel's button (0 - 4)"
 msgstr "Definir a linha de um botão de um painel (0 - 4)"
 
-#: commands\admin.py:1107
+#: commands\admin.py:1129
 msgid "Row needs to be between 0 and 4"
 msgstr "A linha precisa estar entre 0 e 4"
 
-#: commands\admin.py:1127
+#: commands\admin.py:1149
 msgid "This panel message already has the max amount of buttons for that specific row"
 msgstr "Esta mensagem do painel já possui a quantidade máxima de botões para essa linha específica"
 
-#: commands\admin.py:1132
+#: commands\admin.py:1154
 msgid "The row number for this panel has been set to {}!"
 msgstr "O número da linha para este painel foi definido como {}!"
 
-#: commands\admin.py:1142
+#: commands\admin.py:1164
 #, docstring
 msgid "\n"
 "        Add/Remove users or roles from the blacklist\n\n"
@@ -951,15 +976,15 @@ msgid "\n"
 msgstr "Adicionar/Remover usuários ou funções da lista negra\n\n"
 "Os usuários e as funções na lista negra não poderão criar um ticket               "
 
-#: commands\admin.py:1150
+#: commands\admin.py:1172
 msgid " has been removed from the blacklist"
 msgstr " foi removido da lista negra"
 
-#: commands\admin.py:1153
+#: commands\admin.py:1175
 msgid " has been added to the blacklist"
 msgstr " foi adicionado à lista negra"
 
-#: commands\admin.py:1157
+#: commands\admin.py:1179
 #, docstring
 msgid "\n"
 "        Auto-close ticket if opener doesn't say anything after X hours of opening\n\n"
@@ -968,7 +993,7 @@ msgid "\n"
 msgstr "Fecho automático do bilhete se o abridor não disser nada após X horas de abertura\n\n"
 "Definir como 0 para desativar esta opção               "
 
-#: commands\admin.py:1172
+#: commands\admin.py:1194
 #, docstring
 msgid "\n"
 "        Set a channel for the live overview message\n\n"
@@ -977,72 +1002,85 @@ msgid "\n"
 msgstr "Defina um canal para a mensagem de visão geral ao vivo.\n\n"
 "A mensagem de visão geral mostra todos os tickets ativos em todos os painéis configurados para um servidor        "
 
-#: commands\admin.py:1178
+#: commands\admin.py:1200
 msgid "Overview channel has been **Disabled**"
 msgstr "O canal de visão geral foi **Desativado**"
 
-#: commands\admin.py:1181
+#: commands\admin.py:1203
 msgid "Overview channel has been set to {}"
 msgstr "O canal de visão geral foi definido para {}"
 
-#: commands\admin.py:1190
+#: commands\admin.py:1212
+#, docstring
+msgid "Toggle whether channels are mentioned in the active ticket overview"
+msgstr ""
+
+#: commands\admin.py:1216
+msgid "Ticket channels will no longer be mentioned in the active ticket channel"
+msgstr ""
+
+#: commands\admin.py:1219
+msgid "Ticket channels now be mentioned in the active ticket channel"
+msgstr ""
+
+#: commands\admin.py:1224
 #, docstring
 msgid "Cleanup tickets that no longer exist"
 msgstr "Limpeza de bilhetes que já não existem"
 
-#: commands\admin.py:1198
+#: commands\admin.py:1232
 #, docstring
 msgid "(Toggle) The bot sending DM's for ticket alerts"
 msgstr "(Toggle) O bot enviando DMs para alertas de ingressos"
 
-#: commands\admin.py:1202
+#: commands\admin.py:1236
 msgid "DM alerts have been **Disabled**"
 msgstr "Os alertas DM foram **Desativados**"
 
-#: commands\admin.py:1205
+#: commands\admin.py:1239
 msgid "DM alerts have been **Enabled**"
 msgstr "Os alertas DM foram **ativados**"
 
-#: commands\admin.py:1209
+#: commands\admin.py:1243
 #, docstring
 msgid "(Toggle) Thread tickets being closed & archived instead of deleted"
 msgstr "(Alternar) Bilhetes de tópicos sendo fechados e arquivados em vez de serem excluídos"
 
-#: commands\admin.py:1213
+#: commands\admin.py:1247
 msgid "Closed ticket threads will be **Deleted**"
 msgstr "Os tópicos de bilhetes fechados serão **Eliminados**"
 
-#: commands\admin.py:1216
+#: commands\admin.py:1250
 msgid "Closed ticket threads will be **Closed & Archived**"
 msgstr "Os tópicos de bilhetes fechados serão **Fechados e arquivados**"
 
-#: commands\admin.py:1220
+#: commands\admin.py:1254
 #, docstring
 msgid "(Toggle) If users can rename their own tickets"
 msgstr "(Toggle) Se os usuários podem renomear seus próprios tickets"
 
-#: commands\admin.py:1224
+#: commands\admin.py:1258
 msgid "User can no longer rename their support channel"
 msgstr "O utilizador já não pode renomear o seu canal de suporte"
 
-#: commands\admin.py:1227
+#: commands\admin.py:1261
 msgid "User can now rename their support channel"
 msgstr "O utilizador agora pode renomear o seu canal de suporte"
 
-#: commands\admin.py:1231
+#: commands\admin.py:1265
 #, docstring
 msgid "(Toggle) If users can close their own tickets"
 msgstr "(Alternar) Se os usuários podem fechar seus próprios tickets"
 
-#: commands\admin.py:1235
+#: commands\admin.py:1269
 msgid "User can no longer close their support ticket channel"
 msgstr "O utilizador já não pode fechar o seu canal de bilhetes de suporte"
 
-#: commands\admin.py:1238
+#: commands\admin.py:1272
 msgid "User can now close their support ticket channel"
 msgstr "O utilizador agora pode fechar o seu canal de ticket de suporte"
 
-#: commands\admin.py:1242
+#: commands\admin.py:1276
 #, docstring
 msgid "\n"
 "        (Toggle) If users can manage their own tickets\n\n"
@@ -1051,15 +1089,15 @@ msgid "\n"
 msgstr "(Alternar) Se os usuários podem gerenciar seus próprios tickets\n\n"
 "Os usuários poderão adicionar/remover outros em seu ticket de suporte               "
 
-#: commands\admin.py:1250
+#: commands\admin.py:1284
 msgid "User can no longer manage their support ticket channel"
 msgstr "O utilizador já não pode gerir o seu canal de bilhetes de suporte"
 
-#: commands\admin.py:1253
+#: commands\admin.py:1287
 msgid "User can now manage their support ticket channel"
 msgstr "O usuário agora pode gerenciar seu canal de tickets de suporte"
 
-#: commands\admin.py:1257
+#: commands\admin.py:1291
 #, docstring
 msgid "\n"
 "        (Toggle) Auto-add support and panel roles to thread tickets\n\n"
@@ -1068,15 +1106,15 @@ msgid "\n"
 msgstr "(Alternar) Adicionar automaticamente funções de suporte e de painel aos bilhetes de discussão\n\n"
 "Adicionar um usuário a um tópico faz com que eles sejam notificados, portanto, isso está desativado por padrão               "
 
-#: commands\admin.py:1266
+#: commands\admin.py:1300
 msgid "Support and panel roles will no longer be auto-added to thread tickets"
 msgstr "As funções de suporte e de painel deixarão de ser adicionadas automaticamente aos bilhetes de discussão"
 
-#: commands\admin.py:1270
+#: commands\admin.py:1304
 msgid "Support and panel roles will be auto-added to thread tickets"
 msgstr "As funções de suporte e de painel serão adicionadas automaticamente aos bilhetes de discussão"
 
-#: commands\admin.py:1274
+#: commands\admin.py:1308
 #, docstring
 msgid "\n"
 "        (Toggle) Ticket transcripts\n\n"
@@ -1085,83 +1123,87 @@ msgid "\n"
 msgstr "(Toggle) Transcrições de bilhetes\n\n"
 "Os bilhetes fechados terão suas transcrições carregadas no canal de log               "
 
-#: commands\admin.py:1282
+#: commands\admin.py:1316
 msgid "Transcripts of closed tickets will no longer be saved"
 msgstr "As transcrições de bilhetes fechados não serão mais salvas"
 
-#: commands\admin.py:1285
+#: commands\admin.py:1319
 msgid "Transcripts of closed tickets will now be saved"
 msgstr "As transcrições de bilhetes fechados serão agora guardadas"
 
-#: commands\admin.py:1294
+#: commands\admin.py:1328
 #, docstring
 msgid "Update a message with another message (Target gets updated using the source)"
 msgstr "Atualizar uma mensagem com outra mensagem (o destino é atualizado utilizando a fonte)"
 
-#: commands\admin.py:1312
+#: commands\admin.py:1340
+msgid "Failed to update message!"
+msgstr ""
+
+#: commands\admin.py:1352
 #, docstring
 msgid "Create an embed for ticket panel buttons to be added to"
 msgstr "Criar uma incorporação para os botões do painel de bilhetes a serem adicionados"
 
-#: commands\admin.py:1313
+#: commands\admin.py:1353
 msgid "type 'cancel' to cancel"
 msgstr "digite 'cancel' para cancelar"
 
-#: commands\admin.py:1318
+#: commands\admin.py:1358
 msgid "Would you like this embed to have a footer?"
 msgstr "Gostaria que esta incorporação tivesse um rodapé?"
 
-#: commands\admin.py:1325
+#: commands\admin.py:1365
 msgid "Enter the desired footer"
 msgstr "Introduza o rodapé desejado"
 
-#: commands\admin.py:1330 commands\admin.py:1349 commands\admin.py:1368
+#: commands\admin.py:1370 commands\admin.py:1393 commands\admin.py:1412
 msgid "Embed creation cancelled"
 msgstr "Criação de incorporação cancelada"
 
-#: commands\admin.py:1337
+#: commands\admin.py:1377
 msgid "Would you like this embed to have a thumbnail?"
 msgstr "Gostaria que esta incorporação tivesse uma miniatura?"
 
-#: commands\admin.py:1344
+#: commands\admin.py:1388
 msgid "Enter a url for the thumbnail"
 msgstr "introduza um URL para a miniatura"
 
-#: commands\admin.py:1356
+#: commands\admin.py:1400
 msgid "Would you like this embed to have an image?"
 msgstr "Gostaria que esta incorporação tivesse uma imagem?"
 
-#: commands\admin.py:1363
+#: commands\admin.py:1407
 msgid "Enter a url for the image"
 msgstr "Introduza um URL para a imagem"
 
-#: commands\admin.py:1385
+#: commands\admin.py:1429
 msgid "Would you like to add a field to this embed?"
 msgstr "Gostaria de adicionar um campo a esta incorporação?"
 
-#: commands\admin.py:1390
+#: commands\admin.py:1434
 msgid "Would you like to add another field to this embed?\n"
 "*There are currently {} fields*"
 msgstr "Gostaria de adicionar mais um campo a esta incorporação?\n"
 "*Atualmente, existem {} campos*"
 
-#: commands\admin.py:1398
+#: commands\admin.py:1442
 msgid "Enter the name of the field"
 msgstr "Introduza o nome do campo"
 
-#: commands\admin.py:1404
+#: commands\admin.py:1448
 msgid "Enter the value of the field"
 msgstr "Introduza o valor do campo"
 
-#: commands\admin.py:1411
+#: commands\admin.py:1455
 msgid "Do you want this field to be inline?"
 msgstr "Pretende que este campo esteja em linha?"
 
-#: commands\admin.py:1424
+#: commands\admin.py:1468
 msgid "Your embed has been sent!"
 msgstr "A sua incorporação foi enviada!"
 
-#: commands\admin.py:1426
+#: commands\admin.py:1470
 msgid "Failed to send embed!\n"
 "Exception: {}"
 msgstr "Falha ao enviar a incorporação!\n"
