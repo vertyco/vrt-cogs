@@ -87,7 +87,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.6"
+    __version__ = "3.7.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -333,6 +333,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             return
 
         uid = str(receiver.id)
+        if uid not in self.data[gid]["users"]:
+            return
+
         self.data[gid]["users"][uid]["stars"] += 1
         if self.data[gid]["weekly"]["on"]:
             weekly_users = self.data[gid]["weekly"]["users"]
