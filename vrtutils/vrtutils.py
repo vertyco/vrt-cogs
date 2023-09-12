@@ -13,8 +13,10 @@ import sys
 import typing as t
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
 from sys import executable
 from time import perf_counter
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import cpuinfo
 import discord
@@ -60,13 +62,28 @@ async def wait_reply(ctx: commands.Context, timeout: int = 60):
         return None
 
 
+def get_attachments(message: discord.Message) -> t.List[discord.Attachment]:
+    """Get all attachments from context"""
+    attachments = []
+    if message.attachments:
+        direct_attachments = [a for a in message.attachments]
+        attachments.extend(direct_attachments)
+    if hasattr(message, "reference"):
+        try:
+            referenced_attachments = [a for a in message.reference.resolved.attachments]
+            attachments.extend(referenced_attachments)
+        except AttributeError:
+            pass
+    return attachments
+
+
 class VrtUtils(commands.Cog):
     """
-    Random utility commands
+    A collection of utility commands for getting info about various things.
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.11.0"
+    __version__ = "1.12.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -1068,3 +1085,78 @@ class VrtUtils(commands.Cog):
         for index, p in enumerate(pagified):
             pages.append(box(p, lang="python") + f"\nPage {index + 1}/{len(pagified)}")
         await menu(ctx, pages, DEFAULT_CONTROLS)
+
+    @commands.command(name="zip")
+    @commands.is_owner()
+    async def zip_file(self, ctx: commands.Context, *, archive_name: str = "archive.zip"):
+        """
+        zip a file or files
+        """
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send(
+                "Please attach your files to the command or reply to a message with attachments"
+            )
+
+        def zip_files(prepped: list) -> discord.File:
+            zip_buffer = BytesIO()
+            zip_buffer.name = archive_name
+            with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+                for name, bytefile in prepped:
+                    arc.writestr(
+                        zinfo_or_arcname=name,
+                        data=bytefile,
+                        compress_type=ZIP_DEFLATED,
+                        compresslevel=9,
+                    )
+            zip_buffer.seek(0)
+            return discord.File(zip_buffer)
+
+        async with ctx.typing():
+            prepped = [(i.filename, await i.read()) for i in attachments]
+            file = await asyncio.to_thread(zip_files, prepped)
+            if file.__sizeof__() > ctx.guild.filesize_limit:
+                return await ctx.send("ZIP file too large to send!")
+            try:
+                await ctx.send("Here is your zip file!", file=file)
+            except discord.HTTPException:
+                await ctx.send("File is too large!")
+
+    @commands.command(name="unzip")
+    @commands.is_owner()
+    async def unzip_file(self, ctx: commands.Context):
+        """
+        Unzips a zip file and sends the extracted files in the channel
+        """
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send(
+                "Please attach a zip file to the command or reply to a message with a zip file"
+            )
+
+        def unzip_files(prepped: list) -> t.List[discord.File]:
+            files = []
+            for bytefile in prepped:
+                with ZipFile(BytesIO(bytefile), "r") as arc:
+                    for file_info in arc.infolist():
+                        with arc.open(file_info) as extracted:
+                            files.append(
+                                discord.File(
+                                    BytesIO(extracted.read()),
+                                    filename=extracted.name,
+                                )
+                            )
+            return files
+
+        async with ctx.typing():
+            prepped = [await i.read() for i in attachments]
+            files = await asyncio.to_thread(unzip_files, prepped)
+            for file in files:
+                if file.__sizeof__() > ctx.guild.filesize_limit:
+                    await ctx.send(f"File **{file.filename}** is too large to send!")
+                    continue
+                try:
+                    await ctx.send(f"`{file.filename}`", file=file)
+                except discord.HTTPException:
+                    await ctx.send(f"File **{file.filename}** is too large to send!")
+                    continue
