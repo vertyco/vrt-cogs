@@ -1139,6 +1139,8 @@ class VrtUtils(commands.Cog):
             for bytefile in prepped:
                 with ZipFile(BytesIO(bytefile), "r") as arc:
                     for file_info in arc.infolist():
+                        if file_info.is_dir():
+                            continue
                         with arc.open(file_info) as extracted:
                             files.append(
                                 discord.File(
