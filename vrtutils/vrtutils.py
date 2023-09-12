@@ -1186,4 +1186,7 @@ class VrtUtils(commands.Cog):
             grouped = group_files(to_group)
             for file_list in grouped:
                 names = ", ".join(f"`{i.filename}`" for i in file_list)
-                await ctx.send(names[:2000], files=file_list)
+                try:
+                    await ctx.send(names[:2000], files=file_list)
+                except discord.HTTPException:
+                    await ctx.send(f"Failed to dump the following files: {names}")
