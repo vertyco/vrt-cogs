@@ -1060,7 +1060,7 @@ class VrtUtils(commands.Cog):
         try:
             source_code = inspect.getsource(command.callback)
             if comments := inspect.getcomments(command.callback):
-                source_code = comments + "\n\n" + source_code
+                source_code = comments + "\n" + source_code
         except OSError:
             return await ctx.send("Failed to pull source code")
         pagified = [p for p in pagify(source_code, escape_mass_mentions=True, page_length=1900)]
