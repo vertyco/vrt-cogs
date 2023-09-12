@@ -1148,15 +1148,38 @@ class VrtUtils(commands.Cog):
                             )
             return files
 
+        def group_files(files: list) -> t.List[t.List[discord.File]]:
+            grouped_files = []
+            total_size = 0
+            current_group = []
+
+            for file in files:
+                file_size = file.__sizeof__()
+
+                if total_size + file_size > ctx.guild.filesize_limit or len(current_group) == 9:
+                    grouped_files.append(current_group)
+                    current_group = []
+                    total_size = 0
+
+                current_group.append(file)
+                total_size += file_size
+
+            if current_group:
+                grouped_files.append(current_group)
+
+            return grouped_files
+
         async with ctx.typing():
             prepped = [await i.read() for i in attachments]
             files = await asyncio.to_thread(unzip_files, prepped)
+            to_group = []
             for file in files:
                 if file.__sizeof__() > ctx.guild.filesize_limit:
                     await ctx.send(f"File **{file.filename}** is too large to send!")
                     continue
-                try:
-                    await ctx.send(f"`{file.filename}`", file=file)
-                except discord.HTTPException:
-                    await ctx.send(f"File **{file.filename}** is too large to send!")
-                    continue
+                to_group.append(file)
+
+            grouped = group_files(to_group)
+            for file_list in grouped:
+                names = ", ".join(f"`{i.filename}`" for i in file_list)
+                await ctx.send(names[:2000], files=file_list)
