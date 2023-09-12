@@ -1092,6 +1092,8 @@ class VrtUtils(commands.Cog):
         """
         zip a file or files
         """
+        if not archive_name.endswith(".zip"):
+            archive_name += ".zip"
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
