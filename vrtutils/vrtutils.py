@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import inspect
 import json
 import logging
 import math
@@ -65,7 +66,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.10.2"
+    __version__ = "1.11.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -1046,3 +1047,24 @@ class VrtUtils(commands.Cog):
 
         embed.description = txt
         await ctx.send(embed=embed)
+
+    @commands.command(name="getsource")
+    @commands.is_owner()
+    async def get_sourcecode(self, ctx: commands.Context, *, command: str):
+        """
+        Get the source code of a command
+        """
+        command = self.bot.get_command(command)
+        if command is None:
+            return await ctx.send("Command not found!")
+        try:
+            source_code = inspect.getsource(command.callback)
+            if comments := inspect.getcomments(command.callback):
+                source_code = comments + "\n\n" + source_code
+        except OSError:
+            return await ctx.send("Failed to pull source code")
+        pagified = [p for p in pagify(source_code, escape_mass_mentions=True, page_length=1900)]
+        pages = []
+        for index, p in enumerate(pagified):
+            pages.append(box(p, lang="python") + f"\nPage {index + 1}/{len(pagified)}")
+        await menu(ctx, pages, DEFAULT_CONTROLS)
