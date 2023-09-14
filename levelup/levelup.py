@@ -15,7 +15,6 @@ from typing import Dict, List, Set, Tuple, Union
 import discord
 import matplotlib
 import matplotlib.pyplot as plt
-import tabulate
 from aiohttp import ClientSession, ClientTimeout
 from discord.ext import tasks
 from redbot.core import Config, VersionInfo, commands, version_info
@@ -73,7 +72,6 @@ async def confirm(ctx: commands.Context):
 # CREDITS
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
-# Thanks Zephyrkul#1089 for introducing me to tabulate!
 
 # redgettext -D levelup.py generator.py base.py utils/formatter.py --command-docstring
 
@@ -87,7 +85,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.9"
+    __version__ = "3.7.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2672,20 +2670,16 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         exp = conf["exp"]
         cd = conf["cooldown"]
         xp_range = conf["xp"]
-        msg = ""
-        table = []
+        txt = ""
         x = []
         y = []
         for level in range(1, 21):
             xp = get_xp(level, base, exp)
-            msg += f"Level {level}: {xp} XP Needed\n"
             time = time_to_level(level, base, exp, cd, xp_range)
             time = time_formatter(time)
-            table.append([level, xp, time])
+            txt += _("- lvl {}, {} xp, {}\n").format(level, xp, time)
             x.append(level)
             y.append(xp)
-        headers = ["Level", "XP Needed", "AproxTime"]
-        level_text = tabulate.tabulate(table, headers, tablefmt="presto")
         with plt.style.context("dark_background"):
             plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
             plt.xlabel("Level", fontsize=10)
@@ -2696,7 +2690,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             result = BytesIO()
             plt.savefig(result, format="png", dpi=200)
             plt.close()
-            return level_text, result.getvalue()
+            return txt, result.getvalue()
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
