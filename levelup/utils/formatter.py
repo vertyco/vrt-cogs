@@ -193,7 +193,7 @@ def get_leaderboard(
 
     if lbtype == "weekly":
         w = settings["weekly"]
-        desc = _("Total ") + f"{statname}: `{total}`\n"
+        desc = _("Total ") + f"{statname}: `{total}`{col}\n"
         desc += _("Last Reset: ") + f"<t:{w['last_reset']}:d>\n"
         if w["autoreset"]:
             tl = get_next_reset(w["reset_day"], w["reset_hour"])
