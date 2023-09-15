@@ -166,24 +166,28 @@ def get_leaderboard(
         sorted_users = sorted(lb.items(), key=lambda x: x[1]["voice"], reverse=True)
         title += _("Voice Leaderboard")
         key = "voice"
+        col = "🎙️"
         statname = _("Voicetime")
         total = time_formatter(sum(v["voice"] for v in lb.values()))
     elif "m" in stat.lower():
         sorted_users = sorted(lb.items(), key=lambda x: x[1]["messages"], reverse=True)
         title += _("Message Leaderboard")
         key = "messages"
+        col = "💬"
         statname = _("Messages")
         total = humanize_number(round(sum(v["messages"] for v in lb.values())))
     elif "s" in stat.lower():
         sorted_users = sorted(lb.items(), key=lambda x: x[1]["stars"], reverse=True)
         title += _("Star Leaderboard")
         key = "stars"
+        col = "⭐"
         statname = _("Stars")
         total = humanize_number(round(sum(v["stars"] for v in lb.values())))
     else:  # Exp
         sorted_users = sorted(lb.items(), key=lambda x: x[1]["xp"], reverse=True)
         title += _("Exp Leaderboard")
         key = "xp"
+        col = "💡"
         statname = _("Exp")
         total = humanize_number(round(sum(v["xp"] for v in lb.values())))
 
@@ -195,7 +199,7 @@ def get_leaderboard(
             tl = get_next_reset(w["reset_day"], w["reset_hour"])
             desc += _("Next Reset: ") + f"<t:{tl}:d> (<t:{tl}:R>)\n"
     else:
-        desc = _("Total") + f" {statname}: `{total}`\n"
+        desc = _("Total") + f" {statname}: `{total}`{col}\n"
 
     for i in sorted_users.copy():
         if not i[1][key]:
@@ -241,6 +245,9 @@ def get_leaderboard(
                     stat = f"{round(v / 1000, 1)}K"
                 else:
                     stat = str(round(v))
+
+                if key == "xp" and lbtype != "weekly":
+                    stat += f" 🎖{data['level']}"
 
             txt += f"{place}. {user} ({stat})\n"
 
