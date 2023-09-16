@@ -263,8 +263,8 @@ class Conversation(BaseModel):
 
 
 class DB(BaseModel):
-    configs: dict[int, GuildSettings] = {}
-    conversations: dict[str, Conversation] = {}
+    configs: Dict[int, GuildSettings] = {}
+    conversations: Dict[str, Conversation] = {}
     persistent_conversations: bool = False
     functions: Dict[str, CustomFunction] = {}
     listen_to_bots: bool = False
