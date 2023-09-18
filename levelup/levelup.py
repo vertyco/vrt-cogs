@@ -85,7 +85,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.12"
+    __version__ = "3.7.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1623,7 +1623,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         If exp is entered, it will import their experience and base their new level off of that.
         If level is entered, it will import their level and calculate their exp based off of that.
         `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it
-        `include_settings` - import level roles and exp settings from MEE6
+        `include_settings` - (True/False) import level roles and exp settings from MEE6
         `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
 
         **Note**
@@ -1919,7 +1919,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         **Arguments**
         `replace` - (True/False) if True, it will replace the user's exp, otherwise it will add it
-        `include_settings` - import level roles and exp settings from Polaris
+        `include_settings` - (True/False) import level roles and exp settings from Polaris
         `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
 
         **Note**
