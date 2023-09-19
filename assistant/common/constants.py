@@ -6,6 +6,7 @@ MODELS = {
     "gpt-3.5-turbo-16k-0301": 16384,
     "gpt-3.5-turbo-16k-0613": 16384,
     "gpt-3.5-turbo-instruct": 8192,
+    "gpt-3.5-turbo-instruct-0914": 8192,
     "gpt-4": 8192,
     "gpt-4-0301": 8192,
     "gpt-4-0613": 8192,
@@ -28,7 +29,8 @@ PRICES = {
     "gpt-3.5-turbo-16k": [0.003, 0.004],
     "gpt-3.5-turbo-16k-0301": [0.003, 0.004],
     "gpt-3.5-turbo-16k-0613": [0.003, 0.004],
-    "gpt-3.5-turbo-instruct": [0.003, 0.004],
+    "gpt-3.5-turbo-instruct": [0.0015, 0.002],
+    "gpt-3.5-turbo-instruct-0914": [0.0015, 0.002],
     "gpt-4": [0.03, 0.06],
     "gpt-4-0301": [0.03, 0.06],
     "gpt-4-0613": [0.03, 0.06],
@@ -76,6 +78,7 @@ COMPLETION = [
     "text-babbage-001",
     "text-ada-001",
     "gpt-3.5-turbo-instruct",
+    "gpt-3.5-turbo-instruct-0914",
 ]
 READ_EXTENSIONS = [
     ".txt",
