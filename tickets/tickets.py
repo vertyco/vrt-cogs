@@ -32,7 +32,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.3.2"
+    __version__ = "2.3.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -41,6 +41,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
         """No data to delete"""
+        return
 
     def __init__(self, bot: Red):
         self.bot: Red = bot
@@ -407,7 +408,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
         conf = await self.config.guild(guild).all()
         pruned = await prune_invalid_tickets(guild, conf, self.config)
         if pruned:
-            log.info("Pruned old ticket channels")
+            log.info("Pruned old ticket threads")
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):

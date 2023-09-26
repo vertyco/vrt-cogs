@@ -261,25 +261,31 @@ async def prune_invalid_tickets(
             await ctx.send(_("There are no tickets stored in the database."))
         return False
 
-    member_ids = {m.id for m in guild.members}
-    channel_ids = [c.id for c in guild.channels]
-    channel_ids.extend([c.id for c in guild.threads])
-
-    valid_opened_tickets = {}
+    users_to_remove = []
+    tickets_to_remove = []
     count = 0
     for user_id, tickets in opened_tickets.items():
-        if int(user_id) not in member_ids:
+        member = guild.get_member(int(user_id))
+        if not member:
             count += len(list(tickets.keys()))
+            users_to_remove.append(user_id)
             log.info(f"Cleaning up user {user_id}'s tickets for leaving")
             continue
 
-        valid_user_tickets = {}
-        for channel_id, ticket in tickets.items():
-            if int(channel_id) in channel_ids:
-                valid_user_tickets[channel_id] = ticket
-                continue
+        if not tickets:
             count += 1
-            log.info(f"Ticket channel {channel_id} no longer exists for user {user_id}")
+            users_to_remove.append(user_id)
+            log.info(f"Cleaning member {member} for having no tickets opened")
+            continue
+
+        for channel_id, ticket in tickets.items():
+            if guild.get_channel_or_thread(int(channel_id)):
+                continue
+
+            count += 1
+            log.info(f"Ticket channel {channel_id} no longer exists for {member}")
+            tickets_to_remove.append((user_id, channel_id))
+
             panel = conf["panels"][ticket["panel"]]
             log_message_id = ticket["logmsg"]
             log_channel_id = panel["log_channel"]
@@ -291,20 +297,21 @@ async def prune_invalid_tickets(
                 except (discord.NotFound, discord.Forbidden):
                     pass
 
-        if valid_user_tickets:
-            valid_opened_tickets[user_id] = valid_user_tickets
+    if users_to_remove or tickets_to_remove:
+        async with config.guild(guild).opened() as opened:
+            for uid in users_to_remove:
+                del opened[uid]
+            for uid, cid in tickets_to_remove:
+                del opened[uid][cid]
 
-    if count:
-        await config.guild(guild).opened.set(valid_opened_tickets)
-
+    grammar = _("ticket") if count == 1 else _("tickets")
     if count and ctx:
-        grammar = _("ticket") if count == 1 else _("tickets")
         txt = _("Pruned `{}` invalid {}").format(count, grammar)
         await ctx.send(txt)
     elif not count and ctx:
         await ctx.send(_("There are no tickets to prune"))
     elif count and not ctx:
-        log.info(f"{count} tickets pruned from {guild.name}")
+        log.info(f"{count} {grammar} pruned from {guild.name}")
 
     return True if count else False
 
