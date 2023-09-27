@@ -869,7 +869,7 @@ class AdminCommands(MixinMeta):
             desc += _("`Max Claims:     `") + f"{info.get('max_claims', 0)}"
 
             em = Embed(
-                title=_("Panel: ") + panel_name,
+                title=panel_name,
                 description=desc,
                 color=ctx.author.color,
             )
@@ -886,7 +886,7 @@ class AdminCommands(MixinMeta):
 
     async def delete_panel(self, instance, interaction: discord.Interaction):
         index = instance.view.page
-        panel_name = instance.view.pages[index].title.replace("Panel: ", "")
+        panel_name = instance.view.pages[index].title
         async with self.config.guild(interaction.guild).panels() as panels:
             del panels[panel_name]
             em = Embed(description=panel_name + _(" panel has been deleted!"))
