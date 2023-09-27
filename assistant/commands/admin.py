@@ -401,12 +401,12 @@ class Admin(MixinMeta):
         embed = discord.Embed(description=txt, color=ctx.author.color)
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
-        key = view.key.strip()
+        key = view.key.strip() if view.key else "none"
 
-        if key == _("none") and conf.api_key:
+        if key == "none" and conf.api_key:
             conf.api_key = None
             await msg.edit(content=_("OpenAI key has been removed!"), embed=None, view=None)
-        elif key == _("none") and not conf.api_key:
+        elif key == "none" and not conf.api_key:
             conf.api_key = key
             await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
         else:
@@ -905,7 +905,7 @@ class Admin(MixinMeta):
 
         Endpoint overrides will not be used if there is an API key set.
         """
-        if not endpoint.lower().startswith("http"):
+        if endpoint and not endpoint.lower().startswith("http"):
             return await ctx.send(_("Invalid URL, must start with `http`"))
         conf = self.db.get_conf(ctx.guild)
         if conf.endpoint_override and not endpoint:
