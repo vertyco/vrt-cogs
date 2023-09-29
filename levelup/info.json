@@ -23,7 +23,7 @@
   "required_cogs": {},
   "requirements": [
     "json5",
-    "matplotlib",
+    "plotly",
     "requests",
     "pillow",
     "validators",

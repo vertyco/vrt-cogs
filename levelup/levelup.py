@@ -13,8 +13,8 @@ from time import monotonic, perf_counter
 from typing import Dict, List, Set, Tuple, Union
 
 import discord
-import matplotlib
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.io as pio
 from aiohttp import ClientSession, ClientTimeout
 from discord.ext import tasks
 from redbot.core import Config, VersionInfo, commands, version_info
@@ -52,9 +52,6 @@ from .abc import CompositeMetaClass
 from .base import UserCommands
 from .generator import Generator
 
-matplotlib.use("agg")
-plt.switch_backend("agg")
-
 log = logging.getLogger("red.vrt.levelup")
 _ = Translator("LevelUp", __file__)
 
@@ -85,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.7.13"
+    __version__ = "3.7.14"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2680,17 +2677,22 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             txt += _("- lvl {}, {} xp, {}\n").format(level, xp, time)
             x.append(level)
             y.append(xp)
-        with plt.style.context("dark_background"):
-            plt.plot(x, y, color="xkcd:green", label="Total", linewidth=0.7)
-            plt.xlabel("Level", fontsize=10)
-            plt.ylabel("Experience Required", fontsize=10)
-            plt.title("XP Curve")
-            plt.grid(axis="y")
-            plt.grid(axis="x")
-            result = BytesIO()
-            plt.savefig(result, format="png", dpi=200)
-            plt.close()
-            return txt, result.getvalue()
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Total"))
+        fig.update_layout(
+            title="XP Curve",
+            xaxis_title="Level",
+            yaxis_title="Experience Required",
+            autosize=False,
+            width=500,
+            height=500,
+            margin=dict(l=50, r=50, b=100, t=100, pad=4),
+        )
+
+        result = BytesIO()
+        pio.write_image(fig, result, format="png")
+        return txt, result.getvalue()
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
