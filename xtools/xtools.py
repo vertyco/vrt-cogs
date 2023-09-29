@@ -41,7 +41,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.10.3"
+    __version__ = "3.10.4"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -669,9 +669,19 @@ class XTools(commands.Cog):
                     )
                     return await msg.edit(embed=embed)
                 gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-                friend_data = json.loads(
-                    (await xbl_client.people.get_friends_by_xuid(xuid)).json()
-                )
+                try:
+                    friend_data = json.loads(
+                        (await xbl_client.people.get_friends_by_xuid(xuid)).json()
+                    )
+                except aiohttp.ClientResponseError as e:
+                    if e.status == 403:
+                        return await msg.edit(
+                            embed=None, content="This persons friends list is private!"
+                        )
+                    log.error("Failed to get friends list", exc_info=e)
+                    return await msg.edit(
+                        embed=None, content="Failed to fetch this person's friends list!"
+                    )
                 self.cache[str(ctx.author.id)] = friend_data
                 pages = friend_embeds(friend_data, gt)
                 if len(pages) == 0:
