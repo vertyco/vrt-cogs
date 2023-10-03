@@ -732,7 +732,7 @@ msgstr "Vous venez de monter de niveau dans "
 
 #: levelup.py:679
 msgid "**{user} just leveled up!**"
-msgstr "**{utilisateur} vient de passer au niveau supérieur !**"
+msgstr "**{user} vient de passer au niveau supérieur!**"
 
 #: levelup.py:998
 #, docstring

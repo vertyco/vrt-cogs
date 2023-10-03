@@ -9,6 +9,7 @@ from typing import Union
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, UnidentifiedImageError
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number
 
@@ -22,6 +23,14 @@ ASPECT_RATIO = (21, 9)
 
 @cog_i18n(_)
 class Generator(MixinMeta, ABC):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bgpath = cog_data_path(self) / "backgrounds"
+        self.bgpath.mkdir(exist_ok=True)
+        self.fontpath = cog_data_path(self) / "fonts"
+        self.fontpath.mkdir(exist_ok=True)
+
+
     def generate_profile(
         self,
         bg_image: str = None,
