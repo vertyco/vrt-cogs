@@ -61,8 +61,8 @@ class Generator(MixinMeta, ABC):
             if bg_image in defaults:
                 card = Image.open(os.path.join(bgpath, bg_image))
             else:
-                bg_bytes = self.get_image_content_from_url(bg_image)
                 try:
+                    bg_bytes = self.get_image_content_from_url(bg_image)
                     card = Image.open(BytesIO(bg_bytes))
                 except UnidentifiedImageError:
                     card = self.get_random_background()
@@ -555,8 +555,8 @@ class Generator(MixinMeta, ABC):
             if bg_image in defaults:
                 card = Image.open(os.path.join(bgpath, bg_image))
             else:
-                bg_bytes = self.get_image_content_from_url(bg_image)
                 try:
+                    bg_bytes = self.get_image_content_from_url(bg_image)
                     card = Image.open(BytesIO(bg_bytes))
                 except UnidentifiedImageError:
                     card = self.get_random_background()
@@ -917,19 +917,22 @@ class Generator(MixinMeta, ABC):
             return None
         imgs = []
         for filename in choices:
-            filepath = os.path.join(backgrounds, filename)
-            img = self.force_aspect_ratio(Image.open(filepath))
-            img = img.convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
-            draw = ImageDraw.Draw(img)
-            ext_replace = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
-            txt = filename
-            for ext in ext_replace:
-                txt = txt.replace(ext, "")
-            draw.text((10, 10), txt, font=ImageFont.truetype(self.font, 100))
-            if not img:
-                log.error(f"Failed to load image for default background '{filename}`")
-                continue
-            imgs.append((img, filename))
+            try:
+                filepath = os.path.join(backgrounds, filename)
+                img = self.force_aspect_ratio(Image.open(filepath))
+                img = img.convert("RGBA").resize((1050, 450), Image.Resampling.NEAREST)
+                draw = ImageDraw.Draw(img)
+                ext_replace = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+                txt = filename
+                for ext in ext_replace:
+                    txt = txt.replace(ext, "")
+                draw.text((10, 10), txt, font=ImageFont.truetype(self.font, 100))
+                if not img:
+                    log.error(f"Failed to load image for default background '{filename}`")
+                    continue
+                imgs.append((img, filename))
+            except Exception as e:
+                log.warning(f"Failed to prep background image: {filename}", exc_info=e)
 
         # Sort by name
         imgs = sorted(imgs, key=lambda key: key[1])
@@ -1054,7 +1057,7 @@ class Generator(MixinMeta, ABC):
         return image.crop((box[0], box[1], box[2], box[3]))
 
     @staticmethod
-    def force_aspect_ratio(image: Image, aspect_ratio: tuple = ASPECT_RATIO) -> Image:
+    def force_aspect_ratio(image: Image.Image, aspect_ratio: tuple = ASPECT_RATIO) -> Image:
         x, y = aspect_ratio
         w, h = image.size
 
