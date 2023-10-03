@@ -315,7 +315,11 @@ class UserCommands(MixinMeta, ABC):
 
         **Arguments**
         `preferred_filename` - If a name is given, it will be saved as this name instead of the filename
-        **Note:** do not include the file extension in the preferred name, it will be added automatically
+
+        **DISCLAIMER**
+        - Do not replace any existing file names with custom images
+        - If you add broken or corrupt images it can break the cog
+        - Do not include the file extension in the preferred name, it will be added automatically
         """
         content = get_attachments(ctx)
         if not content:
