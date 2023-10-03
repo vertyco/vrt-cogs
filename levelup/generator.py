@@ -54,18 +54,23 @@ class Generator(MixinMeta, ABC):
         else:
             profile = Image.open(self.default_pfp)
 
+
         # Get background
-        if bg_image and bg_image != "random":
-            bgpath = os.path.join(self.path, "backgrounds")
-            defaults = [i for i in os.listdir(bgpath)]
-            if bg_image in defaults:
+        bgpath = os.path.join(self.path, "backgrounds")
+        defaults = [i for i in os.listdir(bgpath)]
+        if not bg_image or str(bg_image) == "random":
+            card = self.get_random_background()
+        elif "http" in bg_image:
+            try:
+                bg_bytes = self.get_image_content_from_url(bg_image)
+                card = Image.open(BytesIO(bg_bytes))
+            except UnidentifiedImageError:
+                card = self.get_random_background()
+        elif bg_image in defaults:
+            try:
                 card = Image.open(os.path.join(bgpath, bg_image))
-            else:
-                try:
-                    bg_bytes = self.get_image_content_from_url(bg_image)
-                    card = Image.open(BytesIO(bg_bytes))
-                except UnidentifiedImageError:
-                    card = self.get_random_background()
+            except OSError:
+                card = self.get_random_background()
         else:
             card = self.get_random_background()
 
@@ -549,17 +554,23 @@ class Generator(MixinMeta, ABC):
 
         # Set canvas
         aspect_ratio = (27, 7)
-        if bg_image and bg_image != "random":
-            bgpath = os.path.join(self.path, "backgrounds")
-            defaults = [i for i in os.listdir(bgpath)]
-            if bg_image in defaults:
+
+        # Get background
+        bgpath = os.path.join(self.path, "backgrounds")
+        defaults = [i for i in os.listdir(bgpath)]
+        if not bg_image or str(bg_image) == "random":
+            card = self.get_random_background()
+        elif "http" in bg_image:
+            try:
+                bg_bytes = self.get_image_content_from_url(bg_image)
+                card = Image.open(BytesIO(bg_bytes))
+            except UnidentifiedImageError:
+                card = self.get_random_background()
+        elif bg_image in defaults:
+            try:
                 card = Image.open(os.path.join(bgpath, bg_image))
-            else:
-                try:
-                    bg_bytes = self.get_image_content_from_url(bg_image)
-                    card = Image.open(BytesIO(bg_bytes))
-                except UnidentifiedImageError:
-                    card = self.get_random_background()
+            except OSError:
+                card = self.get_random_background()
         else:
             card = self.get_random_background()
 
