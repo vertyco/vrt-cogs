@@ -557,7 +557,7 @@ class Generator(MixinMeta, ABC):
 
         # Get background
         bgpath = os.path.join(self.path, "backgrounds")
-        defaults = [i for i in os.listdir(bgpath)]
+        defaults = [i for i in os.listdir(bgpath) if not i.endswith(".png")]
         if not bg_image or str(bg_image) == "random":
             card = self.get_random_background()
         elif "http" in bg_image:
@@ -810,7 +810,7 @@ class Generator(MixinMeta, ABC):
     ):
         if bg_image and bg_image != "random":
             bgpath = os.path.join(self.path, "backgrounds")
-            defaults = [i for i in os.listdir(bgpath)]
+            defaults = [i for i in os.listdir(bgpath) if not i.endswith(".png")]
             if bg_image in defaults:
                 card = Image.open(os.path.join(bgpath, bg_image))
             else:
