@@ -52,7 +52,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.14.2"
+    __version__ = "4.14.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -182,11 +182,7 @@ class Assistant(
                     del conf.max_time_role_override[role_id]
                     cleaned = True
             for obj_id in conf.blacklist.copy():
-                discord_obj = (
-                    guild.get_role(obj_id)
-                    or guild.get_member(obj_id)
-                    or guild.get_channel_or_thread(obj_id)
-                )
+                discord_obj = guild.get_role(obj_id) or guild.get_member(obj_id) or guild.get_channel_or_thread(obj_id)
                 if not discord_obj:
                     log.debug("Cleaning up invalid blacklisted ID")
                     conf.blacklist.remove(obj_id)
