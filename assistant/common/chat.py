@@ -82,10 +82,7 @@ class ChatHandler(MixinMeta):
             )
         for i in get_attachments(message):
             has_extension = i.filename.count(".") > 0
-            if (
-                not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS)
-                and has_extension
-            ):
+            if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
                 continue
 
             text = await i.read()
@@ -122,14 +119,8 @@ class ChatHandler(MixinMeta):
                     )
 
         if get_last_message:
-            conversation = self.db.get_conversation(
-                message.author.id, message.channel.id, message.guild.id
-            )
-            reply = (
-                conversation.messages[-1]["content"]
-                if conversation.messages
-                else _("No message history!")
-            )
+            conversation = self.db.get_conversation(message.author.id, message.channel.id, message.guild.id)
+            reply = conversation.messages[-1]["content"] if conversation.messages else _("No message history!")
         else:
             try:
                 reply = await self.get_chat_response(
@@ -163,17 +154,15 @@ class ChatHandler(MixinMeta):
                 reply = str(e)
             except KeyError as e:
                 log.debug("get_chat_response error", exc_info=e)
-                await message.channel.send(
-                    _("**KeyError in prompt or system message**\n{}").format(box(str(e), "py"))
-                )
+                await message.channel.send(_("**KeyError in prompt or system message**\n{}").format(box(str(e), "py")))
                 return
             except Exception as e:
                 prefix = (await self.bot.get_valid_prefixes(message.guild))[0]
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()
-                reply = _(
-                    "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
-                ).format(f"{prefix}traceback")
+                reply = _("Uh oh, something went wrong! Bot owner can use `{}` to view the error.").format(
+                    f"{prefix}traceback"
+                )
 
         if reply is None:
             return
@@ -256,15 +245,13 @@ class ChatHandler(MixinMeta):
             # Save on tokens by only getting embeddings if theyre enabled
             query_embedding = await self.request_embedding(message, conf)
 
+        mem = guild.get_member(author) if isinstance(author, int) else author
+        bal = humanize_number(await bank.get_balance(mem)) if mem else _("None")
         extras = {
             "banktype": "global bank" if await bank.is_global() else "local bank",
             "currency": await bank.get_currency_name(guild),
             "bank": await bank.get_bank_name(guild),
-            "balance": humanize_number(
-                await bank.get_balance(
-                    guild.get_member(author) if isinstance(author, int) else author,
-                )
-            ),
+            "balance": bal,
         }
 
         def pop_schema(name: str, calls: List[dict]):
@@ -329,9 +316,7 @@ class ChatHandler(MixinMeta):
                     member=author,
                 )
             except InvalidRequestError as e:
-                log.warning(
-                    f"Function response failed. functions: {len(function_calls)}", exc_info=e
-                )
+                log.warning(f"Function response failed. functions: {len(function_calls)}", exc_info=e)
                 if await self.bot.is_owner(author) and len(function_calls) > 64:
                     dump = json.dumps(function_calls, indent=2)
                     buffer = BytesIO(dump.encode())
@@ -355,9 +340,7 @@ class ChatHandler(MixinMeta):
             #     reply = e.user_message
             #     break
             except Exception as e:
-                log.error(
-                    f"Exception occured for chat response.\nMessages: {messages}", exc_info=e
-                )
+                log.error(f"Exception occured for chat response.\nMessages: {messages}", exc_info=e)
                 break
 
             if reply := response["content"]:
@@ -403,16 +386,12 @@ class ChatHandler(MixinMeta):
                 params = json.loads(arguments)
             except json.JSONDecodeError:
                 params = {}
-                log.error(
-                    f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}"
-                )
+                log.error(f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}")
             # Try continuing anyway
 
             extras = {
                 "user": guild.get_member(author) if isinstance(author, int) else author,
-                "channel": guild.get_channel_or_thread(channel)
-                if isinstance(channel, int)
-                else channel,
+                "channel": guild.get_channel_or_thread(channel) if isinstance(channel, int) else channel,
                 "guild": guild,
                 "bot": self.bot,
                 "conf": conf,
@@ -475,9 +454,7 @@ class ChatHandler(MixinMeta):
                 try:
                     reply = await self.safe_regex(regex, reply)
                 except (asyncio.TimeoutError, mp.TimeoutError):
-                    log.error(
-                        f"Regex {regex} in {guild.name} took too long to process. Skipping..."
-                    )
+                    log.error(f"Regex {regex} in {guild.name} took too long to process. Skipping...")
                     if conf.block_failed_regex:
                         block = True
                 except Exception as e:
@@ -568,13 +545,7 @@ class ChatHandler(MixinMeta):
                 results.append(entry)
 
             role = "function" if function_calls else "user"
-            name = (
-                "search_memories"
-                if function_calls
-                else process_username(author.name)
-                if author
-                else None
-            )
+            name = "search_memories" if function_calls else process_username(author.name) if author else None
 
             if conf.embed_method == "static":
                 conversation.update_messages(json.dumps(results, indent=2), role, name)
@@ -632,19 +603,14 @@ class ChatHandler(MixinMeta):
                     )
                 except discord.HTTPException:
                     pass
-            return await message.channel.send(
-                content=content, embed=embed, embeds=embeds, files=files
-            )
+            return await message.channel.send(content=content, embed=embed, embeds=embeds, files=files)
 
         if len(content) <= 2000:
             await send(content, files=files, mention=conf.mention)
         elif len(content) <= 4000 and embed_perms:
             await send(embed=discord.Embed(description=content), files=files, mention=conf.mention)
         elif embed_perms:
-            embeds = [
-                discord.Embed(description=p)
-                for p in pagify(content, page_length=3950, delims=delims)
-            ]
+            embeds = [discord.Embed(description=p) for p in pagify(content, page_length=3950, delims=delims)]
             for index, embed in enumerate(embeds):
                 if index == 0:
                     await send(embed=embed, files=files, mention=conf.mention)
