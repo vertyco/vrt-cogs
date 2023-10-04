@@ -973,10 +973,10 @@ class Generator(MixinMeta, ABC):
         return img
 
     def get_all_backgrounds(self):
-        available: List[Path] = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
+        available: List[Path] = list(self.saved_bgs.iterdir()) + list(self.backgrounds.iterdir())
         imgs = []
         for file in available:
-            if file.name.endswith(".py") or file.is_dir():
+            if file.is_dir() or file.suffix == ".py":
                 continue
             try:
                 img = self.force_aspect_ratio(Image.open(file))
@@ -1002,34 +1002,28 @@ class Generator(MixinMeta, ABC):
         # Make a bunch of rows of 4
         rows = []
         index = 0
-        for i in range(rowcount):
-            first = None
+        for __ in range(rowcount):
             final = None
-            for x in range(4):
+            for __ in range(4):
                 if index >= len(imgs):
                     continue
+
                 img_obj = imgs[index][0]
                 index += 1
-                if first is None:
-                    first = img_obj
-                    continue
+
                 if final is None:
-                    final = self.concat_img_h(first, img_obj)
+                    final = img_obj
                 else:
                     final = self.concat_img_h(final, img_obj)
-            rows.append(final)
+
+            if final:
+                rows.append(final)
 
         # Now concat the rows vertically
-        first = None
         final = None
         for row_img_obj in rows:
-            if row_img_obj is None:
-                continue
-            if first is None:
-                first = row_img_obj
-                continue
             if final is None:
-                final = self.concat_img_v(first, row_img_obj)
+                final = row_img_obj
             else:
                 final = self.concat_img_v(final, row_img_obj)
 
