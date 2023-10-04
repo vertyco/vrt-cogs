@@ -112,12 +112,7 @@ class Generator(MixinMeta, ABC):
         if not card:
             card = self.get_random_background()
 
-
-        card = (
-            self.force_aspect_ratio(card)
-            .convert("RGBA")
-            .resize((1050, 450), Image.Resampling.LANCZOS)
-        )
+        card = self.force_aspect_ratio(card).convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
 
         # Colors
         # Sample colors from profile pic to use for default colors
@@ -329,9 +324,7 @@ class Generator(MixinMeta, ABC):
         prestige_bytes = self.get_image_content_from_url(emoji) if prestige else None
         if prestige_bytes:
             prestige_bytes = BytesIO(prestige_bytes)
-            prestige_img = Image.open(prestige_bytes).resize(
-                (stats_size, stats_size), Image.Resampling.LANCZOS
-            )
+            prestige_img = Image.open(prestige_bytes).resize((stats_size, stats_size), Image.Resampling.LANCZOS)
             # Adjust prestige icon placement
             p_bbox = stats_font.getbbox(prestige_str)
             # Middle of stat text
@@ -484,9 +477,7 @@ class Generator(MixinMeta, ABC):
                 profile_pic_holder.paste(prof_img, (circle_x, circle_y))
                 # make a new Image at card size to crop pfp with transparency to the circle mask
                 pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
-                pfp_composite_holder = Image.composite(
-                    profile_pic_holder, pfp_composite_holder, mask
-                )
+                pfp_composite_holder = Image.composite(profile_pic_holder, pfp_composite_holder, mask)
                 # Profile image is on the background tile now
                 pre = Image.alpha_composite(final, pfp_composite_holder)
                 # Paste status over profile ring
@@ -677,9 +668,7 @@ class Generator(MixinMeta, ABC):
 
         rank = _("Rank: #") + str(user_position)
         level = _("Level: ") + str(level)
-        exp = (
-            f"Exp: {get_str(user_xp_progress)}/{get_str(next_xp_diff)} ({get_str(user_xp)} total)"
-        )
+        exp = f"Exp: {get_str(user_xp_progress)}/{get_str(next_xp_diff)} ({get_str(user_xp)} total)"
         messages = _("Messages: ") + str(messages)
         voice = _("Voice Time: ") + str(voice)
         name = user_name
@@ -890,9 +879,7 @@ class Generator(MixinMeta, ABC):
                 base_font = fontfile
         # base_font = self.get_random_font()
         font = ImageFont.truetype(base_font, fontsize)
-        while font.getlength(string) + int(card.height * 1.2) > card.width - (
-            int(card.height * 1.2) - card.height
-        ):
+        while font.getlength(string) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
             fontsize -= 1
             font = ImageFont.truetype(base_font, fontsize)
 
@@ -962,14 +949,7 @@ class Generator(MixinMeta, ABC):
         for index, i in enumerate(fonts):
             fontname = i.replace(".ttf", "")
             font = ImageFont.truetype(os.path.join(self.fonts, i), fontsize)
-            draw.text(
-                (5, index * (fontsize + 15)),
-                fontname,
-                color,
-                font=font,
-                stroke_width=1,
-                stroke_fill=(0, 0, 0),
-            )
+            draw.text((5, index * (fontsize + 15)), fontname, color, font=font, stroke_width=1, stroke_fill=(0, 0, 0))
         return img
 
     def get_all_backgrounds(self):
