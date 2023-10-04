@@ -104,7 +104,7 @@ class UserCommands(MixinMeta, ABC):
             task = asyncio.to_thread(self.get_all_fonts)
             img = await asyncio.wait_for(task, timeout=60)
             self.fdata["img"] = img
-            self.fdata["names"] = available
+            self.fdata["names"] = [i.name for i in available]
             return img
         except asyncio.TimeoutError:
             log.warning("get_or_fetch_fonts took too long to generate!")
@@ -123,7 +123,7 @@ class UserCommands(MixinMeta, ABC):
             task = asyncio.to_thread(self.get_all_backgrounds)
             img = await asyncio.wait_for(task, timeout=60)
             self.bgdata["img"] = img
-            self.bgdata["names"] = available
+            self.bgdata["names"] = [i.name for i in available]
             return img
         except asyncio.TimeoutError:
             log.warning("get_or_fetch_backgrounds took too long to generate!")
