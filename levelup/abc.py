@@ -1,6 +1,5 @@
 from abc import ABC, ABCMeta, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 
 from discord.ext.commands.cog import CogMeta
 from redbot.core.bot import Red
@@ -17,7 +16,6 @@ class MixinMeta(ABC):
     bot: Red
     config: Config
     executor: ThreadPoolExecutor
-    path: Path
 
     # Cog cache
     data: dict
