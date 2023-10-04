@@ -132,13 +132,13 @@ class Generator(MixinMeta, ABC):
                 base = colors["base"]
             if colors["name"]:
                 namecolor = colors["name"]
-                namedistance = 100
+                namedistance = 10
             if colors["stat"]:
                 statcolor = colors["stat"]
-                statdistance = 100
+                statdistance = 10
             if colors["levelbar"]:
                 lvlbarcolor = colors["levelbar"]
-                lvldistance = 100
+                lvldistance = 10
             else:
                 lvlbarcolor = base
 
@@ -569,13 +569,13 @@ class Generator(MixinMeta, ABC):
             base = colors["base"]
             if colors["name"]:
                 namecolor = colors["name"]
-                namedistance = 100
+                namedistance = 10
             if colors["stat"]:
                 statcolor = colors["stat"]
-                statdistance = 100
+                statdistance = 10
             if colors["levelbar"]:
                 lvlbarcolor = colors["levelbar"]
-                lvldistance = 100
+                lvldistance = 10
             else:
                 lvlbarcolor = base
 
