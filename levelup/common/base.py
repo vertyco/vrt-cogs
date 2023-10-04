@@ -2,11 +2,11 @@ import asyncio
 import datetime
 import logging
 import math
-import os.path
 import random
 import traceback
 from abc import ABC
 from io import BytesIO
+from pathlib import Path
 from time import perf_counter
 from typing import Optional, Union
 
@@ -14,6 +14,7 @@ import discord
 import validators
 from aiocache import cached
 from redbot.core import VersionInfo, bank, commands, version_info
+from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
 
@@ -30,16 +31,13 @@ from levelup.utils.formatter import (
     time_formatter,
 )
 
-from .abc import MixinMeta
-
-# from .generator import Generator
+from ..abc import MixinMeta
 
 if version_info >= VersionInfo.from_str("3.5.0"):
     from .dpymenu import DEFAULT_CONTROLS, menu
 
     DPY2 = True
 else:
-    # from .dislashmenu import menu, DEFAULT_CONTROLS
     from .menus import DEFAULT_CONTROLS, menu
 
     DPY2 = False
@@ -93,34 +91,42 @@ class UserCommands(MixinMeta, ABC):
         return True
 
     async def get_or_fetch_fonts(self):
-        fonts = os.listdir(os.path.join(self.path, "fonts"))
-        same = all([name in self.fdata["names"] for name in fonts])
-        if same and self.fdata["img"]:
-            img = self.fdata["img"]
-        else:
+        maindir = bundled_data_path(self)
+        savedir = cog_data_path(self)
+        fonts = maindir / "fonts"
+        saved_fonts = savedir / "fonts"
+        available = list(fonts.iterdir()) + list(saved_fonts.iterdir())
+        match = all(i.name in self.fdata["names"] for i in available)
+        if match and self.fdata["img"]:
+            return self.fdata["img"]
+
+        try:
             task = asyncio.to_thread(self.get_all_fonts)
-            try:
-                img = await asyncio.wait_for(task, timeout=60)
-                self.fdata["img"] = img
-                self.fdata["names"] = fonts
-            except asyncio.TimeoutError:
-                img = None
-        return img
+            img = await asyncio.wait_for(task, timeout=60)
+            self.fdata["img"] = img
+            self.fdata["names"] = available
+            return img
+        except asyncio.TimeoutError:
+            log.warning("get_or_fetch_fonts took too long to generate!")
 
     async def get_or_fetch_backgrounds(self):
-        backgrounds = os.listdir(os.path.join(self.path, "backgrounds"))
-        same = all([name in self.fdata["names"] for name in backgrounds])
-        if same and self.fdata["img"]:
-            img = self.fdata["img"]
-        else:
+        maindir = bundled_data_path(self)
+        savedir = cog_data_path(self)
+        backgrounds = maindir / "backgrounds"
+        saved_backgrounds = savedir / "backgrounds"
+        available = list(backgrounds.iterdir()) + list(saved_backgrounds.iterdir())
+        match = all(i.name in self.bgdata["names"] for i in available)
+        if match and self.bgdata["img"]:
+            return self.bgdata["img"]
+
+        try:
             task = asyncio.to_thread(self.get_all_backgrounds)
-            try:
-                img = await asyncio.wait_for(task, timeout=60)
-                self.bgdata["img"] = img
-                self.bgdata["names"] = backgrounds
-            except asyncio.TimeoutError:
-                img = None
-        return img
+            img = await asyncio.wait_for(task, timeout=60)
+            self.bgdata["img"] = img
+            self.bgdata["names"] = available
+            return img
+        except asyncio.TimeoutError:
+            log.warning("get_or_fetch_backgrounds took too long to generate!")
 
     async def get_or_fetch_profile(
         self, user: discord.Member, args: dict, full: bool
@@ -147,7 +153,10 @@ class UserCommands(MixinMeta, ABC):
         ext = "GIF" if animated else "WEBP"
         buffer = BytesIO()
         buffer.name = f"{user.id}.{ext.lower()}"
-        img.save(buffer, save_all=True, format=ext)
+        try:
+            img.save(buffer, save_all=True, format=ext)
+        except KeyError:
+            img.save(buffer, save_all=True, format="png")
         buffer.seek(0)
         return discord.File(buffer, filename=buffer.name)
 
@@ -283,28 +292,43 @@ class UserCommands(MixinMeta, ABC):
                 description=desc,
                 color=ctx.author.color,
             )
+
+            maindir = bundled_data_path(self)
+            savedir = cog_data_path(self)
+            backgrounds = maindir / "backgrounds"
+            saved_backgrounds = savedir / "backgrounds"
+            available = list(backgrounds.iterdir()) + list(saved_backgrounds.iterdir())
+
             file = None
             if bg:
-                if "http" in bg.lower():
+                if bg.lower().startswith("http"):
                     em.set_image(url=bg)
                 elif bg != "random":
-                    bgpaths = os.path.join(self.path, "backgrounds")
-                    defaults = [i for i in os.listdir(bgpaths)]
-                    if bg in defaults:
-                        bgpath = os.path.join(bgpaths, bg)
-                        try:
-                            file = discord.File(bgpath, filename=bg)
-                            em.set_image(url=f"attachment://{bg}")
-                        except (WindowsError, PermissionError, OSError):
-                            pass
+                    for bgfile in available:
+                        if bg.lower() in bgfile.name:
+                            try:
+                                file = discord.File(bgfile, filename=bgfile.name)
+                                em.set_image(url=f"attachment://{bg}")
+                                break
+                            except (WindowsError, PermissionError, OSError):
+                                pass
+
             await ctx.send(embed=em, file=file)
 
-    @set_profile.command(name="bgpath")
+    @set_profile.command(name="defaultbgpath")
     @commands.is_owner()
     async def get_bg_path(self, ctx: commands.Context):
         """Get folder path for this cog's default backgrounds"""
-        bgpath = os.path.join(self.path, "backgrounds")
+        bgpath = bundled_data_path(self) / "backgrounds"
         txt = _("Your default background folder path is \n")
+        await ctx.send(f"{txt}`{bgpath}`")
+
+    @set_profile.command(name="savedbgpath")
+    @commands.is_owner()
+    async def get_saved_bg_path(self, ctx: commands.Context):
+        """Get folder path for this cog's saved backgrounds"""
+        bgpath = cog_data_path(self) / "backgrounds"
+        txt = _("Your saved background folder path is \n")
         await ctx.send(f"{txt}`{bgpath}`")
 
     @set_profile.command(name="addbackground")
@@ -327,7 +351,7 @@ class UserCommands(MixinMeta, ABC):
         valid = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
         url = content[0].url
         filename = content[0].filename
-        if not any([i in filename.lower() for i in valid]):
+        if not any(filename.lower().endswith(i) for i in valid):
             return await ctx.send(
                 _("That is not a valid format, must be on of the following extensions: ")
                 + humanize_list(valid)
@@ -340,35 +364,44 @@ class UserCommands(MixinMeta, ABC):
         if not bytes_file:
             return await ctx.send(_("I was not able to get the file from Discord"))
         if preferred_filename:
-            filename = f"{preferred_filename}{ext}"
-        bgpath = os.path.join(self.path, "backgrounds")
-        filepath = os.path.join(bgpath, filename)
-        with open(filepath, "wb") as f:
-            f.write(bytes_file)
+            if Path(filename).suffix.lower() == Path(preferred_filename).suffix.lower():
+                filename = preferred_filename
+            else:
+                filename = f"{preferred_filename}{ext}"
+        filepath = cog_data_path(self) / "backgrounds" / filename
+        filepath.write_bytes(bytes_file)
         await ctx.send(_("Your custom background has been saved as ") + f"`{filename}`")
 
     @set_profile.command(name="rembackground")
     @commands.is_owner()
     async def remove_background(self, ctx: commands.Context, *, filename: str):
         """Remove a default background from the cog's backgrounds folder"""
-        bgpath = os.path.join(self.path, "backgrounds")
-        for f in os.listdir(bgpath):
-            if filename.lower() in f.lower():
+        savedir = cog_data_path(self) / "backgrounds"
+        for file in savedir.iterdir():
+            if filename.lower() in file.name.lower():
                 break
         else:
             return await ctx.send(_("I could not find any background images with that name"))
-        file = os.path.join(bgpath, f)
+
         try:
-            os.remove(file)
+            file.unlink(missing_ok=True)
         except Exception as e:
             return await ctx.send(_("Could not delete file: ") + str(e))
-        await ctx.send(_("Background `") + f + _("` Has been removed!"))
+        await ctx.send(_("Background named {} has been removed!").format(f"`{file.name}`"))
 
-    @set_profile.command(name="fontpath")
+    @set_profile.command(name="defaultfontpath")
     @commands.is_owner()
     async def get_font_path(self, ctx: commands.Context):
-        """Get folder path for this cog's default backgrounds"""
-        fpath = os.path.join(self.path, "fonts")
+        """Get folder path for this cog's default fonts"""
+        fpath = bundled_data_path(self) / "fonts"
+        txt = _("Your default font folder path is \n")
+        await ctx.send(f"{txt}`{fpath}`")
+
+    @set_profile.command(name="savedfontpath")
+    @commands.is_owner()
+    async def get_saved_font_path(self, ctx: commands.Context):
+        """Get folder path for this cog's saved fonts"""
+        fpath = bundled_data_path(self) / "fonts"
         txt = _("Your custom font folder path is \n")
         await ctx.send(f"{txt}`{fpath}`")
 
@@ -400,42 +433,44 @@ class UserCommands(MixinMeta, ABC):
         if not bytes_file:
             return await ctx.send(_("I was not able to get the file from Discord"))
         if preferred_filename:
-            filename = f"{preferred_filename}{ext}"
-        fpath = os.path.join(self.path, "fonts")
-        filepath = os.path.join(fpath, filename)
-        with open(filepath, "wb") as f:
-            f.write(bytes_file)
+            if Path(filename).suffix.lower() == Path(preferred_filename).suffix.lower():
+                filename = preferred_filename
+            else:
+                filename = f"{preferred_filename}{ext}"
+
+        filepath = cog_data_path(self) / "fonts" / filename
+        filepath.write_bytes(bytes_file)
         await ctx.send(_("Your custom font file has been saved as ") + f"`{filename}`")
 
     @set_profile.command(name="remfont")
     @commands.is_owner()
     async def remove_font(self, ctx: commands.Context, *, filename: str):
         """Remove a font from the cog's font folder"""
-        fpath = os.path.join(self.path, "fonts")
-        for f in os.listdir(fpath):
-            if filename.lower() in f.lower():
+        savedir = cog_data_path(self) / "fonts"
+        for file in savedir.iterdir():
+            if filename.lower() in file.name.lower():
                 break
         else:
             return await ctx.send(_("I could not find any fonts with that name"))
-        file = os.path.join(fpath, f)
+
         try:
-            os.remove(file)
+            file.unlink(missing_ok=True)
         except Exception as e:
             return await ctx.send(_("Could not delete file: ") + str(e))
-        await ctx.send(_("Font `") + f + _("` Has been removed!"))
+        await ctx.send(_("Font named {} has been removed!").format(f"`{file.name}`"))
 
     @set_profile.command(name="backgrounds")
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.bot_has_permissions(attach_files=True)
-    async def view_default_backgrounds(self, ctx: commands.Context):
-        """View the default backgrounds"""
+    async def view_all_backgrounds(self, ctx: commands.Context):
+        """View the all available backgrounds"""
         if not self.data[ctx.guild.id]["usepics"]:
             txt = _("Image profiles are disabled on this server so this command is off")
             if ctx.author.guild_permissions.manage_messages:
                 txt += _(
                     "\nUse the `{}` command to toggle image profiles and enable this command."
                 ).format(f"{ctx.clean_prefix}lset embeds")
-            await ctx.send(txt)
+            return await ctx.send(txt)
 
         async with ctx.typing():
             img = await self.get_or_fetch_backgrounds()
@@ -690,25 +725,29 @@ class UserCommands(MixinMeta, ABC):
         if user_id not in users:
             self.init_user(ctx.guild.id, user_id)
 
-        backgrounds = os.path.join(self.path, "backgrounds")
+        default_bg = bundled_data_path(self) / "backgrounds"
+        saved_bg = cog_data_path(self) / "backgrounds"
+
+        backgrounds = list(default_bg.iterdir()) + list(saved_bg.iterdir())
 
         # If image url is given, run some checks
+        if not image_url and not get_attachments(ctx):
+            return await ctx.send(_("You must provide a url, filename, or attach a file"))
+
         filepath = None
-        if image_url and image_url != "random":
-            # Check if they specified a default background filename
-            for filename in os.listdir(backgrounds):
-                if image_url.lower() in filename.lower():
-                    image_url = filename
-                    filepath = os.path.join(backgrounds, filename)
-                    break
-            else:
-                if not await self.valid_url(ctx, image_url):
-                    return
+        if att := get_attachments(ctx):
+            image_url = att[0].url
+            if not await self.valid_url(ctx, image_url):
+                return
+        elif image_url.lower().startswith("http"):
+            if not await self.valid_url(ctx, image_url):
+                return
         else:
-            if ctx.message.attachments:
-                image_url = ctx.message.attachments[0].url
-                if not await self.valid_url(ctx, image_url):
-                    return
+            for file in backgrounds:
+                if image_url.lower() in file.name.lower():
+                    image_url = file.name
+                    filepath = file
+                    break
 
         if image_url:
             self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
@@ -720,9 +759,9 @@ class UserCommands(MixinMeta, ABC):
                 # Either a valid url or a specified default file
                 if filepath:
                     file = discord.File(filepath)
-                    await ctx.send(_("Your background image has been set!"), file=file)
+                    await ctx.send(_("Your background image has been set to `{}`!").format(image_url), file=file)
                 else:
-                    await ctx.send(_("Your background image has been set!"))
+                    await ctx.send(_("Your background image has been set to `{}`!").format(image_url))
         else:
             self.data[ctx.guild.id]["users"][user_id]["background"] = None
             await ctx.send(_("Your background has been removed since you did not specify a url!"))
@@ -750,15 +789,18 @@ class UserCommands(MixinMeta, ABC):
             self.data[ctx.guild.id]["users"][user_id]["font"] = None
             return await ctx.send(_("Your profile font has been reverted to default"))
 
-        fonts = os.path.join(self.path, "fonts")
-        for filename in os.listdir(fonts):
-            if font_name.lower() in filename.lower():
+        default_fonts = bundled_data_path(self) / "fonts"
+        saved_fonts = cog_data_path(self) / "fonts"
+
+        fonts = list(default_fonts.iterdir()) + list(saved_fonts.iterdir())
+        for file in fonts:
+            if font_name.lower() in file.name.lower():
                 break
         else:
             return await ctx.send(_("I could not find a font file with that name"))
 
-        self.data[ctx.guild.id]["users"][user_id]["font"] = filename
-        await ctx.send(_("Your profile font has been set to ") + filename)
+        self.data[ctx.guild.id]["users"][user_id]["font"] = file.name
+        await ctx.send(_("Your profile font has been set to ") + f"`{file.name}`")
 
     @set_profile.command(name="blur")
     async def set_user_blur(self, ctx: commands.Context):

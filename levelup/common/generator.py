@@ -4,17 +4,18 @@ import random
 from abc import ABC
 from io import BytesIO
 from math import ceil, sqrt
-from typing import Union
+from pathlib import Path
+from typing import List, Union
 
 import colorgram
 import requests
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, UnidentifiedImageError
-from redbot.core.data_manager import cog_data_path
+from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number
 
-from .abc import MixinMeta
-from .utils.core import Pilmoji
+from ..abc import MixinMeta
+from ..utils.core import Pilmoji
 
 log = logging.getLogger("red.vrt.levelup.generator")
 _ = Translator("LevelUp", __file__)
@@ -25,11 +26,37 @@ ASPECT_RATIO = (21, 9)
 class Generator(MixinMeta, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bgpath = cog_data_path(self) / "backgrounds"
-        self.bgpath.mkdir(exist_ok=True)
-        self.fontpath = cog_data_path(self) / "fonts"
-        self.fontpath.mkdir(exist_ok=True)
+        # Included Assets
+        maindir = bundled_data_path(self)
+        self.star = maindir / "star.png"
+        self.default_pfp = maindir / "defaultpfp.png"
+        self.status = {
+            "online": maindir / "online.png",
+            "offline": maindir / "offline.png",
+            "idle": maindir / "idle.png",
+            "dnd": maindir / "dnd.png",
+            "streaming": maindir / "streaming.png",
+        }
+        self.font = str(maindir / "font.ttf")
+        self.fonts = maindir / "fonts"
+        self.backgrounds = maindir / "backgrounds"
 
+        # Saved Assets
+        savedir = cog_data_path(self)
+        self.saved_bgs = savedir / "backgrounds"
+        self.saved_bgs.mkdir(exist_ok=True)
+        self.saved_fonts = savedir / "fonts"
+        self.saved_fonts.mkdir(exist_ok=True)
+
+        # Cleanup old files from conversion to webp
+        delete: List[Path] = []
+        for file in self.backgrounds.iterdir():
+            if file.name.endswith(".py") or file.is_dir():
+                continue
+            if not file.name.endswith(".webp"):
+                delete.append(file)
+        for i in delete:
+            i.unlink(missing_ok=True)
 
     def generate_profile(
         self,
@@ -62,26 +89,29 @@ class Generator(MixinMeta, ABC):
             profile = Image.open(profile_bytes)
         else:
             profile = Image.open(self.default_pfp)
-
-
         # Get background
-        bgpath = os.path.join(self.path, "backgrounds")
-        defaults = [i for i in os.listdir(bgpath)]
-        if not bg_image or str(bg_image) == "random":
+        available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
+        card = None
+        if bg_image and str(bg_image) != "random":
+            if not bg_image.lower().startswith("http"):
+                for file in available:
+                    if bg_image.lower() in file.name.lower():
+                        try:
+                            card = Image.open(file)
+                            break
+                        except OSError:
+                            log.info(f"Failed to load {bg_image}")
+
+            if not card and bg_image.lower().startswith("http"):
+                try:
+                    bg_bytes = self.get_image_content_from_url(bg_image)
+                    card = Image.open(BytesIO(bg_bytes))
+                except UnidentifiedImageError:
+                    pass
+
+        if not card:
             card = self.get_random_background()
-        elif "http" in bg_image:
-            try:
-                bg_bytes = self.get_image_content_from_url(bg_image)
-                card = Image.open(BytesIO(bg_bytes))
-            except UnidentifiedImageError:
-                card = self.get_random_background()
-        elif bg_image in defaults:
-            try:
-                card = Image.open(os.path.join(bgpath, bg_image))
-            except OSError:
-                card = self.get_random_background()
-        else:
-            card = self.get_random_background()
+
 
         card = (
             self.force_aspect_ratio(card)
@@ -294,7 +324,7 @@ class Generator(MixinMeta, ABC):
         if role_bytes:
             role_bytes = BytesIO(role_bytes)
             role_icon_img = Image.open(role_bytes).resize((50, 50), Image.Resampling.LANCZOS)
-            blank.paste(role_icon_img, (5, 5))
+            blank.paste(role_icon_img, (10, 10))
         # Prestige icon
         prestige_bytes = self.get_image_content_from_url(emoji) if prestige else None
         if prestige_bytes:
@@ -565,22 +595,26 @@ class Generator(MixinMeta, ABC):
         aspect_ratio = (27, 7)
 
         # Get background
-        bgpath = os.path.join(self.path, "backgrounds")
-        defaults = [i for i in os.listdir(bgpath) if not i.endswith(".png")]
-        if not bg_image or str(bg_image) == "random":
-            card = self.get_random_background()
-        elif "http" in bg_image:
-            try:
-                bg_bytes = self.get_image_content_from_url(bg_image)
-                card = Image.open(BytesIO(bg_bytes))
-            except UnidentifiedImageError:
-                card = self.get_random_background()
-        elif bg_image in defaults:
-            try:
-                card = Image.open(os.path.join(bgpath, bg_image))
-            except OSError:
-                card = self.get_random_background()
-        else:
+        available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
+        card = None
+        if bg_image and str(bg_image) != "random":
+            if not bg_image.lower().startswith("http"):
+                for file in available:
+                    if bg_image.lower() in file.name.lower():
+                        try:
+                            card = Image.open(file)
+                            break
+                        except OSError:
+                            log.info(f"Failed to load {bg_image}")
+
+            if not card and bg_image.lower().startswith("http"):
+                try:
+                    bg_bytes = self.get_image_content_from_url(bg_image)
+                    card = Image.open(BytesIO(bg_bytes))
+                except UnidentifiedImageError:
+                    pass
+
+        if not card:
             card = self.get_random_background()
 
         card = self.force_aspect_ratio(card, aspect_ratio)
@@ -817,18 +851,26 @@ class Generator(MixinMeta, ABC):
         color: tuple = (0, 0, 0),
         font_name: str = None,
     ):
-        if bg_image and bg_image != "random":
-            bgpath = os.path.join(self.path, "backgrounds")
-            defaults = [i for i in os.listdir(bgpath) if not i.endswith(".png")]
-            if bg_image in defaults:
-                card = Image.open(os.path.join(bgpath, bg_image))
-            else:
-                bg_bytes = self.get_image_content_from_url(bg_image)
+        available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
+        card = None
+        if bg_image and str(bg_image) != "random":
+            if not bg_image.lower().startswith("http"):
+                for file in available:
+                    if bg_image.lower() in file.name.lower():
+                        try:
+                            card = Image.open(file)
+                            break
+                        except OSError:
+                            log.info(f"Failed to load {bg_image}")
+
+            if not card and bg_image.lower().startswith("http"):
                 try:
+                    bg_bytes = self.get_image_content_from_url(bg_image)
                     card = Image.open(BytesIO(bg_bytes))
                 except UnidentifiedImageError:
-                    card = self.get_random_background()
-        else:
+                    pass
+
+        if not card:
             card = self.get_random_background()
 
         # Get coords and fonts setup
@@ -909,7 +951,7 @@ class Generator(MixinMeta, ABC):
         final = final.resize(card_size, Image.Resampling.LANCZOS)
         return final
 
-    def get_all_fonts(self):
+    def get_all_fonts(self) -> Image.Image:
         fonts = [i for i in os.listdir(self.fonts)]
         count = len(fonts)
         fontsize = 50
@@ -931,28 +973,26 @@ class Generator(MixinMeta, ABC):
         return img
 
     def get_all_backgrounds(self):
-        backgrounds = os.path.join(self.path, "backgrounds")
-        choices = os.listdir(backgrounds)
-        if not choices:
-            return None
+        available: List[Path] = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
         imgs = []
-        for filename in choices:
+        for file in available:
+            if file.name.endswith(".py") or file.is_dir():
+                continue
             try:
-                filepath = os.path.join(backgrounds, filename)
-                img = self.force_aspect_ratio(Image.open(filepath))
+                img = self.force_aspect_ratio(Image.open(file))
                 img = img.convert("RGBA").resize((1050, 450), Image.Resampling.NEAREST)
                 draw = ImageDraw.Draw(img)
                 ext_replace = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
-                txt = filename
+                txt = file.name
                 for ext in ext_replace:
                     txt = txt.replace(ext, "")
                 draw.text((10, 10), txt, font=ImageFont.truetype(self.font, 100))
                 if not img:
-                    log.error(f"Failed to load image for default background '{filename}`")
+                    log.error(f"Failed to load image for default background '{file}`")
                     continue
-                imgs.append((img, filename))
+                imgs.append((img, file.name))
             except Exception as e:
-                log.warning(f"Failed to prep background image: {filename}", exc_info=e)
+                log.warning(f"Failed to prep background image: {file}", exc_info=e)
 
         # Sort by name
         imgs = sorted(imgs, key=lambda key: key[1])
@@ -1101,16 +1141,13 @@ class Generator(MixinMeta, ABC):
         return cropped
 
     def get_random_background(self) -> Image:
-        bg_dir = os.path.join(self.path, "backgrounds")
-        choice = random.choice(os.listdir(bg_dir))
-        bg_file = os.path.join(bg_dir, choice)
-        return Image.open(bg_file)
+        available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
+        choice = random.choice(available)
+        return Image.open(choice)
 
     def get_random_font(self) -> str:
-        fdir = os.path.join(self.path, "fonts")
-        choice = random.choice(os.listdir(fdir))
-        f_file = os.path.join(fdir, choice)
-        return f_file
+        available = list(self.fonts.iterdir()) + list(self.saved_fonts.iterdir())
+        return random.choice(available)
 
     @staticmethod
     def has_emoji(text: str) -> Union[str, bool]:
