@@ -4,7 +4,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 from openai.embeddings_utils import cosine_similarity
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
@@ -28,12 +28,6 @@ class Embedding(BaseModel):
     def update(self):
         self.modified = datetime.now(tz=timezone.utc)
 
-    def dict(self, *args, **kwargs):
-        data = super().dict(*args, **kwargs)
-        data["created"] = self.created.isoformat()
-        data["modified"] = self.modified.isoformat()
-        return data
-
 
 class CustomFunction(BaseModel):
     """Functions added by bot owner via string"""
@@ -54,6 +48,9 @@ class Usage(BaseModel):
 
 
 class GuildSettings(BaseModel):
+    model_config = ConfigDict(
+        protected_namespaces=()
+    )  # Hides warning for 'model_role_overrides' using a protected namespace
     system_prompt: str = "You are a helpful discord assistant named {botname}"
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
     embeddings: Dict[str, Embedding] = {}

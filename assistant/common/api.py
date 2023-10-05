@@ -86,9 +86,7 @@ class API(MixinMeta):
             message = response["choices"][0]["message"]
         else:
             compiled = compile_messages(messages)
-            prompt = await self.cut_text_by_tokens(
-                compiled, conf, self.get_max_tokens(conf, member)
-            )
+            prompt = await self.cut_text_by_tokens(compiled, conf, self.get_max_tokens(conf, member))
             response = await request_completion_raw(
                 model=model,
                 prompt=prompt,
@@ -131,9 +129,7 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
 
-    async def can_call_llm(
-        self, conf: GuildSettings, ctx: Optional[commands.Context] = None
-    ) -> bool:
+    async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
         cant = [
             not conf.api_key,
             conf.endpoint_override is None,
@@ -143,12 +139,10 @@ class API(MixinMeta):
             if ctx:
                 txt = _("There are no API keys set!\n")
                 if ctx.author.id == ctx.guild.owner_id:
-                    txt += _("- Set your OpenAI key with `{}`\n").format(
-                        f"{ctx.clean_prefix}assist openaikey"
+                    txt += _("- Set your OpenAI key with `{}`\n").format(f"{ctx.clean_prefix}assist openaikey")
+                    txt += _("- Or set an endpoint override to your self-hosted LLM with `{}`\n").format(
+                        f"{ctx.clean_prefix}assist endpoint"
                     )
-                    txt += _(
-                        "- Or set an endpoint override to your self-hosted LLM with `{}`\n"
-                    ).format(f"{ctx.clean_prefix}assist endpoint")
                 if ctx.author.id in self.bot.owner_ids:
                     txt += _("- Alternatively you can set a global endpoint with `{}`").format(
                         f"{ctx.clean_prefix}assist globalendpoint"
@@ -228,13 +222,7 @@ class API(MixinMeta):
 
     async def convo_token_count(self, conf: GuildSettings, convo: Conversation) -> int:
         """Fetch token count of stored messages"""
-        return sum(
-            [
-                (await self.get_token_count(i["content"], conf))
-                for i in convo.messages
-                if i["content"]
-            ]
-        )
+        return sum([(await self.get_token_count(i["content"], conf)) for i in convo.messages if i["content"]])
 
     async def payload_token_count(self, conf: GuildSettings, messages: List[dict]):
         total = 0
@@ -244,9 +232,7 @@ class API(MixinMeta):
 
     async def prompt_token_count(self, conf: GuildSettings) -> int:
         """Fetch token count of system and initial prompts"""
-        return (await self.get_token_count(conf.prompt, conf)) + (
-            await self.get_token_count(conf.system_prompt, conf)
-        )
+        return (await self.get_token_count(conf.prompt, conf)) + (await self.get_token_count(conf.system_prompt, conf))
 
     async def function_token_count(self, conf: GuildSettings, functions: List[dict]) -> int:
         if not functions:
@@ -316,11 +302,7 @@ class API(MixinMeta):
                 most_recent_function = len(messages) - 1 - i
             if most_recent_assistant == -1 and msg["role"] == "assistant":
                 most_recent_assistant = len(messages) - 1 - i
-            if (
-                most_recent_user != -1
-                and most_recent_function != -1
-                and most_recent_assistant != -1
-            ):
+            if most_recent_user != -1 and most_recent_function != -1 and most_recent_assistant != -1:
                 break
 
         # Clear out function calls (not the result, just the message of it being called)
@@ -417,7 +399,7 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
     async def get_function_menu_embeds(self, user: discord.Member) -> List[discord.Embed]:
-        func_dump = {k: v.dict() for k, v in self.db.functions.items()}
+        func_dump = {k: v.model_dump() for k, v in self.db.functions.items()}
         registry = {"Assistant-Custom": func_dump}
         for cog_name, function_schemas in self.registry.items():
             cog = self.bot.get_cog(cog_name)
@@ -455,17 +437,13 @@ class API(MixinMeta):
                 elif cog_name == "Assistant":
                     embed.add_field(
                         name=_("Internal Function"),
-                        value=_(
-                            "This is an internal command that can only be used when interacting with a tutor"
-                        ),
+                        value=_("This is an internal command that can only be used when interacting with a tutor"),
                         inline=False,
                     )
                 schema = json.dumps(func["jsonschema"], indent=2)
                 tokens = await self.get_token_count(schema, conf)
 
-                schema_text = _("This function consumes `{}` input tokens each call\n").format(
-                    humanize_number(tokens)
-                )
+                schema_text = _("This function consumes `{}` input tokens each call\n").format(humanize_number(tokens))
 
                 if user.id in self.bot.owner_ids:
                     if len(schema) > 1000:
@@ -498,9 +476,7 @@ class API(MixinMeta):
             )
         return embeds
 
-    async def get_embbedding_menu_embeds(
-        self, conf: GuildSettings, place: int
-    ) -> List[discord.Embed]:
+    async def get_embbedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
         embeddings = sorted(conf.embeddings.items(), key=lambda x: x[0])
         embeds = []
         pages = math.ceil(len(embeddings) / 5)
@@ -544,9 +520,5 @@ class API(MixinMeta):
             start += 5
             stop += 5
         if not embeds:
-            embeds.append(
-                discord.Embed(
-                    description=_("No embeddings have been added!"), color=discord.Color.purple()
-                )
-            )
+            embeds.append(discord.Embed(description=_("No embeddings have been added!"), color=discord.Color.purple()))
         return embeds
