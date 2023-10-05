@@ -45,6 +45,9 @@ class Embedding(BaseModel):
             return json.loads(super().json(*args, **kwargs))
         return super().dict(*args, **kwargs)
 
+    def __str__(self) -> str:
+        return self.text
+
 
 class CustomFunction(BaseModel):
     """Functions added by bot owner via string"""

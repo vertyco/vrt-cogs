@@ -112,7 +112,7 @@ class Generator(MixinMeta, ABC):
         if not card:
             card = self.get_random_background()
 
-        card = self.force_aspect_ratio(card).convert("RGBA").resize((1050, 450), Image.Resampling.LANCZOS)
+        card = self.force_aspect_ratio(card).convert("RGBA").resize((1050, 450), Image.Resampling.NEAREST)
 
         # Colors
         # Sample colors from profile pic to use for default colors
@@ -244,7 +244,7 @@ class Generator(MixinMeta, ABC):
                 fill=lvlbarcolor,
                 radius=89,
             )
-        progress_bar = progress_bar.resize(card.size, Image.Resampling.LANCZOS)
+        progress_bar = progress_bar.resize(card.size, Image.Resampling.NEAREST)
         # Image with level bar and pfp on background
         final = Image.alpha_composite(final, progress_bar)
 
@@ -312,19 +312,19 @@ class Generator(MixinMeta, ABC):
         blank = Image.new("RGBA", card.size, (255, 255, 255, 0))
         status = self.status[user_status] if user_status in self.status else self.status["offline"]
         status_img = Image.open(status)
-        status = status_img.convert("RGBA").resize((60, 60), Image.Resampling.LANCZOS)
-        star = Image.open(self.star).resize((50, 50), Image.Resampling.LANCZOS)
+        status = status_img.convert("RGBA").resize((60, 60), Image.Resampling.NEAREST)
+        star = Image.open(self.star).resize((50, 50), Image.Resampling.NEAREST)
         # Role icon
         role_bytes = self.get_image_content_from_url(role_icon) if role_icon else None
         if role_bytes:
             role_bytes = BytesIO(role_bytes)
-            role_icon_img = Image.open(role_bytes).resize((50, 50), Image.Resampling.LANCZOS)
+            role_icon_img = Image.open(role_bytes).resize((50, 50), Image.Resampling.NEAREST)
             blank.paste(role_icon_img, (10, 10))
         # Prestige icon
         prestige_bytes = self.get_image_content_from_url(emoji) if prestige else None
         if prestige_bytes:
             prestige_bytes = BytesIO(prestige_bytes)
-            prestige_img = Image.open(prestige_bytes).resize((stats_size, stats_size), Image.Resampling.LANCZOS)
+            prestige_img = Image.open(prestige_bytes).resize((stats_size, stats_size), Image.Resampling.NEAREST)
             # Adjust prestige icon placement
             p_bbox = stats_font.getbbox(prestige_str)
             # Middle of stat text
@@ -445,7 +445,7 @@ class Generator(MixinMeta, ABC):
         circle_img = Image.new("RGBA", (1600, 1600))
         pfp_border = ImageDraw.Draw(circle_img)
         pfp_border.ellipse([4, 4, 1596, 1596], fill=(255, 255, 255, 0), outline=base, width=20)
-        circle_img = circle_img.resize((330, 330), Image.Resampling.LANCZOS)
+        circle_img = circle_img.resize((330, 330), Image.Resampling.NEAREST)
         final.paste(circle_img, (circle_x - 15, circle_y - 15), circle_img)
 
         # Handle profile pic image to paste to card
@@ -456,7 +456,7 @@ class Generator(MixinMeta, ABC):
             frames = []
             for i in range(profile.n_frames):
                 profile.seek(i)
-                prof_img = profile.convert("RGBA").resize((300, 300), Image.Resampling.LANCZOS)
+                prof_img = profile.convert("RGBA").resize((300, 300), Image.Resampling.NEAREST)
                 # Mask to crop profile pic image to a circle
                 # draw at 4x size and resample down to 1x for a nice smooth circle
                 mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
@@ -470,7 +470,7 @@ class Generator(MixinMeta, ABC):
                     ],
                     fill=(255, 255, 255, 255),
                 )
-                mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+                mask = mask.resize(card.size, Image.Resampling.NEAREST)
                 # make a new Image to set up card-sized image for pfp layer and the circle mask for it
                 profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
                 # paste on square profile pic in appropriate spot
@@ -500,7 +500,7 @@ class Generator(MixinMeta, ABC):
             final = Image.open(tmp)
 
         else:
-            profile = profile.convert("RGBA").resize((300, 300), Image.Resampling.LANCZOS)
+            profile = profile.convert("RGBA").resize((300, 300), Image.Resampling.NEAREST)
             # Mask to crop profile pic image to a circle
             # draw at 4x size and resample down to 1x for a nice smooth circle
             mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
@@ -514,7 +514,7 @@ class Generator(MixinMeta, ABC):
                 ],
                 fill=(255, 255, 255, 255),
             )
-            mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+            mask = mask.resize(card.size, Image.Resampling.NEAREST)
             # make a new Image to set up card-sized image for pfp layer and the circle mask for it
             profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
             # paste on square profile pic in appropriate spot
@@ -609,7 +609,7 @@ class Generator(MixinMeta, ABC):
             card = self.get_random_background()
 
         card = self.force_aspect_ratio(card, aspect_ratio)
-        card = card.convert("RGBA").resize((900, 240), Image.Resampling.LANCZOS)
+        card = card.convert("RGBA").resize((900, 240), Image.Resampling.NEAREST)
         try:
             bgcolor = self.get_img_color(card)
         except Exception as e:
@@ -781,7 +781,7 @@ class Generator(MixinMeta, ABC):
         circle_img = Image.new("RGBA", (800, 800))
         pfp_border = ImageDraw.Draw(circle_img)
         pfp_border.ellipse([4, 4, 796, 796], fill=(255, 255, 255, 0), outline=base, width=12)
-        circle_img = circle_img.resize((200, 200), Image.Resampling.LANCZOS)
+        circle_img = circle_img.resize((200, 200), Image.Resampling.NEAREST)
         card.paste(circle_img, (19, 19), circle_img)
 
         # get profile pic
@@ -792,14 +792,14 @@ class Generator(MixinMeta, ABC):
         else:
             profile = Image.open(self.default_pfp)
 
-        profile = profile.convert("RGBA").resize((180, 180), Image.Resampling.LANCZOS)
+        profile = profile.convert("RGBA").resize((180, 180), Image.Resampling.NEAREST)
 
         # Mask to crop profile pic image to a circle
         # draw at 4x size and resample down to 1x for a nice smooth circle
         mask = Image.new("RGBA", ((card.size[0] * 4), (card.size[1] * 4)), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.ellipse((116, 116, 836, 836), fill=(255, 255, 255, 255))
-        mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+        mask = mask.resize(card.size, Image.Resampling.NEAREST)
 
         # make a new Image to set up card-sized image for pfp layer and the circle mask for it
         profile_pic_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
@@ -818,9 +818,9 @@ class Generator(MixinMeta, ABC):
 
         status = self.status[user_status] if user_status in self.status else self.status["offline"]
         status_img = Image.open(status)
-        status = status_img.convert("RGBA").resize((40, 40), Image.Resampling.LANCZOS)
+        status = status_img.convert("RGBA").resize((40, 40), Image.Resampling.NEAREST)
         rep_icon = Image.open(self.star)
-        rep_icon = rep_icon.convert("RGBA").resize((40, 40), Image.Resampling.LANCZOS)
+        rep_icon = rep_icon.convert("RGBA").resize((40, 40), Image.Resampling.NEAREST)
 
         # Status badge
         # Another blank
@@ -904,13 +904,13 @@ class Generator(MixinMeta, ABC):
             profile = Image.open(profile_bytes)
         else:
             profile = Image.open(self.default_pfp)
-        profile = profile.convert("RGBA").resize(pfpsize, Image.Resampling.LANCZOS)
+        profile = profile.convert("RGBA").resize(pfpsize, Image.Resampling.NEAREST)
 
         # Create mask for profile image crop
         mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.ellipse((0, 0, pfpsize[0], pfpsize[1]), fill=(255, 255, 255, 255))
-        # mask = mask.resize(card.size, Image.Resampling.LANCZOS)
+        # mask = mask.resize(card.size, Image.Resampling.NEAREST)
 
         pfp_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
         pfp_holder.paste(profile, (0, 0))
@@ -935,7 +935,7 @@ class Generator(MixinMeta, ABC):
             stroke_fill=fillcolor,
         )
         # Finally resize the image
-        final = final.resize(card_size, Image.Resampling.LANCZOS)
+        final = final.resize(card_size, Image.Resampling.NEAREST)
         return final
 
     def get_all_fonts(self) -> Image.Image:
@@ -1116,8 +1116,13 @@ class Generator(MixinMeta, ABC):
 
     def get_random_background(self) -> Image:
         available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
-        choice = random.choice(available)
-        return Image.open(choice)
+        shuffled = random.shuffle(available)
+        for path in shuffled:
+            try:
+                return Image.open(path)
+            except UnidentifiedImageError:
+                pass
+        return Image.new("RGBA", (2000, 1000), (0, 0, 0, 0))
 
     def get_random_font(self) -> str:
         available = list(self.fonts.iterdir()) + list(self.saved_fonts.iterdir())
