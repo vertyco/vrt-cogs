@@ -1,10 +1,11 @@
+import json
 import logging
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 from openai.embeddings_utils import cosine_similarity
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import VERSION, BaseModel, ConfigDict, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
@@ -27,6 +28,22 @@ class Embedding(BaseModel):
 
     def update(self):
         self.modified = datetime.now(tz=timezone.utc)
+
+    @classmethod
+    def model_validate(cls, obj: Any, *args, **kwargs):
+        if VERSION >= "2.0.1":
+            return super().model_validate(obj, *args, **kwargs)
+        return super().parse_obj(obj, *args, **kwargs)
+
+    def model_dump(self, *args, **kwargs):
+        if VERSION >= "2.0.1":
+            return super().model_dump(*args, **kwargs)
+        mode = kwargs.get("mode", "")
+        if mode:
+            del kwargs["mode"]
+        if mode == "json":
+            return json.loads(super().json(*args, **kwargs))
+        return super().dict(*args, **kwargs)
 
 
 class CustomFunction(BaseModel):
@@ -267,6 +284,22 @@ class DB(BaseModel):
     listen_to_bots: bool = False
 
     endpoint_override: Optional[str] = None
+
+    @classmethod
+    def model_validate(cls, obj: Any, *args, **kwargs):
+        if VERSION >= "2.0.1":
+            return super().model_validate(obj, *args, **kwargs)
+        return super().parse_obj(obj, *args, **kwargs)
+
+    def model_dump(self, *args, **kwargs):
+        if VERSION >= "2.0.1":
+            return super().model_dump(*args, **kwargs)
+        mode = kwargs.get("mode", "")
+        if mode:
+            del kwargs["mode"]
+        if mode == "json":
+            return json.loads(super().json(*args, **kwargs))
+        return super().dict(*args, **kwargs)
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
