@@ -65,9 +65,7 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set")
-        system_tokens = (
-            await self.get_token_count(conf.system_prompt, conf) if conf.system_prompt else 0
-        )
+        system_tokens = await self.get_token_count(conf.system_prompt, conf) if conf.system_prompt else 0
         prompt_tokens = await self.get_token_count(conf.prompt, conf) if conf.prompt else 0
 
         func_list, __ = self.db.prep_functions(self.bot, conf, self.registry)
@@ -133,7 +131,7 @@ class Admin(MixinMeta):
             _("`Top N Embeddings:  `{}\n").format(conf.top_n)
             + _("`Min Relatedness:   `{}\n").format(conf.min_relatedness)
             + _("`Embedding Method:  `{}\n").format(conf.embed_method)
-            + _("`Encoded By:        `{}").format(encoded_by)
+            + _("`Encodings:         `{}").format(encoded_by)
         )
         embed_num = humanize_number(len(conf.embeddings))
         embed.add_field(
@@ -158,9 +156,9 @@ class Admin(MixinMeta):
         )
         if self.registry:
             cogs = humanize_list([cog for cog in self.registry])
-            custom_func_field += _(
-                "The following cogs also have functions registered with the assistant\n{}"
-            ).format(box(cogs))
+            custom_func_field += _("The following cogs also have functions registered with the assistant\n{}").format(
+                box(cogs)
+            )
 
         embed.add_field(
             name=_("Custom Functions ({})").format(humanize_number(func_count)),
@@ -181,9 +179,7 @@ class Admin(MixinMeta):
                 embed.add_field(name=_("Regex Blacklist"), value=box(p), inline=False)
             embed.add_field(
                 name=_("Regex Failure Blocking"),
-                value=_("Block reply if regex replacement fails: **{}**").format(
-                    conf.block_failed_regex
-                ),
+                value=_("Block reply if regex replacement fails: **{}**").format(conf.block_failed_regex),
                 inline=False,
             )
 
@@ -240,9 +236,7 @@ class Admin(MixinMeta):
                         continue
                     field += f"{role.mention}: `{humanize_number(retention)}`\n"
                 if field:
-                    embed.add_field(
-                        name=_("Max Message Retention Role Overrides"), value=field, inline=False
-                    )
+                    embed.add_field(name=_("Max Message Retention Role Overrides"), value=field, inline=False)
 
             if overrides := conf.max_time_role_override:
                 field = ""
@@ -268,9 +262,7 @@ class Admin(MixinMeta):
                         continue
                     field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
                 if field:
-                    embed.add_field(
-                        name=_("Max Response Token Role Overrides"), value=field, inline=False
-                    )
+                    embed.add_field(name=_("Max Response Token Role Overrides"), value=field, inline=False)
 
         embed.set_footer(text=_("Showing settings for {}").format(ctx.guild.name))
 
@@ -284,9 +276,7 @@ class Admin(MixinMeta):
             else None
         )
         prompt_file = (
-            discord.File(BytesIO(conf.prompt.encode()), filename=_("InitialPrompt") + ".txt")
-            if conf.prompt
-            else None
+            discord.File(BytesIO(conf.prompt.encode()), filename=_("InitialPrompt") + ".txt") if conf.prompt else None
         )
         if system_file:
             files.append(system_file)
@@ -346,9 +336,7 @@ class Admin(MixinMeta):
                 continue
 
             field = _(
-                "`Input:  `{} (${} @ ${}/1k tokens)\n"
-                "`Output: `{} (${} @ ${}/1k tokens)\n"
-                "`Total:  `{} (${})"
+                "`Input:  `{} (${} @ ${}/1k tokens)\n" "`Output: `{} (${} @ ${}/1k tokens)\n" "`Total:  `{} (${})"
             ).format(
                 humanize_number(usage.input_tokens),
                 round(input_cost, 2),
@@ -362,10 +350,7 @@ class Admin(MixinMeta):
             embed.add_field(name=model_name, value=field, inline=False)
 
         desc = _(
-            "**Overall Token Usage and Cost**\n"
-            "`Input:  `{} (${})\n"
-            "`Output: `{} (${})\n"
-            "`Total:  `{} (${})"
+            "**Overall Token Usage and Cost**\n" "`Input:  `{} (${})\n" "`Output: `{} (${})\n" "`Total:  `{} (${})"
         ).format(
             humanize_number(overall_input),
             round(total_input_cost, 2),
@@ -422,9 +407,7 @@ class Admin(MixinMeta):
         try:
             tz = pytz.timezone(timezone)
         except pytz.UnknownTimeZoneError:
-            likely_match = sorted(
-                pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True
-            )[0]
+            likely_match = sorted(pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True)[0]
             return await ctx.send(_("Invalid Timezone, did you mean `{}`?").format(likely_match))
         time = datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
         await ctx.send(_("Timezone set to **{}** (`{}`)").format(timezone, time))
@@ -498,8 +481,7 @@ class Admin(MixinMeta):
         elif not prompt and not conf.prompt:
             await ctx.send(
                 _(
-                    "Please include an initial prompt or .txt file!\n"
-                    "Use `{}` to view details for this command"
+                    "Please include an initial prompt or .txt file!\n" "Use `{}` to view details for this command"
                 ).format(f"{ctx.clean_prefix}help assistant prompt")
             )
         elif prompt and conf.prompt:
@@ -576,10 +558,9 @@ class Admin(MixinMeta):
             await ctx.send(_("The system prompt has been removed!"))
         elif not system_prompt and not conf.system_prompt:
             await ctx.send(
-                _(
-                    "Please include a system prompt or .txt file!\n"
-                    "Use `{}` to view details for this command"
-                ).format(f"{ctx.clean_prefix}help assistant system")
+                _("Please include a system prompt or .txt file!\n" "Use `{}` to view details for this command").format(
+                    f"{ctx.clean_prefix}help assistant system"
+                )
             )
         elif system_prompt and conf.system_prompt:
             conf.system_prompt = system_prompt.strip()
@@ -672,9 +653,7 @@ class Admin(MixinMeta):
         if max_retention == 0:
             await ctx.send(_("Conversation retention has been disabled"))
         else:
-            await ctx.send(
-                _("Conversations can now retain up to **{}** messages").format(max_retention)
-            )
+            await ctx.send(_("Conversations can now retain up to **{}** messages").format(max_retention))
         await self.save_conf()
 
     @assistant.command(name="maxtime")
@@ -692,15 +671,9 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.max_retention_time = retention_seconds
         if retention_seconds == 0:
-            await ctx.send(
-                _("Conversations will be stored until the bot restarts or the cog is reloaded")
-            )
+            await ctx.send(_("Conversations will be stored until the bot restarts or the cog is reloaded"))
         else:
-            await ctx.send(
-                _("Conversations will be considered active for **{}** seconds").format(
-                    retention_seconds
-                )
-            )
+            await ctx.send(_("Conversations will be considered active for **{}** seconds").format(retention_seconds))
         await self.save_conf()
 
     @assistant.command(name="temperature")
@@ -773,9 +746,7 @@ class Admin(MixinMeta):
         if recursion == 0:
             await ctx.send(_("Function calls will not be used since recursion is 0"))
         await ctx.send(
-            _(
-                "The model can now call various functions up to {} times before returning a response"
-            ).format(recursion)
+            _("The model can now call various functions up to {} times before returning a response").format(recursion)
         )
         conf.max_function_calls = recursion
 
@@ -791,9 +762,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.min_length = min_question_length
         if min_question_length == 0:
-            await ctx.send(
-                _("{} will respond regardless of message length").format(ctx.bot.user.name)
-            )
+            await ctx.send(_("{} will respond regardless of message length").format(ctx.bot.user.name))
         else:
             await ctx.send(
                 _("{} will respond to messages with more than **{}** characters").format(
@@ -837,9 +806,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.max_response_tokens = max_tokens
         if max_tokens:
-            txt = _("The maximum amount of tokens in the models responses will be {}.").format(
-                max_tokens
-            )
+            txt = _("The maximum amount of tokens in the models responses will be {}.").format(max_tokens)
         else:
             txt = _("Response tokens will now be dynamic")
         await ctx.send(txt)
@@ -866,9 +833,7 @@ class Admin(MixinMeta):
         Other sub-models are also included
         """
         valid_raw = CHAT + COMPLETION
-        valid = _("**Chat**\n{}\n**Completion**\n{}\n").format(
-            box(humanize_list(CHAT)), box(humanize_list(COMPLETION))
-        )
+        valid = _("**Chat**\n{}\n**Completion**\n{}\n").format(box(humanize_list(CHAT)), box(humanize_list(COMPLETION)))
 
         if not model:
             return await ctx.send(_("Valid models are:\n{}").format(valid))
@@ -882,15 +847,11 @@ class Admin(MixinMeta):
                 await openai.Model.aretrieve(model, api_key=conf.api_key)
             except openai.InvalidRequestError as e:
                 err = e._message or ""
-                txt = _("This model is not available for the API key provided!{}").format(
-                    f"\n{err}" if err else ""
-                )
+                txt = _("This model is not available for the API key provided!{}").format(f"\n{err}" if err else "")
                 return await ctx.send(txt)
 
         if model not in valid_raw:
-            return await ctx.send(
-                _("Invalid model type! Available model types are:\n{}").format(valid)
-            )
+            return await ctx.send(_("Invalid model type! Available model types are:\n{}").format(valid))
 
         conf.model = model
         await ctx.send(_("The **{}** model will now be used").format(model))
@@ -988,9 +949,7 @@ class Admin(MixinMeta):
         if not top_n:
             await ctx.send(_("Embeddings will not be pulled during conversations"))
         else:
-            await ctx.send(
-                _("Up to **{}** embeddings will be pulled for each interaction").format(top_n)
-            )
+            await ctx.send(_("Up to **{}** embeddings will be pulled for each interaction").format(top_n))
         await self.save_conf()
 
     @assistant.command(name="relatedness")
@@ -1085,9 +1044,7 @@ class Admin(MixinMeta):
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
-                _(
-                    "You must attach **.csv** files to this command or reference a message that has them!"
-                )
+                _("You must attach **.csv** files to this command or reference a message that has them!")
             )
         frames = []
         files = []
@@ -1100,9 +1057,7 @@ class Admin(MixinMeta):
                     df = pd.read_excel(BytesIO(file_bytes))
             except Exception as e:
                 log.error("Error reading uploaded file", exc_info=e)
-                await ctx.send(
-                    _("Error reading **{}**: {}").format(attachment.filename, box(str(e)))
-                )
+                await ctx.send(_("Error reading **{}**: {}").format(attachment.filename, box(str(e))))
                 continue
             invalid = ["name" not in df.columns, "text" not in df.columns]
             if any(invalid):
@@ -1110,9 +1065,7 @@ class Admin(MixinMeta):
                     f"**{attachment.filename}** contains invalid formatting, columns must be ['name', 'text']",
                 )
                 await ctx.send(
-                    _("**{}** contains invalid formatting, columns must be ").format(
-                        attachment.filename
-                    )
+                    _("**{}** contains invalid formatting, columns must be ").format(attachment.filename)
                     + "['name', 'text']",
                 )
                 continue
@@ -1122,9 +1075,7 @@ class Admin(MixinMeta):
         if not frames:
             return await ctx.send(_("There are no valid files to import!"))
 
-        message_text = _("Processing the following files in the background\n{}").format(
-            box(humanize_list(files))
-        )
+        message_text = _("Processing the following files in the background\n{}").format(box(humanize_list(files)))
         message = await ctx.send(message_text)
 
         df = await asyncio.to_thread(pd.concat, frames)
@@ -1173,9 +1124,7 @@ class Admin(MixinMeta):
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
-                _(
-                    "You must attach **.json** files to this command or reference a message that has them!"
-                )
+                _("You must attach **.json** files to this command or reference a message that has them!")
             )
 
         imported = 0
@@ -1187,22 +1136,18 @@ class Admin(MixinMeta):
                     embeddings = orjson.loads(file_bytes)
                 except Exception as e:
                     log.error("Error reading uploaded file", exc_info=e)
-                    await ctx.send(
-                        _("Error reading **{}**: {}").format(attachment.filename, box(str(e)))
-                    )
+                    await ctx.send(_("Error reading **{}**: {}").format(attachment.filename, box(str(e))))
                     continue
                 try:
                     for name, em in embeddings.items():
                         if not overwrite and name in conf.embeddings:
                             continue
-                        conf.embeddings[name] = Embedding.parse_obj(em)
+                        conf.embeddings[name] = Embedding.model_validate(em)
                         conf.embeddings[name].text = conf.embeddings[name].text[:4000]
                         imported += 1
                 except ValidationError:
                     await ctx.send(
-                        _(
-                            "Failed to import **{}** because it contains invalid formatting!"
-                        ).format(attachment.filename)
+                        _("Failed to import **{}** because it contains invalid formatting!").format(attachment.filename)
                     )
                     continue
                 files.append(attachment.filename)
@@ -1269,7 +1214,7 @@ class Admin(MixinMeta):
             return await ctx.send(_("There are no embeddings to export!"))
 
         async with ctx.typing():
-            dump = {name: em.dict() for name, em in conf.embeddings.items()}
+            dump = {name: em.model_dump(mode="json") for name, em in conf.embeddings.items()}
             json_buffer = BytesIO(orjson.dumps(dump))
             file = discord.File(json_buffer, filename="embeddings_export.json")
 
@@ -1443,14 +1388,10 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if channel_role_member.id in conf.blacklist:
             conf.blacklist.remove(channel_role_member.id)
-            await ctx.send(
-                _("{} has been removed from the blacklist").format(channel_role_member.name)
-            )
+            await ctx.send(_("{} has been removed from the blacklist").format(channel_role_member.name))
         else:
             conf.blacklist.append(channel_role_member.id)
-            await ctx.send(
-                _("{} has been added to the blacklist").format(channel_role_member.name)
-            )
+            await ctx.send(_("{} has been added to the blacklist").format(channel_role_member.name))
         await self.save_conf()
 
     @assistant.command(name="tutor", aliases=["tutors"])
@@ -1473,9 +1414,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if role_or_member.id in conf.tutors:
             conf.tutors.remove(role_or_member.id)
-            await ctx.send(
-                _("{} has been removed from the tutor list").format(role_or_member.name)
-            )
+            await ctx.send(_("{} has been removed from the tutor list").format(role_or_member.name))
         else:
             conf.tutors.append(role_or_member.id)
             await ctx.send(_("{} has been added to the tutor list").format(role_or_member.name))
@@ -1505,9 +1444,7 @@ class Admin(MixinMeta):
         if model not in CHAT + COMPLETION:
             valid = humanize_list(CHAT + COMPLETION)
             return await ctx.send(
-                _("Assistant does not support this model yet! Valid model types are\n{}").format(
-                    box(valid)
-                )
+                _("Assistant does not support this model yet! Valid model types are\n{}").format(box(valid))
             )
 
         try:
@@ -1529,9 +1466,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @override.command(name="maxtokens")
-    async def max_token_override(
-        self, ctx: commands.Context, max_tokens: int, *, role: discord.Role
-    ):
+    async def max_token_override(self, ctx: commands.Context, max_tokens: int, *, role: discord.Role):
         """
         Assign a max token override to a role
 
@@ -1555,9 +1490,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @override.command(name="maxresponsetokens")
-    async def max_response_token_override(
-        self, ctx: commands.Context, max_tokens: int, *, role: discord.Role
-    ):
+    async def max_response_token_override(self, ctx: commands.Context, max_tokens: int, *, role: discord.Role):
         """
         Assign a max response token override to a role
 
@@ -1572,23 +1505,17 @@ class Admin(MixinMeta):
         if role.id in conf.max_response_token_override:
             if conf.max_response_token_override[role.id] == max_tokens:
                 del conf.max_response_token_override[role.id]
-                await ctx.send(
-                    _("Max response token override for {} removed!").format(role.mention)
-                )
+                await ctx.send(_("Max response token override for {} removed!").format(role.mention))
             else:
                 conf.max_response_token_override[role.id] = max_tokens
-                await ctx.send(
-                    _("Max response token override for {} overwritten!").format(role.mention)
-                )
+                await ctx.send(_("Max response token override for {} overwritten!").format(role.mention))
         else:
             conf.max_response_token_override[role.id] = max_tokens
             await ctx.send(_("Max response token override for {} added!").format(role.mention))
         await self.save_conf()
 
     @override.command(name="maxretention")
-    async def max_retention_override(
-        self, ctx: commands.Context, max_retention: int, *, role: discord.Role
-    ):
+    async def max_retention_override(self, ctx: commands.Context, max_retention: int, *, role: discord.Role):
         """
         Assign a max message retention override to a role
 
@@ -1604,18 +1531,14 @@ class Admin(MixinMeta):
                 await ctx.send(_("Max retention override for {} removed!").format(role.mention))
             else:
                 conf.max_retention_role_override[role.id] = max_retention
-                await ctx.send(
-                    _("Max retention override for {} overwritten!").format(role.mention)
-                )
+                await ctx.send(_("Max retention override for {} overwritten!").format(role.mention))
         else:
             conf.max_retention_role_override[role.id] = max_retention
             await ctx.send(_("Max retention override for {} added!").format(role.mention))
         await self.save_conf()
 
     @override.command(name="maxtime")
-    async def max_time_override(
-        self, ctx: commands.Context, retention_seconds: int, *, role: discord.Role
-    ):
+    async def max_time_override(self, ctx: commands.Context, retention_seconds: int, *, role: discord.Role):
         """
         Assign a max retention time override to a role
 
@@ -1628,14 +1551,10 @@ class Admin(MixinMeta):
         if role.id in conf.max_time_role_override:
             if conf.max_time_role_override[role.id] == retention_seconds:
                 del conf.max_time_role_override[role.id]
-                await ctx.send(
-                    _("Max retention time override for {} removed!").format(role.mention)
-                )
+                await ctx.send(_("Max retention time override for {} removed!").format(role.mention))
             else:
                 conf.max_time_role_override[role.id] = retention_seconds
-                await ctx.send(
-                    _("Max retention time override for {} overwritten!").format(role.mention)
-                )
+                await ctx.send(_("Max retention time override for {} overwritten!").format(role.mention))
         else:
             conf.max_time_role_override[role.id] = retention_seconds
             await ctx.send(_("Max retention time override for {} added!").format(role.mention))
@@ -1715,9 +1634,7 @@ class Admin(MixinMeta):
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
-                _(
-                    "You must attach **.json** files to this command or reference a message that has them!"
-                )
+                _("You must attach **.json** files to this command or reference a message that has them!")
             )
         dump = await attachments[0].read()
         self.db = await asyncio.to_thread(DB.parse_raw, dump)
