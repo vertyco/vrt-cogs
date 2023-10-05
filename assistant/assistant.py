@@ -321,7 +321,8 @@ class Assistant(
         if not channel_id.isdigit():
             return "channel_id must be a valid integer!"
         if channel := guild.get_channel_or_thread(int(channel_id)):
-            return f"the name of this channel is {channel.name}"
+            ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
+            return f"the name of this {ctype} channel is {channel.name}"
         return "a channel with that ID could not be found!"
 
     async def get_channel_id_from_name(
@@ -333,14 +334,17 @@ class Assistant(
     ):
         def match_channels() -> tuple:
             channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
-            scores = [(i.id, fuzz.ratio(channel_name.lower(), i.name.lower())) for i in channels]
+            scores = [(i, fuzz.ratio(channel_name.lower(), i.name.lower())) for i in channels]
             sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
             return sorted_scores[0]
 
-        channel_id, score = await asyncio.to_thread(match_channels)
+        channel, score = await asyncio.to_thread(match_channels)
         if score < 50:
             return "could not find a channel that matches that name"
-        return f"found channel ID {channel_id} for {channel_name} with a relatedness score of {round(score)}/100"
+        ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
+        return (
+            f"found {ctype} channel ID {channel.id} for {channel_name} with a relatedness score of {round(score)}/100"
+        )
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
