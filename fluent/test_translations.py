@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock
 import pytest
 
 try:
-    from .api import Result, TranslateManager
+    from .common.api import Result, TranslateManager
 except ImportError:
-    from api import Result, TranslateManager
+    from fluent.common.api import Result, TranslateManager
 
 
 @pytest.fixture
