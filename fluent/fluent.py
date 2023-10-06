@@ -108,7 +108,7 @@ class Fluent(commands.Cog):
         return [
             app_commands.Choice(name=i["name"], value=i["name"])
             for i in available_langs
-            if current.lower() in i.lower()
+            if current.lower() in i["name"].lower()
         ][:25]
 
     @commands.group()
