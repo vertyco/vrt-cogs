@@ -34,7 +34,7 @@ class Fluent(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.1.0"
+    __version__ = "2.1.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -47,16 +47,17 @@ class Fluent(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=11701170)
         self.config.register_guild(channels={})
+        logging.getLogger("hpack.hpack").setLevel(logging.INFO)
 
     @cached(ttl=10)
     async def get_channels(self, guild: discord.Guild) -> dict:
         return await self.config.guild(guild).channels()
 
     @cached(ttl=900)
-    async def translate(self, msg: str, dest: str) -> Result:
+    async def translate(self, msg: str, dest: str, force: bool = False) -> Result:
         deepl_key = await self.bot.get_shared_api_tokens("deepl")
         translator = TranslateManager(deepl_key=deepl_key.get("key"))
-        return await translator.translate(msg, dest)
+        return await translator.translate(msg, dest, force=force)
 
     @commands.hybrid_command(name="translate")
     @app_commands.describe(to_language="Translate to this language")
@@ -141,16 +142,16 @@ class Fluent(commands.Cog):
             channel = ctx.channel
 
         translator = TranslateManager()
-        language1 = await translator.get_lang(language1)
-        language2 = await translator.get_lang(language2)
+        lang1 = await translator.get_lang(language1)
+        lang2 = await translator.get_lang(language2)
 
-        if not language1 and not language2:
+        if not lang1 and not lang2:
             txt = _("Both of those languages are invalid.")
             return await ctx.send(txt)
-        if not language1:
+        if not lang1:
             txt = _("Language 1 is invalid.")
             return await ctx.send(txt)
-        if not language2:
+        if not lang2:
             txt = _("Language 2 is invalid.")
             return await ctx.send(txt)
 
@@ -234,7 +235,7 @@ class Fluent(commands.Cog):
         async with channel.typing():
             # Attempts to translate message into language1.
             try:
-                trans = await self.translate(message.content, lang1)
+                trans = await self.translate(message.content, lang1, force=True)
             except Exception as e:
                 log.error("Initial listener translation failed", exc_info=e)
                 self.bot._last_exception = e
@@ -244,9 +245,17 @@ class Fluent(commands.Cog):
                 log.debug("Auto translation first phase returned None")
                 return
 
+            translator = TranslateManager()
+            source = await translator.get_lang(trans.src)
+            source = source.split("-")[0].lower()
+            target = await translator.get_lang(lang1)
+            target = target.split("-")[0].lower()
+            log.debug(f"Source: {source}, target: {target}")
+            log.debug(f"Raw Source: {trans.src}")
+
             # If the source language is also language1, translate into language2
             # If source language was language2, this saves api calls because translating gets the source and translation
-            if trans.src.lower() == lang1.lower():
+            if source == target:
                 try:
                     trans = await self.translate(message.content, lang2)
                 except Exception as e:
