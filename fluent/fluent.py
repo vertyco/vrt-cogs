@@ -106,7 +106,7 @@ class Fluent(commands.Cog):
     @cached(ttl=60)
     async def get_langs(self, current: str):
         return [
-            app_commands.Choice(name=i["name"], value=i["language"])
+            app_commands.Choice(name=i["name"], value=i["name"])
             for i in available_langs
             if current.lower() in i.lower()
         ][:25]
