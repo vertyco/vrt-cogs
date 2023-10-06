@@ -1116,8 +1116,8 @@ class Generator(MixinMeta, ABC):
 
     def get_random_background(self) -> Image:
         available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
-        shuffled = random.shuffle(available)
-        for path in shuffled:
+        random.shuffle(available)
+        for path in available:
             try:
                 return Image.open(path)
             except UnidentifiedImageError:
