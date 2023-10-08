@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-09-12 14:05-0400\n"
+"POT-Creation-Date: 2023-10-07 20:44-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,650 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: base.py:76
-msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
-
-#: base.py:86
-msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
-
-#: base.py:91
-msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
-
-#: base.py:166
-#, docstring
-msgid ""
-"\n"
-"        Reward a good noodle\n"
-"        Give a star to a user for being a good noodle\n"
-"        "
-msgstr ""
-
-#: base.py:175
-msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
-
-#: base.py:177
-msgid "You can't give stars to yourself!"
-msgstr ""
-
-#: base.py:179
-msgid "You can't give stars to a bot!"
-msgstr ""
-
-#: base.py:195
-msgid "You need to wait "
-msgstr ""
-
-#: base.py:197
-msgid " before you can give more stars!"
-msgstr ""
-
-#: base.py:203
-msgid "No data available for that user yet!"
-msgstr ""
-
-#: base.py:211
-msgid "You just gave a star to {}!"
-msgstr ""
-
-#: base.py:216
-#, docstring
-msgid "Test levelup image gen"
-msgstr ""
-
-#: base.py:250
-#, docstring
-msgid ""
-"\n"
-"        Customize your profile colors\n"
-"\n"
-"        Here is a link to google's color picker:\n"
-"        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
-"        "
-msgstr ""
-
-#: base.py:267 base.py:268 base.py:269 base.py:270
-msgid "Not Set"
-msgstr ""
-
-#: base.py:273
-msgid "`Profile Size:    `"
-msgstr ""
-
-#: base.py:274
-msgid "`Name Color:      `"
-msgstr ""
-
-#: base.py:275
-msgid "`Stat Color:      `"
-msgstr ""
-
-#: base.py:276
-msgid "`Level Bar Color: `"
-msgstr ""
-
-#: base.py:277
-msgid "`Font:            `"
-msgstr ""
-
-#: base.py:278
-msgid "`Background:      `"
-msgstr ""
-
-#: base.py:279
-msgid "`Blur:            `"
-msgstr ""
-
-#: base.py:282
-msgid "Your Profile Settings"
-msgstr ""
-
-#: base.py:305 base.py:366
-#, docstring
-msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
-
-#: base.py:307
-msgid "Your default background folder path is \n"
-msgstr ""
-
-#: base.py:313
-#, docstring
-msgid ""
-"\n"
-"        Add a custom background to the cog from discord\n"
-"\n"
-"        **Arguments**\n"
-"        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
-"        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
-"        "
-msgstr ""
-
-#: base.py:322 base.py:383
-msgid "I was not able to find any attachments"
-msgstr ""
-
-#: base.py:328
-msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
-
-#: base.py:337 base.py:397
-msgid "I was not able to get the file from Discord"
-msgstr ""
-
-#: base.py:344
-msgid "Your custom background has been saved as "
-msgstr ""
-
-#: base.py:349
-#, docstring
-msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
-
-#: base.py:355
-msgid "I could not find any background images with that name"
-msgstr ""
-
-#: base.py:360 base.py:420
-msgid "Could not delete file: "
-msgstr ""
-
-#: base.py:361
-msgid "Background `"
-msgstr ""
-
-#: base.py:361 base.py:421
-msgid "` Has been removed!"
-msgstr ""
-
-#: base.py:368
-msgid "Your custom font folder path is \n"
-msgstr ""
-
-#: base.py:374
-#, docstring
-msgid ""
-"\n"
-"        Add a custom font to the cog from discord\n"
-"\n"
-"        **Arguments**\n"
-"        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
-"        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
-"        "
-msgstr ""
-
-#: base.py:389
-msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
-
-#: base.py:404
-msgid "Your custom font file has been saved as "
-msgstr ""
-
-#: base.py:409
-#, docstring
-msgid "Remove a font from the cog's font folder"
-msgstr ""
-
-#: base.py:415
-msgid "I could not find any fonts with that name"
-msgstr ""
-
-#: base.py:421
-msgid "Font `"
-msgstr ""
-
-#: base.py:427
-#, docstring
-msgid "View the default backgrounds"
-msgstr ""
-
-#: base.py:429 base.py:464
-msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
-
-#: base.py:431 base.py:466
-msgid ""
-"\n"
-"Use the `{}` command to toggle image profiles and enable this command."
-msgstr ""
-
-#: base.py:439 base.py:473
-msgid "Failed to generate background samples"
-msgstr ""
-
-#: base.py:449
-msgid ""
-"Here are the current default backgrounds, to set one permanently you can use"
-" the "
-msgstr ""
-
-#: base.py:452 base.py:484
-msgid "command"
-msgstr ""
-
-#: base.py:456
-msgid "Could not send background collage, file size may be too large."
-msgstr ""
-
-#: base.py:462
-#, docstring
-msgid "View available fonts to use"
-msgstr ""
-
-#: base.py:483
-msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
-
-#: base.py:488
-msgid "Could not send font collage, file size may be too large."
-msgstr ""
-
-#: base.py:492
-#, docstring
-msgid ""
-"\n"
-"        Toggle your profile image type (full/slim)\n"
-"\n"
-"        Full size includes your balance, role icon and prestige icon\n"
-"        Slim is a smaller slimmed down version\n"
-"        "
-msgstr ""
-
-#: base.py:500 base.py:530 base.py:575 base.py:621 base.py:681 base.py:737
-#: base.py:766
-msgid "Image profiles are disabled on this server, this setting has no effect"
-msgstr ""
-
-#: base.py:506
-msgid ""
-"You have no information stored about your account yet. Talk for a bit first"
-msgstr ""
-
-#: base.py:511
-msgid "Your profile image has been set to **Slim**"
-msgstr ""
-
-#: base.py:514
-msgid "Your profile image has been set to **Full**"
-msgstr ""
-
-#: base.py:520
-#, docstring
-msgid ""
-"\n"
-"        Set a hex color for your username\n"
-"\n"
-"        Here is a link to google's color picker:\n"
-"        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
-"\n"
-"        Set to `default` to randomize your name color each time you run the command\n"
-"        "
-msgstr ""
-
-#: base.py:539
-msgid "Your name color has been reset to default"
-msgstr ""
-
-#: base.py:545 base.py:590 base.py:636
-msgid ""
-"That is an invalid color, please use a valid integer color code or hex "
-"color."
-msgstr ""
-
-#: base.py:555 base.py:601 base.py:647
-msgid "Failed to set color, the following error occurred:\n"
-msgstr ""
-
-#: base.py:565
-#, docstring
-msgid ""
-"\n"
-"        Set a hex color for your server stats\n"
-"\n"
-"        Here is a link to google's color picker:\n"
-"        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
-"\n"
-"        Set to `default` to randomize your name color each time you run the command\n"
-"        "
-msgstr ""
-
-#: base.py:584
-msgid "Your stats color has been reset to default"
-msgstr ""
-
-#: base.py:611
-#, docstring
-msgid ""
-"\n"
-"        Set a hex color for your level bar\n"
-"\n"
-"        Here is a link to google's color picker:\n"
-"        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
-"\n"
-"        Set to `default` to randomize your name color each time you run the command\n"
-"        "
-msgstr ""
-
-#: base.py:630
-msgid "Your level bar color has been reset to default"
-msgstr ""
-
-#: base.py:657
-#, docstring
-msgid ""
-"\n"
-"        Set a background for your profile\n"
-"\n"
-"        This will override your profile banner as the background\n"
-"\n"
-"        **WARNING**\n"
-"        Profile backgrounds are wide landscapes (1050 by 450 pixels) with an aspect ratio of 21:9\n"
-"        Using portrait images will be cropped.\n"
-"\n"
-"        Tip: Googling \"dual monitor backgrounds\" gives good results for the right images\n"
-"\n"
-"        Here are some good places to look.\n"
-"        [dualmonitorbackgrounds](https://www.dualmonitorbackgrounds.com/)\n"
-"        [setaswall](https://www.setaswall.com/dual-monitor-wallpapers/)\n"
-"        [pexels](https://www.pexels.com/photo/panoramic-photography-of-trees-and-lake-358482/)\n"
-"        [teahub](https://www.teahub.io/searchw/dual-monitor/)\n"
-"\n"
-"        **Additional Options**\n"
-"         - Leave image_url blank to reset back to using your profile banner (or random if you don't have one)\n"
-"         - `random` will randomly select from a pool of default backgrounds each time\n"
-"         - `filename` run `[p]mypf backgrounds` to view default options you can use by including their filename\n"
-"        "
-msgstr ""
-
-#: base.py:719 base.py:721
-msgid "Your background image has been set!"
-msgstr ""
-
-#: base.py:724
-msgid "Your background has been removed since you did not specify a url!"
-msgstr ""
-
-#: base.py:729
-#, docstring
-msgid ""
-"\n"
-"        Set a font for your profile\n"
-"\n"
-"        To view available fonts, type `[p]myprofile fonts`\n"
-"        To revert to the default font, use `default` for the `font_name` argument\n"
-"        "
-msgstr ""
-
-#: base.py:747
-msgid "Your profile font has been reverted to default"
-msgstr ""
-
-#: base.py:754
-msgid "I could not find a font file with that name"
-msgstr ""
-
-#: base.py:757
-msgid "Your profile font has been set to "
-msgstr ""
-
-#: base.py:761
-#, docstring
-msgid ""
-"\n"
-"        Toggle a slight blur effect on the background image where the text is displayed.\n"
-"        "
-msgstr ""
-
-#: base.py:776
-msgid "Your profile background blur has been set to "
-msgstr ""
-
-#: base.py:782
-#, docstring
-msgid "View your profile"
-msgstr ""
-
-#: base.py:801
-msgid "No information available yet!"
-msgstr ""
-
-#: base.py:804
-msgid "I do not have permission to send images to this channel"
-msgstr ""
-
-#: base.py:806
-msgid "I do not have permission to send embeds to this channel"
-msgstr ""
-
-#: base.py:849 generator.py:823 levelup.py:3002
-msgid "Level "
-msgstr ""
-
-#: base.py:851 generator.py:223
-msgid "Prestige "
-msgstr ""
-
-#: base.py:852
-msgid " stars\n"
-msgstr ""
-
-#: base.py:853
-msgid " messages sent\n"
-msgstr ""
-
-#: base.py:854
-msgid " in voice\n"
-msgstr ""
-
-#: base.py:860
-msgid "Rank "
-msgstr ""
-
-#: base.py:862
-msgid ", with "
-msgstr ""
-
-#: base.py:864
-msgid "% of global server Exp"
-msgstr ""
-
-#: base.py:866
-msgid "{}'s Profile"
-msgstr ""
-
-#: base.py:869
-msgid "Progress"
-msgstr ""
-
-#: base.py:941
-#, docstring
-msgid ""
-"\n"
-"        Prestige your rank!\n"
-"        Once you have reached this servers prestige level requirement, you can\n"
-"        reset your level and experience to gain a prestige level and any perks associated with it\n"
-"\n"
-"        If you are over level and xp when you prestige, your xp and levels will carry over\n"
-"        "
-msgstr ""
-
-#: base.py:955
-msgid "Prestige is disabled on this server!"
-msgstr ""
-
-#: base.py:958 levelup.py:2561
-msgid "Prestige levels have not been set yet!"
-msgstr ""
-
-#: base.py:962
-msgid "No information available for you yet!"
-msgstr ""
-
-#: base.py:969
-msgid "**You are not eligible to prestige yet!**\n"
-msgstr ""
-
-#: base.py:970
-msgid "`Your level:     `"
-msgstr ""
-
-#: base.py:971
-msgid "`Required Level: `"
-msgstr ""
-
-#: base.py:977
-msgid "Prestige level "
-msgstr ""
-
-#: base.py:977
-msgid " has not been set yet!"
-msgstr ""
-
-#: base.py:988
-msgid "I do not have the proper permissions to assign you to the {} role!"
-msgstr ""
-
-#: base.py:1003
-msgid "You have reached Prestige "
-msgstr ""
-
-#: base.py:1027
-msgid "I don't have permissions to remove your old roles!"
-msgstr ""
-
-#: base.py:1042
-msgid "I was not able to re-add the {} role to your profile!"
-msgstr ""
-
-#: base.py:1049
-#, docstring
-msgid ""
-"\n"
-"        View the Leaderboard\n"
-"\n"
-"        **Arguments**\n"
-"        `stat`: What kind of stat to display the weekly leaderboard for\n"
-"        Valid options are `exp`, `messages`, and `voice`\n"
-"        Abbreviations of those arguments may also be used\n"
-"        "
-msgstr ""
-
-#: base.py:1060
-msgid "Use the `"
-msgstr ""
-
-#: base.py:1060
-msgid "startop` command for that"
-msgstr ""
-
-#: base.py:1069 base.py:1150
-msgid "No user data yet!"
-msgstr ""
-
-#: base.py:1081
-#, docstring
-msgid "View the star leaderboard"
-msgstr ""
-
-#: base.py:1093
-msgid "Nobody has stars yet 😕"
-msgstr ""
-
-#: base.py:1112
-msgid "Star Leaderboard"
-msgstr ""
-
-#: base.py:1113
-msgid "Total ⭐'s: {}\n"
-msgstr ""
-
-#: base.py:1136 base.py:1138
-msgid "Pages "
-msgstr ""
-
-#: base.py:1156
-#, docstring
-msgid ""
-"\n"
-"        View the weekly leaderboard\n"
-"\n"
-"        **Arguments**\n"
-"        `stat`: What kind of stat to display the weekly leaderboard for\n"
-"        Valid options are `exp`, `messages`, `stars`, and `voice`\n"
-"        Abbreviations of those arguments may also be used\n"
-"        "
-msgstr ""
-
-#: base.py:1168 base.py:1190
-msgid "Weekly stats are disabled for this guild"
-msgstr ""
-
-#: base.py:1171
-msgid ""
-"There is no data for the weekly leaderboard yet, please chat a bit first."
-msgstr ""
-
-#: base.py:1187
-#, docstring
-msgid "View the last weekly embed"
-msgstr ""
-
-#: base.py:1192
-msgid "There is no recorded weekly embed saved"
-msgstr ""
-
-#: base.py:1194
-msgid "Last Weekly Winners"
-msgstr ""
-
-#: base.py:1195
-msgid ""
-"{}\n"
-"`Last Reset:     `{}"
-msgstr ""
-
-#: generator.py:213 generator.py:624
-msgid "Rank: #"
-msgstr ""
-
-#: generator.py:214 generator.py:625
-msgid "Level: "
-msgstr ""
-
-#: generator.py:216
-msgid "Exp: "
-msgstr ""
-
-#: generator.py:219 generator.py:629
-msgid "Messages: "
-msgstr ""
-
-#: generator.py:220
-msgid "Voice: "
-msgstr ""
-
-#: generator.py:222
-msgid "Balance: "
-msgstr ""
-
-#: generator.py:630
-msgid "Voice Time: "
-msgstr ""
-
-#: generator.py:633
-msgid " - Prestige "
-msgstr ""
-
-#: generator.py:1103
-#, docstring
-msgid "Get average duration sequence of gif frames"
-msgstr ""
-
-#: levelup.py:83
+#: levelup.py:76
 #, docstring
 msgid ""
 "\n"
@@ -664,280 +21,280 @@ msgid ""
 "    "
 msgstr ""
 
-#: levelup.py:235
+#: levelup.py:147
 msgid "Monday"
 msgstr ""
 
-#: levelup.py:236
+#: levelup.py:148
 msgid "Tuesday"
 msgstr ""
 
-#: levelup.py:237
+#: levelup.py:149
 msgid "Wednesday"
 msgstr ""
 
-#: levelup.py:238
+#: levelup.py:150
 msgid "Thursday"
 msgstr ""
 
-#: levelup.py:239
+#: levelup.py:151
 msgid "Friday"
 msgstr ""
 
-#: levelup.py:240
+#: levelup.py:152
 msgid "Saturday"
 msgstr ""
 
-#: levelup.py:241
+#: levelup.py:153
 msgid "Sunday"
 msgstr ""
 
-#: levelup.py:360 levelup.py:364
+#: levelup.py:272 levelup.py:276
 msgid "just gave a star to"
 msgstr ""
 
-#: levelup.py:633
+#: levelup.py:538
 msgid "You have just reached level {level} in {guild}!"
 msgstr ""
 
-#: levelup.py:643
+#: levelup.py:548
 msgid "Just reached level {level}!"
 msgstr ""
 
-#: levelup.py:676
+#: levelup.py:581
 msgid "You just leveled up in "
 msgstr ""
 
-#: levelup.py:682
+#: levelup.py:587
 msgid "**{user} just leveled up!**"
 msgstr ""
 
-#: levelup.py:1001
+#: levelup.py:898
 #, docstring
 msgid "Announce and reset the weekly leaderboard"
 msgstr ""
 
-#: levelup.py:1011
+#: levelup.py:906
 msgid "There are no users with exp"
 msgstr ""
 
-#: levelup.py:1020
+#: levelup.py:915
 msgid "Top Weekly Exp Earners"
 msgstr ""
 
-#: levelup.py:1021
+#: levelup.py:916
 msgid "`Total Exp:      `"
 msgstr ""
 
-#: levelup.py:1022
+#: levelup.py:917
 msgid "`Total Messages: `"
 msgstr ""
 
-#: levelup.py:1023
+#: levelup.py:918
 msgid "`Total Stars:    `"
 msgstr ""
 
-#: levelup.py:1024
+#: levelup.py:919
 msgid "`Total Voice:    `"
 msgstr ""
 
-#: levelup.py:1048
+#: levelup.py:943
 msgid "`Exp:      `"
 msgstr ""
 
-#: levelup.py:1049
+#: levelup.py:944
 msgid "`Messages: `"
 msgstr ""
 
-#: levelup.py:1050
+#: levelup.py:945
 msgid "`Stars:    `"
 msgstr ""
 
-#: levelup.py:1051
+#: levelup.py:946
 msgid "`Voice:    `"
 msgstr ""
 
-#: levelup.py:1101
+#: levelup.py:994
 #, docstring
 msgid "Access LevelUp setting commands"
 msgstr ""
 
-#: levelup.py:1107
+#: levelup.py:1000
 #, docstring
 msgid "View all LevelUP settings"
 msgstr ""
 
-#: levelup.py:1147
+#: levelup.py:1040
 msgid "Image"
 msgstr ""
 
-#: levelup.py:1147
+#: levelup.py:1040
 msgid "Embed"
 msgstr ""
 
-#: levelup.py:1149
+#: levelup.py:1042
 msgid "**Main**\n"
 msgstr ""
 
-#: levelup.py:1150
+#: levelup.py:1043
 msgid "`Profile Type:      `"
 msgstr ""
 
-#: levelup.py:1151
+#: levelup.py:1044
 msgid "`Include Balance:   `"
 msgstr ""
 
-#: levelup.py:1152
+#: levelup.py:1045
 msgid "`Progress Bar:      `"
 msgstr ""
 
-#: levelup.py:1153
+#: levelup.py:1046
 msgid "**Messages**\n"
 msgstr ""
 
-#: levelup.py:1154
+#: levelup.py:1047
 msgid "`Message XP:        `"
 msgstr ""
 
-#: levelup.py:1155
+#: levelup.py:1048
 msgid "`Min Msg Length:    `"
 msgstr ""
 
-#: levelup.py:1156 levelup.py:1173
+#: levelup.py:1049 levelup.py:1066
 msgid "`Cooldown:          `"
 msgstr ""
 
-#: levelup.py:1157
+#: levelup.py:1050
 msgid "**Voice**\n"
 msgstr ""
 
-#: levelup.py:1158
+#: levelup.py:1051
 msgid "`Voice XP:          `"
 msgstr ""
 
-#: levelup.py:1159
+#: levelup.py:1052
 msgid "`Ignore Muted:      `"
 msgstr ""
 
-#: levelup.py:1160
+#: levelup.py:1053
 msgid "`Ignore Solo:       `"
 msgstr ""
 
-#: levelup.py:1161
+#: levelup.py:1054
 msgid "`Ignore Deafened:   `"
 msgstr ""
 
-#: levelup.py:1162
+#: levelup.py:1055
 msgid "`Ignore Invisible:  `"
 msgstr ""
 
-#: levelup.py:1163
+#: levelup.py:1056
 msgid "**Level Algorithm**\n"
 msgstr ""
 
-#: levelup.py:1164
+#: levelup.py:1057
 msgid "`Base Multiplier:   `"
 msgstr ""
 
-#: levelup.py:1165
+#: levelup.py:1058
 msgid "`Exp Multiplier:    `"
 msgstr ""
 
-#: levelup.py:1166
+#: levelup.py:1059
 msgid "**LevelUps**\n"
 msgstr ""
 
-#: levelup.py:1167
+#: levelup.py:1060
 msgid "`LevelUp Notify:    `"
 msgstr ""
 
-#: levelup.py:1168
+#: levelup.py:1061
 msgid "`Notify in DMs:     `"
 msgstr ""
 
-#: levelup.py:1169
+#: levelup.py:1062
 msgid "`Mention User:      `"
 msgstr ""
 
-#: levelup.py:1170
+#: levelup.py:1063
 msgid "`AutoRemove Roles:  `"
 msgstr ""
 
-#: levelup.py:1171
+#: levelup.py:1064
 msgid "`LevelUp Channel:   `"
 msgstr ""
 
-#: levelup.py:1172
+#: levelup.py:1065
 msgid "**Stars**\n"
 msgstr ""
 
-#: levelup.py:1174
+#: levelup.py:1067
 msgid "`React Mention:     `"
 msgstr ""
 
-#: levelup.py:1175
+#: levelup.py:1068
 msgid "`MentionAutoDelete: `"
 msgstr ""
 
-#: levelup.py:1177
+#: levelup.py:1070
 msgid "**Levels**\n"
 msgstr ""
 
-#: levelup.py:1184
+#: levelup.py:1077
 msgid "`Level "
 msgstr ""
 
-#: levelup.py:1186
+#: levelup.py:1079
 msgid ""
 "**Prestige**\n"
 "`Stack Roles: `"
 msgstr ""
 
-#: levelup.py:1187
+#: levelup.py:1080
 msgid "`Level Req:  `"
 msgstr ""
 
-#: levelup.py:1196
+#: levelup.py:1089
 msgid "`Prestige "
 msgstr ""
 
-#: levelup.py:1198
+#: levelup.py:1091
 msgid "LevelUp Settings"
 msgstr ""
 
-#: levelup.py:1210
+#: levelup.py:1103
 msgid "Voice XP Bonus Roles"
 msgstr ""
 
-#: levelup.py:1219
+#: levelup.py:1112
 msgid "Voice XP Bonus Channels"
 msgstr ""
 
-#: levelup.py:1222
+#: levelup.py:1115
 msgid "Stream XP Bonus"
 msgstr ""
 
-#: levelup.py:1231
+#: levelup.py:1124
 msgid "Message XP Bonus Roles"
 msgstr ""
 
-#: levelup.py:1240
+#: levelup.py:1133
 msgid "Message XP Bonus Channels"
 msgstr ""
 
-#: levelup.py:1247
+#: levelup.py:1138
 msgid "Ignored Roles"
 msgstr ""
 
-#: levelup.py:1256
+#: levelup.py:1143
 msgid "Ignored Channels"
 msgstr ""
 
-#: levelup.py:1263
+#: levelup.py:1148
 msgid "Ignored Users"
 msgstr ""
 
-#: levelup.py:1271
+#: levelup.py:1156
 #, docstring
 msgid ""
 "\n"
@@ -947,7 +304,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1281
+#: levelup.py:1166
 #, docstring
 msgid ""
 "\n"
@@ -959,155 +316,155 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1295
+#: levelup.py:1180
 #, docstring
 msgid ""
 "Toggle whether to render profiles as gifs if the user's discord profile is "
 "animated"
 msgstr ""
 
-#: levelup.py:1299
+#: levelup.py:1184
 msgid "I will no longer render profiles with GIFs"
 msgstr ""
 
-#: levelup.py:1302
+#: levelup.py:1187
 msgid "I will now render GIFs with user profiles"
 msgstr ""
 
-#: levelup.py:1309
+#: levelup.py:1194
 #, docstring
 msgid "Reset cog data for all guilds"
 msgstr ""
 
-#: levelup.py:1311
+#: levelup.py:1195
 msgid ""
 "Are you sure you want to reset all stats and settings for the entire cog?"
 msgstr ""
 
-#: levelup.py:1317
+#: levelup.py:1199
 msgid "Not resetting all guilds"
 msgstr ""
 
-#: levelup.py:1321
+#: levelup.py:1203
 msgid "Settings and stats for all guilds have been reset"
 msgstr ""
 
-#: levelup.py:1327
+#: levelup.py:1209
 #, docstring
 msgid "Reset cog data for this guild"
 msgstr ""
 
-#: levelup.py:1329
+#: levelup.py:1210
 msgid "Are you sure you want to reset all stats and settings for this guild?"
 msgstr ""
 
-#: levelup.py:1334
+#: levelup.py:1214
 msgid "Not resetting config"
 msgstr ""
 
-#: levelup.py:1337
+#: levelup.py:1217
 msgid "All settings and stats reset"
 msgstr ""
 
-#: levelup.py:1343
+#: levelup.py:1223
 #, docstring
 msgid "Reset everyone's exp and level"
 msgstr ""
 
-#: levelup.py:1346
+#: levelup.py:1226
 msgid "Are you sure you want to reset "
 msgstr ""
 
-#: levelup.py:1346
+#: levelup.py:1226
 msgid " users' stats?"
 msgstr ""
 
-#: levelup.py:1347
+#: levelup.py:1227
 msgid ""
 "\n"
 "This will reset their exp, voice time, messages, level, prestige and stars"
 msgstr ""
 
-#: levelup.py:1351
+#: levelup.py:1231
 msgid "Not resetting user stats"
 msgstr ""
 
-#: levelup.py:1363
+#: levelup.py:1243
 msgid "Reset stats for "
 msgstr ""
 
-#: levelup.py:1363
+#: levelup.py:1243
 msgid " users"
 msgstr ""
 
-#: levelup.py:1370
+#: levelup.py:1250
 #, docstring
 msgid "View current loop times and cached data"
 msgstr ""
 
-#: levelup.py:1381
+#: levelup.py:1261
 msgid "Cog Stats"
 msgstr ""
 
-#: levelup.py:1383
+#: levelup.py:1263
 msgid "`Voice Checker: `"
 msgstr ""
 
-#: levelup.py:1384
+#: levelup.py:1264
 msgid "`Cache Dumping: `"
 msgstr ""
 
-#: levelup.py:1385
+#: levelup.py:1265
 msgid "`Lvl Assign:    `"
 msgstr ""
 
-#: levelup.py:1386
+#: levelup.py:1266
 msgid "Loop Times"
 msgstr ""
 
-#: levelup.py:1388
+#: levelup.py:1268
 msgid "`Profile Cache Time: `"
 msgstr ""
 
-#: levelup.py:1389
+#: levelup.py:1268
 msgid "Disabled\n"
 msgstr ""
 
-#: levelup.py:1391
+#: levelup.py:1269
 msgid "`Cache Size:         `"
 msgstr ""
 
-#: levelup.py:1392
+#: levelup.py:1270
 msgid "Cache"
 msgstr ""
 
-#: levelup.py:1394 levelup.py:3214
+#: levelup.py:1272 levelup.py:3013
 msgid "(Disabled)"
 msgstr ""
 
-#: levelup.py:1395
+#: levelup.py:1273
 msgid ""
 "Profiles will be static regardless of if the user has an animated profile"
 msgstr ""
 
-#: levelup.py:1397 levelup.py:3214
+#: levelup.py:1275 levelup.py:3013
 msgid "(Enabled)"
 msgstr ""
 
-#: levelup.py:1398
+#: levelup.py:1276
 msgid "Users with animated profiles will render as a gif"
 msgstr ""
 
-#: levelup.py:1400
+#: levelup.py:1278
 msgid "GIF Rendering "
 msgstr ""
 
-#: levelup.py:1408 levelup.py:1419
+#: levelup.py:1286 levelup.py:1297
 #, docstring
 msgid "Create a backup of the LevelUp config"
 msgstr ""
 
-#: levelup.py:1429
+#: levelup.py:1307
 #, docstring
 msgid ""
 "\n"
@@ -1117,19 +474,19 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1437 levelup.py:1466
+#: levelup.py:1314 levelup.py:1341
 msgid "Attach your backup file to the message when using this command."
 msgstr ""
 
-#: levelup.py:1443
+#: levelup.py:1319
 msgid "This is an invalid global config!"
 msgstr ""
 
-#: levelup.py:1453 levelup.py:1479
+#: levelup.py:1329 levelup.py:1353
 msgid "Config restored from backup file!"
 msgstr ""
 
-#: levelup.py:1458
+#: levelup.py:1334
 #, docstring
 msgid ""
 "\n"
@@ -1139,11 +496,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1473
+#: levelup.py:1347
 msgid "This is an invalid guild config!"
 msgstr ""
 
-#: levelup.py:1491
+#: levelup.py:1365
 #, docstring
 msgid ""
 "\n"
@@ -1158,23 +515,23 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1502
+#: levelup.py:1376
 msgid "Not importing levels"
 msgstr ""
 
-#: levelup.py:1505
+#: levelup.py:1379
 msgid "No config found for Malarne's Leveler cog!"
 msgstr ""
 
-#: levelup.py:1551
+#: levelup.py:1421
 msgid "There were no profiles to import"
 msgstr ""
 
-#: levelup.py:1552
+#: levelup.py:1422
 msgid "Imported {} profile(s)"
 msgstr ""
 
-#: levelup.py:1618
+#: levelup.py:1488
 #, docstring
 msgid ""
 "\n"
@@ -1187,7 +544,7 @@ msgid ""
 "        If exp is entered, it will import their experience and base their new level off of that.\n"
 "        If level is entered, it will import their level and calculate their exp based off of that.\n"
 "        `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it\n"
-"        `include_settings` - import level roles and exp settings from MEE6\n"
+"        `include_settings` - (True/False) import level roles and exp settings from MEE6\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "\n"
 "        **Note**\n"
@@ -1197,51 +554,51 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1637
+#: levelup.py:1507
 msgid "Not importing MEE6 levels"
 msgstr ""
 
-#: levelup.py:1639
+#: levelup.py:1509
 msgid "Fetching mee6 leaderboard data, this could take a while..."
 msgstr ""
 
-#: levelup.py:1663
+#: levelup.py:1532
 msgid "Mee6 is rate limiting too heavily! Import Failed!"
 msgstr ""
 
-#: levelup.py:1672 levelup.py:1970
+#: levelup.py:1540 levelup.py:1822
 msgid "Your leaderboard needs to be set to public!"
 msgstr ""
 
-#: levelup.py:1676 levelup.py:1826 levelup.py:1974
+#: levelup.py:1544 levelup.py:1686 levelup.py:1826
 msgid "No data found!"
 msgstr ""
 
-#: levelup.py:1703
+#: levelup.py:1569
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
 msgstr ""
 
-#: levelup.py:1708 levelup.py:1841 levelup.py:2011
+#: levelup.py:1572 levelup.py:1699 levelup.py:1859
 msgid "No leaderboard data found!"
 msgstr ""
 
-#: levelup.py:1710 levelup.py:1843 levelup.py:2013
+#: levelup.py:1574 levelup.py:1701 levelup.py:1861
 msgid "Data retrieved, importing..."
 msgstr ""
 
-#: levelup.py:1750
+#: levelup.py:1614
 msgid "No MEE6 stats were found"
 msgstr ""
 
-#: levelup.py:1752 levelup.py:1898 levelup.py:2042
+#: levelup.py:1616 levelup.py:1756 levelup.py:1890
 msgid "Imported {} User(s)"
 msgstr ""
 
-#: levelup.py:1754 levelup.py:1900 levelup.py:2044
+#: levelup.py:1618 levelup.py:1758 levelup.py:1892
 msgid " ({} skipped since they are no longer in the discord)"
 msgstr ""
 
-#: levelup.py:1767
+#: levelup.py:1629
 #, docstring
 msgid ""
 "\n"
@@ -1262,27 +619,27 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1784
+#: levelup.py:1646
 msgid "Not importing AmariBot levels"
 msgstr ""
 
-#: levelup.py:1786
+#: levelup.py:1648
 msgid "Fetching AmariBot leaderboard data, this could take a while..."
 msgstr ""
 
-#: levelup.py:1812
+#: levelup.py:1673
 msgid "AmariBot is rate limiting too heavily! Import Failed!"
 msgstr ""
 
-#: levelup.py:1836
+#: levelup.py:1696
 msgid "{} pages failed to fetch from AmariBot api, check logs for more info"
 msgstr ""
 
-#: levelup.py:1896
+#: levelup.py:1754
 msgid "No AmariBot stats were found"
 msgstr ""
 
-#: levelup.py:1917
+#: levelup.py:1773
 #, docstring
 msgid ""
 "\n"
@@ -1292,7 +649,7 @@ msgid ""
 "\n"
 "        **Arguments**\n"
 "        `replace` - (True/False) if True, it will replace the user's exp, otherwise it will add it\n"
-"        `include_settings` - import level roles and exp settings from Polaris\n"
+"        `include_settings` - (True/False) import level roles and exp settings from Polaris\n"
 "        `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command\n"
 "\n"
 "        **Note**\n"
@@ -1302,27 +659,27 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:1933
+#: levelup.py:1789
 msgid "Not importing Polaris levels"
 msgstr ""
 
-#: levelup.py:1935
+#: levelup.py:1791
 msgid "Fetching Polaris leaderboard data, this could take a while..."
 msgstr ""
 
-#: levelup.py:1961
+#: levelup.py:1814
 msgid "Polaris is rate limiting too heavily! Import Failed!"
 msgstr ""
 
-#: levelup.py:2006
+#: levelup.py:1856
 msgid "{} pages failed to fetch from Polaris api, check logs for more info"
 msgstr ""
 
-#: levelup.py:2040
+#: levelup.py:1888
 msgid "No Polaris stats were found"
 msgstr ""
 
-#: levelup.py:2055
+#: levelup.py:1901
 #, docstring
 msgid ""
 "\n"
@@ -1334,37 +691,37 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2063
+#: levelup.py:1909
 msgid "Not importing users"
 msgstr ""
 
-#: levelup.py:2067
+#: levelup.py:1913
 msgid "No config found for Fixator's Leveler cog!"
 msgstr ""
 
-#: levelup.py:2091
+#: levelup.py:1937
 msgid ""
 "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo`"
 " and `{}pipinstall motor`"
 msgstr ""
 
-#: levelup.py:2115
+#: levelup.py:1959
 msgid "Failed to connect to MongoDB"
 msgstr ""
 
-#: levelup.py:2119
+#: levelup.py:1963
 msgid "Importing users from Leveler..."
 msgstr ""
 
-#: levelup.py:2179
+#: levelup.py:2021
 msgid "Importing Complete!\n"
 msgstr ""
 
-#: levelup.py:2181
+#: levelup.py:2021
 msgid " users imported"
 msgstr ""
 
-#: levelup.py:2195
+#: levelup.py:2035
 #, docstring
 msgid ""
 "\n"
@@ -1374,24 +731,24 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2213
+#: levelup.py:2053
 msgid "Nothing to clean"
 msgstr ""
 
-#: levelup.py:2216
+#: levelup.py:2055
 msgid "Deleted "
 msgstr ""
 
-#: levelup.py:2218
+#: levelup.py:2055
 msgid " user IDs from the config that are no longer in the server."
 msgstr ""
 
-#: levelup.py:2225
+#: levelup.py:2061
 #, docstring
 msgid "Message settings"
 msgstr ""
 
-#: levelup.py:2229
+#: levelup.py:2065
 #, docstring
 msgid ""
 "\n"
@@ -1400,15 +757,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2236
+#: levelup.py:2071
 msgid "Message XP range has been set to "
 msgstr ""
 
-#: levelup.py:2238
+#: levelup.py:2071
 msgid " per valid message"
 msgstr ""
 
-#: levelup.py:2250
+#: levelup.py:2082
 #, docstring
 msgid ""
 "\n"
@@ -1420,33 +777,33 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2258 levelup.py:2361 levelup.py:2393
+#: levelup.py:2090 levelup.py:2193 levelup.py:2225
 msgid "I cannot find that role"
 msgstr ""
 
-#: levelup.py:2260 levelup.py:2292 levelup.py:2363 levelup.py:2395
-#: levelup.py:2419
+#: levelup.py:2092 levelup.py:2124 levelup.py:2195 levelup.py:2227
+#: levelup.py:2251
 msgid "Max xp needs to be higher than min xp"
 msgstr ""
 
-#: levelup.py:2266 levelup.py:2369
+#: levelup.py:2098 levelup.py:2201
 msgid "That role has no bonus xp associated with it"
 msgstr ""
 
-#: levelup.py:2268 levelup.py:2271 levelup.py:2300 levelup.py:2303
-#: levelup.py:2371 levelup.py:2374 levelup.py:2403 levelup.py:2406
+#: levelup.py:2100 levelup.py:2103 levelup.py:2132 levelup.py:2135
+#: levelup.py:2203 levelup.py:2206 levelup.py:2235 levelup.py:2238
 msgid "Bonus xp for "
 msgstr ""
 
-#: levelup.py:2268 levelup.py:2300 levelup.py:2371 levelup.py:2403
+#: levelup.py:2100 levelup.py:2132 levelup.py:2203 levelup.py:2235
 msgid " has been removed"
 msgstr ""
 
-#: levelup.py:2271 levelup.py:2303 levelup.py:2374 levelup.py:2406
+#: levelup.py:2103 levelup.py:2135 levelup.py:2206 levelup.py:2238
 msgid " has been set to "
 msgstr ""
 
-#: levelup.py:2282
+#: levelup.py:2114
 #, docstring
 msgid ""
 "\n"
@@ -1458,15 +815,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2290
+#: levelup.py:2122
 msgid "I cannot find that channel"
 msgstr ""
 
-#: levelup.py:2298 levelup.py:2401
+#: levelup.py:2130 levelup.py:2233
 msgid "That channel has no bonus xp associated with it"
 msgstr ""
 
-#: levelup.py:2308
+#: levelup.py:2140
 #, docstring
 msgid ""
 "\n"
@@ -1477,7 +834,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2320
+#: levelup.py:2152
 #, docstring
 msgid ""
 "\n"
@@ -1488,12 +845,12 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2332
+#: levelup.py:2164
 #, docstring
 msgid "Voice settings"
 msgstr ""
 
-#: levelup.py:2337
+#: levelup.py:2169
 #, docstring
 msgid ""
 "\n"
@@ -1502,7 +859,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2353
+#: levelup.py:2185
 #, docstring
 msgid ""
 "\n"
@@ -1514,7 +871,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2385
+#: levelup.py:2217
 #, docstring
 msgid ""
 "\n"
@@ -1526,7 +883,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2411
+#: levelup.py:2243
 #, docstring
 msgid ""
 "\n"
@@ -1538,19 +895,19 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2424
+#: levelup.py:2256
 msgid "There is no stream bonus set yet"
 msgstr ""
 
-#: levelup.py:2426
+#: levelup.py:2258
 msgid "Stream bonus has been removed"
 msgstr ""
 
-#: levelup.py:2429
+#: levelup.py:2261
 msgid "Stream bonus has been set to "
 msgstr ""
 
-#: levelup.py:2434
+#: levelup.py:2266
 #, docstring
 msgid ""
 "\n"
@@ -1559,15 +916,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2441
+#: levelup.py:2273
 msgid "Self-Muted users can now gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2444
+#: levelup.py:2276
 msgid "Self-Muted users can no longer gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2449
+#: levelup.py:2281
 #, docstring
 msgid ""
 "\n"
@@ -1576,15 +933,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2456
+#: levelup.py:2288
 msgid "Solo users can now gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2459
+#: levelup.py:2291
 msgid "Solo users can no longer gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2464
+#: levelup.py:2296
 #, docstring
 msgid ""
 "\n"
@@ -1593,15 +950,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2471
+#: levelup.py:2303
 msgid "Deafened users can now gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2474
+#: levelup.py:2306
 msgid "Deafened users can no longer gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2479
+#: levelup.py:2311
 #, docstring
 msgid ""
 "\n"
@@ -1610,61 +967,61 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2486
+#: levelup.py:2318
 msgid "Invisible users can now gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2489
+#: levelup.py:2321
 msgid "Invisible users can no longer gain XP while in a voice channel"
 msgstr ""
 
-#: levelup.py:2499
+#: levelup.py:2331
 #, docstring
 msgid "Add XP to a user or role"
 msgstr ""
 
-#: levelup.py:2502
+#: levelup.py:2334
 msgid "I cannot find that user or role"
 msgstr ""
 
-#: levelup.py:2508
+#: levelup.py:2340
 msgid "xp has been added to "
 msgstr ""
 
-#: levelup.py:2522
+#: levelup.py:2353
 msgid "Added "
 msgstr ""
 
-#: levelup.py:2524
+#: levelup.py:2353
 msgid " xp to "
 msgstr ""
 
-#: levelup.py:2526
+#: levelup.py:2353
 msgid " users that had the "
 msgstr ""
 
-#: levelup.py:2528
+#: levelup.py:2354
 msgid "role"
 msgstr ""
 
-#: levelup.py:2534
+#: levelup.py:2360
 #, docstring
 msgid "Set a user to a specific level"
 msgstr ""
 
-#: levelup.py:2538 levelup.py:2558
+#: levelup.py:2364 levelup.py:2384
 msgid "There is no data for that user!"
 msgstr ""
 
-#: levelup.py:2545
+#: levelup.py:2371
 msgid "User "
 msgstr ""
 
-#: levelup.py:2545
+#: levelup.py:2371
 msgid " is now level "
 msgstr ""
 
-#: levelup.py:2550
+#: levelup.py:2376
 #, docstring
 msgid ""
 "\n"
@@ -1674,16 +1031,20 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2564
+#: levelup.py:2387
+msgid "Prestige levels have not been set yet!"
+msgstr ""
+
+#: levelup.py:2390
 msgid "That prestige level isn't set!"
 msgstr ""
 
-#: levelup.py:2573
+#: levelup.py:2399
 #, docstring
 msgid "Customize the leveling algorithm for your guild"
 msgstr ""
 
-#: levelup.py:2578
+#: levelup.py:2404
 #, docstring
 msgid ""
 "\n"
@@ -1693,7 +1054,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2589
+#: levelup.py:2415
 #, docstring
 msgid ""
 "\n"
@@ -1703,47 +1064,47 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2595
+#: levelup.py:2421
 msgid "Your exponent needs to be higher than 0"
 msgstr ""
 
-#: levelup.py:2597
+#: levelup.py:2423
 msgid "Your exponent needs to be 10 or lower"
 msgstr ""
 
-#: levelup.py:2604
+#: levelup.py:2430
 #, docstring
 msgid "Toggle using embeds or generated pics"
 msgstr ""
 
-#: levelup.py:2608
+#: levelup.py:2434
 msgid "LevelUp will now use **embeds** instead of generated images"
 msgstr ""
 
-#: levelup.py:2611
+#: levelup.py:2437
 msgid "LevelUp will now use **generated images** instead of embeds"
 msgstr ""
 
-#: levelup.py:2616
+#: levelup.py:2442
 #, docstring
 msgid "Set the progress bar length for embed profiles"
 msgstr ""
 
-#: levelup.py:2619
+#: levelup.py:2445
 msgid ""
 "Embed profiles are disabled. Enable them to set the progress bar length with"
 " "
 msgstr ""
 
-#: levelup.py:2626
+#: levelup.py:2449
 msgid "Progress bar length must be a minimum of 15 and maximum of 40"
 msgstr ""
 
-#: levelup.py:2629
+#: levelup.py:2451
 msgid "Progress bar length has been set to "
 msgstr ""
 
-#: levelup.py:2635
+#: levelup.py:2457
 #, docstring
 msgid ""
 "\n"
@@ -1752,30 +1113,50 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2649
+#: levelup.py:2471
 msgid ""
 "XP required for a level = Base * Level^ᵉˣᵖ\n"
 "\n"
 "Approx time is the time it would take for a user to reach a level with randomized breaks"
 msgstr ""
 
-#: levelup.py:2653
+#: levelup.py:2475
 msgid "`Base Multiplier:  `"
 msgstr ""
 
-#: levelup.py:2654
+#: levelup.py:2476
 msgid "`Exp Multiplier:   `"
 msgstr ""
 
-#: levelup.py:2655
+#: levelup.py:2477
 msgid "`Experience Range: `"
 msgstr ""
 
-#: levelup.py:2657
+#: levelup.py:2478
 msgid "`Message Cooldown: `"
 msgstr ""
 
-#: levelup.py:2703
+#: levelup.py:2480
+msgid "Level Example"
+msgstr ""
+
+#: levelup.py:2499
+msgid "- lvl {}, {} xp, {}\n"
+msgstr ""
+
+#: levelup.py:2506
+msgid "XP Curve"
+msgstr ""
+
+#: levelup.py:2507
+msgid "Level"
+msgstr ""
+
+#: levelup.py:2508
+msgid "Experience Required"
+msgstr ""
+
+#: levelup.py:2518
 #, docstring
 msgid ""
 "\n"
@@ -1784,15 +1165,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2710
+#: levelup.py:2525
 msgid "Users will no longer be DM'd when they level up"
 msgstr ""
 
-#: levelup.py:2713
+#: levelup.py:2528
 msgid "Users will now be DM'd when they level up"
 msgstr ""
 
-#: levelup.py:2718
+#: levelup.py:2533
 #, docstring
 msgid ""
 "\n"
@@ -1801,15 +1182,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2725
+#: levelup.py:2540
 msgid "Mentions **Disabled**"
 msgstr ""
 
-#: levelup.py:2728
+#: levelup.py:2543
 msgid "Mentions **Enabled**"
 msgstr ""
 
-#: levelup.py:2733
+#: levelup.py:2548
 #, docstring
 msgid ""
 "\n"
@@ -1818,15 +1199,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2740
+#: levelup.py:2555
 msgid "Star reaction mentions **Disabled**"
 msgstr ""
 
-#: levelup.py:2743
+#: levelup.py:2558
 msgid "Star reaction mention **Enabled**"
 msgstr ""
 
-#: levelup.py:2748
+#: levelup.py:2563
 #, docstring
 msgid ""
 "\n"
@@ -1835,19 +1216,19 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2755
+#: levelup.py:2569
 msgid "Star reaction mentions will auto-delete after "
 msgstr ""
 
-#: levelup.py:2757
+#: levelup.py:2569
 msgid " seconds"
 msgstr ""
 
-#: levelup.py:2760
+#: levelup.py:2571
 msgid "Star reaction mentions will not be deleted"
 msgstr ""
 
-#: levelup.py:2769
+#: levelup.py:2580
 #, docstring
 msgid ""
 "\n"
@@ -1856,39 +1237,39 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2776
+#: levelup.py:2587
 msgid ""
 "LevelUp channel has been **Disabled**\n"
 "level up messages will now happen in the channel the user is in"
 msgstr ""
 
-#: levelup.py:2785
+#: levelup.py:2595
 msgid "I do not have permission to send messages to that channel."
 msgstr ""
 
-#: levelup.py:2788
+#: levelup.py:2597
 msgid "LevelUp channel has been set to "
 msgstr ""
 
-#: levelup.py:2793
+#: levelup.py:2602
 #, docstring
 msgid "Toggle whether to show user's economy credit balance in their profile"
 msgstr ""
 
-#: levelup.py:2797
+#: levelup.py:2606
 msgid "I will no longer include economy balance in user profiles"
 msgstr ""
 
-#: levelup.py:2800
+#: levelup.py:2609
 msgid "I will now include economy balance in user profiles"
 msgstr ""
 
-#: levelup.py:2805
+#: levelup.py:2614
 #, docstring
 msgid "Toggle the level up message when a user levels up"
 msgstr ""
 
-#: levelup.py:2817
+#: levelup.py:2626
 #, docstring
 msgid ""
 "\n"
@@ -1898,12 +1279,12 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2829
+#: levelup.py:2638
 #, docstring
 msgid "Level role assignment"
 msgstr ""
 
-#: levelup.py:2834
+#: levelup.py:2643
 #, docstring
 msgid ""
 "\n"
@@ -1914,114 +1295,118 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:2844
+#: levelup.py:2653
 msgid "I dont have the proper permissions to manage roles!"
 msgstr ""
 
-#: levelup.py:2848
+#: levelup.py:2657
 msgid "Calculating roles, this may take a while..."
 msgstr ""
 
-#: levelup.py:2912
+#: levelup.py:2721
 msgid "Assigning roles, this may take a while..."
 msgstr ""
 
-#: levelup.py:2952
+#: levelup.py:2761
 msgid "Role initialization completed!"
 msgstr ""
 
-#: levelup.py:2954
+#: levelup.py:2763
 msgid ""
 "\n"
 "Added `{}`"
 msgstr ""
 
-#: levelup.py:2956 levelup.py:2961
+#: levelup.py:2765 levelup.py:2770
 msgid " (`{}` failed)"
 msgstr ""
 
-#: levelup.py:2959
+#: levelup.py:2768
 msgid ""
 "\n"
 "Removed `{}`"
 msgstr ""
 
-#: levelup.py:2964
+#: levelup.py:2773
 msgid ""
 "\n"
 "No roles needed to be added or removed!"
 msgstr ""
 
-#: levelup.py:2969
+#: levelup.py:2778
 msgid "Initialization took {} to complete."
 msgstr ""
 
-#: levelup.py:2975
+#: levelup.py:2784
 #, docstring
 msgid "Automatic removal of previous level roles"
 msgstr ""
 
-#: levelup.py:2979
+#: levelup.py:2788
 msgid "Automatic role removal **Disabled**"
 msgstr ""
 
-#: levelup.py:2982
+#: levelup.py:2791
 msgid "Automatic role removal **Enabled**"
 msgstr ""
 
-#: levelup.py:2987
+#: levelup.py:2796
 #, docstring
 msgid "Assign a role to a level"
 msgstr ""
 
-#: levelup.py:2990
+#: levelup.py:2798
 msgid ""
 "The role you are trying to set is higher than the one you currently have!"
 msgstr ""
 
-#: levelup.py:2993
+#: levelup.py:2800
 msgid "I cannot assign roles higher than my own!"
 msgstr ""
 
-#: levelup.py:2996
+#: levelup.py:2803
 msgid "I do not have permission to manage roles"
 msgstr ""
 
-#: levelup.py:2998
+#: levelup.py:2805
 msgid "Overwritten"
 msgstr ""
 
-#: levelup.py:3000
+#: levelup.py:2807
 msgid "Set"
 msgstr ""
 
-#: levelup.py:3002
+#: levelup.py:2809
+msgid "Level "
+msgstr ""
+
+#: levelup.py:2809
 msgid " has been "
 msgstr ""
 
-#: levelup.py:3002
+#: levelup.py:2809
 msgid " as "
 msgstr ""
 
-#: levelup.py:3008
+#: levelup.py:2815
 #, docstring
 msgid "Unassign a role from a level"
 msgstr ""
 
-#: levelup.py:3011
+#: levelup.py:2818
 msgid "Level role has been deleted!"
 msgstr ""
 
-#: levelup.py:3014
+#: levelup.py:2821
 msgid "Level doesnt exist!"
 msgstr ""
 
-#: levelup.py:3018
+#: levelup.py:2825
 #, docstring
 msgid "Level Prestige Settings"
 msgstr ""
 
-#: levelup.py:3023
+#: levelup.py:2830
 #, docstring
 msgid ""
 "\n"
@@ -2030,20 +1415,20 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3033
+#: levelup.py:2840
 #, docstring
 msgid "Automatic removal of previous prestige level roles"
 msgstr ""
 
-#: levelup.py:3037
+#: levelup.py:2844
 msgid "Automatic prestige role removal **Disabled**"
 msgstr ""
 
-#: levelup.py:3040
+#: levelup.py:2847
 msgid "Automatic prestige role removal **Enabled**"
 msgstr ""
 
-#: levelup.py:3051
+#: levelup.py:2858
 #, docstring
 msgid ""
 "\n"
@@ -2054,30 +1439,30 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3058 levelup.py:3080
+#: levelup.py:2865 levelup.py:2887
 msgid "prestige_level must be a number!"
 msgstr ""
 
-#: levelup.py:3069
+#: levelup.py:2876
 #, docstring
 msgid "Test emojis to see if the bot is able to get a valid url for them"
 msgstr ""
 
-#: levelup.py:3078
+#: levelup.py:2885
 #, docstring
 msgid "Delete a prestige level role"
 msgstr ""
 
-#: levelup.py:3085
+#: levelup.py:2892
 msgid "That prestige level doesnt exist!"
 msgstr ""
 
-#: levelup.py:3091
+#: levelup.py:2898
 #, docstring
 msgid "Base command for all ignore lists"
 msgstr ""
 
-#: levelup.py:3097
+#: levelup.py:2904
 #, docstring
 msgid ""
 "\n"
@@ -2089,15 +1474,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3106
+#: levelup.py:2913
 msgid "Guild removed from ignore list"
 msgstr ""
 
-#: levelup.py:3109
+#: levelup.py:2916
 msgid "Guild added to ignore list"
 msgstr ""
 
-#: levelup.py:3118
+#: levelup.py:2925
 #, docstring
 msgid ""
 "\n"
@@ -2108,15 +1493,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3127
+#: levelup.py:2934
 msgid "Channel removed from ignore list"
 msgstr ""
 
-#: levelup.py:3130
+#: levelup.py:2937
 msgid "Channel added to ignore list"
 msgstr ""
 
-#: levelup.py:3135
+#: levelup.py:2942
 #, docstring
 msgid ""
 "\n"
@@ -2127,15 +1512,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3144
+#: levelup.py:2951
 msgid "Role removed from ignore list"
 msgstr ""
 
-#: levelup.py:3147
+#: levelup.py:2954
 msgid "Role added to ignore list"
 msgstr ""
 
-#: levelup.py:3152
+#: levelup.py:2959
 #, docstring
 msgid ""
 "\n"
@@ -2146,132 +1531,132 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3161
+#: levelup.py:2968
 msgid "Member removed from ignore list"
 msgstr ""
 
-#: levelup.py:3164
+#: levelup.py:2971
 msgid "Member added to ignore list"
 msgstr ""
 
-#: levelup.py:3171
+#: levelup.py:2978
 #, docstring
 msgid "Access the weekly settings for levelUp"
 msgstr ""
 
-#: levelup.py:3177
+#: levelup.py:2984
 #, docstring
 msgid "View the current weekly settings"
 msgstr ""
 
-#: levelup.py:3179
+#: levelup.py:2986
 msgid "**Enabled**"
 msgstr ""
 
-#: levelup.py:3179
+#: levelup.py:2986
 msgid "**Disabled**"
 msgstr ""
 
-#: levelup.py:3180
+#: levelup.py:2987
 msgid "Weekly stat tracking is currently "
 msgstr ""
 
-#: levelup.py:3182
+#: levelup.py:2989
 msgid "Weekly LevelUp settings"
 msgstr ""
 
-#: levelup.py:3195
+#: levelup.py:2998
 msgid "`Winner Count:   `"
 msgstr ""
 
-#: levelup.py:3197
+#: levelup.py:2999
 msgid "`Last Winner(s): `"
 msgstr ""
 
-#: levelup.py:3198 levelup.py:3201 levelup.py:3202
+#: levelup.py:2999 levelup.py:3000 levelup.py:3001
 msgid "None"
 msgstr ""
 
-#: levelup.py:3201
+#: levelup.py:3000
 msgid "`Channel:        `"
 msgstr ""
 
-#: levelup.py:3202
+#: levelup.py:3001
 msgid "`Role:           `"
 msgstr ""
 
-#: levelup.py:3203
+#: levelup.py:3002
 msgid "`RoleAllWinners: `"
 msgstr ""
 
-#: levelup.py:3204
+#: levelup.py:3003
 msgid "`Auto Remove:    `"
 msgstr ""
 
-#: levelup.py:3205
+#: levelup.py:3004
 msgid "`Bonus Exp:      `"
 msgstr ""
 
-#: levelup.py:3206
+#: levelup.py:3005
 msgid "Settings"
 msgstr ""
 
-#: levelup.py:3209
+#: levelup.py:3008
 msgid "`Reset Day:  `"
 msgstr ""
 
-#: levelup.py:3210
+#: levelup.py:3009
 msgid "`Reset Hour: `"
 msgstr ""
 
-#: levelup.py:3211
+#: levelup.py:3010
 msgid "`Last Reset: `"
 msgstr ""
 
-#: levelup.py:3213
+#: levelup.py:3012
 msgid "`Next Reset: `"
 msgstr ""
 
-#: levelup.py:3215
+#: levelup.py:3014
 msgid "Auto Reset "
 msgstr ""
 
-#: levelup.py:3221
+#: levelup.py:3020
 #, docstring
 msgid "Reset the weekly leaderboard manually and announce winners"
 msgstr ""
 
-#: levelup.py:3223
+#: levelup.py:3022
 msgid "Not resetting weekly leaderboard"
 msgstr ""
 
-#: levelup.py:3229
+#: levelup.py:3028
 #, docstring
 msgid "Toggle weekly stat tracking"
 msgstr ""
 
-#: levelup.py:3233
+#: levelup.py:3032
 msgid "Weekly stat tracking has been **Disabled**"
 msgstr ""
 
-#: levelup.py:3236
+#: levelup.py:3035
 msgid "Weekly stat tracking has been **Enabled**"
 msgstr ""
 
-#: levelup.py:3241
+#: levelup.py:3040
 #, docstring
 msgid "Toggle weekly auto-reset"
 msgstr ""
 
-#: levelup.py:3245
+#: levelup.py:3044
 msgid "Weekly auto-reset has been **Disabled**"
 msgstr ""
 
-#: levelup.py:3248
+#: levelup.py:3047
 msgid "Weekly auto-reset has been **Enabled**"
 msgstr ""
 
-#: levelup.py:3253
+#: levelup.py:3052
 #, docstring
 msgid ""
 "\n"
@@ -2280,15 +1665,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3258
+#: levelup.py:3057
 msgid "Hour must be 0 to 23"
 msgstr ""
 
-#: levelup.py:3260
+#: levelup.py:3059
 msgid "Weekly stats auto reset hour is now "
 msgstr ""
 
-#: levelup.py:3267
+#: levelup.py:3066
 #, docstring
 msgid ""
 "\n"
@@ -2297,15 +1682,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3272
+#: levelup.py:3071
 msgid "Day must be 0 to 6 (Monday to Sunday)"
 msgstr ""
 
-#: levelup.py:3274
+#: levelup.py:3073
 msgid "Weekly stats auto reset day is now "
 msgstr ""
 
-#: levelup.py:3281
+#: levelup.py:3080
 #, docstring
 msgid ""
 "\n"
@@ -2314,15 +1699,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3286
+#: levelup.py:3085
 msgid "There must be at least one winner!"
 msgstr ""
 
-#: levelup.py:3288
+#: levelup.py:3087
 msgid "There can only be up to 25 winners!"
 msgstr ""
 
-#: levelup.py:3295
+#: levelup.py:3094
 #, docstring
 msgid ""
 "Weekly winner announcement channel\n"
@@ -2330,44 +1715,44 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3299
+#: levelup.py:3098
 msgid "I do not have permission to send messages to that channel!"
 msgstr ""
 
-#: levelup.py:3301
+#: levelup.py:3100
 msgid "I do not have permission to send embeds to that channel!"
 msgstr ""
 
-#: levelup.py:3308
+#: levelup.py:3107
 #, docstring
 msgid ""
 "Weekly winner role reward\n"
 "        Set the role awarded to the top member of the weekly leaderboard"
 msgstr ""
 
-#: levelup.py:3311
+#: levelup.py:3110
 msgid "I do not have permission to manage roles!"
 msgstr ""
 
-#: levelup.py:3318
+#: levelup.py:3117
 #, docstring
 msgid ""
 "Toggle whether to give the weekly winner role to all winners or only 1st "
 "place"
 msgstr ""
 
-#: levelup.py:3323
+#: levelup.py:3121
 msgid ""
 "Only the 1st place winner of the weekly stats reset will receive the weekly "
 "role"
 msgstr ""
 
-#: levelup.py:3330
+#: levelup.py:3124
 msgid ""
 "All top members listed in the weekly stat reset will receive the weekly role"
 msgstr ""
 
-#: levelup.py:3336
+#: levelup.py:3129
 #, docstring
 msgid ""
 "One role holder at a time\n"
@@ -2375,15 +1760,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3342
+#: levelup.py:3135
 msgid "Auto role removal from previous winner has been **Disabled**"
 msgstr ""
 
-#: levelup.py:3345
+#: levelup.py:3138
 msgid "Auto role removal from previous winner has been **Enabled**"
 msgstr ""
 
-#: levelup.py:3350
+#: levelup.py:3143
 #, docstring
 msgid ""
 "\n"
@@ -2392,34 +1777,34 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup.py:3362
+#: levelup.py:3155
 #, docstring
 msgid "Force level a user or yourself"
 msgstr ""
 
-#: levelup.py:3379 levelup.py:3404
+#: levelup.py:3172 levelup.py:3197
 msgid "Forced "
 msgstr ""
 
-#: levelup.py:3379
+#: levelup.py:3172
 msgid " to level up!"
 msgstr ""
 
-#: levelup.py:3387
+#: levelup.py:3180
 #, docstring
 msgid "Force de-level a user or yourself"
 msgstr ""
 
-#: levelup.py:3404
+#: levelup.py:3197
 msgid " to level down!"
 msgstr ""
 
-#: levelup.py:3412
+#: levelup.py:3205
 #, docstring
 msgid "Force Initialization"
 msgstr ""
 
-#: levelup.py:3419
+#: levelup.py:3212
 #, docstring
 msgid "Force save the cache"
 msgstr ""

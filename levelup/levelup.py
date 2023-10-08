@@ -68,7 +68,7 @@ async def confirm(ctx: commands.Context):
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
 
-# redgettext -D levelup.py generator.py base.py utils/formatter.py --command-docstring
+# redgettext -D levelup.py common/generator.py common/base.py utils/formatter.py --command-docstring
 
 
 @cog_i18n(_)
@@ -2477,7 +2477,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         desc += _("`Experience Range: `") + f"{xp_range}\n"
         desc += _("`Message Cooldown: `") + f"{cd}\n" + f"{box(example)}\n" + f"{box(level_text, lang='python')}"
         embed = discord.Embed(
-            title="Level Example",
+            title=_("Level Example"),
             description=desc,
             color=discord.Color.random(),
         )
@@ -2503,9 +2503,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Total"))
         fig.update_layout(
-            title="XP Curve",
-            xaxis_title="Level",
-            yaxis_title="Experience Required",
+            title=_("XP Curve"),
+            xaxis_title=_("Level"),
+            yaxis_title=_("Experience Required"),
             autosize=False,
             width=500,
             height=500,
