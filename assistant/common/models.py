@@ -1,9 +1,9 @@
-import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
+import orjson
 from openai.embeddings_utils import cosine_similarity
 from pydantic import VERSION, BaseModel, ConfigDict, Field
 from redbot.core.bot import Red
@@ -11,7 +11,22 @@ from redbot.core.bot import Red
 log = logging.getLogger("red.vrt.assistant.models")
 
 
-class Embedding(BaseModel):
+class AssistantBaseModel(BaseModel):
+    @classmethod
+    def model_validate(cls, obj: Any, *args, **kwargs):
+        if VERSION >= "2.0.1":
+            return super().model_validate(obj, *args, **kwargs)
+        return super().parse_obj(obj, *args, **kwargs)
+
+    def model_dump(self, *args, **kwargs):
+        if VERSION >= "2.0.1":
+            return super().model_dump(*args, **kwargs)
+        if kwargs.pop("mode", "") == "json":
+            return orjson.loads(super().json(*args, **kwargs))
+        return super().dict(*args, **kwargs)
+
+
+class Embedding(AssistantBaseModel):
     text: str
     embedding: List[float]
     ai_created: bool = False
@@ -29,27 +44,11 @@ class Embedding(BaseModel):
     def update(self):
         self.modified = datetime.now(tz=timezone.utc)
 
-    @classmethod
-    def model_validate(cls, obj: Any, *args, **kwargs):
-        if VERSION >= "2.0.1":
-            return super().model_validate(obj, *args, **kwargs)
-        return super().parse_obj(obj, *args, **kwargs)
-
-    def model_dump(self, *args, **kwargs):
-        if VERSION >= "2.0.1":
-            return super().model_dump(*args, **kwargs)
-        mode = kwargs.get("mode", "")
-        if mode:
-            del kwargs["mode"]
-        if mode == "json":
-            return json.loads(super().json(*args, **kwargs))
-        return super().dict(*args, **kwargs)
-
     def __str__(self) -> str:
         return self.text
 
 
-class CustomFunction(BaseModel):
+class CustomFunction(AssistantBaseModel):
     """Functions added by bot owner via string"""
 
     code: str
@@ -61,13 +60,13 @@ class CustomFunction(BaseModel):
         return globals()[self.jsonschema["name"]]
 
 
-class Usage(BaseModel):
+class Usage(AssistantBaseModel):
     total_tokens: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
 
 
-class GuildSettings(BaseModel):
+class GuildSettings(AssistantBaseModel):
     model_config = ConfigDict(
         protected_namespaces=()
     )  # Hides warning for 'model_role_overrides' using a protected namespace
@@ -204,7 +203,7 @@ class GuildSettings(BaseModel):
         return self.max_retention_time
 
 
-class Conversation(BaseModel):
+class Conversation(AssistantBaseModel):
     messages: List[dict] = []
     last_updated: float = 0.0
 
@@ -279,7 +278,7 @@ class Conversation(BaseModel):
         return prepared
 
 
-class DB(BaseModel):
+class DB(AssistantBaseModel):
     configs: Dict[int, GuildSettings] = {}
     conversations: Dict[str, Conversation] = {}
     persistent_conversations: bool = False
@@ -287,22 +286,6 @@ class DB(BaseModel):
     listen_to_bots: bool = False
 
     endpoint_override: Optional[str] = None
-
-    @classmethod
-    def model_validate(cls, obj: Any, *args, **kwargs):
-        if VERSION >= "2.0.1":
-            return super().model_validate(obj, *args, **kwargs)
-        return super().parse_obj(obj, *args, **kwargs)
-
-    def model_dump(self, *args, **kwargs):
-        if VERSION >= "2.0.1":
-            return super().model_dump(*args, **kwargs)
-        mode = kwargs.get("mode", "")
-        if mode:
-            del kwargs["mode"]
-        if mode == "json":
-            return json.loads(super().json(*args, **kwargs))
-        return super().dict(*args, **kwargs)
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
