@@ -80,7 +80,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.8.7"
+    __version__ = "3.8.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -471,7 +471,13 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         self.data[guild.id]["users"][str(user.id)]["stars"] += 1
         return True
 
-    async def check_levelups(self, guild_id: int, user_id: str, message: discord.Message = None):
+    async def check_levelups(
+        self,
+        guild_id: int,
+        user_id: str,
+        message: discord.Message = None,
+        channel_obj: discord.TextChannel = None,
+    ):
         base = self.data[guild_id]["base"]
         exp = self.data[guild_id]["exp"]
         user = self.data[guild_id]["users"][user_id]
@@ -485,16 +491,17 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not guild:
             return
         self.data[guild_id]["users"][user_id]["level"] = maybe_new_level
-        await self.level_up(guild, user_id, maybe_new_level, background, message)
+        await self.level_up(guild, user_id, maybe_new_level, background, message, channel_obj)
 
     # User has leveled up, send message and check if any roles are associated with it
     async def level_up(
         self,
-        guild: discord.guild,
+        guild: discord.Guild,
         user: str,
         new_level: int,
         bg: str = None,
         message: discord.Message = None,
+        channel_obj: discord.TextChannel = None,
     ):
         t1 = monotonic()
         conf = self.data[guild.id]
@@ -506,9 +513,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         channel = conf["notifylog"]
         notify = conf["notify"]
 
-        channel = guild.get_channel(channel) if channel else None
+        channel = guild.get_channel_or_thread(channel) if channel else None
         if message and not channel:
             channel = message.channel
+        if channel_obj and not channel:
+            channel = channel_obj
 
         perms = [
             channel.permissions_for(guild.me).send_messages if channel else False,
@@ -548,10 +557,13 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     channeltxt = _("Just reached level {level}!").format(level=str(new_level))
                     channelembed = discord.Embed(description=channeltxt, color=member.color)
                     channelembed.set_author(name=name, icon_url=pfp)
-                    if mention:
-                        await channel.send(mentionuser, embed=channelembed)
-                    else:
-                        await channel.send(embed=channelembed)
+                    try:
+                        if mention:
+                            await channel.send(mentionuser, embed=channelembed)
+                        else:
+                            await channel.send(embed=channelembed)
+                    except Exception as e:
+                        log.warning(f"Failed to send levelup alert to {channel.name}!", exc_info=e)
 
         else:
             # Generate LevelUP Image
@@ -585,7 +597,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                         pass
                 elif all(perms) and channel:
                     txt = _("**{user} just leveled up!**").format(user=mentionuser if mention else name)
-                    await channel.send(txt, file=file)
+                    try:
+                        await channel.send(txt, file=file)
+                    except Exception as e:
+                        log.warning(f"Failed to send levelup alert to {channel.name}!", exc_info=e)
 
         if not roleperms:
             # log.warning(f"Bot can't manage roles in {guild.name}")
@@ -729,6 +744,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         weekly_on = conf["weekly"]["on"]
         bonusrole = None
         async for member in AsyncIter(guild.members, steps=100, delay=0.001):
+            member: discord.Member = member
             if member.bot:
                 continue
             now = datetime.now()
@@ -807,7 +823,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             if weekly_on:
                 self.data[gid]["weekly"]["users"][uid]["voice"] += td
             self.voice[gid][uid] = now
-            jobs.append(self.check_levelups(gid, uid))
+            jobs.append(self.check_levelups(gid, uid, channel_obj=voice_state.channel))
         await asyncio.gather(*jobs)
 
     @tasks.loop(seconds=20)
