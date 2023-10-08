@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-09-12 14:05-0400\n"
-"PO-Revision-Date: 2023-09-12 19:22\n"
+"POT-Creation-Date: 2023-10-07 20:44-0400\n"
+"PO-Revision-Date: 2023-10-08 14:32\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -54,67 +54,67 @@ msgstr "LevelUp "
 msgid "Voice Leaderboard"
 msgstr "Stimmen-Rangliste"
 
-#: utils\formatter.py:169
+#: utils\formatter.py:170
 msgid "Voicetime"
 msgstr "Voicetime"
 
-#: utils\formatter.py:173
+#: utils\formatter.py:174
 msgid "Message Leaderboard"
 msgstr "Nachrichten-Leaderboard"
 
-#: utils\formatter.py:175
+#: utils\formatter.py:177
 msgid "Messages"
 msgstr "Nachrichten"
 
-#: utils\formatter.py:179
+#: utils\formatter.py:181
 msgid "Star Leaderboard"
 msgstr "Star-Leaderboard"
 
-#: utils\formatter.py:181
+#: utils\formatter.py:184
 msgid "Stars"
 msgstr "Sterne"
 
-#: utils\formatter.py:185
+#: utils\formatter.py:188
 msgid "Exp Leaderboard"
 msgstr "Exp-Rangliste"
 
-#: utils\formatter.py:187
+#: utils\formatter.py:191
 msgid "Exp"
 msgstr "Exp"
 
-#: utils\formatter.py:192
+#: utils\formatter.py:196
 msgid "Total "
 msgstr "Insgesamt "
 
-#: utils\formatter.py:193
+#: utils\formatter.py:197
 msgid "Last Reset: "
 msgstr "Letzter Reset: "
 
-#: utils\formatter.py:196
+#: utils\formatter.py:200
 msgid "Next Reset: "
 msgstr "Nächster Reset: "
 
-#: utils\formatter.py:198
+#: utils\formatter.py:202
 msgid "Total"
 msgstr "Insgesamt"
 
-#: utils\formatter.py:206
+#: utils\formatter.py:210
 msgid "There is no data for the weekly "
 msgstr "Es gibt keine Daten für die wöchentliche "
 
-#: utils\formatter.py:206 utils\formatter.py:208
+#: utils\formatter.py:210 utils\formatter.py:212
 msgid " leaderboard yet"
 msgstr " Rangliste noch nicht verfügbar"
 
-#: utils\formatter.py:208
+#: utils\formatter.py:212
 msgid "There is no data for the "
 msgstr "Es gibt keine Daten für die "
 
-#: utils\formatter.py:214
+#: utils\formatter.py:218
 msgid "You: "
 msgstr "Sie: "
 
-#: utils\formatter.py:258 utils\formatter.py:260
+#: utils\formatter.py:265 utils\formatter.py:267
 msgid "Pages "
 msgstr "Seiten "
 
