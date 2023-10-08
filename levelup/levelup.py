@@ -12,7 +12,6 @@ from typing import Dict, List, Set, Tuple, Union
 
 import discord
 import plotly.graph_objects as go
-import plotly.io as pio
 from aiohttp import ClientSession, ClientTimeout
 from discord.ext import tasks
 from redbot.core import Config, VersionInfo, commands, version_info
@@ -81,7 +80,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.8.6"
+    __version__ = "3.8.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2467,8 +2466,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         async with ctx.typing():
             level_text, file_bytes = await asyncio.to_thread(self.plot_levels, conf)
 
-        file = discord.File(BytesIO(file_bytes), filename="lvlexample.png")
-        img = "attachment://lvlexample.png"
+        file = discord.File(BytesIO(file_bytes), filename="lvlexample.webp")
+        img = "attachment://lvlexample.webp"
         example = _(
             "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
             "Approx time is the time it would take for a user to reach a level with randomized breaks"
@@ -2512,10 +2511,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             height=500,
             margin=dict(l=50, r=50, b=100, t=100, pad=4),
         )
-
-        result = BytesIO()
-        pio.write_image(fig, result, format="png")
-        return txt, result.getvalue()
+        return txt, fig.to_image(format="webp")
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
