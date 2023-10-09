@@ -59,7 +59,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.16.0"
+    __version__ = "4.16.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -322,7 +322,7 @@ class Assistant(
             return "channel_id must be a valid integer!"
         if channel := guild.get_channel_or_thread(int(channel_id)):
             ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
-            return f"the name of this {ctype} channel is {channel.name}"
+            return f"the name of the {ctype} channel with ID {channel_id} is {channel.name}"
         return "a channel with that ID could not be found!"
 
     async def get_channel_id_from_name(
