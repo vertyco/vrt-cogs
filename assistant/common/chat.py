@@ -241,7 +241,7 @@ class ChatHandler(MixinMeta):
 
         query_embedding = []
         message_tokens = await self.get_token_count(message, conf)
-        if conf.top_n and message_tokens < 8191:
+        if conf.top_n and message_tokens < 8191 and message.endswith("?"):
             # Save on tokens by only getting embeddings if theyre enabled
             query_embedding = await self.request_embedding(message, conf)
 
