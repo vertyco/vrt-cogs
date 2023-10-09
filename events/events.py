@@ -826,8 +826,8 @@ class Events(commands.Cog):
                     )
                     continue
                 channel: discord.TextChannel = reply.channel_mentions[0]
-                if not isinstance(channel, discord.TextChannel):
-                    await ctx.send("The event channel cannot be a thread or forum!", delete_after=10)
+                if isinstance(channel, discord.ForumChannel):
+                    await ctx.send("The event needs to be in a text channel, not a forum!", delete_after=10)
                     continue
                 break
 
