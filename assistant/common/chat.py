@@ -241,8 +241,8 @@ class ChatHandler(MixinMeta):
 
         query_embedding = []
         message_tokens = await self.get_token_count(message, conf)
-        question_or_first_msg = conversation.is_expired() or message.endswith("?") or len(conversation.messages) <= 1
-        if conf.top_n and message_tokens < 8191 and question_or_first_msg:
+        words = message.split(" ")
+        if conf.top_n and message_tokens < 8191 and len(words) > 5:
             # Save on tokens by only getting embeddings if theyre enabled
             query_embedding = await self.request_embedding(message, conf)
 
