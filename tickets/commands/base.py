@@ -28,9 +28,7 @@ class BaseCommands(MixinMeta):
         opened = conf["opened"]
         owner_id = get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
-            return await ctx.send(
-                _("This is not a ticket channel, or it has been removed from config")
-            )
+            return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
 
         panel_name = opened[owner_id][str(ctx.channel.id)]["panel"]
         panel_roles = conf["panels"][panel_name]["roles"]
@@ -54,10 +52,15 @@ class BaseCommands(MixinMeta):
             return await ctx.send(_("You do not have permissions to add users to this ticket"))
 
         channel = ctx.channel
-        if isinstance(channel, discord.TextChannel):
-            await ctx.channel.set_permissions(user, read_messages=True, send_messages=True)
-        else:
-            await channel.add_user(user)
+        try:
+            if isinstance(channel, discord.TextChannel):
+                await ctx.channel.set_permissions(user, read_messages=True, send_messages=True)
+            else:
+                await channel.add_user(user)
+        except Exception as e:
+            log.exception(f"Failed to add {user.name} to ticket", exc_info=e)
+            txt = _("Failed to add user to ticket: {}").format(str(e))
+            return await ctx.send(txt)
         await ctx.send(f"**{user.name}** " + _("has been added to this ticket!"))
 
     @commands.hybrid_command(name="renameticket", description="Rename your ticket")
@@ -69,9 +72,7 @@ class BaseCommands(MixinMeta):
         opened = conf["opened"]
         owner_id = get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
-            return await ctx.send(
-                _("This is not a ticket channel, or it has been removed from config")
-            )
+            return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
 
         panel_name = opened[owner_id][str(ctx.channel.id)]["panel"]
         panel_roles = conf["panels"][panel_name]["roles"]
@@ -116,13 +117,9 @@ class BaseCommands(MixinMeta):
         opened = conf["opened"]
         owner_id = get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
-            return await ctx.send(
-                _("Cannot find the owner of this ticket! " "Maybe it was removed from config?")
-            )
+            return await ctx.send(_("Cannot find the owner of this ticket! " "Maybe it was removed from config?"))
 
-        user_can_close = await can_close(
-            self.bot, ctx.guild, ctx.channel, ctx.author, owner_id, conf
-        )
+        user_can_close = await can_close(self.bot, ctx.guild, ctx.channel, ctx.author, owner_id, conf)
         if not user_can_close:
             return await ctx.send(_("You do not have permissions to close this ticket"))
         else:
@@ -161,9 +158,7 @@ class BaseCommands(MixinMeta):
                     return
 
         if ctx.interaction:
-            await ctx.interaction.response.send_message(
-                _("Closing..."), ephemeral=True, delete_after=4
-            )
+            await ctx.interaction.response.send_message(_("Closing..."), ephemeral=True, delete_after=4)
         await close_ticket(
             member=owner,
             guild=ctx.guild,
