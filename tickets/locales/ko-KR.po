@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-09-10 11:41-0400\n"
-"PO-Revision-Date: 2023-09-10 15:46\n"
+"POT-Creation-Date: 2023-10-10 15:00-0400\n"
+"PO-Revision-Date: 2023-10-10 19:12\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -33,15 +33,15 @@ msgstr "지원 티켓 시스템의 다중 패널 기능    "
 msgid "No data to delete"
 msgstr "삭제할 데이터가 없습니다"
 
-#: tickets.py:328
+#: tickets.py:327
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr "20분 이내에 이 티켓에 응답하지 않으면 자동으로 티켓이 닫힙니다."
 
-#: tickets.py:344
+#: tickets.py:343
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr "(자동 종료) 응답이 없는 티켓을 열었습니다 "
 
-#: tickets.py:393
+#: tickets.py:389
 msgid "User left guild(Auto-Close)"
 msgstr "길드를 떠난 사용자(자동 폐쇄)"
 
@@ -101,31 +101,31 @@ msgstr "파일이 업로드되었습니다: "
 msgid "There are no tickets stored in the database."
 msgstr "데이터베이스에 저장된 티켓이 없습니다."
 
-#: utils.py:301
+#: utils.py:307
 msgid "ticket"
 msgstr "티켓"
 
-#: utils.py:301
+#: utils.py:307
 msgid "tickets"
 msgstr "티켓"
 
-#: utils.py:302
+#: utils.py:309
 msgid "Pruned `{}` invalid {}"
 msgstr "잘린 `{}` 잘못된 {}"
 
-#: utils.py:305
+#: utils.py:312
 msgid "There are no tickets to prune"
 msgstr "가지 치기 티켓이 없습니다"
 
-#: utils.py:315
+#: utils.py:322
 msgid "Ticket Overview"
 msgstr "티켓 개요"
 
-#: utils.py:340
+#: utils.py:347
 msgid "There are no active tickets."
 msgstr "활성 티켓이 없습니다."
 
-#: utils.py:366
+#: utils.py:373
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
@@ -153,80 +153,80 @@ msgstr "티켓을 닫습니다"
 msgid "Reason for closing"
 msgstr "폐쇄 이유"
 
-#: views.py:174
+#: views.py:172
 msgid "You do not have permissions to close this ticket"
 msgstr "이 티켓을 닫을 수 있는 권한이 없습니다"
 
-#: views.py:186 views.py:188
+#: views.py:184 views.py:186
 msgid "Closing..."
 msgstr "마감..."
 
-#: views.py:259
+#: views.py:255
 msgid "You been blacklisted from creating tickets!"
 msgstr "티켓 생성이 금지되었습니다!"
 
-#: views.py:265
+#: views.py:261
 msgid "You have a role that has been blacklisted from creating tickets!"
 msgstr "티켓을 만들 수 없도록 블랙리스트에 등록된 역할이 있습니다!"
 
-#: views.py:277
+#: views.py:271
 msgid "You must have one of the following roles to open this ticket: "
 msgstr "이 티켓을 열려면 다음 역할 중 하나가 있어야 합니다: "
 
-#: views.py:288
-msgid "You have the maximum amount of tickets opened already!"
-msgstr "이미 최대 티켓 수량을 초과했습니다!"
+#: views.py:283
+msgid "You have the maximum amount of tickets opened already!{}"
+msgstr ""
 
-#: views.py:296
+#: views.py:291
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
 msgstr "이 지원 패널의 카테고리를 찾을 수 없습니다!\n"
 "관리자에게 문의하세요!"
 
-#: views.py:314
+#: views.py:306
 msgid "Submission Info"
 msgstr "제출 정보"
 
-#: views.py:332
+#: views.py:324
 msgid "Unanswered"
 msgstr "답변 없음"
 
-#: views.py:421
+#: views.py:413
 msgid "{} ticket for {}"
 msgstr "{} 티켓에 대한 {}"
 
-#: views.py:445
+#: views.py:437
 msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
 msgstr "티켓을 만드는 데 필요한 권한이 없습니다. 관리자에게 문의하여 권한을 수정할 수 있도록 해주세요."
 
-#: views.py:457
+#: views.py:449
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
 msgstr "티켓을 준비하는 동안 오류가 발생했습니다. 관리자에게 문의하세요! {}"
 
-#: views.py:471
+#: views.py:461
 msgid "Welcome to your ticket channel "
 msgstr "티켓 채널에 오신 것을 환영합니다 "
 
-#: views.py:473
+#: views.py:463
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
 msgstr "\n"
 "사용자 또는 관리자는 `{}close` 명령을 사용하여 이를 닫을 수 있습니다"
 
-#: views.py:525
+#: views.py:513
 msgid "Ticket form questions"
 msgstr "티켓 양식 질문"
 
-#: views.py:528
+#: views.py:516
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
 msgstr "응답 메시지를 고정하려고 했는데 메시지 관리 권한이 없습니다!"
 
-#: views.py:533
+#: views.py:519
 msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
 msgstr "티켓 채널이 생성되었습니다. **[여기를 클릭하세요]({})**"
 
-#: views.py:551
+#: views.py:541
 msgid "`Created By: `{user}\n"
 "`User ID:    `{userid}\n"
 "`Opened:     `{timestamp}\n"
@@ -240,27 +240,27 @@ msgstr "`작성자: `{user}\n"
 "`패널 이름: `{panelname}\n"
 "**[클릭하여 이동!]({jumpurl})**"
 
-#: views.py:560
+#: views.py:550
 msgid "Ticket Opened"
 msgstr "티켓이 열렸습니다"
 
-#: views.py:637
+#: views.py:627
 msgid "You have already been added to the ticket **{}**!"
 msgstr "이미 티켓에 추가되었습니다 **{}**!"
 
-#: views.py:643
+#: views.py:633
 msgid "The maximum amount of staff have claimed this ticket!"
 msgstr ""
 
-#: views.py:654
+#: views.py:644
 msgid "You already have access to the ticket **{}**!"
 msgstr "이미 **{}** 티켓에 액세스할 수 있습니다!"
 
-#: views.py:659
+#: views.py:649
 msgid "{} was added to the ticket"
 msgstr "티켓에 {}이 추가되었습니다"
 
-#: views.py:664
+#: views.py:654
 msgid "You have been added to the ticket **{}**"
 msgstr "티켓에 추가되었습니다 **{}**"
 
