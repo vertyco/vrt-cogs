@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-09-10 11:41-0400\n"
-"PO-Revision-Date: 2023-09-10 15:46\n"
+"POT-Creation-Date: 2023-10-10 15:00-0400\n"
+"PO-Revision-Date: 2023-10-10 19:12\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -722,10 +722,6 @@ msgstr "`Neden Modal:   `"
 msgid "`Max Claims:     `"
 msgstr ""
 
-#: commands\admin.py:872
-msgid "Panel: "
-msgstr "Panel: "
-
 #: commands\admin.py:877
 msgid "Panel Roles(Mention)"
 msgstr "Panel Rolleri (Mansiyon)"
@@ -1226,32 +1222,36 @@ msgstr "Yerleştirme gönderilemedi!\n"
 msgid "Add a user to your ticket"
 msgstr "Biletinize bir kullanıcı ekleyin"
 
-#: commands\base.py:32 commands\base.py:73
+#: commands\base.py:31 commands\base.py:75
 msgid "This is not a ticket channel, or it has been removed from config"
 msgstr "Bu bir bilet kanalı değildir veya yapılandırmadan kaldırılmıştır"
 
-#: commands\base.py:54
+#: commands\base.py:52
 msgid "You do not have permissions to add users to this ticket"
 msgstr "Bu bilete kullanıcı eklemek için izniniz yok"
 
-#: commands\base.py:61
+#: commands\base.py:62
+msgid "Failed to add user to ticket: {}"
+msgstr ""
+
+#: commands\base.py:64
 msgid "has been added to this ticket!"
 msgstr "bu bilete eklendi!"
 
-#: commands\base.py:67
+#: commands\base.py:70
 #, docstring
 msgid "Rename your ticket channel"
 msgstr "Bilet kanalınızı yeniden adlandırın"
 
-#: commands\base.py:94
+#: commands\base.py:95
 msgid "You do not have permissions to rename this ticket"
 msgstr "Bu bileti yeniden adlandırmak için izniniz yok"
 
-#: commands\base.py:98
+#: commands\base.py:99
 msgid "Ticket has been renamed"
 msgstr "Biletin adı değiştirildi"
 
-#: commands\base.py:106
+#: commands\base.py:107
 #, docstring
 msgid "\n"
 "        Close your ticket\n\n"
@@ -1269,19 +1269,19 @@ msgstr "\n"
 "        `[p]close 1h` - neden belirtilmeden 1 saat içinde kapatılır\n"
 "        `[p]close 1m thanks for helping!` - \"yardımınız için teşekkürler!\" nedeniyle 1 dakika içinde kapatılır "
 
-#: commands\base.py:120
-msgid "Cannot find the owner of this ticket! Maybe it was removed from config?"
-msgstr "Bu biletin sahibini bulamıyorum! Belki yapılandırmadan kaldırılmıştır?"
+#: commands\base.py:121
+msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
+msgstr ""
 
-#: commands\base.py:127
+#: commands\base.py:128
 msgid "You do not have permissions to close this ticket"
 msgstr "Bu bileti kapatmak için izniniz yok"
 
-#: commands\base.py:145
+#: commands\base.py:146
 msgid "This ticket will close {}"
 msgstr "Bu bilet kapanacak {}"
 
-#: commands\base.py:153
+#: commands\base.py:154
 msgid "Closing cancelled!"
 msgstr "Kapanış iptal edildi!"
 
