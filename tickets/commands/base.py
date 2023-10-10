@@ -117,7 +117,11 @@ class BaseCommands(MixinMeta):
         opened = conf["opened"]
         owner_id = get_ticket_owner(opened, str(ctx.channel.id))
         if not owner_id:
-            return await ctx.send(_("Cannot find the owner of this ticket! " "Maybe it was removed from config?"))
+            return await ctx.send(
+                _(
+                    "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
+                )
+            )
 
         user_can_close = await can_close(self.bot, ctx.guild, ctx.channel, ctx.author, owner_id, conf)
         if not user_can_close:
