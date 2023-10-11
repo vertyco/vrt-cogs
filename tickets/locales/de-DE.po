@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-10 19:12\n"
+"POT-Creation-Date: 2023-10-11 19:12-0400\n"
+"PO-Revision-Date: 2023-10-11 23:29\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 13\n"
 "Language: de_DE\n"
 
-#: menu.py:65 views.py:76
+#: menu.py:65 views.py:75
 msgid "You are not allowed to interact with this button."
 msgstr "Es ist nicht erlaubt, mit dieser Schaltfläche zu interagieren."
 
@@ -141,65 +141,69 @@ msgstr "Aktualisiere die Übersicht der aktiven Tickets\n\n"
 "    Rückgabe:\n"
 "        int: Nachrichten-ID des Übersichtsfensters    "
 
-#: views.py:38
+#: views.py:37
 msgid "cancel"
 msgstr "kündigen"
 
-#: views.py:130
+#: views.py:129
 msgid "Closing your ticket"
 msgstr "Ihr Ticket schließen"
 
-#: views.py:132
+#: views.py:131
 msgid "Reason for closing"
 msgstr "Grund für die Schließung"
 
-#: views.py:172
+#: views.py:171
 msgid "You do not have permissions to close this ticket"
 msgstr "Sie haben keine Berechtigung, dieses Ticket zu schließen"
 
-#: views.py:184 views.py:186
+#: views.py:183 views.py:185
 msgid "Closing..."
 msgstr "Schließen..."
 
-#: views.py:255
+#: views.py:254
 msgid "You been blacklisted from creating tickets!"
 msgstr "Sie wurden von der Erstellung von Tickets ausgeschlossen!"
 
-#: views.py:261
+#: views.py:260
 msgid "You have a role that has been blacklisted from creating tickets!"
 msgstr "Sie haben eine Rolle, die auf der schwarzen Liste für die Erstellung von Tickets steht!"
 
-#: views.py:271
+#: views.py:270
 msgid "You must have one of the following roles to open this ticket: "
 msgstr "Sie müssen eine der folgenden Rollen haben, um dieses Ticket zu öffnen: "
 
-#: views.py:283
+#: views.py:282
 msgid "You have the maximum amount of tickets opened already!{}"
 msgstr ""
 
-#: views.py:291
+#: views.py:290
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
 msgstr "Die Kategorie für dieses Support-Panel kann nicht gefunden werden!\n"
 "Bitte kontaktieren Sie einen Administrator!"
 
-#: views.py:306
+#: views.py:305
 msgid "Submission Info"
 msgstr "Informationen zur Einreichung"
 
-#: views.py:324
+#: views.py:323
 msgid "Unanswered"
 msgstr "Unbeantwortet"
 
-#: views.py:413
+#: views.py:341
+msgid "Your ticket is being created, one moment..."
+msgstr ""
+
+#: views.py:419
 msgid "{} ticket for {}"
 msgstr "{} Ticket für {}"
 
-#: views.py:437
+#: views.py:443
 msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
 msgstr "Ich habe nicht die erforderlichen Berechtigungen, um ein Ticket für Sie zu erstellen. Bitte kontaktieren Sie einen Administrator, damit er meine Berechtigungen korrigieren kann."
 
-#: views.py:449
+#: views.py:452
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
 msgstr "Bei der Vorbereitung Ihres Tickets ist ein Fehler aufgetreten, bitte kontaktieren Sie einen Administrator! {}"
@@ -218,15 +222,15 @@ msgstr "\n"
 msgid "Ticket form questions"
 msgstr "Fragen zum Ticketformular"
 
-#: views.py:516
+#: views.py:515
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
 msgstr "Ich habe versucht, die Antwortnachricht anzuheften, aber ich habe nicht die Berechtigung, Nachrichten zu verwalten!"
 
-#: views.py:519
-msgid "Your ticket channel has been created, **[CLICK HERE]({})**"
-msgstr "Ihr Ticket-Kanal wurde erstellt, **[HIER KLICKEN]({})**"
+#: views.py:518
+msgid "Your ticket has been created! {}"
+msgstr ""
 
-#: views.py:541
+#: views.py:536
 msgid "`Created By: `{user}\n"
 "`User ID:    `{userid}\n"
 "`Opened:     `{timestamp}\n"
@@ -240,27 +244,27 @@ msgstr "`Erstellt von: `{user}\n"
 "`Panel-Name: `{panelname}\n"
 "**[Hier klicken, um zu springen!]({jumpurl})**"
 
-#: views.py:550
+#: views.py:545
 msgid "Ticket Opened"
 msgstr "Ticket geöffnet"
 
-#: views.py:627
+#: views.py:622
 msgid "You have already been added to the ticket **{}**!"
 msgstr "Sie sind bereits zum Ticket **{}** hinzugefügt worden!"
 
-#: views.py:633
+#: views.py:628
 msgid "The maximum amount of staff have claimed this ticket!"
 msgstr ""
 
-#: views.py:644
+#: views.py:639
 msgid "You already have access to the ticket **{}**!"
 msgstr "Sie haben bereits Zugriff auf das Ticket **{}**!"
 
-#: views.py:649
+#: views.py:644
 msgid "{} was added to the ticket"
 msgstr "{} wurde dem Ticket hinzugefügt"
 
-#: views.py:654
+#: views.py:649
 msgid "You have been added to the ticket **{}**"
 msgstr "Sie wurden zum Ticket **{}** hinzugefügt"
 
