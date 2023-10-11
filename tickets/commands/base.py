@@ -114,8 +114,7 @@ class BaseCommands(MixinMeta):
         `[p]close 1m thanks for helping!` - closes in 1 minute with reason "thanks for helping!"
         """
         conf = await self.config.guild(ctx.guild).all()
-        opened = conf["opened"]
-        owner_id = get_ticket_owner(opened, str(ctx.channel.id))
+        owner_id = get_ticket_owner(conf["opened"], str(ctx.channel.id))
         if not owner_id:
             return await ctx.send(
                 _(
