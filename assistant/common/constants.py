@@ -207,7 +207,7 @@ GET_CHANNEL_NAMED = {
 }
 GET_SEARCH_URL = {
     "name": "make_search_url",
-    "description": "Get a link to search google or youtube",
+    "description": "Generate a link to search google or youtube, use this if you aren't sure of the answer to help the user find it themselves",
     "parameters": {
         "type": "object",
         "properties": {
