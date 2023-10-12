@@ -205,3 +205,21 @@ GET_CHANNEL_NAMED = {
         "required": ["channel_name"],
     },
 }
+GET_SEARCH_URL = {
+    "name": "make_search_url",
+    "description": "Get a link to search google or youtube",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "site": {
+                "type": "string",
+                "description": "the website to search, can be 'youtube' or 'google'",
+            },
+            "search_query": {
+                "type": "string",
+                "description": "what to search for",
+            },
+        },
+        "required": ["site", "search_query"],
+    },
+}
