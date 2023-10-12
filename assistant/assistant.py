@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import string
 from multiprocessing.pool import Pool
 from time import perf_counter
 from typing import Callable, Dict, List, Optional, Union
@@ -59,7 +60,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.16.2"
+    __version__ = "4.16.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -324,6 +325,23 @@ class Assistant(
             ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
             return f"the name of the {ctype} channel with ID {channel_id} is {channel.name}"
         return "a channel with that ID could not be found!"
+
+    async def make_search_url(
+        self,
+        site: str,
+        search_query: str,
+        *args,
+        **kwargs,
+    ):
+        site = site.lower()
+        chars = string.ascii_letters + string.hexdigits
+        for char in search_query:
+            if char not in chars:
+                search_query = search_query.replace(char, "")
+        search_query = search_query.replace(" ", "+")
+        if site == "youtube":
+            return f"https://www.youtube.com/results?search_query={search_query}"
+        return f"https://www.google.com/search?q={search_query}"
 
     async def get_channel_id_from_name(
         self,
