@@ -60,7 +60,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.16.3"
+    __version__ = "4.16.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -326,6 +326,36 @@ class Assistant(
             return f"the name of the {ctype} channel with ID {channel_id} is {channel.name}"
         return "a channel with that ID could not be found!"
 
+    async def get_channel_id_from_name(
+        self,
+        guild: discord.Guild,
+        channel_name: str,
+        *args,
+        **kwargs,
+    ):
+        def clean_name(name: str) -> str:
+            chars = string.ascii_letters + string.hexdigits
+            for char in name:
+                if char not in chars:
+                    name = name.replace(char, "")
+            return name
+
+        def match_channels() -> tuple:
+            channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
+            scores = [(i, fuzz.ratio(clean_name(channel_name.lower()), clean_name(i.name.lower()))) for i in channels]
+            sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+            return sorted_scores[0]
+
+        channel, score = await asyncio.to_thread(match_channels)
+        if score < 50:
+            return "could not find a channel that closely matches that name"
+        ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
+        if clean_name(channel.name) == clean_name(channel_name):
+            return f"The ID for the {ctype} channel named {channel_name} is {channel.id}"
+        return (
+            f"found {ctype} channel ID {channel.id} for {channel_name} with a relatedness score of {round(score)}/100"
+        )
+
     async def make_search_url(
         self,
         site: str,
@@ -342,27 +372,6 @@ class Assistant(
         if site == "youtube":
             return f"https://www.youtube.com/results?search_query={search_query}"
         return f"https://www.google.com/search?q={search_query}"
-
-    async def get_channel_id_from_name(
-        self,
-        guild: discord.Guild,
-        channel_name: str,
-        *args,
-        **kwargs,
-    ):
-        def match_channels() -> tuple:
-            channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
-            scores = [(i, fuzz.ratio(channel_name.lower(), i.name.lower())) for i in channels]
-            sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
-            return sorted_scores[0]
-
-        channel, score = await asyncio.to_thread(match_channels)
-        if score < 50:
-            return "could not find a channel that matches that name"
-        ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
-        return (
-            f"found {ctype} channel ID {channel.id} for {channel_name} with a relatedness score of {round(score)}/100"
-        )
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
