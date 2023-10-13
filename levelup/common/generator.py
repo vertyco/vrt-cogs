@@ -966,7 +966,8 @@ class Generator(MixinMeta, ABC):
                 txt = file.name
                 for ext in ext_replace:
                     txt = txt.replace(ext, "")
-                draw.text((10, 10), txt, font=ImageFont.truetype(self.font, 100))
+                # Add a black outline to the text       
+                draw.text((10, 10), txt, font=ImageFont.truetype(self.font, 100), fill=(255, 255, 255), stroke_width=5, stroke_fill="#000000")
                 if not img:
                     log.error(f"Failed to load image for default background '{file}`")
                     continue
