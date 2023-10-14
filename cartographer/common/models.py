@@ -721,7 +721,7 @@ class GuildBackup(FriendlyBase):
             reason=reason,
             name=self.name,
             description=self.description,
-            afk_channel=get_named_channel(self.afk_channel_id or 0),
+            afk_channel=get_named_channel(guild, self.afk_channel_id or 0),
             afk_timeout=self.afk_timeout,
             verification_level=verification,
             default_notifications=NotificationLevel(self.default_notifications),
