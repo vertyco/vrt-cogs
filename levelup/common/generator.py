@@ -904,7 +904,7 @@ class Generator(MixinMeta, ABC):
             profile = Image.open(profile_bytes)
         else:
             profile = Image.open(self.default_pfp)
-        profile = profile.convert("RGBA").resize(pfpsize, Image.Resampling.NEAREST)
+        profile = profile.convert("RGBA").resize(pfpsize, Image.Resampling.LANCZOS)
 
         # Create mask for profile image crop
         mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
@@ -935,7 +935,7 @@ class Generator(MixinMeta, ABC):
             stroke_fill=fillcolor,
         )
         # Finally resize the image
-        final = final.resize(card_size, Image.Resampling.NEAREST)
+        final = final.resize(card_size, Image.Resampling.LANCZOS)
         return final
 
     def get_all_fonts(self) -> Image.Image:
@@ -966,8 +966,15 @@ class Generator(MixinMeta, ABC):
                 txt = file.name
                 for ext in ext_replace:
                     txt = txt.replace(ext, "")
-                # Add a black outline to the text       
-                draw.text((10, 10), txt, font=ImageFont.truetype(self.font, 100), fill=(255, 255, 255), stroke_width=5, stroke_fill="#000000")
+                # Add a black outline to the text
+                draw.text(
+                    (10, 10),
+                    txt,
+                    font=ImageFont.truetype(self.font, 100),
+                    fill=(255, 255, 255),
+                    stroke_width=5,
+                    stroke_fill="#000000",
+                )
                 if not img:
                     log.error(f"Failed to load image for default background '{file}`")
                     continue
