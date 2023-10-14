@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-09-10 11:41-0400\n"
-"PO-Revision-Date: 2023-09-10 15:46\n"
+"POT-Creation-Date: 2023-10-10 15:00-0400\n"
+"PO-Revision-Date: 2023-10-10 19:12\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -725,10 +725,6 @@ msgstr "`Raison modale:`"
 msgid "`Max Claims:     `"
 msgstr ""
 
-#: commands\admin.py:872
-msgid "Panel: "
-msgstr "Panneau: "
-
 #: commands\admin.py:877
 msgid "Panel Roles(Mention)"
 msgstr "Rôles de panneau (Mention)"
@@ -1229,32 +1225,36 @@ msgstr "Échec de l'envoi de l'intégration!\n"
 msgid "Add a user to your ticket"
 msgstr "Ajoutez un utilisateur à votre billet"
 
-#: commands\base.py:32 commands\base.py:73
+#: commands\base.py:31 commands\base.py:75
 msgid "This is not a ticket channel, or it has been removed from config"
 msgstr "Ce n'est pas un canal de ticket, ou il a été supprimé de la configuration"
 
-#: commands\base.py:54
+#: commands\base.py:52
 msgid "You do not have permissions to add users to this ticket"
 msgstr "Vous n'avez pas d'autorisations pour ajouter des utilisateurs à ce billet"
 
-#: commands\base.py:61
+#: commands\base.py:62
+msgid "Failed to add user to ticket: {}"
+msgstr ""
+
+#: commands\base.py:64
 msgid "has been added to this ticket!"
 msgstr "a été ajouté à ce billet!"
 
-#: commands\base.py:67
+#: commands\base.py:70
 #, docstring
 msgid "Rename your ticket channel"
 msgstr "Renommez votre canal de ticket"
 
-#: commands\base.py:94
+#: commands\base.py:95
 msgid "You do not have permissions to rename this ticket"
 msgstr "Vous n'avez pas d'autorisations pour renommer ce billet"
 
-#: commands\base.py:98
+#: commands\base.py:99
 msgid "Ticket has been renamed"
 msgstr "Le billet a été renommé"
 
-#: commands\base.py:106
+#: commands\base.py:107
 #, docstring
 msgid "\n"
 "        Close your ticket\n\n"
@@ -1272,19 +1272,19 @@ msgstr "\n"
 "        `[p]close 1h` - ferme dans 1 heure sans raison attachée\n"
 "        `[p]close 1m merci d'avoir aidé!` - ferme dans 1 minute avec la raison \"merci d'avoir aidé!\" "
 
-#: commands\base.py:120
-msgid "Cannot find the owner of this ticket! Maybe it was removed from config?"
-msgstr "Impossible de trouver le propriétaire de ce billet ! Peut-être qu'il a été supprimé de la configuration ?"
+#: commands\base.py:121
+msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
+msgstr ""
 
-#: commands\base.py:127
+#: commands\base.py:128
 msgid "You do not have permissions to close this ticket"
 msgstr "Vous n'avez pas d'autorisations pour fermer ce billet"
 
-#: commands\base.py:145
+#: commands\base.py:146
 msgid "This ticket will close {}"
 msgstr "Ce billet se fermera {}"
 
-#: commands\base.py:153
+#: commands\base.py:154
 msgid "Closing cancelled!"
 msgstr "Clôture annulée!"
 
