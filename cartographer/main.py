@@ -105,6 +105,7 @@ class Cartographer(commands.Cog):
     @commands.bot_has_permissions(administrator=True)
     @commands.guild_only()
     async def cartographer_menu(self, ctx: commands.Context):
+        """Open the Backup/Restore menu"""
         if ctx.guild.id in self.db.ignored_guilds:
             txt = _("This server is in the ingored list!")
             return await ctx.send(txt)
