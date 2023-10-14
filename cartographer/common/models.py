@@ -54,6 +54,7 @@ class FriendlyBase(BaseModel):
 class Overwrites(FriendlyBase):
     type: int  # 0 for role, 1 for member
     id: int
+    role_name: str | None = None
     values: dict[str, bool] = {}
 
     @classmethod
@@ -65,13 +66,14 @@ class Overwrites(FriendlyBase):
                     type=0 if isinstance(role_or_mem_obj, discord.Role) else 1,
                     id=role_or_mem_obj.id,
                     values=overwrite._values,
+                    role_name=role_or_mem_obj.name if isinstance(role_or_mem_obj, discord.Role) else None,
                 )
             )
         return overwrites
 
     def get(self, guild: discord.Guild) -> discord.Member | discord.Role | None:
         if self.type == 0:
-            return guild.get_role(self.id)
+            return get_named_role(guild, self.role_name)
         else:
             return guild.get_member(self.id)
 
@@ -140,7 +142,7 @@ class Role(FriendlyBase):
         return any(skip)
 
     async def restore(self, guild: discord.Guild) -> discord.Role | None:
-        if guild.get_role(self.id):
+        if get_named_role(guild, self.name):
             return
         if self.leave_alone():
             return
@@ -170,7 +172,7 @@ class Role(FriendlyBase):
         return role
 
     async def update(self, guild: discord.Guild) -> None:
-        if role := guild.get_role(self.id):
+        if role := get_named_role(guild, self.name):
             skip = [
                 role.name == self.name,
                 str(role.color) == str(self.color),
@@ -207,7 +209,7 @@ class Role(FriendlyBase):
                 position=self.position,
                 permissions=perms,
                 mentionable=self.mentionable,
-                display_icon=base64.b64encode(self.icon).decode() if self.icon else None,
+                display_icon=base64.b64decode(self.icon) if self.icon else None,
             )
 
 
@@ -541,7 +543,7 @@ class VoiceChannel(FriendlyBase):
             channel: discord.VoiceChannel = channel
             coro = channel.edit(
                 name=self.name,
-                category=guild.get_channel(self.category),
+                category=get_named_channel(self.category),
                 position=self.position,
                 user_limit=self.user_limit,
                 bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
@@ -629,7 +631,7 @@ class GuildBackup(FriendlyBase):
         all_objs = self.categories + self.text_channels + self.voice_channels + self.forums
 
         if remove_old:
-            backup_ids = [i.id for i in self.roles]
+            backup_roles = [i.name for i in self.roles]
             for role in guild.roles:
                 skip = [
                     not role.is_assignable(),
@@ -641,27 +643,27 @@ class GuildBackup(FriendlyBase):
                 ]
                 if any(skip):
                     continue
-                if role.id not in backup_ids:
+                if role.name not in backup_roles:
                     await role.delete(reason=reason + remove)
 
             # Ensure consistency of all channels
-            backup_ids = [i.id for i in all_objs]
+            backup_names = [i.name for i in all_objs]
             for chan in guild.channels:
                 if chan.id == current_channel.id:
                     continue
-                if chan.id not in backup_ids:
+                if chan.name not in backup_names:
                     try:
                         await chan.delete(reason=reason + remove)
                     except discord.HTTPException as e:
                         log.debug(f"Failed to delete channel {chan.name}", exc_info=e)
             for chan in guild.categories:
-                if chan.id not in backup_ids:
+                if chan.name not in backup_names:
                     try:
                         await chan.delete(reason=reason + remove)
                     except discord.HTTPException as e:
                         log.debug(f"Failed to delete channel {chan.name}", exc_info=e)
             for chan in guild.forums:
-                if chan.id not in backup_ids:
+                if chan.name not in backup_names:
                     try:
                         await chan.delete(reason=reason + remove)
                     except discord.HTTPException as e:
@@ -719,7 +721,7 @@ class GuildBackup(FriendlyBase):
             reason=reason,
             name=self.name,
             description=self.description,
-            afk_channel=guild.get_channel(self.afk_channel_id or 0),
+            afk_channel=get_named_channel(self.afk_channel_id or 0),
             afk_timeout=self.afk_timeout,
             verification_level=verification,
             default_notifications=NotificationLevel(self.default_notifications),
