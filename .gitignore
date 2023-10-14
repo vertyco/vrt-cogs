@@ -169,3 +169,5 @@ compress.py
 
 # Temporary
 backups/
+cartographer/
+orchestrator/
