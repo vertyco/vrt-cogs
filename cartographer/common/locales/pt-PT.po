@@ -1,0 +1,180 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2023-10-14 16:16-0400\n"
+"PO-Revision-Date: 2023-10-14 20:27\n"
+"Last-Translator: \n"
+"Language-Team: Portuguese\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: pt-PT\n"
+"X-Crowdin-File: /main/cartographer/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 78\n"
+"Language: pt_PT\n"
+
+#: common\formatting.py:11
+msgid "`Created:        `{}\n"
+"`Name:           `{}\n"
+"`AFK Channel:    `{}\n"
+"`AFK Timeout:    `{}\n"
+"`Verification:   `{}\n"
+"`Notifications:  `{}\n"
+"`Locale:         `{}\n"
+"`Role Count:     `{}\n"
+"`Members Saved:  `{}\n"
+"`Categories:     `{}\n"
+"`Text Channels:  `{}\n"
+"`Voice Channels: `{}\n"
+"`Forums:         `{}\n"
+msgstr ""
+
+#: common\formatting.py:45
+msgid "Controls"
+msgstr ""
+
+#: common\formatting.py:46
+msgid "- Backup Current Server: 📥\n"
+"- Restore Here: 🔄\n"
+"- Switch Servers: 🔍\n"
+"- Set AutoBackup Interval: ⌛\n"
+"- Delete Backup: 🗑️\n"
+msgstr ""
+
+#: common\formatting.py:53
+msgid "Settings"
+msgstr ""
+
+#: common\formatting.py:54
+msgid "- Auto Backup Interval Hours: {}\n"
+"- Last Backup: {}"
+msgstr ""
+
+#: common\formatting.py:57
+msgid "Cartographer Backups for {}"
+msgstr ""
+
+#: common\formatting.py:64
+msgid "Page {}"
+msgstr ""
+
+#: common\formatting.py:67
+msgid "There are no backups for this server yet!"
+msgstr ""
+
+#: common\models.py:134 common\models.py:160
+msgid "Restored from backup"
+msgstr ""
+
+#: common\models.py:594
+msgid "Cartographer Restore"
+msgstr ""
+
+#: common\models.py:595
+msgid " (Removal)"
+msgstr ""
+
+#: common\views.py:44
+msgid "That is not a number!"
+msgstr ""
+
+#: common\views.py:55
+msgid "Confirmation"
+msgstr ""
+
+#: common\views.py:57
+msgid "Are you SURE?"
+msgstr ""
+
+#: common\views.py:60
+msgid "THIS CANNOT BE UNDONE!"
+msgstr ""
+
+#: common\views.py:64
+msgid "Remove Old"
+msgstr ""
+
+#: common\views.py:67
+msgid "removes unsaved channels/roles"
+msgstr ""
+
+#: common\views.py:72
+msgid "response must be a string!"
+msgstr ""
+
+#: common\views.py:92
+msgid "Close"
+msgstr ""
+
+#: common\views.py:96
+msgid "This isn't your menu!"
+msgstr ""
+
+#: common\views.py:137
+msgid "Backing up {}!"
+msgstr ""
+
+#: common\views.py:141
+msgid "Backup created!"
+msgstr ""
+
+#: common\views.py:149
+msgid "No backups to restore!"
+msgstr ""
+
+#: common\views.py:160
+msgid "Your backup is being restored!"
+msgstr ""
+
+#: common\views.py:163
+msgid "Restore has been cancelled!"
+msgstr ""
+
+#: common\views.py:168
+msgid "Switch Servers"
+msgstr ""
+
+#: common\views.py:168
+msgid "Server ID"
+msgstr ""
+
+#: common\views.py:168
+msgid "Enter the ID of the server"
+msgstr ""
+
+#: common\views.py:175
+msgid "You can only switch to servers that you own!"
+msgstr ""
+
+#: common\views.py:185
+msgid "Auto backups have been disabled by the bot owner!"
+msgstr ""
+
+#: common\views.py:187
+msgid "Auto Backup Interval"
+msgstr ""
+
+#: common\views.py:187
+msgid "Interval Hours"
+msgstr ""
+
+#: common\views.py:187
+msgid "Hours in-between backups"
+msgstr ""
+
+#: common\views.py:193
+msgid "Auto-backup interval hours has been set to {}"
+msgstr ""
+
+#: common\views.py:205
+msgid "No backups to delete!"
+msgstr ""
+
+#: common\views.py:211
+msgid "Backup deleted!"
+msgstr ""
+

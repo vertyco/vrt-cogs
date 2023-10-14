@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-09-10 11:41-0400\n"
-"PO-Revision-Date: 2023-09-10 15:46\n"
+"POT-Creation-Date: 2023-10-10 15:00-0400\n"
+"PO-Revision-Date: 2023-10-10 19:12\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -717,10 +717,6 @@ msgstr "`이유 모달:   `"
 msgid "`Max Claims:     `"
 msgstr ""
 
-#: commands\admin.py:872
-msgid "Panel: "
-msgstr "패널: "
-
 #: commands\admin.py:877
 msgid "Panel Roles(Mention)"
 msgstr "패널 역할(언급)"
@@ -1211,32 +1207,36 @@ msgstr "임베드 전송에 실패했습니다!\n"
 msgid "Add a user to your ticket"
 msgstr "티켓에 사용자를 추가하세요"
 
-#: commands\base.py:32 commands\base.py:73
+#: commands\base.py:31 commands\base.py:75
 msgid "This is not a ticket channel, or it has been removed from config"
 msgstr "티켓 채널이 아니거나 구성에서 제거되었습니다"
 
-#: commands\base.py:54
+#: commands\base.py:52
 msgid "You do not have permissions to add users to this ticket"
 msgstr "이 티켓에 사용자를 추가할 수 있는 권한이 없습니다"
 
-#: commands\base.py:61
+#: commands\base.py:62
+msgid "Failed to add user to ticket: {}"
+msgstr ""
+
+#: commands\base.py:64
 msgid "has been added to this ticket!"
 msgstr "이 티켓에 추가되었습니다!"
 
-#: commands\base.py:67
+#: commands\base.py:70
 #, docstring
 msgid "Rename your ticket channel"
 msgstr "티켓 채널의 이름을 바꿔주세요"
 
-#: commands\base.py:94
+#: commands\base.py:95
 msgid "You do not have permissions to rename this ticket"
 msgstr "이 티켓의 이름을 바꿀 수 있는 권한이 없습니다"
 
-#: commands\base.py:98
+#: commands\base.py:99
 msgid "Ticket has been renamed"
 msgstr "티켓 이름이 변경되었습니다"
 
-#: commands\base.py:106
+#: commands\base.py:107
 #, docstring
 msgid "\n"
 "        Close your ticket\n\n"
@@ -1253,19 +1253,19 @@ msgstr "티켓을 닫으세요\n\n"
 "`[p]close 1h` - 이유 없이 1시간 후에 티켓을 닫습니다\n"
 "`[p]close 1m thanks for helping!` - \"도와주셔서 감사합니다!\"라는 이유와 함께 1분 후에 티켓을 닫습니다        "
 
-#: commands\base.py:120
-msgid "Cannot find the owner of this ticket! Maybe it was removed from config?"
-msgstr "이 티켓의 소유자를 찾을 수 없습니다! 구성에서 제거된 것일까요?"
+#: commands\base.py:121
+msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
+msgstr ""
 
-#: commands\base.py:127
+#: commands\base.py:128
 msgid "You do not have permissions to close this ticket"
 msgstr "이 티켓을 닫을 수 있는 권한이 없습니다"
 
-#: commands\base.py:145
+#: commands\base.py:146
 msgid "This ticket will close {}"
 msgstr "이 티켓은 {}을 종료합니다"
 
-#: commands\base.py:153
+#: commands\base.py:154
 msgid "Closing cancelled!"
 msgstr "마감이 취소되었습니다!"
 
