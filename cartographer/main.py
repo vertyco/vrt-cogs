@@ -30,7 +30,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.4b"
+    __version__ = "0.0.5b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -79,6 +79,7 @@ class Cartographer(commands.Cog):
         if not self.db.allow_auto_backups:
             return
         now = datetime.now().astimezone()
+        save = False
         for guild_id, settings in self.db.configs.items():
             if not settings.auto_backup_interval_hours:
                 continue
@@ -88,12 +89,16 @@ class Cartographer(commands.Cog):
                 continue
             guild = self.bot.get_guild(guild_id)
             if not guild:
+                settings.backups.clear()
                 continue
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
             if delta_hours > settings.auto_backup_interval_hours:
                 await settings.backup(guild)
-
+                save = True
             self.db.cleanup(guild)
+
+        if save:
+            await self.save()
 
     @commands.command(name="cartographer")
     @commands.has_permissions(administrator=True)
