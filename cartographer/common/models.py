@@ -748,7 +748,7 @@ class GuildBackup(FriendlyBase):
 
 class GuildSettings(FriendlyBase):
     backups: list[GuildBackup] = []
-    auto_backup_interval_hours: int = 12
+    auto_backup_interval_hours: int = 0
     last_backup: datetime = Field(default_factory=lambda: datetime.now().astimezone() - timedelta(days=999))
 
     @property
