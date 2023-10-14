@@ -92,7 +92,7 @@ class Role(FriendlyBase):
     is_default: bool
 
     @classmethod
-    def serialize(cls, role: discord.Role):
+    def member_serialize(cls, role: discord.Role):
         return cls(
             id=role.id,
             name=role.name,
@@ -101,7 +101,27 @@ class Role(FriendlyBase):
             position=role.position,
             permissions=role.permissions.value,
             mentionable=role.mentionable,
-            icon=str(role.icon) if role.icon else None,
+            icon=None,
+            is_assignable=role.is_assignable(),
+            is_managed=role.is_bot_managed(),
+            is_integration=role.is_integration(),
+            is_premium=role.is_premium_subscriber(),
+            is_default=role.is_default(),
+        )
+
+    @classmethod
+    async def serialize(cls, role: discord.Role):
+        icon = await role.icon.read() if role.icon else None
+        icon = base64.b64encode(icon).decode() if icon else None
+        return cls(
+            id=role.id,
+            name=role.name,
+            color=role.color.value,
+            hoist=role.hoist,
+            position=role.position,
+            permissions=role.permissions.value,
+            mentionable=role.mentionable,
+            icon=icon,
             is_assignable=role.is_assignable(),
             is_managed=role.is_bot_managed(),
             is_integration=role.is_integration(),
@@ -125,14 +145,27 @@ class Role(FriendlyBase):
         if self.leave_alone():
             return
         log.debug(f"Restoring role {self.name}")
-        role = await guild.create_role(
-            name=self.name,
-            hoist=self.hoist,
-            permissions=discord.Permissions(self.permissions),
-            color=self.color,
-            display_icon=self.icon,
-            reason=_("Restored from backup"),
-        )
+        try:
+            role = await guild.create_role(
+                name=self.name,
+                hoist=self.hoist,
+                permissions=discord.Permissions(self.permissions),
+                color=self.color,
+                display_icon=base64.b64decode(self.icon) if self.icon else None,
+                reason=_("Restored from backup"),
+            )
+        except Exception as e:
+            if "needs more boosts" not in str(e):
+                log.error(f"Failed to create role {self.name}", exc_info=e)
+                return
+            role = await guild.create_role(
+                name=self.name,
+                hoist=self.hoist,
+                permissions=discord.Permissions(self.permissions),
+                color=self.color,
+                reason=_("Restored from backup"),
+            )
+
         self.id = role.id
         return role
 
@@ -174,7 +207,7 @@ class Role(FriendlyBase):
                 position=self.position,
                 permissions=perms,
                 mentionable=self.mentionable,
-                display_icon=self.icon,
+                display_icon=base64.b64encode(self.icon).decode() if self.icon else None,
             )
 
 
@@ -184,7 +217,7 @@ class Member(FriendlyBase):
 
     @classmethod
     def serialize(cls, member: discord.Member):
-        return cls(id=member.id, roles=[Role.serialize(i) for i in member.roles])
+        return cls(id=member.id, roles=[Role.member_serialize(i) for i in member.roles])
 
     async def restore(self, guild: discord.Guild, remove_others: bool = False):
         member = guild.get_member(self.id)
@@ -483,7 +516,7 @@ class VoiceChannel(FriendlyBase):
             name=self.name,
             category=get_named_channel(guild, self.category),
             user_limit=self.user_limit,
-            bitrate=self.bitrate,
+            bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
             overwrites=self.get_overwrites(guild),
             position=0,
         )
@@ -505,12 +538,13 @@ class VoiceChannel(FriendlyBase):
             if all(equal):
                 return
             log.debug(f"Updating voice channel {channel.name}")
+            channel: discord.VoiceChannel = channel
             coro = channel.edit(
                 name=self.name,
                 category=guild.get_channel(self.category),
                 position=self.position,
                 user_limit=self.user_limit,
-                bitrate=self.bitrate,
+                bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
                 overwrites=self.get_overwrites(guild),
             )
             if channel.position == self.position:
@@ -553,8 +587,7 @@ class GuildBackup(FriendlyBase):
         return f"<t:{int(self.created.timestamp())}:R>"
 
     @classmethod
-    def serialize(cls, guild: discord.Guild, banner: bytes | None, icon: bytes | None):
-        roles = [Role.serialize(role) for role in guild.roles]
+    def serialize(cls, guild: discord.Guild, banner: bytes | None, icon: bytes | None, roles: list[Role]):
         members = [Member.serialize(member) for member in guild.members]
         categories = [CategoryChannel.serialize(category) for category in guild.categories]
         text_channels = [TextChannel.serialize(text_channel) for text_channel in guild.text_channels]
@@ -570,7 +603,7 @@ class GuildBackup(FriendlyBase):
             verification_level=guild.verification_level.value,
             default_notifications=guild.default_notifications.value,
             banner=base64.b64encode(banner).decode() if banner else None,
-            icon=base64.b64encode(icon).decode() if banner else None,
+            icon=base64.b64encode(icon).decode() if icon else None,
             preferred_locale=str(guild.preferred_locale),
             rules_channel_id=guild.rules_channel.name if guild.rules_channel else None,
             public_updates_channel=guild.public_updates_channel.name if guild.public_updates_channel else None,
@@ -724,9 +757,10 @@ class GuildSettings(FriendlyBase):
     async def backup(self, guild: discord.Guild) -> None:
         banner = await guild.banner.read() if guild.banner else None
         icon = await guild.icon.read() if guild.icon else None
+        roles = [await Role.serialize(i) for i in guild.roles]
 
         def _backup():
-            return GuildBackup.serialize(guild, banner, icon)
+            return GuildBackup.serialize(guild, banner, icon, roles)
 
         guild_backup = await asyncio.to_thread(_backup)
         self.backups.append(guild_backup)
