@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco" ],
+  "description": "Create backups of your Discord server and restore them easily",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores information about your entire discord server including user IDs.\n**NOTE**\nRestoring backups can be rate-limit intensive, and may take quite a while.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": ["administrator"],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Discord Server Backup/Restore",
+  "tags": ["backup", "backups", "restore", "cartographer"],
+  "type": "COG"
+}
