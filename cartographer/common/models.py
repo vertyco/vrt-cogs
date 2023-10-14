@@ -742,6 +742,9 @@ class GuildBackup(FriendlyBase):
         for obj in all_objs:
             await obj.update(guild)
 
+        txt = _("Server restore has completed successfully!")
+        await current_channel.send(txt)
+
 
 class GuildSettings(FriendlyBase):
     backups: list[GuildBackup] = []
