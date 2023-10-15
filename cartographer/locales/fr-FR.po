@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-14 23:06\n"
+"PO-Revision-Date: 2023-10-15 23:17\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -24,44 +24,49 @@ msgid "\n"
 "    This cog will create a backup of all roles, channels and permission.\n\n"
 "    When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Outils de sauvegarde et de restauration pour les serveurs Discord.\n\n"
+"    Cet outil créera une sauvegarde de tous les rôles, canaux et permissions.\n\n"
+"    Lors de la restauration, il fera de son mieux pour restaurer la sauvegarde aussi fidèlement que possible, certains rôles peuvent ne pas être restaurés en raison d'une hirearchie de position.\n"
+"    "
 
 #: main.py:71
 msgid "Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "Version : {}\n"
+"Auteur : {}"
 
 #: main.py:75
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Pas de données à supprimer"
 
 #: main.py:108
 #, docstring
 msgid "Open the Backup/Restore menu"
-msgstr ""
+msgstr "Ouvrir le menu Sauvegarde/Restauration"
 
 #: main.py:110 main.py:133 main.py:155
 msgid "This server is in the ingored list!"
-msgstr ""
+msgstr "Ce serveur figure dans la liste des serveurs ignorés !"
 
 #: main.py:113 main.py:136 main.py:158
 msgid "This server is not in the allowed list!"
-msgstr ""
+msgstr "Ce serveur ne figure pas dans la liste des serveurs autorisés !"
 
 #: main.py:127
 #, docstring
 msgid "Backup & Restore Tools"
-msgstr ""
+msgstr "Outils de sauvegarde et de restauration"
 
 #: main.py:131
 #, docstring
 msgid "Create a backup of this server"
-msgstr ""
+msgstr "Créer une sauvegarde de ce serveur"
 
 #: main.py:142
 msgid "A backup has been created!"
-msgstr ""
+msgstr "Une sauvegarde a été créée !"
 
 #: main.py:148
 #, docstring
@@ -70,20 +75,24 @@ msgid "\n"
 "        **Arguments**\n"
 "        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Restaurer la dernière sauvegarde de ce serveur\n\n"
+"        **Arguments**\n"
+"        - delete_existing : si True, supprime les canaux/rôles existants qui ne font pas partie de la sauvegarde.\n"
+"        "
 
 #: main.py:164
 msgid "There are no backups for this guild!"
-msgstr ""
+msgstr "Il n'y a pas de sauvegarde pour cette guilde !"
 
 #: main.py:167
 msgid "Server restore is complete!"
-msgstr ""
+msgstr "La restauration du serveur est terminée !"
 
 #: main.py:172
 #, docstring
 msgid "View current global settings"
-msgstr ""
+msgstr "Afficher les paramètres globaux actuels"
 
 #: main.py:176
 msgid "### Global Settings\n"
@@ -92,57 +101,62 @@ msgid "### Global Settings\n"
 "- Allow auto-backups: {}\n"
 "- Ignored servers: {}\n"
 "- Allowed servers: {}\n"
-msgstr ""
+msgstr "### Paramètres globaux\n"
+"- Sauvegardes globales : {}\n"
+"- Sauvegardes maximales par serveur : {}\n"
+"- Autoriser les sauvegardes automatiques : {}\n"
+"- Serveurs ignorés : {}\n"
+"- Serveurs autorisés : {}\n"
 
 #: main.py:195
 #, docstring
 msgid "Enable/Disable allowing auto backups"
-msgstr ""
+msgstr "Activer/désactiver l'autorisation des sauvegardes automatiques"
 
 #: main.py:198
 msgid "Auto backups have been **Disabled**"
-msgstr ""
+msgstr "Les sauvegardes automatiques ont été **désactivées**"
 
 #: main.py:201
 msgid "Auto backups have been **Enabled**"
-msgstr ""
+msgstr "Les sauvegardes automatiques ont été **activées**"
 
 #: main.py:208
 #, docstring
 msgid "Set the max amount of backups a server can have"
-msgstr ""
+msgstr "Définir le nombre maximum de sauvegardes qu'un serveur peut avoir"
 
 #: main.py:211
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
-msgstr ""
+msgstr "Le nombre maximum de sauvegardes est fixé à 0, le cartographe a été **désactivé**"
 
 #: main.py:213
 msgid "Max backup count has been set"
-msgstr ""
+msgstr "Le nombre maximum de sauvegardes a été défini"
 
 #: main.py:220
 #, docstring
 msgid "Add/Remove a server from the ignore list"
-msgstr ""
+msgstr "Ajouter/supprimer un serveur de la liste des serveurs ignorés"
 
 #: main.py:223
 msgid "Server removed from the ignore list"
-msgstr ""
+msgstr "Serveur retiré de la liste des ignorés"
 
 #: main.py:226
 msgid "Server added to the ignore list"
-msgstr ""
+msgstr "Serveur ajouté à la liste des ignorés"
 
 #: main.py:233
 #, docstring
 msgid "Add/Remove a server from the allow list"
-msgstr ""
+msgstr "Ajouter/supprimer un serveur de la liste des serveurs autorisés"
 
 #: main.py:236
 msgid "Server removed from the allow list"
-msgstr ""
+msgstr "Serveur supprimé de la liste d'autorisation"
 
 #: main.py:239
 msgid "Server added to the allow list"
-msgstr ""
+msgstr "Serveur ajouté à la liste d'autorisation"
 
