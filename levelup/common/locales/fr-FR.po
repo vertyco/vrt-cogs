@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-15 01:12\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,15 @@ msgstr ""
 
 #: common\base.py:74
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "Il semblerait que cela ne soit pas une URL valide"
 
 #: common\base.py:84
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "Uh Oh, il semble que ce ne soit pas une image valide, impossible d'identifier le fichier"
 
 #: common\base.py:89
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "Il semble que cette image ne soit pas valide"
 
 #: common\base.py:175
 #, docstring
@@ -35,40 +35,41 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "Récompensez une bonne nouille\n"
+"Donnez une étoile à un utilisateur pour avoir été une bonne nouille        "
 
 #: common\base.py:184
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "Le cache n'est pas encore chargé, attendez encore quelques secondes."
 
 #: common\base.py:186
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "On ne peut pas se donner des étoiles à soi-même !"
 
 #: common\base.py:188
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "On ne peut pas donner des étoiles à un bot !"
 
 #: common\base.py:204
 msgid "You need to wait "
-msgstr ""
+msgstr "Vous devez attendre"
 
 #: common\base.py:206
 msgid " before you can give more stars!"
-msgstr ""
+msgstr "avant de pouvoir donner plus d'étoiles !"
 
 #: common\base.py:212
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "Aucune donnée n'est disponible pour cet utilisateur pour le moment !"
 
 #: common\base.py:220
 msgid "You just gave a star to {}!"
-msgstr ""
+msgstr "Vous venez de donner une étoile à {} !"
 
 #: common\base.py:225
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "Test niveau supérieur image gén"
 
 #: common\base.py:259
 #, docstring
@@ -77,11 +78,13 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "Personnalisez les couleurs de votre profil\n\n"
+"Voici un lien vers le sélecteur de couleurs de Google :\n"
+"**[Hex Color Picker](https://htmlcolorcodes.com/)**        "
 
 #: common\base.py:276 common\base.py:277 common\base.py:278 common\base.py:279
 msgid "Not Set"
-msgstr ""
+msgstr "Non défini"
 
 #: common\base.py:282
 msgid "`Profile Size:    `"
@@ -89,7 +92,7 @@ msgstr ""
 
 #: common\base.py:283
 msgid "`Name Color:      `"
-msgstr ""
+msgstr "`Nom Couleur :      `"
 
 #: common\base.py:284
 msgid "`Stat Color:      `"
@@ -109,29 +112,29 @@ msgstr ""
 
 #: common\base.py:288
 msgid "`Blur:            `"
-msgstr ""
+msgstr "`Flou :            `"
 
 #: common\base.py:291
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "Paramètres de votre profil"
 
 #: common\base.py:321
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "Obtenir le chemin d'accès au dossier des arrière-plans par défaut de ce cog"
 
 #: common\base.py:323
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "Le chemin du dossier d'arrière-plan par défaut est le suivant :\n"
 
 #: common\base.py:329
 #, docstring
 msgid "Get folder path for this cog's saved backgrounds"
-msgstr ""
+msgstr "Obtenir le chemin d'accès au dossier des arrière-plans sauvegardés de ce cog"
 
 #: common\base.py:331
 msgid "Your saved background folder path is \n"
-msgstr ""
+msgstr "Le chemin de votre dossier d'arrière-plan sauvegardé est le suivant :\n"
 
 #: common\base.py:337
 #, docstring
@@ -144,58 +147,64 @@ msgid "\n"
 "        - If you add broken or corrupt images it can break the cog\n"
 "        - Do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "        Ajouter un fond d'écran personnalisé au cog depuis discord\n\n"
+"        **Arguments**\n"
+"        `preferred_filename` - Si un nom est donné, il sera sauvegardé sous ce nom au lieu du nom de fichier\n\n"
+"        **DISCLAIMER**\n"
+"        - Ne remplacez pas les noms de fichiers existants par des images personnalisées\n"
+"        - Si vous ajoutez des images cassées ou corrompues, cela peut casser le cog\n"
+"        - N'incluez pas l'extension du fichier dans le nom préféré, elle sera ajoutée automatiquement        "
 
 #: common\base.py:350 common\base.py:420
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "Je n'ai pas pu trouver de pièces jointes"
 
 #: common\base.py:356
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "Ce n'est pas un format valide, il doit s'agir de l'une des extensions suivantes :"
 
 #: common\base.py:365 common\base.py:434
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Je n'ai pas réussi à obtenir le fichier depuis Discord"
 
 #: common\base.py:373
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Votre arrière-plan personnalisé a été enregistré en tant que"
 
 #: common\base.py:378
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Supprimer un arrière-plan par défaut du dossier des arrière-plans de la cog"
 
 #: common\base.py:384
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "Je n'ai trouvé aucune image d'arrière-plan portant ce nom"
 
 #: common\base.py:389 common\base.py:459
 msgid "Could not delete file: "
-msgstr ""
+msgstr "Impossible de supprimer le fichier :"
 
 #: common\base.py:390
 msgid "Background named {} has been removed!"
-msgstr ""
+msgstr "L'arrière-plan nommé {} a été supprimé !"
 
 #: common\base.py:395
 #, docstring
 msgid "Get folder path for this cog's default fonts"
-msgstr ""
+msgstr "Obtenir le chemin d'accès au dossier des polices par défaut de ce cog"
 
 #: common\base.py:397
 msgid "Your default font folder path is \n"
-msgstr ""
+msgstr "Le chemin d'accès par défaut du dossier des polices est le suivant :\n"
 
 #: common\base.py:403
 #, docstring
 msgid "Get folder path for this cog's saved fonts"
-msgstr ""
+msgstr "Obtenir le chemin d'accès au dossier des polices sauvegardées de ce cog"
 
 #: common\base.py:405
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Le chemin d'accès à votre dossier de polices personnalisées est le suivant :\n"
 
 #: common\base.py:411
 #, docstring
@@ -205,71 +214,74 @@ msgid "\n"
 "        `preferred_filename` - If a name is given, it will be saved as this name instead of the filename\n"
 "        **Note:** do not include the file extension in the preferred name, it will be added automatically\n"
 "        "
-msgstr ""
+msgstr "        Ajouter une police personnalisée au cog à partir de discord\n\n"
+"        **Arguments**\n"
+"        `preferred_filename` - Si un nom est donné, il sera sauvegardé sous ce nom au lieu du nom de fichier\n"
+"        **Note:** ne pas inclure l'extension du fichier dans le nom préféré, elle sera ajoutée automatiquement        "
 
 #: common\base.py:426
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
-msgstr ""
+msgstr "Ce n'est pas un format valide, il doit s'agir des extensions `.ttf` ou `.otf`"
 
 #: common\base.py:443
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Votre fichier de police personnalisée a été enregistré sous le nom de"
 
 #: common\base.py:448
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Supprimer une police du dossier de polices du cog"
 
 #: common\base.py:454
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Je n'ai trouvé aucune police avec ce nom"
 
 #: common\base.py:460
 msgid "Font named {} has been removed!"
-msgstr ""
+msgstr "La police nommée {} a été supprimée !"
 
 #: common\base.py:466
 #, docstring
 msgid "View the all available backgrounds"
-msgstr ""
+msgstr "Voir tous les arrière-plans disponibles"
 
 #: common\base.py:468 common\base.py:503
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "Les profils d'image étant désactivés sur ce serveur, cette commande est désactivée"
 
 #: common\base.py:470 common\base.py:505
 msgid "\n"
 "Use the `{}` command to toggle image profiles and enable this command."
-msgstr ""
+msgstr "Utilisez la commande `{}` pour activer ou désactiver les profils d'image et activer cette commande."
 
 #: common\base.py:478 common\base.py:512
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "Échec de la génération d'échantillons de fond"
 
 #: common\base.py:488
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "Voici les arrière-plans actuels par défaut. Pour en définir un de façon permanente, vous pouvez utiliser la commande"
 
 #: common\base.py:491 common\base.py:523
 msgid "command"
-msgstr ""
+msgstr "commande"
 
 #: common\base.py:495
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "Impossible d'envoyer le collage d'arrière-plan, la taille du fichier est peut-être trop importante."
 
 #: common\base.py:501
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "Afficher les polices disponibles"
 
 #: common\base.py:522
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "Voici les polices actuelles, pour en définir une de façon permanente, vous pouvez utiliser la commande"
 
 #: common\base.py:527
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "Impossible d'envoyer le collage de polices, la taille du fichier est peut-être trop importante."
 
 #: common\base.py:531
 #, docstring
@@ -278,24 +290,26 @@ msgid "\n"
 "        Full size includes your balance, role icon and prestige icon\n"
 "        Slim is a smaller slimmed down version\n"
 "        "
-msgstr ""
+msgstr "        Modifiez le type d'image de votre profil (complet/mince)\n\n"
+"        La taille complète inclut votre solde, l'icône de votre rôle et l'icône de votre prestige\n"
+"        Mince est une version plus petite et affinée        "
 
 #: common\base.py:539 common\base.py:569 common\base.py:614 common\base.py:660
 #: common\base.py:720 common\base.py:780 common\base.py:812
 msgid "Image profiles are disabled on this server, this setting has no effect"
-msgstr ""
+msgstr "Les profils d'image sont désactivés sur ce serveur, ce paramètre n'a aucun effet"
 
 #: common\base.py:545
 msgid "You have no information stored about your account yet. Talk for a bit first"
-msgstr ""
+msgstr "Vous n'avez pas encore d'informations stockées sur votre compte. Parlez un peu d'abord"
 
 #: common\base.py:550
 msgid "Your profile image has been set to **Slim**"
-msgstr ""
+msgstr "Votre image de profil a été définie sur **Slim**"
 
 #: common\base.py:553
 msgid "Your profile image has been set to **Full**"
-msgstr ""
+msgstr "Votre image de profil a été définie sur **Full**"
 
 #: common\base.py:559
 #, docstring
@@ -305,15 +319,18 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr ""
+msgstr "Définissez une couleur hexagonale pour votre nom d'utilisateur\n\n"
+"Voici un lien vers le sélecteur de couleurs de Google :\n"
+"**[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
+"Mettez `default` pour randomiser la couleur de votre nom à chaque fois que vous exécutez la commande        "
 
 #: common\base.py:578
 msgid "Your name color has been reset to default"
-msgstr ""
+msgstr "La couleur de votre nom a été réinitialisée par défaut"
 
 #: common\base.py:584 common\base.py:629 common\base.py:675
 msgid "That is an invalid color, please use a valid integer color code or hex color."
-msgstr ""
+msgstr "Il s'agit d'une couleur non valide, veuillez utiliser un code couleur entier valide ou une couleur hexadécimale."
 
 #: common\base.py:594 common\base.py:640 common\base.py:686
 msgid "Failed to set color, the following error occurred:\n"
@@ -327,11 +344,14 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr ""
+msgstr "Définissez une couleur hexagonale pour les statistiques de votre serveur\n\n"
+"Voici un lien vers le sélecteur de couleurs de Google :\n"
+"**[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
+"Mettez `default` pour randomiser la couleur de votre nom à chaque fois que vous exécutez la commande        "
 
 #: common\base.py:623
 msgid "Your stats color has been reset to default"
-msgstr ""
+msgstr "La couleur de vos statistiques a été réinitialisée par défaut"
 
 #: common\base.py:650
 #, docstring
