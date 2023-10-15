@@ -24,13 +24,18 @@ class Cartographer(commands.Cog):
     """
     Backup & Restore tools for Discord servers.
 
-    This cog will create a backup of all roles, channels and permission.
+    This cog can backup & restore the following:
+    - Categories (permissions/order)
+    - Text channels (permissions/order)
+    - Voice channels (permissions/order)
+    - Forum channels  (permissions/order)[Not forum posts]
+    - Roles (permissions and what members they're assigned to)
 
-    When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.
+    When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.5b"
+    __version__ = "0.0.6b"
 
     def __init__(self, bot: Red):
         super().__init__()
