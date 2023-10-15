@@ -32,7 +32,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.3.10"
+    __version__ = "2.4.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -223,6 +223,10 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             if "row" not in panel or "priority" not in panel:
                 panel["row"] = None
                 panel["priority"] = 1
+                migrations = True
+            # v2.4.0 schema update (Disable panels)
+            if "disabled" not in panel:
+                panel["disabled"] = False
                 migrations = True
 
             panel["name"] = panel_name

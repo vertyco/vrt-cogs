@@ -230,6 +230,7 @@ class SupportButton(Button):
             custom_id=panel["name"],
             emoji=panel["button_emoji"],
             row=panel.get("row"),
+            disabled=panel.get("disabled", False),
         )
         self.panel_name = panel["name"]
 
