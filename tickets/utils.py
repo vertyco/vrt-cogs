@@ -49,9 +49,7 @@ async def can_close(
     return can_close
 
 
-async def fetch_channel_history(
-    channel: discord.TextChannel, limit: int = None
-) -> List[discord.Message]:
+async def fetch_channel_history(channel: discord.TextChannel, limit: int = None) -> List[discord.Message]:
     history = []
     async for msg in channel.history(oldest_first=True, limit=limit):
         history.append(msg)
@@ -96,18 +94,10 @@ async def close_ticket(
     panel = conf["panels"][panel_name]
     panel.get("threads")
 
-    if not channel.permissions_for(guild.me).manage_channels and isinstance(
-        channel, discord.TextChannel
-    ):
-        return await channel.send(
-            _("I am missing the `Manage Channels` permission to close this ticket!")
-        )
-    if not channel.permissions_for(guild.me).manage_threads and isinstance(
-        channel, discord.Thread
-    ):
-        return await channel.send(
-            _("I am missing the `Manage Threads` permission to close this ticket!")
-        )
+    if not channel.permissions_for(guild.me).manage_channels and isinstance(channel, discord.TextChannel):
+        return await channel.send(_("I am missing the `Manage Channels` permission to close this ticket!"))
+    if not channel.permissions_for(guild.me).manage_threads and isinstance(channel, discord.Thread):
+        return await channel.send(_("I am missing the `Manage Threads` permission to close this ticket!"))
 
     opened = int(datetime.fromisoformat(ticket["opened"]).timestamp())
     closed = int(datetime.now().timestamp())
@@ -129,9 +119,7 @@ async def close_ticket(
         closer_name,
         str(reason),
     )
-    backup_text = _(
-        "Ticket Closed\n{}\nCurrently missing permissions to send embeds to this channel!"
-    ).format(desc)
+    backup_text = _("Ticket Closed\n{}\nCurrently missing permissions to send embeds to this channel!").format(desc)
     embed = discord.Embed(
         title=_("Ticket Closed"),
         description=desc,
@@ -286,7 +274,10 @@ async def prune_invalid_tickets(
             log.info(f"Ticket channel {channel_id} no longer exists for {member}")
             tickets_to_remove.append((user_id, channel_id))
 
-            panel = conf["panels"][ticket["panel"]]
+            panel = conf["panels"].get(ticket["panel"])
+            if not panel:
+                # Panel has been deleted
+                continue
             log_message_id = ticket["logmsg"]
             log_channel_id = panel["log_channel"]
             if log_channel_id and log_message_id:
@@ -316,9 +307,7 @@ async def prune_invalid_tickets(
     return True if count else False
 
 
-def prep_overview_embeds(
-    guild: discord.Guild, opened: dict, mention: bool = False
-) -> List[discord.Embed]:
+def prep_overview_embeds(guild: discord.Guild, opened: dict, mention: bool = False) -> List[discord.Embed]:
     title = _("Ticket Overview")
     active = []
     for uid, opened_tickets in opened.items():
