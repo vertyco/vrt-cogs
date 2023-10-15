@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 16:16-0400\n"
-"PO-Revision-Date: 2023-10-14 20:27\n"
+"POT-Creation-Date: 2023-10-14 17:27-0400\n"
+"PO-Revision-Date: 2023-10-15 23:17\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -31,11 +31,23 @@ msgid "`Created:        `{}\n"
 "`Text Channels:  `{}\n"
 "`Voice Channels: `{}\n"
 "`Forums:         `{}\n"
-msgstr ""
+msgstr "`Créé :        `{}\n"
+"`Nom :           `{}\n"
+"`Canal AFK :    `{}\n"
+"`Temps d'attente de l'AFK : `{}\n"
+"`Vérification : `{}\n"
+"`Notifications :  `{}\n"
+"`Langue :         `{}\n"
+"`Nombre de rôles :     `{}\n"
+"`Membres sauvegardés :  `{}\n"
+"`Catégories :     `{}\n"
+"`Canaux de texte :  `{}\n"
+"`Canaux vocaux : `{}\n"
+"`Forums :         `{}\n"
 
 #: common\formatting.py:45
 msgid "Controls"
-msgstr ""
+msgstr "Contrôles"
 
 #: common\formatting.py:46
 msgid "- Backup Current Server: 📥\n"
@@ -43,138 +55,147 @@ msgid "- Backup Current Server: 📥\n"
 "- Switch Servers: 🔍\n"
 "- Set AutoBackup Interval: ⌛\n"
 "- Delete Backup: 🗑️\n"
-msgstr ""
+msgstr "- Sauvegarde du serveur actuel : 📥\n"
+"- Restaurer ici : 🔄\n"
+"- Changer de serveur : 🔍\n"
+"- Définir l'intervalle d'auto-sauvegarde : ⌛\n"
+"- Supprimer la sauvegarde : 🗑️\n"
 
 #: common\formatting.py:53
 msgid "Settings"
-msgstr ""
+msgstr "Paramètres"
 
 #: common\formatting.py:54
 msgid "- Auto Backup Interval Hours: {}\n"
 "- Last Backup: {}"
-msgstr ""
+msgstr "- Intervalle de sauvegarde automatique en heures : {}\n"
+"- Dernière sauvegarde : {}"
 
 #: common\formatting.py:57
 msgid "Cartographer Backups for {}"
-msgstr ""
+msgstr "Sauvegardes du cartographe pour {}"
 
 #: common\formatting.py:64
 msgid "Page {}"
-msgstr ""
+msgstr "Page {}"
 
 #: common\formatting.py:67
 msgid "There are no backups for this server yet!"
-msgstr ""
+msgstr "Il n'y a pas encore de sauvegardes pour ce serveur !"
 
-#: common\models.py:134 common\models.py:160
+#: common\models.py:157 common\models.py:168 common\models.py:195
 msgid "Restored from backup"
-msgstr ""
+msgstr "Restauré à partir d'une sauvegarde"
 
-#: common\models.py:594
+#: common\models.py:629
 msgid "Cartographer Restore"
-msgstr ""
+msgstr "Restauration du cartographe"
 
-#: common\models.py:595
+#: common\models.py:630
 msgid " (Removal)"
-msgstr ""
+msgstr " (Déménagement)"
 
-#: common\views.py:44
+#: common\models.py:745
+msgid "Server restore has completed successfully!"
+msgstr "La restauration du serveur s'est achevée avec succès !"
+
+#: common\views.py:36
 msgid "That is not a number!"
-msgstr ""
+msgstr "Ce n'est pas un chiffre !"
 
-#: common\views.py:55
+#: common\views.py:47
 msgid "Confirmation"
-msgstr ""
+msgstr "Confirmation"
 
-#: common\views.py:57
+#: common\views.py:49
 msgid "Are you SURE?"
-msgstr ""
+msgstr "Êtes-vous sûr ?"
 
-#: common\views.py:60
+#: common\views.py:52
 msgid "THIS CANNOT BE UNDONE!"
-msgstr ""
+msgstr "CELA NE PEUT ÊTRE ANNULÉ !"
+
+#: common\views.py:56
+msgid "Remove Old"
+msgstr "Supprimer l'ancien"
+
+#: common\views.py:59
+msgid "removes unsaved channels/roles"
+msgstr "supprime les chaînes/rôles non sauvegardés"
 
 #: common\views.py:64
-msgid "Remove Old"
-msgstr ""
-
-#: common\views.py:67
-msgid "removes unsaved channels/roles"
-msgstr ""
-
-#: common\views.py:72
 msgid "response must be a string!"
-msgstr ""
+msgstr "la réponse doit être une chaîne de caractères !"
 
-#: common\views.py:92
+#: common\views.py:84
 msgid "Close"
-msgstr ""
+msgstr "Fermer"
 
-#: common\views.py:96
+#: common\views.py:88
 msgid "This isn't your menu!"
-msgstr ""
+msgstr "Ce n'est pas votre menu !"
 
-#: common\views.py:137
+#: common\views.py:129
 msgid "Backing up {}!"
-msgstr ""
+msgstr "Sauvegarde {} !"
+
+#: common\views.py:133
+msgid "Backup created!"
+msgstr "Sauvegarde créée !"
 
 #: common\views.py:141
-msgid "Backup created!"
-msgstr ""
-
-#: common\views.py:149
 msgid "No backups to restore!"
-msgstr ""
+msgstr "Pas de sauvegardes à restaurer !"
+
+#: common\views.py:152
+msgid "Your backup is being restored!"
+msgstr "Votre sauvegarde est en cours de restauration !"
+
+#: common\views.py:155
+msgid "Restore has been cancelled!"
+msgstr "La restauration a été annulée !"
 
 #: common\views.py:160
-msgid "Your backup is being restored!"
-msgstr ""
-
-#: common\views.py:163
-msgid "Restore has been cancelled!"
-msgstr ""
-
-#: common\views.py:168
 msgid "Switch Servers"
-msgstr ""
+msgstr "Serveurs de commutation"
 
-#: common\views.py:168
+#: common\views.py:160
 msgid "Server ID"
-msgstr ""
+msgstr "ID du serveur"
 
-#: common\views.py:168
+#: common\views.py:160
 msgid "Enter the ID of the server"
-msgstr ""
+msgstr "Saisir l'ID du serveur"
 
-#: common\views.py:175
+#: common\views.py:167
 msgid "You can only switch to servers that you own!"
-msgstr ""
+msgstr "Vous ne pouvez passer qu'à des serveurs qui vous appartiennent !"
+
+#: common\views.py:177
+msgid "Auto backups have been disabled by the bot owner!"
+msgstr "Les sauvegardes automatiques ont été désactivées par le propriétaire du bot !"
+
+#: common\views.py:179
+msgid "Auto Backup Interval"
+msgstr "Intervalle de sauvegarde automatique"
+
+#: common\views.py:179
+msgid "Interval Hours"
+msgstr "Heures d'intervalle"
+
+#: common\views.py:179
+msgid "Hours in-between backups"
+msgstr "Heures entre les sauvegardes"
 
 #: common\views.py:185
-msgid "Auto backups have been disabled by the bot owner!"
-msgstr ""
-
-#: common\views.py:187
-msgid "Auto Backup Interval"
-msgstr ""
-
-#: common\views.py:187
-msgid "Interval Hours"
-msgstr ""
-
-#: common\views.py:187
-msgid "Hours in-between backups"
-msgstr ""
-
-#: common\views.py:193
 msgid "Auto-backup interval hours has been set to {}"
-msgstr ""
+msgstr "L'intervalle de sauvegarde automatique en heures a été réglé sur {}"
 
-#: common\views.py:205
+#: common\views.py:197
 msgid "No backups to delete!"
-msgstr ""
+msgstr "Pas de sauvegardes à supprimer !"
 
-#: common\views.py:211
+#: common\views.py:203
 msgid "Backup deleted!"
-msgstr ""
+msgstr "Sauvegarde supprimée !"
 
