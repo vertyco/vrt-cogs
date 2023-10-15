@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 16:16-0400\n"
-"PO-Revision-Date: 2023-10-14 20:27\n"
+"POT-Creation-Date: 2023-10-14 17:27-0400\n"
+"PO-Revision-Date: 2023-10-14 23:06\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -36,29 +36,34 @@ msgstr ""
 msgid "No data to delete"
 msgstr ""
 
-#: main.py:104 main.py:127 main.py:149
+#: main.py:108
+#, docstring
+msgid "Open the Backup/Restore menu"
+msgstr ""
+
+#: main.py:110 main.py:133 main.py:155
 msgid "This server is in the ingored list!"
 msgstr ""
 
-#: main.py:107 main.py:130 main.py:152
+#: main.py:113 main.py:136 main.py:158
 msgid "This server is not in the allowed list!"
 msgstr ""
 
-#: main.py:121
+#: main.py:127
 #, docstring
 msgid "Backup & Restore Tools"
 msgstr ""
 
-#: main.py:125
+#: main.py:131
 #, docstring
 msgid "Create a backup of this server"
 msgstr ""
 
-#: main.py:136
+#: main.py:142
 msgid "A backup has been created!"
 msgstr ""
 
-#: main.py:142
+#: main.py:148
 #, docstring
 msgid "\n"
 "        Restore the latest backup for this server\n\n"
@@ -67,20 +72,20 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: main.py:158
+#: main.py:164
 msgid "There are no backups for this guild!"
 msgstr ""
 
-#: main.py:161
+#: main.py:167
 msgid "Server restore is complete!"
 msgstr ""
 
-#: main.py:166
+#: main.py:172
 #, docstring
 msgid "View current global settings"
 msgstr ""
 
-#: main.py:170
+#: main.py:176
 msgid "### Global Settings\n"
 "- Global backups: {}\n"
 "- Max backups per server: {}\n"
@@ -89,55 +94,55 @@ msgid "### Global Settings\n"
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:189
+#: main.py:195
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr ""
 
-#: main.py:192
+#: main.py:198
 msgid "Auto backups have been **Disabled**"
 msgstr ""
 
-#: main.py:195
+#: main.py:201
 msgid "Auto backups have been **Enabled**"
 msgstr ""
 
-#: main.py:202
+#: main.py:208
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr ""
 
-#: main.py:205
+#: main.py:211
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr ""
 
-#: main.py:207
+#: main.py:213
 msgid "Max backup count has been set"
 msgstr ""
 
-#: main.py:214
+#: main.py:220
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr ""
 
-#: main.py:217
+#: main.py:223
 msgid "Server removed from the ignore list"
 msgstr ""
 
-#: main.py:220
+#: main.py:226
 msgid "Server added to the ignore list"
 msgstr ""
 
-#: main.py:227
+#: main.py:233
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr ""
 
-#: main.py:230
+#: main.py:236
 msgid "Server removed from the allow list"
 msgstr ""
 
-#: main.py:233
+#: main.py:239
 msgid "Server added to the allow list"
 msgstr ""
 
