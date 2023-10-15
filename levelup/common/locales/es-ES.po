@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-15 23:17\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,15 @@ msgstr ""
 
 #: common\base.py:74
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "Uh Oh, parece que no es una URL válida"
 
 #: common\base.py:84
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "Uh Oh, parece que no es una imagen válida, no se puede identificar el archivo"
 
 #: common\base.py:89
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "Uh Oh, parece que no es una imagen válida"
 
 #: common\base.py:175
 #, docstring
@@ -35,31 +35,34 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Premiar a un buen fideo\n"
+"        Dar una estrella a un usuario por ser un buen fideo\n"
+"        "
 
 #: common\base.py:184
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "La caché aún no se ha cargado, espere unos segundos más."
 
 #: common\base.py:186
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "¡No puedes darte estrellas a ti mismo!"
 
 #: common\base.py:188
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "No se pueden dar estrellas a un bot"
 
 #: common\base.py:204
 msgid "You need to wait "
-msgstr ""
+msgstr "Tienes que esperar"
 
 #: common\base.py:206
 msgid " before you can give more stars!"
-msgstr ""
+msgstr " ¡antes de poder dar más estrellas!"
 
 #: common\base.py:212
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "Aún no hay datos disponibles para ese usuario"
 
 #: common\base.py:220
 msgid "You just gave a star to {}!"
@@ -68,7 +71,7 @@ msgstr ""
 #: common\base.py:225
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "Prueba de generación de imágenes de nivelación"
 
 #: common\base.py:259
 #, docstring
@@ -77,11 +80,15 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Personaliza los colores de tu perfil\n\n"
+"        Aquí tienes un enlace al selector de colores de google:\n"
+"        **[Selector de color hexadecimal](https://htmlcolorcodes.com/)**\n"
+"        "
 
 #: common\base.py:276 common\base.py:277 common\base.py:278 common\base.py:279
 msgid "Not Set"
-msgstr ""
+msgstr "No fijado"
 
 #: common\base.py:282
 msgid "`Profile Size:    `"
@@ -113,16 +120,16 @@ msgstr ""
 
 #: common\base.py:291
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "Configuración de su perfil"
 
 #: common\base.py:321
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "Obtener la ruta de la carpeta para los fondos por defecto de este engranaje"
 
 #: common\base.py:323
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "La ruta predeterminada de la carpeta de fondo es\n"
 
 #: common\base.py:329
 #, docstring
