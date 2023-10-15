@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-15 02:41\n"
+"PO-Revision-Date: 2023-10-15 23:17\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -88,7 +88,7 @@ msgstr "Non défini"
 
 #: common\base.py:282
 msgid "`Profile Size:    `"
-msgstr ""
+msgstr "`Taille du profil :    `"
 
 #: common\base.py:283
 msgid "`Name Color:      `"
@@ -96,19 +96,19 @@ msgstr "`Nom Couleur :      `"
 
 #: common\base.py:284
 msgid "`Stat Color:      `"
-msgstr ""
+msgstr "`Couleur de l'état :      `"
 
 #: common\base.py:285
 msgid "`Level Bar Color: `"
-msgstr ""
+msgstr "`Couleur de la barre de niveau : `"
 
 #: common\base.py:286
 msgid "`Font:            `"
-msgstr ""
+msgstr "`Police de caractères : `"
 
 #: common\base.py:287
 msgid "`Background:      `"
-msgstr ""
+msgstr "`Arrière-plan :      `"
 
 #: common\base.py:288
 msgid "`Blur:            `"
@@ -334,7 +334,7 @@ msgstr "Il s'agit d'une couleur non valide, veuillez utiliser un code couleur en
 
 #: common\base.py:594 common\base.py:640 common\base.py:686
 msgid "Failed to set color, the following error occurred:\n"
-msgstr ""
+msgstr "Échec de la définition de la couleur, l'erreur suivante s'est produite :\n"
 
 #: common\base.py:604
 #, docstring
@@ -361,7 +361,12 @@ msgid "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
 "        Set to `default` to randomize your name color each time you run the command\n"
 "        "
-msgstr ""
+msgstr "```\n"
+"Définissez une couleur hexadécimale pour votre barre de niveau\n\n"
+"Voici un lien vers le sélecteur de couleurs de Google :\n"
+"**[Hex Color Picker](https://htmlcolorcodes.com/)**\n\n"
+"Définissez sur `default` pour randomiser la couleur de votre nom à chaque fois que vous exécutez la commande\n"
+"```        "
 
 #: common\base.py:669
 msgid "Your level bar color has been reset to default"
@@ -536,11 +541,12 @@ msgstr "**Vous n'êtes pas encore éligible pour le prestige !**\n"
 
 #: common\base.py:1016
 msgid "`Your level:     `"
-msgstr ""
+msgstr "`Votre niveau :     `"
 
 #: common\base.py:1017
 msgid "`Required Level: `"
-msgstr ""
+msgstr "Niveau requis :\n"
+"Niveau requis :"
 
 #: common\base.py:1023
 msgid "Prestige level "
@@ -548,7 +554,7 @@ msgstr "Niveau de prestige"
 
 #: common\base.py:1023
 msgid " has not been set yet!"
-msgstr ""
+msgstr " n'a pas encore été fixé !"
 
 #: common\base.py:1034
 msgid "I do not have the proper permissions to assign you to the {} role!"
@@ -583,7 +589,7 @@ msgstr "        Voir le classement\n\n"
 
 #: common\base.py:1106
 msgid "Use the `"
-msgstr ""
+msgstr "Utiliser le `"
 
 #: common\base.py:1106
 msgid "startop` command for that"
@@ -608,11 +614,11 @@ msgstr "Tableau de bord des étoiles"
 
 #: common\base.py:1159
 msgid "Total ⭐'s: {}\n"
-msgstr ""
+msgstr "Total ⭐ : {}\n"
 
 #: common\base.py:1182 common\base.py:1184
 msgid "Pages "
-msgstr ""
+msgstr "Pages"
 
 #: common\base.py:1202
 #, docstring
@@ -653,42 +659,43 @@ msgstr "Derniers gagnants de la semaine"
 #: common\base.py:1241
 msgid "{}\n"
 "`Last Reset:     `{}"
-msgstr ""
+msgstr "{}\n"
+"`Réinitialisation de la charge : `{}"
 
 #: common\generator.py:252 common\generator.py:669
 msgid "Rank: #"
-msgstr ""
+msgstr "Rang : #"
 
 #: common\generator.py:253 common\generator.py:670
 msgid "Level: "
-msgstr ""
+msgstr "Niveau :"
 
 #: common\generator.py:255
 msgid "Exp: "
-msgstr ""
+msgstr "Exp :"
 
 #: common\generator.py:258 common\generator.py:672
 msgid "Messages: "
-msgstr ""
+msgstr "Messages :"
 
 #: common\generator.py:259
 msgid "Voice: "
-msgstr ""
+msgstr "Voix :"
 
 #: common\generator.py:261
 msgid "Balance: "
-msgstr ""
+msgstr "L'équilibre :"
 
 #: common\generator.py:673
 msgid "Voice Time: "
-msgstr ""
+msgstr "Temps de parole :"
 
 #: common\generator.py:676
 msgid " - Prestige "
-msgstr ""
+msgstr "Prestige"
 
 #: common\generator.py:1142
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr ""
+msgstr "Obtenir la durée moyenne d'une séquence d'images gif"
 
