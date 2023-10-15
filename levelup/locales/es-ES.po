@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-15 23:17\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -617,27 +617,38 @@ msgid "\n"
 "        1 = True\n"
 "        0 = False\n"
 "        "
-msgstr ""
+msgstr "        Importar niveles y exp de AmariBot\n\n"
+"        **Argumentos**\n"
+"        `import_by` - qué estadística priorizar (`level` o `exp`)\n"
+"        Si se introduce exp, importará su experiencia y basará su nuevo nivel en ella.\n"
+"        Si se introduce el nivel, importará su nivel y calculará su exp basándose en él.\n"
+"        `replace` - (Verdadero/Falso) si es Verdadero, reemplazará la exp o el nivel del usuario, si no, lo añadirá\n"
+"        `i_agree` - (Sí/No) Sólo una opción extra para asegurarte de que quieres ejecutar este comando\n"
+"        `api_key` - Tu [AmariBot API Key](https://docs.google.com/forms/d/e/1FAIpQLScQDCsIqaTb1QR9BfzbeohlUJYA3Etwr-iSb0CRKbgjA-fq7Q/viewform?usp=send_form)\n\n"
+"        **Nota**\n"
+"        En lugar de escribir verdadero/falso\n"
+"        1 = Verdadero\n"
+"        0 = Falso        "
 
 #: levelup.py:1646
 msgid "Not importing AmariBot levels"
-msgstr ""
+msgstr "No se importan los niveles de AmariBot"
 
 #: levelup.py:1648
 msgid "Fetching AmariBot leaderboard data, this could take a while..."
-msgstr ""
+msgstr "Obteniendo los datos de la clasificación de AmariBot, esto podría llevar un rato..."
 
 #: levelup.py:1673
 msgid "AmariBot is rate limiting too heavily! Import Failed!"
-msgstr ""
+msgstr "AmariBot está limitando demasiado la velocidad ¡Importación fallida!"
 
 #: levelup.py:1696
 msgid "{} pages failed to fetch from AmariBot api, check logs for more info"
-msgstr ""
+msgstr "No se pudieron obtener {} páginas de la API de AmariBot, revise los registros para obtener más información"
 
 #: levelup.py:1754
 msgid "No AmariBot stats were found"
-msgstr ""
+msgstr "No se han encontrado estadísticas de AmariBot"
 
 #: levelup.py:1773
 #, docstring
@@ -657,23 +668,23 @@ msgstr ""
 
 #: levelup.py:1789
 msgid "Not importing Polaris levels"
-msgstr ""
+msgstr "No importar niveles Polaris"
 
 #: levelup.py:1791
 msgid "Fetching Polaris leaderboard data, this could take a while..."
-msgstr ""
+msgstr "Obtener los datos de la tabla de clasificación de Polaris podría llevar un rato..."
 
 #: levelup.py:1814
 msgid "Polaris is rate limiting too heavily! Import Failed!"
-msgstr ""
+msgstr "¡Polaris está limitando demasiado la tasa! ¡Importación fallida!"
 
 #: levelup.py:1856
 msgid "{} pages failed to fetch from Polaris api, check logs for more info"
-msgstr ""
+msgstr "No se pudieron obtener {} páginas de la API de Polaris, revise los registros para obtener más información"
 
 #: levelup.py:1888
 msgid "No Polaris stats were found"
-msgstr ""
+msgstr "No se han encontrado estadísticas de Polaris"
 
 #: levelup.py:1901
 #, docstring
@@ -1112,7 +1123,8 @@ msgstr "\n"
 #: levelup.py:2471
 msgid "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
 "Approx time is the time it would take for a user to reach a level with randomized breaks"
-msgstr ""
+msgstr "XP necesaria para un nivel = Base * Nivel^ᵉˣᵖ\n\n"
+"Tiempo aproximado es el tiempo que tardaría un usuario en alcanzar un nivel con descansos aleatorios"
 
 #: levelup.py:2475
 msgid "`Base Multiplier:  `"
@@ -1298,38 +1310,39 @@ msgstr "¡No tengo los permisos adecuados para gestionar roles!"
 
 #: levelup.py:2657
 msgid "Calculating roles, this may take a while..."
-msgstr ""
+msgstr "Calcular roles, esto puede llevar un rato..."
 
 #: levelup.py:2721
 msgid "Assigning roles, this may take a while..."
-msgstr ""
+msgstr "Asignación de roles, esto puede llevar un tiempo..."
 
 #: levelup.py:2761
 msgid "Role initialization completed!"
-msgstr ""
+msgstr "¡Inicialización de roles completada!"
 
 #: levelup.py:2763
 msgid "\n"
 "Added `{}`"
-msgstr ""
+msgstr "Añadido `{}`"
 
 #: levelup.py:2765 levelup.py:2770
 msgid " (`{}` failed)"
-msgstr ""
+msgstr " (`{}` fallido)"
 
 #: levelup.py:2768
 msgid "\n"
 "Removed `{}`"
-msgstr ""
+msgstr "Eliminado `{}`"
 
 #: levelup.py:2773
 msgid "\n"
 "No roles needed to be added or removed!"
-msgstr ""
+msgstr "\n"
+"No es necesario añadir ni eliminar funciones"
 
 #: levelup.py:2778
 msgid "Initialization took {} to complete."
-msgstr ""
+msgstr "La inicialización tomó {} para completarse."
 
 #: levelup.py:2784
 #, docstring
@@ -1384,7 +1397,7 @@ msgstr " como "
 #: levelup.py:2815
 #, docstring
 msgid "Unassign a role from a level"
-msgstr ""
+msgstr "Desasignar un rol de un nivel"
 
 #: levelup.py:2818
 msgid "Level role has been deleted!"
