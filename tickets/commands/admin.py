@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional, Union
 
@@ -253,8 +254,8 @@ class AdminCommands(MixinMeta):
                 panels[panel_name]["disabled"] = True
                 txt = _("Panel **Disabled**")
             await ctx.send(txt)
-            await self.initialize(ctx.guild)
-
+        await asyncio.sleep(3)
+        await self.initialize(ctx.guild)
 
     @tickets.command()
     async def ticketname(self, ctx: commands.Context, panel_name: str, *, ticket_name: str):
@@ -846,7 +847,8 @@ class AdminCommands(MixinMeta):
                     continue
                 open_roles += f"{role.mention}\n"
 
-            desc = _("`Category:       `") + f"{cat}\n"
+            desc = _("`Disabled:       `") + f"{info.get('disabled', False)}\n"
+            desc += _("`Category:       `") + f"{cat}\n"
             desc += _("`Channel:        `") + f"{channel}{extra}\n"
             desc += _("`MessageID:      `") + f"{info['message_id']}\n"
             desc += _("`ButtonText:     `") + f"{info['button_text']}\n"
