@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-15 01:12\n"
+"PO-Revision-Date: 2023-10-15 23:16\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -557,7 +557,19 @@ msgid "\n"
 "        1 = True\n"
 "        0 = False\n"
 "        "
-msgstr ""
+msgstr "Importez les niveaux et l'expérience de MEE6\n\n"
+"**Assurez-vous que le classement de votre guilde est public !**\n\n"
+"**Arguments**\n"
+"`import_by` - quelle statistique privilégier (`level` ou `exp`)\n"
+"Si exp est entré, cela importera leur expérience et basera leur nouveau niveau sur celle-ci.\n"
+"Si level est entré, cela importera leur niveau et calculera leur expérience en fonction de celui-ci.\n"
+"`replace` - (Vrai/Faux) si Vrai, cela remplacera l'expérience ou le niveau de l'utilisateur, sinon cela l'ajoutera\n"
+"`include_settings` - (Vrai/Faux) importe les rôles de niveau et les paramètres d'expérience de MEE6\n"
+"`i_agree` - (Oui/Non) Juste une option supplémentaire pour vous assurer que vous souhaitez exécuter cette commande\n\n"
+"**Note**\n"
+"Au lieu de taper vrai/faux\n"
+"1 = Vrai\n"
+"0 = Faux        "
 
 #: levelup.py:1507
 msgid "Not importing MEE6 levels"
@@ -619,7 +631,18 @@ msgid "\n"
 "        1 = True\n"
 "        0 = False\n"
 "        "
-msgstr ""
+msgstr "        Importer les niveaux et l'exp d'AmariBot\n\n"
+"        **Arguments**\n"
+"        `import_by` - quelle stat prioriser (`level` ou `exp`)\n"
+"        Si exp est entré, cela importera leur expérience et basera leur nouveau niveau sur celle-ci.\n"
+"        Si level est indiqué, il importera leur niveau et calculera leur exp en fonction de celui-ci.\n"
+"        `replace` - (Vrai/Faux) si Vrai, cela remplacera l'exp ou le niveau de l'utilisateur, sinon cela l'ajoutera\n"
+"        `i_agree` - (Oui/Non) Juste une option supplémentaire pour s'assurer que vous voulez exécuter cette commande\n"
+"        `api_key` - Votre [Clé API AmariBot] (https://docs.google.com/forms/d/e/1FAIpQLScQDCsIqaTb1QR9BfzbeohlUJYA3Etwr-iSb0CRKbgjA-fq7Q/viewform?usp=send_form)\n\n"
+"        **Note**\n"
+"        Au lieu de taper vrai/faux\n"
+"        1 = Vrai\n"
+"        0 = Faux        "
 
 #: levelup.py:1646
 msgid "Not importing AmariBot levels"
@@ -655,7 +678,16 @@ msgid "\n"
 "        1 = True\n"
 "        0 = False\n"
 "        "
-msgstr ""
+msgstr "        Importer des niveaux et de l'expérience de [Polaris](https://gdcolon.com/polaris/)\n\n"
+"        **Assurez-vous que le classement de votre guilde est public !**\n\n"
+"        **Arguments**\n"
+"        `replace` - (Vrai/Faux) si Vrai, cela remplacera l'expérience de l'utilisateur, sinon cela l'ajoutera\n"
+"        `include_settings` - (Vrai/Faux) importer les rôles de niveau et les paramètres d'expérience de Polaris\n"
+"        `i_agree` - (Oui/Non) Juste une option supplémentaire pour vous assurer que vous souhaitez exécuter cette commande\n\n"
+"        **Note**\n"
+"        Au lieu de taper vrai/faux\n"
+"        1 = Vrai\n"
+"        0 = Faux        "
 
 #: levelup.py:1789
 msgid "Not importing Polaris levels"
@@ -1138,23 +1170,23 @@ msgstr "`Message recharge:`"
 
 #: levelup.py:2480
 msgid "Level Example"
-msgstr ""
+msgstr "Exemple de niveau"
 
 #: levelup.py:2499
 msgid "- lvl {}, {} xp, {}\n"
-msgstr ""
+msgstr "- lvl {}, {} xp, {}\n"
 
 #: levelup.py:2506
 msgid "XP Curve"
-msgstr ""
+msgstr "Courbe XP"
 
 #: levelup.py:2507
 msgid "Level"
-msgstr ""
+msgstr "Niveau"
 
 #: levelup.py:2508
 msgid "Experience Required"
-msgstr ""
+msgstr "Expérience requise"
 
 #: levelup.py:2518
 #, docstring
