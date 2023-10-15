@@ -32,7 +32,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.4.0"
+    __version__ = "2.4.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -74,6 +74,7 @@ class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
             "category_id": 0,  # <Required>
             "channel_id": 0,  # <Required>
             "message_id": 0,  # <Required>
+            "disabled": False,  # Whether panel is disabled
             "alt_channel": 0,  # (Optional) Open tickets from another channel/category
             "required_roles": [],  # (Optional) list of role IDs, empty list if anyone can open
             "close_reason": True,  # Throw a modal for closing reason on the ticket close button
