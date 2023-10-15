@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 16:16-0400\n"
-"PO-Revision-Date: 2023-10-14 20:27\n"
+"POT-Creation-Date: 2023-10-14 17:27-0400\n"
+"PO-Revision-Date: 2023-10-14 23:06\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -66,115 +66,119 @@ msgstr ""
 msgid "There are no backups for this server yet!"
 msgstr ""
 
-#: common\models.py:134 common\models.py:160
+#: common\models.py:157 common\models.py:168 common\models.py:195
 msgid "Restored from backup"
 msgstr ""
 
-#: common\models.py:594
+#: common\models.py:629
 msgid "Cartographer Restore"
 msgstr ""
 
-#: common\models.py:595
+#: common\models.py:630
 msgid " (Removal)"
 msgstr ""
 
-#: common\views.py:44
+#: common\models.py:745
+msgid "Server restore has completed successfully!"
+msgstr ""
+
+#: common\views.py:36
 msgid "That is not a number!"
 msgstr ""
 
-#: common\views.py:55
+#: common\views.py:47
 msgid "Confirmation"
 msgstr ""
 
-#: common\views.py:57
+#: common\views.py:49
 msgid "Are you SURE?"
 msgstr ""
 
-#: common\views.py:60
+#: common\views.py:52
 msgid "THIS CANNOT BE UNDONE!"
 msgstr ""
 
-#: common\views.py:64
+#: common\views.py:56
 msgid "Remove Old"
 msgstr ""
 
-#: common\views.py:67
+#: common\views.py:59
 msgid "removes unsaved channels/roles"
 msgstr ""
 
-#: common\views.py:72
+#: common\views.py:64
 msgid "response must be a string!"
 msgstr ""
 
-#: common\views.py:92
+#: common\views.py:84
 msgid "Close"
 msgstr ""
 
-#: common\views.py:96
+#: common\views.py:88
 msgid "This isn't your menu!"
 msgstr ""
 
-#: common\views.py:137
+#: common\views.py:129
 msgid "Backing up {}!"
 msgstr ""
 
-#: common\views.py:141
+#: common\views.py:133
 msgid "Backup created!"
 msgstr ""
 
-#: common\views.py:149
+#: common\views.py:141
 msgid "No backups to restore!"
 msgstr ""
 
-#: common\views.py:160
+#: common\views.py:152
 msgid "Your backup is being restored!"
 msgstr ""
 
-#: common\views.py:163
+#: common\views.py:155
 msgid "Restore has been cancelled!"
 msgstr ""
 
-#: common\views.py:168
+#: common\views.py:160
 msgid "Switch Servers"
 msgstr ""
 
-#: common\views.py:168
+#: common\views.py:160
 msgid "Server ID"
 msgstr ""
 
-#: common\views.py:168
+#: common\views.py:160
 msgid "Enter the ID of the server"
 msgstr ""
 
-#: common\views.py:175
+#: common\views.py:167
 msgid "You can only switch to servers that you own!"
 msgstr ""
 
-#: common\views.py:185
+#: common\views.py:177
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr ""
 
-#: common\views.py:187
+#: common\views.py:179
 msgid "Auto Backup Interval"
 msgstr ""
 
-#: common\views.py:187
+#: common\views.py:179
 msgid "Interval Hours"
 msgstr ""
 
-#: common\views.py:187
+#: common\views.py:179
 msgid "Hours in-between backups"
 msgstr ""
 
-#: common\views.py:193
+#: common\views.py:185
 msgid "Auto-backup interval hours has been set to {}"
 msgstr ""
 
-#: common\views.py:205
+#: common\views.py:197
 msgid "No backups to delete!"
 msgstr ""
 
-#: common\views.py:211
+#: common\views.py:203
 msgid "Backup deleted!"
 msgstr ""
 
