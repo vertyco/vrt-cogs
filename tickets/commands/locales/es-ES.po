@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-10 19:12\n"
+"PO-Revision-Date: 2023-10-15 23:17\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -818,11 +818,11 @@ msgstr "Lista negra"
 
 #: commands\admin.py:951
 msgid "Thread tickets will be closed/archived rather than deleted"
-msgstr ""
+msgstr "Las entradas de los hilos se cerrarán/archivarán en lugar de eliminarse"
 
 #: commands\admin.py:953
 msgid "Thread tickets will be deleted instead of closed/archived"
-msgstr ""
+msgstr "Las entradas de los hilos se eliminarán en lugar de cerrarse/archivarse"
 
 #: commands\admin.py:957
 msgid "Thread Ticket Auto-Add"
@@ -886,15 +886,15 @@ msgstr " se ha añadido a las funciones del panel {}"
 #: commands\admin.py:1041
 #, docstring
 msgid "Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"
-msgstr ""
+msgstr "Establecer cuántos miembros del personal pueden reclamar/unirse a un ticket antes de que se desactive el botón de unirse (si se utilizan hilos)"
 
 #: commands\admin.py:1044
 msgid "Amount cannot be negative!"
-msgstr ""
+msgstr "El importe no puede ser negativo"
 
 #: commands\admin.py:1050
 msgid "Up to {} staff member(s) can claim a single ticket"
-msgstr ""
+msgstr "Hasta {} miembro(s) del personal puede(n) reclamar un solo ticket"
 
 #: commands\admin.py:1055
 #, docstring
@@ -1013,15 +1013,15 @@ msgstr "El canal de resumen se ha establecido en {}"
 #: commands\admin.py:1212
 #, docstring
 msgid "Toggle whether channels are mentioned in the active ticket overview"
-msgstr ""
+msgstr "Conmutar si los canales se mencionan en el resumen de tickets activos"
 
 #: commands\admin.py:1216
 msgid "Ticket channels will no longer be mentioned in the active ticket channel"
-msgstr ""
+msgstr "Los canales de tickets ya no se mencionarán en el canal de tickets activo"
 
 #: commands\admin.py:1219
 msgid "Ticket channels now be mentioned in the active ticket channel"
-msgstr ""
+msgstr "Los canales de tickets ahora se mencionan en el canal de tickets activo"
 
 #: commands\admin.py:1224
 #, docstring
@@ -1138,7 +1138,7 @@ msgstr "Actualizar un mensaje con otro mensaje (El destino se actualiza utilizan
 
 #: commands\admin.py:1340
 msgid "Failed to update message!"
-msgstr ""
+msgstr "No se ha podido actualizar el mensaje"
 
 #: commands\admin.py:1352
 #, docstring
