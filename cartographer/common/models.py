@@ -263,10 +263,9 @@ class Member(FriendlyBase):
         if to_remove or to_add:
             log.debug(f"Updating roles for {member.name}")
         if to_remove:
-            # log.debug(f"Roles {[i.name for i in to_remove]}")
-            await member.remove_roles(*to_remove)
+            asyncio.create_task(member.remove_roles(*to_remove))
         if to_add:
-            await member.add_roles(*to_add)
+            asyncio.create_task(member.add_roles(*to_add))
 
 
 class CategoryChannel(FriendlyBase):
@@ -399,7 +398,7 @@ class TextChannel(FriendlyBase):
             if all(equal):
                 return
             log.debug(f"Updating text channel {channel.name}")
-            await channel.edit(
+            coro = channel.edit(
                 name=self.name,
                 category=get_named_channel(guild, self.category),
                 position=self.position,
@@ -411,10 +410,10 @@ class TextChannel(FriendlyBase):
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
             )
-            # if channel.position == self.position:
-            #     asyncio.create_task(coro)
-            # else:
-            #     await coro
+            if channel.position == self.position:
+                asyncio.create_task(coro)
+            else:
+                await coro
 
 
 class ForumChannel(FriendlyBase):
