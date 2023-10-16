@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-11 19:12-0400\n"
-"PO-Revision-Date: 2023-10-11 23:29\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -32,11 +32,11 @@ msgstr "\n"
 #: tickets.py:43
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Nema podataka za brisanje"
 
 #: tickets.py:327
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
-msgstr ""
+msgstr "Ako ne odgovorite na ovu kartu u narednih 20 minuta, bit će automatski zatvoren."
 
 #: tickets.py:343
 msgid "(Auto-Close) Opened ticket with no response for "
@@ -88,11 +88,11 @@ msgstr ""
 
 #: utils.py:167
 msgid "Files uploaded: "
-msgstr ""
+msgstr "Datoteke prenesene:"
 
 #: utils.py:261
 msgid "There are no tickets stored in the database."
-msgstr ""
+msgstr "U bazi podataka ne postoje karte pohranjene."
 
 #: utils.py:307
 msgid "ticket"
@@ -108,15 +108,15 @@ msgstr ""
 
 #: utils.py:312
 msgid "There are no tickets to prune"
-msgstr ""
+msgstr "Nema ulaznica za obrezivanje"
 
 #: utils.py:322
 msgid "Ticket Overview"
-msgstr ""
+msgstr "Pregled karata"
 
 #: utils.py:347
 msgid "There are no active tickets."
-msgstr ""
+msgstr "Nema aktivnih ulaznica."
 
 #: utils.py:373
 #, docstring
@@ -127,7 +127,12 @@ msgid "Update active ticket overview\n\n"
 "    Returns:\n"
 "        int: Message ID of the overview panel\n"
 "    "
-msgstr ""
+msgstr "Ažurirajte aktivni pregled karata\n\n"
+"    Args:\n"
+"        Ceh (Discord.Guild): Server Discord\n"
+"        conf (dict): postavke za ceh\n\n"
+"    Vraća:\n"
+"        INT: ID poruke ploče za pregled"
 
 #: views.py:37
 msgid "cancel"
@@ -135,31 +140,31 @@ msgstr "otkazati"
 
 #: views.py:129
 msgid "Closing your ticket"
-msgstr ""
+msgstr "Zatvaranje karte"
 
 #: views.py:131
 msgid "Reason for closing"
-msgstr ""
+msgstr "Razlog zatvaranja"
 
 #: views.py:171
 msgid "You do not have permissions to close this ticket"
-msgstr ""
+msgstr "Nemate dozvole za zatvaranje ove karte"
 
 #: views.py:183 views.py:185
 msgid "Closing..."
-msgstr ""
+msgstr "Zatvaranje ..."
 
 #: views.py:254
 msgid "You been blacklisted from creating tickets!"
-msgstr ""
+msgstr "Bili ste na crnoj listi od stvaranja ulaznica!"
 
 #: views.py:260
 msgid "You have a role that has been blacklisted from creating tickets!"
-msgstr ""
+msgstr "Imate ulogu koja je na crnoj listi od stvaranja ulaznica!"
 
 #: views.py:270
 msgid "You must have one of the following roles to open this ticket: "
-msgstr ""
+msgstr "Morate imati jednu od sljedećih uloga za otvaranje ove karte:"
 
 #: views.py:282
 msgid "You have the maximum amount of tickets opened already!{}"
@@ -173,15 +178,15 @@ msgstr "Ne može se pronaći kategorija za ovaj panel za podršku!\n"
 
 #: views.py:305
 msgid "Submission Info"
-msgstr ""
+msgstr "Podaci o prijavi"
 
 #: views.py:323
 msgid "Unanswered"
-msgstr ""
+msgstr "Bez odgovora"
 
 #: views.py:341
 msgid "Your ticket is being created, one moment..."
-msgstr ""
+msgstr "Vaša se ulaznica stvara, jedan trenutak ..."
 
 #: views.py:419
 msgid "{} ticket for {}"
@@ -189,7 +194,7 @@ msgstr ""
 
 #: views.py:443
 msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
-msgstr ""
+msgstr "Nedostaju mi potrebna dopuštenja za izradu karte za vas.Molimo kontaktirajte administratora kako bi mogli popraviti moje dopuštenja."
 
 #: views.py:452
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
@@ -207,11 +212,11 @@ msgstr ""
 
 #: views.py:513
 msgid "Ticket form questions"
-msgstr ""
+msgstr "Pitanja o ulaznicama"
 
 #: views.py:515
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
-msgstr ""
+msgstr "Pokušao sam prikvačiti poruku odgovora, ali nemam dozvole za upravljanje porukama!"
 
 #: views.py:518
 msgid "Your ticket has been created! {}"
@@ -228,7 +233,7 @@ msgstr ""
 
 #: views.py:545
 msgid "Ticket Opened"
-msgstr ""
+msgstr "Ulaznica otvorena"
 
 #: views.py:622
 msgid "You have already been added to the ticket **{}**!"
@@ -236,7 +241,7 @@ msgstr ""
 
 #: views.py:628
 msgid "The maximum amount of staff have claimed this ticket!"
-msgstr ""
+msgstr "Maksimalni iznos osoblja zatražio je ovu kartu!"
 
 #: views.py:639
 msgid "You already have access to the ticket **{}**!"
