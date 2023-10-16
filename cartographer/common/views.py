@@ -162,9 +162,16 @@ class BackupMenu(discord.ui.View):
         await modal.wait()
         if modal.entry is None:
             return
-        guild = self.ctx.bot.get_guild(int(modal.entry))
-        if guild.owner_id != interaction.user.id:
-            txt = _("You can only switch to servers that you own!")
+        guild: discord.Guild = self.ctx.bot.get_guild(int(modal.entry))
+        if not guild:
+            txt = _("I am not in that server!")
+            return await interaction.followup.send(txt, ephemeral=True)
+        guild_member = guild.get_member(interaction.user.id)
+        if not guild_member:
+            txt = _("You do not appear to be in that server!")
+            return await interaction.followup.send(txt, ephemeral=True)
+        if not guild_member.guild_permissions.administrator:
+            txt = _("You can only switch to servers that you are an administrator of!")
             return await interaction.followup.send(txt, ephemeral=True)
         self.conf = self.db.get_conf(guild)
         self.pages = backup_menu_embeds(self.conf, guild)
