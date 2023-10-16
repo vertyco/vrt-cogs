@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-08-12 16:11\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -40,11 +40,11 @@ msgstr ""
 
 #: autodocs.py:57
 msgid "name"
-msgstr ""
+msgstr "Ime"
 
 #: autodocs.py:57
 msgid "text"
-msgstr ""
+msgstr "tekst"
 
 #: autodocs.py:66
 msgid "{} cog description"
@@ -56,31 +56,31 @@ msgstr ""
 
 #: autodocs.py:118
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
-msgstr ""
+msgstr "Naziv zupčanika za koji želite napraviti dokumente za (osjetljivi na slučaj)"
 
 #: autodocs.py:119
 msgid "Replace all occurrences of [p] with the bots prefix"
-msgstr ""
+msgstr "Zamijenite sve pojave [P] s prefiksom Bots"
 
 #: autodocs.py:120
 msgid "Replace all occurrences of [botname] with the bots name"
-msgstr ""
+msgstr "Zamijenite sve pojave [Botname] imenom botova"
 
 #: autodocs.py:121
 msgid "Include extra info like converters and their docstrings"
-msgstr ""
+msgstr "Uključite dodatne informacije poput pretvarača i njihovih dokumenata"
 
 #: autodocs.py:122
 msgid "Include hidden commands"
-msgstr ""
+msgstr "Uključite skrivene naredbe"
 
 #: autodocs.py:123
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
-msgstr ""
+msgstr "Sakrij naredbe gore navedene razine privilegiranja (korisnik, mod, administrator, Gurdowner, Botowner)"
 
 #: autodocs.py:126
 msgid "Include a csv with each command isolated per row"
-msgstr ""
+msgstr "Uključite CSV sa svakom naredbom izoliranom po redu"
 
 #: autodocs.py:141
 #, docstring
@@ -102,15 +102,15 @@ msgstr ""
 
 #: autodocs.py:163
 msgid "AllCogDocs"
-msgstr ""
+msgstr "Allcogdocs"
 
 #: autodocs.py:203
 msgid "Here are the docs for all of your currently loaded cogs!"
-msgstr ""
+msgstr "Evo dokumenata za sve vaše trenutno učitane zupčanike!"
 
 #: autodocs.py:207
 msgid "I could not find that cog, maybe it is not loaded?"
-msgstr ""
+msgstr "Nisam mogao pronaći taj zupčanik, možda nije učitan?"
 
 #: autodocs.py:229
 msgid "Here are your docs for {}!"
@@ -118,19 +118,19 @@ msgstr ""
 
 #: converters.py:62
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
-msgstr ""
+msgstr "Jedna riječ, ako ne koristite kosinu i više riječi, koristite citat, npr. \"Hello World\"."
 
 #: converters.py:65
 msgid "A number without decimal places."
-msgstr ""
+msgstr "Broj bez decimalnih mjesta."
 
 #: converters.py:66
 msgid "A number with or without decimal places."
-msgstr ""
+msgstr "Broj s ili bez decimalnih mjesta."
 
 #: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
-msgstr ""
+msgstr "Može biti 1, 0, istina, lažno, t, f"
 
 #: formatter.py:18
 msgid "Help"
@@ -150,11 +150,11 @@ msgstr ""
 
 #: formatter.py:22
 msgid "Autocomplete"
-msgstr ""
+msgstr "Automatski dovršiti"
 
 #: formatter.py:23
 msgid "Choices"
-msgstr ""
+msgstr "Izbora"
 
 #: formatter.py:24
 msgid "Optional"
@@ -162,7 +162,7 @@ msgstr ""
 
 #: formatter.py:25
 msgid "Default"
-msgstr ""
+msgstr "Zadano"
 
 #: formatter.py:26
 msgid "Slash"
@@ -174,40 +174,40 @@ msgstr ""
 
 #: formatter.py:28
 msgid "Command"
-msgstr ""
+msgstr "Naredba"
 
 #: formatter.py:29
 msgid "Restricted to"
-msgstr ""
+msgstr "Ograničen na"
 
 #: formatter.py:30
 msgid "Server Only"
-msgstr ""
+msgstr "Samo poslužitelj"
 
 #: formatter.py:31
 msgid "per"
-msgstr ""
+msgstr "po"
 
 #: formatter.py:32
 msgid "seconds"
-msgstr ""
+msgstr "sekundi"
 
 #: formatter.py:33
 msgid "second"
-msgstr ""
+msgstr "drugi"
 
 #: formatter.py:34
 msgid "Cooldown"
-msgstr ""
+msgstr "Smiri se"
 
 #: formatter.py:35
 msgid "Checks"
-msgstr ""
+msgstr "Provjera"
 
 #: formatter.py:59
 #, docstring
 msgid "Formats documentation for a single command"
-msgstr ""
+msgstr "Formatira dokumentaciju za jednu naredbu"
 
 #: formatter.py:221
 msgid "Could not get docstring or class for {} converter"
