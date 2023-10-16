@@ -5,6 +5,7 @@ import typing as t
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import box, text_to_file
 
 from ..common import get_bot_percentage
 from ..common.abc import MixinMeta
@@ -153,6 +154,7 @@ class Base(MixinMeta):
         await self.save()
 
     @guildlock.command()
+    @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def leave(
         self,
         ctx: commands.Context,
@@ -203,15 +205,23 @@ class Base(MixinMeta):
 
         grammar = _("guild") if len(guilds) == 1 else _("guilds")
         txt = _("Are you sure you want to leave {}?").format(f"**{len(guilds)}** {grammar}")
+        joined = "\n".join(f"{i.name} ({i.id}) [{i.owner.name}]" for i in guilds)
+
+        if len(joined) > 3900:
+            file = text_to_file(joined, filename=_("Guilds to Leave") + ".txt")
+        else:
+            txt += f"\n{box(joined)}"
+            file = None
+
         view = Confirm(ctx.author)
-        msg = await ctx.send(txt, view=view)
+        msg = await ctx.send(embed=discord.Embed(description=txt, color=discord.Color.red()), view=view, file=file)
         await view.wait()
         if not view.value:
             txt = _("Not leaving {}").format(f"**{len(guilds)}** {grammar}")
             return await msg.edit(content=txt, view=None)
 
         txt = _("Leaving {}, one moment...").format(f"**{len(guilds)}** {grammar}")
-        await msg.edit(content=txt, view=None)
+        await msg.edit(embed=None, content=txt, view=None)
 
         async with ctx.typing():
             for guild in guilds:
