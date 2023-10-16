@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-15 01:12\n"
+"PO-Revision-Date: 2023-10-15 23:16\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -723,7 +723,7 @@ msgstr "`Raison modale:`"
 
 #: commands\admin.py:869
 msgid "`Max Claims:     `"
-msgstr ""
+msgstr "`Max Claims :     `"
 
 #: commands\admin.py:877
 msgid "Panel Roles(Mention)"
@@ -1235,7 +1235,7 @@ msgstr "Vous n'avez pas d'autorisations pour ajouter des utilisateurs à ce bill
 
 #: commands\base.py:62
 msgid "Failed to add user to ticket: {}"
-msgstr ""
+msgstr "Échec de l'ajout d'un utilisateur au ticket : {}"
 
 #: commands\base.py:64
 msgid "has been added to this ticket!"
@@ -1274,7 +1274,7 @@ msgstr "\n"
 
 #: commands\base.py:121
 msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
-msgstr ""
+msgstr "Impossible de trouver le propriétaire de ce ticket ! Peut-être que ce n'est pas un canal de ticket ou qu'il a été supprimé de la configuration ?"
 
 #: commands\base.py:128
 msgid "You do not have permissions to close this ticket"

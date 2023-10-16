@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-11 19:12-0400\n"
-"PO-Revision-Date: 2023-10-11 23:29\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -194,7 +194,7 @@ msgstr "Sem resposta"
 
 #: views.py:341
 msgid "Your ticket is being created, one moment..."
-msgstr ""
+msgstr "O seu bilhete está a ser criado, um momento..."
 
 #: views.py:419
 msgid "{} ticket for {}"
@@ -256,7 +256,7 @@ msgstr "Já foi adicionado ao bilhete **{}**!"
 
 #: views.py:628
 msgid "The maximum amount of staff have claimed this ticket!"
-msgstr ""
+msgstr "O número máximo de funcionários reclamou este bilhete!"
 
 #: views.py:639
 msgid "You already have access to the ticket **{}**!"

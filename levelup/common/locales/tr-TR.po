@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,15 @@ msgstr ""
 
 #: common\base.py:74
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "Uh Oh, görünüşe göre bu geçerli bir URL değil"
 
 #: common\base.py:84
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "Uh Oh, görünüşe göre bu geçerli bir resim değil, dosyayı tanımlayamıyor"
 
 #: common\base.py:89
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "Uh Oh, görünüşe göre bu geçerli bir resim değil"
 
 #: common\base.py:175
 #, docstring
@@ -35,31 +35,34 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        İyi bir erişteyi ödüllendirin\n"
+"        Bir kullanıcıya iyi bir noodle olduğu için bir yıldız verin\n"
+"        "
 
 #: common\base.py:184
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "Önbellek henüz yüklenmedi, birkaç saniye daha bekleyin."
 
 #: common\base.py:186
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "Kendine yıldız veremezsin!"
 
 #: common\base.py:188
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "Bir bota yıldız veremezsin!"
 
 #: common\base.py:204
 msgid "You need to wait "
-msgstr ""
+msgstr "Beklemeniz gerekiyor"
 
 #: common\base.py:206
 msgid " before you can give more stars!"
-msgstr ""
+msgstr " daha fazla yıldız vermeden önce!"
 
 #: common\base.py:212
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "Bu kullanıcı için henüz veri mevcut değil!"
 
 #: common\base.py:220
 msgid "You just gave a star to {}!"
@@ -68,7 +71,7 @@ msgstr ""
 #: common\base.py:225
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "Test levelup görüntü oluşturma"
 
 #: common\base.py:259
 #, docstring
@@ -77,11 +80,15 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Profil renklerinizi özelleştirin\n\n"
+"        İşte google'ın renk seçicisine bir bağlantı:\n"
+"        **[Hex Renk Seçici](https://htmlcolorcodes.com/)**\n"
+"        "
 
 #: common\base.py:276 common\base.py:277 common\base.py:278 common\base.py:279
 msgid "Not Set"
-msgstr ""
+msgstr "Ayarlanmamış"
 
 #: common\base.py:282
 msgid "`Profile Size:    `"
@@ -113,25 +120,25 @@ msgstr ""
 
 #: common\base.py:291
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "Profil Ayarlarınız"
 
 #: common\base.py:321
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "Bu dişlinin varsayılan arka planları için klasör yolunu al"
 
 #: common\base.py:323
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "Varsayılan arka plan klasör yolunuz\n"
 
 #: common\base.py:329
 #, docstring
 msgid "Get folder path for this cog's saved backgrounds"
-msgstr ""
+msgstr "Bu çarkın kayıtlı arka planları için klasör yolunu al"
 
 #: common\base.py:331
 msgid "Your saved background folder path is \n"
-msgstr ""
+msgstr "Kayıtlı arka plan klasör yolunuz\n"
 
 #: common\base.py:337
 #, docstring
@@ -148,32 +155,32 @@ msgstr ""
 
 #: common\base.py:350 common\base.py:420
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "Herhangi bir ek bulamadım"
 
 #: common\base.py:356
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "Bu geçerli bir format değildir, aşağıdaki uzantılardan biri olmalıdır:"
 
 #: common\base.py:365 common\base.py:434
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Discord'dan dosyayı alamadım"
 
 #: common\base.py:373
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Özel arka planınız şu şekilde kaydedildi"
 
 #: common\base.py:378
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Çarkın arka planlar klasöründen varsayılan bir arka planı kaldırın"
 
 #: common\base.py:384
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "Bu isimde herhangi bir arka plan resmi bulamadım"
 
 #: common\base.py:389 common\base.py:459
 msgid "Could not delete file: "
-msgstr ""
+msgstr "Dosya silinemedi:"
 
 #: common\base.py:390
 msgid "Background named {} has been removed!"
@@ -182,20 +189,20 @@ msgstr ""
 #: common\base.py:395
 #, docstring
 msgid "Get folder path for this cog's default fonts"
-msgstr ""
+msgstr "Bu dişlinin varsayılan yazı tipleri için klasör yolunu al"
 
 #: common\base.py:397
 msgid "Your default font folder path is \n"
-msgstr ""
+msgstr "Varsayılan yazı tipi klasör yolunuz\n"
 
 #: common\base.py:403
 #, docstring
 msgid "Get folder path for this cog's saved fonts"
-msgstr ""
+msgstr "Bu çarkın kayıtlı yazı tipleri için klasör yolunu al"
 
 #: common\base.py:405
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "Özel yazı tipi klasör yolunuz\n"
 
 #: common\base.py:411
 #, docstring
@@ -213,16 +220,16 @@ msgstr ""
 
 #: common\base.py:443
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Özel yazı tipi dosyanız şu şekilde kaydedildi"
 
 #: common\base.py:448
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Çarkın yazı tipi klasöründen bir yazı tipini kaldırma"
 
 #: common\base.py:454
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Bu isimde herhangi bir yazı tipi bulamadım"
 
 #: common\base.py:460
 msgid "Font named {} has been removed!"
@@ -231,11 +238,11 @@ msgstr ""
 #: common\base.py:466
 #, docstring
 msgid "View the all available backgrounds"
-msgstr ""
+msgstr "Mevcut tüm arka planları görüntüleyin"
 
 #: common\base.py:468 common\base.py:503
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "Bu sunucuda görüntü profilleri devre dışı bırakılmıştır, bu nedenle bu komut kapalıdır"
 
 #: common\base.py:470 common\base.py:505
 msgid "\n"
@@ -244,32 +251,32 @@ msgstr ""
 
 #: common\base.py:478 common\base.py:512
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "Arka plan örnekleri oluşturulamadı"
 
 #: common\base.py:488
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "İşte mevcut varsayılan arka planlar, birini kalıcı olarak ayarlamak için"
 
 #: common\base.py:491 common\base.py:523
 msgid "command"
-msgstr ""
+msgstr "komuta"
 
 #: common\base.py:495
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "Arka plan kolajı gönderilemedi, dosya boyutu çok büyük olabilir."
 
 #: common\base.py:501
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "Kullanılabilecek fontları görüntüleme"
 
 #: common\base.py:522
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "İşte mevcut yazı tipleri, birini kalıcı olarak ayarlamak için"
 
 #: common\base.py:527
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "Yazı tipi kolajı gönderilemedi, dosya boyutu çok büyük olabilir."
 
 #: common\base.py:531
 #, docstring
@@ -278,24 +285,28 @@ msgid "\n"
 "        Full size includes your balance, role icon and prestige icon\n"
 "        Slim is a smaller slimmed down version\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Profil resmi türünüzü değiştirin (tam/ince)\n\n"
+"        Tam boy bakiyenizi, rol simgenizi ve prestij simgenizi içerir\n"
+"        Slim, daha küçük ve inceltilmiş bir versiyonudur\n"
+"        "
 
 #: common\base.py:539 common\base.py:569 common\base.py:614 common\base.py:660
 #: common\base.py:720 common\base.py:780 common\base.py:812
 msgid "Image profiles are disabled on this server, this setting has no effect"
-msgstr ""
+msgstr "Görüntü profilleri bu sunucuda devre dışı bırakılmıştır, bu ayarın bir etkisi yoktur"
 
 #: common\base.py:545
 msgid "You have no information stored about your account yet. Talk for a bit first"
-msgstr ""
+msgstr "Hesabınız hakkında henüz hiçbir bilginiz yok. Önce biraz konuşun"
 
 #: common\base.py:550
 msgid "Your profile image has been set to **Slim**"
-msgstr ""
+msgstr "Profil resminiz **Slim** olarak ayarlandı"
 
 #: common\base.py:553
 msgid "Your profile image has been set to **Full**"
-msgstr ""
+msgstr "Profil resminiz **Tam** olarak ayarlandı"
 
 #: common\base.py:559
 #, docstring
@@ -309,15 +320,15 @@ msgstr ""
 
 #: common\base.py:578
 msgid "Your name color has been reset to default"
-msgstr ""
+msgstr "İsim renginiz varsayılana sıfırlandı"
 
 #: common\base.py:584 common\base.py:629 common\base.py:675
 msgid "That is an invalid color, please use a valid integer color code or hex color."
-msgstr ""
+msgstr "Bu geçersiz bir renktir, lütfen geçerli bir tamsayı renk kodu veya hex rengi kullanın."
 
 #: common\base.py:594 common\base.py:640 common\base.py:686
 msgid "Failed to set color, the following error occurred:\n"
-msgstr ""
+msgstr "Renk ayarlanamadı, aşağıdaki hata oluştu:\n"
 
 #: common\base.py:604
 #, docstring
@@ -331,7 +342,7 @@ msgstr ""
 
 #: common\base.py:623
 msgid "Your stats color has been reset to default"
-msgstr ""
+msgstr "İstatistik renginiz varsayılana sıfırlandı"
 
 #: common\base.py:650
 #, docstring
@@ -345,7 +356,7 @@ msgstr ""
 
 #: common\base.py:669
 msgid "Your level bar color has been reset to default"
-msgstr ""
+msgstr "Seviye çubuğunuzun rengi varsayılana sıfırlandı"
 
 #: common\base.py:696
 #, docstring
@@ -370,7 +381,7 @@ msgstr ""
 
 #: common\base.py:735
 msgid "You must provide a url, filename, or attach a file"
-msgstr ""
+msgstr "Bir url, dosya adı sağlamalı veya bir dosya eklemelisiniz"
 
 #: common\base.py:762 common\base.py:764
 msgid "Your background image has been set to `{}`!"
@@ -378,7 +389,7 @@ msgstr ""
 
 #: common\base.py:767
 msgid "Your background has been removed since you did not specify a url!"
-msgstr ""
+msgstr "Bir url belirtmediğiniz için arka planınız kaldırıldı!"
 
 #: common\base.py:772
 #, docstring
@@ -391,75 +402,77 @@ msgstr ""
 
 #: common\base.py:790
 msgid "Your profile font has been reverted to default"
-msgstr ""
+msgstr "Profil yazı tipiniz varsayılana geri döndürüldü"
 
 #: common\base.py:800
 msgid "I could not find a font file with that name"
-msgstr ""
+msgstr "Bu isimde bir yazı tipi dosyası bulamadım"
 
 #: common\base.py:803
 msgid "Your profile font has been set to "
-msgstr ""
+msgstr "Profil yazı tipiniz şu şekilde ayarlanmıştır"
 
 #: common\base.py:807
 #, docstring
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Metnin görüntülendiği arka plan görüntüsü üzerinde hafif bir bulanıklaştırma efektini değiştirin.\n"
+"        "
 
 #: common\base.py:822
 msgid "Your profile background blur has been set to "
-msgstr ""
+msgstr "Profil arka plan bulanıklığınız şu şekilde ayarlandı"
 
 #: common\base.py:828
 #, docstring
 msgid "View your profile"
-msgstr ""
+msgstr "Profilinizi görüntüleyin"
 
 #: common\base.py:847
 msgid "No information available yet!"
-msgstr ""
+msgstr "Henüz bilgi mevcut değil!"
 
 #: common\base.py:850
 msgid "I do not have permission to send images to this channel"
-msgstr ""
+msgstr "Bu kanala görüntü göndermek için iznim yok"
 
 #: common\base.py:852
 msgid "I do not have permission to send embeds to this channel"
-msgstr ""
+msgstr "Bu kanala yerleştirme göndermek için iznim yok"
 
 #: common\base.py:895 common\generator.py:874
 msgid "Level "
-msgstr ""
+msgstr "Seviye"
 
 #: common\base.py:897 common\generator.py:262
 msgid "Prestige "
-msgstr ""
+msgstr "Prestij"
 
 #: common\base.py:898
 msgid " stars\n"
-msgstr ""
+msgstr " yıldızlar\n"
 
 #: common\base.py:899
 msgid " messages sent\n"
-msgstr ""
+msgstr " gönderilen mesajlar\n"
 
 #: common\base.py:900
 msgid " in voice\n"
-msgstr ""
+msgstr " seste\n"
 
 #: common\base.py:906
 msgid "Rank "
-msgstr ""
+msgstr "Rütbe"
 
 #: common\base.py:908
 msgid ", with "
-msgstr ""
+msgstr "ile"
 
 #: common\base.py:910
 msgid "% of global server Exp"
-msgstr ""
+msgstr "küresel sunucunun %'si Exp"
 
 #: common\base.py:912
 msgid "{}'s Profile"
@@ -467,7 +480,7 @@ msgstr ""
 
 #: common\base.py:915
 msgid "Progress"
-msgstr ""
+msgstr "İlerleme"
 
 #: common\base.py:987
 #, docstring
@@ -477,23 +490,28 @@ msgid "\n"
 "        reset your level and experience to gain a prestige level and any perks associated with it\n\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Rütbenizi prestijlendirin!\n"
+"        Bu sunucuların prestij seviyesi gereksinimine ulaştığınızda, şunları yapabilirsiniz\n"
+"        bir prestij seviyesi ve bununla ilişkili tüm avantajları kazanmak için seviyenizi ve deneyiminizi sıfırlayın\n\n"
+"        Prestij kazandığınızda seviye ve xp'niz fazlaysa, xp'niz ve seviyeleriniz devam eder\n"
+"        "
 
 #: common\base.py:1001
 msgid "Prestige is disabled on this server!"
-msgstr ""
+msgstr "Prestij bu sunucuda devre dışı bırakıldı!"
 
 #: common\base.py:1004
 msgid "Prestige levels have not been set yet!"
-msgstr ""
+msgstr "Prestij seviyeleri henüz belirlenmedi!"
 
 #: common\base.py:1008
 msgid "No information available for you yet!"
-msgstr ""
+msgstr "Sizin için henüz bir bilgi mevcut değil!"
 
 #: common\base.py:1015
 msgid "**You are not eligible to prestige yet!**\n"
-msgstr ""
+msgstr "**Henüz prestij kazanmaya uygun değilsiniz!**\n"
 
 #: common\base.py:1016
 msgid "`Your level:     `"
@@ -505,11 +523,11 @@ msgstr ""
 
 #: common\base.py:1023
 msgid "Prestige level "
-msgstr ""
+msgstr "Prestij seviyesi"
 
 #: common\base.py:1023
 msgid " has not been set yet!"
-msgstr ""
+msgstr " henüz belirlenmedi!"
 
 #: common\base.py:1034
 msgid "I do not have the proper permissions to assign you to the {} role!"
@@ -517,11 +535,11 @@ msgstr ""
 
 #: common\base.py:1049
 msgid "You have reached Prestige "
-msgstr ""
+msgstr "Prestige'e ulaştınız"
 
 #: common\base.py:1073
 msgid "I don't have permissions to remove your old roles!"
-msgstr ""
+msgstr "Eski rollerinizi kaldırma iznim yok!"
 
 #: common\base.py:1088
 msgid "I was not able to re-add the {} role to your profile!"
@@ -548,20 +566,20 @@ msgstr ""
 
 #: common\base.py:1115 common\base.py:1196
 msgid "No user data yet!"
-msgstr ""
+msgstr "Henüz kullanıcı verisi yok!"
 
 #: common\base.py:1127
 #, docstring
 msgid "View the star leaderboard"
-msgstr ""
+msgstr "Yıldız lider tablosunu görüntüleyin"
 
 #: common\base.py:1139
 msgid "Nobody has stars yet 😕"
-msgstr ""
+msgstr "Henüz kimsenin yıldızı yok 😕"
 
 #: common\base.py:1158
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "Yıldız Liderlik Tablosu"
 
 #: common\base.py:1159
 msgid "Total ⭐'s: {}\n"
@@ -569,7 +587,7 @@ msgstr ""
 
 #: common\base.py:1182 common\base.py:1184
 msgid "Pages "
-msgstr ""
+msgstr "Sayfalar"
 
 #: common\base.py:1202
 #, docstring
@@ -584,24 +602,24 @@ msgstr ""
 
 #: common\base.py:1214 common\base.py:1236
 msgid "Weekly stats are disabled for this guild"
-msgstr ""
+msgstr "Haftalık istatistikler bu lonca için devre dışı bırakıldı"
 
 #: common\base.py:1217
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
-msgstr ""
+msgstr "Haftalık liderlik tablosu için henüz veri yok, lütfen önce biraz sohbet edin."
 
 #: common\base.py:1233
 #, docstring
 msgid "View the last weekly embed"
-msgstr ""
+msgstr "Son haftalık yerleştirmeyi görüntüleyin"
 
 #: common\base.py:1238
 msgid "There is no recorded weekly embed saved"
-msgstr ""
+msgstr "Kaydedilmiş bir haftalık gömme yoktur"
 
 #: common\base.py:1240
 msgid "Last Weekly Winners"
-msgstr ""
+msgstr "Son Haftalık Kazananlar"
 
 #: common\base.py:1241
 msgid "{}\n"
@@ -610,38 +628,38 @@ msgstr ""
 
 #: common\generator.py:252 common\generator.py:669
 msgid "Rank: #"
-msgstr ""
+msgstr "Rütbe: #"
 
 #: common\generator.py:253 common\generator.py:670
 msgid "Level: "
-msgstr ""
+msgstr "Seviye:"
 
 #: common\generator.py:255
 msgid "Exp: "
-msgstr ""
+msgstr "Son kullanma tarihi:"
 
 #: common\generator.py:258 common\generator.py:672
 msgid "Messages: "
-msgstr ""
+msgstr "Mesajlar:"
 
 #: common\generator.py:259
 msgid "Voice: "
-msgstr ""
+msgstr "Sesli:"
 
 #: common\generator.py:261
 msgid "Balance: "
-msgstr ""
+msgstr "Denge:"
 
 #: common\generator.py:673
 msgid "Voice Time: "
-msgstr ""
+msgstr "Ses zamanı:"
 
 #: common\generator.py:676
 msgid " - Prestige "
-msgstr ""
+msgstr " - Prestij"
 
 #: common\generator.py:1142
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr ""
+msgstr "GIF karelerinin ortalama süre dizisini alın"
 

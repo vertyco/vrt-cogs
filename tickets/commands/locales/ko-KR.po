@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-10 19:12\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -812,11 +812,11 @@ msgstr "블랙리스트"
 
 #: commands\admin.py:951
 msgid "Thread tickets will be closed/archived rather than deleted"
-msgstr ""
+msgstr "스레드 티켓은 삭제되지 않고 종료/보관됩니다"
 
 #: commands\admin.py:953
 msgid "Thread tickets will be deleted instead of closed/archived"
-msgstr ""
+msgstr "스레드 티켓이 종료/보관되는 대신 삭제됩니다"
 
 #: commands\admin.py:957
 msgid "Thread Ticket Auto-Add"
@@ -880,11 +880,11 @@ msgstr "패널 역할에 {}가 추가되었습니다"
 #: commands\admin.py:1041
 #, docstring
 msgid "Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"
-msgstr ""
+msgstr "참여 버튼이 비활성화되기 전에 티켓을 신청/참여할 수 있는 스태프 수를 설정합니다(스레드를 사용하는 경우)"
 
 #: commands\admin.py:1044
 msgid "Amount cannot be negative!"
-msgstr ""
+msgstr "금액은 음수일 수 없습니다!"
 
 #: commands\admin.py:1050
 msgid "Up to {} staff member(s) can claim a single ticket"
@@ -1006,15 +1006,15 @@ msgstr "개요 채널이 {}로 설정되었습니다"
 #: commands\admin.py:1212
 #, docstring
 msgid "Toggle whether channels are mentioned in the active ticket overview"
-msgstr ""
+msgstr "활성 티켓 개요에 채널이 언급되는지 여부 전환하기"
 
 #: commands\admin.py:1216
 msgid "Ticket channels will no longer be mentioned in the active ticket channel"
-msgstr ""
+msgstr "티켓 채널이 더 이상 활성 티켓 채널에 언급되지 않습니다"
 
 #: commands\admin.py:1219
 msgid "Ticket channels now be mentioned in the active ticket channel"
-msgstr ""
+msgstr "이제 활성 티켓 채널에 티켓 채널이 언급됩니다"
 
 #: commands\admin.py:1224
 #, docstring
@@ -1131,7 +1131,7 @@ msgstr "다른 메시지로 메시지를 업데이트합니다 (소스를 사용
 
 #: commands\admin.py:1340
 msgid "Failed to update message!"
-msgstr ""
+msgstr "메시지를 업데이트하지 못했습니다!"
 
 #: commands\admin.py:1352
 #, docstring
@@ -1255,7 +1255,7 @@ msgstr "티켓을 닫으세요\n\n"
 
 #: commands\base.py:121
 msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
-msgstr ""
+msgstr "이 티켓의 소유자를 찾을 수 없습니다! 티켓 채널이 아니거나 구성에서 정리된 것일까요?"
 
 #: commands\base.py:128
 msgid "You do not have permissions to close this ticket"
