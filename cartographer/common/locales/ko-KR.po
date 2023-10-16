@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-16 00:17\n"
+"POT-Creation-Date: 2023-10-16 13:28-0400\n"
+"PO-Revision-Date: 2023-10-16 17:38\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -70,19 +70,19 @@ msgstr ""
 msgid "There are no backups for this server yet!"
 msgstr "아직 이 서버에 대한 백업이 없습니다!"
 
-#: common\models.py:157 common\models.py:168 common\models.py:195
+#: common\models.py:156 common\models.py:167 common\models.py:194
 msgid "Restored from backup"
 msgstr "백업에서 복원"
 
-#: common\models.py:629
+#: common\models.py:627
 msgid "Cartographer Restore"
 msgstr "지도 제작자 복원"
 
-#: common\models.py:630
+#: common\models.py:628
 msgid " (Removal)"
 msgstr " (제거)"
 
-#: common\models.py:745
+#: common\models.py:743
 msgid "Server restore has completed successfully!"
 msgstr "서버 복원이 성공적으로 완료되었습니다!"
 
@@ -155,34 +155,42 @@ msgid "Enter the ID of the server"
 msgstr "서버의 ID를 입력합니다"
 
 #: common\views.py:167
-msgid "You can only switch to servers that you own!"
-msgstr "소유한 서버로만 전환할 수 있습니다!"
+msgid "I am not in that server!"
+msgstr ""
 
-#: common\views.py:177
+#: common\views.py:171
+msgid "You do not appear to be in that server!"
+msgstr ""
+
+#: common\views.py:174
+msgid "You can only switch to servers that you are an administrator of!"
+msgstr ""
+
+#: common\views.py:184
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr "봇 소유자에 의해 자동 백업이 비활성화되었습니다!"
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Auto Backup Interval"
 msgstr "자동 백업 간격"
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Interval Hours"
 msgstr "간격 시간"
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Hours in-between backups"
 msgstr "백업 사이의 시간"
 
-#: common\views.py:185
+#: common\views.py:192
 msgid "Auto-backup interval hours has been set to {}"
 msgstr ""
 
-#: common\views.py:197
+#: common\views.py:204
 msgid "No backups to delete!"
 msgstr "삭제할 백업이 없습니다!"
 
-#: common\views.py:203
+#: common\views.py:210
 msgid "Backup deleted!"
 msgstr "백업이 삭제되었습니다!"
 
