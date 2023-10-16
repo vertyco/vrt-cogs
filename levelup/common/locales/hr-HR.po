@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,15 @@ msgstr ""
 
 #: common\base.py:74
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "Uh oh, izgleda da to nije valjan URL"
 
 #: common\base.py:84
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "Uh oh, izgleda da to nije valjana slika, ne može identificirati datoteku"
 
 #: common\base.py:89
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "Uh oh, izgleda da to nije valjana slika"
 
 #: common\base.py:175
 #, docstring
@@ -35,31 +35,32 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "Nagradite dobru rezancu\n"
+"        Dajte zvijezdi korisniku da je dobar rezanci"
 
 #: common\base.py:184
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "Cache još nije učitana, pričekajte još nekoliko sekundi."
 
 #: common\base.py:186
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "Ne možete sebi dati zvijezde!"
 
 #: common\base.py:188
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "Ne možete dati zvijezde botu!"
 
 #: common\base.py:204
 msgid "You need to wait "
-msgstr ""
+msgstr "Trebate pričekati"
 
 #: common\base.py:206
 msgid " before you can give more stars!"
-msgstr ""
+msgstr "Prije nego što možete dati više zvijezda!"
 
 #: common\base.py:212
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "Za tog korisnika još nema podataka!"
 
 #: common\base.py:220
 msgid "You just gave a star to {}!"
@@ -68,7 +69,7 @@ msgstr ""
 #: common\base.py:225
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "Test nivoup slike gen"
 
 #: common\base.py:259
 #, docstring
@@ -77,11 +78,13 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "Prilagodite boje vašeg profila\n\n"
+"        Evo veze do Googleovog birača boja:\n"
+"        ** [Hex Picker Color] (https://htmlcolorcodes.com/) **"
 
 #: common\base.py:276 common\base.py:277 common\base.py:278 common\base.py:279
 msgid "Not Set"
-msgstr ""
+msgstr "Nespreman"
 
 #: common\base.py:282
 msgid "`Profile Size:    `"
@@ -113,12 +116,12 @@ msgstr ""
 
 #: common\base.py:291
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "Postavke vaših profila"
 
 #: common\base.py:321
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "Nabavite put mape za zadane pozadine ovog zupčanika"
 
 #: common\base.py:323
 msgid "Your default background folder path is \n"
@@ -127,7 +130,7 @@ msgstr ""
 #: common\base.py:329
 #, docstring
 msgid "Get folder path for this cog's saved backgrounds"
-msgstr ""
+msgstr "Nabavite stazu mape za ovo spremljene pozadine COG -a"
 
 #: common\base.py:331
 msgid "Your saved background folder path is \n"
@@ -148,32 +151,32 @@ msgstr ""
 
 #: common\base.py:350 common\base.py:420
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "Nisam bio u mogućnosti pronaći nikakve priloge"
 
 #: common\base.py:356
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "To nije valjan format, mora biti na sljedećim proširenjima:"
 
 #: common\base.py:365 common\base.py:434
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Nisam bio u mogućnosti dobiti datoteku od nesklada"
 
 #: common\base.py:373
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "Vaša prilagođena pozadina spremljena je kao"
 
 #: common\base.py:378
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "Uklonite zadanu pozadinu iz mape pozadine zupčanika"
 
 #: common\base.py:384
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "S tim imenom nisam mogao pronaći nijednu pozadinsku sliku"
 
 #: common\base.py:389 common\base.py:459
 msgid "Could not delete file: "
-msgstr ""
+msgstr "Nije mogao izbrisati datoteku:"
 
 #: common\base.py:390
 msgid "Background named {} has been removed!"
@@ -182,7 +185,7 @@ msgstr ""
 #: common\base.py:395
 #, docstring
 msgid "Get folder path for this cog's default fonts"
-msgstr ""
+msgstr "Nabavite put mape za zadane fontove ovog zupčanika"
 
 #: common\base.py:397
 msgid "Your default font folder path is \n"
@@ -191,7 +194,7 @@ msgstr ""
 #: common\base.py:403
 #, docstring
 msgid "Get folder path for this cog's saved fonts"
-msgstr ""
+msgstr "Nabavite stazu mape za ovaj spremljeni fontovi"
 
 #: common\base.py:405
 msgid "Your custom font folder path is \n"
@@ -213,16 +216,16 @@ msgstr ""
 
 #: common\base.py:443
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "Vaša prilagođena datoteka fonta spremljena je kao"
 
 #: common\base.py:448
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "Uklonite font iz mape font -a"
 
 #: common\base.py:454
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "Nisam mogao pronaći nijedan fontovi s tim imenom"
 
 #: common\base.py:460
 msgid "Font named {} has been removed!"
@@ -231,11 +234,11 @@ msgstr ""
 #: common\base.py:466
 #, docstring
 msgid "View the all available backgrounds"
-msgstr ""
+msgstr "Pogledajte sve dostupne pozadine"
 
 #: common\base.py:468 common\base.py:503
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "Profili slike su onemogućeni na ovom poslužitelju, tako da je ova naredba isključena"
 
 #: common\base.py:470 common\base.py:505
 msgid "\n"
@@ -244,32 +247,32 @@ msgstr ""
 
 #: common\base.py:478 common\base.py:512
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "Nije uspio generirati pozadinske uzorke"
 
 #: common\base.py:488
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "Evo trenutnih zadanih pozadina, za postavljanje jedne trajno možete koristiti"
 
 #: common\base.py:491 common\base.py:523
 msgid "command"
-msgstr ""
+msgstr "naredba"
 
 #: common\base.py:495
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "Ne mogu poslati pozadinski kolaž, veličina datoteke može biti prevelika."
 
 #: common\base.py:501
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "Pogledajte dostupne fontove za upotrebu"
 
 #: common\base.py:522
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "Evo trenutnih fontova, za postavljanje onih koji trajno možete koristiti"
 
 #: common\base.py:527
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "Ne mogu poslati kolaž fonta, veličina datoteke može biti prevelika."
 
 #: common\base.py:531
 #, docstring
@@ -278,24 +281,26 @@ msgid "\n"
 "        Full size includes your balance, role icon and prestige icon\n"
 "        Slim is a smaller slimmed down version\n"
 "        "
-msgstr ""
+msgstr "Prebacite vrstu slike svog profila (puna/vitka)\n\n"
+"        Puna veličina uključuje vašu ravnotežu, ikonu uloga i ikonu prestiža\n"
+"        Slim je manja vitka verzija"
 
 #: common\base.py:539 common\base.py:569 common\base.py:614 common\base.py:660
 #: common\base.py:720 common\base.py:780 common\base.py:812
 msgid "Image profiles are disabled on this server, this setting has no effect"
-msgstr ""
+msgstr "Profili slike onemogućeni su na ovom poslužitelju, ova postavka nema učinka"
 
 #: common\base.py:545
 msgid "You have no information stored about your account yet. Talk for a bit first"
-msgstr ""
+msgstr "Još niste pohranjeni podaci o svom računu.Prvo razgovarajte"
 
 #: common\base.py:550
 msgid "Your profile image has been set to **Slim**"
-msgstr ""
+msgstr "Vaša slika profila postavljena je na ** vitka **"
 
 #: common\base.py:553
 msgid "Your profile image has been set to **Full**"
-msgstr ""
+msgstr "Vaša slika profila postavljena je na ** puna **"
 
 #: common\base.py:559
 #, docstring
@@ -309,11 +314,11 @@ msgstr ""
 
 #: common\base.py:578
 msgid "Your name color has been reset to default"
-msgstr ""
+msgstr "Vaše ime boje se resetira na zadani"
 
 #: common\base.py:584 common\base.py:629 common\base.py:675
 msgid "That is an invalid color, please use a valid integer color code or hex color."
-msgstr ""
+msgstr "To je nevaljana boja, molimo koristite valjani cijeli broj u boji ili hex boju."
 
 #: common\base.py:594 common\base.py:640 common\base.py:686
 msgid "Failed to set color, the following error occurred:\n"
@@ -331,7 +336,7 @@ msgstr ""
 
 #: common\base.py:623
 msgid "Your stats color has been reset to default"
-msgstr ""
+msgstr "Vaša se statistika resetira na zadane postavke"
 
 #: common\base.py:650
 #, docstring
@@ -345,7 +350,7 @@ msgstr ""
 
 #: common\base.py:669
 msgid "Your level bar color has been reset to default"
-msgstr ""
+msgstr "Vaša boja razine resetira se na zadane postavke"
 
 #: common\base.py:696
 #, docstring
@@ -370,7 +375,7 @@ msgstr ""
 
 #: common\base.py:735
 msgid "You must provide a url, filename, or attach a file"
-msgstr ""
+msgstr "Morate dostaviti URL, naziv datoteke ili priložiti datoteku"
 
 #: common\base.py:762 common\base.py:764
 msgid "Your background image has been set to `{}`!"
@@ -378,7 +383,7 @@ msgstr ""
 
 #: common\base.py:767
 msgid "Your background has been removed since you did not specify a url!"
-msgstr ""
+msgstr "Vaša je pozadina uklonjena jer niste odredili URL!"
 
 #: common\base.py:772
 #, docstring
@@ -391,51 +396,51 @@ msgstr ""
 
 #: common\base.py:790
 msgid "Your profile font has been reverted to default"
-msgstr ""
+msgstr "Vaš profil font je vraćen u zadani"
 
 #: common\base.py:800
 msgid "I could not find a font file with that name"
-msgstr ""
+msgstr "Nisam mogao pronaći datoteku s fontom s tim imenom"
 
 #: common\base.py:803
 msgid "Your profile font has been set to "
-msgstr ""
+msgstr "Vaš je font profila postavljen na"
 
 #: common\base.py:807
 #, docstring
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr ""
+msgstr "Prebacite lagani učinak zamućenja na pozadinsku sliku na kojoj se prikazuje tekst."
 
 #: common\base.py:822
 msgid "Your profile background blur has been set to "
-msgstr ""
+msgstr "Zamućenje vašeg profila postavljeno je na"
 
 #: common\base.py:828
 #, docstring
 msgid "View your profile"
-msgstr ""
+msgstr "Pogledajte svoj profil"
 
 #: common\base.py:847
 msgid "No information available yet!"
-msgstr ""
+msgstr "Još nema podataka!"
 
 #: common\base.py:850
 msgid "I do not have permission to send images to this channel"
-msgstr ""
+msgstr "Nemam dozvolu za slanje slika na ovaj kanal"
 
 #: common\base.py:852
 msgid "I do not have permission to send embeds to this channel"
-msgstr ""
+msgstr "Nemam dozvolu za slanje ugradnje na ovaj kanal"
 
 #: common\base.py:895 common\generator.py:874
 msgid "Level "
-msgstr ""
+msgstr "Nivo"
 
 #: common\base.py:897 common\generator.py:262
 msgid "Prestige "
-msgstr ""
+msgstr "Prestiž"
 
 #: common\base.py:898
 msgid " stars\n"
@@ -451,15 +456,15 @@ msgstr ""
 
 #: common\base.py:906
 msgid "Rank "
-msgstr ""
+msgstr "Rang"
 
 #: common\base.py:908
 msgid ", with "
-msgstr ""
+msgstr ", sa"
 
 #: common\base.py:910
 msgid "% of global server Exp"
-msgstr ""
+msgstr "% globalnog poslužitelja exp"
 
 #: common\base.py:912
 msgid "{}'s Profile"
@@ -467,7 +472,7 @@ msgstr ""
 
 #: common\base.py:915
 msgid "Progress"
-msgstr ""
+msgstr "Napredak"
 
 #: common\base.py:987
 #, docstring
@@ -477,19 +482,22 @@ msgid "\n"
 "        reset your level and experience to gain a prestige level and any perks associated with it\n\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
-msgstr ""
+msgstr "Prestignite svoj rang!\n"
+"        Nakon što steknete zahtjev za prestižnim nivou poslužitelja, možete\n"
+"        Poništite razinu i iskustvo kako biste stekli prestižnu razinu i sve pogodnosti povezane s njom\n\n"
+"        Ako ste preko razine i XP kada prestirate, vaš XP i razine će se prenijeti"
 
 #: common\base.py:1001
 msgid "Prestige is disabled on this server!"
-msgstr ""
+msgstr "Prestige je onemogućen na ovom poslužitelju!"
 
 #: common\base.py:1004
 msgid "Prestige levels have not been set yet!"
-msgstr ""
+msgstr "Razine prestiža još nisu postavljene!"
 
 #: common\base.py:1008
 msgid "No information available for you yet!"
-msgstr ""
+msgstr "Još nema podataka za vas!"
 
 #: common\base.py:1015
 msgid "**You are not eligible to prestige yet!**\n"
@@ -505,11 +513,11 @@ msgstr ""
 
 #: common\base.py:1023
 msgid "Prestige level "
-msgstr ""
+msgstr "Prestige razina"
 
 #: common\base.py:1023
 msgid " has not been set yet!"
-msgstr ""
+msgstr "još nije postavljeno!"
 
 #: common\base.py:1034
 msgid "I do not have the proper permissions to assign you to the {} role!"
@@ -517,11 +525,11 @@ msgstr ""
 
 #: common\base.py:1049
 msgid "You have reached Prestige "
-msgstr ""
+msgstr "Stigli ste do prestige"
 
 #: common\base.py:1073
 msgid "I don't have permissions to remove your old roles!"
-msgstr ""
+msgstr "Nemam dopuštenja za uklanjanje svojih starih uloga!"
 
 #: common\base.py:1088
 msgid "I was not able to re-add the {} role to your profile!"
@@ -548,20 +556,20 @@ msgstr ""
 
 #: common\base.py:1115 common\base.py:1196
 msgid "No user data yet!"
-msgstr ""
+msgstr "Još nema korisničkih podataka!"
 
 #: common\base.py:1127
 #, docstring
 msgid "View the star leaderboard"
-msgstr ""
+msgstr "Pogledajte ploču Star Leadera"
 
 #: common\base.py:1139
 msgid "Nobody has stars yet 😕"
-msgstr ""
+msgstr "Još nitko nema zvijezde 😕"
 
 #: common\base.py:1158
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "Daska zvijezda"
 
 #: common\base.py:1159
 msgid "Total ⭐'s: {}\n"
@@ -569,7 +577,7 @@ msgstr ""
 
 #: common\base.py:1182 common\base.py:1184
 msgid "Pages "
-msgstr ""
+msgstr "Stranice"
 
 #: common\base.py:1202
 #, docstring
@@ -584,24 +592,24 @@ msgstr ""
 
 #: common\base.py:1214 common\base.py:1236
 msgid "Weekly stats are disabled for this guild"
-msgstr ""
+msgstr "Tjedne statistike onemogućene su za ovaj ceh"
 
 #: common\base.py:1217
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
-msgstr ""
+msgstr "Još nema podataka za tjednu ploču, molim vas prvo malo razgovarajte."
 
 #: common\base.py:1233
 #, docstring
 msgid "View the last weekly embed"
-msgstr ""
+msgstr "Pogledajte posljednji tjedan ugradnje"
 
 #: common\base.py:1238
 msgid "There is no recorded weekly embed saved"
-msgstr ""
+msgstr "Nema zabilježenih ugrađenih tjedno ugrađenih"
 
 #: common\base.py:1240
 msgid "Last Weekly Winners"
-msgstr ""
+msgstr "Prošli tjedni pobjednici"
 
 #: common\base.py:1241
 msgid "{}\n"
@@ -610,38 +618,38 @@ msgstr ""
 
 #: common\generator.py:252 common\generator.py:669
 msgid "Rank: #"
-msgstr ""
+msgstr "Rank: #"
 
 #: common\generator.py:253 common\generator.py:670
 msgid "Level: "
-msgstr ""
+msgstr "Razina:"
 
 #: common\generator.py:255
 msgid "Exp: "
-msgstr ""
+msgstr "EXP:"
 
 #: common\generator.py:258 common\generator.py:672
 msgid "Messages: "
-msgstr ""
+msgstr "Poruke:"
 
 #: common\generator.py:259
 msgid "Voice: "
-msgstr ""
+msgstr "Glas:"
 
 #: common\generator.py:261
 msgid "Balance: "
-msgstr ""
+msgstr "Ravnoteža:"
 
 #: common\generator.py:673
 msgid "Voice Time: "
-msgstr ""
+msgstr "Glasovno vrijeme:"
 
 #: common\generator.py:676
 msgid " - Prestige "
-msgstr ""
+msgstr "- prestiž"
 
 #: common\generator.py:1142
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr ""
+msgstr "Nabavite prosječni slijed trajanja GIF okvira"
 
