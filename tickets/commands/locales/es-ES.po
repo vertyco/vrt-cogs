@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-15 23:17\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -1263,7 +1263,7 @@ msgstr "\n"
 
 #: commands\base.py:121
 msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
-msgstr ""
+msgstr "No puedo encontrar al propietario de este ticket Tal vez no es un canal de ticket o fue limpiado de la configuración?"
 
 #: commands\base.py:128
 msgid "You do not have permissions to close this ticket"
