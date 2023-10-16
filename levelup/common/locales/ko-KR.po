@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,15 @@ msgstr ""
 
 #: common\base.py:74
 msgid "Uh Oh, looks like that is not a valid URL"
-msgstr ""
+msgstr "유효한 URL이 아닌 것 같습니다"
 
 #: common\base.py:84
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
-msgstr ""
+msgstr "유효한 이미지가 아닌 것 같습니다. 파일을 식별할 수 없습니다"
 
 #: common\base.py:89
 msgid "Uh Oh, looks like that is not a valid image"
-msgstr ""
+msgstr "유효한 이미지가 아닌 것 같습니다"
 
 #: common\base.py:175
 #, docstring
@@ -35,31 +35,34 @@ msgid "\n"
 "        Reward a good noodle\n"
 "        Give a star to a user for being a good noodle\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        좋은 누들 보상하기\n"
+"        좋은 누들인 사용자에게 별을 선물하세요\n"
+"        "
 
 #: common\base.py:184
 msgid "Cache not loaded yet, wait a few more seconds."
-msgstr ""
+msgstr "캐시가 아직 로드되지 않았습니다. 몇 초만 더 기다려주세요."
 
 #: common\base.py:186
 msgid "You can't give stars to yourself!"
-msgstr ""
+msgstr "자신에게 별을 줄 수는 없습니다!"
 
 #: common\base.py:188
 msgid "You can't give stars to a bot!"
-msgstr ""
+msgstr "봇에게 별을 줄 수 없습니다!"
 
 #: common\base.py:204
 msgid "You need to wait "
-msgstr ""
+msgstr "기다려야 합니다"
 
 #: common\base.py:206
 msgid " before you can give more stars!"
-msgstr ""
+msgstr " 별을 더 많이 줄 수 있습니다!"
 
 #: common\base.py:212
 msgid "No data available for that user yet!"
-msgstr ""
+msgstr "해당 사용자에 대해 아직 사용할 수 있는 데이터가 없습니다!"
 
 #: common\base.py:220
 msgid "You just gave a star to {}!"
@@ -68,7 +71,7 @@ msgstr ""
 #: common\base.py:225
 #, docstring
 msgid "Test levelup image gen"
-msgstr ""
+msgstr "레벨업 이미지 생성 테스트"
 
 #: common\base.py:259
 #, docstring
@@ -77,11 +80,15 @@ msgid "\n"
 "        Here is a link to google's color picker:\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        프로필 색상 사용자 지정\n\n"
+"        다음은 구글의 색상 선택기 링크입니다:\n"
+"        **[헥스 색상 선택기](https://htmlcolorcodes.com/)**\n"
+"        "
 
 #: common\base.py:276 common\base.py:277 common\base.py:278 common\base.py:279
 msgid "Not Set"
-msgstr ""
+msgstr "설정되지 않음"
 
 #: common\base.py:282
 msgid "`Profile Size:    `"
@@ -113,25 +120,25 @@ msgstr ""
 
 #: common\base.py:291
 msgid "Your Profile Settings"
-msgstr ""
+msgstr "프로필 설정"
 
 #: common\base.py:321
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
-msgstr ""
+msgstr "이 톱니바퀴의 기본 배경에 대한 폴더 경로 가져오기"
 
 #: common\base.py:323
 msgid "Your default background folder path is \n"
-msgstr ""
+msgstr "기본 백그라운드 폴더 경로는 다음과 같습니다\n"
 
 #: common\base.py:329
 #, docstring
 msgid "Get folder path for this cog's saved backgrounds"
-msgstr ""
+msgstr "이 톱니바퀴의 저장된 배경의 폴더 경로 가져오기"
 
 #: common\base.py:331
 msgid "Your saved background folder path is \n"
-msgstr ""
+msgstr "저장된 백그라운드 폴더 경로는 다음과 같습니다\n"
 
 #: common\base.py:337
 #, docstring
@@ -148,32 +155,32 @@ msgstr ""
 
 #: common\base.py:350 common\base.py:420
 msgid "I was not able to find any attachments"
-msgstr ""
+msgstr "첨부파일을 찾을 수 없습니다"
 
 #: common\base.py:356
 msgid "That is not a valid format, must be on of the following extensions: "
-msgstr ""
+msgstr "유효한 형식이 아니며 다음 확장자 중 하나에 해당해야 합니다:"
 
 #: common\base.py:365 common\base.py:434
 msgid "I was not able to get the file from Discord"
-msgstr ""
+msgstr "Discord에서 파일을 가져올 수 없습니다"
 
 #: common\base.py:373
 msgid "Your custom background has been saved as "
-msgstr ""
+msgstr "사용자 지정 배경이 다음과 같이 저장되었습니다"
 
 #: common\base.py:378
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
-msgstr ""
+msgstr "톱니바퀴의 배경 폴더에서 기본 배경을 제거합니다"
 
 #: common\base.py:384
 msgid "I could not find any background images with that name"
-msgstr ""
+msgstr "해당 이름의 배경 이미지를 찾을 수 없습니다"
 
 #: common\base.py:389 common\base.py:459
 msgid "Could not delete file: "
-msgstr ""
+msgstr "파일을 삭제할 수 없습니다:"
 
 #: common\base.py:390
 msgid "Background named {} has been removed!"
@@ -182,20 +189,20 @@ msgstr ""
 #: common\base.py:395
 #, docstring
 msgid "Get folder path for this cog's default fonts"
-msgstr ""
+msgstr "이 톱니바퀴의 기본 글꼴 폴더 경로 가져오기"
 
 #: common\base.py:397
 msgid "Your default font folder path is \n"
-msgstr ""
+msgstr "기본 글꼴 폴더 경로는 다음과 같습니다\n"
 
 #: common\base.py:403
 #, docstring
 msgid "Get folder path for this cog's saved fonts"
-msgstr ""
+msgstr "이 톱니바퀴에 저장된 글꼴의 폴더 경로 가져오기"
 
 #: common\base.py:405
 msgid "Your custom font folder path is \n"
-msgstr ""
+msgstr "사용자 지정 글꼴 폴더 경로는 다음과 같습니다\n"
 
 #: common\base.py:411
 #, docstring
@@ -213,16 +220,16 @@ msgstr ""
 
 #: common\base.py:443
 msgid "Your custom font file has been saved as "
-msgstr ""
+msgstr "사용자 정의 글꼴 파일이 다음과 같이 저장되었습니다"
 
 #: common\base.py:448
 #, docstring
 msgid "Remove a font from the cog's font folder"
-msgstr ""
+msgstr "톱니바퀴의 글꼴 폴더에서 글꼴 제거하기"
 
 #: common\base.py:454
 msgid "I could not find any fonts with that name"
-msgstr ""
+msgstr "해당 이름의 글꼴을 찾을 수 없습니다"
 
 #: common\base.py:460
 msgid "Font named {} has been removed!"
@@ -231,11 +238,11 @@ msgstr ""
 #: common\base.py:466
 #, docstring
 msgid "View the all available backgrounds"
-msgstr ""
+msgstr "사용 가능한 모든 배경 보기"
 
 #: common\base.py:468 common\base.py:503
 msgid "Image profiles are disabled on this server so this command is off"
-msgstr ""
+msgstr "이 서버에서는 이미지 프로필이 비활성화되어 있으므로 이 명령은 꺼져 있습니다"
 
 #: common\base.py:470 common\base.py:505
 msgid "\n"
@@ -244,32 +251,32 @@ msgstr ""
 
 #: common\base.py:478 common\base.py:512
 msgid "Failed to generate background samples"
-msgstr ""
+msgstr "배경 샘플을 생성하지 못했습니다"
 
 #: common\base.py:488
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
-msgstr ""
+msgstr "현재 기본 배경은 다음과 같으며, 영구적으로 배경을 설정하려면"
 
 #: common\base.py:491 common\base.py:523
 msgid "command"
-msgstr ""
+msgstr "명령"
 
 #: common\base.py:495
 msgid "Could not send background collage, file size may be too large."
-msgstr ""
+msgstr "배경 콜라주를 보낼 수 없습니다. 파일 크기가 너무 클 수 있습니다."
 
 #: common\base.py:501
 #, docstring
 msgid "View available fonts to use"
-msgstr ""
+msgstr "사용 가능한 글꼴 보기"
 
 #: common\base.py:522
 msgid "Here are the current fonts, to set one permanently you can use the "
-msgstr ""
+msgstr "현재 글꼴은 다음과 같으며, 영구적으로 글꼴을 설정하려면"
 
 #: common\base.py:527
 msgid "Could not send font collage, file size may be too large."
-msgstr ""
+msgstr "글꼴 콜라주를 보낼 수 없습니다. 파일 크기가 너무 클 수 있습니다."
 
 #: common\base.py:531
 #, docstring
@@ -278,24 +285,28 @@ msgid "\n"
 "        Full size includes your balance, role icon and prestige icon\n"
 "        Slim is a smaller slimmed down version\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        프로필 이미지 유형 전환(전체/슬림)\n\n"
+"        전체 크기에는 잔액, 역할 아이콘 및 명성 아이콘이 포함됩니다\n"
+"        슬림은 더 작게 축소한 버전입니다\n"
+"        "
 
 #: common\base.py:539 common\base.py:569 common\base.py:614 common\base.py:660
 #: common\base.py:720 common\base.py:780 common\base.py:812
 msgid "Image profiles are disabled on this server, this setting has no effect"
-msgstr ""
+msgstr "이 서버에서는 이미지 프로필이 비활성화되어 있으며 이 설정은 적용되지 않습니다"
 
 #: common\base.py:545
 msgid "You have no information stored about your account yet. Talk for a bit first"
-msgstr ""
+msgstr "아직 계정에 대한 정보가 저장되어 있지 않습니다. 먼저 잠시 이야기하세요"
 
 #: common\base.py:550
 msgid "Your profile image has been set to **Slim**"
-msgstr ""
+msgstr "프로필 이미지가 **슬림**으로 설정되었습니다"
 
 #: common\base.py:553
 msgid "Your profile image has been set to **Full**"
-msgstr ""
+msgstr "프로필 이미지가 **전체**로 설정되었습니다"
 
 #: common\base.py:559
 #, docstring
@@ -309,15 +320,15 @@ msgstr ""
 
 #: common\base.py:578
 msgid "Your name color has been reset to default"
-msgstr ""
+msgstr "이름 색상이 기본값으로 재설정되었습니다"
 
 #: common\base.py:584 common\base.py:629 common\base.py:675
 msgid "That is an invalid color, please use a valid integer color code or hex color."
-msgstr ""
+msgstr "잘못된 색상이므로 유효한 정수 색상 코드 또는 16진수 색상을 사용하세요."
 
 #: common\base.py:594 common\base.py:640 common\base.py:686
 msgid "Failed to set color, the following error occurred:\n"
-msgstr ""
+msgstr "색상을 설정하지 못했습니다. 다음 오류가 발생했습니다:\n"
 
 #: common\base.py:604
 #, docstring
@@ -331,7 +342,7 @@ msgstr ""
 
 #: common\base.py:623
 msgid "Your stats color has been reset to default"
-msgstr ""
+msgstr "통계 색상이 기본값으로 재설정되었습니다"
 
 #: common\base.py:650
 #, docstring
@@ -345,7 +356,7 @@ msgstr ""
 
 #: common\base.py:669
 msgid "Your level bar color has been reset to default"
-msgstr ""
+msgstr "레벨 표시줄 색상이 기본값으로 재설정되었습니다"
 
 #: common\base.py:696
 #, docstring
@@ -370,7 +381,7 @@ msgstr ""
 
 #: common\base.py:735
 msgid "You must provide a url, filename, or attach a file"
-msgstr ""
+msgstr "URL, 파일 이름을 제공하거나 파일을 첨부해야 합니다"
 
 #: common\base.py:762 common\base.py:764
 msgid "Your background image has been set to `{}`!"
@@ -378,7 +389,7 @@ msgstr ""
 
 #: common\base.py:767
 msgid "Your background has been removed since you did not specify a url!"
-msgstr ""
+msgstr "URL을 지정하지 않아 배경이 제거되었습니다!"
 
 #: common\base.py:772
 #, docstring
@@ -391,75 +402,77 @@ msgstr ""
 
 #: common\base.py:790
 msgid "Your profile font has been reverted to default"
-msgstr ""
+msgstr "프로필 글꼴이 기본값으로 되돌아갔습니다"
 
 #: common\base.py:800
 msgid "I could not find a font file with that name"
-msgstr ""
+msgstr "해당 이름의 글꼴 파일을 찾을 수 없습니다"
 
 #: common\base.py:803
 msgid "Your profile font has been set to "
-msgstr ""
+msgstr "프로필 글꼴이 다음과 같이 설정되었습니다"
 
 #: common\base.py:807
 #, docstring
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        텍스트가 표시되는 배경 이미지에 약간의 흐림 효과를 토글합니다.\n"
+"        "
 
 #: common\base.py:822
 msgid "Your profile background blur has been set to "
-msgstr ""
+msgstr "프로필 배경 흐림 효과가 다음과 같이 설정되어 있습니다"
 
 #: common\base.py:828
 #, docstring
 msgid "View your profile"
-msgstr ""
+msgstr "프로필 보기"
 
 #: common\base.py:847
 msgid "No information available yet!"
-msgstr ""
+msgstr "아직 사용할 수 있는 정보가 없습니다!"
 
 #: common\base.py:850
 msgid "I do not have permission to send images to this channel"
-msgstr ""
+msgstr "이 채널에 이미지를 보낼 수 있는 권한이 없습니다"
 
 #: common\base.py:852
 msgid "I do not have permission to send embeds to this channel"
-msgstr ""
+msgstr "이 채널에 임베드를 보낼 수 있는 권한이 없습니다"
 
 #: common\base.py:895 common\generator.py:874
 msgid "Level "
-msgstr ""
+msgstr "레벨"
 
 #: common\base.py:897 common\generator.py:262
 msgid "Prestige "
-msgstr ""
+msgstr "프레스티지"
 
 #: common\base.py:898
 msgid " stars\n"
-msgstr ""
+msgstr " 별\n"
 
 #: common\base.py:899
 msgid " messages sent\n"
-msgstr ""
+msgstr " 전송된 메시지\n"
 
 #: common\base.py:900
 msgid " in voice\n"
-msgstr ""
+msgstr " 음성\n"
 
 #: common\base.py:906
 msgid "Rank "
-msgstr ""
+msgstr "순위"
 
 #: common\base.py:908
 msgid ", with "
-msgstr ""
+msgstr "와 함께"
 
 #: common\base.py:910
 msgid "% of global server Exp"
-msgstr ""
+msgstr "글로벌 서버 경험치의 %"
 
 #: common\base.py:912
 msgid "{}'s Profile"
@@ -467,7 +480,7 @@ msgstr ""
 
 #: common\base.py:915
 msgid "Progress"
-msgstr ""
+msgstr "진행 상황"
 
 #: common\base.py:987
 #, docstring
@@ -477,23 +490,28 @@ msgid "\n"
 "        reset your level and experience to gain a prestige level and any perks associated with it\n\n"
 "        If you are over level and xp when you prestige, your xp and levels will carry over\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        계급을 올리세요!\n"
+"        이 서버의 명성 레벨 요건에 도달하면 다음을 수행할 수 있습니다\n"
+"        레벨과 경험치를 초기화하여 명성 레벨과 그에 따른 특전을 획득할 수 있습니다\n\n"
+"        명성을 획득할 때 레벨과 경험치를 초과한 경우, 경험치와 레벨은 이월됩니다\n"
+"        "
 
 #: common\base.py:1001
 msgid "Prestige is disabled on this server!"
-msgstr ""
+msgstr "이 서버에서는 명성이 비활성화되었습니다!"
 
 #: common\base.py:1004
 msgid "Prestige levels have not been set yet!"
-msgstr ""
+msgstr "명성 레벨은 아직 설정되지 않았습니다!"
 
 #: common\base.py:1008
 msgid "No information available for you yet!"
-msgstr ""
+msgstr "아직 사용할 수 있는 정보가 없습니다!"
 
 #: common\base.py:1015
 msgid "**You are not eligible to prestige yet!**\n"
-msgstr ""
+msgstr "**아직 프레스티지 등급을 받을 수 없습니다!\n"
 
 #: common\base.py:1016
 msgid "`Your level:     `"
@@ -505,11 +523,11 @@ msgstr ""
 
 #: common\base.py:1023
 msgid "Prestige level "
-msgstr ""
+msgstr "명성 레벨"
 
 #: common\base.py:1023
 msgid " has not been set yet!"
-msgstr ""
+msgstr " 아직 설정되지 않았습니다!"
 
 #: common\base.py:1034
 msgid "I do not have the proper permissions to assign you to the {} role!"
@@ -517,11 +535,11 @@ msgstr ""
 
 #: common\base.py:1049
 msgid "You have reached Prestige "
-msgstr ""
+msgstr "프레스티지에 도달했습니다"
 
 #: common\base.py:1073
 msgid "I don't have permissions to remove your old roles!"
-msgstr ""
+msgstr "이전 역할을 삭제할 권한이 없습니다!"
 
 #: common\base.py:1088
 msgid "I was not able to re-add the {} role to your profile!"
@@ -548,20 +566,20 @@ msgstr ""
 
 #: common\base.py:1115 common\base.py:1196
 msgid "No user data yet!"
-msgstr ""
+msgstr "아직 사용자 데이터가 없습니다!"
 
 #: common\base.py:1127
 #, docstring
 msgid "View the star leaderboard"
-msgstr ""
+msgstr "스타 순위표 보기"
 
 #: common\base.py:1139
 msgid "Nobody has stars yet 😕"
-msgstr ""
+msgstr "아직 별이 없는 사람 😕"
 
 #: common\base.py:1158
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "스타 순위표"
 
 #: common\base.py:1159
 msgid "Total ⭐'s: {}\n"
@@ -569,7 +587,7 @@ msgstr ""
 
 #: common\base.py:1182 common\base.py:1184
 msgid "Pages "
-msgstr ""
+msgstr "페이지"
 
 #: common\base.py:1202
 #, docstring
@@ -584,24 +602,24 @@ msgstr ""
 
 #: common\base.py:1214 common\base.py:1236
 msgid "Weekly stats are disabled for this guild"
-msgstr ""
+msgstr "이 길드에는 주간 통계가 비활성화되어 있습니다"
 
 #: common\base.py:1217
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
-msgstr ""
+msgstr "아직 주간 순위표에 대한 데이터가 없으니 잠시만 기다려 주세요."
 
 #: common\base.py:1233
 #, docstring
 msgid "View the last weekly embed"
-msgstr ""
+msgstr "지난 주간 임베드 보기"
 
 #: common\base.py:1238
 msgid "There is no recorded weekly embed saved"
-msgstr ""
+msgstr "저장된 주간 임베드 기록이 없습니다"
 
 #: common\base.py:1240
 msgid "Last Weekly Winners"
-msgstr ""
+msgstr "지난 주간 우승자"
 
 #: common\base.py:1241
 msgid "{}\n"
@@ -610,38 +628,38 @@ msgstr ""
 
 #: common\generator.py:252 common\generator.py:669
 msgid "Rank: #"
-msgstr ""
+msgstr "Rank: #"
 
 #: common\generator.py:253 common\generator.py:670
 msgid "Level: "
-msgstr ""
+msgstr "레벨:"
 
 #: common\generator.py:255
 msgid "Exp: "
-msgstr ""
+msgstr "경험치:"
 
 #: common\generator.py:258 common\generator.py:672
 msgid "Messages: "
-msgstr ""
+msgstr "메시지:"
 
 #: common\generator.py:259
 msgid "Voice: "
-msgstr ""
+msgstr "음성:"
 
 #: common\generator.py:261
 msgid "Balance: "
-msgstr ""
+msgstr "균형:"
 
 #: common\generator.py:673
 msgid "Voice Time: "
-msgstr ""
+msgstr "음성 시간:"
 
 #: common\generator.py:676
 msgid " - Prestige "
-msgstr ""
+msgstr " - 프레스티지"
 
 #: common\generator.py:1142
 #, docstring
 msgid "Get average duration sequence of gif frames"
-msgstr ""
+msgstr "GIF 프레임의 평균 지속 시간 시퀀스 가져오기"
 
