@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-10 19:12\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -814,11 +814,11 @@ msgstr "Lista negra"
 
 #: commands\admin.py:951
 msgid "Thread tickets will be closed/archived rather than deleted"
-msgstr ""
+msgstr "Os bilhetes de discussão serão fechados/arquivados em vez de apagados"
 
 #: commands\admin.py:953
 msgid "Thread tickets will be deleted instead of closed/archived"
-msgstr ""
+msgstr "Os bilhetes de discussão serão eliminados em vez de fechados/arquivados"
 
 #: commands\admin.py:957
 msgid "Thread Ticket Auto-Add"
@@ -883,11 +883,11 @@ msgstr " foi adicionado às funções do painel {}"
 #: commands\admin.py:1041
 #, docstring
 msgid "Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"
-msgstr ""
+msgstr "Definir o número de membros da equipa que podem reclamar/aderir a um bilhete antes de o botão de adesão ser desativado (se utilizar tópicos)"
 
 #: commands\admin.py:1044
 msgid "Amount cannot be negative!"
-msgstr ""
+msgstr "O montante não pode ser negativo!"
 
 #: commands\admin.py:1050
 msgid "Up to {} staff member(s) can claim a single ticket"
@@ -1009,15 +1009,15 @@ msgstr "O canal de visão geral foi definido para {}"
 #: commands\admin.py:1212
 #, docstring
 msgid "Toggle whether channels are mentioned in the active ticket overview"
-msgstr ""
+msgstr "Alternar se os canais são mencionados na visão geral do bilhete ativo"
 
 #: commands\admin.py:1216
 msgid "Ticket channels will no longer be mentioned in the active ticket channel"
-msgstr ""
+msgstr "Os canais de bilhetes deixarão de ser mencionados no canal de bilhetes ativo"
 
 #: commands\admin.py:1219
 msgid "Ticket channels now be mentioned in the active ticket channel"
-msgstr ""
+msgstr "Os canais de bilhetes passam a ser mencionados no canal de bilhetes ativo"
 
 #: commands\admin.py:1224
 #, docstring
@@ -1134,7 +1134,7 @@ msgstr "Atualizar uma mensagem com outra mensagem (o destino é atualizado utili
 
 #: commands\admin.py:1340
 msgid "Failed to update message!"
-msgstr ""
+msgstr "Falha na atualização da mensagem!"
 
 #: commands\admin.py:1352
 #, docstring
@@ -1259,7 +1259,7 @@ msgstr "\n"
 
 #: commands\base.py:121
 msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
-msgstr ""
+msgstr "Não é possível encontrar o proprietário deste bilhete! Talvez não seja um canal de bilhetes ou tenha sido limpo da configuração?"
 
 #: commands\base.py:128
 msgid "You do not have permissions to close this ticket"
