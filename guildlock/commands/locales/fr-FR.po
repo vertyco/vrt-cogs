@@ -1,0 +1,235 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2023-10-16 16:34-0400\n"
+"PO-Revision-Date: 2023-10-16 20:48\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /main/guildlock/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 94\n"
+"Language: fr_FR\n"
+
+#: commands\base.py:23
+#, docstring
+msgid "View GuildLock settings"
+msgstr ""
+
+#: commands\base.py:24
+msgid "Disabled"
+msgstr ""
+
+#: commands\base.py:26
+msgid "GuildLock Settings"
+msgstr ""
+
+#: commands\base.py:27
+msgid "Tools for managing guild joins and leaves."
+msgstr ""
+
+#: commands\base.py:30
+msgid "Log Channel"
+msgstr ""
+
+#: commands\base.py:31
+msgid "Not Set"
+msgstr ""
+
+#: commands\base.py:34
+msgid "Guild Limit"
+msgstr ""
+
+#: commands\base.py:35
+msgid "Bot will auto-leave new guilds if in more than {} servers already."
+msgstr ""
+
+#: commands\base.py:40
+msgid "Minimum Member Requirement"
+msgstr ""
+
+#: commands\base.py:41
+msgid "Bot will auto-leave guilds with less than {} members."
+msgstr ""
+
+#: commands\base.py:46
+msgid "Bot Farm Detection"
+msgstr ""
+
+#: commands\base.py:47
+msgid "Bot will auto-leave guilds where {}% of the members are bots."
+msgstr ""
+
+#: commands\base.py:52
+msgid "Guild Whitelist"
+msgstr ""
+
+#: commands\base.py:56
+msgid "Not in Guild ({})\n"
+msgstr ""
+
+#: commands\base.py:57 commands\base.py:61
+msgid "None Set"
+msgstr ""
+
+#: commands\base.py:59
+msgid "Guild Blacklist"
+msgstr ""
+
+#: commands\base.py:66
+#, docstring
+msgid "Set the log channel for the bot"
+msgstr ""
+
+#: commands\base.py:71
+msgid "Guild events will be logged to {}"
+msgstr ""
+
+#: commands\base.py:77
+#, docstring
+msgid "\n"
+"        Set the maximum amount of guilds the bot can be in.\n\n"
+"        Set to **0** to disable the guild limit.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:84
+msgid "Guild limit set to {}"
+msgstr ""
+
+#: commands\base.py:86
+msgid "Guild limit **Disabled**"
+msgstr ""
+
+#: commands\base.py:92
+#, docstring
+msgid "\n"
+"        Set the minimum number of members a server should have for the bot to stay in it.\n\n"
+"        Set to **0** to disable.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:99 commands\base.py:117
+msgid "Minimum members required for bot to stay has been set to {}"
+msgstr ""
+
+#: commands\base.py:101 commands\base.py:119
+msgid "Minimum member requirement **Disabled**"
+msgstr ""
+
+#: commands\base.py:107
+#, docstring
+msgid "\n"
+"        Set the the threshold percentage of bots-to-members for the bot to auto-leave.\n\n"
+"        **Example**\n"
+"        If bot ratio is 60% and it joins a guild with 10 members (7 bots and 3 members) it will auto-leave since that ratio is 70%.\n\n"
+"        Set to **0** to disable.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:125
+#, docstring
+msgid "\n"
+"        Add/Remove a guild from the blacklist.\n\n"
+"        To remove a guild from the blacklist, specify it again.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:132
+msgid "Guild removed from blacklist"
+msgstr ""
+
+#: commands\base.py:135
+msgid "Guild added to the blacklist"
+msgstr ""
+
+#: commands\base.py:141
+#, docstring
+msgid "\n"
+"        Add/Remove a guild from the whitelist.\n\n"
+"        To remove a guild from the whitelist, specify it again.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:148
+msgid "Guild removed from whitelist"
+msgstr ""
+
+#: commands\base.py:151
+msgid "Guild added to the whitelist"
+msgstr ""
+
+#: commands\base.py:161
+#, docstring
+msgid "\n"
+"        Make the bot leave certain servers.\n\n\n"
+"        **Leave Arguments**\n"
+"        - `botfarms`: leave servers with a bot ratio above the set percentage.\n"
+"        - `minmembers`: leave servers with a member count below the set amount.\n"
+"        - `blacklist`: leave any servers in the blacklist.\n"
+"        - `whitelist`: leave any server not in the whitelist.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:172
+msgid "there is no bot ratio set!"
+msgstr ""
+
+#: commands\base.py:174
+msgid "Minimum member requirement has not been set!"
+msgstr ""
+
+#: commands\base.py:176
+msgid "There are no guild IDs in the blacklist!"
+msgstr ""
+
+#: commands\base.py:178
+msgid "There are no guild IDs in the whitelist!"
+msgstr ""
+
+#: commands\base.py:196
+msgid "There are no guilds to leave with a bot ratio higher thatn {}%"
+msgstr ""
+
+#: commands\base.py:197
+msgid "There are no guilds to leave that have less than {} members"
+msgstr ""
+
+#: commands\base.py:198
+msgid "There are no guilds to leave that are in the blacklist"
+msgstr ""
+
+#: commands\base.py:199
+msgid "There are no guilds to leave that are in the whitelist"
+msgstr ""
+
+#: commands\base.py:204
+msgid "guild"
+msgstr ""
+
+#: commands\base.py:204
+msgid "guilds"
+msgstr ""
+
+#: commands\base.py:205
+msgid "Are you sure you want to leave {}?"
+msgstr ""
+
+#: commands\base.py:210
+msgid "Not leaving {}"
+msgstr ""
+
+#: commands\base.py:213
+msgid "Leaving {}, one moment..."
+msgstr ""
+
+#: commands\base.py:223
+msgid "I have left {}!"
+msgstr ""
+
