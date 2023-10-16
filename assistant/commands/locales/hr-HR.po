@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:42-0400\n"
-"PO-Revision-Date: 2023-10-16 00:18\n"
+"PO-Revision-Date: 2023-10-16 00:48\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -24,9 +24,7 @@ msgid "\n"
 "        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n\n"
 "        This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.\n"
 "        "
-msgstr "Postavite pomoćnika\n\n"
-"        Trebat će vam ** [API ključ] (https://platform.openai.com/account/api-keys) ** iz Openai-a za korištenje chatgpt-a i njihovih ostalih modela.\n\n"
-"        Ovaj COG podržava postavljanje krajnjih točaka za [samo-hosted] (https://github.com/vertyco/gpt-api)."
+msgstr ""
 
 #: commands\admin.py:60
 #, docstring
@@ -38,7 +36,7 @@ msgstr ""
 
 #: commands\admin.py:68 commands\admin.py:175
 msgid "Not Set"
-msgstr "Nespreman"
+msgstr ""
 
 #: commands\admin.py:95
 msgid "{} (Global Override)"
@@ -106,19 +104,19 @@ msgstr ""
 
 #: commands\admin.py:119
 msgid "Assistant Settings"
-msgstr "Pomoćne postavke"
+msgstr ""
 
 #: commands\admin.py:127
 msgid "Mixed (Please Refresh!)"
-msgstr "Mješovito (molim vas osvježi!)"
+msgstr ""
 
 #: commands\admin.py:129
 msgid "Synced!"
-msgstr "Sinkronizirano!"
+msgstr ""
 
 #: commands\admin.py:131
 msgid "N/A"
-msgstr "N/a"
+msgstr ""
 
 #: commands\admin.py:134
 msgid "`Top N Embeddings:  `{}\n"
@@ -142,7 +140,7 @@ msgstr ""
 
 #: commands\admin.py:147
 msgid "The following roles/users are considered tutors, if function calls are on the model can create its own embeddings: "
-msgstr "Sljedeće uloge/korisnici smatraju se učiteljima, ako pozivi funkcije na modelu mogu stvoriti vlastite ugradnje:"
+msgstr ""
 
 #: commands\admin.py:156
 msgid "`Function Calling:  `{}\n"
@@ -167,15 +165,15 @@ msgstr ""
 
 #: commands\admin.py:174
 msgid "OpenAI Key"
-msgstr "Otvoreni ključ"
+msgstr ""
 
 #: commands\admin.py:182
 msgid "Regex Blacklist"
-msgstr "Regex crna lista"
+msgstr ""
 
 #: commands\admin.py:184
 msgid "Regex Failure Blocking"
-msgstr "Blokiranje kvarova Regexa"
+msgstr ""
 
 #: commands\admin.py:185
 msgid "Block reply if regex replacement fails: **{}**"
@@ -183,39 +181,39 @@ msgstr ""
 
 #: commands\admin.py:192
 msgid "Conversations are stored persistently"
-msgstr "Razgovori se uporno čuvaju"
+msgstr ""
 
 #: commands\admin.py:194
 msgid "conversations are stored in memory until reboot or reload"
-msgstr "Razgovori se pohranjuju u memoriji do ponovnog pokretanja ili ponovnog punjenja"
+msgstr ""
 
 #: commands\admin.py:196
 msgid "Persistent Conversations"
-msgstr "Uporni razgovori"
+msgstr ""
 
 #: commands\admin.py:210
 msgid "Blacklist"
-msgstr "Crna lista"
+msgstr ""
 
 #: commands\admin.py:222
 msgid "Model Role Overrides"
-msgstr "Uloga uloga modela"
+msgstr ""
 
 #: commands\admin.py:233
 msgid "Max Token Role Overrides"
-msgstr "Max Token Uloga Overridide"
+msgstr ""
 
 #: commands\admin.py:245
 msgid "Max Message Retention Role Overrides"
-msgstr "Maksimalna uloga uloga za zadržavanje poruka"
+msgstr ""
 
 #: commands\admin.py:258
 msgid "Max Message Retention Time Role Overrides"
-msgstr "Maksimalno poništavanje uloga vremena zadržavanja poruka"
+msgstr ""
 
 #: commands\admin.py:273
 msgid "Max Response Token Role Overrides"
-msgstr "Maksimalni token uloga uloga"
+msgstr ""
 
 #: commands\admin.py:276
 msgid "Showing settings for {}"
@@ -223,28 +221,28 @@ msgstr ""
 
 #: commands\admin.py:282
 msgid "SystemPrompt"
-msgstr "SistemPrompt"
+msgstr ""
 
 #: commands\admin.py:288
 msgid "InitialPrompt"
-msgstr "Početni prompt"
+msgstr ""
 
 #: commands\admin.py:300
 msgid "Sent your current settings for this server in DMs!"
-msgstr "Poslali su vaše trenutne postavke za ovaj poslužitelj u DMS -u!"
+msgstr ""
 
 #: commands\admin.py:302
 msgid "You need to allow DMs so I can message you!"
-msgstr "Morate dopustiti DMS kako bih vam mogao poslati poruku!"
+msgstr ""
 
 #: commands\admin.py:309
 #, docstring
 msgid "View the token usage stats for this server"
-msgstr "Pogledajte statistiku upotrebe tokena za ovaj poslužitelj"
+msgstr ""
 
 #: commands\admin.py:312
 msgid "There is no usage data yet!"
-msgstr "Još nema podataka o upotrebi!"
+msgstr ""
 
 #: commands\admin.py:338
 msgid "`Total:  `{} (${} @ ${}/1k tokens)"
@@ -252,7 +250,7 @@ msgstr ""
 
 #: commands\admin.py:345
 msgid "Free/Self-Hosted"
-msgstr "Slobodno/samozadovoljni"
+msgstr ""
 
 #: commands\admin.py:349
 msgid "`Input:  `{} (${} @ ${}/1k tokens)\n"
@@ -270,16 +268,16 @@ msgstr ""
 #: commands\admin.py:384
 #, docstring
 msgid "Reset the token usage stats for this server"
-msgstr "Ponovno postavite statistiku uporabe tokena za ovaj poslužitelj"
+msgstr ""
 
 #: commands\admin.py:387
 msgid "Token usage stats have been reset!"
-msgstr "Statistika korištenja tokena resetira se!"
+msgstr ""
 
 #: commands\admin.py:393
 #, docstring
 msgid "Set your OpenAI key"
-msgstr "Postavite svoj OpenAi ključ"
+msgstr ""
 
 #: commands\admin.py:397
 msgid "Click to set your OpenAI key\n\n"
@@ -288,24 +286,24 @@ msgstr ""
 
 #: commands\admin.py:403 commands\admin.py:406
 msgid "none"
-msgstr "nijedan"
+msgstr ""
 
 #: commands\admin.py:405
 msgid "OpenAI key has been removed!"
-msgstr "OpenAi ključ je uklonjen!"
+msgstr ""
 
 #: commands\admin.py:408
 msgid "No API key was entered!"
-msgstr "Nije unesen ključ API -ja!"
+msgstr ""
 
 #: commands\admin.py:411
 msgid "OpenAI key has been set!"
-msgstr "OpenAi ključ je postavljen!"
+msgstr ""
 
 #: commands\admin.py:417
 #, docstring
 msgid "Set the timezone used for prompt placeholders"
-msgstr "Postavite vremensku zonu koja se koristi za brze rezerve mjesta"
+msgstr ""
 
 #: commands\admin.py:425
 msgid "Invalid Timezone, did you mean `{}`?"
@@ -347,34 +345,7 @@ msgid "\n"
 "        - **bank**: bank name\n"
 "        - **balance**: the user's current balance\n"
 "        "
-msgstr "Postavite početni upit da GPT koristi\n\n"
-"        ** Držači mjesta **\n"
-"        - ** Botname **: [Botname]\n"
-"        - ** Vremenska oznaka **: Discord Timestamp\n"
-"        - ** dan **: Mon-Sun\n"
-"        -** datum **: mm-dd-yyyy\n"
-"        - ** Vrijeme **: HH: MM AM/PM\n"
-"        - ** Timetz **: HH: MM AM/PM Vremenska zona\n"
-"        - ** Članovi **: Broj članova poslužitelja\n"
-"        - ** Korisničko ime **: Ime korisnika\n"
-"        - ** DisplayName **: Naziv zaslona korisnika\n"
-"        - ** Uloga **: Imena uloga korisnika\n"
-"        - ** Rolementsions **: spominjanja uloga korisnika\n"
-"        - ** avatar **: URL korisnika Avatar\n"
-"        - ** Vlasnik **: Vlasnik poslužitelja\n"
-"        - ** ServerCreated **: Datum/vrijeme stvaranja poslužitelja\n"
-"        - ** Server **: Naziv poslužitelja\n"
-"        - ** PY **: Python verzija\n"
-"        - ** dpy **: diskord.py verzija\n"
-"        - ** crvena **: crvena verzija\n"
-"        - ** COGS **: Popis trenutno učitanih zupčanika\n"
-"        - ** ChannelName **: Naziv kanala Razgovor se odvija u\n"
-"        - ** Channenment **: Spomenuti trenutni kanal\n"
-"        - ** Tema **: Tema trenutnog kanala (ako ne i forum ili nit)\n"
-"        - ** BankType **: je li banka globalna ili ne\n"
-"        - ** valuta **: Ime valute\n"
-"        - ** banka **: Naziv banke\n"
-"        - ** ravnoteža **: trenutni saldo korisnika"
+msgstr ""
 
 #: commands\admin.py:470 commands\admin.py:549
 msgid "Failed to read `{}`, bot owner can use `{}` for more information"
@@ -387,7 +358,7 @@ msgstr ""
 
 #: commands\admin.py:494
 msgid "The initial prompt has been removed!"
-msgstr "Početni upit je uklonjen!"
+msgstr ""
 
 #: commands\admin.py:497
 msgid "Please include an initial prompt or .txt file!\n"
@@ -396,11 +367,11 @@ msgstr ""
 
 #: commands\admin.py:504
 msgid "The initial prompt has been overwritten!"
-msgstr "Početni upit je prepisan!"
+msgstr ""
 
 #: commands\admin.py:507
 msgid "Initial prompt has been set!"
-msgstr "Početni prompt je postavljen!"
+msgstr ""
 
 #: commands\admin.py:513
 #, docstring
@@ -434,38 +405,11 @@ msgid "\n"
 "        - **bank**: bank name\n"
 "        - **balance**: the user's current balance\n"
 "        "
-msgstr "Postavite sustav sustava za GPT za upotrebu\n\n"
-"        ** Držači mjesta **\n"
-"        - ** Botname **: [Botname]\n"
-"        - ** Vremenska oznaka **: Discord Timestamp\n"
-"        - ** dan **: Mon-Sun\n"
-"        -** datum **: mm-dd-yyyy\n"
-"        - ** Vrijeme **: HH: MM AM/PM\n"
-"        - ** Timetz **: HH: MM AM/PM Vremenska zona\n"
-"        - ** Članovi **: Broj članova poslužitelja\n"
-"        - ** Korisničko ime **: Ime korisnika\n"
-"        - ** DisplayName **: Naziv zaslona korisnika\n"
-"        - ** Uloga **: Imena uloga korisnika\n"
-"        - ** Rolementsions **: spominjanja uloga korisnika\n"
-"        - ** avatar **: URL korisnika Avatar\n"
-"        - ** Vlasnik **: Vlasnik poslužitelja\n"
-"        - ** ServerCreated **: Datum/vrijeme stvaranja poslužitelja\n"
-"        - ** Server **: Naziv poslužitelja\n"
-"        - ** PY **: Python verzija\n"
-"        - ** dpy **: diskord.py verzija\n"
-"        - ** crvena **: crvena verzija\n"
-"        - ** COGS **: Popis trenutno učitanih zupčanika\n"
-"        - ** ChannelName **: Naziv kanala Razgovor se odvija u\n"
-"        - ** Channenment **: Spomenuti trenutni kanal\n"
-"        - ** Tema **: Tema trenutnog kanala (ako ne i forum ili nit)\n"
-"        - ** BankType **: je li banka globalna ili ne\n"
-"        - ** valuta **: Ime valute\n"
-"        - ** banka **: Naziv banke\n"
-"        - ** ravnoteža **: trenutni saldo korisnika"
+msgstr ""
 
 #: commands\admin.py:573
 msgid "The system prompt has been removed!"
-msgstr "Sistemski upit je uklonjen!"
+msgstr ""
 
 #: commands\admin.py:576
 msgid "Please include a system prompt or .txt file!\n"
@@ -474,67 +418,67 @@ msgstr ""
 
 #: commands\admin.py:583
 msgid "The system prompt has been overwritten!"
-msgstr "Prepisan je sustav sustava!"
+msgstr ""
 
 #: commands\admin.py:586
 msgid "System prompt has been set!"
-msgstr "Postavljen je sustav sustava!"
+msgstr ""
 
 #: commands\admin.py:600
 #, docstring
 msgid "Set the channel for the assistant"
-msgstr "Postavite kanal za pomoćnika"
+msgstr ""
 
 #: commands\admin.py:605
 msgid "Assistant channel has been removed"
-msgstr "Uklonjen je pomoćni kanal"
+msgstr ""
 
 #: commands\admin.py:608
 msgid "Assistant channel has been overwritten"
-msgstr "Pomoćnik kanala je prepisano"
+msgstr ""
 
 #: commands\admin.py:611
 msgid "Channel id has been set"
-msgstr "ID kanala je postavljen"
+msgstr ""
 
 #: commands\admin.py:617
 #, docstring
 msgid "Toggle whether questions need to end with **__?__**"
-msgstr "Prebacite li pitanja trebaju završiti s ** __? __ **"
+msgstr ""
 
 #: commands\admin.py:621
 msgid "Questions will be answered regardless of if they end with **?**"
-msgstr "Na pitanja će se odgovoriti bez obzira na to ako završe s **? **"
+msgstr ""
 
 #: commands\admin.py:624
 msgid "Questions must end in **?** to be answered"
-msgstr "Pitanja moraju završiti u **? ** na odgovor"
+msgstr ""
 
 #: commands\admin.py:629
 #, docstring
 msgid "Toggle the assistant on or off"
-msgstr "Uključite pomoćnika ili isključite"
+msgstr ""
 
 #: commands\admin.py:633
 msgid "The assistant is now **Disabled**"
-msgstr "Pomoćnik je sada ** onemogućen **"
+msgstr ""
 
 #: commands\admin.py:636
 msgid "The assistant is now **Enabled**"
-msgstr "Pomoćnik je sada ** omogućeno **"
+msgstr ""
 
 #: commands\admin.py:641
 #, docstring
 msgid "Toggle whether to ping the user on replies"
-msgstr "Prebacite li ping korisnika na odgovore"
+msgstr ""
 
 #: commands\admin.py:645
 msgid "Mentions are now **Disabled**"
-msgstr "Spominjanja su sada ** onemogućeno **"
+msgstr ""
 
 #: commands\admin.py:648
 msgid "Mentions are now **Enabled**"
-msgstr "Spominjanja su sada ** omogućeno **"
+msgstr ""
 
 #: commands\admin.py:653
 #, docstring
@@ -546,20 +490,15 @@ msgid "\n"
 "        Set to 0 to disable conversation retention\n\n"
 "        **Note:** *actual message count may exceed the max retention during an API call*\n"
 "        "
-msgstr "Postavite max poruke za razgovor\n\n"
-"        Zadržavanje razgovora je predmemorirano i resetira se kada se bot ponovno pokrene ili se ponovno učitava COG.\n\n"
-"        Bez obzira na ovaj broj, uvijek su uključeni početni promptni i interni sustav sustava,\n"
-"        To se odnosi samo na bilo koji razgovor između korisnika i bota nakon toga.\n\n"
-"        Postavite na 0 da onemogući zadržavanje razgovora\n\n"
-"        ** Napomena: ***Stvarni broj poruka može premašiti maksimalno zadržavanje tijekom poziva API -ja*"
+msgstr ""
 
 #: commands\admin.py:666 commands\admin.py:1578
 msgid "Max retention needs to be at least 0 or higher"
-msgstr "Maksimalno zadržavanje mora biti najmanje 0 ili više"
+msgstr ""
 
 #: commands\admin.py:670
 msgid "Conversation retention has been disabled"
-msgstr "Zadržavanje razgovora je onemogućeno"
+msgstr ""
 
 #: commands\admin.py:673
 msgid "Conversations can now retain up to **{}** messages"
@@ -573,18 +512,15 @@ msgid "\n"
 "        this only applies to any conversation between the user and bot after that.\n\n"
 "        Set to 0 to store conversations indefinitely or until the bot restarts or cog is reloaded\n"
 "        "
-msgstr "Postavite vrijeme isteka razgovora\n\n"
-"        Bez obzira na ovaj broj, uvijek su uključeni početni promptni i interni sustav sustava,\n"
-"        To se odnosi samo na bilo koji razgovor između korisnika i bota nakon toga.\n\n"
-"        Postavite na 0 za pohranu razgovora u nedogled ili dok se bot ponovno pokrene ili ne ponovno učitava"
+msgstr ""
 
 #: commands\admin.py:688 commands\admin.py:1605
 msgid "Max retention time needs to be at least 0 or higher"
-msgstr "Maksimalno vrijeme zadržavanja mora biti najmanje 0 ili više"
+msgstr ""
 
 #: commands\admin.py:693
 msgid "Conversations will be stored until the bot restarts or the cog is reloaded"
-msgstr "Razgovori će se pohraniti sve dok se bot ponovno pokrene ili ne ponovno učitava zupčanik"
+msgstr ""
 
 #: commands\admin.py:697
 msgid "Conversations will be considered active for **{}** seconds"
@@ -596,12 +532,11 @@ msgid "\n"
 "        Set the temperature for the model (0.0 - 2.0)\n\n"
 "        Closer to 0 is more concise and accurate while closer to 2 is more imaginative\n"
 "        "
-msgstr "Postavite temperaturu za model (0,0 - 2,0)\n\n"
-"        Bliže 0 je sažetiji i precizniji, dok je bliže 2 maštovitije"
+msgstr ""
 
 #: commands\admin.py:711
 msgid "Temperature must be between **0.0** and **2.0**"
-msgstr "Temperatura mora biti između ** 0,0 ** i ** 2,0 **"
+msgstr ""
 
 #: commands\admin.py:716
 msgid "Temperature has been set to **{}**"
@@ -614,9 +549,7 @@ msgid "\n"
 "        *This command can be used when changing the embedding method you use with your self-hosted llm*\n\n"
 "        Embeddings that were created using OpenAI cannot be use with the self-hosted model and vice versa\n"
 "        "
-msgstr "Osvježite ugradnju utega\n\n"
-"        *Ova se naredba može koristiti prilikom promjene metode ugradnje koju koristite sa svojim samo-domaćim LLM-om*\n\n"
-"        Ugradnje koje su stvorene pomoću OpenAi-a ne mogu se koristiti s modelom samo-hostiranih i obrnuto"
+msgstr ""
 
 #: commands\admin.py:733
 msgid "{} embeddings have been updated"
@@ -624,7 +557,7 @@ msgstr ""
 
 #: commands\admin.py:735
 msgid "No embeddings needed to be refreshed"
-msgstr "Nije trebalo osvježiti ugradnje"
+msgstr ""
 
 #: commands\admin.py:739
 #, docstring
@@ -635,20 +568,15 @@ msgid "Toggle whether GPT can call functions\n\n"
 "        - gpt-4\n"
 "        - gpt-4-32k\n"
 "        "
-msgstr "Prebacite li GPT funkcije poziva\n\n"
-"        Samo sljedeći modeli mogu nazvati funkcije trenutno (samo s otvorenim ključem)\n"
-"        -GPT-3.5-turbo\n"
-"        -GPT-3.5-turbo-16K\n"
-"        - GPT-4\n"
-"        -GPT-4-32K"
+msgstr ""
 
 #: commands\admin.py:750
 msgid "Assistant will not call functions"
-msgstr "Pomoćnik neće nazvati funkcije"
+msgstr ""
 
 #: commands\admin.py:753
 msgid "Assistant will now call functions as needed"
-msgstr "Pomoćnik će sada po potrebi nazvati funkcije"
+msgstr ""
 
 #: commands\admin.py:758
 #, docstring
@@ -660,17 +588,11 @@ msgid "Set the maximum function calls allowed in a row\n\n"
 "        - gpt-4\n"
 "        - gpt-4-32k\n"
 "        "
-msgstr "Postavite maksimalne pozive funkcije dopuštene u nizu\n\n"
-"        Ovo postavlja koliko puta model može nazvati funkcije zaredom\n\n"
-"        Trenutno samo sljedeći modeli mogu nazvati funkcije\n"
-"        -GPT-3.5-turbo\n"
-"        -GPT-3.5-turbo-16K\n"
-"        - GPT-4\n"
-"        -GPT-4-32K"
+msgstr ""
 
 #: commands\admin.py:771
 msgid "Function calls will not be used since recursion is 0"
-msgstr "Pozivi funkcije neće se koristiti jer je rekurzija 0"
+msgstr ""
 
 #: commands\admin.py:773
 msgid "The model can now call various functions up to {} times before returning a response"
@@ -682,12 +604,11 @@ msgid "\n"
 "        set min character length for questions\n\n"
 "        Set to 0 to respond to anything\n"
 "        "
-msgstr "Postavite duljinu min znakova za pitanja\n\n"
-"        Postavite na 0 da odgovori na bilo što"
+msgstr ""
 
 #: commands\admin.py:787
 msgid "Minimum length needs to be at least 0 or higher"
-msgstr "Minimalna duljina mora biti najmanje 0 ili više"
+msgstr ""
 
 #: commands\admin.py:792
 msgid "{} will respond regardless of message length"
@@ -707,16 +628,11 @@ msgid "\n"
 "        - Ideally set max to 500 less than that models maximum, to allow adequate responses\n\n"
 "        Using more than the model can handle will raise exceptions.\n"
 "        "
-msgstr "Postavite max tokene koje će bot poslati na model\n\n"
-"        ** Savjeti **\n"
-"        - Max tokeni su meka kapa, ponekad poruke mogu biti malo više\n"
-"        - Ako postavite max tokene previsoke, zupčanik će automatski prilagoditi 100 manje od modela prirodne kape\n"
-"        - idealno postavite max na 500 manje od onih modela maksimalnih, kako bi se omogućili odgovarajući odgovori\n\n"
-"        Korištenje više od modela može se nositi s iznimkama."
+msgstr ""
 
 #: commands\admin.py:815 commands\admin.py:1521
 msgid "Use at least 100 tokens"
-msgstr "Koristite najmanje 100 tokena"
+msgstr ""
 
 #: commands\admin.py:818
 msgid "The maximum amount of tokens sent in a payload will be {}.\n"
@@ -729,12 +645,11 @@ msgid "\n"
 "        Set the max response tokens the model can respond with\n\n"
 "        Set to 0 for response tokens to be dynamic\n"
 "        "
-msgstr "Postavite maksimalne tokene odgovora koje model može odgovoriti\n\n"
-"        Postavite na 0 da bi tokeni odgovora bili dinamični"
+msgstr ""
 
 #: commands\admin.py:833 commands\admin.py:1549
 msgid "Cannot be a negative number!"
-msgstr "Ne može biti negativan broj!"
+msgstr ""
 
 #: commands\admin.py:837
 msgid "The maximum amount of tokens in the models responses will be {}."
@@ -742,7 +657,7 @@ msgstr ""
 
 #: commands\admin.py:841
 msgid "Response tokens will now be dynamic"
-msgstr "Tokeni odgovora sada će biti dinamični"
+msgstr ""
 
 #: commands\admin.py:847
 #, docstring
@@ -762,20 +677,7 @@ msgid "\n"
 "        - text-ada-001: 2049, completion\n\n"
 "        Other sub-models are also included\n"
 "        "
-msgstr "Postavite model OpenAi za upotrebu\n\n"
-"        Valjani modeli i njihove informacije o kontekstu:\n"
-"        - Naziv modela: maxtokens, modelType\n"
-"        -GPT-3.5-turbo: 4096, chat\n"
-"        -GPT-3.5-turbo-16K: 16384, Chat\n"
-"        - GPT-4: 8192, chat\n"
-"        -GPT-4-32K: 32768, Chat\n"
-"        -Code-Davinci-002: 8001, chat\n"
-"        -Tekst-davinci-003: 4097, završetak\n"
-"        -Tekst-davinci-002: 4097, završetak\n"
-"        -Tekst-kurie-001: 2049, završetak\n"
-"        -Tekstualno babo-001: 2049, završetak\n"
-"        -Text-ADA-001: 2049, završetak\n\n"
-"        Uključeni su i drugi pod-modeli"
+msgstr ""
 
 #: commands\admin.py:866
 msgid "**Chat**\n"
@@ -791,7 +693,7 @@ msgstr ""
 
 #: commands\admin.py:881 commands\admin.py:1496
 msgid "This model is not available for the API key provided!"
-msgstr "Ovaj model nije dostupan za API ključ!"
+msgstr ""
 
 #: commands\admin.py:885
 msgid "Invalid model type! Available model types are:\n"
@@ -812,15 +714,15 @@ msgstr ""
 
 #: commands\admin.py:902 commands\admin.py:922
 msgid "Endpoint has been reset!"
-msgstr "Krajnja točka je resetirana!"
+msgstr ""
 
 #: commands\admin.py:905 commands\admin.py:925
 msgid "Endpoint has been overwritten!"
-msgstr "Krajnja točka je prepisana!"
+msgstr ""
 
 #: commands\admin.py:908 commands\admin.py:928
 msgid "Endpoint has been set!"
-msgstr "Postavljena je krajnja točka!"
+msgstr ""
 
 #: commands\admin.py:915
 #, docstring
@@ -836,16 +738,15 @@ msgid "\n"
 "        Wipe saved embeddings for the assistant\n\n"
 "        This will delete any and all saved embedding training data for the assistant.\n"
 "        "
-msgstr "Obrišite uštede ugrađene za pomoćnika\n\n"
-"        To će izbrisati sve i sve spremljene ugrađene podatke o obuci za pomoćnika."
+msgstr ""
 
 #: commands\admin.py:941 commands\admin.py:1744
 msgid "Not wiping embedding data"
-msgstr "Ne obrisati ugrađivanje podataka"
+msgstr ""
 
 #: commands\admin.py:944
 msgid "All embedding data has been wiped!"
-msgstr "Svi podaci o ugradnji obrisani su!"
+msgstr ""
 
 #: commands\admin.py:949
 #, docstring
@@ -853,16 +754,15 @@ msgid "\n"
 "        Wipe saved conversations for the assistant in this server\n\n"
 "        This will delete any and all saved conversations for the assistant.\n"
 "        "
-msgstr "Obrišite spremljene razgovore za pomoćnika na ovom poslužitelju\n\n"
-"        To će izbrisati sve spremljene razgovore za pomoćnika."
+msgstr ""
 
 #: commands\admin.py:955 commands\admin.py:1717
 msgid "Not wiping conversations"
-msgstr "Ne brišući razgovore"
+msgstr ""
 
 #: commands\admin.py:959
 msgid "Conversations have been wiped in this server!"
-msgstr "Razgovori su obrisani na ovom poslužitelju!"
+msgstr ""
 
 #: commands\admin.py:964
 #, docstring
@@ -870,16 +770,15 @@ msgid "\n"
 "        Set the embedding inclusion amout\n\n"
 "        Top N is the amount of embeddings to include with the initial prompt\n"
 "        "
-msgstr "Postavite umetanje uključivanja\n\n"
-"        Top N je količina ugradnje koje treba uključiti s početnim promptom"
+msgstr ""
 
 #: commands\admin.py:970
 msgid "Top N must be between 0 and 10"
-msgstr "Vrh n mora biti između 0 i 10"
+msgstr ""
 
 #: commands\admin.py:974
 msgid "Embeddings will not be pulled during conversations"
-msgstr "Ugradnje se neće povući tijekom razgovora"
+msgstr ""
 
 #: commands\admin.py:977
 msgid "Up to **{}** embeddings will be pulled for each interaction"
@@ -893,14 +792,11 @@ msgid "\n"
 "        Questions are converted to embeddings and compared against stored embeddings to pull the most relevant, this is the score that is derived from that comparison\n\n"
 "        **Hint**: The closer to 1 you get, the more deterministic and accurate the results may be, just don't be *too* strict or there wont be any results.\n"
 "        "
-msgstr "Postavite minimalnu srodnost koju ugradnja mora biti uključena u prompt\n\n"
-"        Prag srodnosti između 0 i 1 koji uključuje ugradnje tijekom chata\n\n"
-"        Pitanja se pretvaraju u ugradnje i uspoređuju se s pohranjenim ugradnjama kako bi se povukli najrelevantniji, ovo je rezultat koji je izveden iz te usporedbe\n\n"
-"        ** nagovještaj **: Što se bliži 1, to su determiniraniji i točniji rezultati, samo nemojte biti*previše*strogi ili neće biti rezultata."
+msgstr ""
 
 #: commands\admin.py:993
 msgid "Minimum relatedness must be between 0 and 1"
-msgstr "Minimalna povezanost mora biti između 0 i 1"
+msgstr ""
 
 #: commands\admin.py:996
 msgid "Minimum relatedness has been set to **{}**"
@@ -909,11 +805,11 @@ msgstr ""
 #: commands\admin.py:1001
 #, docstring
 msgid "Remove certain words/phrases in the bot's responses"
-msgstr "Uklonite određene riječi/fraze u odgovorima bota"
+msgstr ""
 
 #: commands\admin.py:1005
 msgid "That regex is invalid"
-msgstr "Taj regex nije valjan"
+msgstr ""
 
 #: commands\admin.py:1009
 msgid "`{}` has been **Removed** from the blacklist"
@@ -930,17 +826,15 @@ msgid "\n"
 "        Some regexes can cause [catastrophically backtracking](https://www.rexegg.com/regex-explosive-quantifiers.html)\n"
 "        The bot can safely handle if this happens and will either continue on, or block the response.\n"
 "        "
-msgstr "Prebacite li neuspjeli regex blokira odgovor pomoćnika\n\n"
-"        Neki regexe mogu uzrokovati [katastrofalno povratno udaranje] (https://www.rexegg.com/regex-explosive-quantifiers.html)\n"
-"        Bot se može sigurno nositi ako se to dogodi i nastavit će ili blokirati odgovor."
+msgstr ""
 
 #: commands\admin.py:1026
 msgid "If a regex blacklist fails, the bots reply will be blocked"
-msgstr "Ako regex crna lista ne uspije, odgovor bota bit će blokiran"
+msgstr ""
 
 #: commands\admin.py:1029
 msgid "If a reges blacklist fails, the bot will still reply"
-msgstr "Ako crna lista rega ne uspije, bot će i dalje odgovoriti"
+msgstr ""
 
 #: commands\admin.py:1034
 #, docstring
@@ -952,24 +846,19 @@ msgid "\n"
 "        **Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage\n\n"
 "        Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground\n"
 "        "
-msgstr "Ciklus između metoda ugradnje\n\n"
-"        ** Dinamično ** Ugradnje znače da su ugrađeni ugradnje dinamički dodani početnom upitu za svako pojedinačno pitanje.\n"
-"        Kad svaki put korisnik postavi pitanje, prethodno ugrađivanje zamijenjeno je ugradnjom izvučenim iz trenutnog pitanja, to značajno smanjuje korištenje tokena\n\n"
-"        ** Statički ** Ugradnje se primjenjuju ispred svake korisničke poruke i pohranjuju se s razgovorom, umjesto da se zamijene sa svakim pitanjem.\n\n"
-"        ** Hybrid ** Ugradnje su kombinacija, pri čemu se prvo ugradnja pohranjuje u razgovor, a ostalo je dinamično, to se malo sprema na korištenje tokena\n\n"
-"        Dinamična ugradnja korisna su za pitanja i odgovori, ali ne toliko za chat kada trebate zadržati kontekst izvučen iz ugradnje.Hibridna metoda je dobra srednja zemlja"
+msgstr ""
 
 #: commands\admin.py:1049
 msgid "Embedding method has been set to **Static**"
-msgstr "Metoda ugradnje postavljena je na ** statički **"
+msgstr ""
 
 #: commands\admin.py:1052
 msgid "Embedding method has been set to **Hybrid**"
-msgstr "Metoda ugradnje postavljena je na ** hibrid **"
+msgstr ""
 
 #: commands\admin.py:1055
 msgid "Embedding method has been set to **Dynamic**"
-msgstr "Metoda ugradnje postavljena je na ** dinamički **"
+msgstr ""
 
 #: commands\admin.py:1060
 #, docstring
@@ -978,14 +867,11 @@ msgid "Import embeddings to use with the assistant\n\n"
 "            overwrite (bool): overwrite embeddings with existing entry names\n\n"
 "        This will read excel files too\n"
 "        "
-msgstr "Uvoz ugradnje za korištenje s pomoćnikom\n\n"
-"        Args:\n"
-"            prepisati (bool): prepisati ugradnje s postojećim ulaznim imenima\n\n"
-"        Ovo će čitati i Excel datoteke"
+msgstr ""
 
 #: commands\admin.py:1073
 msgid "You must attach **.csv** files to this command or reference a message that has them!"
-msgstr "Morate priložiti **. CSV ** datoteke na ovu naredbu ili uputiti poruku koja ih ima!"
+msgstr ""
 
 #: commands\admin.py:1089 commands\admin.py:1176
 msgid "Error reading **{}**: {}"
@@ -997,7 +883,7 @@ msgstr ""
 
 #: commands\admin.py:1108
 msgid "There are no valid files to import!"
-msgstr "Nema valjanih datoteka za uvoz!"
+msgstr ""
 
 #: commands\admin.py:1110
 msgid "Processing the following files in the background\n"
@@ -1006,11 +892,11 @@ msgstr ""
 
 #: commands\admin.py:1126
 msgid "processing"
-msgstr "obrada"
+msgstr ""
 
 #: commands\admin.py:1128
 msgid "overwriting"
-msgstr "prepisivanje"
+msgstr ""
 
 #: commands\admin.py:1135
 msgid "{}\n"
@@ -1036,13 +922,11 @@ msgid "Import embeddings to use with the assistant\n\n"
 "        Args:\n"
 "            overwrite (bool): overwrite embeddings with existing entry names\n"
 "        "
-msgstr "Uvoz ugradnje za korištenje s pomoćnikom\n\n"
-"        Args:\n"
-"            prepisati (bool): prepisati ugradnje s postojećim ulaznim imenima"
+msgstr ""
 
 #: commands\admin.py:1161 commands\admin.py:1699
 msgid "You must attach **.json** files to this command or reference a message that has them!"
-msgstr "Morate priložiti **. Json ** datoteke na ovu naredbu ili uputiti poruku koja ih ima!"
+msgstr ""
 
 #: commands\admin.py:1188
 msgid "Failed to import **{}** because it contains invalid formatting!"
@@ -1058,30 +942,29 @@ msgstr ""
 msgid "Export embeddings to a .csv file\n\n"
 "        **Note:** csv exports do not include the embedding values\n"
 "        "
-msgstr "Izvoz ugradnje u .csv datoteku\n\n"
-"        ** Napomena: ** Izvoz CSV -a ne uključuje vrijednosti ugradnje"
+msgstr ""
 
 #: commands\admin.py:1210 commands\admin.py:1254
 msgid "There are no embeddings to export!"
-msgstr "Nema ugradnje za izvoz!"
+msgstr ""
 
 #: commands\admin.py:1223 commands\admin.py:1243 commands\admin.py:1262
 #: commands\admin.py:1282 commands\admin.py:1685
 msgid "Here is your embeddings export!"
-msgstr "Evo izvoza ugradnje!"
+msgstr ""
 
 #: commands\admin.py:1226 commands\admin.py:1265 commands\admin.py:1667
 msgid "File too large, attempting to compress..."
-msgstr "Datoteka prevelika, pokušaj kompresije ..."
+msgstr ""
 
 #: commands\admin.py:1246 commands\admin.py:1285 commands\admin.py:1688
 msgid "File is still too large even with compression!"
-msgstr "Datoteka je i dalje prevelika čak i sa kompresijom!"
+msgstr ""
 
 #: commands\admin.py:1251
 #, docstring
 msgid "Export embeddings to a json file"
-msgstr "Izvoz ugradnje u json datoteku"
+msgstr ""
 
 #: commands\admin.py:1293
 #, docstring
@@ -1092,11 +975,7 @@ msgid "\n"
 "        **Note**\n"
 "        You can enter a search query with this command to bring up the menu and go directly to that embedding selection.\n"
 "        "
-msgstr "Upravljanje ugradnjama za trening\n\n"
-"        Ugradnje se koriste za optimizaciju obuke pomoćnika i minimiziranje uporabe tokena.\n\n"
-"        Koristeći ovo, bot može pohraniti ogromne količine kontekstualnih informacija bez prelaska ograničenja tokena.\n\n"
-"        **Bilješka**\n"
-"        Možete unijeti upit za pretraživanje s ovom naredbom kako biste pokrenuli izbornik i krenuli izravno na odabir ugradnje."
+msgstr ""
 
 #: commands\admin.py:1341
 #, docstring
@@ -1162,7 +1041,7 @@ msgstr ""
 #: commands\admin.py:1471
 #, docstring
 msgid "Override settings for specific roles"
-msgstr "Prejasni postavke za određene uloge"
+msgstr ""
 
 #: commands\admin.py:1475
 #, docstring
@@ -1170,8 +1049,7 @@ msgid "\n"
 "        Assign a role to use a model\n\n"
 "        *Specify same role and model to remove the override*\n"
 "        "
-msgstr "Dodijelite ulogu za korištenje modela\n\n"
-"        *Navedite istu ulogu i model da biste uklonili poništenje*"
+msgstr ""
 
 #: commands\admin.py:1488
 msgid "Assistant does not support this model yet! Valid model types are\n"
@@ -1196,8 +1074,7 @@ msgid "\n"
 "        Assign a max token override to a role\n\n"
 "        *Specify same role and token count to remove the override*\n"
 "        "
-msgstr "Dodijelite max token prevladavanje ulozi\n\n"
-"        *Navedite istu ulogu i broj tokena da biste uklonili poništenje*"
+msgstr ""
 
 #: commands\admin.py:1527
 msgid "Max token override for {} removed!"
@@ -1218,9 +1095,7 @@ msgid "\n"
 "        Set to 0 for response tokens to be dynamic\n\n"
 "        *Specify same role and token count to remove the override*\n"
 "        "
-msgstr "Dodijelite ulogu maksimalnog tokena reakcije\n\n"
-"        Postavite na 0 da bi tokeni odgovora bili dinamični\n\n"
-"        *Navedite istu ulogu i broj tokena da biste uklonili poništenje*"
+msgstr ""
 
 #: commands\admin.py:1556
 msgid "Max response token override for {} removed!"
@@ -1240,8 +1115,7 @@ msgid "\n"
 "        Assign a max message retention override to a role\n\n"
 "        *Specify same role and retention amount to remove the override*\n"
 "        "
-msgstr "Dodijelite maksimalno poništenje za zadržavanje poruke ulozi\n\n"
-"        *Navedite istu ulogu i iznos zadržavanja da biste uklonili poništenje*"
+msgstr ""
 
 #: commands\admin.py:1584
 msgid "Max retention override for {} removed!"
@@ -1261,8 +1135,7 @@ msgid "\n"
 "        Assign a max retention time override to a role\n\n"
 "        *Specify same role and time to remove the override*\n"
 "        "
-msgstr "Dodijelite maksimalno prevladavanje vremena zadržavanja ulozi\n\n"
-"        *Navedite istu ulogu i vrijeme za uklanjanje poništavanja*"
+msgstr ""
 
 #: commands\admin.py:1612
 msgid "Max retention time override for {} removed!"
@@ -1279,15 +1152,15 @@ msgstr ""
 #: commands\admin.py:1633
 #, docstring
 msgid "Wipe all settings and data for entire cog"
-msgstr "Obrišite sve postavke i podatke za cijeli zupčanik"
+msgstr ""
 
 #: commands\admin.py:1635
 msgid "Not wiping cog"
-msgstr "Ne brišeći zupčanik"
+msgstr ""
 
 #: commands\admin.py:1640
 msgid "Cog has been wiped!"
-msgstr "COG je obrisan!"
+msgstr ""
 
 #: commands\admin.py:1645
 #, docstring
@@ -1295,23 +1168,22 @@ msgid "\n"
 "        Take a backup of the cog\n\n"
 "        - This does not backup conversation data\n"
 "        "
-msgstr "Uzmite sigurnosnu kopiju\n\n"
-"        - ovo ne sigurnosno kopiranje podataka o razgovoru"
+msgstr ""
 
 #: commands\admin.py:1664
 msgid "Here is your export!"
-msgstr "Evo vašeg izvoza!"
+msgstr ""
 
 #: commands\admin.py:1693
 #, docstring
 msgid "\n"
 "        Restore the cog from a backup\n"
 "        "
-msgstr "Vratite zupčanik iz sigurnosne kopije"
+msgstr ""
 
 #: commands\admin.py:1705
 msgid "Cog has been restored!"
-msgstr "COG je obnovljen!"
+msgstr ""
 
 #: commands\admin.py:1711
 #, docstring
@@ -1319,25 +1191,24 @@ msgid "\n"
 "        Wipe saved conversations for the assistant in all servers\n\n"
 "        This will delete any and all saved conversations for the assistant.\n"
 "        "
-msgstr "Obrišite uštede razgovore za pomoćnika na svim poslužiteljima\n\n"
-"        To će izbrisati sve spremljene razgovore za pomoćnika."
+msgstr ""
 
 #: commands\admin.py:1720
 msgid "Conversations have been wiped for all servers!"
-msgstr "Razgovori su obrisani za sve poslužitelje!"
+msgstr ""
 
 #: commands\admin.py:1726
 #, docstring
 msgid "Toggle persistent conversations"
-msgstr "Prebacite trajne razgovore"
+msgstr ""
 
 #: commands\admin.py:1729
 msgid "Persistent conversations have been **Disabled**"
-msgstr "Uporni razgovori su ** onemogućeni **"
+msgstr ""
 
 #: commands\admin.py:1732
 msgid "Persistent conversations have been **Enabled**"
-msgstr "Uporni razgovori su ** omogućeni **"
+msgstr ""
 
 #: commands\admin.py:1738
 #, docstring
@@ -1345,12 +1216,11 @@ msgid "\n"
 "        Wipe saved embeddings for all servers\n\n"
 "        This will delete any and all saved embedding training data for the assistant.\n"
 "        "
-msgstr "Obrišite uštede ugrađene za sve poslužitelje\n\n"
-"        To će izbrisati sve i sve spremljene ugrađene podatke o obuci za pomoćnika."
+msgstr ""
 
 #: commands\admin.py:1747
 msgid "All embedding data has been wiped for all servers!"
-msgstr "Svi podaci o ugradnji obrisani su za sve poslužitelje!"
+msgstr ""
 
 #: commands\admin.py:1753
 #, docstring
@@ -1358,16 +1228,15 @@ msgid "\n"
 "        Toggle whether the assistant listens to other bots\n\n"
 "        **NOT RECOMMENDED FOR PUBLIC BOTS!**\n"
 "        "
-msgstr "Prebacite li pomoćnik slušanja drugih botova\n\n"
-"        ** Ne preporučuje se za javne botove! **"
+msgstr ""
 
 #: commands\admin.py:1760
 msgid "Assistant will no longer listen to other bot messages"
-msgstr "Pomoćnik više neće slušati druge BOT poruke"
+msgstr ""
 
 #: commands\admin.py:1763
 msgid "Assistant will listen to other bot messages"
-msgstr "Pomoćnik će slušati ostale poruke bota"
+msgstr ""
 
 #: commands\base.py:36
 #, docstring
@@ -1392,13 +1261,11 @@ msgid "\n"
 "        Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel\n\n"
 "        Conversations are only stored in memory until the bot restarts or the cog reloads\n"
 "        "
-msgstr "Provjerite token i broj poruka o sebi ili razgovoru drugog korisnika za ovaj kanal\n\n"
-"        Razgovori su * po * korisnik * po * kanalu, što znači da će razgovor koji imate u jednom kanalu u memoriji zasebno od drugog razgovora u zasebnom kanalu\n\n"
-"        Razgovori se pohranjuju samo u memoriji dok se bot ponovno pokrene ili ne ponovno učitava COG"
+msgstr ""
 
 #: commands\base.py:107
 msgid "Could not fetch external model"
-msgstr "Nije mogao donijeti vanjski model"
+msgstr ""
 
 #: commands\base.py:113
 msgid "`Messages: `{}/{}\n"
@@ -1413,7 +1280,7 @@ msgstr ""
 
 #: commands\base.py:131
 msgid "Token limit is a soft cap and excess is trimmed before sending to the api"
-msgstr "Ograničenje tokena je meka poklopac, a višak je obrezan prije slanja u API"
+msgstr ""
 
 #: commands\base.py:138
 #, docstring
@@ -1421,12 +1288,11 @@ msgid "\n"
 "        Reset your conversation with the bot\n\n"
 "        This will clear all message history between you and the bot for this channel\n"
 "        "
-msgstr "Resetirajte svoj razgovor s botom\n\n"
-"        To će očistiti svu povijest poruka između vas i bota za ovaj kanal"
+msgstr ""
 
 #: commands\base.py:145
 msgid "Your conversation in this channel has been reset!"
-msgstr "Vaš razgovor na ovom kanalu je resetiran!"
+msgstr ""
 
 #: commands\base.py:150
 #, docstring
@@ -1434,24 +1300,23 @@ msgid "\n"
 "        Fetch related embeddings according to the current settings along with their scores\n\n"
 "        You can use this to fine-tune the minimum relatedness for your assistant\n"
 "        "
-msgstr "Dohvaćanje ugrađenih u skladu s trenutnim postavkama zajedno s njihovim rezultatima\n\n"
-"        To možete upotrijebiti za fino podešavanje minimalne povezanosti za svog pomoćnika"
+msgstr ""
 
 #: commands\base.py:157
 msgid "You do not have any embeddings configured!"
-msgstr "Nemate konfigurirane ugradnje!"
+msgstr ""
 
 #: commands\base.py:159
 msgid "Top N is set to 0 so no embeddings will be returned"
-msgstr "Top N je postavljen na 0, tako da se neće vratiti ugradnje"
+msgstr ""
 
 #: commands\base.py:165
 msgid "Failed to get embedding for your query"
-msgstr "Nije uspjelo ugraditi za vaš upit"
+msgstr ""
 
 #: commands\base.py:170
 msgid "No embeddings could be related to this query with the current settings"
-msgstr "Nijedna ugradnja ne bi mogla biti povezana s ovim upitom s trenutnim postavkama"
+msgstr ""
 
 #: commands\base.py:175
 msgid "`Entry Name:  `{}\n"
@@ -1471,14 +1336,13 @@ msgid "\n"
 "        View the current transcript of a conversation\n\n"
 "        This is mainly here for moderation purposes\n"
 "        "
-msgstr "Pogledajte trenutni transkript razgovora\n\n"
-"        Ovo je uglavnom ovdje u svrhu umjerenosti"
+msgstr ""
 
 #: commands\base.py:198
 msgid "You have no conversation in this channel!"
-msgstr "Nemate razgovor na ovom kanalu!"
+msgstr ""
 
 #: commands\base.py:210
 msgid "Here is your conversation transcript!"
-msgstr "Evo vašeg transkripta razgovora!"
+msgstr ""
 
