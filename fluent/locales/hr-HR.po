@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-26 19:16-0400\n"
-"PO-Revision-Date: 2023-08-26 21:08\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -40,12 +40,12 @@ msgstr ""
 #: fluent.py:47
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Nema podataka za brisanje"
 
 #: fluent.py:72
 #, docstring
 msgid "Translate a message"
-msgstr ""
+msgstr "Prevedite poruku"
 
 #: fluent.py:75
 msgid "The target language `{}` was not found."
@@ -53,20 +53,20 @@ msgstr ""
 
 #: fluent.py:84
 msgid "Could not find any content to translate!"
-msgstr ""
+msgstr "Nisam mogao pronaći nijedan sadržaj za prevođenje!"
 
 #: fluent.py:90
 msgid "An error occured while translating, Check logs for more info."
-msgstr ""
+msgstr "Došlo je do pogreške tijekom prevođenja, provjerite zapisnike za više informacija."
 
 #: fluent.py:97
 msgid "❌ Translation failed."
-msgstr ""
+msgstr "❌ Prijevod nije uspio."
 
 #: fluent.py:122
 #, docstring
 msgid "Base command"
-msgstr ""
+msgstr "Bazna naredba"
 
 #: fluent.py:140
 #, docstring
@@ -75,19 +75,21 @@ msgid "\n"
 "        Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be\n"
 "        in english, then make english language 2 to use less api calls.\n"
 "        "
-msgstr ""
+msgstr "Dodajte kanal i jezike za prevođenje između\n\n"
+"        Savjet: Jezik 1 je prvi koji je pretvoren.Na primjer, ako očekujete da će većina razgovora biti\n"
+"        Na engleskom jeziku, a zatim napravite engleski jezik 2 da biste koristili manje API poziva."
 
 #: fluent.py:153
 msgid "Both of those languages are invalid."
-msgstr ""
+msgstr "Oba su jezika nevaljana."
 
 #: fluent.py:156
 msgid "Language 1 is invalid."
-msgstr ""
+msgstr "Jezik 1 je nevažeći."
 
 #: fluent.py:159
 msgid "Language 2 is invalid."
-msgstr ""
+msgstr "Jezik 2 je nevažeći."
 
 #: fluent.py:165
 msgid "❌ {} is already a fluent channel."
@@ -95,16 +97,16 @@ msgstr ""
 
 #: fluent.py:169
 msgid "✅ Fluent channel has been set!"
-msgstr ""
+msgstr "✅ Tečni kanal je postavljen!"
 
 #: fluent.py:185
 #, docstring
 msgid "Remove a channel from Fluent"
-msgstr ""
+msgstr "Uklonite kanal iz tečnog"
 
 #: fluent.py:193
 msgid "✅ Fluent channel has been deleted!"
-msgstr ""
+msgstr "✅ Tečni kanal je izbrisan!"
 
 #: fluent.py:195
 msgid "❌ {} isn't a fluent channel!"
@@ -113,11 +115,11 @@ msgstr ""
 #: fluent.py:199
 #, docstring
 msgid "View all fluent channels"
-msgstr ""
+msgstr "Pogledajte sve tečne kanale"
 
 #: fluent.py:211
 msgid "There are no fluent channels at this time."
-msgstr ""
+msgstr "U ovom trenutku nema tečnih kanala."
 
 #: fluent.py:212
 msgid "**Fluent Settings**\n"
@@ -126,9 +128,9 @@ msgstr ""
 
 #: fluent.py:257
 msgid "Unable to finish translation, perhaps the API is down."
-msgstr ""
+msgstr "Nesposoban završiti prijevod, možda je API dolje."
 
 #: fluent.py:298
 msgid "Invalid target language"
-msgstr ""
+msgstr "Nevažeći ciljni jezik"
 
