@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-16 00:18\n"
+"PO-Revision-Date: 2023-10-16 00:48\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -20,16 +20,16 @@ msgstr ""
 #: commands\admin.py:24
 #, docstring
 msgid "Base support ticket settings"
-msgstr "Postavke karata za osnovnu podršku"
+msgstr ""
 
 #: commands\admin.py:29 commands\admin.py:36
 #, docstring
 msgid "Ticket Setup Guide"
-msgstr "Vodič za postavljanje ulaznica"
+msgstr ""
 
 #: commands\admin.py:31
 msgid "To create a support ticket panel, type "
-msgstr "Da biste stvorili ploču za podršku, upišite"
+msgstr ""
 
 #: commands\admin.py:33
 msgid " <panel_name>`"
@@ -45,7 +45,7 @@ msgstr ""
 
 #: commands\admin.py:44
 msgid "Step 1"
-msgstr "Korak 1"
+msgstr ""
 
 #: commands\admin.py:45
 msgid "Set the channel that the bots ticket panel will be located in.\n"
@@ -57,7 +57,7 @@ msgstr ""
 
 #: commands\admin.py:47
 msgid "Step 2"
-msgstr "Korak 2"
+msgstr ""
 
 #: commands\admin.py:48
 msgid "Set the ID of the bots ticket panel message.\n"
@@ -74,11 +74,11 @@ msgstr ""
 
 #: commands\admin.py:55
 msgid "If the bot is having trouble finding the message, run the command in the same channel as it."
-msgstr "Ako bot ima problema s pronalaženjem poruke, pokrenite naredbu na istom kanalu kao i ona."
+msgstr ""
 
 #: commands\admin.py:58
 msgid "Step 3"
-msgstr "Korak 3"
+msgstr ""
 
 #: commands\admin.py:59
 msgid "Set the text of the ticket panel button.\n"
@@ -90,7 +90,7 @@ msgstr ""
 
 #: commands\admin.py:61
 msgid "Button Text"
-msgstr "Tekst gumba"
+msgstr ""
 
 #: commands\admin.py:62
 msgid "Set the ticket panel button color.\n"
@@ -98,7 +98,7 @@ msgstr ""
 
 #: commands\admin.py:63
 msgid "Valid colors are "
-msgstr "Važeće boje su"
+msgstr ""
 
 #: commands\admin.py:64
 msgid "<panel_name> <button_color>`"
@@ -106,7 +106,7 @@ msgstr ""
 
 #: commands\admin.py:65
 msgid "Button Color"
-msgstr "Boja gumba"
+msgstr ""
 
 #: commands\admin.py:66
 msgid "Set the button emoji for the ticket panel.\n"
@@ -118,7 +118,7 @@ msgstr ""
 
 #: commands\admin.py:68
 msgid "Button Emoji"
-msgstr "Gumb emoji"
+msgstr ""
 
 #: commands\admin.py:70
 msgid "Use threads instead of channels for tickets\n"
@@ -130,7 +130,7 @@ msgstr ""
 
 #: commands\admin.py:72 commands\admin.py:954
 msgid "Thread Tickets"
-msgstr "Ulaznice za nit"
+msgstr ""
 
 #: commands\admin.py:74
 msgid "Add a message the bot sends to the user in their ticket.\n"
@@ -138,7 +138,7 @@ msgstr ""
 
 #: commands\admin.py:76
 msgid "Ticket Messages"
-msgstr "Poruke ulaznica"
+msgstr ""
 
 #: commands\admin.py:78
 msgid "View and remove a messages the bot sends to the user in their ticket.\n"
@@ -146,7 +146,7 @@ msgstr ""
 
 #: commands\admin.py:80
 msgid "Remove/View Ticket Messages"
-msgstr "Uklonite/pogledajte poruke ulaznica"
+msgstr ""
 
 #: commands\admin.py:82
 msgid "Set the naming format for ticket channels that are opened.\n"
@@ -158,7 +158,7 @@ msgstr ""
 
 #: commands\admin.py:84
 msgid "Ticket Channel Name"
-msgstr "Naziv kanala ulaznica"
+msgstr ""
 
 #: commands\admin.py:85
 msgid "Set log channel for a ticket panel.\n"
@@ -170,33 +170,33 @@ msgstr ""
 
 #: commands\admin.py:87
 msgid "Log Channel"
-msgstr "Kanal"
+msgstr ""
 
 #: commands\admin.py:89
 msgid "Tip: you can create multiple support panels using the same message for a multi-button panel"
-msgstr "Savjet: Možete stvoriti više ploča za podršku pomoću iste poruke za ploču s više gumba"
+msgstr ""
 
 #: commands\admin.py:97
 #, docstring
 msgid "Add a support ticket panel"
-msgstr "Dodajte ploču za podršku"
+msgstr ""
 
 #: commands\admin.py:100
 msgid " Panel Saved"
-msgstr "Ploča spremljena"
+msgstr ""
 
 #: commands\admin.py:101
 msgid "Your panel has been added and will need to be configured."
-msgstr "Vaša ploča je dodana i trebat će je konfigurirati."
+msgstr ""
 
 #: commands\admin.py:106
 msgid "Panel already exists!"
-msgstr "Panel već postoji!"
+msgstr ""
 
 #: commands\admin.py:117
 #, docstring
 msgid "Set the category ID for a ticket panel"
-msgstr "Postavite ID kategorije za ploču s ulaznicama"
+msgstr ""
 
 #: commands\admin.py:121
 msgid "I need the `manage channels` permission to set this category"
@@ -212,11 +212,11 @@ msgstr ""
 
 #: commands\admin.py:128
 msgid "I cannot see that category!"
-msgstr "Ne vidim tu kategoriju!"
+msgstr ""
 
 #: commands\admin.py:130
 msgid "I cannot see message history in that category!"
-msgstr "Ne vidim povijest poruka u toj kategoriji!"
+msgstr ""
 
 #: commands\admin.py:133 commands\admin.py:153 commands\admin.py:168
 #: commands\admin.py:193 commands\admin.py:215 commands\admin.py:242
@@ -226,24 +226,24 @@ msgstr "Ne vidim povijest poruka u toj kategoriji!"
 #: commands\admin.py:1047 commands\admin.py:1063 commands\admin.py:1103
 #: commands\admin.py:1120 commands\admin.py:1133
 msgid "Panel does not exist!"
-msgstr "Panel ne postoji!"
+msgstr ""
 
 #: commands\admin.py:136
 msgid "New tickets will now be opened under that category!"
-msgstr "Nove ulaznice će se sada otvoriti u toj kategoriji!"
+msgstr ""
 
 #: commands\admin.py:145
 #, docstring
 msgid "Set the channel ID where a ticket panel is located"
-msgstr "Postavite ID kanala gdje se nalazi ploča za ulaznice"
+msgstr ""
 
 #: commands\admin.py:148 commands\admin.py:326
 msgid "I cannot see that channel!"
-msgstr "Ne vidim taj kanal!"
+msgstr ""
 
 #: commands\admin.py:150 commands\admin.py:328
 msgid "I cannot see message history in that channel!"
-msgstr "Ne vidim povijest poruka na tom kanalu!"
+msgstr ""
 
 #: commands\admin.py:159
 #, docstring
@@ -251,30 +251,29 @@ msgid "\n"
 "        Set the message ID of a ticket panel\n"
 "        Run this command in the same channel as the ticket panel message\n"
 "        "
-msgstr "Postavite ID poruke ploče ulaznica\n"
-"        Pokrenite ovu naredbu na istom kanalu kao i poruka ploče ulaznica"
+msgstr ""
 
 #: commands\admin.py:170
 msgid "Category ID must be set for this panel first!"
-msgstr "ID kategorije prvo mora biti postavljen za ovu ploču!"
+msgstr ""
 
 #: commands\admin.py:180
 #, docstring
 msgid "Set the button text for a support ticket panel"
-msgstr "Postavite tekst gumba za ploču za podršku"
+msgstr ""
 
 #: commands\admin.py:184
 msgid "The text content of a button must be less than 80 characters!"
-msgstr "Tekst sadržaj gumba mora biti manji od 80 znakova!"
+msgstr ""
 
 #: commands\admin.py:188
 msgid "This is what your button will look like with this text!"
-msgstr "Ovako će izgledati vaš gumb s ovim tekstom!"
+msgstr ""
 
 #: commands\admin.py:200
 #, docstring
 msgid "Set the button color for a support ticket panel"
-msgstr "Postavite boju gumba za ploču za podršku"
+msgstr ""
 
 #: commands\admin.py:206
 msgid " is not valid, must be one of the following\n"
@@ -282,16 +281,16 @@ msgstr ""
 
 #: commands\admin.py:210
 msgid "This is what your button will look like with this color!"
-msgstr "Ovako će izgledati vaš gumb s ovom bojom!"
+msgstr ""
 
 #: commands\admin.py:228
 #, docstring
 msgid "Set the button emoji for a support ticket panel"
-msgstr "Postavite gumb Emoji za ploču za podršku"
+msgstr ""
 
 #: commands\admin.py:233
 msgid "This is what your button will look like with this emoji!"
-msgstr "Ovako će izgledati vaš gumb s ovim emojijem!"
+msgstr ""
 
 #: commands\admin.py:238
 msgid "Failed to create test button. Error:\n"
@@ -316,11 +315,11 @@ msgstr ""
 #: commands\admin.py:274
 #, docstring
 msgid "Toggle whether a certain panel uses threads or channels"
-msgstr "Prebacite li određena ploča koristi niti ili kanale"
+msgstr ""
 
 #: commands\admin.py:281
 msgid "Set a panel channel first!"
-msgstr "Prvo postavite kanal ploče!"
+msgstr ""
 
 #: commands\admin.py:284
 msgid "I am missing the `Create Private Threads` permission!"
@@ -341,7 +340,7 @@ msgstr ""
 #: commands\admin.py:298
 #, docstring
 msgid "Throw a modal when the close button is clicked to enter a reason"
-msgstr "Bacite modal kada se klikne gumb za zatvaranje da unese razlog"
+msgstr ""
 
 #: commands\admin.py:307
 msgid "The {} panel will no longer show a close reason modal"
@@ -354,36 +353,36 @@ msgstr ""
 #: commands\admin.py:323
 #, docstring
 msgid "Set the logging channel for each panel's tickets"
-msgstr "Postavite kanal za prijavu za ulaznice svake ploče"
+msgstr ""
 
 #: commands\admin.py:330
 msgid "I cannot send messages in that channel!"
-msgstr "Ne mogu slati poruke na tom kanalu!"
+msgstr ""
 
 #: commands\admin.py:332
 msgid "I cannot embed links in that channel!"
-msgstr "Ne mogu ugraditi veze u taj kanal!"
+msgstr ""
 
 #: commands\admin.py:334
 msgid "I cannot attach files in that channel!"
-msgstr "Ne mogu priložiti datoteke na taj kanal!"
+msgstr ""
 
 #: commands\admin.py:344
 #, docstring
 msgid "Set a title for a ticket panel's modal"
-msgstr "Postavite naslov za modal ploče ulaznica"
+msgstr ""
 
 #: commands\admin.py:346
 msgid "The max length is 45!"
-msgstr "Maksimalna duljina je 45!"
+msgstr ""
 
 #: commands\admin.py:353
 msgid "Modal title set!"
-msgstr "Modalni set naslova!"
+msgstr ""
 
 #: commands\admin.py:356
 msgid "Modal title removed!"
-msgstr "Modalni naslov uklonjen!"
+msgstr ""
 
 #: commands\admin.py:361
 #, docstring
@@ -407,86 +406,85 @@ msgstr ""
 
 #: commands\admin.py:420
 msgid "type 'cancel' to cancel at any time"
-msgstr "Unesite \"Otkaži\" da biste otkazali u bilo kojem trenutku"
+msgstr ""
 
 #: commands\admin.py:429
 msgid "What would you like the field label to be? (45 chars or less)"
-msgstr "Što biste željeli da bude naljepnica na terenu?(45 Chars ili manje)"
+msgstr ""
 
 #: commands\admin.py:439
 msgid "Modal field labels must be 45 characters or less!"
-msgstr "Naljepnice modalnih polja moraju biti 45 znakova ili manje!"
+msgstr ""
 
 #: commands\admin.py:452
 msgid "What style would you like the text box to be? (long/short)"
-msgstr "Koji bi stil volio da tekstni okvir bude?(dugo kratko)"
+msgstr ""
 
 #: commands\admin.py:462
 msgid "Style must be long or short!"
-msgstr "Stil mora biti dugačak ili kratak!"
+msgstr ""
 
 #: commands\admin.py:471
 msgid "Would you like to set a placeholder for the text field?\n"
 "This is text that shows up in the box before the user types."
-msgstr "Želite li postaviti rezerviranje mjesta za tekstno polje?\n"
-"Ovo je tekst koji se prikazuje u okviru prije nego što se korisnik upiše."
+msgstr ""
 
 #: commands\admin.py:483
 msgid "Type your desired placeholder below (100 chars max)"
-msgstr "Upišite željeni držač mjesta u nastavku (100 chars max)"
+msgstr ""
 
 #: commands\admin.py:493
 msgid "Placeholders must be 100 characters or less!"
-msgstr "Nosači mjesta moraju biti 100 znakova ili manje!"
+msgstr ""
 
 #: commands\admin.py:502
 msgid "Would you like to set a default value for the text field?"
-msgstr "Želite li postaviti zadanu vrijednost za tekstualno polje?"
+msgstr ""
 
 #: commands\admin.py:511
 msgid "Type your desired default value below"
-msgstr "Unesite svoju željenu zadanu vrijednost u nastavku"
+msgstr ""
 
 #: commands\admin.py:524
 msgid "Would you like to make this field required?"
-msgstr "Želite li učiniti ovo polje?"
+msgstr ""
 
 #: commands\admin.py:537
 msgid "Would you like to set a minimum length for this field?"
-msgstr "Želite li postaviti minimalnu duljinu za ovo polje?"
+msgstr ""
 
 #: commands\admin.py:546
 msgid "Type the minimum length for this field below (less than 4000)"
-msgstr "Upišite minimalnu duljinu za ovo polje ispod (manje od 4000)"
+msgstr ""
 
 #: commands\admin.py:556 commands\admin.py:586
 msgid "That is not a number!"
-msgstr "To nije broj!"
+msgstr ""
 
 #: commands\admin.py:567
 msgid "Would you like to set a maximum length for this field?"
-msgstr "Želite li postaviti maksimalnu duljinu za ovo polje?"
+msgstr ""
 
 #: commands\admin.py:576
 msgid "Type the maximum length for this field below (up to 4000)"
-msgstr "Unesite maksimalnu duljinu za ovo polje ispod (do 4000)"
+msgstr ""
 
 #: commands\admin.py:604
 msgid "Your modal field has been added!"
-msgstr "Vaše modalno polje je dodano!"
+msgstr ""
 
 #: commands\admin.py:606
 msgid "Your modal field has been edited!"
-msgstr "Vaše modalno polje je uređeno!"
+msgstr ""
 
 #: commands\admin.py:616 commands\admin.py:772
 #, docstring
 msgid "View/Delete a ticket message for a support ticket panel"
-msgstr "Pogledajte/izbrišite poruku ulaznice za ploču za podršku"
+msgstr ""
 
 #: commands\admin.py:623
 msgid "This panel does not have any modal fields set!"
-msgstr "Ova ploča nema postavljeno modalna polja!"
+msgstr ""
 
 #: commands\admin.py:627
 msgid "`Label: `{}\n"
@@ -518,7 +516,7 @@ msgstr ""
 
 #: commands\admin.py:636 commands\admin.py:790
 msgid "Page"
-msgstr "Stranica"
+msgstr ""
 
 #: commands\admin.py:639
 msgid "Modal Fields for {}"
@@ -530,7 +528,7 @@ msgstr ""
 
 #: commands\admin.py:669
 msgid "Modal field has been deleted from "
-msgstr "Modalno polje je izbrisano iz"
+msgstr ""
 
 #: commands\admin.py:691
 #, docstring
@@ -546,45 +544,45 @@ msgstr ""
 
 #: commands\admin.py:705
 msgid "type 'cancel' to cancel the setup"
-msgstr "Upišite 'Otkaži' da biste otkazali postavljanje"
+msgstr ""
 
 #: commands\admin.py:709
 msgid "Would you like this ticket embed to have a title?"
-msgstr "Želite li da ova ulaznica ima naslov?"
+msgstr ""
 
 #: commands\admin.py:717
 msgid "Type your desired title below"
-msgstr "Upišite željeni naslov u nastavku"
+msgstr ""
 
 #: commands\admin.py:722 commands\admin.py:735 commands\admin.py:738
 #: commands\admin.py:756
 msgid "Ticket message addition cancelled"
-msgstr "Otkazan dodatak poruke ulaznica"
+msgstr ""
 
 #: commands\admin.py:728
 msgid "Type your desired ticket message below"
-msgstr "Upišite željenu poruku ulaznica u nastavku"
+msgstr ""
 
 #: commands\admin.py:742
 msgid "Would you like this ticket embed to have a footer?"
-msgstr "Želite li da ova ulaznica ima podnožje?"
+msgstr ""
 
 #: commands\admin.py:751
 msgid "Type your footer"
-msgstr "Upišite podnožje"
+msgstr ""
 
 #: commands\admin.py:755 commands\admin.py:1369 commands\admin.py:1392
 #: commands\admin.py:1411
 msgid "cancel"
-msgstr "otkazati"
+msgstr ""
 
 #: commands\admin.py:766
 msgid "Your ticket message has been added!"
-msgstr "Poruka vaše karte je dodana!"
+msgstr ""
 
 #: commands\admin.py:779
 msgid "This panel does not have any messages added!"
-msgstr "Ova ploča nema dodane nikakve poruke!"
+msgstr ""
 
 #: commands\admin.py:782
 msgid "**Title**\n"
@@ -600,30 +598,29 @@ msgstr ""
 
 #: commands\admin.py:786 commands\admin.py:799
 msgid "Ticket Messages for: "
-msgstr "Poruke ulaznica za:"
+msgstr ""
 
 #: commands\admin.py:802
 msgid "Ticket message has been deleted from "
-msgstr "Poruka ulaznice izbrisana je iz"
+msgstr ""
 
 #: commands\admin.py:816
 #, docstring
 msgid "View/Delete currently configured support ticket panels"
-msgstr "View/brisanje trenutno konfiguriranih ploča za podršku ulaznica"
+msgstr ""
 
 #: commands\admin.py:820
 msgid "There are no panels available!\n"
 "Use "
-msgstr "Nema na raspolaganju ploče!\n"
-"Koristiti"
+msgstr ""
 
 #: commands\admin.py:822
 msgid "to create one."
-msgstr "stvoriti jedan."
+msgstr ""
 
 #: commands\admin.py:834
 msgid "(alt)"
-msgstr "(alt)"
+msgstr ""
 
 #: commands\admin.py:853
 msgid "`Category:       `"
@@ -695,40 +692,40 @@ msgstr ""
 
 #: commands\admin.py:877
 msgid "Panel Roles(Mention)"
-msgstr "Uloge panela (spominju)"
+msgstr ""
 
 #: commands\admin.py:879
 msgid "Required Roles to Open"
-msgstr "Potrebne uloge za otvaranje"
+msgstr ""
 
 #: commands\admin.py:880
 msgid "Page "
-msgstr "Stranica"
+msgstr ""
 
 #: commands\admin.py:892
 msgid " panel has been deleted!"
-msgstr "Panel je izbrisan!"
+msgstr ""
 
 #: commands\admin.py:900
 msgid "There are no more panels configured!"
-msgstr "Nema više konfiguriranih ploča!"
+msgstr ""
 
 #: commands\admin.py:907
 #, docstring
 msgid "View support ticket settings"
-msgstr "Pogledajte postavke za podršku"
+msgstr ""
 
 #: commands\admin.py:910
 msgid "hours"
-msgstr "sati"
+msgstr ""
 
 #: commands\admin.py:911
 msgid "hour"
-msgstr "sat"
+msgstr ""
 
 #: commands\admin.py:914
 msgid "Disabled"
-msgstr "Onemogućeno"
+msgstr ""
 
 #: commands\admin.py:915
 msgid "`Max Tickets:      `"
@@ -760,11 +757,11 @@ msgstr ""
 
 #: commands\admin.py:921
 msgid "On"
-msgstr "Na"
+msgstr ""
 
 #: commands\admin.py:921
 msgid "Off"
-msgstr "Izvan"
+msgstr ""
 
 #: commands\admin.py:922
 msgid "`NoResponseDelete: `"
@@ -772,31 +769,31 @@ msgstr ""
 
 #: commands\admin.py:939
 msgid "Invalid"
-msgstr "Nevažeći"
+msgstr ""
 
 #: commands\admin.py:941
 msgid "Tickets Core Settings"
-msgstr "Ulaznice jezgrene postavke"
+msgstr ""
 
 #: commands\admin.py:946
 msgid "Support Roles(Mention)"
-msgstr "Uloge za podršku (spominju)"
+msgstr ""
 
 #: commands\admin.py:948
 msgid "Blacklist"
-msgstr "Crna lista"
+msgstr ""
 
 #: commands\admin.py:951
 msgid "Thread tickets will be closed/archived rather than deleted"
-msgstr "Ulaznice za nit bit će zatvorene/arhivirane, a ne izbrisane"
+msgstr ""
 
 #: commands\admin.py:953
 msgid "Thread tickets will be deleted instead of closed/archived"
-msgstr "Ulaznice za nit bit će izbrisane umjesto zatvorenih/arhiviranih"
+msgstr ""
 
 #: commands\admin.py:957
 msgid "Thread Ticket Auto-Add"
-msgstr "Automatsko dodavanje ulaznica za nit"
+msgstr ""
 
 #: commands\admin.py:958
 msgid "Auto-add support and panel roles to tickets that use threads: **{}**"
@@ -805,11 +802,11 @@ msgstr ""
 #: commands\admin.py:966
 #, docstring
 msgid "Set the max tickets a user can have open at one time of any kind"
-msgstr "Postavite max ulaznice koje korisnik može otvoriti u jednom trenutku bilo koje vrste"
+msgstr ""
 
 #: commands\admin.py:968
 msgid "Max ticket amount must be greater than 0!"
-msgstr "Maksimalni iznos ulaznice mora biti veći od 0!"
+msgstr ""
 
 #: commands\admin.py:979
 #, docstring
@@ -826,7 +823,7 @@ msgstr ""
 
 #: commands\admin.py:995
 msgid " has been added to support roles"
-msgstr "je dodan u podršku ulogama"
+msgstr ""
 
 #: commands\admin.py:1006
 #, docstring
@@ -850,11 +847,11 @@ msgstr ""
 #: commands\admin.py:1041
 #, docstring
 msgid "Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"
-msgstr "Postavite koliko zaposlenika može zatražiti/pridružiti se kartu prije nego što je gumb za pridruživanje onemogućen (ako koristite teme)"
+msgstr ""
 
 #: commands\admin.py:1044
 msgid "Amount cannot be negative!"
-msgstr "Iznos ne može biti negativan!"
+msgstr ""
 
 #: commands\admin.py:1050
 msgid "Up to {} staff member(s) can claim a single ticket"
@@ -866,8 +863,7 @@ msgid "\n"
 "        Add/Remove roles required to open a ticket for a specific panel\n\n"
 "        Specify the same role to remove it\n"
 "        "
-msgstr "Dodajte/uklonite uloge potrebne za otvaranje karte za određenu ploču\n\n"
-"        Navedite istu ulogu da biste je uklonili"
+msgstr ""
 
 #: commands\admin.py:1070
 msgid "{} has been removed from the {} panel's required open roles"
@@ -886,15 +882,11 @@ msgid "\n"
 "        If the panel is a channel type and a channel is used, the bot will use the category associated with the channel.\n\n"
 "        To remove the alt channel, specify the existing one\n"
 "        "
-msgstr "Postavite alternativni kanal na koji će se ulaznice otvoriti za ploču\n\n"
-"        Ako ploča koristi niti, to mora biti normalan tekstualni kanal.\n"
-"        Ako ploča koristi kanale, to mora biti kategorija.\n\n"
-"        Ako je ploča vrsta kanala i koristi se kanal, bot će koristiti kategoriju povezanu s kanalom.\n\n"
-"        Da biste uklonili ALT kanal, odredite postojeći"
+msgstr ""
 
 #: commands\admin.py:1107
 msgid "Alt channel has been removed for this panel!"
-msgstr "Alt kanal je uklonjen za ovu ploču!"
+msgstr ""
 
 #: commands\admin.py:1109
 msgid "Alt channel has been set to {}!"
@@ -903,11 +895,11 @@ msgstr ""
 #: commands\admin.py:1114
 #, docstring
 msgid "Set the priority order of a panel's button"
-msgstr "Postavite redoslijed prioriteta gumba ploče"
+msgstr ""
 
 #: commands\admin.py:1116
 msgid "Priority needs to be between 1 and 25"
-msgstr "Prioritet mora biti između 1 i 25"
+msgstr ""
 
 #: commands\admin.py:1122
 msgid "Priority for this panel has been set to {}!"
@@ -916,15 +908,15 @@ msgstr ""
 #: commands\admin.py:1127
 #, docstring
 msgid "Set the row of a panel's button (0 - 4)"
-msgstr "Postavite redak gumba ploče (0 - 4)"
+msgstr ""
 
 #: commands\admin.py:1129
 msgid "Row needs to be between 0 and 4"
-msgstr "Red mora biti između 0 i 4"
+msgstr ""
 
 #: commands\admin.py:1149
 msgid "This panel message already has the max amount of buttons for that specific row"
-msgstr "Ova poruka na ploči već ima maksimalnu količinu gumba za taj određeni red"
+msgstr ""
 
 #: commands\admin.py:1154
 msgid "The row number for this panel has been set to {}!"
@@ -936,16 +928,15 @@ msgid "\n"
 "        Add/Remove users or roles from the blacklist\n\n"
 "        Users and roles in the blacklist will not be able to create a ticket\n"
 "        "
-msgstr "Dodajte/uklonite korisnike ili uloge s crne liste\n\n"
-"        Korisnici i uloge na crnoj listi neće moći stvoriti kartu"
+msgstr ""
 
 #: commands\admin.py:1172
 msgid " has been removed from the blacklist"
-msgstr "je uklonjen s crne liste"
+msgstr ""
 
 #: commands\admin.py:1175
 msgid " has been added to the blacklist"
-msgstr "je dodan na crnu listu"
+msgstr ""
 
 #: commands\admin.py:1179
 #, docstring
@@ -953,8 +944,7 @@ msgid "\n"
 "        Auto-close ticket if opener doesn't say anything after X hours of opening\n\n"
 "        Set to 0 to disable this\n"
 "        "
-msgstr "Ulaznica za automatsko otvarač ako otvarač ne kaže ništa nakon X sati otvaranja\n\n"
-"        Postavite na 0 da to onemogući"
+msgstr ""
 
 #: commands\admin.py:1194
 #, docstring
@@ -962,12 +952,11 @@ msgid "\n"
 "        Set a channel for the live overview message\n\n"
 "        The overview message shows all active tickets across all configured panels for a server.\n"
 "        "
-msgstr "Postavite kanal za LIVE Pregled poruke\n\n"
-"        Pregled poruka prikazuje sve aktivne karte na svim konfiguriranim pločama za poslužitelj."
+msgstr ""
 
 #: commands\admin.py:1200
 msgid "Overview channel has been **Disabled**"
-msgstr "Kanal pregleda je ** onemogućen **"
+msgstr ""
 
 #: commands\admin.py:1203
 msgid "Overview channel has been set to {}"
@@ -976,72 +965,72 @@ msgstr ""
 #: commands\admin.py:1212
 #, docstring
 msgid "Toggle whether channels are mentioned in the active ticket overview"
-msgstr "Prebacite li kanali spominju se u pregledu aktivne karte"
+msgstr ""
 
 #: commands\admin.py:1216
 msgid "Ticket channels will no longer be mentioned in the active ticket channel"
-msgstr "Kanali ulaznica više se neće spomenuti na aktivnom kanalu ulaznica"
+msgstr ""
 
 #: commands\admin.py:1219
 msgid "Ticket channels now be mentioned in the active ticket channel"
-msgstr "Kanali ulaznica sada će se spomenuti na aktivnom kanalu ulaznica"
+msgstr ""
 
 #: commands\admin.py:1224
 #, docstring
 msgid "Cleanup tickets that no longer exist"
-msgstr "Čišćenje ulaznica koje više ne postoje"
+msgstr ""
 
 #: commands\admin.py:1232
 #, docstring
 msgid "(Toggle) The bot sending DM's for ticket alerts"
-msgstr "(Prebaci) Bot koji šalje DM -ove za upozorenja o ulaznicama"
+msgstr ""
 
 #: commands\admin.py:1236
 msgid "DM alerts have been **Disabled**"
-msgstr "Upozorenja o DM -u su ** onemogućena **"
+msgstr ""
 
 #: commands\admin.py:1239
 msgid "DM alerts have been **Enabled**"
-msgstr "DM upozorenja su ** omogućeno **"
+msgstr ""
 
 #: commands\admin.py:1243
 #, docstring
 msgid "(Toggle) Thread tickets being closed & archived instead of deleted"
-msgstr "(Prebacite) Ulaznice za nit su zatvorene i arhivirane umjesto izbrisane"
+msgstr ""
 
 #: commands\admin.py:1247
 msgid "Closed ticket threads will be **Deleted**"
-msgstr "Teme zatvorenih ulaznica bit će ** izbrisane **"
+msgstr ""
 
 #: commands\admin.py:1250
 msgid "Closed ticket threads will be **Closed & Archived**"
-msgstr "Tehne zatvorene karte bit će ** zatvorene i arhivirane **"
+msgstr ""
 
 #: commands\admin.py:1254
 #, docstring
 msgid "(Toggle) If users can rename their own tickets"
-msgstr "(Prebacite) Ako korisnici mogu preimenovati vlastite ulaznice"
+msgstr ""
 
 #: commands\admin.py:1258
 msgid "User can no longer rename their support channel"
-msgstr "Korisnik više ne može preimenovati svoj kanal za podršku"
+msgstr ""
 
 #: commands\admin.py:1261
 msgid "User can now rename their support channel"
-msgstr "Korisnik sada može preimenovati svoj kanal za podršku"
+msgstr ""
 
 #: commands\admin.py:1265
 #, docstring
 msgid "(Toggle) If users can close their own tickets"
-msgstr "(Prebacite) Ako korisnici mogu zatvoriti vlastite karte"
+msgstr ""
 
 #: commands\admin.py:1269
 msgid "User can no longer close their support ticket channel"
-msgstr "Korisnik više ne može zatvoriti svoj kanal za podršku"
+msgstr ""
 
 #: commands\admin.py:1272
 msgid "User can now close their support ticket channel"
-msgstr "Korisnik sada može zatvoriti svoj kanal za podršku"
+msgstr ""
 
 #: commands\admin.py:1276
 #, docstring
@@ -1049,16 +1038,15 @@ msgid "\n"
 "        (Toggle) If users can manage their own tickets\n\n"
 "        Users will be able to add/remove others to their support ticket\n"
 "        "
-msgstr "(Prebacite) Ako korisnici mogu upravljati vlastitim ulaznicama\n\n"
-"        Korisnici će moći dodati/ukloniti druge u njihovu kartu za podršku"
+msgstr ""
 
 #: commands\admin.py:1284
 msgid "User can no longer manage their support ticket channel"
-msgstr "Korisnik više ne može upravljati njihovim kanalom za podršku"
+msgstr ""
 
 #: commands\admin.py:1287
 msgid "User can now manage their support ticket channel"
-msgstr "Korisnik sada može upravljati njihovim kanalom za podršku"
+msgstr ""
 
 #: commands\admin.py:1291
 #, docstring
@@ -1066,16 +1054,15 @@ msgid "\n"
 "        (Toggle) Auto-add support and panel roles to thread tickets\n\n"
 "        Adding a user to a thread pings them, so this is off by default\n"
 "        "
-msgstr "(Preklopnik) Podrška za automatsko dodavanje i uloge ploče za ulaznice\n\n"
-"        Dodavanje korisnika u nit pingira ih, tako da je to prema zadanim postavkama isključeno"
+msgstr ""
 
 #: commands\admin.py:1300
 msgid "Support and panel roles will no longer be auto-added to thread tickets"
-msgstr "Uloga podrške i ploča više neće biti automatski dodana za ulaznice"
+msgstr ""
 
 #: commands\admin.py:1304
 msgid "Support and panel roles will be auto-added to thread tickets"
-msgstr "Uloge za podršku i ploče bit će automatski dodane ulaznicama"
+msgstr ""
 
 #: commands\admin.py:1308
 #, docstring
@@ -1083,66 +1070,65 @@ msgid "\n"
 "        (Toggle) Ticket transcripts\n\n"
 "        Closed tickets will have their transcripts uploaded to the log channel\n"
 "        "
-msgstr "(Preklopni) Transkripti ulaznica\n\n"
-"        Zatvorene ulaznice imat će svoje transkripte prenesene na kanal dnevnika"
+msgstr ""
 
 #: commands\admin.py:1316
 msgid "Transcripts of closed tickets will no longer be saved"
-msgstr "Transkripti zatvorenih karata više se neće spasiti"
+msgstr ""
 
 #: commands\admin.py:1319
 msgid "Transcripts of closed tickets will now be saved"
-msgstr "Transkripti zatvorenih karata sada će se spasiti"
+msgstr ""
 
 #: commands\admin.py:1328
 #, docstring
 msgid "Update a message with another message (Target gets updated using the source)"
-msgstr "Ažurirajte poruku drugom porukom (cilj se ažurira pomoću izvora)"
+msgstr ""
 
 #: commands\admin.py:1340
 msgid "Failed to update message!"
-msgstr "Nije uspio ažurirati poruku!"
+msgstr ""
 
 #: commands\admin.py:1352
 #, docstring
 msgid "Create an embed for ticket panel buttons to be added to"
-msgstr "Stvorite ugradnju za dodavanje gumba za ploče ulaznica"
+msgstr ""
 
 #: commands\admin.py:1353
 msgid "type 'cancel' to cancel"
-msgstr "Upišite 'Otkaži' za otkazivanje"
+msgstr ""
 
 #: commands\admin.py:1358
 msgid "Would you like this embed to have a footer?"
-msgstr "Želite li da ovaj ugradnja ima podnožje?"
+msgstr ""
 
 #: commands\admin.py:1365
 msgid "Enter the desired footer"
-msgstr "Unesite željeni podnožje"
+msgstr ""
 
 #: commands\admin.py:1370 commands\admin.py:1393 commands\admin.py:1412
 msgid "Embed creation cancelled"
-msgstr "Ugrađeno stvaranje otkazano"
+msgstr ""
 
 #: commands\admin.py:1377
 msgid "Would you like this embed to have a thumbnail?"
-msgstr "Želite li da ovaj ugradnja ima sličicu?"
+msgstr ""
 
 #: commands\admin.py:1388
 msgid "Enter a url for the thumbnail"
-msgstr "Unesite URL za sličicu"
+msgstr ""
 
 #: commands\admin.py:1400
 msgid "Would you like this embed to have an image?"
-msgstr "Želite li da ovaj ugradnja ima sliku?"
+msgstr ""
 
 #: commands\admin.py:1407
 msgid "Enter a url for the image"
-msgstr "Unesite URL za sliku"
+msgstr ""
 
 #: commands\admin.py:1429
 msgid "Would you like to add a field to this embed?"
-msgstr "Želite li dodati polje ovom ugradnju?"
+msgstr ""
 
 #: commands\admin.py:1434
 msgid "Would you like to add another field to this embed?\n"
@@ -1151,19 +1137,19 @@ msgstr ""
 
 #: commands\admin.py:1442
 msgid "Enter the name of the field"
-msgstr "Unesite ime polja"
+msgstr ""
 
 #: commands\admin.py:1448
 msgid "Enter the value of the field"
-msgstr "Unesite vrijednost polja"
+msgstr ""
 
 #: commands\admin.py:1455
 msgid "Do you want this field to be inline?"
-msgstr "Želite li da ovo polje bude inline?"
+msgstr ""
 
 #: commands\admin.py:1468
 msgid "Your embed has been sent!"
-msgstr "Poslano je vaš ugradnja!"
+msgstr ""
 
 #: commands\admin.py:1470
 msgid "Failed to send embed!\n"
@@ -1173,15 +1159,15 @@ msgstr ""
 #: commands\base.py:26
 #, docstring
 msgid "Add a user to your ticket"
-msgstr "Dodajte korisnika u svoju kartu"
+msgstr ""
 
 #: commands\base.py:31 commands\base.py:75
 msgid "This is not a ticket channel, or it has been removed from config"
-msgstr "Ovo nije kanal ulaznica ili je uklonjen iz konfiguracije"
+msgstr ""
 
 #: commands\base.py:52
 msgid "You do not have permissions to add users to this ticket"
-msgstr "Nemate dozvole za dodavanje korisnika u ovu kartu"
+msgstr ""
 
 #: commands\base.py:62
 msgid "Failed to add user to ticket: {}"
@@ -1189,20 +1175,20 @@ msgstr ""
 
 #: commands\base.py:64
 msgid "has been added to this ticket!"
-msgstr "je dodan u ovu kartu!"
+msgstr ""
 
 #: commands\base.py:70
 #, docstring
 msgid "Rename your ticket channel"
-msgstr "Preimenujte svoj kanal ulaznica"
+msgstr ""
 
 #: commands\base.py:95
 msgid "You do not have permissions to rename this ticket"
-msgstr "Nemate dozvole za preimenovanje ove karte"
+msgstr ""
 
 #: commands\base.py:99
 msgid "Ticket has been renamed"
-msgstr "Ulaznica je preimenovana"
+msgstr ""
 
 #: commands\base.py:107
 #, docstring
@@ -1218,11 +1204,11 @@ msgstr ""
 
 #: commands\base.py:121
 msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
-msgstr "Ne možete pronaći vlasnika ove karte!Možda to nije kanal ulaznica ili je očišćen iz konfiguracije?"
+msgstr ""
 
 #: commands\base.py:128
 msgid "You do not have permissions to close this ticket"
-msgstr "Nemate dozvole za zatvaranje ove karte"
+msgstr ""
 
 #: commands\base.py:146
 msgid "This ticket will close {}"
@@ -1230,9 +1216,9 @@ msgstr ""
 
 #: commands\base.py:154
 msgid "Closing cancelled!"
-msgstr "Zatvaranje otkazanog!"
+msgstr ""
 
 #: commands\base.py:165
 msgid "Closing..."
-msgstr "Zatvaranje ..."
+msgstr ""
 
