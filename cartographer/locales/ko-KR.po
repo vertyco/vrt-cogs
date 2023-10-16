@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-16 13:28-0400\n"
-"PO-Revision-Date: 2023-10-16 17:38\n"
+"POT-Creation-Date: 2023-10-16 17:37-0400\n"
+"PO-Revision-Date: 2023-10-16 22:51\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -27,48 +27,52 @@ msgid "\n"
 "    - Voice channels (permissions/order)\n"
 "    - Forum channels  (permissions/order)[Not forum posts]\n"
 "    - Roles (permissions and what members they're assigned to)\n\n"
-"    When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
+"    **Caveats**\n"
+"    Note the following\n"
+"    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.\n"
+"     - This is because object IDs cannot be restored so the bot relies on the name of the object.\n"
+"    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
 "    "
 msgstr ""
 
-#: main.py:78
+#: main.py:82
 msgid "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:82
+#: main.py:86
 #, docstring
 msgid "No data to delete"
 msgstr "삭제할 데이터 없음"
 
-#: main.py:115
+#: main.py:119
 #, docstring
 msgid "Open the Backup/Restore menu"
 msgstr "백업/복원 메뉴 열기"
 
-#: main.py:117 main.py:140 main.py:162
+#: main.py:121 main.py:144 main.py:166
 msgid "This server is in the ingored list!"
 msgstr "이 서버가 수집 목록에 추가되었습니다!"
 
-#: main.py:120 main.py:143 main.py:165
+#: main.py:124 main.py:147 main.py:169
 msgid "This server is not in the allowed list!"
 msgstr "이 서버는 허용 목록에 없습니다!"
 
-#: main.py:134
+#: main.py:138
 #, docstring
 msgid "Backup & Restore Tools"
 msgstr "백업 및 복원 도구"
 
-#: main.py:138
+#: main.py:142
 #, docstring
 msgid "Create a backup of this server"
 msgstr "이 서버의 백업 만들기"
 
-#: main.py:149
+#: main.py:153
 msgid "A backup has been created!"
 msgstr "백업이 생성되었습니다!"
 
-#: main.py:155
+#: main.py:159
 #, docstring
 msgid "\n"
 "        Restore the latest backup for this server\n\n"
@@ -81,20 +85,20 @@ msgstr "\n"
 "        - delete_existing: True이면 백업에 포함되지 않은 기존 채널/역할을 삭제합니다.\n"
 "        "
 
-#: main.py:171
+#: main.py:175
 msgid "There are no backups for this guild!"
 msgstr "이 길드에는 백업이 없습니다!"
 
-#: main.py:174
+#: main.py:178
 msgid "Server restore is complete!"
 msgstr "서버 복원이 완료되었습니다!"
 
-#: main.py:179
+#: main.py:183
 #, docstring
 msgid "View current global settings"
 msgstr "현재 글로벌 설정 보기"
 
-#: main.py:183
+#: main.py:187
 msgid "### Global Settings\n"
 "- Global backups: {}\n"
 "- Max backups per server: {}\n"
@@ -103,55 +107,55 @@ msgid "### Global Settings\n"
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:202
+#: main.py:206
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr "자동 백업 허용 활성화/비활성화"
 
-#: main.py:205
+#: main.py:209
 msgid "Auto backups have been **Disabled**"
 msgstr "자동 백업이 **사용 안 함**으로 설정되었습니다"
 
-#: main.py:208
+#: main.py:212
 msgid "Auto backups have been **Enabled**"
 msgstr "자동 백업이 **활성화**되었습니다"
 
-#: main.py:215
+#: main.py:219
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr "서버가 보유할 수 있는 최대 백업 용량 설정"
 
-#: main.py:218
+#: main.py:222
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr "최대 백업이 0으로 설정됨, 지도 제작자가 **사용 안 함**으로 설정됨"
 
-#: main.py:220
+#: main.py:224
 msgid "Max backup count has been set"
 msgstr "최대 백업 횟수가 설정되었습니다"
 
-#: main.py:227
+#: main.py:231
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr "무시 목록에서 서버 추가/제거하기"
 
-#: main.py:230
+#: main.py:234
 msgid "Server removed from the ignore list"
 msgstr "무시 목록에서 서버 제거"
 
-#: main.py:233
+#: main.py:237
 msgid "Server added to the ignore list"
 msgstr "무시 목록에 서버 추가"
 
-#: main.py:240
+#: main.py:244
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr "허용 목록에서 서버 추가/제거하기"
 
-#: main.py:243
+#: main.py:247
 msgid "Server removed from the allow list"
 msgstr "허용 목록에서 서버 제거"
 
-#: main.py:246
+#: main.py:250
 msgid "Server added to the allow list"
 msgstr "허용 목록에 서버 추가"
 
