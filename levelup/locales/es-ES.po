@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-15 23:17\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -1144,7 +1144,7 @@ msgstr "`Enfriamiento del mensaje: `"
 
 #: levelup.py:2480
 msgid "Level Example"
-msgstr ""
+msgstr "Ejemplo de nivel"
 
 #: levelup.py:2499
 msgid "- lvl {}, {} xp, {}\n"
@@ -1152,15 +1152,15 @@ msgstr ""
 
 #: levelup.py:2506
 msgid "XP Curve"
-msgstr ""
+msgstr "Curva XP"
 
 #: levelup.py:2507
 msgid "Level"
-msgstr ""
+msgstr "Nivel"
 
 #: levelup.py:2508
 msgid "Experience Required"
-msgstr ""
+msgstr "Experiencia necesaria"
 
 #: levelup.py:2518
 #, docstring
