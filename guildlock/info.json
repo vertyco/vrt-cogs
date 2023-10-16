@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco" ],
+  "description": "Manage what kind of servers the bot can join. A stripped down rewrite of Phen's Baron cog",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not persistently store any data or metadata about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["pydantic"],
+  "short": "Manage what kind of servers the bot can join",
+  "tags": ["guild", "utility", "management", "baron", "guildlock", "lock"],
+  "type": "COG"
+}
