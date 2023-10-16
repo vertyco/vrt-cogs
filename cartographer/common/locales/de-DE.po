@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-16 13:28-0400\n"
-"PO-Revision-Date: 2023-10-16 17:38\n"
+"POT-Creation-Date: 2023-10-16 17:37-0400\n"
+"PO-Revision-Date: 2023-10-16 22:51\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -70,19 +70,19 @@ msgstr ""
 msgid "There are no backups for this server yet!"
 msgstr "Für diesen Server gibt es noch keine Backups!"
 
-#: common\models.py:156 common\models.py:167 common\models.py:194
+#: common\models.py:178 common\models.py:189 common\models.py:216
 msgid "Restored from backup"
 msgstr "Wiederhergestellt vom Backup"
 
-#: common\models.py:627
+#: common\models.py:694
 msgid "Cartographer Restore"
 msgstr "Kartenmacher Wiederherstellen"
 
-#: common\models.py:628
+#: common\models.py:695
 msgid " (Removal)"
 msgstr " (Entfernung)"
 
-#: common\models.py:743
+#: common\models.py:835
 msgid "Server restore has completed successfully!"
 msgstr "Die Serverwiederherstellung wurde erfolgreich abgeschlossen!"
 
@@ -130,67 +130,107 @@ msgstr ""
 msgid "Backup created!"
 msgstr "Backup erstellt!"
 
-#: common\views.py:141
+#: common\views.py:136
+msgid "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:140
+msgid "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:144
+msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:148
+msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:152
+msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:162
 msgid "No backups to restore!"
 msgstr "Keine Backups zum Wiederherstellen!"
 
-#: common\views.py:152
+#: common\views.py:174
 msgid "Your backup is being restored!"
 msgstr "Ihr Backup wird wiederhergestellt!"
 
-#: common\views.py:155
-msgid "Restore has been cancelled!"
-msgstr "Die Wiederherstellung wurde abgebrochen!"
-
-#: common\views.py:160
-msgid "Switch Servers"
-msgstr "Server wechseln"
-
-#: common\views.py:160
-msgid "Server ID"
-msgstr "Server-ID"
-
-#: common\views.py:160
-msgid "Enter the ID of the server"
-msgstr "Geben Sie die ID des Servers ein"
-
-#: common\views.py:167
-msgid "I am not in that server!"
+#: common\views.py:176
+msgid "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
 msgstr ""
 
-#: common\views.py:171
-msgid "You do not appear to be in that server!"
-msgstr ""
-
-#: common\views.py:174
-msgid "You can only switch to servers that you are an administrator of!"
+#: common\views.py:180
+msgid "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
 msgstr ""
 
 #: common\views.py:184
+msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:188
+msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:192
+msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:197
+msgid "Restore has been cancelled!"
+msgstr "Die Wiederherstellung wurde abgebrochen!"
+
+#: common\views.py:202
+msgid "Switch Servers"
+msgstr "Server wechseln"
+
+#: common\views.py:202
+msgid "Server ID"
+msgstr "Server-ID"
+
+#: common\views.py:202
+msgid "Enter the ID of the server"
+msgstr "Geben Sie die ID des Servers ein"
+
+#: common\views.py:209
+msgid "I am not in that server!"
+msgstr ""
+
+#: common\views.py:213
+msgid "You do not appear to be in that server!"
+msgstr ""
+
+#: common\views.py:216
+msgid "You can only switch to servers that you are an administrator of!"
+msgstr ""
+
+#: common\views.py:226
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr "Automatische Backups wurden vom Bot-Besitzer deaktiviert!"
 
-#: common\views.py:186
+#: common\views.py:228
 msgid "Auto Backup Interval"
 msgstr "Automatisches Sicherungsintervall"
 
-#: common\views.py:186
+#: common\views.py:228
 msgid "Interval Hours"
 msgstr "Intervall-Stunden"
 
-#: common\views.py:186
+#: common\views.py:228
 msgid "Hours in-between backups"
 msgstr "Stunden zwischen den Backups"
 
-#: common\views.py:192
+#: common\views.py:234
 msgid "Auto-backup interval hours has been set to {}"
 msgstr ""
 
-#: common\views.py:204
+#: common\views.py:246
 msgid "No backups to delete!"
 msgstr "Keine Backups zu löschen!"
 
-#: common\views.py:210
+#: common\views.py:252
 msgid "Backup deleted!"
 msgstr "Backup gelöscht!"
 
