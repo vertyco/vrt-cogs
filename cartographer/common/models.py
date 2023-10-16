@@ -543,7 +543,7 @@ class VoiceChannel(FriendlyBase):
             channel: discord.VoiceChannel = channel
             coro = channel.edit(
                 name=self.name,
-                category=get_named_channel(self.category),
+                category=get_named_channel(guild, self.category),
                 position=self.position,
                 user_limit=self.user_limit,
                 bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
