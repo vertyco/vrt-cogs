@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-16 00:18\n"
+"PO-Revision-Date: 2023-10-16 00:48\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -23,8 +23,7 @@ msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
-msgstr "Vaš prijateljski sustav za izravnavanje susjedstva\n\n"
-"    Zaradite iskustvo čavrljanjem u tekstualnim i glasovnim kanalima, usporedite razine sa svojim prijateljima, prilagodite svoj profil i pogledajte razne ploče!"
+msgstr ""
 
 #: levelup.py:147
 msgid "Monday"
@@ -276,7 +275,7 @@ msgstr "Voice XP Bonus Kanali"
 
 #: levelup.py:1115
 msgid "Stream XP Bonus"
-msgstr "Stream XP bonus"
+msgstr ""
 
 #: levelup.py:1124
 msgid "Message XP Bonus Roles"
@@ -517,15 +516,15 @@ msgstr ""
 
 #: levelup.py:1376
 msgid "Not importing levels"
-msgstr "Ne uvoze razine"
+msgstr ""
 
 #: levelup.py:1379
 msgid "No config found for Malarne's Leveler cog!"
-msgstr "Nije pronađena konfiguracija za Malarneov izravnani zupčanik!"
+msgstr ""
 
 #: levelup.py:1421
 msgid "There were no profiles to import"
-msgstr "Nije bilo profila za uvoz"
+msgstr ""
 
 #: levelup.py:1422
 msgid "Imported {} profile(s)"
@@ -556,11 +555,11 @@ msgstr "Ne uvozim MEE6 razine"
 
 #: levelup.py:1509
 msgid "Fetching mee6 leaderboard data, this could take a while..."
-msgstr "Dohvaćajući podatke o mee6 ploče, ovo bi moglo potrajati ..."
+msgstr ""
 
 #: levelup.py:1532
 msgid "Mee6 is rate limiting too heavily! Import Failed!"
-msgstr "MEE6 je previše ograničavajući stopu!Uvoz nije uspio!"
+msgstr ""
 
 #: levelup.py:1540 levelup.py:1822
 msgid "Your leaderboard needs to be set to public!"
@@ -576,11 +575,11 @@ msgstr ""
 
 #: levelup.py:1572 levelup.py:1699 levelup.py:1859
 msgid "No leaderboard data found!"
-msgstr "Nisu pronađeni podaci o ploči!"
+msgstr ""
 
 #: levelup.py:1574 levelup.py:1701 levelup.py:1861
 msgid "Data retrieved, importing..."
-msgstr "Podaci dohvaćeni, uvoz ..."
+msgstr ""
 
 #: levelup.py:1614
 msgid "No MEE6 stats were found"
@@ -614,15 +613,15 @@ msgstr ""
 
 #: levelup.py:1646
 msgid "Not importing AmariBot levels"
-msgstr "Ne uvoze razine amaribota"
+msgstr ""
 
 #: levelup.py:1648
 msgid "Fetching AmariBot leaderboard data, this could take a while..."
-msgstr "Dobivanje podataka o Amaribotu Leaderboard, ovo bi moglo potrajati ..."
+msgstr ""
 
 #: levelup.py:1673
 msgid "AmariBot is rate limiting too heavily! Import Failed!"
-msgstr "Amaribot se previše ograničava!Uvoz nije uspio!"
+msgstr ""
 
 #: levelup.py:1696
 msgid "{} pages failed to fetch from AmariBot api, check logs for more info"
@@ -630,7 +629,7 @@ msgstr ""
 
 #: levelup.py:1754
 msgid "No AmariBot stats were found"
-msgstr "Nisu pronađene statistike amaribota"
+msgstr ""
 
 #: levelup.py:1773
 #, docstring
@@ -650,15 +649,15 @@ msgstr ""
 
 #: levelup.py:1789
 msgid "Not importing Polaris levels"
-msgstr "Ne uvoze razine Polarisa"
+msgstr ""
 
 #: levelup.py:1791
 msgid "Fetching Polaris leaderboard data, this could take a while..."
-msgstr "Dohvaćanje podataka o ledenoj ploči Polaris, ovo bi moglo potrajati ..."
+msgstr ""
 
 #: levelup.py:1814
 msgid "Polaris is rate limiting too heavily! Import Failed!"
-msgstr "Polaris previše ograničava stopu!Uvoz nije uspio!"
+msgstr ""
 
 #: levelup.py:1856
 msgid "{} pages failed to fetch from Polaris api, check logs for more info"
@@ -666,7 +665,7 @@ msgstr ""
 
 #: levelup.py:1888
 msgid "No Polaris stats were found"
-msgstr "Nisu pronađene statistike Polarisa"
+msgstr ""
 
 #: levelup.py:1901
 #, docstring
@@ -676,10 +675,7 @@ msgid "\n"
 "        It will also import XP range level roles, and ignored channels\n"
 "        *Obviously you will need MongoDB running while you run this command*\n"
 "        "
-msgstr "Uvoz podataka iz fiksatorskog nivoara\n\n"
-"        To će prebrisati postojeće podatke o razini nivoa i zvijezde\n"
-"        Uvest će i uloge na razini XP i zanemarene kanale\n"
-"        *Očito će vam trebati mongodb dok pokrećete ovu naredbu*"
+msgstr ""
 
 #: levelup.py:1909
 msgid "Not importing users"
@@ -687,7 +683,7 @@ msgstr ""
 
 #: levelup.py:1913
 msgid "No config found for Fixator's Leveler cog!"
-msgstr "Nije pronađena konfiguracija za fiksatorski nieder cog!"
+msgstr ""
 
 #: levelup.py:1937
 msgid "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo` and `{}pipinstall motor`"
@@ -882,21 +878,19 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the bonus\n"
 "        "
-msgstr "Dodajte niz bonus xp korisnicima koji su nesklad strujanja\n\n"
-"        Ovaj se bonus odnosi na glasovno vrijeme xp\n\n"
-"        Postavite i Min i Max na 0 da uklonite bonus"
+msgstr ""
 
 #: levelup.py:2256
 msgid "There is no stream bonus set yet"
-msgstr "Još nije set bonusa za struju"
+msgstr ""
 
 #: levelup.py:2258
 msgid "Stream bonus has been removed"
-msgstr "Stream Bonus je uklonjen"
+msgstr ""
 
 #: levelup.py:2261
 msgid "Stream bonus has been set to "
-msgstr "Stream Bonus je postavljen na"
+msgstr ""
 
 #: levelup.py:2266
 #, docstring
@@ -1022,8 +1016,7 @@ msgid "\n"
 "        Set a user to a specific prestige level\n\n"
 "        Prestige roles will need to be manually added/removed when using this command\n"
 "        "
-msgstr "Postavite korisnika na određenu razinu prestiža\n\n"
-"        Uloge u prestižnim ulogama trebat će se ručno dodati/ukloniti kada koristite ovu naredbu"
+msgstr ""
 
 #: levelup.py:2387
 msgid "Prestige levels have not been set yet!"
@@ -1031,7 +1024,7 @@ msgstr ""
 
 #: levelup.py:2390
 msgid "That prestige level isn't set!"
-msgstr "Ta razina prestiža nije postavljena!"
+msgstr ""
 
 #: levelup.py:2399
 #, docstring
@@ -1060,11 +1053,11 @@ msgstr "\n"
 
 #: levelup.py:2421
 msgid "Your exponent needs to be higher than 0"
-msgstr "Vaš eksponent mora biti veći od 0"
+msgstr ""
 
 #: levelup.py:2423
 msgid "Your exponent needs to be 10 or lower"
-msgstr "Vaš eksponent mora biti 10 ili niži"
+msgstr ""
 
 #: levelup.py:2430
 #, docstring
@@ -1109,8 +1102,7 @@ msgstr "\n"
 #: levelup.py:2471
 msgid "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
 "Approx time is the time it would take for a user to reach a level with randomized breaks"
-msgstr "XP potreban za razinu = baza * razina^ᵉˣᵖ\n\n"
-"Otprilike vrijeme je vrijeme koje bi trebalo da korisnik dosegne razinu s randomiziranim prekidima"
+msgstr ""
 
 #: levelup.py:2475
 msgid "`Base Multiplier:  `"
@@ -1130,7 +1122,7 @@ msgstr "`Poruka hladi:`"
 
 #: levelup.py:2480
 msgid "Level Example"
-msgstr "Primjer razine"
+msgstr ""
 
 #: levelup.py:2499
 msgid "- lvl {}, {} xp, {}\n"
@@ -1138,15 +1130,15 @@ msgstr ""
 
 #: levelup.py:2506
 msgid "XP Curve"
-msgstr "XP krivulja"
+msgstr ""
 
 #: levelup.py:2507
 msgid "Level"
-msgstr "Nivo"
+msgstr ""
 
 #: levelup.py:2508
 msgid "Experience Required"
-msgstr "Potrebno iskustvo"
+msgstr ""
 
 #: levelup.py:2518
 #, docstring
@@ -1299,15 +1291,15 @@ msgstr "Nemam odgovarajuća dopuštenja za upravljanje ulogama!"
 
 #: levelup.py:2657
 msgid "Calculating roles, this may take a while..."
-msgstr "Izračunavanje uloga, ovo će možda potrajati ..."
+msgstr ""
 
 #: levelup.py:2721
 msgid "Assigning roles, this may take a while..."
-msgstr "Dodjeljivanje uloga, ovo će možda potrajati ..."
+msgstr ""
 
 #: levelup.py:2761
 msgid "Role initialization completed!"
-msgstr "Inicijalizacija uloga dovršena!"
+msgstr ""
 
 #: levelup.py:2763
 msgid "\n"
@@ -1326,7 +1318,7 @@ msgstr ""
 #: levelup.py:2773
 msgid "\n"
 "No roles needed to be added or removed!"
-msgstr "Nije potrebno dodati ili ukloniti uloge!"
+msgstr ""
 
 #: levelup.py:2778
 msgid "Initialization took {} to complete."
@@ -1352,11 +1344,11 @@ msgstr "Dodijelite ulogu razini"
 
 #: levelup.py:2798
 msgid "The role you are trying to set is higher than the one you currently have!"
-msgstr "Uloga koju pokušavate postaviti je veća od one koju trenutno imate!"
+msgstr ""
 
 #: levelup.py:2800
 msgid "I cannot assign roles higher than my own!"
-msgstr "Ne mogu dodijeliti uloge više od svojih!"
+msgstr ""
 
 #: levelup.py:2803
 msgid "I do not have permission to manage roles"
@@ -1376,7 +1368,7 @@ msgstr "Level "
 
 #: levelup.py:2809
 msgid " has been "
-msgstr "jest"
+msgstr ""
 
 #: levelup.py:2809
 msgid " as "
@@ -1385,7 +1377,7 @@ msgstr " kao "
 #: levelup.py:2815
 #, docstring
 msgid "Unassign a role from a level"
-msgstr "Nepriznati ulogu s razine"
+msgstr ""
 
 #: levelup.py:2818
 msgid "Level role has been deleted!"
@@ -1715,8 +1707,7 @@ msgstr "Može biti samo do 25 pobjednika!"
 msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
 "        "
-msgstr "Tjedni kanal za objavu pobjednika\n"
-"        Postavite kanal za tjedne pobjednike koji će biti proglašeni kada je omogućeno automatsko preusmjeravanje"
+msgstr ""
 
 #: levelup.py:3098
 msgid "I do not have permission to send messages to that channel!"
@@ -1755,8 +1746,7 @@ msgstr "Svi najbolji članovi navedeni u tjednom resetu će dobiti tjednu ulogu"
 msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
 "        "
-msgstr "Jedna uloga u isto vrijeme\n"
-"        Prebacite li uloga pobjednika uklonjena iz prethodnog nositelja kada je odabran novi pobjednik"
+msgstr ""
 
 #: levelup.py:3135
 msgid "Auto role removal from previous winner has been **Disabled**"
