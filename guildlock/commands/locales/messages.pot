@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-10-16 16:34-0400\n"
+"POT-Creation-Date: 2023-10-16 17:36-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,81 +11,81 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: commands\base.py:23
+#: commands\base.py:24
 #, docstring
 msgid "View GuildLock settings"
 msgstr ""
 
-#: commands\base.py:24
+#: commands\base.py:25
 msgid "Disabled"
 msgstr ""
 
-#: commands\base.py:26
+#: commands\base.py:27
 msgid "GuildLock Settings"
 msgstr ""
 
-#: commands\base.py:27
+#: commands\base.py:28
 msgid "Tools for managing guild joins and leaves."
 msgstr ""
 
-#: commands\base.py:30
+#: commands\base.py:31
 msgid "Log Channel"
 msgstr ""
 
-#: commands\base.py:31
+#: commands\base.py:32
 msgid "Not Set"
 msgstr ""
 
-#: commands\base.py:34
+#: commands\base.py:35
 msgid "Guild Limit"
 msgstr ""
 
-#: commands\base.py:35
+#: commands\base.py:36
 msgid "Bot will auto-leave new guilds if in more than {} servers already."
 msgstr ""
 
-#: commands\base.py:40
+#: commands\base.py:41
 msgid "Minimum Member Requirement"
 msgstr ""
 
-#: commands\base.py:41
+#: commands\base.py:42
 msgid "Bot will auto-leave guilds with less than {} members."
 msgstr ""
 
-#: commands\base.py:46
+#: commands\base.py:47
 msgid "Bot Farm Detection"
 msgstr ""
 
-#: commands\base.py:47
+#: commands\base.py:48
 msgid "Bot will auto-leave guilds where {}% of the members are bots."
 msgstr ""
 
-#: commands\base.py:52
+#: commands\base.py:53
 msgid "Guild Whitelist"
 msgstr ""
 
-#: commands\base.py:56
+#: commands\base.py:57
 msgid "Not in Guild ({})\n"
 msgstr ""
 
-#: commands\base.py:57 commands\base.py:61
+#: commands\base.py:58 commands\base.py:62
 msgid "None Set"
 msgstr ""
 
-#: commands\base.py:59
+#: commands\base.py:60
 msgid "Guild Blacklist"
 msgstr ""
 
-#: commands\base.py:66
+#: commands\base.py:67
 #, docstring
 msgid "Set the log channel for the bot"
 msgstr ""
 
-#: commands\base.py:71
+#: commands\base.py:72
 msgid "Guild events will be logged to {}"
 msgstr ""
 
-#: commands\base.py:77
+#: commands\base.py:78
 #, docstring
 msgid ""
 "\n"
@@ -95,15 +95,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\base.py:84
+#: commands\base.py:85
 msgid "Guild limit set to {}"
 msgstr ""
 
-#: commands\base.py:86
+#: commands\base.py:87
 msgid "Guild limit **Disabled**"
 msgstr ""
 
-#: commands\base.py:92
+#: commands\base.py:93
 #, docstring
 msgid ""
 "\n"
@@ -113,15 +113,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\base.py:99 commands\base.py:117
+#: commands\base.py:100 commands\base.py:118
 msgid "Minimum members required for bot to stay has been set to {}"
 msgstr ""
 
-#: commands\base.py:101 commands\base.py:119
+#: commands\base.py:102 commands\base.py:120
 msgid "Minimum member requirement **Disabled**"
 msgstr ""
 
-#: commands\base.py:107
+#: commands\base.py:108
 #, docstring
 msgid ""
 "\n"
@@ -134,7 +134,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\base.py:125
+#: commands\base.py:126
 #, docstring
 msgid ""
 "\n"
@@ -144,15 +144,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\base.py:132
+#: commands\base.py:133
 msgid "Guild removed from blacklist"
 msgstr ""
 
-#: commands\base.py:135
+#: commands\base.py:136
 msgid "Guild added to the blacklist"
 msgstr ""
 
-#: commands\base.py:141
+#: commands\base.py:142
 #, docstring
 msgid ""
 "\n"
@@ -162,15 +162,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\base.py:148
+#: commands\base.py:149
 msgid "Guild removed from whitelist"
 msgstr ""
 
-#: commands\base.py:151
+#: commands\base.py:152
 msgid "Guild added to the whitelist"
 msgstr ""
 
-#: commands\base.py:161
+#: commands\base.py:163
 #, docstring
 msgid ""
 "\n"
@@ -185,58 +185,62 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\base.py:172
+#: commands\base.py:174
 msgid "there is no bot ratio set!"
 msgstr ""
 
-#: commands\base.py:174
+#: commands\base.py:176
 msgid "Minimum member requirement has not been set!"
 msgstr ""
 
-#: commands\base.py:176
+#: commands\base.py:178
 msgid "There are no guild IDs in the blacklist!"
 msgstr ""
 
-#: commands\base.py:178
+#: commands\base.py:180
 msgid "There are no guild IDs in the whitelist!"
 msgstr ""
 
-#: commands\base.py:196
+#: commands\base.py:198
 msgid "There are no guilds to leave with a bot ratio higher thatn {}%"
 msgstr ""
 
-#: commands\base.py:197
+#: commands\base.py:199
 msgid "There are no guilds to leave that have less than {} members"
 msgstr ""
 
-#: commands\base.py:198
+#: commands\base.py:200
 msgid "There are no guilds to leave that are in the blacklist"
 msgstr ""
 
-#: commands\base.py:199
+#: commands\base.py:201
 msgid "There are no guilds to leave that are in the whitelist"
 msgstr ""
 
-#: commands\base.py:204
+#: commands\base.py:206
 msgid "guild"
 msgstr ""
 
-#: commands\base.py:204
+#: commands\base.py:206
 msgid "guilds"
 msgstr ""
 
-#: commands\base.py:205
+#: commands\base.py:207
 msgid "Are you sure you want to leave {}?"
 msgstr ""
 
-#: commands\base.py:210
+#: commands\base.py:211
+msgid "Guilds to Leave"
+msgstr ""
+
+#: commands\base.py:220
 msgid "Not leaving {}"
 msgstr ""
 
-#: commands\base.py:213
+#: commands\base.py:223
 msgid "Leaving {}, one moment..."
 msgstr ""
 
-#: commands\base.py:223
+#: commands\base.py:233
 msgid "I have left {}!"
 msgstr ""
