@@ -115,9 +115,9 @@ class Base(MixinMeta):
         """
         self.db.bot_ratio = bot_ratio
         if bot_ratio:
-            txt = _("Minimum members required for bot to stay has been set to {}").format(f"**{bot_ratio}**")
+            txt = _("The bot will now leave servers that have more than {}% bots").format(f"**{bot_ratio}**")
         else:
-            txt = _("Minimum member requirement **Disabled**")
+            txt = _("Bot percentage threshold for auto-leaving has been **Disabled**")
         await ctx.send(txt)
         await self.save()
 
