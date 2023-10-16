@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-16 00:17\n"
+"POT-Creation-Date: 2023-10-16 13:28-0400\n"
+"PO-Revision-Date: 2023-10-16 17:38\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -17,57 +17,58 @@ msgstr ""
 "X-Crowdin-File-ID: 80\n"
 "Language: de_DE\n"
 
-#: main.py:24
+#: main.py:26
 #, docstring
 msgid "\n"
 "    Backup & Restore tools for Discord servers.\n\n"
-"    This cog will create a backup of all roles, channels and permission.\n\n"
-"    When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.\n"
+"    This cog can backup & restore the following:\n"
+"    - Categories (permissions/order)\n"
+"    - Text channels (permissions/order)\n"
+"    - Voice channels (permissions/order)\n"
+"    - Forum channels  (permissions/order)[Not forum posts]\n"
+"    - Roles (permissions and what members they're assigned to)\n\n"
+"    When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
 "    "
-msgstr "\n"
-"    Sicherungs- und Wiederherstellungstools für Discord-Server.\n\n"
-"    Dieses Zahnrad erstellt ein Backup aller Rollen, Kanäle und Berechtigungen.\n\n"
-"    Bei der Wiederherstellung wird es sein Bestes tun, um die Sicherung so genau wie möglich wiederherzustellen, einige Rollen können aufgrund von Positionsmietearchien nicht wiederhergestellt werden.\n"
-"    "
+msgstr ""
 
-#: main.py:71
+#: main.py:78
 msgid "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:75
+#: main.py:82
 #, docstring
 msgid "No data to delete"
 msgstr "Keine Daten zu löschen"
 
-#: main.py:108
+#: main.py:115
 #, docstring
 msgid "Open the Backup/Restore menu"
 msgstr "Öffnen Sie das Menü Sichern/Wiederherstellen"
 
-#: main.py:110 main.py:133 main.py:155
+#: main.py:117 main.py:140 main.py:162
 msgid "This server is in the ingored list!"
 msgstr "Dieser Server steht auf der Liste der nicht berücksichtigten Server!"
 
-#: main.py:113 main.py:136 main.py:158
+#: main.py:120 main.py:143 main.py:165
 msgid "This server is not in the allowed list!"
 msgstr "Dieser Server steht nicht auf der Liste der zugelassenen Server!"
 
-#: main.py:127
+#: main.py:134
 #, docstring
 msgid "Backup & Restore Tools"
 msgstr "Tools zur Sicherung und Wiederherstellung"
 
-#: main.py:131
+#: main.py:138
 #, docstring
 msgid "Create a backup of this server"
 msgstr "Erstellen Sie eine Sicherungskopie des Servers"
 
-#: main.py:142
+#: main.py:149
 msgid "A backup has been created!"
 msgstr "Es wurde ein Backup erstellt!"
 
-#: main.py:148
+#: main.py:155
 #, docstring
 msgid "\n"
 "        Restore the latest backup for this server\n\n"
@@ -80,20 +81,20 @@ msgstr "\n"
 "        - delete_existing: falls True, löscht bestehende Channels/Rollen, die nicht Teil des Backups sind.\n"
 "        "
 
-#: main.py:164
+#: main.py:171
 msgid "There are no backups for this guild!"
 msgstr "Für diese Gilde gibt es keine Backups!"
 
-#: main.py:167
+#: main.py:174
 msgid "Server restore is complete!"
 msgstr "Die Wiederherstellung des Servers ist abgeschlossen!"
 
-#: main.py:172
+#: main.py:179
 #, docstring
 msgid "View current global settings"
 msgstr "Aktuelle globale Einstellungen anzeigen"
 
-#: main.py:176
+#: main.py:183
 msgid "### Global Settings\n"
 "- Global backups: {}\n"
 "- Max backups per server: {}\n"
@@ -102,55 +103,55 @@ msgid "### Global Settings\n"
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:195
+#: main.py:202
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr "Aktivieren/Deaktivieren von automatischen Backups"
 
-#: main.py:198
+#: main.py:205
 msgid "Auto backups have been **Disabled**"
 msgstr "Automatische Sicherungen wurden **Deaktiviert**"
 
-#: main.py:201
+#: main.py:208
 msgid "Auto backups have been **Enabled**"
 msgstr "Automatische Backups wurden **aktiviert**"
 
-#: main.py:208
+#: main.py:215
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr "Festlegen der maximalen Anzahl von Backups für einen Server"
 
-#: main.py:211
+#: main.py:218
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr "Maximale Anzahl der Backups auf 0 gesetzt, Cartographer wurde **Deaktiviert**"
 
-#: main.py:213
+#: main.py:220
 msgid "Max backup count has been set"
 msgstr "Maximale Anzahl von Backups wurde festgelegt"
 
-#: main.py:220
+#: main.py:227
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr "Hinzufügen/Entfernen eines Servers von der Ignorierliste"
 
-#: main.py:223
+#: main.py:230
 msgid "Server removed from the ignore list"
 msgstr "Server von der Ignorierliste entfernt"
 
-#: main.py:226
+#: main.py:233
 msgid "Server added to the ignore list"
 msgstr "Server zur Ignorierliste hinzugefügt"
 
-#: main.py:233
+#: main.py:240
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr "Hinzufügen/Entfernen eines Servers aus der Zulassungsliste"
 
-#: main.py:236
+#: main.py:243
 msgid "Server removed from the allow list"
 msgstr "Server von der Zulassungsliste entfernt"
 
-#: main.py:239
+#: main.py:246
 msgid "Server added to the allow list"
 msgstr "Server zur Zulassungsliste hinzugefügt"
 
