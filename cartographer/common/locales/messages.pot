@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-10-14 17:27-0400\n"
+"POT-Creation-Date: 2023-10-16 13:28-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -63,19 +63,19 @@ msgstr ""
 msgid "There are no backups for this server yet!"
 msgstr ""
 
-#: common\models.py:157 common\models.py:168 common\models.py:195
+#: common\models.py:156 common\models.py:167 common\models.py:194
 msgid "Restored from backup"
 msgstr ""
 
-#: common\models.py:629
+#: common\models.py:627
 msgid "Cartographer Restore"
 msgstr ""
 
-#: common\models.py:630
+#: common\models.py:628
 msgid " (Removal)"
 msgstr ""
 
-#: common\models.py:745
+#: common\models.py:743
 msgid "Server restore has completed successfully!"
 msgstr ""
 
@@ -148,33 +148,41 @@ msgid "Enter the ID of the server"
 msgstr ""
 
 #: common\views.py:167
-msgid "You can only switch to servers that you own!"
+msgid "I am not in that server!"
 msgstr ""
 
-#: common\views.py:177
+#: common\views.py:171
+msgid "You do not appear to be in that server!"
+msgstr ""
+
+#: common\views.py:174
+msgid "You can only switch to servers that you are an administrator of!"
+msgstr ""
+
+#: common\views.py:184
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr ""
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Auto Backup Interval"
 msgstr ""
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Interval Hours"
 msgstr ""
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Hours in-between backups"
 msgstr ""
 
-#: common\views.py:185
+#: common\views.py:192
 msgid "Auto-backup interval hours has been set to {}"
 msgstr ""
 
-#: common\views.py:197
+#: common\views.py:204
 msgid "No backups to delete!"
 msgstr ""
 
-#: common\views.py:203
+#: common\views.py:210
 msgid "Backup deleted!"
 msgstr ""
