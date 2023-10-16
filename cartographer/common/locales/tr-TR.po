@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-14 23:06\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -35,7 +35,7 @@ msgstr ""
 
 #: common\formatting.py:45
 msgid "Controls"
-msgstr ""
+msgstr "Kontroller"
 
 #: common\formatting.py:46
 msgid "- Backup Current Server: 📥\n"
@@ -43,11 +43,15 @@ msgid "- Backup Current Server: 📥\n"
 "- Switch Servers: 🔍\n"
 "- Set AutoBackup Interval: ⌛\n"
 "- Delete Backup: 🗑️\n"
-msgstr ""
+msgstr "- Geçerli Sunucuyu Yedekleyin: 📥\n"
+"- Buraya Geri Yükle: 🔄\n"
+"- Sunucuları Değiştirin: 🔍\n"
+"- Otomatik Yedekleme Aralığını Ayarla: ⌛\n"
+"- Yedeklemeyi Sil: 🗑️\n"
 
 #: common\formatting.py:53
 msgid "Settings"
-msgstr ""
+msgstr "Ayarlar"
 
 #: common\formatting.py:54
 msgid "- Auto Backup Interval Hours: {}\n"
@@ -64,59 +68,59 @@ msgstr ""
 
 #: common\formatting.py:67
 msgid "There are no backups for this server yet!"
-msgstr ""
+msgstr "Bu sunucu için henüz yedekleme yok!"
 
 #: common\models.py:157 common\models.py:168 common\models.py:195
 msgid "Restored from backup"
-msgstr ""
+msgstr "Yedekten geri yüklendi"
 
 #: common\models.py:629
 msgid "Cartographer Restore"
-msgstr ""
+msgstr "Haritacı Geri Yükleme"
 
 #: common\models.py:630
 msgid " (Removal)"
-msgstr ""
+msgstr " (Kaldırma)"
 
 #: common\models.py:745
 msgid "Server restore has completed successfully!"
-msgstr ""
+msgstr "Sunucu geri yükleme işlemi başarıyla tamamlandı!"
 
 #: common\views.py:36
 msgid "That is not a number!"
-msgstr ""
+msgstr "Bu bir sayı değil!"
 
 #: common\views.py:47
 msgid "Confirmation"
-msgstr ""
+msgstr "Onaylama"
 
 #: common\views.py:49
 msgid "Are you SURE?"
-msgstr ""
+msgstr "Emin misin?"
 
 #: common\views.py:52
 msgid "THIS CANNOT BE UNDONE!"
-msgstr ""
+msgstr "BU GERI ALINAMAZ!"
 
 #: common\views.py:56
 msgid "Remove Old"
-msgstr ""
+msgstr "Eskiyi Kaldır"
 
 #: common\views.py:59
 msgid "removes unsaved channels/roles"
-msgstr ""
+msgstr "kaydedilmemiş kanalları/rolleri kaldırır"
 
 #: common\views.py:64
 msgid "response must be a string!"
-msgstr ""
+msgstr "yanıt bir dize olmalıdır!"
 
 #: common\views.py:84
 msgid "Close"
-msgstr ""
+msgstr "Kapat"
 
 #: common\views.py:88
 msgid "This isn't your menu!"
-msgstr ""
+msgstr "Bu senin menün değil!"
 
 #: common\views.py:129
 msgid "Backing up {}!"
@@ -124,51 +128,51 @@ msgstr ""
 
 #: common\views.py:133
 msgid "Backup created!"
-msgstr ""
+msgstr "Yedekleme oluşturuldu!"
 
 #: common\views.py:141
 msgid "No backups to restore!"
-msgstr ""
+msgstr "Geri yüklenecek yedek yok!"
 
 #: common\views.py:152
 msgid "Your backup is being restored!"
-msgstr ""
+msgstr "Yedeklemeniz geri yükleniyor!"
 
 #: common\views.py:155
 msgid "Restore has been cancelled!"
-msgstr ""
+msgstr "Geri yükleme iptal edildi!"
 
 #: common\views.py:160
 msgid "Switch Servers"
-msgstr ""
+msgstr "Anahtar Sunucular"
 
 #: common\views.py:160
 msgid "Server ID"
-msgstr ""
+msgstr "Sunucu Kimliği"
 
 #: common\views.py:160
 msgid "Enter the ID of the server"
-msgstr ""
+msgstr "Sunucunun kimliğini girin"
 
 #: common\views.py:167
 msgid "You can only switch to servers that you own!"
-msgstr ""
+msgstr "Yalnızca sahip olduğunuz sunuculara geçiş yapabilirsiniz!"
 
 #: common\views.py:177
 msgid "Auto backups have been disabled by the bot owner!"
-msgstr ""
+msgstr "Otomatik yedeklemeler bot sahibi tarafından devre dışı bırakıldı!"
 
 #: common\views.py:179
 msgid "Auto Backup Interval"
-msgstr ""
+msgstr "Otomatik Yedekleme Aralığı"
 
 #: common\views.py:179
 msgid "Interval Hours"
-msgstr ""
+msgstr "Aralık Saatleri"
 
 #: common\views.py:179
 msgid "Hours in-between backups"
-msgstr ""
+msgstr "Yedeklemeler arasında geçen saatler"
 
 #: common\views.py:185
 msgid "Auto-backup interval hours has been set to {}"
@@ -176,9 +180,9 @@ msgstr ""
 
 #: common\views.py:197
 msgid "No backups to delete!"
-msgstr ""
+msgstr "Silinecek yedek yok!"
 
 #: common\views.py:203
 msgid "Backup deleted!"
-msgstr ""
+msgstr "Yedek silindi!"
 
