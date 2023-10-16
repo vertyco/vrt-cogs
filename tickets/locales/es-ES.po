@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-11 19:12-0400\n"
-"PO-Revision-Date: 2023-10-15 23:17\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -192,7 +192,7 @@ msgstr "Sin respuesta"
 
 #: views.py:341
 msgid "Your ticket is being created, one moment..."
-msgstr ""
+msgstr "Su billete se está creando, un momento..."
 
 #: views.py:419
 msgid "{} ticket for {}"
