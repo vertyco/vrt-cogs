@@ -4,7 +4,6 @@ import logging
 from datetime import datetime, timedelta
 
 import discord
-import orjson
 from discord.enums import ContentFilter, NotificationLevel, VerificationLevel
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.i18n import Translator
@@ -35,7 +34,7 @@ class FriendlyBase(BaseModel):
         if VERSION >= "2.0.1":
             return super().model_dump(*args, **kwargs)
         if kwargs.pop("mode", "") == "json":
-            return orjson.loads(super().json(*args, **kwargs))
+            return super().parse_raw(super().json(*args, **kwargs))
         return super().dict(*args, **kwargs)
 
     @classmethod
@@ -559,17 +558,17 @@ class GuildBackup(FriendlyBase):
     id: int
     owner_id: int
     name: str
-    description: str | None
-    afk_channel_id: int | None
+    description: str | None = None
+    afk_channel_id: int | None = None
     afk_timeout: int
     verification_level: int  # Enum[0, 1, 2, 3, 4]
     default_notifications: int  # Enum[0, 1]
-    banner: str | None
-    icon: str | None
+    banner: str | None = None
+    icon: str | None = None
     preferred_locale: str
     community: bool
-    rules_channel: str | None
-    public_updates_channel: str | None
+    rules_channel: str | None = None
+    public_updates_channel: str | None = None
     content_filter: int
 
     roles: list[Role]

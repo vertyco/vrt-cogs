@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import typing as t
 from datetime import datetime
 
 import discord
@@ -14,6 +15,7 @@ from .common.views import BackupMenu
 
 log = logging.getLogger("red.vrt.cartographer")
 _ = Translator("Cartographer", __file__)
+RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
 # redgettext -D main.py common/formatting.py common/models.py common/views.py --command-docstring
@@ -35,7 +37,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.8b"
+    __version__ = "0.0.9b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -76,7 +78,7 @@ class Cartographer(commands.Cog):
         txt = _("Version: {}\nAuthor: {}").format(self.__version__, self.__author__)
         return f"{helpcmd}\n\n{txt}"
 
-    async def red_delete_data_for_user(self, *, requester, user_id: int):
+    async def red_delete_data_for_user(self, *, requester: RequestType, user_id: int):
         """No data to delete"""
 
     @tasks.loop(minutes=1)
