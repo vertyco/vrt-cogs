@@ -62,7 +62,7 @@ class Base(MixinMeta):
             embed.add_field(name=n, value=v or _("None Set"), inline=False)
             await ctx.send(embed=embed)
 
-    @guildlock.command()
+    @guildlock.command(aliases=["chan"])
     async def channel(self, ctx: commands.Context, *, channel: discord.TextChannel | discord.Thread = None):
         """Set the log channel for the bot"""
         if not channel:
@@ -73,7 +73,7 @@ class Base(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
-    @guildlock.command()
+    @guildlock.command(aliases=["lim"])
     async def limit(self, ctx: commands.Context, limit: int):
         """
         Set the maximum amount of guilds the bot can be in.
@@ -88,7 +88,7 @@ class Base(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
-    @guildlock.command()
+    @guildlock.command(aliases=["mm"])
     async def minmembers(self, ctx: commands.Context, minimum_members: int):
         """
         Set the minimum number of members a server should have for the bot to stay in it.
@@ -103,7 +103,7 @@ class Base(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
-    @guildlock.command()
+    @guildlock.command(aliases=["br"])
     async def botratio(self, ctx: commands.Context, bot_ratio: int):
         """
         Set the the threshold percentage of bots-to-members for the bot to auto-leave.
@@ -121,7 +121,7 @@ class Base(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
-    @guildlock.command()
+    @guildlock.command(aliases=["bl"])
     async def blacklist(self, ctx: commands.Context, guild_id: int):
         """
         Add/Remove a guild from the blacklist.
@@ -137,7 +137,7 @@ class Base(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
-    @guildlock.command()
+    @guildlock.command(aliases=["wl"])
     async def whitelist(self, ctx: commands.Context, guild_id: int):
         """
         Add/Remove a guild from the whitelist.
@@ -205,7 +205,7 @@ class Base(MixinMeta):
 
         grammar = _("guild") if len(guilds) == 1 else _("guilds")
         txt = _("Are you sure you want to leave {}?").format(f"**{len(guilds)}** {grammar}")
-        joined = "\n".join(f"{i.name} ({i.id}) [{i.owner.name}]" for i in guilds)
+        joined = "\n".join(f"- {i.name} ({i.id}) [{i.owner.name}]" for i in guilds)
 
         if len(joined) > 3900:
             file = text_to_file(joined, filename=_("Guilds to Leave") + ".txt")
@@ -218,7 +218,7 @@ class Base(MixinMeta):
         await view.wait()
         if not view.value:
             txt = _("Not leaving {}").format(f"**{len(guilds)}** {grammar}")
-            return await msg.edit(content=txt, view=None)
+            return await msg.edit(embed=None, content=txt, view=None)
 
         txt = _("Leaving {}, one moment...").format(f"**{len(guilds)}** {grammar}")
         await msg.edit(embed=None, content=txt, view=None)
