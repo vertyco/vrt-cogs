@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-14 23:06\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -35,7 +35,7 @@ msgstr ""
 
 #: common\formatting.py:45
 msgid "Controls"
-msgstr ""
+msgstr "컨트롤"
 
 #: common\formatting.py:46
 msgid "- Backup Current Server: 📥\n"
@@ -43,11 +43,15 @@ msgid "- Backup Current Server: 📥\n"
 "- Switch Servers: 🔍\n"
 "- Set AutoBackup Interval: ⌛\n"
 "- Delete Backup: 🗑️\n"
-msgstr ""
+msgstr "- 현재 서버 백업: 📥\n"
+"- 여기에서 복원: 🔄\n"
+"- 서버 전환: 🔍\n"
+"- 자동 백업 간격 설정: ⌛\n"
+"- 백업 삭제: 🗑️\n"
 
 #: common\formatting.py:53
 msgid "Settings"
-msgstr ""
+msgstr "설정"
 
 #: common\formatting.py:54
 msgid "- Auto Backup Interval Hours: {}\n"
@@ -64,59 +68,59 @@ msgstr ""
 
 #: common\formatting.py:67
 msgid "There are no backups for this server yet!"
-msgstr ""
+msgstr "아직 이 서버에 대한 백업이 없습니다!"
 
 #: common\models.py:157 common\models.py:168 common\models.py:195
 msgid "Restored from backup"
-msgstr ""
+msgstr "백업에서 복원"
 
 #: common\models.py:629
 msgid "Cartographer Restore"
-msgstr ""
+msgstr "지도 제작자 복원"
 
 #: common\models.py:630
 msgid " (Removal)"
-msgstr ""
+msgstr " (제거)"
 
 #: common\models.py:745
 msgid "Server restore has completed successfully!"
-msgstr ""
+msgstr "서버 복원이 성공적으로 완료되었습니다!"
 
 #: common\views.py:36
 msgid "That is not a number!"
-msgstr ""
+msgstr "숫자가 아닙니다!"
 
 #: common\views.py:47
 msgid "Confirmation"
-msgstr ""
+msgstr "확인"
 
 #: common\views.py:49
 msgid "Are you SURE?"
-msgstr ""
+msgstr "확실하신가요?"
 
 #: common\views.py:52
 msgid "THIS CANNOT BE UNDONE!"
-msgstr ""
+msgstr "이것은 되돌릴 수 없습니다!"
 
 #: common\views.py:56
 msgid "Remove Old"
-msgstr ""
+msgstr "이전 제거"
 
 #: common\views.py:59
 msgid "removes unsaved channels/roles"
-msgstr ""
+msgstr "저장되지 않은 채널/역할을 제거합니다"
 
 #: common\views.py:64
 msgid "response must be a string!"
-msgstr ""
+msgstr "응답은 문자열이어야 합니다!"
 
 #: common\views.py:84
 msgid "Close"
-msgstr ""
+msgstr "닫기"
 
 #: common\views.py:88
 msgid "This isn't your menu!"
-msgstr ""
+msgstr "이건 메뉴가 아닙니다!"
 
 #: common\views.py:129
 msgid "Backing up {}!"
@@ -124,51 +128,51 @@ msgstr ""
 
 #: common\views.py:133
 msgid "Backup created!"
-msgstr ""
+msgstr "백업이 생성되었습니다!"
 
 #: common\views.py:141
 msgid "No backups to restore!"
-msgstr ""
+msgstr "복원할 백업이 없습니다!"
 
 #: common\views.py:152
 msgid "Your backup is being restored!"
-msgstr ""
+msgstr "백업이 복원 중입니다!"
 
 #: common\views.py:155
 msgid "Restore has been cancelled!"
-msgstr ""
+msgstr "복원이 취소되었습니다!"
 
 #: common\views.py:160
 msgid "Switch Servers"
-msgstr ""
+msgstr "서버 전환"
 
 #: common\views.py:160
 msgid "Server ID"
-msgstr ""
+msgstr "서버 ID"
 
 #: common\views.py:160
 msgid "Enter the ID of the server"
-msgstr ""
+msgstr "서버의 ID를 입력합니다"
 
 #: common\views.py:167
 msgid "You can only switch to servers that you own!"
-msgstr ""
+msgstr "소유한 서버로만 전환할 수 있습니다!"
 
 #: common\views.py:177
 msgid "Auto backups have been disabled by the bot owner!"
-msgstr ""
+msgstr "봇 소유자에 의해 자동 백업이 비활성화되었습니다!"
 
 #: common\views.py:179
 msgid "Auto Backup Interval"
-msgstr ""
+msgstr "자동 백업 간격"
 
 #: common\views.py:179
 msgid "Interval Hours"
-msgstr ""
+msgstr "간격 시간"
 
 #: common\views.py:179
 msgid "Hours in-between backups"
-msgstr ""
+msgstr "백업 사이의 시간"
 
 #: common\views.py:185
 msgid "Auto-backup interval hours has been set to {}"
@@ -176,9 +180,9 @@ msgstr ""
 
 #: common\views.py:197
 msgid "No backups to delete!"
-msgstr ""
+msgstr "삭제할 백업이 없습니다!"
 
 #: common\views.py:203
 msgid "Backup deleted!"
-msgstr ""
+msgstr "백업이 삭제되었습니다!"
 
