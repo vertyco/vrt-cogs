@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-10-16 13:28-0400\n"
+"POT-Creation-Date: 2023-10-16 17:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,49 +24,53 @@ msgid ""
 "    - Forum channels  (permissions/order)[Not forum posts]\n"
 "    - Roles (permissions and what members they're assigned to)\n"
 "\n"
-"    When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
+"    **Caveats**\n"
+"    Note the following\n"
+"    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.\n"
+"     - This is because object IDs cannot be restored so the bot relies on the name of the object.\n"
+"    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
 "    "
 msgstr ""
 
-#: main.py:78
+#: main.py:82
 msgid ""
 "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:82
+#: main.py:86
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: main.py:115
+#: main.py:119
 #, docstring
 msgid "Open the Backup/Restore menu"
 msgstr ""
 
-#: main.py:117 main.py:140 main.py:162
+#: main.py:121 main.py:144 main.py:166
 msgid "This server is in the ingored list!"
 msgstr ""
 
-#: main.py:120 main.py:143 main.py:165
+#: main.py:124 main.py:147 main.py:169
 msgid "This server is not in the allowed list!"
-msgstr ""
-
-#: main.py:134
-#, docstring
-msgid "Backup & Restore Tools"
 msgstr ""
 
 #: main.py:138
 #, docstring
+msgid "Backup & Restore Tools"
+msgstr ""
+
+#: main.py:142
+#, docstring
 msgid "Create a backup of this server"
 msgstr ""
 
-#: main.py:149
+#: main.py:153
 msgid "A backup has been created!"
 msgstr ""
 
-#: main.py:155
+#: main.py:159
 #, docstring
 msgid ""
 "\n"
@@ -77,20 +81,20 @@ msgid ""
 "        "
 msgstr ""
 
-#: main.py:171
+#: main.py:175
 msgid "There are no backups for this guild!"
 msgstr ""
 
-#: main.py:174
+#: main.py:178
 msgid "Server restore is complete!"
 msgstr ""
 
-#: main.py:179
+#: main.py:183
 #, docstring
 msgid "View current global settings"
 msgstr ""
 
-#: main.py:183
+#: main.py:187
 msgid ""
 "### Global Settings\n"
 "- Global backups: {}\n"
@@ -100,54 +104,54 @@ msgid ""
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:202
+#: main.py:206
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr ""
 
-#: main.py:205
+#: main.py:209
 msgid "Auto backups have been **Disabled**"
 msgstr ""
 
-#: main.py:208
+#: main.py:212
 msgid "Auto backups have been **Enabled**"
 msgstr ""
 
-#: main.py:215
+#: main.py:219
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr ""
 
-#: main.py:218
+#: main.py:222
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr ""
 
-#: main.py:220
+#: main.py:224
 msgid "Max backup count has been set"
 msgstr ""
 
-#: main.py:227
+#: main.py:231
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr ""
 
-#: main.py:230
+#: main.py:234
 msgid "Server removed from the ignore list"
 msgstr ""
 
-#: main.py:233
+#: main.py:237
 msgid "Server added to the ignore list"
 msgstr ""
 
-#: main.py:240
+#: main.py:244
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr ""
 
-#: main.py:243
+#: main.py:247
 msgid "Server removed from the allow list"
 msgstr ""
 
-#: main.py:246
+#: main.py:250
 msgid "Server added to the allow list"
 msgstr ""
