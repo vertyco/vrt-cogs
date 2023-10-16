@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-16 00:18\n"
+"PO-Revision-Date: 2023-10-16 00:48\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -35,7 +35,7 @@ msgstr ""
 
 #: common\formatting.py:45
 msgid "Controls"
-msgstr "Kontrole"
+msgstr ""
 
 #: common\formatting.py:46
 msgid "- Backup Current Server: 📥\n"
@@ -47,7 +47,7 @@ msgstr ""
 
 #: common\formatting.py:53
 msgid "Settings"
-msgstr "Postavke"
+msgstr ""
 
 #: common\formatting.py:54
 msgid "- Auto Backup Interval Hours: {}\n"
@@ -64,59 +64,59 @@ msgstr ""
 
 #: common\formatting.py:67
 msgid "There are no backups for this server yet!"
-msgstr "Za ovaj poslužitelj još nema sigurnosnih kopija!"
+msgstr ""
 
 #: common\models.py:157 common\models.py:168 common\models.py:195
 msgid "Restored from backup"
-msgstr "Obnovljen iz sigurnosne kopije"
+msgstr ""
 
 #: common\models.py:629
 msgid "Cartographer Restore"
-msgstr "Kartograf Obnovi"
+msgstr ""
 
 #: common\models.py:630
 msgid " (Removal)"
-msgstr "(Uklanjanje)"
+msgstr ""
 
 #: common\models.py:745
 msgid "Server restore has completed successfully!"
-msgstr "Obnova poslužitelja uspješno je završila!"
+msgstr ""
 
 #: common\views.py:36
 msgid "That is not a number!"
-msgstr "To nije broj!"
+msgstr ""
 
 #: common\views.py:47
 msgid "Confirmation"
-msgstr "Potvrda"
+msgstr ""
 
 #: common\views.py:49
 msgid "Are you SURE?"
-msgstr "Jesi li siguran?"
+msgstr ""
 
 #: common\views.py:52
 msgid "THIS CANNOT BE UNDONE!"
-msgstr "TO SE NE MOŽE PONIŠTITI!"
+msgstr ""
 
 #: common\views.py:56
 msgid "Remove Old"
-msgstr "Ukloniti stari"
+msgstr ""
 
 #: common\views.py:59
 msgid "removes unsaved channels/roles"
-msgstr "Uklanja nespremljene kanale/uloge"
+msgstr ""
 
 #: common\views.py:64
 msgid "response must be a string!"
-msgstr "Odgovor mora biti niz!"
+msgstr ""
 
 #: common\views.py:84
 msgid "Close"
-msgstr "Zatvoriti"
+msgstr ""
 
 #: common\views.py:88
 msgid "This isn't your menu!"
-msgstr "Ovo nije vaš izbornik!"
+msgstr ""
 
 #: common\views.py:129
 msgid "Backing up {}!"
@@ -124,51 +124,51 @@ msgstr ""
 
 #: common\views.py:133
 msgid "Backup created!"
-msgstr "Stvorena sigurnosna kopija!"
+msgstr ""
 
 #: common\views.py:141
 msgid "No backups to restore!"
-msgstr "Nema sigurnosnih kopija za vraćanje!"
+msgstr ""
 
 #: common\views.py:152
 msgid "Your backup is being restored!"
-msgstr "Vraća se vaša sigurnosna kopija!"
+msgstr ""
 
 #: common\views.py:155
 msgid "Restore has been cancelled!"
-msgstr "Obnova je otkazana!"
+msgstr ""
 
 #: common\views.py:160
 msgid "Switch Servers"
-msgstr "Switch poslužitelji"
+msgstr ""
 
 #: common\views.py:160
 msgid "Server ID"
-msgstr "ID poslužitelja"
+msgstr ""
 
 #: common\views.py:160
 msgid "Enter the ID of the server"
-msgstr "Unesite ID poslužitelja"
+msgstr ""
 
 #: common\views.py:167
 msgid "You can only switch to servers that you own!"
-msgstr "Možete se prebaciti samo na poslužitelje koje posjedujete!"
+msgstr ""
 
 #: common\views.py:177
 msgid "Auto backups have been disabled by the bot owner!"
-msgstr "Automatska sigurnosna kopija onemogućena je vlasnik bota!"
+msgstr ""
 
 #: common\views.py:179
 msgid "Auto Backup Interval"
-msgstr "Interval sigurnosne kopije"
+msgstr ""
 
 #: common\views.py:179
 msgid "Interval Hours"
-msgstr "Intervalni sati"
+msgstr ""
 
 #: common\views.py:179
 msgid "Hours in-between backups"
-msgstr "Sati između sigurnosnih kopija"
+msgstr ""
 
 #: common\views.py:185
 msgid "Auto-backup interval hours has been set to {}"
@@ -176,9 +176,9 @@ msgstr ""
 
 #: common\views.py:197
 msgid "No backups to delete!"
-msgstr "Nema sigurnosnih kopija za brisanje!"
+msgstr ""
 
 #: common\views.py:203
 msgid "Backup deleted!"
-msgstr "Sigurnosna kopija izbrisana!"
+msgstr ""
 
