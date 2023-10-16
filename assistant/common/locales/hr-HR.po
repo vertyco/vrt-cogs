@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-24 20:07-0400\n"
-"PO-Revision-Date: 2023-10-16 00:18\n"
+"PO-Revision-Date: 2023-10-16 00:48\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -38,28 +38,27 @@ msgstr ""
 msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
 "        "
-msgstr "Ažurirajte ugradnje kako bi odgovarali trenutnim dimenzijama\n\n"
-"        Uzima uzorak pomoću trenutne metode ugradnje, a nadograđuje ostatak kako bi odgovarao dimenzijama"
+msgstr ""
 
 #: common\api.py:184
 #, docstring
 msgid "Get token list from text"
-msgstr "Dobijte listu tokena iz teksta"
+msgstr ""
 
 #: common\api.py:202
 #, docstring
 msgid "Get text from token list"
-msgstr "Nabavite tekst s popisa tokena"
+msgstr ""
 
 #: common\api.py:212
 #, docstring
 msgid "Fetch token count of stored messages"
-msgstr "Dobivanje tokena broja pohranjenih poruka"
+msgstr ""
 
 #: common\api.py:227
 #, docstring
 msgid "Fetch token count of system and initial prompts"
-msgstr "Dobivanje tokena broja sustava i početnih uputa"
+msgstr ""
 
 #: common\api.py:253
 #, docstring
@@ -71,26 +70,20 @@ msgid "Iteratively degrade a conversation payload, prioritizing more recent mess
 "        Returns:\n"
 "            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
 "        "
-msgstr "Iterativno degradirajte korisno opterećenje razgovora, prioritet novijim porukama i kritičnim kontekstom\n\n"
-"        Args:\n"
-"            Poruke (popis [DICT]): Unosi u poruke poslane u API\n"
-"            function_list (list [dict]): Popis JSON shema funkcija za model\n"
-"            CONF: (GuildSettings): trenutne postavke\n\n"
-"        Vraća:\n"
-"            Tuple [list [dict], list [dict], bool]: Ažurirani popis poruka, popis funkcija i je li razgovor bio degradiran"
+msgstr ""
 
 #: common\api.py:367
 #, docstring
 msgid "Pagify a long string by tokens rather than characters"
-msgstr "Pagirati dugački niz od strane tokena, a ne znakova"
+msgstr ""
 
 #: common\api.py:423
 msgid "Custom Functions"
-msgstr "Prilagođene funkcije"
+msgstr ""
 
 #: common\api.py:429
 msgid "3rd Party"
-msgstr "3. stranka"
+msgstr ""
 
 #: common\api.py:430
 msgid "This function is managed by the `{}` cog"
@@ -98,11 +91,11 @@ msgstr ""
 
 #: common\api.py:435
 msgid "Internal Function"
-msgstr "Unutarnja funkcija"
+msgstr ""
 
 #: common\api.py:436
 msgid "This is an internal command that can only be used when interacting with a tutor"
-msgstr "Ovo je unutarnja naredba koja se može koristiti samo u interakciji s nastavkom"
+msgstr ""
 
 #: common\api.py:444
 msgid "This function consumes `{}` input tokens each call\n"
@@ -110,15 +103,15 @@ msgstr ""
 
 #: common\api.py:461
 msgid "Hidden..."
-msgstr "Skriven..."
+msgstr ""
 
 #: common\api.py:463
 msgid "Schema"
-msgstr "Shema"
+msgstr ""
 
 #: common\api.py:464
 msgid "Code"
-msgstr "Kodirati"
+msgstr ""
 
 #: common\api.py:466 common\api.py:490
 msgid "Page {}/{}"
@@ -126,11 +119,11 @@ msgstr ""
 
 #: common\api.py:473
 msgid "No custom code has been added yet!"
-msgstr "Još nije dodan prilagođeni kôd!"
+msgstr ""
 
 #: common\api.py:489
 msgid "Embeddings"
-msgstr "Ugradnje"
+msgstr ""
 
 #: common\api.py:501
 msgid "`Tokens:     `{}\n"
@@ -142,15 +135,15 @@ msgstr ""
 
 #: common\api.py:517
 msgid "No embeddings have been added!"
-msgstr "Nisu dodane ugradnje!"
+msgstr ""
 
 #: common\chat.py:105
 msgid "No message history!"
-msgstr "Nema povijesti poruka!"
+msgstr ""
 
 #: common\chat.py:113
 msgid "Failed to communicate with endpoint!"
-msgstr "Nije uspio komunicirati s krajnjom točkom!"
+msgstr ""
 
 #: common\chat.py:118
 msgid "Error: {}"
@@ -158,11 +151,11 @@ msgstr ""
 
 #: common\chat.py:127
 msgid "Invalid API key, please set a new valid key!"
-msgstr "Nevažeća tipka za API, postavite novi valjani ključ!"
+msgstr ""
 
 #: common\chat.py:129
 msgid "Uh oh, looks like my API key is invalid!"
-msgstr "Uh oh, izgleda da je moj ključ API -ja nevažeći!"
+msgstr ""
 
 #: common\chat.py:133
 msgid "**KeyError in prompt or system message**\n"
@@ -175,24 +168,24 @@ msgstr ""
 
 #: common\chat.py:172
 msgid "No results found"
-msgstr "Nema rezultata"
+msgstr ""
 
 #: common\chat.py:191
 #, docstring
 msgid "Call the API asynchronously"
-msgstr "Nazovite apinkrono API"
+msgstr ""
 
 #: common\chat.py:272
 msgid "Failed to get response!"
-msgstr "Nije uspio dobiti odgovor!"
+msgstr ""
 
 #: common\chat.py:312
 msgid "Too many functions called"
-msgstr "Previše funkcija zvanih"
+msgstr ""
 
 #: common\chat.py:419
 msgid "Response failed due to invalid regex, check logs for more info."
-msgstr "Odgovor nije uspio zbog nevaljanog regexa, provjerite zapisnike za više informacija."
+msgstr ""
 
 #: common\chat.py:450
 #, docstring
@@ -208,54 +201,44 @@ msgid "Prepare content for calling the GPT API\n\n"
 "        Returns:\n"
 "            List[dict]: list of messages prepped for api\n"
 "        "
-msgstr "Pripremite sadržaj za pozivanje GPT API -ja\n\n"
-"        Args:\n"
-"            Poruka (STR): Poruka pitanja ili chata\n"
-"            Ceh (Discord.Guild): Ceh povezan s chatom\n"
-"            conf (GuildSettings): Konfigurirajte podatke\n"
-"            Razgovor (razgovor): Korisnički razgovor za razgovor o povijesti chata\n"
-"            Autor (neobavezno [Discord.Member]): Korisnik razgovara s botom\n"
-"            Kanal (opcionalno [Union [Discord.TextChannel, Discord.Thread, Discord.forumChannel]]): Kanal za kontekst\n"
-"            upit_embedding lista [float]: poruka ugrađujući utege\n\n"
-"        Vraća:\n"
-"            Popis [DICT]: Popis poruka pripremljenih za API"
+msgstr ""
 
 #: common\chat.py:468
 #, docstring
 msgid "Instead of format(**params) possibly giving a KeyError if prompt has code in it"
-msgstr "Umjesto formata (** params) možda davanje KeyError -a ako je upit u njemu ima kôd"
+msgstr ""
 
 #: common\chat.py:529
 msgid "\n"
 "Missing 'attach files' permissions!"
-msgstr "Nedostaju dopuštenja 'priloge datoteka'!"
+msgstr ""
 
 #: common\utils.py:19
 #, docstring
 msgid "Get all attachments from context"
-msgstr "Nabavite sve priloge iz konteksta"
+msgstr ""
 
 #: common\utils.py:40
 msgid "Canceled"
-msgstr "Otkazan"
+msgstr ""
 
 #: common\utils.py:53
 msgid "You have been blacklisted from using this command!"
-msgstr "U crnoj listi ste od koristite ovu naredbu!"
+msgstr ""
 
 #: common\utils.py:58
 msgid "You have a blacklisted role and cannot use this command!"
-msgstr "Imate ulogu na crnoj listi i ne možete koristiti ovu naredbu!"
+msgstr ""
 
 #: common\utils.py:63
 msgid "You cannot use that command in this channel!"
-msgstr "Tu naredbu ne možete koristiti na ovom kanalu!"
+msgstr ""
 
 #: common\utils.py:68
 msgid "You cannot use that command in any channels under this category"
-msgstr "Ne možete koristiti tu naredbu ni na jednom kanalu u ovoj kategoriji"
+msgstr ""
 
 #: common\utils.py:115 common\utils.py:116
 msgid "[Code Removed]"
-msgstr "[Uklonjen kôd]"
+msgstr ""
 
