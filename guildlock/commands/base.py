@@ -46,7 +46,7 @@ class Base(MixinMeta):
 
             n = _("Bot Farm Detection")
             v = _("Bot will auto-leave guilds where {}% of the members are bots.").format(f"**{self.db.bot_ratio}**")
-            if not self.db.min_members:
+            if not self.db.bot_ratio:
                 v = disabled
             embed.add_field(name=n, value=v, inline=False)
 
