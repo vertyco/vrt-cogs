@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -618,15 +618,15 @@ msgstr ""
 
 #: levelup.py:1646
 msgid "Not importing AmariBot levels"
-msgstr ""
+msgstr "Não importar níveis de AmariBot"
 
 #: levelup.py:1648
 msgid "Fetching AmariBot leaderboard data, this could take a while..."
-msgstr ""
+msgstr "A obtenção dos dados da tabela de classificação do AmariBot pode demorar algum tempo..."
 
 #: levelup.py:1673
 msgid "AmariBot is rate limiting too heavily! Import Failed!"
-msgstr ""
+msgstr "O AmariBot está a limitar demasiado a taxa! Importação falhada!"
 
 #: levelup.py:1696
 msgid "{} pages failed to fetch from AmariBot api, check logs for more info"
@@ -634,7 +634,7 @@ msgstr ""
 
 #: levelup.py:1754
 msgid "No AmariBot stats were found"
-msgstr ""
+msgstr "Não foram encontradas estatísticas do AmariBot"
 
 #: levelup.py:1773
 #, docstring
@@ -654,15 +654,15 @@ msgstr ""
 
 #: levelup.py:1789
 msgid "Not importing Polaris levels"
-msgstr ""
+msgstr "Não importar níveis Polaris"
 
 #: levelup.py:1791
 msgid "Fetching Polaris leaderboard data, this could take a while..."
-msgstr ""
+msgstr "A obtenção dos dados da tabela de classificação do Polaris pode demorar algum tempo..."
 
 #: levelup.py:1814
 msgid "Polaris is rate limiting too heavily! Import Failed!"
-msgstr ""
+msgstr "A Polaris está a limitar demasiado a taxa! Importação falhada!"
 
 #: levelup.py:1856
 msgid "{} pages failed to fetch from Polaris api, check logs for more info"
@@ -670,7 +670,7 @@ msgstr ""
 
 #: levelup.py:1888
 msgid "No Polaris stats were found"
-msgstr ""
+msgstr "Não foram encontradas estatísticas do Polaris"
 
 #: levelup.py:1901
 #, docstring
@@ -1103,7 +1103,8 @@ msgstr "Testar o algoritmo de níveis\n"
 #: levelup.py:2471
 msgid "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
 "Approx time is the time it would take for a user to reach a level with randomized breaks"
-msgstr ""
+msgstr "XP necessária para um nível = Base * Nível^ᵉˣᵖ\n\n"
+"Tempo aproximado é o tempo que um utilizador demoraria a atingir um nível com pausas aleatórias"
 
 #: levelup.py:2475
 msgid "`Base Multiplier:  `"
@@ -1123,7 +1124,7 @@ msgstr "`Recarga da mensagem: `"
 
 #: levelup.py:2480
 msgid "Level Example"
-msgstr ""
+msgstr "Exemplo de nível"
 
 #: levelup.py:2499
 msgid "- lvl {}, {} xp, {}\n"
@@ -1131,15 +1132,15 @@ msgstr ""
 
 #: levelup.py:2506
 msgid "XP Curve"
-msgstr ""
+msgstr "Curva XP"
 
 #: levelup.py:2507
 msgid "Level"
-msgstr ""
+msgstr "Nível"
 
 #: levelup.py:2508
 msgid "Experience Required"
-msgstr ""
+msgstr "Experiência necessária"
 
 #: levelup.py:2518
 #, docstring
@@ -1286,15 +1287,15 @@ msgstr "Não tenho as permissões adequadas para gerir funções!"
 
 #: levelup.py:2657
 msgid "Calculating roles, this may take a while..."
-msgstr ""
+msgstr "Calcular os papéis, isto pode demorar um pouco..."
 
 #: levelup.py:2721
 msgid "Assigning roles, this may take a while..."
-msgstr ""
+msgstr "Atribuição de papéis, isto pode demorar um pouco..."
 
 #: levelup.py:2761
 msgid "Role initialization completed!"
-msgstr ""
+msgstr "Inicialização da função concluída!"
 
 #: levelup.py:2763
 msgid "\n"
@@ -1313,7 +1314,8 @@ msgstr ""
 #: levelup.py:2773
 msgid "\n"
 "No roles needed to be added or removed!"
-msgstr ""
+msgstr "\n"
+"Não é necessário acrescentar ou retirar papéis!"
 
 #: levelup.py:2778
 msgid "Initialization took {} to complete."
@@ -1372,7 +1374,7 @@ msgstr " como "
 #: levelup.py:2815
 #, docstring
 msgid "Unassign a role from a level"
-msgstr ""
+msgstr "Anular a atribuição de uma função de um nível"
 
 #: levelup.py:2818
 msgid "Level role has been deleted!"
