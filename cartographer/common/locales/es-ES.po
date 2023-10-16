@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-14 23:06\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -35,7 +35,7 @@ msgstr ""
 
 #: common\formatting.py:45
 msgid "Controls"
-msgstr ""
+msgstr "Controla"
 
 #: common\formatting.py:46
 msgid "- Backup Current Server: 📥\n"
@@ -43,11 +43,15 @@ msgid "- Backup Current Server: 📥\n"
 "- Switch Servers: 🔍\n"
 "- Set AutoBackup Interval: ⌛\n"
 "- Delete Backup: 🗑️\n"
-msgstr ""
+msgstr "- Copia de seguridad del servidor actual: 📥\n"
+"- Restaurar aquí: 🔄\n"
+"- Cambiar Servidores: 🔍\n"
+"- Establecer intervalo de copia de seguridad automática: ⌛\n"
+"- Eliminar copia de seguridad: 🗑️\n"
 
 #: common\formatting.py:53
 msgid "Settings"
-msgstr ""
+msgstr "Ajustes"
 
 #: common\formatting.py:54
 msgid "- Auto Backup Interval Hours: {}\n"
@@ -64,59 +68,59 @@ msgstr ""
 
 #: common\formatting.py:67
 msgid "There are no backups for this server yet!"
-msgstr ""
+msgstr "Aún no hay copias de seguridad de este servidor"
 
 #: common\models.py:157 common\models.py:168 common\models.py:195
 msgid "Restored from backup"
-msgstr ""
+msgstr "Restaurado desde copia de seguridad"
 
 #: common\models.py:629
 msgid "Cartographer Restore"
-msgstr ""
+msgstr "Restaurar cartógrafo"
 
 #: common\models.py:630
 msgid " (Removal)"
-msgstr ""
+msgstr " (Eliminación)"
 
 #: common\models.py:745
 msgid "Server restore has completed successfully!"
-msgstr ""
+msgstr "La restauración del servidor se ha completado con éxito"
 
 #: common\views.py:36
 msgid "That is not a number!"
-msgstr ""
+msgstr "¡Eso no es un número!"
 
 #: common\views.py:47
 msgid "Confirmation"
-msgstr ""
+msgstr "Confirmación"
 
 #: common\views.py:49
 msgid "Are you SURE?"
-msgstr ""
+msgstr "¿Está SEGURO?"
 
 #: common\views.py:52
 msgid "THIS CANNOT BE UNDONE!"
-msgstr ""
+msgstr "¡ESTO NO SE PUEDE DESHACER!"
 
 #: common\views.py:56
 msgid "Remove Old"
-msgstr ""
+msgstr "Eliminar antiguo"
 
 #: common\views.py:59
 msgid "removes unsaved channels/roles"
-msgstr ""
+msgstr "elimina los canales/roles no guardados"
 
 #: common\views.py:64
 msgid "response must be a string!"
-msgstr ""
+msgstr "la respuesta debe ser una cadena"
 
 #: common\views.py:84
 msgid "Close"
-msgstr ""
+msgstr "Cerrar"
 
 #: common\views.py:88
 msgid "This isn't your menu!"
-msgstr ""
+msgstr "¡Este no es tu menú!"
 
 #: common\views.py:129
 msgid "Backing up {}!"
@@ -124,51 +128,51 @@ msgstr ""
 
 #: common\views.py:133
 msgid "Backup created!"
-msgstr ""
+msgstr "Copia de seguridad creada"
 
 #: common\views.py:141
 msgid "No backups to restore!"
-msgstr ""
+msgstr "Sin copias de seguridad que restaurar"
 
 #: common\views.py:152
 msgid "Your backup is being restored!"
-msgstr ""
+msgstr "¡Tu copia de seguridad está siendo restaurada!"
 
 #: common\views.py:155
 msgid "Restore has been cancelled!"
-msgstr ""
+msgstr "Se ha cancelado la restauración"
 
 #: common\views.py:160
 msgid "Switch Servers"
-msgstr ""
+msgstr "Servidores de conmutación"
 
 #: common\views.py:160
 msgid "Server ID"
-msgstr ""
+msgstr "ID de servidor"
 
 #: common\views.py:160
 msgid "Enter the ID of the server"
-msgstr ""
+msgstr "Introduzca el ID del servidor"
 
 #: common\views.py:167
 msgid "You can only switch to servers that you own!"
-msgstr ""
+msgstr "Sólo puede cambiar a servidores de su propiedad"
 
 #: common\views.py:177
 msgid "Auto backups have been disabled by the bot owner!"
-msgstr ""
+msgstr "El propietario del bot ha desactivado las copias de seguridad automáticas"
 
 #: common\views.py:179
 msgid "Auto Backup Interval"
-msgstr ""
+msgstr "Intervalo de copia de seguridad automática"
 
 #: common\views.py:179
 msgid "Interval Hours"
-msgstr ""
+msgstr "Intervalo Horas"
 
 #: common\views.py:179
 msgid "Hours in-between backups"
-msgstr ""
+msgstr "Horas entre copias de seguridad"
 
 #: common\views.py:185
 msgid "Auto-backup interval hours has been set to {}"
@@ -176,9 +180,9 @@ msgstr ""
 
 #: common\views.py:197
 msgid "No backups to delete!"
-msgstr ""
+msgstr "Sin copias de seguridad que borrar"
 
 #: common\views.py:203
 msgid "Backup deleted!"
-msgstr ""
+msgstr "Copia de seguridad borrada"
 
