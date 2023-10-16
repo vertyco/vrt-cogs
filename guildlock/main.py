@@ -10,6 +10,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from .commands import BaseCommands
 from .common import get_bot_percentage
 from .common.abc import CompositeMetaClass
+from .common.listener import Listener
 from .common.models import DB
 
 log = logging.getLogger("red.vrt.guildlock")
@@ -21,13 +22,13 @@ RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
 @cog_i18n(_)
-class GuildLock(BaseCommands, commands.Cog, metaclass=CompositeMetaClass):
+class GuildLock(BaseCommands, Listener, commands.Cog, metaclass=CompositeMetaClass):
     """
     Tools for managing guild joins and leaves.
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
