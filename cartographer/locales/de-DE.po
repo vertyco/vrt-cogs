@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-14 23:06\n"
+"PO-Revision-Date: 2023-10-16 00:17\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +24,11 @@ msgid "\n"
 "    This cog will create a backup of all roles, channels and permission.\n\n"
 "    When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Sicherungs- und Wiederherstellungstools für Discord-Server.\n\n"
+"    Dieses Zahnrad erstellt ein Backup aller Rollen, Kanäle und Berechtigungen.\n\n"
+"    Bei der Wiederherstellung wird es sein Bestes tun, um die Sicherung so genau wie möglich wiederherzustellen, einige Rollen können aufgrund von Positionsmietearchien nicht wiederhergestellt werden.\n"
+"    "
 
 #: main.py:71
 msgid "Version: {}\n"
@@ -34,34 +38,34 @@ msgstr ""
 #: main.py:75
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Keine Daten zu löschen"
 
 #: main.py:108
 #, docstring
 msgid "Open the Backup/Restore menu"
-msgstr ""
+msgstr "Öffnen Sie das Menü Sichern/Wiederherstellen"
 
 #: main.py:110 main.py:133 main.py:155
 msgid "This server is in the ingored list!"
-msgstr ""
+msgstr "Dieser Server steht auf der Liste der nicht berücksichtigten Server!"
 
 #: main.py:113 main.py:136 main.py:158
 msgid "This server is not in the allowed list!"
-msgstr ""
+msgstr "Dieser Server steht nicht auf der Liste der zugelassenen Server!"
 
 #: main.py:127
 #, docstring
 msgid "Backup & Restore Tools"
-msgstr ""
+msgstr "Tools zur Sicherung und Wiederherstellung"
 
 #: main.py:131
 #, docstring
 msgid "Create a backup of this server"
-msgstr ""
+msgstr "Erstellen Sie eine Sicherungskopie des Servers"
 
 #: main.py:142
 msgid "A backup has been created!"
-msgstr ""
+msgstr "Es wurde ein Backup erstellt!"
 
 #: main.py:148
 #, docstring
@@ -70,20 +74,24 @@ msgid "\n"
 "        **Arguments**\n"
 "        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Die letzte Sicherung für diesen Server wiederherstellen\n\n"
+"        **Argumente**\n"
+"        - delete_existing: falls True, löscht bestehende Channels/Rollen, die nicht Teil des Backups sind.\n"
+"        "
 
 #: main.py:164
 msgid "There are no backups for this guild!"
-msgstr ""
+msgstr "Für diese Gilde gibt es keine Backups!"
 
 #: main.py:167
 msgid "Server restore is complete!"
-msgstr ""
+msgstr "Die Wiederherstellung des Servers ist abgeschlossen!"
 
 #: main.py:172
 #, docstring
 msgid "View current global settings"
-msgstr ""
+msgstr "Aktuelle globale Einstellungen anzeigen"
 
 #: main.py:176
 msgid "### Global Settings\n"
@@ -97,52 +105,52 @@ msgstr ""
 #: main.py:195
 #, docstring
 msgid "Enable/Disable allowing auto backups"
-msgstr ""
+msgstr "Aktivieren/Deaktivieren von automatischen Backups"
 
 #: main.py:198
 msgid "Auto backups have been **Disabled**"
-msgstr ""
+msgstr "Automatische Sicherungen wurden **Deaktiviert**"
 
 #: main.py:201
 msgid "Auto backups have been **Enabled**"
-msgstr ""
+msgstr "Automatische Backups wurden **aktiviert**"
 
 #: main.py:208
 #, docstring
 msgid "Set the max amount of backups a server can have"
-msgstr ""
+msgstr "Festlegen der maximalen Anzahl von Backups für einen Server"
 
 #: main.py:211
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
-msgstr ""
+msgstr "Maximale Anzahl der Backups auf 0 gesetzt, Cartographer wurde **Deaktiviert**"
 
 #: main.py:213
 msgid "Max backup count has been set"
-msgstr ""
+msgstr "Maximale Anzahl von Backups wurde festgelegt"
 
 #: main.py:220
 #, docstring
 msgid "Add/Remove a server from the ignore list"
-msgstr ""
+msgstr "Hinzufügen/Entfernen eines Servers von der Ignorierliste"
 
 #: main.py:223
 msgid "Server removed from the ignore list"
-msgstr ""
+msgstr "Server von der Ignorierliste entfernt"
 
 #: main.py:226
 msgid "Server added to the ignore list"
-msgstr ""
+msgstr "Server zur Ignorierliste hinzugefügt"
 
 #: main.py:233
 #, docstring
 msgid "Add/Remove a server from the allow list"
-msgstr ""
+msgstr "Hinzufügen/Entfernen eines Servers aus der Zulassungsliste"
 
 #: main.py:236
 msgid "Server removed from the allow list"
-msgstr ""
+msgstr "Server von der Zulassungsliste entfernt"
 
 #: main.py:239
 msgid "Server added to the allow list"
-msgstr ""
+msgstr "Server zur Zulassungsliste hinzugefügt"
 
