@@ -2,8 +2,10 @@ import asyncio
 import base64
 import logging
 from datetime import datetime, timedelta
+from io import BytesIO
 
 import discord
+import orjson
 from discord.enums import ContentFilter, NotificationLevel, VerificationLevel
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.i18n import Translator
@@ -34,7 +36,7 @@ class FriendlyBase(BaseModel):
         if VERSION >= "2.0.1":
             return super().model_dump(*args, **kwargs)
         if kwargs.pop("mode", "") == "json":
-            return super().parse_raw(super().json(*args, **kwargs))
+            return orjson.loads(super().json(*args, **kwargs))
         return super().dict(*args, **kwargs)
 
     @classmethod
@@ -715,22 +717,47 @@ class GuildBackup(FriendlyBase):
         if not public_updates_channel:
             public_updates_channel = await guild.create_text_channel(name="public-updates")
 
-        await guild.edit(
-            reason=reason,
-            name=self.name,
-            description=self.description,
-            afk_channel=get_named_channel(guild, self.afk_channel_id or 0),
-            afk_timeout=self.afk_timeout,
-            verification_level=verification,
-            default_notifications=NotificationLevel(self.default_notifications),
-            banner=base64.b64decode(self.banner) if self.banner else None,
-            icon=base64.b64decode(self.icon) if self.icon else None,
-            preferred_locale=self.preferred_locale,
-            community=self.community,
-            rules_channel=rules_channel,
-            public_updates_channel=public_updates_channel,
-            explicit_content_filter=content_filter,
-        )
+        banner = base64.b64decode(self.banner) if self.banner else None
+        icon = base64.b64decode(self.icon) if self.icon else None
+
+        if BytesIO(banner).__sizeof__() >= guild.filesize_limit:
+            banner = None
+        if BytesIO(icon).__sizeof__() >= guild.filesize_limit:
+            icon = None
+
+        try:
+            await guild.edit(
+                reason=reason,
+                name=self.name,
+                description=self.description,
+                afk_channel=get_named_channel(guild, self.afk_channel_id or 0),
+                afk_timeout=self.afk_timeout,
+                verification_level=verification,
+                default_notifications=NotificationLevel(self.default_notifications),
+                banner=banner,
+                icon=icon,
+                preferred_locale=self.preferred_locale,
+                community=self.community,
+                rules_channel=rules_channel,
+                public_updates_channel=public_updates_channel,
+                explicit_content_filter=content_filter,
+            )
+        except Exception as e:
+            log.warning("Couldn't fully edit guild", exc_info=e)
+            await guild.edit(
+                reason=reason,
+                name=self.name,
+                description=self.description,
+                afk_channel=get_named_channel(guild, self.afk_channel_id or 0),
+                afk_timeout=self.afk_timeout,
+                verification_level=verification,
+                default_notifications=NotificationLevel(self.default_notifications),
+                preferred_locale=self.preferred_locale,
+                community=self.community,
+                rules_channel=rules_channel,
+                public_updates_channel=public_updates_channel,
+                explicit_content_filter=content_filter,
+            )
 
         # Ensure all forum channels exist before sorting them
         for obj in self.forums:
