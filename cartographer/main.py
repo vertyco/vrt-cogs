@@ -37,7 +37,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.11b"
+    __version__ = "0.0.12b"
 
     def __init__(self, bot: Red):
         super().__init__()
