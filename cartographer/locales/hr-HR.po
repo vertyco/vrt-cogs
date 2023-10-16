@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-16 00:18\n"
+"PO-Revision-Date: 2023-10-16 00:48\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -24,9 +24,7 @@ msgid "\n"
 "    This cog will create a backup of all roles, channels and permission.\n\n"
 "    When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.\n"
 "    "
-msgstr "Alati za sigurnosnu kopiju i vraćanje za nesklad poslužitelje.\n\n"
-"    Ovaj zupčanik će stvoriti sigurnosnu kopiju svih uloga, kanala i dopuštenja.\n\n"
-"    Pri vraćanju dat će sve od sebe da vratite sigurnosnu kopiju što je moguće bliže, neke uloge se ne mogu obnoviti zbog pozicije Hirearchy."
+msgstr ""
 
 #: main.py:71
 msgid "Version: {}\n"
@@ -36,34 +34,34 @@ msgstr ""
 #: main.py:75
 #, docstring
 msgid "No data to delete"
-msgstr "Nema podataka za brisanje"
+msgstr ""
 
 #: main.py:108
 #, docstring
 msgid "Open the Backup/Restore menu"
-msgstr "Otvorite izbornik za sigurnosnu kopiju/vraćanje"
+msgstr ""
 
 #: main.py:110 main.py:133 main.py:155
 msgid "This server is in the ingored list!"
-msgstr "Ovaj je poslužitelj na popisu ingored!"
+msgstr ""
 
 #: main.py:113 main.py:136 main.py:158
 msgid "This server is not in the allowed list!"
-msgstr "Ovaj poslužitelj nije na dopuštenom popisu!"
+msgstr ""
 
 #: main.py:127
 #, docstring
 msgid "Backup & Restore Tools"
-msgstr "Alati za sigurnosnu kopiju i obnavljanje"
+msgstr ""
 
 #: main.py:131
 #, docstring
 msgid "Create a backup of this server"
-msgstr "Stvorite sigurnosnu kopiju ovog poslužitelja"
+msgstr ""
 
 #: main.py:142
 msgid "A backup has been created!"
-msgstr "Stvorena je sigurnosna kopija!"
+msgstr ""
 
 #: main.py:148
 #, docstring
@@ -72,22 +70,20 @@ msgid "\n"
 "        **Arguments**\n"
 "        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.\n"
 "        "
-msgstr "Vratite najnoviju sigurnosnu kopiju za ovaj poslužitelj\n\n"
-"        ** Argumenti **\n"
-"        - Delete_Exist: Ako je istina, briše postojeće kanale/uloge koji nisu dio sigurnosne kopije."
+msgstr ""
 
 #: main.py:164
 msgid "There are no backups for this guild!"
-msgstr "Nema sigurnosnih kopija za ovaj ceh!"
+msgstr ""
 
 #: main.py:167
 msgid "Server restore is complete!"
-msgstr "Vraćanje poslužitelja je završena!"
+msgstr ""
 
 #: main.py:172
 #, docstring
 msgid "View current global settings"
-msgstr "Pogledajte trenutne globalne postavke"
+msgstr ""
 
 #: main.py:176
 msgid "### Global Settings\n"
@@ -101,52 +97,52 @@ msgstr ""
 #: main.py:195
 #, docstring
 msgid "Enable/Disable allowing auto backups"
-msgstr "Omogući/onemogućite dopuštanje automatske sigurnosne kopije"
+msgstr ""
 
 #: main.py:198
 msgid "Auto backups have been **Disabled**"
-msgstr "Automatske sigurnosne kopije su ** onemogućene **"
+msgstr ""
 
 #: main.py:201
 msgid "Auto backups have been **Enabled**"
-msgstr "Automatske sigurnosne kopije bile su ** omogućene **"
+msgstr ""
 
 #: main.py:208
 #, docstring
 msgid "Set the max amount of backups a server can have"
-msgstr "Postavite maksimalnu količinu sigurnosnih kopija koje poslužitelj može imati"
+msgstr ""
 
 #: main.py:211
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
-msgstr "Max sigurnosne kopije postavljene na 0, kartograf je bio ** onemogućen **"
+msgstr ""
 
 #: main.py:213
 msgid "Max backup count has been set"
-msgstr "Postavljeno je maksimalno brojanje sigurnosnih kopija"
+msgstr ""
 
 #: main.py:220
 #, docstring
 msgid "Add/Remove a server from the ignore list"
-msgstr "Dodajte/uklonite poslužitelj s popisa zanemarivanja"
+msgstr ""
 
 #: main.py:223
 msgid "Server removed from the ignore list"
-msgstr "Poslužitelj uklonjen s popisa zanemarivanja"
+msgstr ""
 
 #: main.py:226
 msgid "Server added to the ignore list"
-msgstr "Poslužitelj dodan na popis zanemarivanja"
+msgstr ""
 
 #: main.py:233
 #, docstring
 msgid "Add/Remove a server from the allow list"
-msgstr "Dodajte/uklonite poslužitelj s popisa dozvole"
+msgstr ""
 
 #: main.py:236
 msgid "Server removed from the allow list"
-msgstr "Poslužitelj uklonjen s popisa dozvole"
+msgstr ""
 
 #: main.py:239
 msgid "Server added to the allow list"
-msgstr "Poslužitelj dodan na popis dopuštanja"
+msgstr ""
 
