@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-10 15:00-0400\n"
-"PO-Revision-Date: 2023-10-10 19:12\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -817,11 +817,11 @@ msgstr "Kara Liste"
 
 #: commands\admin.py:951
 msgid "Thread tickets will be closed/archived rather than deleted"
-msgstr ""
+msgstr "Konu biletleri silinmek yerine kapatılacak/arşivlenecek"
 
 #: commands\admin.py:953
 msgid "Thread tickets will be deleted instead of closed/archived"
-msgstr ""
+msgstr "Konu biletleri kapatılmak/arşivlenmek yerine silinecek"
 
 #: commands\admin.py:957
 msgid "Thread Ticket Auto-Add"
@@ -887,11 +887,11 @@ msgstr " {} panel rollerine eklenmiştir"
 #: commands\admin.py:1041
 #, docstring
 msgid "Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"
-msgstr ""
+msgstr "Katıl düğmesi devre dışı bırakılmadan önce kaç personel üyesinin bir bilet talep edebileceğini/katılabileceğini ayarlayın (Konuları kullanıyorsanız)"
 
 #: commands\admin.py:1044
 msgid "Amount cannot be negative!"
-msgstr ""
+msgstr "Miktar negatif olamaz!"
 
 #: commands\admin.py:1050
 msgid "Up to {} staff member(s) can claim a single ticket"
@@ -1018,15 +1018,15 @@ msgstr "Genel bakış kanalı {} olarak ayarlandı"
 #: commands\admin.py:1212
 #, docstring
 msgid "Toggle whether channels are mentioned in the active ticket overview"
-msgstr ""
+msgstr "Etkin bilet genel görünümünde kanallardan bahsedilip bahsedilmeyeceğini değiştirme"
 
 #: commands\admin.py:1216
 msgid "Ticket channels will no longer be mentioned in the active ticket channel"
-msgstr ""
+msgstr "Bilet kanalları artık aktif bilet kanalında belirtilmeyecek"
 
 #: commands\admin.py:1219
 msgid "Ticket channels now be mentioned in the active ticket channel"
-msgstr ""
+msgstr "Bilet kanalları artık aktif bilet kanalında belirtilecek"
 
 #: commands\admin.py:1224
 #, docstring
@@ -1146,7 +1146,7 @@ msgstr "Bir mesajı başka bir mesajla güncelleme (Hedef, kaynak kullanılarak 
 
 #: commands\admin.py:1340
 msgid "Failed to update message!"
-msgstr ""
+msgstr "Mesaj güncellenemedi!"
 
 #: commands\admin.py:1352
 #, docstring
@@ -1271,7 +1271,7 @@ msgstr "\n"
 
 #: commands\base.py:121
 msgid "Cannot find the owner of this ticket! Maybe it is not a ticket channel or was cleaned from the config?"
-msgstr ""
+msgstr "Bu biletin sahibi bulunamıyor! Belki de bir bilet kanalı değildir veya yapılandırmadan temizlenmiştir?"
 
 #: commands\base.py:128
 msgid "You do not have permissions to close this ticket"

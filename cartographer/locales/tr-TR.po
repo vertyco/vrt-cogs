@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-14 23:06\n"
+"PO-Revision-Date: 2023-10-16 00:18\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +24,11 @@ msgid "\n"
 "    This cog will create a backup of all roles, channels and permission.\n\n"
 "    When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Discord sunucuları için Yedekleme ve Geri Yükleme araçları.\n\n"
+"    Bu dişli tüm rollerin, kanalların ve izinlerin bir yedeğini oluşturacaktır.\n\n"
+"    Geri yüklerken, yedeği mümkün olduğunca yakın bir şekilde geri yüklemek için elinden geleni yapacaktır, bazı roller pozisyon arama nedeniyle geri yüklenemeyebilir.\n"
+"    "
 
 #: main.py:71
 msgid "Version: {}\n"
@@ -34,34 +38,34 @@ msgstr ""
 #: main.py:75
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Silinecek veri yok"
 
 #: main.py:108
 #, docstring
 msgid "Open the Backup/Restore menu"
-msgstr ""
+msgstr "Yedekleme/Geri Yükleme menüsünü açın"
 
 #: main.py:110 main.py:133 main.py:155
 msgid "This server is in the ingored list!"
-msgstr ""
+msgstr "Bu sunucu reddedilenler listesinde!"
 
 #: main.py:113 main.py:136 main.py:158
 msgid "This server is not in the allowed list!"
-msgstr ""
+msgstr "Bu sunucu izin verilenler listesinde değil!"
 
 #: main.py:127
 #, docstring
 msgid "Backup & Restore Tools"
-msgstr ""
+msgstr "Yedekleme ve Geri Yükleme Araçları"
 
 #: main.py:131
 #, docstring
 msgid "Create a backup of this server"
-msgstr ""
+msgstr "Bu sunucunun yedeğini oluşturun"
 
 #: main.py:142
 msgid "A backup has been created!"
-msgstr ""
+msgstr "Bir yedekleme oluşturuldu!"
 
 #: main.py:148
 #, docstring
@@ -70,20 +74,24 @@ msgid "\n"
 "        **Arguments**\n"
 "        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Bu sunucu için en son yedeği geri yükleyin\n\n"
+"        **Argümanlar**\n"
+"        - delete_existing: True ise, yedeklemenin bir parçası olmayan mevcut kanalları/rolleri siler.\n"
+"        "
 
 #: main.py:164
 msgid "There are no backups for this guild!"
-msgstr ""
+msgstr "Bu loncanın yedeği yok!"
 
 #: main.py:167
 msgid "Server restore is complete!"
-msgstr ""
+msgstr "Sunucu geri yükleme işlemi tamamlandı!"
 
 #: main.py:172
 #, docstring
 msgid "View current global settings"
-msgstr ""
+msgstr "Geçerli global ayarları görüntüleme"
 
 #: main.py:176
 msgid "### Global Settings\n"
@@ -97,52 +105,52 @@ msgstr ""
 #: main.py:195
 #, docstring
 msgid "Enable/Disable allowing auto backups"
-msgstr ""
+msgstr "Otomatik yedeklemelere izin vermeyi Etkinleştir/Devre Dışı Bırak"
 
 #: main.py:198
 msgid "Auto backups have been **Disabled**"
-msgstr ""
+msgstr "Otomatik yedeklemeler **Devre Dışı** bırakıldı"
 
 #: main.py:201
 msgid "Auto backups have been **Enabled**"
-msgstr ""
+msgstr "Otomatik yedeklemeler **Etkinleştirildi**"
 
 #: main.py:208
 #, docstring
 msgid "Set the max amount of backups a server can have"
-msgstr ""
+msgstr "Bir sunucunun sahip olabileceği maksimum yedekleme miktarını ayarlama"
 
 #: main.py:211
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
-msgstr ""
+msgstr "Maksimum yedekleme 0 olarak ayarlandı, Cartographer **Devre Dışı** bırakıldı"
 
 #: main.py:213
 msgid "Max backup count has been set"
-msgstr ""
+msgstr "Maksimum yedekleme sayısı ayarlandı"
 
 #: main.py:220
 #, docstring
 msgid "Add/Remove a server from the ignore list"
-msgstr ""
+msgstr "Yoksayma listesine sunucu ekleme/kaldırma"
 
 #: main.py:223
 msgid "Server removed from the ignore list"
-msgstr ""
+msgstr "Sunucu yok sayma listesinden çıkarıldı"
 
 #: main.py:226
 msgid "Server added to the ignore list"
-msgstr ""
+msgstr "Yoksay listesine eklenen sunucu"
 
 #: main.py:233
 #, docstring
 msgid "Add/Remove a server from the allow list"
-msgstr ""
+msgstr "İzin verilenler listesine sunucu ekleme/kaldırma"
 
 #: main.py:236
 msgid "Server removed from the allow list"
-msgstr ""
+msgstr "Sunucu izin verilenler listesinden kaldırıldı"
 
 #: main.py:239
 msgid "Server added to the allow list"
-msgstr ""
+msgstr "İzin verilenler listesine eklenen sunucu"
 
