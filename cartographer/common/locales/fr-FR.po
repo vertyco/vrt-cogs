@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-15 23:17\n"
+"POT-Creation-Date: 2023-10-16 13:28-0400\n"
+"PO-Revision-Date: 2023-10-16 17:37\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -83,19 +83,19 @@ msgstr "Page {}"
 msgid "There are no backups for this server yet!"
 msgstr "Il n'y a pas encore de sauvegardes pour ce serveur !"
 
-#: common\models.py:157 common\models.py:168 common\models.py:195
+#: common\models.py:156 common\models.py:167 common\models.py:194
 msgid "Restored from backup"
 msgstr "Restauré à partir d'une sauvegarde"
 
-#: common\models.py:629
+#: common\models.py:627
 msgid "Cartographer Restore"
 msgstr "Restauration du cartographe"
 
-#: common\models.py:630
+#: common\models.py:628
 msgid " (Removal)"
 msgstr " (Déménagement)"
 
-#: common\models.py:745
+#: common\models.py:743
 msgid "Server restore has completed successfully!"
 msgstr "La restauration du serveur s'est achevée avec succès !"
 
@@ -168,34 +168,42 @@ msgid "Enter the ID of the server"
 msgstr "Saisir l'ID du serveur"
 
 #: common\views.py:167
-msgid "You can only switch to servers that you own!"
-msgstr "Vous ne pouvez passer qu'à des serveurs qui vous appartiennent !"
+msgid "I am not in that server!"
+msgstr ""
 
-#: common\views.py:177
+#: common\views.py:171
+msgid "You do not appear to be in that server!"
+msgstr ""
+
+#: common\views.py:174
+msgid "You can only switch to servers that you are an administrator of!"
+msgstr ""
+
+#: common\views.py:184
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr "Les sauvegardes automatiques ont été désactivées par le propriétaire du bot !"
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Auto Backup Interval"
 msgstr "Intervalle de sauvegarde automatique"
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Interval Hours"
 msgstr "Heures d'intervalle"
 
-#: common\views.py:179
+#: common\views.py:186
 msgid "Hours in-between backups"
 msgstr "Heures entre les sauvegardes"
 
-#: common\views.py:185
+#: common\views.py:192
 msgid "Auto-backup interval hours has been set to {}"
 msgstr "L'intervalle de sauvegarde automatique en heures a été réglé sur {}"
 
-#: common\views.py:197
+#: common\views.py:204
 msgid "No backups to delete!"
 msgstr "Pas de sauvegardes à supprimer !"
 
-#: common\views.py:203
+#: common\views.py:210
 msgid "Backup deleted!"
 msgstr "Sauvegarde supprimée !"
 
