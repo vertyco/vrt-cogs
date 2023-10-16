@@ -21,6 +21,26 @@ def get_named_channel(
     return mapping.get(channel_name)
 
 
+def get_named_forum_channel(guild: discord.Guild, channel_name: str) -> discord.ForumChannel | None:
+    mapping = {i.name: i for i in guild.forums}
+    return mapping.get(channel_name)
+
+
+def get_named_text_channel(guild: discord.Guild, channel_name: str) -> discord.TextChannel | None:
+    mapping = {i.name: i for i in guild.text_channels}
+    return mapping.get(channel_name)
+
+
+def get_named_voice_channel(guild: discord.Guild, channel_name: str) -> discord.VoiceChannel | None:
+    mapping = {i.name: i for i in guild.voice_channels}
+    return mapping.get(channel_name)
+
+
+def get_named_category(guild: discord.Guild, channel_name: str) -> discord.CategoryChannel | None:
+    mapping = {i.name: i for i in guild.categories}
+    return mapping.get(channel_name)
+
+
 def get_named_role(guild: discord.Guild, role_name: str) -> discord.Role | None:
     mapping = {i.name: i for i in guild.roles}
     return mapping.get(role_name)
@@ -290,7 +310,7 @@ class CategoryChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.CategoryChannel | None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_category(guild, self.name):
             if not isinstance(channel, discord.CategoryChannel):
                 return
             self.id = channel.id
@@ -306,7 +326,7 @@ class CategoryChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_category(guild, self.name):
             if not isinstance(channel, discord.CategoryChannel):
                 return
             equal = [
@@ -359,7 +379,7 @@ class TextChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.TextChannel | None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_text_channel(guild, self.name):
             if not isinstance(channel, discord.TextChannel):
                 return
             self.id = channel.id
@@ -367,7 +387,7 @@ class TextChannel(FriendlyBase):
         log.debug(f"Restoring text channel {self.name}")
         channel = await guild.create_text_channel(
             name=self.name,
-            category=get_named_channel(guild, self.category),
+            category=get_named_category(guild, self.category),
             news=self.news,
             topic=self.topic,
             nsfw=self.nsfw,
@@ -381,12 +401,12 @@ class TextChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_text_channel(guild, self.name):
             if not isinstance(channel, discord.TextChannel):
                 return
             equal = [
                 channel.name == self.name,
-                channel.category == get_named_channel(guild, self.category),
+                channel.category == get_named_category(guild, self.category),
                 channel.position == self.position,
                 channel.nsfw == self.nsfw,
                 channel.overwrites == self.get_overwrites(guild),
@@ -401,7 +421,7 @@ class TextChannel(FriendlyBase):
             log.debug(f"Updating text channel {channel.name}")
             coro = channel.edit(
                 name=self.name,
-                category=get_named_channel(guild, self.category),
+                category=get_named_category(guild, self.category),
                 position=self.position,
                 news=self.news,
                 topic=self.topic,
@@ -446,7 +466,7 @@ class ForumChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.ForumChannel | None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_forum_channel(guild, self.name):
             if not isinstance(channel, discord.ForumChannel):
                 return
             self.id = channel.id
@@ -457,12 +477,12 @@ class ForumChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_forum_channel(guild, self.name):
             if not isinstance(channel, discord.ForumChannel):
                 return
             equal = [
                 channel.name == self.name,
-                channel.category == get_named_channel(guild, self.category),
+                channel.category == get_named_category(guild, self.category),
                 channel.position == self.position,
                 channel.nsfw == self.nsfw,
                 channel.overwrites == self.get_overwrites(guild),
@@ -473,7 +493,7 @@ class ForumChannel(FriendlyBase):
             log.debug(f"Updating forum {channel.name}")
             await channel.edit(
                 name=self.name,
-                category=get_named_channel(guild, self.category),
+                category=get_named_category(guild, self.category),
                 position=self.position,
                 topic=self.topic,
                 overwrites=self.get_overwrites(guild),
@@ -508,7 +528,7 @@ class VoiceChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.VoiceChannel | None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_voice_channel(guild, self.name):
             if not isinstance(channel, discord.VoiceChannel):
                 return
             self.id = channel.id
@@ -516,7 +536,7 @@ class VoiceChannel(FriendlyBase):
         log.debug(f"Restoring voice channel {self.name}")
         channel = await guild.create_voice_channel(
             name=self.name,
-            category=get_named_channel(guild, self.category),
+            category=get_named_category(guild, self.category),
             user_limit=self.user_limit,
             bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
             overwrites=self.get_overwrites(guild),
@@ -526,12 +546,12 @@ class VoiceChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_channel(guild, self.name):
+        if channel := get_named_voice_channel(guild, self.name):
             if not isinstance(channel, discord.VoiceChannel):
                 return
             equal = [
                 channel.name == self.name,
-                channel.category == get_named_channel(guild, self.category),
+                channel.category == get_named_category(guild, self.category),
                 channel.position == self.position,
                 channel.user_limit == self.user_limit,
                 channel.bitrate == self.bitrate,
@@ -543,7 +563,7 @@ class VoiceChannel(FriendlyBase):
             channel: discord.VoiceChannel = channel
             coro = channel.edit(
                 name=self.name,
-                category=get_named_channel(guild, self.category),
+                category=get_named_category(guild, self.category),
                 position=self.position,
                 user_limit=self.user_limit,
                 bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
@@ -618,6 +638,51 @@ class GuildBackup(FriendlyBase):
             forums=forums,
             community="COMMUNITY" in list(guild.features),
         )
+
+    @property
+    def has_duplcate_roles(self) -> bool:
+        existing = set()
+        for i in self.roles:
+            if i.name in self.roles:
+                return True
+            existing.add(i.name)
+        return False
+
+    @property
+    def has_duplcate_text_channels(self) -> bool:
+        existing = set()
+        for i in self.text_channels:
+            if i.name in self.text_channels:
+                return True
+            existing.add(i.name)
+        return False
+
+    @property
+    def has_duplcate_categories(self) -> bool:
+        existing = set()
+        for i in self.categories:
+            if i.name in self.categories:
+                return True
+            existing.add(i.name)
+        return False
+
+    @property
+    def has_duplcate_voice_channels(self) -> bool:
+        existing = set()
+        for i in self.voice_channels:
+            if i.name in self.voice_channels:
+                return True
+            existing.add(i.name)
+        return False
+
+    @property
+    def has_duplcate_forum_channels(self) -> bool:
+        existing = set()
+        for i in self.forums:
+            if i.name in self.forums:
+                return True
+            existing.add(i.name)
+        return False
 
     async def restore(
         self,

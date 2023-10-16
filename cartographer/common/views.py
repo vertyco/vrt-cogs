@@ -5,7 +5,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 
 from .formatting import backup_menu_embeds
-from .models import DB, GuildSettings
+from .models import DB, GuildBackup, GuildSettings
 
 _ = Translator("Cartographer", __file__)
 
@@ -131,6 +131,27 @@ class BackupMenu(discord.ui.View):
         self.conf = self.db.get_conf(interaction.guild)
         await self.conf.backup(self.guild)
         txt = _("Backup created!")
+        backup = self.conf.backups[-1]
+        if backup.has_duplcate_roles:
+            txt += "\n" + _(
+                "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
+            )
+        if backup.has_duplcate_categories:
+            txt += "\n" + _(
+                "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
+            )
+        if backup.has_duplcate_text_channels:
+            txt += "\n" + _(
+                "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
+            )
+        if backup.has_duplcate_voice_channels:
+            txt += "\n" + _(
+                "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
+            )
+        if backup.has_duplcate_forum_channels:
+            txt += "\n" + _(
+                "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
+            )
         await interaction.followup.send(txt, ephemeral=True)
         self.pages = backup_menu_embeds(self.conf, self.guild)
         await self.message.edit(embed=self.pages[self.page])
@@ -148,8 +169,29 @@ class BackupMenu(discord.ui.View):
             return
 
         if modal.confirm:
-            asyncio.create_task(self.conf.backups[self.page].restore(self.guild, interaction.channel, modal.rem_old))
+            backup: GuildBackup = self.conf.backups[self.page]
+            asyncio.create_task(backup.restore(self.guild, interaction.channel, modal.rem_old))
             txt = _("Your backup is being restored!")
+            if backup.has_duplcate_roles:
+                txt += "\n" + _(
+                    "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
+                )
+            if backup.has_duplcate_categories:
+                txt += "\n" + _(
+                    "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
+                )
+            if backup.has_duplcate_text_channels:
+                txt += "\n" + _(
+                    "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
+                )
+            if backup.has_duplcate_voice_channels:
+                txt += "\n" + _(
+                    "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
+                )
+            if backup.has_duplcate_forum_channels:
+                txt += "\n" + _(
+                    "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
+                )
             return await interaction.followup.send(txt, ephemeral=True)
 
         txt = _("Restore has been cancelled!")

@@ -33,11 +33,15 @@ class Cartographer(commands.Cog):
     - Forum channels  (permissions/order)[Not forum posts]
     - Roles (permissions and what members they're assigned to)
 
-    When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.
+    **Caveats**
+    Note the following
+    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.
+     - This is because object IDs cannot be restored so the bot relies on the name of the object.
+    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.12b"
+    __version__ = "0.0.13b"
 
     def __init__(self, bot: Red):
         super().__init__()
