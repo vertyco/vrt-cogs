@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-07-22 14:24-0400\n"
-"PO-Revision-Date: 2023-10-16 00:18\n"
+"PO-Revision-Date: 2023-10-16 00:48\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -19,31 +19,31 @@ msgstr ""
 
 #: views.py:33
 msgid "Set OpenAI Key"
-msgstr "Postavite otvoreni ključ"
+msgstr ""
 
 #: views.py:35
 msgid "Enter your OpenAI Key below"
-msgstr "Unesite svoj ključ OpenAi u nastavku"
+msgstr ""
 
 #: views.py:56 views.py:140 views.py:465
 msgid "This isn't your menu!"
-msgstr "Ovo nije vaš izbornik!"
+msgstr ""
 
 #: views.py:77
 msgid "Entry name"
-msgstr "Naziv unosa"
+msgstr ""
 
 #: views.py:84
 msgid "Training context"
-msgstr "Trening kontekst"
+msgstr ""
 
 #: views.py:101
 msgid "Search for an embedding"
-msgstr "Potražite ugradnju"
+msgstr ""
 
 #: views.py:103
 msgid "Search Query"
-msgstr "Upit za pretraživanje"
+msgstr ""
 
 #: views.py:191
 msgid "Failed to process embedding `{}`\n"
@@ -62,31 +62,31 @@ msgstr ""
 
 #: views.py:214
 msgid "No embeddings to inspect!"
-msgstr "Nema ugradnje za pregled!"
+msgstr ""
 
 #: views.py:237
 msgid "No embeddings to edit!"
-msgstr "Nema ugradnje za uređivanje!"
+msgstr ""
 
 #: views.py:249
 msgid "Failed to edit that embedding, please try again later"
-msgstr "Uređivanje tog ugradnje nije uspjelo, pokušajte ponovo kasnije"
+msgstr ""
 
 #: views.py:256
 msgid "Your embedding has been modified!"
-msgstr "Vaše je ugrađivanje modificirano!"
+msgstr ""
 
 #: views.py:297
 msgid "Add an embedding"
-msgstr "Dodajte ugradnju"
+msgstr ""
 
 #: views.py:304
 msgid "Your embedding is processing and will appear when ready!"
-msgstr "Vaše ugradnja je obrada i pojavit će se kad je spremno!"
+msgstr ""
 
 #: views.py:324
 msgid "No embeddings to delete!"
-msgstr "Nema ugradnje za brisanje!"
+msgstr ""
 
 #: views.py:328
 msgid "Deleted `{}` embedding."
@@ -94,7 +94,7 @@ msgstr ""
 
 #: views.py:356
 msgid "No embeddings to search!"
-msgstr "Nema ugradnje za pretragu!"
+msgstr ""
 
 #: views.py:372
 msgid "Search result: **{}**"
@@ -102,29 +102,28 @@ msgstr ""
 
 #: views.py:403
 msgid "Function Edit"
-msgstr "Uredi funkciju"
+msgstr ""
 
 #: views.py:409
 msgid "JSON Schema"
-msgstr "JSON shema"
+msgstr ""
 
 #: views.py:416
 msgid "Code"
-msgstr "Kodirati"
+msgstr ""
 
 #: views.py:580
 msgid "No code to inspect!"
-msgstr "Nema koda za pregled!"
+msgstr ""
 
 #: views.py:599
 msgid "Here are your custom functions"
-msgstr "Evo vaših prilagođenih funkcija"
+msgstr ""
 
 #: views.py:604
 msgid "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
-msgstr "Odgovorite na ovu poruku s JSON shemom za vašu funkciju\n"
-"-[Primjer funkcija] (https://github.com/vertyco/vrt-cogs/tree/main/asistant/example-funcs)"
+msgstr ""
 
 #: views.py:625 views.py:707
 msgid "SchemaError\n"
@@ -133,7 +132,7 @@ msgstr ""
 
 #: views.py:627 views.py:710
 msgid "Empty schema!"
-msgstr "Prazna shema!"
+msgstr ""
 
 #: views.py:631 views.py:713
 msgid "Invalid schema!\n"
@@ -143,11 +142,11 @@ msgstr ""
 
 #: views.py:636
 msgid "Reply to this message with the custom code"
-msgstr "Odgovorite na ovu poruku s prilagođenim kodom"
+msgstr ""
 
 #: views.py:651 views.py:719
 msgid "Invalid function"
-msgstr "Nevažeća funkcija"
+msgstr ""
 
 #: views.py:655
 msgid "`{}` has been overwritten!"
@@ -159,11 +158,11 @@ msgstr ""
 
 #: views.py:668
 msgid "No code to edit!"
-msgstr "Nema koda za uređivanje!"
+msgstr ""
 
 #: views.py:677 views.py:747
 msgid "Could not find function!"
-msgstr "Ne mogu pronaći funkciju!"
+msgstr ""
 
 #: views.py:680
 msgid "This function is managed by the `{}` cog and cannot be edited"
@@ -171,11 +170,11 @@ msgstr ""
 
 #: views.py:686
 msgid "The json schema for this function is too long, you'll need to re-upload it to modify"
-msgstr "JSON shema za ovu funkciju je preduga, morat ćete je ponovno učitati za modificiranje"
+msgstr ""
 
 #: views.py:693
 msgid "The code for this function is too long, you'll need to re-upload it to modify"
-msgstr "Kôd za ovu funkciju je predug, morat ćete ga ponovno učitati za modificiranje"
+msgstr ""
 
 #: views.py:728
 msgid "`{}` function updated!"
@@ -183,7 +182,7 @@ msgstr ""
 
 #: views.py:739
 msgid "No code to delete!"
-msgstr "Nema koda za brisanje!"
+msgstr ""
 
 #: views.py:750
 msgid "This function is managed by the `{}` cog and cannot be deleted"
@@ -195,5 +194,5 @@ msgstr ""
 
 #: views.py:766
 msgid "No code to toggle!"
-msgstr "Nema koda za prebacivanje!"
+msgstr ""
 
