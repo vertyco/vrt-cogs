@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from io import BytesIO
 from time import monotonic, perf_counter
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import discord
 import plotly.graph_objects as go
@@ -80,7 +80,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.8.9"
+    __version__ = "3.8.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2479,10 +2479,12 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         exp = conf["exp"]
         cd = conf["cooldown"]
         xp_range = conf["xp"]
-        async with ctx.typing():
-            level_text, file_bytes = await asyncio.to_thread(self.plot_levels, conf)
 
-        file = discord.File(BytesIO(file_bytes), filename="lvlexample.webp")
+        async with ctx.typing():
+            level_text, x, y = await asyncio.to_thread(self.get_level_times, conf)
+            file_bytes = await asyncio.to_thread(self.plot_levels, x, y)
+            file = discord.File(BytesIO(file_bytes), filename="lvlexample.webp")
+
         img = "attachment://lvlexample.webp"
         example = _(
             "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
@@ -2500,7 +2502,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         embed.set_image(url=img)
         await ctx.send(embed=embed, file=file)
 
-    def plot_levels(self, conf: dict) -> Tuple[str, bytes]:
+    def get_level_times(self, conf: dict) -> Tuple[str, list, list]:
         base = conf["base"]
         exp = conf["exp"]
         cd = conf["cooldown"]
@@ -2515,19 +2517,24 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             txt += _("- lvl {}, {} xp, {}\n").format(level, xp, time)
             x.append(level)
             y.append(xp)
+        return txt, x, y
 
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Total"))
-        fig.update_layout(
-            title=_("XP Curve"),
-            xaxis_title=_("Level"),
-            yaxis_title=_("Experience Required"),
-            autosize=False,
-            width=500,
-            height=500,
-            margin=dict(l=50, r=50, b=100, t=100, pad=4),
-        )
-        return txt, fig.to_image(format="webp")
+    def plot_levels(self, x: list, y: list) -> Optional[bytes]:
+        try:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Total"))
+            fig.update_layout(
+                title=_("XP Curve"),
+                xaxis_title=_("Level"),
+                yaxis_title=_("Experience Required"),
+                autosize=False,
+                width=500,
+                height=500,
+                margin=dict(l=50, r=50, b=100, t=100, pad=4),
+            )
+            return fig.to_image(format="webp")
+        except Exception as e:
+            log.warning("Failed to plot levels", exc_info=e)
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
