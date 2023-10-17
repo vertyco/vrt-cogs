@@ -80,7 +80,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.8.11"
+    __version__ = "3.8.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -580,7 +580,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not usepics:
             if notify:
                 if dm:
-                    if new_level:
+                    if new_role:
                         txt = _("You have just reached level {} in {} and obtained the {} role!").format(
                             new_level, guild.name, new_role
                         )
@@ -593,7 +593,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     except discord.Forbidden:
                         pass
                 elif all(perms) and channel:
-                    if new_level:
+                    if new_role:
                         txt = _("You have just reached level {} and obtained the {} role!").format(new_level, new_role)
                     else:
                         txt = _("Just reached level {}!").format(new_level)
@@ -632,7 +632,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
             if notify:
                 if dm:
-                    if new_level:
+                    if new_role:
                         txt = _("You have just leveled up in {} and obtained the {} role!").format(guild.name, new_role)
                     else:
                         txt = _("You just leveled up in {}!").format(guild.name)
@@ -641,7 +641,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     except discord.Forbidden:
                         pass
                 elif all(perms) and channel:
-                    if new_level:
+                    if new_role:
                         txt = _("**{} just leveled up and obtained the {} role!**").format(
                             mentionuser if mention else name, new_role
                         )
