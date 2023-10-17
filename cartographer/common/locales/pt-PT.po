@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-16 17:37-0400\n"
-"PO-Revision-Date: 2023-10-16 22:51\n"
+"PO-Revision-Date: 2023-10-17 14:22\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -132,23 +132,23 @@ msgstr "Cópia de segurança criada!"
 
 #: common\views.py:136
 msgid "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém funções com nomes duplicados! Só pode ser restaurada uma função por nome único!"
 
 #: common\views.py:140
 msgid "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém categorias com nomes duplicados! Só pode ser restaurada uma categoria por nome único!"
 
 #: common\views.py:144
 msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém canais de texto com nomes duplicados! Só pode ser restaurado um canal de texto por nome único!"
 
 #: common\views.py:148
 msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém canais de voz com nomes duplicados! Só pode ser restaurado um canal de voz por nome único!"
 
 #: common\views.py:152
 msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém canais de fóruns com nomes duplicados! Apenas um canal de fórum por nome único pode ser restaurado!"
 
 #: common\views.py:162
 msgid "No backups to restore!"
@@ -160,23 +160,23 @@ msgstr "A sua cópia de segurança está a ser restaurada!"
 
 #: common\views.py:176
 msgid "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém funções com nomes duplicados! Apenas será restaurada uma função por nome único!"
 
 #: common\views.py:180
 msgid "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém categorias com nomes duplicados! Apenas uma categoria por nome único será restaurada!"
 
 #: common\views.py:184
 msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém canais de texto com nomes duplicados! Só será restaurado um canal de texto por nome único!"
 
 #: common\views.py:188
 msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém canais de voz com nomes duplicados! Só será restaurado um canal de voz por nome único!"
 
 #: common\views.py:192
 msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
-msgstr ""
+msgstr "- A cópia de segurança contém canais de fóruns com nomes duplicados! Apenas um canal de fórum por nome único será restaurado!"
 
 #: common\views.py:197
 msgid "Restore has been cancelled!"
@@ -196,15 +196,15 @@ msgstr "Introduzir o ID do servidor"
 
 #: common\views.py:209
 msgid "I am not in that server!"
-msgstr ""
+msgstr "Não estou nesse servidor!"
 
 #: common\views.py:213
 msgid "You do not appear to be in that server!"
-msgstr ""
+msgstr "Não parece estar nesse servidor!"
 
 #: common\views.py:216
 msgid "You can only switch to servers that you are an administrator of!"
-msgstr ""
+msgstr "Só pode mudar para servidores de que é administrador!"
 
 #: common\views.py:226
 msgid "Auto backups have been disabled by the bot owner!"
