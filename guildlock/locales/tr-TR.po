@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-16 18:28-0400\n"
-"PO-Revision-Date: 2023-10-16 22:52\n"
+"PO-Revision-Date: 2023-10-17 14:23\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -22,7 +22,9 @@ msgstr ""
 msgid "\n"
 "    Tools for managing guild joins and leaves.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Lonca katılımlarını ve ayrılmalarını yönetmek için araçlar.\n"
+"    "
 
 #: main.py:56
 msgid "Version: {}\n"
@@ -32,19 +34,19 @@ msgstr ""
 #: main.py:60
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Silinecek veri yok"
 
 #: main.py:64
 msgid "I have left this server because it is blacklisted"
-msgstr ""
+msgstr "Kara listede olduğu için bu sunucudan ayrıldım"
 
 #: main.py:65
 msgid "I have left this server because it is not whitelisted"
-msgstr ""
+msgstr "Beyaz listede olmadığı için bu sunucudan ayrıldım"
 
 #: main.py:66
 msgid "I have left this server because I am already at maximum capacity"
-msgstr ""
+msgstr "Bu sunucudan ayrıldım çünkü zaten maksimum kapasiteye ulaşmış durumdayım"
 
 #: main.py:67
 msgid "I have left this server because it has less than {} members"
@@ -56,11 +58,11 @@ msgstr ""
 
 #: main.py:76
 msgid "Guild is in the blacklist"
-msgstr ""
+msgstr "Lonca kara listede"
 
 #: main.py:77
 msgid "Guild is not in the whitelist"
-msgstr ""
+msgstr "Lonca beyaz listede değil"
 
 #: main.py:78
 msgid "Cannot surpass guild limit of {}"
