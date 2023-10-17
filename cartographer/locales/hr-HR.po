@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-16 00:48\n"
+"POT-Creation-Date: 2023-10-16 17:37-0400\n"
+"PO-Revision-Date: 2023-10-16 22:51\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -17,53 +17,62 @@ msgstr ""
 "X-Crowdin-File-ID: 80\n"
 "Language: hr_HR\n"
 
-#: main.py:24
+#: main.py:26
 #, docstring
 msgid "\n"
 "    Backup & Restore tools for Discord servers.\n\n"
-"    This cog will create a backup of all roles, channels and permission.\n\n"
-"    When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.\n"
+"    This cog can backup & restore the following:\n"
+"    - Categories (permissions/order)\n"
+"    - Text channels (permissions/order)\n"
+"    - Voice channels (permissions/order)\n"
+"    - Forum channels  (permissions/order)[Not forum posts]\n"
+"    - Roles (permissions and what members they're assigned to)\n\n"
+"    **Caveats**\n"
+"    Note the following\n"
+"    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.\n"
+"     - This is because object IDs cannot be restored so the bot relies on the name of the object.\n"
+"    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
 "    "
 msgstr ""
 
-#: main.py:71
+#: main.py:82
 msgid "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:75
+#: main.py:86
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: main.py:108
+#: main.py:119
 #, docstring
 msgid "Open the Backup/Restore menu"
 msgstr ""
 
-#: main.py:110 main.py:133 main.py:155
+#: main.py:121 main.py:144 main.py:166
 msgid "This server is in the ingored list!"
 msgstr ""
 
-#: main.py:113 main.py:136 main.py:158
+#: main.py:124 main.py:147 main.py:169
 msgid "This server is not in the allowed list!"
 msgstr ""
 
-#: main.py:127
+#: main.py:138
 #, docstring
 msgid "Backup & Restore Tools"
 msgstr ""
 
-#: main.py:131
+#: main.py:142
 #, docstring
 msgid "Create a backup of this server"
 msgstr ""
 
-#: main.py:142
+#: main.py:153
 msgid "A backup has been created!"
 msgstr ""
 
-#: main.py:148
+#: main.py:159
 #, docstring
 msgid "\n"
 "        Restore the latest backup for this server\n\n"
@@ -72,20 +81,20 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: main.py:164
+#: main.py:175
 msgid "There are no backups for this guild!"
 msgstr ""
 
-#: main.py:167
+#: main.py:178
 msgid "Server restore is complete!"
 msgstr ""
 
-#: main.py:172
+#: main.py:183
 #, docstring
 msgid "View current global settings"
 msgstr ""
 
-#: main.py:176
+#: main.py:187
 msgid "### Global Settings\n"
 "- Global backups: {}\n"
 "- Max backups per server: {}\n"
@@ -94,55 +103,55 @@ msgid "### Global Settings\n"
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:195
+#: main.py:206
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr ""
 
-#: main.py:198
+#: main.py:209
 msgid "Auto backups have been **Disabled**"
 msgstr ""
 
-#: main.py:201
+#: main.py:212
 msgid "Auto backups have been **Enabled**"
 msgstr ""
 
-#: main.py:208
+#: main.py:219
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr ""
 
-#: main.py:211
+#: main.py:222
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr ""
 
-#: main.py:213
+#: main.py:224
 msgid "Max backup count has been set"
 msgstr ""
 
-#: main.py:220
+#: main.py:231
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr ""
 
-#: main.py:223
+#: main.py:234
 msgid "Server removed from the ignore list"
 msgstr ""
 
-#: main.py:226
+#: main.py:237
 msgid "Server added to the ignore list"
 msgstr ""
 
-#: main.py:233
+#: main.py:244
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr ""
 
-#: main.py:236
+#: main.py:247
 msgid "Server removed from the allow list"
 msgstr ""
 
-#: main.py:239
+#: main.py:250
 msgid "Server added to the allow list"
 msgstr ""
 

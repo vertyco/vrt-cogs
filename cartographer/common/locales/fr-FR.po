@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-14 17:27-0400\n"
-"PO-Revision-Date: 2023-10-15 23:17\n"
+"POT-Creation-Date: 2023-10-16 17:37-0400\n"
+"PO-Revision-Date: 2023-10-16 22:51\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -83,19 +83,19 @@ msgstr "Page {}"
 msgid "There are no backups for this server yet!"
 msgstr "Il n'y a pas encore de sauvegardes pour ce serveur !"
 
-#: common\models.py:157 common\models.py:168 common\models.py:195
+#: common\models.py:178 common\models.py:189 common\models.py:216
 msgid "Restored from backup"
 msgstr "Restauré à partir d'une sauvegarde"
 
-#: common\models.py:629
+#: common\models.py:694
 msgid "Cartographer Restore"
 msgstr "Restauration du cartographe"
 
-#: common\models.py:630
+#: common\models.py:695
 msgid " (Removal)"
 msgstr " (Déménagement)"
 
-#: common\models.py:745
+#: common\models.py:835
 msgid "Server restore has completed successfully!"
 msgstr "La restauration du serveur s'est achevée avec succès !"
 
@@ -143,59 +143,107 @@ msgstr "Sauvegarde {} !"
 msgid "Backup created!"
 msgstr "Sauvegarde créée !"
 
-#: common\views.py:141
+#: common\views.py:136
+msgid "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:140
+msgid "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:144
+msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:148
+msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:152
+msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
+msgstr ""
+
+#: common\views.py:162
 msgid "No backups to restore!"
 msgstr "Pas de sauvegardes à restaurer !"
 
-#: common\views.py:152
+#: common\views.py:174
 msgid "Your backup is being restored!"
 msgstr "Votre sauvegarde est en cours de restauration !"
 
-#: common\views.py:155
+#: common\views.py:176
+msgid "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:180
+msgid "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:184
+msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:188
+msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:192
+msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
+msgstr ""
+
+#: common\views.py:197
 msgid "Restore has been cancelled!"
 msgstr "La restauration a été annulée !"
 
-#: common\views.py:160
+#: common\views.py:202
 msgid "Switch Servers"
 msgstr "Serveurs de commutation"
 
-#: common\views.py:160
+#: common\views.py:202
 msgid "Server ID"
 msgstr "ID du serveur"
 
-#: common\views.py:160
+#: common\views.py:202
 msgid "Enter the ID of the server"
 msgstr "Saisir l'ID du serveur"
 
-#: common\views.py:167
-msgid "You can only switch to servers that you own!"
-msgstr "Vous ne pouvez passer qu'à des serveurs qui vous appartiennent !"
+#: common\views.py:209
+msgid "I am not in that server!"
+msgstr ""
 
-#: common\views.py:177
+#: common\views.py:213
+msgid "You do not appear to be in that server!"
+msgstr ""
+
+#: common\views.py:216
+msgid "You can only switch to servers that you are an administrator of!"
+msgstr ""
+
+#: common\views.py:226
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr "Les sauvegardes automatiques ont été désactivées par le propriétaire du bot !"
 
-#: common\views.py:179
+#: common\views.py:228
 msgid "Auto Backup Interval"
 msgstr "Intervalle de sauvegarde automatique"
 
-#: common\views.py:179
+#: common\views.py:228
 msgid "Interval Hours"
 msgstr "Heures d'intervalle"
 
-#: common\views.py:179
+#: common\views.py:228
 msgid "Hours in-between backups"
 msgstr "Heures entre les sauvegardes"
 
-#: common\views.py:185
+#: common\views.py:234
 msgid "Auto-backup interval hours has been set to {}"
 msgstr "L'intervalle de sauvegarde automatique en heures a été réglé sur {}"
 
-#: common\views.py:197
+#: common\views.py:246
 msgid "No backups to delete!"
 msgstr "Pas de sauvegardes à supprimer !"
 
-#: common\views.py:203
+#: common\views.py:252
 msgid "Backup deleted!"
 msgstr "Sauvegarde supprimée !"
 
