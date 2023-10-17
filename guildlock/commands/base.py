@@ -197,7 +197,7 @@ class Base(MixinMeta):
                 guilds.append(guild)
 
         texts = {
-            "botfarms": _("There are no guilds to leave with a bot ratio higher thatn {}%").format(self.db.bot_ratio),
+            "botfarms": _("There are no guilds to leave with a bot ratio higher than {}%").format(self.db.bot_ratio),
             "minmembers": _("There are no guilds to leave that have less than {} members").format(self.db.min_members),
             "blacklist": _("There are no guilds to leave that are in the blacklist"),
             "whitelist": _("There are no guilds to leave that are in the whitelist"),
