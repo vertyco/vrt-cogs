@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-16 17:37-0400\n"
-"PO-Revision-Date: 2023-10-16 22:51\n"
+"PO-Revision-Date: 2023-10-17 14:22\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -132,23 +132,23 @@ msgstr "Backup erstellt!"
 
 #: common\views.py:136
 msgid "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
-msgstr ""
+msgstr "- Backup enthält Rollen mit doppeltem Namen! Es kann nur eine Rolle pro eindeutigem Namen wiederhergestellt werden!"
 
 #: common\views.py:140
 msgid "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
-msgstr ""
+msgstr "- Backup enthält Kategorien mit doppeltem Namen! Es kann nur eine Kategorie pro eindeutigem Namen wiederhergestellt werden!"
 
 #: common\views.py:144
 msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
-msgstr ""
+msgstr "- Backup enthält Textkanäle mit doppelten Namen! Es kann nur ein Textkanal pro eindeutigem Namen wiederhergestellt werden!"
 
 #: common\views.py:148
 msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
-msgstr ""
+msgstr "- Backup enthält Sprachkanäle mit doppelten Namen! Es kann nur ein Sprachkanal pro eindeutigem Namen wiederhergestellt werden!"
 
 #: common\views.py:152
 msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
-msgstr ""
+msgstr "- Das Backup enthält Forenkanäle mit doppeltem Namen! Nur ein Forumskanal pro eindeutigem Namen kann wiederhergestellt werden!"
 
 #: common\views.py:162
 msgid "No backups to restore!"
@@ -160,23 +160,23 @@ msgstr "Ihr Backup wird wiederhergestellt!"
 
 #: common\views.py:176
 msgid "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
-msgstr ""
+msgstr "- Backup enthält Rollen mit doppeltem Namen! Es wird nur eine Rolle pro eindeutigem Namen wiederhergestellt!"
 
 #: common\views.py:180
 msgid "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
-msgstr ""
+msgstr "- Backup enthält Kategorien mit doppelten Namen! Es wird nur eine Kategorie pro eindeutigem Namen wiederhergestellt!"
 
 #: common\views.py:184
 msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
-msgstr ""
+msgstr "- Backup enthält Textkanäle mit doppeltem Namen! Es wird nur ein Textkanal pro eindeutigem Namen wiederhergestellt!"
 
 #: common\views.py:188
 msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
-msgstr ""
+msgstr "- Das Backup enthält Sprachkanäle mit doppeltem Namen! Es wird nur ein Sprachkanal pro eindeutigem Namen wiederhergestellt!"
 
 #: common\views.py:192
 msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
-msgstr ""
+msgstr "- Das Backup enthält Forenkanäle mit doppeltem Namen! Es wird nur ein Forumskanal pro eindeutigem Namen wiederhergestellt!"
 
 #: common\views.py:197
 msgid "Restore has been cancelled!"
@@ -196,15 +196,15 @@ msgstr "Geben Sie die ID des Servers ein"
 
 #: common\views.py:209
 msgid "I am not in that server!"
-msgstr ""
+msgstr "Ich bin nicht auf diesem Server!"
 
 #: common\views.py:213
 msgid "You do not appear to be in that server!"
-msgstr ""
+msgstr "Sie scheinen nicht auf diesem Server zu sein!"
 
 #: common\views.py:216
 msgid "You can only switch to servers that you are an administrator of!"
-msgstr ""
+msgstr "Sie können nur zu Servern wechseln, bei denen Sie Administrator sind!"
 
 #: common\views.py:226
 msgid "Auto backups have been disabled by the bot owner!"
