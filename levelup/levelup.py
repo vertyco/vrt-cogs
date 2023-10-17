@@ -80,7 +80,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.8.10"
+    __version__ = "3.8.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -132,6 +132,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             "checkvoice": 0,
             "cachedump": 0,
             "lvlassignavg": 0,
+            "levelups": 0,
             "weekly": 0,
         }
 
@@ -540,22 +541,63 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         except AttributeError:
             log.warning(f"Failed to get avatar url for {member.name} in {guild.name}. DPY2 = {self.dpy2}")
 
+        # Get roles to be added and removed
+        roles_to_add = []
+        roles_to_remove = []
+        # Role adding/removal
+        if not autoremove:  # Level roles stack
+            for level, role_id in sorted(levelroles.items(), key=lambda x: x[0]):
+                if int(level) <= int(new_level):  # Then give user that role since they should stack
+                    role = guild.get_role(int(role_id))
+                    if not role:
+                        continue
+                    if role not in member.roles:
+                        roles_to_add.append(role)
+
+        else:  # No stacking so add role and remove the others below that level
+            role_applied = False
+            if str(new_level) in levelroles:
+                role_id = levelroles[str(new_level)]
+                role = guild.get_role(int(role_id))
+                if role not in member.roles:
+                    roles_to_add.append(role)
+                    # await member.add_roles(role)
+                    role_applied = True
+
+            # Remove any previous roles, but only if a new role was applied
+            if new_level > 1 and role_applied:
+                for role in member.roles:
+                    for level, role_id in levelroles.items():
+                        if role.id != role_id:
+                            continue
+                        if int(level) >= new_level:
+                            continue
+                        roles_to_remove.append(role)
+
+        new_role = roles_to_add[-1].mention if roles_to_add else None
+
         # Send levelup messages
         if not usepics:
             if notify:
                 if dm:
-                    dmtxt = _("You have just reached level {level} in {guild}!").format(
-                        level=str(new_level), guild=guild.name
-                    )
-                    dmembed = discord.Embed(description=dmtxt, color=member.color)
+                    if new_level:
+                        txt = _("You have just reached level {} in {} and obtained the {} role!").format(
+                            new_level, guild.name, new_role
+                        )
+                    else:
+                        txt = _("You have just reached level {} in {}!").format(new_level, guild.name)
+                    dmembed = discord.Embed(description=txt, color=member.color)
                     dmembed.set_thumbnail(url=pfp)
                     try:
                         await member.send(embed=dmembed)
                     except discord.Forbidden:
                         pass
                 elif all(perms) and channel:
-                    channeltxt = _("Just reached level {level}!").format(level=str(new_level))
-                    channelembed = discord.Embed(description=channeltxt, color=member.color)
+                    if new_level:
+                        txt = _("You have just reached level {} and obtained the {} role!").format(new_level, new_role)
+                    else:
+                        txt = _("Just reached level {}!").format(new_level)
+                    channelembed = discord.Embed(description=txt, color=member.color)
                     channelembed.set_author(name=name, icon_url=pfp)
                     try:
                         if mention:
@@ -590,59 +632,51 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
             if notify:
                 if dm:
-                    txt = _("You just leveled up in ") + guild.name
+                    if new_level:
+                        txt = _("You have just leveled up in {} and obtained the {} role!").format(guild.name, new_role)
+                    else:
+                        txt = _("You just leveled up in {}!").format(guild.name)
                     try:
                         await member.send(txt, file=file)
                     except discord.Forbidden:
                         pass
                 elif all(perms) and channel:
-                    txt = _("**{user} just leveled up!**").format(user=mentionuser if mention else name)
+                    if new_level:
+                        txt = _("**{} just leveled up and obtained the {} role!**").format(
+                            mentionuser if mention else name, new_role
+                        )
+                    else:
+                        txt = _("**{} just leveled up!**").format(mentionuser if mention else name)
                     try:
                         await channel.send(txt, file=file)
                     except Exception as e:
                         log.warning(f"Failed to send levelup alert to {channel.name}!", exc_info=e)
 
+        t = int((monotonic() - t1) * 1000)
+        loop = self.looptimes["levelups"]
+        if not loop:
+            self.looptimes["levelups"] = t
+        else:
+            self.looptimes["levelups"] = int((loop + t) / 2)
+
         if not roleperms:
-            # log.warning(f"Bot can't manage roles in {guild.name}")
             return
         if not levelroles:
             return
-        # Role adding/removal
-        if not autoremove:  # Level roles stack
-            for level, role_id in levelroles.items():
-                if int(level) <= int(new_level):  # Then give user that role since they should stack
-                    role = guild.get_role(int(role_id))
-                    if not role:
-                        continue
-                    if role not in member.roles:
-                        try:
-                            await member.add_roles(role)
-                        except discord.Forbidden:
-                            log.warning(f"Failed to give {role.name} role to {member.display_name} in {guild.name}")
 
-        else:  # No stacking so add role and remove the others below that level
-            role_applied = False
-            if str(new_level) in levelroles:
-                role_id = levelroles[str(new_level)]
-                role = guild.get_role(int(role_id))
-                if role not in member.roles:
-                    await member.add_roles(role)
-                    role_applied = True
+        leveltime = monotonic()
+        if roles_to_add:
+            try:
+                await member.add_roles(*roles_to_add)
+            except discord.Forbidden:
+                pass
+        if roles_to_remove:
+            try:
+                await member.add_roles(*roles_to_remove)
+            except discord.Forbidden:
+                pass
 
-            # Remove any previous roles, but only if a new role was applied
-            if new_level > 1 and role_applied:
-                for role in member.roles:
-                    for level, role_id in levelroles.items():
-                        if role.id != role_id:
-                            continue
-                        if int(level) >= new_level:
-                            continue
-                        try:
-                            await member.remove_roles(role)
-                        except discord.Forbidden:
-                            log.warning(f"Failed to remove {role.name} role from {member.display_name} in {guild.name}")
-
-        t = int((monotonic() - t1) * 1000)
+        t = int((monotonic() - leveltime) * 1000)
         loop = self.looptimes["lvlassignavg"]
         if not loop:
             self.looptimes["lvlassignavg"] = t
