@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-16 17:37-0400\n"
-"PO-Revision-Date: 2023-10-16 22:51\n"
+"PO-Revision-Date: 2023-10-17 14:22\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -132,23 +132,23 @@ msgstr "백업이 생성되었습니다!"
 
 #: common\views.py:136
 msgid "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 역할이 포함되어 있습니다! 고유 이름당 하나의 역할만 복원할 수 있습니다!"
 
 #: common\views.py:140
 msgid "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 카테고리가 포함되어 있습니다! 고유한 이름당 하나의 카테고리만 복원할 수 있습니다!"
 
 #: common\views.py:144
 msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 텍스트 채널이 포함되어 있습니다! 고유 이름당 하나의 텍스트 채널만 복원할 수 있습니다!"
 
 #: common\views.py:148
 msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 음성 채널이 포함되어 있습니다! 고유 이름당 하나의 음성 채널만 복원할 수 있습니다!"
 
 #: common\views.py:152
 msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 포럼 채널이 포함되어 있습니다! 고유 이름당 하나의 포럼 채널만 복원할 수 있습니다!"
 
 #: common\views.py:162
 msgid "No backups to restore!"
@@ -160,23 +160,23 @@ msgstr "백업이 복원 중입니다!"
 
 #: common\views.py:176
 msgid "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 역할이 포함되어 있습니다! 고유 이름당 하나의 역할만 복원됩니다!"
 
 #: common\views.py:180
 msgid "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 카테고리가 포함되어 있습니다! 고유한 이름당 하나의 카테고리만 복원됩니다!"
 
 #: common\views.py:184
 msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 텍스트 채널이 포함되어 있습니다! 고유 이름당 하나의 텍스트 채널만 복원됩니다!"
 
 #: common\views.py:188
 msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 음성 채널이 포함되어 있습니다! 고유 이름당 하나의 음성 채널만 복원됩니다!"
 
 #: common\views.py:192
 msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
-msgstr ""
+msgstr "- 백업에 이름이 중복된 포럼 채널이 포함되어 있습니다! 고유 이름당 하나의 포럼 채널만 복원됩니다!"
 
 #: common\views.py:197
 msgid "Restore has been cancelled!"
@@ -196,15 +196,15 @@ msgstr "서버의 ID를 입력합니다"
 
 #: common\views.py:209
 msgid "I am not in that server!"
-msgstr ""
+msgstr "나는 그 서버에 있지 않습니다!"
 
 #: common\views.py:213
 msgid "You do not appear to be in that server!"
-msgstr ""
+msgstr "해당 서버에 접속하지 않은 것 같습니다!"
 
 #: common\views.py:216
 msgid "You can only switch to servers that you are an administrator of!"
-msgstr ""
+msgstr "자신이 관리자인 서버로만 전환할 수 있습니다!"
 
 #: common\views.py:226
 msgid "Auto backups have been disabled by the bot owner!"
