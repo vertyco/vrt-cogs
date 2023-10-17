@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-16 18:28-0400\n"
-"PO-Revision-Date: 2023-10-16 22:52\n"
+"PO-Revision-Date: 2023-10-17 14:05\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -22,7 +22,9 @@ msgstr ""
 msgid "\n"
 "    Tools for managing guild joins and leaves.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Outils de gestion des entrées et sorties de guilde.\n"
+"    "
 
 #: main.py:56
 msgid "Version: {}\n"
@@ -32,19 +34,19 @@ msgstr ""
 #: main.py:60
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Pas de données à supprimer"
 
 #: main.py:64
 msgid "I have left this server because it is blacklisted"
-msgstr ""
+msgstr "J'ai quitté ce serveur car il est sur liste noire"
 
 #: main.py:65
 msgid "I have left this server because it is not whitelisted"
-msgstr ""
+msgstr "J'ai quitté ce serveur car il n'est pas sur la liste blanche"
 
 #: main.py:66
 msgid "I have left this server because I am already at maximum capacity"
-msgstr ""
+msgstr "J'ai quitté ce serveur parce que j'ai déjà atteint ma capacité maximale"
 
 #: main.py:67
 msgid "I have left this server because it has less than {} members"
@@ -56,11 +58,11 @@ msgstr ""
 
 #: main.py:76
 msgid "Guild is in the blacklist"
-msgstr ""
+msgstr "La guilde est dans la liste noire"
 
 #: main.py:77
 msgid "Guild is not in the whitelist"
-msgstr ""
+msgstr "Guild n'est pas dans la liste blanche"
 
 #: main.py:78
 msgid "Cannot surpass guild limit of {}"
