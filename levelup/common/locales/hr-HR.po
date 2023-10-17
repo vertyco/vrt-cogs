@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-16 00:48\n"
+"POT-Creation-Date: 2023-10-17 11:36-0400\n"
+"PO-Revision-Date: 2023-10-17 17:24\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -640,7 +640,7 @@ msgstr ""
 msgid " - Prestige "
 msgstr ""
 
-#: common\generator.py:1142
+#: common\generator.py:1150
 #, docstring
 msgid "Get average duration sequence of gif frames"
 msgstr ""
