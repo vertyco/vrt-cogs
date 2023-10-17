@@ -1313,6 +1313,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         looptimes = _("`Voice Checker: `") + humanize_number(lt["checkvoice"]) + "ms\n"
         looptimes += _("`Cache Dumping: `") + humanize_number(lt["cachedump"]) + "ms\n"
         looptimes += _("`Lvl Assign:    `") + humanize_number(lt["lvlassignavg"]) + "ms\n"
+        looptimes += _("`LevelUps:      `") + humanize_number(lt["levelups"]) + "ms\n"
         em.add_field(name=_("Loop Times"), value=looptimes, inline=False)
 
         cachetxt = _("`Profile Cache Time: `") + (_("Disabled\n") if not ct else f"{humanize_number(ct)} seconds\n")
