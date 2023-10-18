@@ -625,10 +625,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             }
             img = await self.gen_levelup_img(args)
             temp = BytesIO()
-            temp.name = f"{member.id}.webp"
             try:
+                temp.name = f"{member.id}.webp"
                 img.save(temp, format="WEBP")
             except KeyError:
+                temp.name = f"{member.id}.png"
                 img.save(temp, format="PNG")
             temp.seek(0)
             file = discord.File(temp)
