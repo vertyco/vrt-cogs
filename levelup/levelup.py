@@ -80,7 +80,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.8.12"
+    __version__ = "3.8.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -626,7 +626,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             img = await self.gen_levelup_img(args)
             temp = BytesIO()
             temp.name = f"{member.id}.webp"
-            img.save(temp, format="WEBP")
+            try:
+                img.save(temp, format="WEBP")
+            except KeyError:
+                img.save(temp, format="PNG")
             temp.seek(0)
             file = discord.File(temp)
 
@@ -2567,7 +2570,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 height=500,
                 margin=dict(l=50, r=50, b=100, t=100, pad=4),
             )
-            return fig.to_image(format="webp")
+            try:
+                img_bytes = fig.to_image(format="WEBP")
+            except KeyError:
+                img_bytes = fig.to_image(format="PNG")
+            return img_bytes
         except Exception as e:
             log.warning("Failed to plot levels", exc_info=e)
 
