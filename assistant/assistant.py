@@ -60,7 +60,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.16.4"
+    __version__ = "4.17.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -181,10 +181,10 @@ class Assistant(
                     log.debug("Cleaning deleted max retention override role")
                     del conf.max_retention_role_override[role_id]
                     cleaned = True
-            for role_id in conf.model_role_overrides.copy():
+            for role_id in conf.role_overrides.copy():
                 if not guild.get_role(role_id):
                     log.debug("Cleaning deleted model override role")
-                    del conf.model_role_overrides[role_id]
+                    del conf.role_overrides[role_id]
                     cleaned = True
             for role_id in conf.max_time_role_override.copy():
                 if not guild.get_role(role_id):

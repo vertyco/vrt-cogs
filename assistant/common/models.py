@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 import discord
 import orjson
 from openai.embeddings_utils import cosine_similarity
-from pydantic import VERSION, BaseModel, ConfigDict, Field
+from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
@@ -67,9 +67,6 @@ class Usage(AssistantBaseModel):
 
 
 class GuildSettings(AssistantBaseModel):
-    model_config = ConfigDict(
-        protected_namespaces=()
-    )  # Hides warning for 'model_role_overrides' using a protected namespace
     system_prompt: str = "You are a helpful discord assistant named {botname}"
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
     embeddings: Dict[str, Embedding] = {}
@@ -101,7 +98,7 @@ class GuildSettings(AssistantBaseModel):
     max_response_token_override: Dict[int, int] = {}
     max_token_role_override: Dict[int, int] = {}
     max_retention_role_override: Dict[int, int] = {}
-    model_role_overrides: Dict[int, str] = {}
+    role_overrides: Dict[int, str] = Field(default_factory=dict, alias="model_role_overrides")
     max_time_role_override: Dict[int, int] = {}
 
     image_tools: bool = True
@@ -158,12 +155,12 @@ class GuildSettings(AssistantBaseModel):
         self.usage[model].output_tokens += output_tokens
 
     def get_user_model(self, member: Optional[discord.Member] = None) -> str:
-        if not member or not self.model_role_overrides:
+        if not member or not self.role_overrides:
             return self.model
         sorted_roles = sorted(member.roles, reverse=True)
         for role in sorted_roles:
-            if role.id in self.model_role_overrides:
-                return self.model_role_overrides[role.id]
+            if role.id in self.role_overrides:
+                return self.role_overrides[role.id]
         return self.model
 
     def get_user_max_tokens(self, member: Optional[discord.Member] = None) -> int:

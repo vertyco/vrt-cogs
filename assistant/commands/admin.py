@@ -205,7 +205,7 @@ class Admin(MixinMeta):
             embed.add_field(name=_("Blacklist"), value=humanize_list(blacklist), inline=False)
 
         if not private:
-            if overrides := conf.model_role_overrides:
+            if overrides := conf.role_overrides:
                 field = ""
                 roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
                 sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
@@ -1452,15 +1452,15 @@ class Admin(MixinMeta):
         except openai.InvalidRequestError:
             return await ctx.send(_("This model is not available for the API key provided!"))
 
-        if role.id in conf.model_role_overrides:
-            if conf.model_role_overrides[role.id] == model:
-                del conf.model_role_overrides[role.id]
+        if role.id in conf.role_overrides:
+            if conf.role_overrides[role.id] == model:
+                del conf.role_overrides[role.id]
                 await ctx.send(_("Role override for {} removed!").format(role.mention))
             else:
-                conf.model_role_overrides[role.id] = model
+                conf.role_overrides[role.id] = model
                 await ctx.send(_("Role override for {} overwritten!").format(role.mention))
         else:
-            conf.model_role_overrides[role.id] = model
+            conf.role_overrides[role.id] = model
             await ctx.send(_("Role override for {} added!").format(role.mention))
 
         await self.save_conf()
