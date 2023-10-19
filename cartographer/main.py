@@ -41,7 +41,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.13b"
+    __version__ = "0.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -182,8 +182,8 @@ class Cartographer(commands.Cog):
     async def view_settings(self, ctx: commands.Context):
         """View current global settings"""
         backups = sum([len(i.backups) for i in self.db.configs.values()])
-        ignored = ", ".join(self.db.ignored_guilds)
-        allowed = ", ".join(self.db.allowed_guilds)
+        ignored = ", ".join([str(i) for i in self.db.ignored_guilds]) if self.db.ignored_guilds else _("None Set")
+        allowed = ", ".join([str(i) for i in self.db.allowed_guilds]) if self.db.allowed_guilds else _("None Set")
         txt = _(
             "### Global Settings\n"
             "- Global backups: {}\n"
