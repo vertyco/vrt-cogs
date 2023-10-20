@@ -184,7 +184,7 @@ GET_CHANNEL_ID = {
         "type": "object",
         "properties": {
             "channel_id": {
-                "type": "string",
+                "type": "integer",
                 "description": "The ID of a Discord channel",
             },
         },

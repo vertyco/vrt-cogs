@@ -27,6 +27,7 @@ log = logging.getLogger("red.vrt.assistant.calls")
 @retry(
     retry=retry_if_exception_type(
         Union[
+            APIError,
             Timeout,
             APIConnectionError,
             RateLimitError,
