@@ -9,7 +9,7 @@ from discord.utils import escape_markdown
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import humanize_list, pagify, text_to_file
 from redbot.core.utils.mod import is_admin_or_superior
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -307,7 +307,7 @@ async def prune_invalid_tickets(
     return True if count else False
 
 
-def prep_overview_embeds(guild: discord.Guild, opened: dict, mention: bool = False) -> List[discord.Embed]:
+def prep_overview_text(guild: discord.Guild, opened: dict, mention: bool = False) -> str:
     title = _("Ticket Overview")
     active = []
     for uid, opened_tickets in opened.items():
@@ -331,6 +331,7 @@ def prep_overview_embeds(guild: discord.Guild, opened: dict, mention: bool = Fal
             active.append(entry)
 
     if not active:
+        return _("There are no active tickets.")
         embed = discord.Embed(
             title=title,
             description=_("There are no active tickets."),
@@ -345,6 +346,7 @@ def prep_overview_embeds(guild: discord.Guild, opened: dict, mention: bool = Fal
     for index, i in enumerate(sorted_active):
         chan_mention, panel, ts, username = i
         desc += f"{index + 1}. {chan_mention}({panel}) <t:{ts}:R> - {username}\n"
+    return desc
 
     embeds = []
     for p in pagify(desc, page_length=4000):
@@ -370,11 +372,42 @@ async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[i
     """
     if not conf["overview_channel"]:
         return
-    channel = guild.get_channel(conf["overview_channel"])
+    channel: discord.TextChannel = guild.get_channel(conf["overview_channel"])
     if not channel:
         return
 
-    embeds = prep_overview_embeds(guild, conf["opened"], conf.get("overview_mention", False))
+    txt = prep_overview_text(guild, conf["opened"], conf.get("overview_mention", False))
+    title = _("Ticket Overview")
+    embeds = []
+    attachments = []
+    if len(txt) < 4000:
+        embed = discord.Embed(
+            title=title,
+            description=txt,
+            color=discord.Color.greyple(),
+            timestamp=datetime.now(),
+        )
+        embeds.append(embed)
+    elif len(txt) < 5500:
+        for p in pagify(txt, page_length=3900):
+            embed = discord.Embed(
+                title=title,
+                description=p,
+                color=discord.Color.greyple(),
+                timestamp=datetime.now(),
+            )
+            embeds.append(embed)
+    else:
+        embed = discord.Embed(
+            title=title,
+            description=_("Too many active tickets to include in message!"),
+            color=discord.Color.red(),
+            timestamp=datetime.now(),
+        )
+        embeds.append(embed)
+        filename = _("Active Tickets") + ".txt"
+        file = text_to_file(txt, filename=filename)
+        attachments = [file]
 
     message = None
     if msg_id := conf["overview_msg"]:
@@ -384,7 +417,7 @@ async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[i
             pass
 
     if message:
-        await message.edit(embeds=embeds)
+        await message.edit(embeds=embeds, attachments=attachments)
     else:
-        message = await channel.send(embeds=embeds)
+        message = await channel.send(embeds=embeds, files=attachments)
         return message.id
