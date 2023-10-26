@@ -1,38 +1,20 @@
 import logging
 from typing import Optional, Union
 
+import discord
 from discord.app_commands.commands import Command as SlashCommand
 from discord.ext.commands.hybrid import HybridAppCommand
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.commands.commands import HybridCommand, HybridGroup
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, set_contextual_locales_from_guild
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .converters import CLASSCONVERTER, CONVERTERS, PRIVILEGES
+from .converters import CLASSCONVERTER, PRIVILEGES, get_converter_docstring
 
 log = logging.getLogger("red.vrt.autodocs.formatter")
 _ = Translator("AutoDocs", __file__)
 
-# Static words
-HELP = _("Help")
-USAGE = _("Usage")
-ALIASES = _("Aliases")
-REQUIRED = _("Required")
-AUTOCOMPLETE = _("Autocomplete")
-CHOICES = _("Choices")
-OPTIONAL = _("Optional")
-DEFAULT = _("Default")
-SLASH = _("Slash")
-HYBRID = _("Hybrid")
-COMMAND = _("Command")
-RESTRICTED = _("Restricted to")
-GUILDONLY = _("Server Only")
-PER = _("per")
-SECONDS = _("seconds")
-SECOND = _("second")
-COOLDOWN = _("Cooldown")
-CHECKS = _("Checks")
 
 # Core cog ignore list
 IGNORE = [
@@ -61,6 +43,7 @@ class CustomCmdFmt:
     def __init__(
         self,
         bot: Red,
+        guild: discord.Guild,
         cmd: Union[
             HybridGroup,
             HybridCommand,
@@ -75,6 +58,7 @@ class CustomCmdFmt:
         embedding_style: bool = False,
     ):
         self.bot = bot
+        self.guild = guild
         self.cmd = cmd
         self.prefix = prefix
         self.replace_botname = replace_botname
@@ -92,9 +76,7 @@ class CustomCmdFmt:
         )
 
         try:
-            self.checks: str = humanize_list(
-                [i.__qualname__.split(".")[0] for i in cmd.checks]
-            ).strip()
+            self.checks: str = humanize_list([i.__qualname__.split(".")[0] for i in cmd.checks]).strip()
         except AttributeError:
             self.checks = ""
 
@@ -117,27 +99,33 @@ class CustomCmdFmt:
                 self.perms = None
                 cd = None
                 aliases = None
-            self.cooldown: str = (
-                f"{cd.rate} {PER} {cd.per} {SECOND if int(cd.per) == 1 else SECONDS}"
-                if cd
-                else None
-            )
+            PER = _("per")
+            SECONDS = _("seconds")
+            SECOND = _("second")
+            self.cooldown: str = f"{cd.rate} {PER} {cd.per} {SECOND if int(cd.per) == 1 else SECONDS}" if cd else None
             self.aliases: str = humanize_list(aliases) if aliases else ""
 
         if not self.embedding_style:
             self.desc = self.desc.replace("\n", "<br/>")
 
-    def get_doc(self) -> Optional[str]:
+    async def get_doc(self) -> Optional[str]:
+        await set_contextual_locales_from_guild(self.bot, self.guild)
         # Get header of command
+        SLASH = _("Slash")
+        COMMAND = _("Command")
         if self.is_slash:
             doc = f"{self.hashes} {self.name} ({SLASH} {COMMAND})\n"
         elif self.is_hybrid:
+            HYBRID = _("Hybrid")
             doc = f"{self.hashes} {self.name} ({HYBRID} {COMMAND})\n"
         else:
             doc = f"{self.hashes} {self.name}\n"
 
         if self.embedding_style:
             doc = doc.replace("#", "").strip() + "\n"
+
+        USAGE = _("Usage")
+        CHECKS = _("Checks")
 
         # Get command usage info
         if self.is_slash:
@@ -149,9 +137,11 @@ class CustomCmdFmt:
                 required = i.get("required", False)
 
                 if required:
+                    REQUIRED = _("Required")
                     usage += f"<{name}> "
                     arginfo += f" - `{name}:` ({REQUIRED}) {desc}\n"
                 else:
+                    OPTIONAL = _("Optional")
                     usage += f"[{name}] "
                     arginfo += f" - `{name}:` ({OPTIONAL}) {desc}\n"
 
@@ -163,6 +153,7 @@ class CustomCmdFmt:
             if self.cmd.nsfw:
                 checks.append("NSFW")
             if self.cmd.guild_only:
+                GUILDONLY = _("Server Only")
                 checks.append(GUILDONLY)
             if self.checks:
                 doc += f" - {CHECKS}: `{humanize_list(checks)}\n"
@@ -193,11 +184,14 @@ class CustomCmdFmt:
                     if priv.value > limit:
                         return None
                     if priv.value > 1:
+                        RESTRICTED = _("Restricted to")
                         doc += f" - {RESTRICTED}: `{priv.name}`\n"
 
             if self.aliases:
+                ALIASES = _("Aliases")
                 doc += f" - {ALIASES}: `{self.aliases}`\n"
             if self.cooldown:
+                COOLDOWN = _("Cooldown")
                 doc += f" - {COOLDOWN}: `{self.cooldown}`\n"
             if self.checks:
                 doc += f" - {CHECKS}: `{self.checks}`\n"
@@ -214,7 +208,7 @@ class CustomCmdFmt:
                 for p in self.cmd.parameters:
                     required = p.required
                     autocomplete = p.autocomplete
-                    docstring = CONVERTERS.get(p.type)
+                    docstring = get_converter_docstring(p.type)
                     cls = CLASSCONVERTER.get(p.type, "")
 
                     if not docstring and not cls:
@@ -235,13 +229,16 @@ class CustomCmdFmt:
                         ext += f"> {p.name}: {cstring}\n"
                     else:
                         ext += f"> ### {p.name}: {cstring}\n"
+                    AUTOCOMPLETE = _("Autocomplete")
                     ext += f"> - {AUTOCOMPLETE}: {autocomplete}\n"
 
                     if not required:
+                        DEFAULT = _("Default")
                         ext += f"> - {DEFAULT}: {p.default}\n"
 
                     choices = [i.name for i in p.choices]
                     if choices:
+                        CHOICES = _("Choices")
                         ext += f"> - {CHOICES}: {choices}\n"
 
                     if not ext.endswith("\n\n"):
@@ -269,16 +266,14 @@ class CustomCmdFmt:
                     for arg, p in self.cmd.clean_params.items():
                         converter = p.converter
                         try:
-                            docstring = CONVERTERS.get(converter)
+                            docstring = get_converter_docstring(converter)
                         except TypeError:
-                            err = _(
-                                "Could not find {} for the {} argument of the {} command"
-                            ).format(p, arg, self.name)
+                            err = _("Could not find {} for the {} argument of the {} command").format(p, arg, self.name)
                             log.warning(err)
                             docstring = None
 
                         if not docstring and hasattr(converter, "__args__"):
-                            docstring = CONVERTERS.get(converter.__args__[0])
+                            docstring = get_converter_docstring(converter.__args__[0])
 
                         if not docstring:
                             err = _("Could not get docstring for {} converter").format(str(p))
