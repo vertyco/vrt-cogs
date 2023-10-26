@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-06-15 21:24-0400\n"
+"POT-Creation-Date: 2023-10-26 15:33-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: autodocs.py:24
+#: autodocs.py:25
 #, docstring
 msgid ""
 "\n"
@@ -21,24 +21,28 @@ msgid ""
 "    "
 msgstr ""
 
-#: autodocs.py:35
+#: autodocs.py:36
 msgid ""
 "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: autodocs.py:41
+#: autodocs.py:40
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: autodocs.py:57
+#: autodocs.py:56
 msgid "name"
 msgstr ""
 
-#: autodocs.py:57
+#: autodocs.py:56
 msgid "text"
+msgstr ""
+
+#: autodocs.py:59
+msgid "Help"
 msgstr ""
 
 #: autodocs.py:66
@@ -75,11 +79,11 @@ msgid ""
 " botowner)"
 msgstr ""
 
-#: autodocs.py:126
+#: autodocs.py:124
 msgid "Include a csv with each command isolated per row"
 msgstr ""
 
-#: autodocs.py:141
+#: autodocs.py:139
 #, docstring
 msgid ""
 "\n"
@@ -100,133 +104,135 @@ msgid ""
 "        "
 msgstr ""
 
-#: autodocs.py:163
+#: autodocs.py:159
 msgid "AllCogDocs"
 msgstr ""
 
-#: autodocs.py:203
+#: autodocs.py:199
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr ""
 
-#: autodocs.py:207
+#: autodocs.py:203
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr ""
 
-#: autodocs.py:229
+#: autodocs.py:225
 msgid "Here are your docs for {}!"
 msgstr ""
 
-#: converters.py:62
+#: autodocs.py:298
+#, docstring
+msgid ""
+"Registers a command with Assistant enabling it to access to command docs"
+msgstr ""
+
+#: converters.py:65
 msgid ""
 "A single word, if not using slash and multiple words are necessary use a "
 "quote e.g \"Hello world\"."
 msgstr ""
 
-#: converters.py:65
+#: converters.py:66
 msgid "A number without decimal places."
 msgstr ""
 
-#: converters.py:66
+#: converters.py:67
 msgid "A number with or without decimal places."
 msgstr ""
 
-#: converters.py:67
+#: converters.py:68
 msgid "Can be 1, 0, true, false, t, f"
 msgstr ""
 
-#: formatter.py:18
-msgid "Help"
-msgstr ""
-
-#: formatter.py:19
-msgid "Usage"
-msgstr ""
-
-#: formatter.py:20
-msgid "Aliases"
-msgstr ""
-
-#: formatter.py:21
-msgid "Required"
-msgstr ""
-
-#: formatter.py:22
-msgid "Autocomplete"
-msgstr ""
-
-#: formatter.py:23
-msgid "Choices"
-msgstr ""
-
-#: formatter.py:24
-msgid "Optional"
-msgstr ""
-
-#: formatter.py:25
-msgid "Default"
-msgstr ""
-
-#: formatter.py:26
-msgid "Slash"
-msgstr ""
-
-#: formatter.py:27
-msgid "Hybrid"
-msgstr ""
-
-#: formatter.py:28
-msgid "Command"
-msgstr ""
-
-#: formatter.py:29
-msgid "Restricted to"
-msgstr ""
-
-#: formatter.py:30
-msgid "Server Only"
-msgstr ""
-
-#: formatter.py:31
-msgid "per"
-msgstr ""
-
-#: formatter.py:32
-msgid "seconds"
-msgstr ""
-
-#: formatter.py:33
-msgid "second"
-msgstr ""
-
-#: formatter.py:34
-msgid "Cooldown"
-msgstr ""
-
-#: formatter.py:35
-msgid "Checks"
-msgstr ""
-
-#: formatter.py:59
+#: formatter.py:41
 #, docstring
 msgid "Formats documentation for a single command"
 msgstr ""
 
-#: formatter.py:221
+#: formatter.py:102
+msgid "per"
+msgstr ""
+
+#: formatter.py:103
+msgid "seconds"
+msgstr ""
+
+#: formatter.py:104
+msgid "second"
+msgstr ""
+
+#: formatter.py:114
+msgid "Slash"
+msgstr ""
+
+#: formatter.py:115
+msgid "Command"
+msgstr ""
+
+#: formatter.py:119
+msgid "Hybrid"
+msgstr ""
+
+#: formatter.py:127
+msgid "Usage"
+msgstr ""
+
+#: formatter.py:128
+msgid "Checks"
+msgstr ""
+
+#: formatter.py:140
+msgid "Required"
+msgstr ""
+
+#: formatter.py:144
+msgid "Optional"
+msgstr ""
+
+#: formatter.py:156
+msgid "Server Only"
+msgstr ""
+
+#: formatter.py:187
+msgid "Restricted to"
+msgstr ""
+
+#: formatter.py:191
+msgid "Aliases"
+msgstr ""
+
+#: formatter.py:194
+msgid "Cooldown"
+msgstr ""
+
+#: formatter.py:215
 msgid "Could not get docstring or class for {} converter"
 msgstr ""
 
-#: formatter.py:225 formatter.py:284
+#: formatter.py:219 formatter.py:279
 msgid "Could not get docstring for {} converter"
 msgstr ""
 
-#: formatter.py:229
+#: formatter.py:223
 msgid "Could not get class for {} converter"
 msgstr ""
 
-#: formatter.py:274
+#: formatter.py:232
+msgid "Autocomplete"
+msgstr ""
+
+#: formatter.py:236
+msgid "Default"
+msgstr ""
+
+#: formatter.py:241
+msgid "Choices"
+msgstr ""
+
+#: formatter.py:271
 msgid "Could not find {} for the {} argument of the {} command"
 msgstr ""
 
-#: formatter.py:311
+#: formatter.py:306
 msgid "Extended Arg Info\n"
 msgstr ""
