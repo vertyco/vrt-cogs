@@ -125,7 +125,7 @@ Your job is to read a snippet of text and come up with a short descriptive name 
 
 CREATE_MEMORY = {
     "name": "create_memory",
-    "description": "Use this when someone corrects you, tells you something new, or tells you to remember something.",
+    "description": "Use this to remember information that you normally wouldnt have access to. Useful when someone corrects you, tells you something new, or tells you to remember something. Use the search_memories function first to ensure no duplicates are created.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -135,7 +135,7 @@ CREATE_MEMORY = {
             },
             "memory_text": {
                 "type": "string",
-                "description": "The information to remember, write as if you are informing yourself of the thing to remember.",
+                "description": "The information to remember, write as if you are informing yourself of the thing to remember, Make sure to include the context of the conversation as well as the answer or important information to be retained",
             },
         },
         "required": ["memory_name", "memory_text"],
@@ -143,7 +143,7 @@ CREATE_MEMORY = {
 }
 SEARCH_MEMORIES = {
     "name": "search_memories",
-    "description": "Use this to find information about something, always use this if you are unsure about the answer to a question",
+    "description": "Use this to find information about something, always use this if you are unsure about the answer to a question.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -161,7 +161,7 @@ SEARCH_MEMORIES = {
 }
 EDIT_MEMORY = {
     "name": "edit_memory",
-    "description": "Use this to edit existing memories, useful for correcting inaccurate memories after making them",
+    "description": "Use this to edit existing memories, useful for correcting inaccurate memories after making them. Use search_memories first if the memory you need to edit is not in the conversation.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -171,7 +171,7 @@ EDIT_MEMORY = {
             },
             "memory_text": {
                 "type": "string",
-                "description": "The new text that will replace the current content of the memory",
+                "description": "The new text that will replace the current content of the memory, this should reflect the old memory with the corrections",
             },
         },
         "required": ["memory_name", "memory_text"],
@@ -179,7 +179,7 @@ EDIT_MEMORY = {
 }
 GET_CHANNEL_ID = {
     "name": "get_channel_name_from_id",
-    "description": "Get the channel name from an ID",
+    "description": "Get the channel name from an ID.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -193,7 +193,7 @@ GET_CHANNEL_ID = {
 }
 GET_CHANNEL_NAMED = {
     "name": "get_channel_id_from_name",
-    "description": "Get the channel ID from its name",
+    "description": "Get the channel ID from its name.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -207,7 +207,7 @@ GET_CHANNEL_NAMED = {
 }
 GET_SEARCH_URL = {
     "name": "make_search_url",
-    "description": "Generate a link to search google or youtube, use this if you aren't sure of the answer to help the user find it themselves",
+    "description": "Generate a link to search google or youtube, use this if you arent sure of the answer to help the user find it themselves.",
     "parameters": {
         "type": "object",
         "properties": {
