@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-06-15 21:24-0400\n"
-"PO-Revision-Date: 2023-07-26 14:13\n"
+"POT-Creation-Date: 2023-10-26 15:33-0400\n"
+"PO-Revision-Date: 2023-10-26 20:37\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 25\n"
 "Language: es_ES\n"
 
-#: autodocs.py:24
+#: autodocs.py:25
 #, docstring
 msgid "\n"
 "    Document your cogs with ease!\n\n"
@@ -26,7 +26,7 @@ msgid "\n"
 msgstr "¡Documenta tus cogs con facilidad!\n\n"
 "Crea fácilmente documentación para cualquier cog en formato Markdown    "
 
-#: autodocs.py:35
+#: autodocs.py:36
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
@@ -34,18 +34,22 @@ msgstr "{}\n"
 "Versión Cog: {}\n"
 "Autor: {}"
 
-#: autodocs.py:41
+#: autodocs.py:40
 #, docstring
 msgid "No data to delete"
 msgstr "No hay datos que borrar"
 
-#: autodocs.py:57
+#: autodocs.py:56
 msgid "name"
 msgstr "nombre"
 
-#: autodocs.py:57
+#: autodocs.py:56
 msgid "text"
 msgstr "texto"
+
+#: autodocs.py:59
+msgid "Help"
+msgstr "Ayuda"
 
 #: autodocs.py:66
 msgid "{} cog description"
@@ -79,11 +83,11 @@ msgstr "Incluir comandos ocultos"
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
 msgstr "Ocultar comandos por encima del nivel de privilegio especificado (usuario, mod, admin, guildowner, botowner)"
 
-#: autodocs.py:126
+#: autodocs.py:124
 msgid "Include a csv with each command isolated per row"
 msgstr "incluye un archivo csv con cada comando aislado en una fila"
 
-#: autodocs.py:141
+#: autodocs.py:139
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
@@ -111,132 +115,133 @@ msgstr "Crear una página de documentos Markdown para un cog y enviar a Discord\
 "`csv_export:         `(bool) Incluye un archivo CSV con cada comando aislado por fila para usarlo como incrustaciones\n\n"
 "**Nota** Si se especifica `all` para `cog_name`, se generarán documentos para todos los cogs no principales cargados actualmente y se enviarán en un archivo zip        "
 
-#: autodocs.py:163
+#: autodocs.py:159
 msgid "AllCogDocs"
 msgstr "AllCogDocs"
 
-#: autodocs.py:203
+#: autodocs.py:199
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr "¡Aquí están los documentos de todos los engranajes cargados actualmente!"
 
-#: autodocs.py:207
+#: autodocs.py:203
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr "No he podido encontrar ese engranaje, ¿quizás no está cargado?"
 
-#: autodocs.py:229
+#: autodocs.py:225
 msgid "Here are your docs for {}!"
 msgstr "¡Aquí están tus documentos para {}!"
 
-#: converters.py:62
+#: autodocs.py:298
+#, docstring
+msgid "Registers a command with Assistant enabling it to access to command docs"
+msgstr ""
+
+#: converters.py:65
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
 msgstr "Una sola palabra, si no se utiliza barra oblicua y son necesarias varias palabras, utilice comillas, por ejemplo \"Hola mundo\"."
 
-#: converters.py:65
+#: converters.py:66
 msgid "A number without decimal places."
 msgstr "Un número sin decimales."
 
-#: converters.py:66
+#: converters.py:67
 msgid "A number with or without decimal places."
 msgstr "Un número con o sin decimales."
 
-#: converters.py:67
+#: converters.py:68
 msgid "Can be 1, 0, true, false, t, f"
 msgstr "Puede ser 1, 0, verdadero, falso, t, f"
 
-#: formatter.py:18
-msgid "Help"
-msgstr "Ayuda"
-
-#: formatter.py:19
-msgid "Usage"
-msgstr "Utilización"
-
-#: formatter.py:20
-msgid "Aliases"
-msgstr "Alias"
-
-#: formatter.py:21
-msgid "Required"
-msgstr "Requerido"
-
-#: formatter.py:22
-msgid "Autocomplete"
-msgstr "Autocompletar"
-
-#: formatter.py:23
-msgid "Choices"
-msgstr "Opciones"
-
-#: formatter.py:24
-msgid "Optional"
-msgstr "Opcional"
-
-#: formatter.py:25
-msgid "Default"
-msgstr "Por defecto"
-
-#: formatter.py:26
-msgid "Slash"
-msgstr "Slash"
-
-#: formatter.py:27
-msgid "Hybrid"
-msgstr "Híbrido"
-
-#: formatter.py:28
-msgid "Command"
-msgstr "Comando"
-
-#: formatter.py:29
-msgid "Restricted to"
-msgstr "Restringido a"
-
-#: formatter.py:30
-msgid "Server Only"
-msgstr "Solo servidor"
-
-#: formatter.py:31
-msgid "per"
-msgstr "por"
-
-#: formatter.py:32
-msgid "seconds"
-msgstr "segundos"
-
-#: formatter.py:33
-msgid "second"
-msgstr "segundo"
-
-#: formatter.py:34
-msgid "Cooldown"
-msgstr "Enfriamiento"
-
-#: formatter.py:35
-msgid "Checks"
-msgstr "Comprobaciones"
-
-#: formatter.py:59
+#: formatter.py:41
 #, docstring
 msgid "Formats documentation for a single command"
 msgstr "Formatea la documentación para un solo comando"
 
-#: formatter.py:221
+#: formatter.py:102
+msgid "per"
+msgstr "por"
+
+#: formatter.py:103
+msgid "seconds"
+msgstr "segundos"
+
+#: formatter.py:104
+msgid "second"
+msgstr "segundo"
+
+#: formatter.py:114
+msgid "Slash"
+msgstr "Slash"
+
+#: formatter.py:115
+msgid "Command"
+msgstr "Comando"
+
+#: formatter.py:119
+msgid "Hybrid"
+msgstr "Híbrido"
+
+#: formatter.py:127
+msgid "Usage"
+msgstr "Utilización"
+
+#: formatter.py:128
+msgid "Checks"
+msgstr "Comprobaciones"
+
+#: formatter.py:140
+msgid "Required"
+msgstr "Requerido"
+
+#: formatter.py:144
+msgid "Optional"
+msgstr "Opcional"
+
+#: formatter.py:156
+msgid "Server Only"
+msgstr "Solo servidor"
+
+#: formatter.py:187
+msgid "Restricted to"
+msgstr "Restringido a"
+
+#: formatter.py:191
+msgid "Aliases"
+msgstr "Alias"
+
+#: formatter.py:194
+msgid "Cooldown"
+msgstr "Enfriamiento"
+
+#: formatter.py:215
 msgid "Could not get docstring or class for {} converter"
 msgstr "No se pudo obtener el docstring o la clase para el convertidor {}"
 
-#: formatter.py:225 formatter.py:284
+#: formatter.py:219 formatter.py:279
 msgid "Could not get docstring for {} converter"
 msgstr "No se pudo obtener el docstring para el convertidor {}"
 
-#: formatter.py:229
+#: formatter.py:223
 msgid "Could not get class for {} converter"
 msgstr "No se pudo obtener la clase para el convertidor {}"
 
-#: formatter.py:274
+#: formatter.py:232
+msgid "Autocomplete"
+msgstr "Autocompletar"
+
+#: formatter.py:236
+msgid "Default"
+msgstr "Por defecto"
+
+#: formatter.py:241
+msgid "Choices"
+msgstr "Opciones"
+
+#: formatter.py:271
 msgid "Could not find {} for the {} argument of the {} command"
 msgstr "No se pudo encontrar {} para el argumento {} del comando {}"
 
-#: formatter.py:311
+#: formatter.py:306
 msgid "Extended Arg Info\n"
 msgstr "Información ampliada de Arg\n"
 
