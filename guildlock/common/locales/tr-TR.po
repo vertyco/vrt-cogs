@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-16 16:34-0400\n"
-"PO-Revision-Date: 2023-10-17 14:23\n"
+"POT-Creation-Date: 2023-10-26 15:12-0400\n"
+"PO-Revision-Date: 2023-10-26 19:24\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -17,15 +17,27 @@ msgstr ""
 "X-Crowdin-File-ID: 96\n"
 "Language: tr_TR\n"
 
-#: common\views.py:11
+#: common\views.py:13
 msgid "Yes"
 msgstr "Evet"
 
-#: common\views.py:12
+#: common\views.py:14
 msgid "No"
 msgstr "Hayır"
 
-#: common\views.py:18
+#: common\views.py:20 common\views.py:82
 msgid "This isn't your menu!"
 msgstr "Bu senin menün değil!"
+
+#: common\views.py:43
+msgid "Select a Page"
+msgstr ""
+
+#: common\views.py:46
+msgid "Enter Page Number"
+msgstr ""
+
+#: common\views.py:176
+msgid "Page must be a number!"
+msgstr ""
 
