@@ -891,7 +891,7 @@ class Admin(MixinMeta):
 
         Endpoint overrides will not be used if there is an API key set.
         """
-        if not endpoint.lower().startswith("http"):
+        if endpoint and not endpoint.lower().startswith("http"):
             return await ctx.send(_("Invalid URL, must start with `http`"))
         if self.db.endpoint_override and not endpoint:
             self.db.endpoint_override = None
