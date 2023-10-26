@@ -290,6 +290,8 @@ class Base(MixinMeta):
         if not await self.type_check(ctx, check):
             return
         guilds = await self.get_guilds_type(check)
+        if not guilds:
+            return await ctx.send(_("No guilds found!"))
         titles = {
             "botfarms": _("Guilds with {}% or more bots").format(self.db.bot_ratio),
             "minmembers": _("Guilds with less than {} members").format(self.db.min_members),
