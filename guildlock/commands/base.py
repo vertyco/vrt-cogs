@@ -1,15 +1,16 @@
 import asyncio
 import logging
+import math
 import typing as t
 
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, text_to_file
+from redbot.core.utils.chat_formatting import box, humanize_number, text_to_file
 
 from ..common import get_bot_percentage
 from ..common.abc import MixinMeta
-from ..common.views import Confirm
+from ..common.views import Confirm, DynamicMenu
 
 log = logging.getLogger("red.vrt.guildlock.commands")
 _ = Translator("GuildLock", __file__)
@@ -155,6 +156,60 @@ class Base(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
+    async def type_check(self, ctx: commands.Context, check: str) -> bool | None:
+        if check == "botfarms" and not self.db.bot_ratio:
+            await ctx.send(_("there is no bot ratio set!"))
+            return
+        elif check == "minmembers" and not self.db.min_members:
+            await ctx.send(_("Minimum member requirement has not been set!"))
+            return
+        elif check == "blacklist" and not self.db.blacklist:
+            await ctx.send(_("There are no guild IDs in the blacklist!"))
+            return
+        elif check == "whitelist" and not self.db.whitelist:
+            await ctx.send(_("There are no guild IDs in the whitelist!"))
+            return
+        return True
+
+    async def get_guilds_type(self, check: str) -> list[discord.Guild]:
+        guilds: list[discord.Guild] = []
+        for guild in self.bot.guilds:
+            if guild.id in self.db.whitelist:
+                continue
+            if check == "botfarms":
+                ratio = await asyncio.to_thread(get_bot_percentage, guild)
+                if ratio > self.db.bot_ratio:
+                    guilds.append(guild)
+            elif check == "minmembers":
+                count = guild.member_count or len(guild.members)
+                if count < self.db.min_members:
+                    guilds.append(guild)
+            elif check == "blacklist" and guild.id in self.db.blacklist:
+                guilds.append(guild)
+        return guilds
+
+    def guild_embeds(self, guilds: list[discord.Guild], title: str, color: discord.Color) -> list[discord.Embed]:
+        embeds = []
+        start = 0
+        stop = 5
+        pages = math.ceil(len(guilds) / 5)
+        for p in range(pages):
+            embed = discord.Embed(title=title, color=color)
+            if stop > len(guilds):
+                stop = len(guilds)
+            for i in range(start, stop):
+                guild: discord.Guild = guilds[i]
+                bots = sum(i.bot for i in guild.members)
+                members = (guild.member_count or len(guild.members)) - bots
+                fname = guild.name
+                fval = _("- Members: {}\n- Bots: {}").format(f"**{humanize_number(members)}**", f"**{bots}**")
+                embed.add_field(name=fname, value=fval, inline=False)
+            embed.set_footer(text=_("Page {}").format(f"{p + 1}/{pages}"))
+            start += 5
+            stop += 5
+            embeds.append(embed)
+        return embeds
+
     @guildlock.command()
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def leave(
@@ -172,29 +227,9 @@ class Base(MixinMeta):
         - `blacklist`: leave any servers in the blacklist.
         - `whitelist`: leave any server not in the whitelist.
         """
-        if check == "botfarms" and not self.db.bot_ratio:
-            return await ctx.send(_("there is no bot ratio set!"))
-        elif check == "minmembers" and not self.db.min_members:
-            return await ctx.send(_("Minimum member requirement has not been set!"))
-        elif check == "blacklist" and not self.db.blacklist:
-            return await ctx.send(_("There are no guild IDs in the blacklist!"))
-        elif check == "whitelist" and not self.db.whitelist:
-            return await ctx.send(_("There are no guild IDs in the whitelist!"))
-
-        guilds: list[discord.Guild] = []
-        for guild in self.bot.guilds:
-            if guild.id in self.db.whitelist:
-                continue
-            if check == "botfarms":
-                ratio = await asyncio.to_thread(get_bot_percentage, guild)
-                if ratio > self.db.bot_ratio:
-                    guilds.append(guild)
-            elif check == "minmembers":
-                count = guild.member_count or len(guild.members)
-                if count < self.db.min_members:
-                    guilds.append(guild)
-            elif check == "blacklist" and guild.id in self.db.blacklist:
-                guilds.append(guild)
+        if not await self.type_check(ctx, check):
+            return
+        guilds = await self.get_guilds_type(check)
 
         texts = {
             "botfarms": _("There are no guilds to leave with a bot ratio higher than {}%").format(self.db.bot_ratio),
@@ -234,3 +269,33 @@ class Base(MixinMeta):
 
         txt = _("I have left {}!").format(f"**{len(guilds)}** {grammar}")
         await msg.edit(content=txt)
+
+    @guildlock.command()
+    @commands.bot_has_permissions(attach_files=True, embed_links=True)
+    async def view(
+        self,
+        ctx: commands.Context,
+        check: t.Literal["botfarms", "minmembers", "blacklist", "whitelist"],
+    ):
+        """
+        View servers that fall under the auto-leave thresholds.
+
+
+        **Arguments**
+        - `botfarms`: show servers with a bot ratio above the set percentage.
+        - `minmembers`: show servers with a member count below the set amount.
+        - `blacklist`: show any servers in the blacklist.
+        - `whitelist`: show any server not in the whitelist.
+        """
+        if not await self.type_check(ctx, check):
+            return
+        guilds = await self.get_guilds_type(check)
+        titles = {
+            "botfarms": _("Guilds with {}% or more bots").format(self.db.bot_ratio),
+            "minmembers": _("Guilds with less than {} members").format(self.db.min_members),
+            "blacklist": _("Blacklisted guilds"),
+            "whitelist": _("Un-Whitelisted guilds"),
+        }
+        title = titles[check]
+        embeds = await asyncio.to_thread(self.guild_embeds, guilds, title, ctx.author.color)
+        await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
