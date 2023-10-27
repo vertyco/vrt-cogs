@@ -1,13 +1,12 @@
 import logging
 from typing import Optional, Union
 
-import discord
 from discord.app_commands.commands import Command as SlashCommand
 from discord.ext.commands.hybrid import HybridAppCommand
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.commands.commands import HybridCommand, HybridGroup
-from redbot.core.i18n import Translator, set_contextual_locales_from_guild
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .converters import CLASSCONVERTER, PRIVILEGES, get_converter_docstring
@@ -43,7 +42,6 @@ class CustomCmdFmt:
     def __init__(
         self,
         bot: Red,
-        guild: discord.Guild,
         cmd: Union[
             HybridGroup,
             HybridCommand,
@@ -58,7 +56,6 @@ class CustomCmdFmt:
         embedding_style: bool = False,
     ):
         self.bot = bot
-        self.guild = guild
         self.cmd = cmd
         self.prefix = prefix
         self.replace_botname = replace_botname
@@ -108,8 +105,7 @@ class CustomCmdFmt:
         if not self.embedding_style:
             self.desc = self.desc.replace("\n", "<br/>")
 
-    async def get_doc(self) -> Optional[str]:
-        await set_contextual_locales_from_guild(self.bot, self.guild)
+    def get_doc(self) -> Optional[str]:
         # Get header of command
         SLASH = _("Slash")
         COMMAND = _("Command")

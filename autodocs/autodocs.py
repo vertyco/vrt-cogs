@@ -10,7 +10,7 @@ from aiocache import cached
 from discord import app_commands
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator, cog_i18n, set_contextual_locales_from_guild
 from redbot.core.utils.mod import is_admin_or_superior, is_mod_or_superior
 
 from .formatter import IGNORE, CustomCmdFmt
@@ -29,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.6.6"
+    __version__ = "0.6.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -70,7 +70,6 @@ class AutoDocs(commands.Cog):
         for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(
                 self.bot,
-                guild,
                 cmd,
                 prefix,
                 replace_botname,
@@ -91,7 +90,6 @@ class AutoDocs(commands.Cog):
                 continue
             c = CustomCmdFmt(
                 self.bot,
-                guild,
                 cmd,
                 prefix,
                 replace_botname,
@@ -155,6 +153,7 @@ class AutoDocs(commands.Cog):
         **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for
         them and sent in a zip file
         """
+        await set_contextual_locales_from_guild(self.bot, ctx.guild)
         prefix = (await self.bot.get_valid_prefixes(ctx.guild))[0].strip() if replace_prefix else ""
         async with ctx.typing():
             if cog_name == "all":
@@ -271,7 +270,7 @@ class AutoDocs(commands.Cog):
         else:
             level = "user"
 
-        c = CustomCmdFmt(self.bot, guild, command, prefixes[0], True, False, level, True)
+        c = CustomCmdFmt(self.bot, command, prefixes[0], True, False, level, True)
         doc = c.get_doc()
         if not doc:
             return "The user you are chatting with does not have the required permissions to use that command"
