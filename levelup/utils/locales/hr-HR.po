@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"PO-Revision-Date: 2023-10-28 22:15\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -19,102 +19,102 @@ msgstr ""
 
 #: utils\formatter.py:93
 msgid "None"
-msgstr "Ništa"
+msgstr ""
 
 #: utils\formatter.py:96
 msgid " second"
-msgstr " sekunda"
+msgstr ""
 
 #: utils\formatter.py:98
 msgid " seconds"
-msgstr " sekundi"
+msgstr ""
 
 #: utils\formatter.py:101
 msgid " minute"
-msgstr " minuta"
+msgstr ""
 
 #: utils\formatter.py:103
 msgid " minutes"
-msgstr " minuta"
+msgstr ""
 
 #: utils\formatter.py:132
 #, docstring
 msgid "Get all attachments from context"
-msgstr "Nabavite sve priloge iz konteksta"
+msgstr ""
 
 #: utils\formatter.py:151
 msgid "Weekly "
-msgstr "Tjedna "
+msgstr ""
 
 #: utils\formatter.py:154
 msgid "LevelUp "
-msgstr "LevelUp "
+msgstr ""
 
 #: utils\formatter.py:167
 msgid "Voice Leaderboard"
-msgstr "Voice ljestvica"
+msgstr ""
 
 #: utils\formatter.py:170
 msgid "Voicetime"
-msgstr "Vrijeme u voice-u"
+msgstr ""
 
 #: utils\formatter.py:174
 msgid "Message Leaderboard"
-msgstr "Ljestvica za poruke"
+msgstr ""
 
 #: utils\formatter.py:177
 msgid "Messages"
-msgstr "Poruka"
+msgstr ""
 
 #: utils\formatter.py:181
 msgid "Star Leaderboard"
-msgstr "Ljestvica za zvijezde"
+msgstr ""
 
 #: utils\formatter.py:184
 msgid "Stars"
-msgstr "Zvijezdice"
+msgstr ""
 
 #: utils\formatter.py:188
 msgid "Exp Leaderboard"
-msgstr "Exp Ljestvica"
+msgstr ""
 
 #: utils\formatter.py:191
 msgid "Exp"
-msgstr "Exp"
+msgstr ""
 
 #: utils\formatter.py:196
 msgid "Total "
-msgstr "Ukupno "
+msgstr ""
 
 #: utils\formatter.py:197
 msgid "Last Reset: "
-msgstr "Zadnji reset: "
+msgstr ""
 
 #: utils\formatter.py:200
 msgid "Next Reset: "
-msgstr "Sljedeći reset: "
+msgstr ""
 
 #: utils\formatter.py:202
 msgid "Total"
-msgstr "Ukupno"
+msgstr ""
 
 #: utils\formatter.py:210
 msgid "There is no data for the weekly "
-msgstr "Nema podataka za weekly "
+msgstr ""
 
 #: utils\formatter.py:210 utils\formatter.py:212
 msgid " leaderboard yet"
-msgstr " ljestvicu"
+msgstr ""
 
 #: utils\formatter.py:212
 msgid "There is no data for the "
-msgstr "Nema još podataka za "
+msgstr ""
 
 #: utils\formatter.py:218
 msgid "You: "
-msgstr "Ti: "
+msgstr ""
 
 #: utils\formatter.py:265 utils\formatter.py:267
 msgid "Pages "
-msgstr "Stranica "
+msgstr ""
 

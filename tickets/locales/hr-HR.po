@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-11 19:12-0400\n"
-"PO-Revision-Date: 2023-10-16 00:48\n"
+"PO-Revision-Date: 2023-10-28 22:15\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -19,15 +19,14 @@ msgstr ""
 
 #: menu.py:65 views.py:75
 msgid "You are not allowed to interact with this button."
-msgstr "Nije vam dopušteno komunicirati s ovim gumbom."
+msgstr ""
 
 #: tickets.py:30
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
-msgstr "\n"
-"Sustav podrške ulaznicama s funkcionalnošću s više ploča "
+msgstr ""
 
 #: tickets.py:43
 #, docstring
@@ -40,11 +39,11 @@ msgstr ""
 
 #: tickets.py:343
 msgid "(Auto-Close) Opened ticket with no response for "
-msgstr "(Auto-close) otvorena karta bez odgovora za "
+msgstr ""
 
 #: tickets.py:389
 msgid "User left guild(Auto-Close)"
-msgstr "Korisnik je napustio Ceh (Auto-Zatvaranje)"
+msgstr ""
 
 #: utils.py:103
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
@@ -71,15 +70,15 @@ msgstr ""
 
 #: utils.py:136
 msgid "Ticket Closed"
-msgstr "Ulaznica zatvorena"
+msgstr ""
 
 #: utils.py:147
 msgid "Archiving channel..."
-msgstr "Arhivirajući kanal..."
+msgstr ""
 
 #: utils.py:150
 msgid "This channel will be deleted once complete"
-msgstr "Ovaj će se kanal izbrisati nakon završetka"
+msgstr ""
 
 #: utils.py:156
 msgid "Question: {}\n"
@@ -96,11 +95,11 @@ msgstr ""
 
 #: utils.py:307
 msgid "ticket"
-msgstr "ulaznica"
+msgstr ""
 
 #: utils.py:307
 msgid "tickets"
-msgstr "ulaznice"
+msgstr ""
 
 #: utils.py:309
 msgid "Pruned `{}` invalid {}"
@@ -131,7 +130,7 @@ msgstr ""
 
 #: views.py:37
 msgid "cancel"
-msgstr "otkazati"
+msgstr ""
 
 #: views.py:129
 msgid "Closing your ticket"
@@ -168,8 +167,7 @@ msgstr ""
 #: views.py:290
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
-msgstr "Ne može se pronaći kategorija za ovaj panel za podršku!\n"
-"Molimo kontaktirajte administratora!"
+msgstr ""
 
 #: views.py:305
 msgid "Submission Info"
@@ -198,7 +196,7 @@ msgstr ""
 
 #: views.py:461
 msgid "Welcome to your ticket channel "
-msgstr "Dobrodošli na vaš kanal za kartu "
+msgstr ""
 
 #: views.py:463
 msgid "\n"
