@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-17 12:34-0400\n"
-"PO-Revision-Date: 2023-10-17 17:23\n"
+"PO-Revision-Date: 2023-10-28 22:14\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -27,31 +27,31 @@ msgstr ""
 
 #: levelup.py:148
 msgid "Monday"
-msgstr "Ponedjeljak"
+msgstr ""
 
 #: levelup.py:149
 msgid "Tuesday"
-msgstr "Utorak"
+msgstr ""
 
 #: levelup.py:150
 msgid "Wednesday"
-msgstr "Srijeda"
+msgstr ""
 
 #: levelup.py:151
 msgid "Thursday"
-msgstr "Četvrtak"
+msgstr ""
 
 #: levelup.py:152
 msgid "Friday"
-msgstr "Petak"
+msgstr ""
 
 #: levelup.py:153
 msgid "Saturday"
-msgstr "Subota"
+msgstr ""
 
 #: levelup.py:154
 msgid "Sunday"
-msgstr "Nedjelja"
+msgstr ""
 
 #: levelup.py:273 levelup.py:277
 msgid "just gave a star to"
@@ -96,53 +96,53 @@ msgstr ""
 
 #: levelup.py:956
 msgid "There are no users with exp"
-msgstr "Nema korisnika s xp-om"
+msgstr ""
 
 #: levelup.py:965
 msgid "Top Weekly Exp Earners"
-msgstr "Najveći zarađivaći xp-a"
+msgstr ""
 
 #: levelup.py:966
 msgid "`Total Exp:      `"
-msgstr "`Ukupni exp:     `"
+msgstr ""
 
 #: levelup.py:967
 msgid "`Total Messages: `"
-msgstr "`Ukupno poruka:  `"
+msgstr ""
 
 #: levelup.py:968
 msgid "`Total Stars:    `"
-msgstr "`Ukupno zvijezda:`"
+msgstr ""
 
 #: levelup.py:969
 msgid "`Total Voice:    `"
-msgstr "`Ukupan Voice:   `"
+msgstr ""
 
 #: levelup.py:993
 msgid "`Exp:      `"
-msgstr "`Exp:      `"
+msgstr ""
 
 #: levelup.py:994
 msgid "`Messages: `"
-msgstr "`Poruke:   `"
+msgstr ""
 
 #: levelup.py:995
 msgid "`Stars:    `"
-msgstr "`Zvijezde: `"
+msgstr ""
 
 #: levelup.py:996
 msgid "`Voice:    `"
-msgstr "`Voice:    `"
+msgstr ""
 
 #: levelup.py:1044
 #, docstring
 msgid "Access LevelUp setting commands"
-msgstr "Pristup naredbama za postavljanje LevelUp-a"
+msgstr ""
 
 #: levelup.py:1050
 #, docstring
 msgid "View all LevelUP settings"
-msgstr "Pogledaj sve LevelUP postavke"
+msgstr ""
 
 #: levelup.py:1090
 msgid "Image"
@@ -162,7 +162,7 @@ msgstr ""
 
 #: levelup.py:1094
 msgid "`Include Balance:   `"
-msgstr "`Uključi stanje računa:   `"
+msgstr ""
 
 #: levelup.py:1095
 msgid "`Progress Bar:      `"
@@ -170,7 +170,7 @@ msgstr ""
 
 #: levelup.py:1096
 msgid "**Messages**\n"
-msgstr "**Poruke**\n"
+msgstr ""
 
 #: levelup.py:1097
 msgid "`Message XP:        `"
@@ -186,11 +186,11 @@ msgstr ""
 
 #: levelup.py:1100
 msgid "**Voice**\n"
-msgstr "**Voice**\n"
+msgstr ""
 
 #: levelup.py:1101
 msgid "`Voice XP:          `"
-msgstr "`Voice XP:          `"
+msgstr ""
 
 #: levelup.py:1102
 msgid "`Ignore Muted:      `"
@@ -262,7 +262,7 @@ msgstr ""
 
 #: levelup.py:1127
 msgid "`Level "
-msgstr "`Level "
+msgstr ""
 
 #: levelup.py:1129
 msgid "**Prestige**\n"
@@ -271,23 +271,23 @@ msgstr ""
 
 #: levelup.py:1130
 msgid "`Level Req:  `"
-msgstr "`Razina zahtjeva: `"
+msgstr ""
 
 #: levelup.py:1139
 msgid "`Prestige "
-msgstr "`Prestiž` "
+msgstr ""
 
 #: levelup.py:1141
 msgid "LevelUp Settings"
-msgstr "Postavke LevelUpa"
+msgstr ""
 
 #: levelup.py:1153
 msgid "Voice XP Bonus Roles"
-msgstr "Voice XP Bonus Uloge"
+msgstr ""
 
 #: levelup.py:1162
 msgid "Voice XP Bonus Channels"
-msgstr "Voice XP Bonus Kanali"
+msgstr ""
 
 #: levelup.py:1165
 msgid "Stream XP Bonus"
@@ -295,23 +295,23 @@ msgstr ""
 
 #: levelup.py:1174
 msgid "Message XP Bonus Roles"
-msgstr "Poruka XP Bonus Uloge"
+msgstr ""
 
 #: levelup.py:1183
 msgid "Message XP Bonus Channels"
-msgstr "Poruka XP Bonus Kanali"
+msgstr ""
 
 #: levelup.py:1188
 msgid "Ignored Roles"
-msgstr "Ignorirane uloge"
+msgstr ""
 
 #: levelup.py:1193
 msgid "Ignored Channels"
-msgstr "Ignorirani kanali"
+msgstr ""
 
 #: levelup.py:1198
 msgid "Ignored Users"
-msgstr "Ignorirani korisnici"
+msgstr ""
 
 #: levelup.py:1206
 #, docstring
@@ -319,9 +319,7 @@ msgid "\n"
 "        Cog admin commands\n\n"
 "        Reset levels, backup and restore cog data\n"
 "        "
-msgstr "\n"
-"COG administratorske naredbe\n\n"
-"Resetirajte razine, sigurnosno kopirajte i vratite podatke o COG-u "
+msgstr ""
 
 #: levelup.py:1216
 #, docstring
@@ -331,110 +329,105 @@ msgid "\n"
 "        If profile embeds are enabled this setting will have no effect\n"
 "        Anything less than 5 seconds will effectively disable the cache\n"
 "        "
-msgstr "\n"
-"Postavite koliko dugo zadrži slike profila u predmemoriji. \n"
-"Kad korisnik pokrene naredbu profila, njihova će generirana slika biti pohranjena u predmemoriju kako bi se ponovno upotrijebila na X sekundi. \n"
-"Ako su omogućene ugradnje profila, ova postavka neće imati učinka. \n"
-"Bilo što manje od 5 sekundi učinkovito će onemogućiti predmemoriju "
+msgstr ""
 
 #: levelup.py:1230
 #, docstring
 msgid "Toggle whether to render profiles as gifs if the user's discord profile is animated"
-msgstr "Prebacite li profile kao GIF-ove ako je korisnikov Discord profil animiran?"
+msgstr ""
 
 #: levelup.py:1234
 msgid "I will no longer render profiles with GIFs"
-msgstr "Neću više prikazivati profile s GIF-ovima"
+msgstr ""
 
 #: levelup.py:1237
 msgid "I will now render GIFs with user profiles"
-msgstr "Sada ću izrađivati GIF-ove s korisničkim profilima"
+msgstr ""
 
 #: levelup.py:1244
 #, docstring
 msgid "Reset cog data for all guilds"
-msgstr "Ponovno postavite COG podatke za sve cehove"
+msgstr ""
 
 #: levelup.py:1245
 msgid "Are you sure you want to reset all stats and settings for the entire cog?"
-msgstr "Jeste li sigurni da želite resetirati sve statistike i postavke za cijeli COG?"
+msgstr ""
 
 #: levelup.py:1249
 msgid "Not resetting all guilds"
-msgstr "Ne resetiranje svih guildova"
+msgstr ""
 
 #: levelup.py:1253
 msgid "Settings and stats for all guilds have been reset"
-msgstr "Postavke i statistike za sve cehove su resetirane"
+msgstr ""
 
 #: levelup.py:1259
 #, docstring
 msgid "Reset cog data for this guild"
-msgstr "Ponovno postavite podatke o COG-u za ovaj ceh"
+msgstr ""
 
 #: levelup.py:1260
 msgid "Are you sure you want to reset all stats and settings for this guild?"
-msgstr "Jeste li sigurni da želite resetirati sve statistike i postavke za ovaj ceh?"
+msgstr ""
 
 #: levelup.py:1264
 msgid "Not resetting config"
-msgstr "Ne resetiranje konfiguracije"
+msgstr ""
 
 #: levelup.py:1267
 msgid "All settings and stats reset"
-msgstr "Sve postavke i statistike su resetirane"
+msgstr ""
 
 #: levelup.py:1273
 #, docstring
 msgid "Reset everyone's exp and level"
-msgstr "Resetirajte svačiju exp i razinu"
+msgstr ""
 
 #: levelup.py:1276
 msgid "Are you sure you want to reset "
-msgstr "Jeste li sigurni da želite resetirati? "
+msgstr ""
 
 #: levelup.py:1276
 msgid " users' stats?"
-msgstr " Statistika korisnika?"
+msgstr ""
 
 #: levelup.py:1277
 msgid "\n"
 "This will reset their exp, voice time, messages, level, prestige and stars"
-msgstr "\n"
-"Ovo će resetirati njihovo Exp, glasovno vrijeme, poruke, razinu, prestiž i zvijezde"
+msgstr ""
 
 #: levelup.py:1281
 msgid "Not resetting user stats"
-msgstr "Ne resetiranje statistike korisnika"
+msgstr ""
 
 #: levelup.py:1293
 msgid "Reset stats for "
-msgstr "Resetirati statistiku za "
+msgstr ""
 
 #: levelup.py:1293
 msgid " users"
-msgstr " korisnici"
+msgstr ""
 
 #: levelup.py:1300
 #, docstring
 msgid "View current loop times and cached data"
-msgstr "Pogledajte trenutna vremena petlje i predmemorirane podatke"
+msgstr ""
 
 #: levelup.py:1311
 msgid "Cog Stats"
-msgstr "Statistika COG"
+msgstr ""
 
 #: levelup.py:1313
 msgid "`Voice Checker: `"
-msgstr "`Glasovna provjera:`"
+msgstr ""
 
 #: levelup.py:1314
 msgid "`Cache Dumping: `"
-msgstr "`Damping predmemorije:`"
+msgstr ""
 
 #: levelup.py:1315
 msgid "`Lvl Assign:    `"
-msgstr "`LVL dodijeli:`"
+msgstr ""
 
 #: levelup.py:1316
 msgid "`LevelUps:      `"
@@ -442,48 +435,48 @@ msgstr ""
 
 #: levelup.py:1317
 msgid "Loop Times"
-msgstr "Vremena petlje"
+msgstr ""
 
 #: levelup.py:1319
 msgid "`Profile Cache Time: `"
-msgstr "`Vrijeme predmemorije profila:`"
+msgstr ""
 
 #: levelup.py:1319
 msgid "Disabled\n"
-msgstr "Onemogućeno\n"
+msgstr ""
 
 #: levelup.py:1320
 msgid "`Cache Size:         `"
-msgstr "`Veličina predmemorije:`"
+msgstr ""
 
 #: levelup.py:1321
 msgid "Cache"
-msgstr "Predmemorija"
+msgstr ""
 
 #: levelup.py:1323 levelup.py:3071
 msgid "(Disabled)"
-msgstr "(Onemogućeno)"
+msgstr ""
 
 #: levelup.py:1324
 msgid "Profiles will be static regardless of if the user has an animated profile"
-msgstr "Profili će biti statični bez obzira na to ima li korisnik animirani profil"
+msgstr ""
 
 #: levelup.py:1326 levelup.py:3071
 msgid "(Enabled)"
-msgstr "(Omogućeno)"
+msgstr ""
 
 #: levelup.py:1327
 msgid "Users with animated profiles will render as a gif"
-msgstr "Korisnici s animiranim profilima će se prikazivati kao GIF"
+msgstr ""
 
 #: levelup.py:1329
 msgid "GIF Rendering "
-msgstr "GIF prikazivanje "
+msgstr ""
 
 #: levelup.py:1337 levelup.py:1348
 #, docstring
 msgid "Create a backup of the LevelUp config"
-msgstr "Stvorite sigurnosnu kopiju konfiguracije LevelUp"
+msgstr ""
 
 #: levelup.py:1358
 #, docstring
@@ -491,21 +484,19 @@ msgid "\n"
 "        Restore a global backup\n\n"
 "        Attach the .json file to the command message to import\n"
 "        "
-msgstr "\n"
-"Vrati globalnu sigurnosnu kopiju\n\n"
-"Priložite .json datoteku na naredbenu poruku za uvoz "
+msgstr ""
 
 #: levelup.py:1365 levelup.py:1392
 msgid "Attach your backup file to the message when using this command."
-msgstr "Priložite datoteku sigurnosne kopije na poruku prilikom korištenja ove naredbe."
+msgstr ""
 
 #: levelup.py:1370
 msgid "This is an invalid global config!"
-msgstr "Ovo je nevaljana globalna konfiguracija!"
+msgstr ""
 
 #: levelup.py:1380 levelup.py:1404
 msgid "Config restored from backup file!"
-msgstr "Config obnovljen iz sigurnosne kopije!"
+msgstr ""
 
 #: levelup.py:1385
 #, docstring
@@ -513,13 +504,11 @@ msgid "\n"
 "        Restore a guild backup\n\n"
 "        Attach the .json file to the command message to import\n"
 "        "
-msgstr "\n"
-"Vratite sigurnosnu kopiju ceha\n\n"
-"Priložite .json datoteku na naredbenu poruku za uvoz "
+msgstr ""
 
 #: levelup.py:1398
 msgid "This is an invalid guild config!"
-msgstr "Ovo je nevaljana konfiguracija ceha!"
+msgstr ""
 
 #: levelup.py:1416
 #, docstring
@@ -571,7 +560,7 @@ msgstr ""
 
 #: levelup.py:1558
 msgid "Not importing MEE6 levels"
-msgstr "Ne uvozim MEE6 razine"
+msgstr ""
 
 #: levelup.py:1560
 msgid "Fetching mee6 leaderboard data, this could take a while..."
@@ -583,11 +572,11 @@ msgstr ""
 
 #: levelup.py:1591 levelup.py:1873
 msgid "Your leaderboard needs to be set to public!"
-msgstr "Vaša ploča vode mora biti postavljena u javnost!"
+msgstr ""
 
 #: levelup.py:1595 levelup.py:1737 levelup.py:1877
 msgid "No data found!"
-msgstr "Nisu pronađeni podaci!"
+msgstr ""
 
 #: levelup.py:1620
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
@@ -735,20 +724,20 @@ msgstr ""
 
 #: levelup.py:2104
 msgid "Nothing to clean"
-msgstr "Ništa za čišćenje"
+msgstr ""
 
 #: levelup.py:2106
 msgid "Deleted "
-msgstr "Izbrisan "
+msgstr ""
 
 #: levelup.py:2106
 msgid " user IDs from the config that are no longer in the server."
-msgstr " ID korisnika iz konfiguracije koji više nisu na poslužitelju."
+msgstr ""
 
 #: levelup.py:2112
 #, docstring
 msgid "Message settings"
-msgstr "Postavke poruka"
+msgstr ""
 
 #: levelup.py:2116
 #, docstring
@@ -756,17 +745,15 @@ msgid "\n"
 "        Set message XP range\n"
 "        Set the Min and Max amount of XP that a message can gain\n"
 "        "
-msgstr "\n"
-"Postavite raspon XP-a poruke\n"
-"Postavite minimalnu i maksimalnu količinu XP-a koje poruka može dobiti "
+msgstr ""
 
 #: levelup.py:2122
 msgid "Message XP range has been set to "
-msgstr "Poruka XP raspon je postavljen na "
+msgstr ""
 
 #: levelup.py:2122
 msgid " per valid message"
-msgstr " po valjanoj poruci"
+msgstr ""
 
 #: levelup.py:2133
 #, docstring
@@ -775,36 +762,33 @@ msgid "\n"
 "        This bonus applies to message xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr "\n"
-"Dodajte niz bonus XP za primjenu na određene uloge\n\n"
-"Ovaj bonus se primjenjuje na XP poruke\n\n"
-"Postavite i min i max na 0 kako biste uklonili bonus uloge "
+msgstr ""
 
 #: levelup.py:2141 levelup.py:2244 levelup.py:2276
 msgid "I cannot find that role"
-msgstr "Ne mogu pronaći tu ulogu"
+msgstr ""
 
 #: levelup.py:2143 levelup.py:2175 levelup.py:2246 levelup.py:2278
 #: levelup.py:2302
 msgid "Max xp needs to be higher than min xp"
-msgstr "Max xp mora biti veći od min xp"
+msgstr ""
 
 #: levelup.py:2149 levelup.py:2252
 msgid "That role has no bonus xp associated with it"
-msgstr "Ta uloga nema povezanu bonus xp"
+msgstr ""
 
 #: levelup.py:2151 levelup.py:2154 levelup.py:2183 levelup.py:2186
 #: levelup.py:2254 levelup.py:2257 levelup.py:2286 levelup.py:2289
 msgid "Bonus xp for "
-msgstr "Bonus xp za "
+msgstr ""
 
 #: levelup.py:2151 levelup.py:2183 levelup.py:2254 levelup.py:2286
 msgid " has been removed"
-msgstr " uklonjeno je"
+msgstr ""
 
 #: levelup.py:2154 levelup.py:2186 levelup.py:2257 levelup.py:2289
 msgid " has been set to "
-msgstr " je postavljen na "
+msgstr ""
 
 #: levelup.py:2165
 #, docstring
@@ -813,18 +797,15 @@ msgid "\n"
 "        This bonus applies to message xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr "\n"
-"Dodajte niz bonus XP za primjenu na određene kanale.\n\n"
-"Ovaj bonus se odnosi na XP poruke.\n\n"
-"Postavite i min i max na 0 kako biste uklonili bonus uloge "
+msgstr ""
 
 #: levelup.py:2173
 msgid "I cannot find that channel"
-msgstr "Ne mogu pronaći taj kanal"
+msgstr ""
 
 #: levelup.py:2181 levelup.py:2284
 msgid "That channel has no bonus xp associated with it"
-msgstr "Taj kanal nema povezanu bonus xp"
+msgstr ""
 
 #: levelup.py:2191
 #, docstring
@@ -833,9 +814,7 @@ msgid "\n"
 "        When a user sends a message they will have to wait X seconds before their message\n"
 "        counts as XP gained\n"
 "        "
-msgstr "\n"
-"Prag za hlađenje za poruku XP\n\n"
-"Kada korisnik pošalje poruku, morat će pričekati X sekundi prije nego što se njihova poruka računa kao stečeni XP "
+msgstr ""
 
 #: levelup.py:2203
 #, docstring
@@ -844,15 +823,12 @@ msgid "\n"
 "        Minimum length a message must be to count towards XP gained\n\n"
 "        Set to 0 to disable\n"
 "        "
-msgstr "\n"
-"Postavite minimalnu duljinu poruke za XP\n"
-"Minimalna duljina poruke mora biti brojena za stjecanje XP-a\n\n"
-"Postavite na 0 da onemogućite "
+msgstr ""
 
 #: levelup.py:2215
 #, docstring
 msgid "Voice settings"
-msgstr "Voice postavke"
+msgstr ""
 
 #: levelup.py:2220
 #, docstring
@@ -860,10 +836,7 @@ msgid "\n"
 "        Set voice XP gain\n"
 "        Sets the amount of XP gained per minute in a voice channel (default is 2)\n"
 "        "
-msgstr "\n"
-"        Postavite dobitak XP-a u voice-u\n"
-"        Postavlja količinu dobivenog XP-a po minuti u glasovnom kanalu (zadano je 2)\n"
-"        "
+msgstr ""
 
 #: levelup.py:2236
 #, docstring
@@ -872,11 +845,7 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr "\n"
-"        Dodajte raspon bonus XP-a za određene uloge\n\n"
-"        Ovaj bonus se odnosi i na voice xp\n\n"
-"        Postavite min i maks na 0 kako bi uklonili bonus\n"
-"        "
+msgstr ""
 
 #: levelup.py:2268
 #, docstring
@@ -885,11 +854,7 @@ msgid "\n"
 "        This bonus applies to voice time xp\n\n"
 "        Set both min and max to 0 to remove the role bonus\n"
 "        "
-msgstr "\n"
-"        Dodajte raspon bonus XP-a za određene kanale\n\n"
-"        Ovaj bonus se odnosi i na voice xp\n\n"
-"        Postavite min i maks na 0 kako bi uklonili bonus\n"
-"        "
+msgstr ""
 
 #: levelup.py:2294
 #, docstring
@@ -918,17 +883,15 @@ msgid "\n"
 "        Ignore muted voice users\n"
 "        Toggle whether self-muted users in a voice channel can gain voice XP\n"
 "        "
-msgstr "\n"
-"Zanemarite korisnike s prigušenim glasom\n"
-"        Prekidač za omogućavanje samo-prigušenih korisnika u glasovnom kanalu da steknu glasovne XP bodove "
+msgstr ""
 
 #: levelup.py:2324
 msgid "Self-Muted users can now gain XP while in a voice channel"
-msgstr "Samozaposleni korisnici sada mogu dobivati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2327
 msgid "Self-Muted users can no longer gain XP while in a voice channel"
-msgstr "Samozaporni korisnici više ne mogu dobivati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2332
 #, docstring
@@ -936,17 +899,15 @@ msgid "\n"
 "        Ignore solo voice users\n"
 "        Toggle whether solo users in a voice channel can gain voice XP\n"
 "        "
-msgstr "\n"
-"Zanemarite korisnike solo glasa\n"
-"Prebacite li solo korisnici u glasovnom kanalu mogu dobiti glas XP "
+msgstr ""
 
 #: levelup.py:2339
 msgid "Solo users can now gain XP while in a voice channel"
-msgstr "Solo korisnici sada mogu dobivati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2342
 msgid "Solo users can no longer gain XP while in a voice channel"
-msgstr "Solo korisnici više ne mogu dobivati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2347
 #, docstring
@@ -954,17 +915,15 @@ msgid "\n"
 "        Ignore deafened voice users\n"
 "        Toggle whether deafened users in a voice channel can gain voice XP\n"
 "        "
-msgstr "\n"
-"Zanemarite korisnike koji su zaglušeni u glasovnom kanalu\n"
-"Prebacite mogu li zaglušeni korisnici u glasovnom kanalu dobiti glasovne XP bodove "
+msgstr ""
 
 #: levelup.py:2354
 msgid "Deafened users can now gain XP while in a voice channel"
-msgstr "Gluhi korisnici sada mogu stjecati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2357
 msgid "Deafened users can no longer gain XP while in a voice channel"
-msgstr "Gluhi korisnici više ne mogu dobivati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2362
 #, docstring
@@ -972,63 +931,61 @@ msgid "\n"
 "        Ignore invisible voice users\n"
 "        Toggle whether invisible users in a voice channel can gain voice XP\n"
 "        "
-msgstr "\n"
-"Zanemarite korisnike nevidljivog glasa\n"
-"Prebacite li nevidljive korisnike u glasovnom kanalu mogu dobiti glasovne XP "
+msgstr ""
 
 #: levelup.py:2369
 msgid "Invisible users can now gain XP while in a voice channel"
-msgstr "Nevidljivi korisnici sada mogu dobivati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2372
 msgid "Invisible users can no longer gain XP while in a voice channel"
-msgstr "Nevidljivi korisnici više ne mogu dobivati XP dok su u glasovnom kanalu"
+msgstr ""
 
 #: levelup.py:2382
 #, docstring
 msgid "Add XP to a user or role"
-msgstr "Dodajte XP korisniku ili ulozi"
+msgstr ""
 
 #: levelup.py:2385
 msgid "I cannot find that user or role"
-msgstr "Ne mogu pronaći taj korisnik ili ulogu"
+msgstr ""
 
 #: levelup.py:2391
 msgid "xp has been added to "
-msgstr "XP je dodan u "
+msgstr ""
 
 #: levelup.py:2404
 msgid "Added "
-msgstr "Dodan "
+msgstr ""
 
 #: levelup.py:2404
 msgid " xp to "
-msgstr " XP to "
+msgstr ""
 
 #: levelup.py:2404
 msgid " users that had the "
-msgstr " korisnici koji su imali "
+msgstr ""
 
 #: levelup.py:2405
 msgid "role"
-msgstr "uloga"
+msgstr ""
 
 #: levelup.py:2411
 #, docstring
 msgid "Set a user to a specific level"
-msgstr "Postavite korisnika na određenu razinu"
+msgstr ""
 
 #: levelup.py:2415 levelup.py:2435
 msgid "There is no data for that user!"
-msgstr "Nema podataka za tog korisnika!"
+msgstr ""
 
 #: levelup.py:2422
 msgid "User "
-msgstr "Korisnik "
+msgstr ""
 
 #: levelup.py:2422
 msgid " is now level "
-msgstr " je sada razina "
+msgstr ""
 
 #: levelup.py:2427
 #, docstring
@@ -1049,7 +1006,7 @@ msgstr ""
 #: levelup.py:2450
 #, docstring
 msgid "Customize the leveling algorithm for your guild"
-msgstr "Prilagodite algoritam za izravnavanje za svoj ceh"
+msgstr ""
 
 #: levelup.py:2455
 #, docstring
@@ -1057,9 +1014,7 @@ msgid "\n"
 "        Base multiplier for the leveling algorithm\n\n"
 "        Affects leveling on a more linear scale(higher values makes leveling take longer)\n"
 "        "
-msgstr "\n"
-"Osnovni multiplikator za algoritam izravnavanja\n\n"
-"Utječe na izravnavanje na linearniju ljestvicu (veće vrijednosti čine da izravnavanje traje duže) "
+msgstr ""
 
 #: levelup.py:2466
 #, docstring
@@ -1067,9 +1022,7 @@ msgid "\n"
 "        Exponent multiplier for the leveling algorithm\n\n"
 "        Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)\n"
 "        "
-msgstr "\n"
-"Eksponentski multiplikator za algoritam izravnavanja\n\n"
-"Utječe na izravnavanje eksponencijalne skale (veće vrijednosti čine da izravnavanje eksponencijalno traje duže) "
+msgstr ""
 
 #: levelup.py:2472
 msgid "Your exponent needs to be higher than 0"
@@ -1082,32 +1035,32 @@ msgstr ""
 #: levelup.py:2481
 #, docstring
 msgid "Toggle using embeds or generated pics"
-msgstr "Prebacite pomoću ugradnje ili generiranih slika"
+msgstr ""
 
 #: levelup.py:2485
 msgid "LevelUp will now use **embeds** instead of generated images"
-msgstr "LevelUp će sada koristiti **embedove** umjesto generiranih slika"
+msgstr ""
 
 #: levelup.py:2488
 msgid "LevelUp will now use **generated images** instead of embeds"
-msgstr "LevelUp će sada koristiti **generirane slike** umjesto ugradnje"
+msgstr ""
 
 #: levelup.py:2493
 #, docstring
 msgid "Set the progress bar length for embed profiles"
-msgstr "Postavite duljinu trake napretka za ugradbene profile"
+msgstr ""
 
 #: levelup.py:2496
 msgid "Embed profiles are disabled. Enable them to set the progress bar length with "
-msgstr "Ugrađeni profili su onemogućeni. Omogući im da postave duljinu trake napretka sa "
+msgstr ""
 
 #: levelup.py:2500
 msgid "Progress bar length must be a minimum of 15 and maximum of 40"
-msgstr "Duljina trake napretka mora biti najmanje 15 i maksimalno 40"
+msgstr ""
 
 #: levelup.py:2502
 msgid "Progress bar length has been set to "
-msgstr "Postavljena je duljina napretka na "
+msgstr ""
 
 #: levelup.py:2508
 #, docstring
@@ -1115,9 +1068,7 @@ msgid "\n"
 "        Test the level algorithm\n"
 "        View the first 20 levels using the current algorithm to test experience curve\n"
 "        "
-msgstr "\n"
-"Testirajte algoritam razine\n"
-"Pogledajte prvih 20 razina koristeći trenutni algoritam za testiranje krivulje iskustva "
+msgstr ""
 
 #: levelup.py:2524
 msgid "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
@@ -1126,19 +1077,19 @@ msgstr ""
 
 #: levelup.py:2528
 msgid "`Base Multiplier:  `"
-msgstr "`Bazni multiplikator:`"
+msgstr ""
 
 #: levelup.py:2529
 msgid "`Exp Multiplier:   `"
-msgstr "`EXP multiplikator:`"
+msgstr ""
 
 #: levelup.py:2530
 msgid "`Experience Range: `"
-msgstr "`Raspon iskustva:`"
+msgstr ""
 
 #: levelup.py:2531
 msgid "`Message Cooldown: `"
-msgstr "`Poruka hladi:`"
+msgstr ""
 
 #: levelup.py:2533
 msgid "Level Example"
@@ -1166,17 +1117,15 @@ msgid "\n"
 "        Toggle DM notifications\n"
 "        Toggle whether LevelUp messages are DM'd to the user\n"
 "        "
-msgstr "\n"
-"Prebacite DM obavijesti\n"
-"Prebacite li LEVELUP poruke dm'd korisniku "
+msgstr ""
 
 #: levelup.py:2583
 msgid "Users will no longer be DM'd when they level up"
-msgstr "Korisnici više neće biti obaviješteni putem DM-a kada se izravnaju"
+msgstr ""
 
 #: levelup.py:2586
 msgid "Users will now be DM'd when they level up"
-msgstr "Korisnici će sada biti obaviješteni putem DM-a kada se izravnaju"
+msgstr ""
 
 #: levelup.py:2591
 #, docstring
@@ -1184,17 +1133,15 @@ msgid "\n"
 "        Toggle levelup mentions\n"
 "        Toggle whether the user in mentioned in LevelUp messages\n"
 "        "
-msgstr "\n"
-"Preklopnik spominjanja levela\n"
-"Prebacite li korisnika spomenutog u porukama LevelUp "
+msgstr ""
 
 #: levelup.py:2598
 msgid "Mentions **Disabled**"
-msgstr "Spominjanje **onemogućeno**"
+msgstr ""
 
 #: levelup.py:2601
 msgid "Mentions **Enabled**"
-msgstr "Spominjanja **Omogućeno**"
+msgstr ""
 
 #: levelup.py:2606
 #, docstring
@@ -1202,17 +1149,15 @@ msgid "\n"
 "        Toggle star reaction mentions\n"
 "        Toggle whether the bot mentions that a user reacted to a message with a star\n"
 "        "
-msgstr "\n"
-"Prebacivanje spominjanja reakcije zvijezde\n"
-"Prebacite li bot da spominje da je korisnik reagirao na poruku sa zvijezdom "
+msgstr ""
 
 #: levelup.py:2613
 msgid "Star reaction mentions **Disabled**"
-msgstr "Star reakcija spominje **Onemogućeno**"
+msgstr ""
 
 #: levelup.py:2616
 msgid "Star reaction mention **Enabled**"
-msgstr "Zvijezda reakcija spomen **Omogućeno**"
+msgstr ""
 
 #: levelup.py:2621
 #, docstring
@@ -1220,21 +1165,19 @@ msgid "\n"
 "        Toggle whether the bot auto-deletes the star mentions\n"
 "        Set to 0 to disable auto-delete\n"
 "        "
-msgstr "\n"
-"Prebacite li bot automatski briše spominjanja zvijezde\n"
-"Postavite na 0 da onemogućite automatsko brisanje "
+msgstr ""
 
 #: levelup.py:2627
 msgid "Star reaction mentions will auto-delete after "
-msgstr "Zvjezdana reakcija spominje će se automatski deletirati nakon "
+msgstr ""
 
 #: levelup.py:2627
 msgid " seconds"
-msgstr " sekundi"
+msgstr ""
 
 #: levelup.py:2629
 msgid "Star reaction mentions will not be deleted"
-msgstr "Zvijezda reakcija spominje neće biti izbrisana"
+msgstr ""
 
 #: levelup.py:2638
 #, docstring
@@ -1242,41 +1185,38 @@ msgid "\n"
 "        Set LevelUP message channel\n"
 "        Set a channel for all level up messages to send to\n"
 "        "
-msgstr "\n"
-"Postavite kanal poruke LevelUP\n"
-"Postavite kanal za sve poruke o level upu koje treba poslati "
+msgstr ""
 
 #: levelup.py:2645
 msgid "LevelUp channel has been **Disabled**\n"
 "level up messages will now happen in the channel the user is in"
-msgstr "Će kanal je **onemogućen**\n"
-"Poruke u porastu sada će se dogoditi na kanalu u kojem je korisnik"
+msgstr ""
 
 #: levelup.py:2653
 msgid "I do not have permission to send messages to that channel."
-msgstr "Nemam dopuštenje za slanje poruka na taj kanal."
+msgstr ""
 
 #: levelup.py:2655
 msgid "LevelUp channel has been set to "
-msgstr "JelenUp kanal je postavljen na "
+msgstr ""
 
 #: levelup.py:2660
 #, docstring
 msgid "Toggle whether to show user's economy credit balance in their profile"
-msgstr "Prebacite li prikazati kreditni saldo ekonomije korisnika u svom profilu"
+msgstr ""
 
 #: levelup.py:2664
 msgid "I will no longer include economy balance in user profiles"
-msgstr "Neću više uključiti ekonomsku ravnotežu u korisničke profile"
+msgstr ""
 
 #: levelup.py:2667
 msgid "I will now include economy balance in user profiles"
-msgstr "Sada ću uključiti ekonomsku ravnotežu u korisničke profile"
+msgstr ""
 
 #: levelup.py:2672
 #, docstring
 msgid "Toggle the level up message when a user levels up"
-msgstr "Prebacite poruku o porastu razine kada korisnik poraste"
+msgstr ""
 
 #: levelup.py:2684
 #, docstring
@@ -1284,14 +1224,12 @@ msgid "\n"
 "        Set the star cooldown\n\n"
 "        Users can give another user a star every X seconds\n"
 "        "
-msgstr "\n"
-"Postavite hlađenje zvijezde\n\n"
-"Korisnici mogu drugom korisniku dati zvijezdu svakih X sekundi "
+msgstr ""
 
 #: levelup.py:2696
 #, docstring
 msgid "Level role assignment"
-msgstr "Dodjeljivanje uloge na razini"
+msgstr ""
 
 #: levelup.py:2701
 #, docstring
@@ -1300,14 +1238,11 @@ msgid "\n"
 "        This command is for if you added level roles after users have achieved that level,\n"
 "        it will apply all necessary roles to a user according to their level and prestige\n"
 "        "
-msgstr "\n"
-"Inicijalizirajte razine uloga\n\n"
-"Ova naredba je namijenjena ako ste dodali razine uloga nakon što su korisnici postigli tu razinu,\n"
-"primijenit će sve potrebne uloge korisniku prema njihovoj razini i ugledu "
+msgstr ""
 
 #: levelup.py:2711
 msgid "I dont have the proper permissions to manage roles!"
-msgstr "Nemam odgovarajuća dopuštenja za upravljanje ulogama!"
+msgstr ""
 
 #: levelup.py:2715
 msgid "Calculating roles, this may take a while..."
@@ -1347,20 +1282,20 @@ msgstr ""
 #: levelup.py:2842
 #, docstring
 msgid "Automatic removal of previous level roles"
-msgstr "Automatsko uklanjanje prethodnih uloga na razini"
+msgstr ""
 
 #: levelup.py:2846
 msgid "Automatic role removal **Disabled**"
-msgstr "Automatsko uklanjanje uloga **onemogućeno**"
+msgstr ""
 
 #: levelup.py:2849
 msgid "Automatic role removal **Enabled**"
-msgstr "Automatsko uklanjanje uloga **omogućeno**"
+msgstr ""
 
 #: levelup.py:2854
 #, docstring
 msgid "Assign a role to a level"
-msgstr "Dodijelite ulogu razini"
+msgstr ""
 
 #: levelup.py:2856
 msgid "The role you are trying to set is higher than the one you currently have!"
@@ -1372,19 +1307,19 @@ msgstr ""
 
 #: levelup.py:2861
 msgid "I do not have permission to manage roles"
-msgstr "Nemam dopuštenje za upravljanje ulogama"
+msgstr ""
 
 #: levelup.py:2863
 msgid "Overwritten"
-msgstr "Prepisan"
+msgstr ""
 
 #: levelup.py:2865
 msgid "Set"
-msgstr "Postavi"
+msgstr ""
 
 #: levelup.py:2867
 msgid "Level "
-msgstr "Level "
+msgstr ""
 
 #: levelup.py:2867
 msgid " has been "
@@ -1392,7 +1327,7 @@ msgstr ""
 
 #: levelup.py:2867
 msgid " as "
-msgstr " kao "
+msgstr ""
 
 #: levelup.py:2873
 #, docstring
@@ -1401,16 +1336,16 @@ msgstr ""
 
 #: levelup.py:2876
 msgid "Level role has been deleted!"
-msgstr "Uloga na razini je izbrisana!"
+msgstr ""
 
 #: levelup.py:2879
 msgid "Level doesnt exist!"
-msgstr "Razina ne postoji!"
+msgstr ""
 
 #: levelup.py:2883
 #, docstring
 msgid "Level Prestige Settings"
-msgstr "Postavke prestiža na razini"
+msgstr ""
 
 #: levelup.py:2888
 #, docstring
@@ -1418,22 +1353,20 @@ msgid "\n"
 "        Set the level required to prestige\n"
 "        Set to 0 to disable prestige\n"
 "        "
-msgstr "\n"
-"Postavite razinu potrebnu za prestiž\n"
-"Postavite na 0 da onemogućite prestiž "
+msgstr ""
 
 #: levelup.py:2898
 #, docstring
 msgid "Automatic removal of previous prestige level roles"
-msgstr "Automatsko uklanjanje prethodnih uloga na razini prestiža"
+msgstr ""
 
 #: levelup.py:2902
 msgid "Automatic prestige role removal **Disabled**"
-msgstr "Automatsko uklanjanje uloga u prestižu **Onemogućeno**"
+msgstr ""
 
 #: levelup.py:2905
 msgid "Automatic prestige role removal **Enabled**"
-msgstr "Automatsko uklanjanje uloga u prestižu **Omogućeno**"
+msgstr ""
 
 #: levelup.py:2916
 #, docstring
@@ -1442,33 +1375,30 @@ msgid "\n"
 "        Add a role and emoji associated with a specific prestige level\n\n"
 "        When a user prestiges, they will get that role and the emoji will show on their profile\n"
 "        "
-msgstr "\n"
-"Dodajte ulogu na razini prestiža\n"
-"Dodajte ulogu i emoji povezane s određenom razinom prestiža\n\n"
-"Kada korisnik prestiže, dobit će tu ulogu i emoji će se prikazati na njihovom profilu "
+msgstr ""
 
 #: levelup.py:2923 levelup.py:2945
 msgid "prestige_level must be a number!"
-msgstr "Prestige_level mora biti broj!"
+msgstr ""
 
 #: levelup.py:2934
 #, docstring
 msgid "Test emojis to see if the bot is able to get a valid url for them"
-msgstr "Testirajte emojije da biste vidjeli je li bot u stanju dobiti valjan URL za njih"
+msgstr ""
 
 #: levelup.py:2943
 #, docstring
 msgid "Delete a prestige level role"
-msgstr "Izbrišite ulogu na razini prestiža"
+msgstr ""
 
 #: levelup.py:2950
 msgid "That prestige level doesnt exist!"
-msgstr "Ta razina prestiža ne postoji!"
+msgstr ""
 
 #: levelup.py:2956
 #, docstring
 msgid "Base command for all ignore lists"
-msgstr "Osnovna naredba za sve popise zanemarivanja"
+msgstr ""
 
 #: levelup.py:2962
 #, docstring
@@ -1477,18 +1407,15 @@ msgid "\n"
 "        **THIS IS A GLOBAL SETTING ONLY BOT OWNERS CAN USE**\n\n"
 "        Use the command with a guild already in the ignore list to remove it\n"
 "        "
-msgstr "\n"
-"Dodajte/uklonite ceh na popis zanemarivanja\n\n"
-"        **OVO JE SAMO GLOBALNA POSTAVKA KOJU MOGU KORISTITI SAMO VLASNICI BOTA**\n\n"
-"        Koristite naredbu s cehom koji je već na popisu zanemarivanja da ga uklonite "
+msgstr ""
 
 #: levelup.py:2971
 msgid "Guild removed from ignore list"
-msgstr "Ceh uklonjen s popisa zanemarivanja"
+msgstr ""
 
 #: levelup.py:2974
 msgid "Guild added to ignore list"
-msgstr "Ceh je dodan na popis za ignoriranje"
+msgstr ""
 
 #: levelup.py:2983
 #, docstring
@@ -1497,18 +1424,15 @@ msgid "\n"
 "        Channels in the ignore list don't gain XP\n\n"
 "        Use the command with a channel already in the ignore list to remove it\n"
 "        "
-msgstr "\n"
-"Dodajte/uklonite kanal na popis zanemarivanja\n"
-"Kanali na popisu zanemarivanja ne dobivaju XP\n\n"
-"Koristite naredbu s kanalom koji je već na popisu zanemarivanja da ga uklonite "
+msgstr ""
 
 #: levelup.py:2992
 msgid "Channel removed from ignore list"
-msgstr "Kanal uklonjen s popisa zanemarivanja"
+msgstr ""
 
 #: levelup.py:2995
 msgid "Channel added to ignore list"
-msgstr "Kanal dodan na popis ignoriranja"
+msgstr ""
 
 #: levelup.py:3000
 #, docstring
@@ -1517,18 +1441,15 @@ msgid "\n"
 "        Roles in the ignore list don't gain XP\n\n"
 "        Use the command with a role already in the ignore list to remove it\n"
 "        "
-msgstr "\n"
-"Dodajte/uklonite ulogu s popisa zanemarivanja\n"
-"Uloge na popisu zanemarivanja ne dobivaju XP\n\n"
-"Koristite naredbu s ulogom koja je već na popisu zanemarivanja da je uklonite "
+msgstr ""
 
 #: levelup.py:3009
 msgid "Role removed from ignore list"
-msgstr "Uloga uklonjena s popisa zanemarivanja"
+msgstr ""
 
 #: levelup.py:3012
 msgid "Role added to ignore list"
-msgstr "Uloga dodana na popis za ignoriranje"
+msgstr ""
 
 #: levelup.py:3017
 #, docstring
@@ -1537,135 +1458,132 @@ msgid "\n"
 "        Members in the ignore list don't gain XP\n\n"
 "        Use the command with a member already in the ignore list to remove them\n"
 "        "
-msgstr "\n"
-"Dodajte/uklonite člana s popisa zanemarivanja\n"
-"Članovi na popisu zanemarivanja ne dobivaju XP\n\n"
-"Koristite naredbu s članom koji je već na popisu zanemarivanja da biste ih uklonili "
+msgstr ""
 
 #: levelup.py:3026
 msgid "Member removed from ignore list"
-msgstr "Član uklonjen s liste zanemarivanja"
+msgstr ""
 
 #: levelup.py:3029
 msgid "Member added to ignore list"
-msgstr "Član je dodan na zanemarivanje liste"
+msgstr ""
 
 #: levelup.py:3036
 #, docstring
 msgid "Access the weekly settings for levelUp"
-msgstr "Pristupi LevelUp postavkama tjedne ljestvice"
+msgstr ""
 
 #: levelup.py:3042
 #, docstring
 msgid "View the current weekly settings"
-msgstr "Pregledaj trenutne postavke tjedne ljestvice"
+msgstr ""
 
 #: levelup.py:3044
 msgid "**Enabled**"
-msgstr "**Omogućeno**"
+msgstr ""
 
 #: levelup.py:3044
 msgid "**Disabled**"
-msgstr "**Onemogućeno**"
+msgstr ""
 
 #: levelup.py:3045
 msgid "Weekly stat tracking is currently "
-msgstr "Praćenje tjednih statistike je trenutno "
+msgstr ""
 
 #: levelup.py:3047
 msgid "Weekly LevelUp settings"
-msgstr "LevelUp postavke tjedne ljestvice"
+msgstr ""
 
 #: levelup.py:3056
 msgid "`Winner Count:   `"
-msgstr "`Broj pobjednika:`"
+msgstr ""
 
 #: levelup.py:3057
 msgid "`Last Winner(s): `"
-msgstr "`Posljednji pobjednik:`"
+msgstr ""
 
 #: levelup.py:3057 levelup.py:3058 levelup.py:3059
 msgid "None"
-msgstr "Nijedan"
+msgstr ""
 
 #: levelup.py:3058
 msgid "`Channel:        `"
-msgstr "`Kanal:        `"
+msgstr ""
 
 #: levelup.py:3059
 msgid "`Role:           `"
-msgstr "`Uloga:`"
+msgstr ""
 
 #: levelup.py:3060
 msgid "`RoleAllWinners: `"
-msgstr "`RoleAllWinners: ` -> `Roleallwinners:`"
+msgstr ""
 
 #: levelup.py:3061
 msgid "`Auto Remove:    `"
-msgstr "`Automatsko uklanjanje:`"
+msgstr ""
 
 #: levelup.py:3062
 msgid "`Bonus Exp:      `"
-msgstr "`Bonus exp:      `"
+msgstr ""
 
 #: levelup.py:3063
 msgid "Settings"
-msgstr "Postavke"
+msgstr ""
 
 #: levelup.py:3066
 msgid "`Reset Day:  `"
-msgstr "`Dan reseta: `"
+msgstr ""
 
 #: levelup.py:3067
 msgid "`Reset Hour: `"
-msgstr "`Sat reseta: `"
+msgstr ""
 
 #: levelup.py:3068
 msgid "`Last Reset: `"
-msgstr "`Zadnji reset: `"
+msgstr ""
 
 #: levelup.py:3070
 msgid "`Next Reset: `"
-msgstr "`Sljedeći reset: `"
+msgstr ""
 
 #: levelup.py:3072
 msgid "Auto Reset "
-msgstr "Automatski reset "
+msgstr ""
 
 #: levelup.py:3078
 #, docstring
 msgid "Reset the weekly leaderboard manually and announce winners"
-msgstr "Ručno resetiraj tjednu ljestvicu i objavi pobjednike"
+msgstr ""
 
 #: levelup.py:3080
 msgid "Not resetting weekly leaderboard"
-msgstr "Ne resetiram tjednu ljestvicu"
+msgstr ""
 
 #: levelup.py:3086
 #, docstring
 msgid "Toggle weekly stat tracking"
-msgstr "Prebacite praćenje tjednih statistika"
+msgstr ""
 
 #: levelup.py:3090
 msgid "Weekly stat tracking has been **Disabled**"
-msgstr "Praćenje tjednih statistika je **Onemogućeno**"
+msgstr ""
 
 #: levelup.py:3093
 msgid "Weekly stat tracking has been **Enabled**"
-msgstr "Praćenje tjednih statistika je **Omogućeno**"
+msgstr ""
 
 #: levelup.py:3098
 #, docstring
 msgid "Toggle weekly auto-reset"
-msgstr "Prebacite tjedni automatski resetar"
+msgstr ""
 
 #: levelup.py:3102
 msgid "Weekly auto-reset has been **Disabled**"
-msgstr "Automatsko resetiranje tjedne ljestvice je **Onemogućeno**"
+msgstr ""
 
 #: levelup.py:3105
 msgid "Weekly auto-reset has been **Enabled**"
-msgstr "Automatsko resetiranje tjedne ljestvice je **Omogućeno**"
+msgstr ""
 
 #: levelup.py:3110
 #, docstring
@@ -1673,17 +1591,15 @@ msgid "\n"
 "        What hour the weekly stats reset\n"
 "        Set the hour (0 - 23 in UTC) for the weekly reset to take place\n"
 "        "
-msgstr "\n"
-"Koji sat se tjedno resetiraju statistike\n"
-"Postavite sat (0 - 23 u UTC-u) za tjedno resetiranje "
+msgstr ""
 
 #: levelup.py:3115
 msgid "Hour must be 0 to 23"
-msgstr "Sat mora bit od 0 do 23"
+msgstr ""
 
 #: levelup.py:3117
 msgid "Weekly stats auto reset hour is now "
-msgstr "Tjedni sat za automatsko resetiranje statistika je sada "
+msgstr ""
 
 #: levelup.py:3124
 #, docstring
@@ -1691,18 +1607,15 @@ msgid "\n"
 "        What day of the week the weekly stats reset\n"
 "        Set the day of the week (0 - 6 = Monday - Sunday) for weekly reset to take place\n"
 "        "
-msgstr "\n"
-"        U kojem danu u tjednu se tjedne statistike resetiraju\n"
-"        Postavi dan u tjednu (0 - 6 = Ponedjeljak - Nedjelja) koji će biti dan reseta\n"
-"        "
+msgstr ""
 
 #: levelup.py:3129
 msgid "Day must be 0 to 6 (Monday to Sunday)"
-msgstr "Dan mora bit od 0 to 6 (ponedjeljak do nedjelje)"
+msgstr ""
 
 #: levelup.py:3131
 msgid "Weekly stats auto reset day is now "
-msgstr "Tjedni statistički podaci se sada automatski resetiraju "
+msgstr ""
 
 #: levelup.py:3138
 #, docstring
@@ -1710,17 +1623,15 @@ msgid "\n"
 "        Top weekly member count\n"
 "        Set amount of members to include in the weekly top leaderboard\n"
 "        "
-msgstr "\n"
-"Broj najviših tjednih članova\n"
-"Postavite količinu članova koji će se uključiti u tjedni top vodeći ploča "
+msgstr ""
 
 #: levelup.py:3143
 msgid "There must be at least one winner!"
-msgstr "Mora biti barem jedan pobjednik!"
+msgstr ""
 
 #: levelup.py:3145
 msgid "There can only be up to 25 winners!"
-msgstr "Može biti samo do 25 pobjednika!"
+msgstr ""
 
 #: levelup.py:3152
 #, docstring
@@ -1731,35 +1642,34 @@ msgstr ""
 
 #: levelup.py:3156
 msgid "I do not have permission to send messages to that channel!"
-msgstr "Nemam dozvolu slati poruke u taj kanal!"
+msgstr ""
 
 #: levelup.py:3158
 msgid "I do not have permission to send embeds to that channel!"
-msgstr "Nemam dozvolu slati embede u taj kanal!"
+msgstr ""
 
 #: levelup.py:3165
 #, docstring
 msgid "Weekly winner role reward\n"
 "        Set the role awarded to the top member of the weekly leaderboard"
-msgstr "Tjedna nagrada za ulogu pobjednika\n"
-"        Postavite ulogu dodijeljenu najboljem članu tjedne ljestvice"
+msgstr ""
 
 #: levelup.py:3168
 msgid "I do not have permission to manage roles!"
-msgstr "Nemam dozvolu upravljat ulogama!"
+msgstr ""
 
 #: levelup.py:3175
 #, docstring
 msgid "Toggle whether to give the weekly winner role to all winners or only 1st place"
-msgstr "Odaberite želite li ulogu tjednog pobjednika dati svim pobjednicima ili samo prvom mjestu"
+msgstr ""
 
 #: levelup.py:3179
 msgid "Only the 1st place winner of the weekly stats reset will receive the weekly role"
-msgstr "Pobjednik u prvom mjestu je jedini koji će dobiti tjednu ulogu"
+msgstr ""
 
 #: levelup.py:3182
 msgid "All top members listed in the weekly stat reset will receive the weekly role"
-msgstr "Svi najbolji članovi navedeni u tjednom resetu će dobiti tjednu ulogu"
+msgstr ""
 
 #: levelup.py:3187
 #, docstring
@@ -1770,11 +1680,11 @@ msgstr ""
 
 #: levelup.py:3193
 msgid "Auto role removal from previous winner has been **Disabled**"
-msgstr "Automatsko uklanjanje uloga od prethodnog pobjednika bilo je **onemogućeno**"
+msgstr ""
 
 #: levelup.py:3196
 msgid "Auto role removal from previous winner has been **Enabled**"
-msgstr "Uklanjanje automatske uloge prethodnog pobjednika je **omogućeno**"
+msgstr ""
 
 #: levelup.py:3201
 #, docstring
@@ -1782,39 +1692,37 @@ msgid "\n"
 "        Weekly winners bonus experience points\n"
 "        Set to 0 to disable exp bonus\n"
 "        "
-msgstr "\n"
-"Tjedni pobjednici bonus iskustva bodova\n"
-"Postavite na 0 da onemogućite exp bonus "
+msgstr ""
 
 #: levelup.py:3213
 #, docstring
 msgid "Force level a user or yourself"
-msgstr "Prisiljavajte korisnika ili sebe"
+msgstr ""
 
 #: levelup.py:3230 levelup.py:3255
 msgid "Forced "
-msgstr "Prisilan "
+msgstr ""
 
 #: levelup.py:3230
 msgid " to level up!"
-msgstr " da se izjednači!"
+msgstr ""
 
 #: levelup.py:3238
 #, docstring
 msgid "Force de-level a user or yourself"
-msgstr "Prisiliti na razinu korisnika ili sebe"
+msgstr ""
 
 #: levelup.py:3255
 msgid " to level down!"
-msgstr " da se spusti!"
+msgstr ""
 
 #: levelup.py:3263
 #, docstring
 msgid "Force Initialization"
-msgstr "Inicijalizacija sile"
+msgstr ""
 
 #: levelup.py:3270
 #, docstring
 msgid "Force save the cache"
-msgstr "Force Spremi predmemoriju"
+msgstr ""
 
