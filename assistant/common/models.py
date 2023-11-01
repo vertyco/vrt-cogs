@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import discord
 import orjson
@@ -9,6 +10,18 @@ from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
+
+
+class EmbedMethod(Enum):
+    DYNAMIC = "dynamic"
+    STATIC = "static"
+    HYBRID = "hybrid"
+
+
+class ImageSize(Enum):
+    SMALL = "256x256"
+    MEDIUM = "512x512"
+    LARGE = "1024x1024"
 
 
 class AssistantBaseModel(BaseModel):
@@ -75,7 +88,7 @@ class GuildSettings(AssistantBaseModel):
     tutors: List[int] = []  # Role or user IDs
     top_n: int = 3
     min_relatedness: float = 0.75
-    embed_method: Literal["dynamic", "static", "hybrid"] = "dynamic"
+    embed_method: EmbedMethod = EmbedMethod.DYNAMIC
     channel_id: Optional[int] = 0
     api_key: Optional[str] = None
     endswith_questionmark: bool = False
@@ -102,7 +115,7 @@ class GuildSettings(AssistantBaseModel):
     max_time_role_override: Dict[int, int] = {}
 
     image_tools: bool = True
-    image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024"
+    image_size: ImageSize = ImageSize.LARGE
 
     use_function_calls: bool = False
     max_function_calls: int = 10  # Max calls in a row
