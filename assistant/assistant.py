@@ -60,7 +60,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.17.2"
+    __version__ = "4.17.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -315,7 +315,7 @@ class Assistant(
     async def get_channel_name_from_id(
         self,
         guild: discord.Guild,
-        channel_id: str | int,
+        channel_id: Union[str, int],
         *args,
         **kwargs,
     ):
