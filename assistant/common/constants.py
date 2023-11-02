@@ -179,13 +179,13 @@ EDIT_MEMORY = {
 }
 GET_CHANNEL_ID = {
     "name": "get_channel_name_from_id",
-    "description": "Get the channel name from an ID.",
+    "description": "Convert a channel ID to the channel's name",
     "parameters": {
         "type": "object",
         "properties": {
             "channel_id": {
                 "type": "integer",
-                "description": "The ID of a Discord channel",
+                "description": "Channel ID",
             },
         },
         "required": ["channel_id"],
@@ -193,13 +193,13 @@ GET_CHANNEL_ID = {
 }
 GET_CHANNEL_NAMED = {
     "name": "get_channel_id_from_name",
-    "description": "Get the channel ID from its name.",
+    "description": "Convert a channel name to its ID",
     "parameters": {
         "type": "object",
         "properties": {
             "channel_name": {
                 "type": "string",
-                "description": "The name of a Discord channel",
+                "description": "Channel Name",
             },
         },
         "required": ["channel_name"],
