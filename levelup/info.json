@@ -31,7 +31,8 @@
     "aiocache",
     "ujson",
     "msgpack",
-    "tenacity"
+    "tenacity",
+    "perftracker>=1.0.3"
   ],
   "short": "Leveling System",
   "tags": [
