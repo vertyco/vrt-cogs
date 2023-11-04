@@ -1168,7 +1168,8 @@ class AdminCommands(MixinMeta):
 
         Set to 0 to disable this
 
-        If using threads your options are:
+        If using thread tickets, this translates to the thread's "Hide after inactivity" setting.
+        Your options are:
         - 1 hour
         - 24 hours (1 day)
         - 72 hours (3 days)
