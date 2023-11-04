@@ -1167,6 +1167,13 @@ class AdminCommands(MixinMeta):
         Auto-close ticket if opener doesn't say anything after X hours of opening
 
         Set to 0 to disable this
+
+        If using threads your options are:
+        - 1 hour
+        - 24 hours (1 day)
+        - 72 hours (3 days)
+        - 168 hours (1 week)
+        Tickets will default to the closest value you select.
         """
         await self.config.guild(ctx.guild).inactive.set(hours)
         await ctx.tick()
