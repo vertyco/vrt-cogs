@@ -41,7 +41,7 @@ class Pixl(commands.Cog):
     """Guess pictures for points"""
 
     __author__ = "Vertyco"
-    __version__ = "0.3.4"
+    __version__ = "0.3.5"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -108,9 +108,7 @@ class Pixl(commands.Cog):
                 all_users[user] = userdata
 
         if not all_users:
-            return await ctx.send(
-                f"There are no users saved yet, start a game with `{ctx.clean_prefix}pixl`"
-            )
+            return await ctx.send(f"There are no users saved yet, start a game with `{ctx.clean_prefix}pixl`")
         sorted_users = sorted(all_users.items(), key=lambda x: x[1]["score"], reverse=True)
         you = None
         for num, i in enumerate(sorted_users):
@@ -137,9 +135,7 @@ class Pixl(commands.Cog):
                 numalign="left",
                 stralign="left",
             )
-            embed = discord.Embed(
-                title=title, description=box(board, "py"), color=ctx.author.color
-            )
+            embed = discord.Embed(title=title, description=box(board, "py"), color=ctx.author.color)
             foot = f"Page {p + 1}/{pages}"
             if you:
                 foot += f" | {you}"
@@ -201,9 +197,7 @@ class Pixl(commands.Cog):
             break
         else:
             invalid = "\n".join(cant_get)
-            return await ctx.send(
-                f"Game prep failed 3 times in a row\n\nThese urls were invalid\n{box(invalid)}"
-            )
+            return await ctx.send(f"Game prep failed 3 times in a row\n\nThese urls were invalid\n{box(invalid)}")
 
         if cant_get:
             invalid = "\n".join(cant_get)
@@ -249,10 +243,7 @@ class Pixl(commands.Cog):
         if winner:  # Chicken dinner
             thumb = (winner.display_avatar.url) if dpy2 else winner.avatar_url
             title = "Winner!"
-            desc = (
-                f"{winner.name} guessed correctly after {shown} blocks!\n"
-                f"`Points Awarded:  `{points}\n"
-            )
+            desc = f"{winner.name} guessed correctly after {shown} blocks!\n" f"`Points Awarded:  `{points}\n"
             if participants >= min_p and reward:
                 desc += f"`Credits Awarded: `{humanize_number(reward)}"
             color = winner.color
@@ -349,14 +340,10 @@ class Pixl(commands.Cog):
     async def set_blocks(self, ctx: commands.Context, amount: int):
         """Set the amount of blocks to reveal after each delay"""
         if amount >= 192 or amount < 1:
-            return await ctx.send(
-                "The amount of blocks revealed at one time must be at least 1 but less than 192"
-            )
+            return await ctx.send("The amount of blocks revealed at one time must be at least 1 but less than 192")
         async with ctx.typing():
             await self.config.guild(ctx.guild).blocks_to_reveal.set(amount)
-            await ctx.send(
-                f"The amount of blocks revealed after each delay has been set to {amount}"
-            )
+            await ctx.send(f"The amount of blocks revealed after each delay has been set to {amount}")
 
     @pixlset.command(name="participants")
     async def set_participants(self, ctx: commands.Context, amount: int):
@@ -404,7 +391,7 @@ class Pixl(commands.Cog):
             await ctx.send("I will now show global images in this guild")
             await self.config.guild(ctx.guild).use_global.set(True)
 
-    @pixlset.command(name="showdefault")
+    @pixlset.command(name="usedefault")
     async def toggle_default(self, ctx: commands.Context):
         """(Toggle) Whether to use the default hardcoded images in this guild"""
         toggle = await self.config.guild(ctx.guild).use_default()
@@ -496,9 +483,7 @@ class Pixl(commands.Cog):
     @image.command(name="addglobal")
     @commands.is_owner()
     @commands.bot_has_permissions(embed_links=True)
-    async def add_global_image(
-        self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]
-    ):
+    async def add_global_image(self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]):
         """
         Add a global image for all guilds to use
 
@@ -537,7 +522,7 @@ class Pixl(commands.Cog):
                 for index, line in enumerate(lines):
                     if not line:  # Skip empty lines
                         continue
-                    parts = [p.strip() for p in line.split(",") if p.strip()]
+                    parts = [p.strip().lower() for p in line.split(",") if p.strip()]
                     if len(parts) < 2:
                         failed.append(f"Line {index + 1}(Invalid Format): {line}")
                         continue
@@ -581,9 +566,7 @@ class Pixl(commands.Cog):
                     return await ctx.send("That global image url already exists!")
                 image = await get_content_from_url(url)
                 if not image:
-                    return await ctx.send(
-                        "I am unable to pull this image to use, please try another one"
-                    )
+                    return await ctx.send("I am unable to pull this image to use, please try another one")
                 answers = [a.strip().lower() for a in answers.split(",")]
                 async with self.config.images() as images:
                     images.append({"url": url, "answers": answers})
@@ -597,9 +580,7 @@ class Pixl(commands.Cog):
 
     @image.command(name="add")
     @commands.bot_has_permissions(embed_links=True)
-    async def add_image(
-        self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]
-    ):
+    async def add_image(self, ctx: commands.Context, url: Optional[str], *, answers: Optional[str]):
         """
         Add an image for your guild to use
 
@@ -637,7 +618,7 @@ class Pixl(commands.Cog):
                 for i, line in enumerate(lines):
                     if not line:  # Skip empty lines
                         continue
-                    parts = [p.strip() for p in line.split(",") if p.strip()]
+                    parts = [p.strip().lower() for p in line.split(",") if p.strip()]
                     if len(parts) < 2:
                         failed.append(f"Line {i + 1}(Invalid Format): {line}")
                         continue
@@ -678,9 +659,7 @@ class Pixl(commands.Cog):
                     return await ctx.send("That guild image url already exists!")
                 image = await get_content_from_url(url)
                 if not image:
-                    return await ctx.send(
-                        "I am unable to pull this image to use, please try another one"
-                    )
+                    return await ctx.send("I am unable to pull this image to use, please try another one")
                 answers = [a.strip().lower() for a in answers.split(",")]
                 async with self.config.guild(ctx.guild).images() as images:
                     images.append({"url": url, "answers": answers})
@@ -715,9 +694,7 @@ class Pixl(commands.Cog):
 
         con = DEFAULT_CONTROLS.copy()
         # If global, only show delete button to bot owner
-        if (
-            "global" in title.lower() and ctx.author.id in self.bot.owner_ids
-        ) or "guild" in title.lower():
+        if ("global" in title.lower() and ctx.author.id in self.bot.owner_ids) or "guild" in title.lower():
             con["\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"] = self.delete_image
             con["\N{MEMO}"] = self.edit_image
         await menu(ctx, embeds, con, message=message, page=page)
@@ -738,10 +715,8 @@ class Pixl(commands.Cog):
             )
             return await instance.message.delete()
         else:
-            await instance.respond(
-                interaction, f"Image with url `{embed.image.url}` has been deleted"
-            )
-        page = instance.page - 1
+            await instance.respond(interaction, f"Image with url `{embed.image.url}` has been deleted")
+        page = (instance.page or 0) - 1
         page %= len(instance.pages)
         await self.image_menu(instance.ctx, images, title, message=instance.message, page=page)
 
@@ -755,9 +730,7 @@ class Pixl(commands.Cog):
         )
 
         def check(message: discord.Message):
-            return (
-                message.author == instance.ctx.author and message.channel == instance.ctx.channel
-            )
+            return message.author == instance.ctx.author and message.channel == instance.ctx.channel
 
         fs = [asyncio.ensure_future(instance.ctx.bot.wait_for("message", check=check))]
         done, pending = await asyncio.wait(fs, timeout=120)
@@ -796,9 +769,7 @@ class Pixl(commands.Cog):
 
         await instance.ctx.send("Answers have been modified for this image!", delete_after=6)
         images = await conf.images()
-        await self.image_menu(
-            instance.ctx, images, title, message=instance.message, page=instance.page
-        )
+        await self.image_menu(instance.ctx, images, title, message=instance.message, page=instance.page)
 
     @staticmethod
     def get_attachments(ctx: commands.Context) -> List[discord.Attachment]:
