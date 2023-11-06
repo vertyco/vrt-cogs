@@ -65,11 +65,12 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set")
-        system_tokens = await self.get_token_count(conf.system_prompt, conf) if conf.system_prompt else 0
-        prompt_tokens = await self.get_token_count(conf.prompt, conf) if conf.prompt else 0
+        model = conf.get_user_model(ctx.author)
+        system_tokens = await self.count_tokens(conf.system_prompt, conf, model) if conf.system_prompt else 0
+        prompt_tokens = await self.count_tokens(conf.prompt, conf, model) if conf.prompt else 0
 
         func_list, __ = self.db.prep_functions(self.bot, conf, self.registry)
-        func_tokens = await self.function_token_count(conf, func_list)
+        func_tokens = await self.count_function_tokens(func_list, conf, model)
         func_count = len(func_list)
 
         model_text = conf.model
@@ -462,9 +463,9 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
-
-        ptokens = await self.get_token_count(prompt, conf) if prompt else 0
-        stokens = await self.get_token_count(conf.system_prompt, conf) if conf.system_prompt else 0
+        model = conf.get_user_model(ctx.author)
+        ptokens = await self.count_tokens(prompt, conf, model) if prompt else 0
+        stokens = await self.count_tokens(conf.system_prompt, conf, model) if conf.system_prompt else 0
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
         if combined >= max_tokens:
@@ -540,9 +541,10 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
+        model = conf.get_user_model(ctx.author)
+        ptokens = await self.count_tokens(conf.prompt, conf, model) if conf.prompt else 0
+        stokens = await self.count_tokens(system_prompt, conf, model) if system_prompt else 0
 
-        ptokens = await self.get_token_count(conf.prompt, conf) if conf.prompt else 0
-        stokens = await self.get_token_count(system_prompt, conf) if system_prompt else 0
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
         if combined >= max_tokens:

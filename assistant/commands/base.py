@@ -139,7 +139,7 @@ If a file has no extension it will still try to read it only if it can be decode
             # Return the new RGB color
             return (green, blue)
 
-        convo_tokens = await self.convo_token_count(conf, conversation)
+        convo_tokens = await self.count_payload_tokens(conversation.messages, conf, conf.get_user_model(user))
         g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
         gg, bb = generate_color(convo_tokens, max_tokens)
         # Whatever limit is more severe get that color
@@ -174,9 +174,7 @@ If a file has no extension it will still try to read it only if it can be decode
             name=_("Conversation stats for {}").format(user.display_name),
             icon_url=user.display_avatar,
         )
-        embed.set_footer(
-            text=_("Token limit is a soft cap and excess is trimmed before sending to the api")
-        )
+        embed.set_footer(text=_("Token limit is a soft cap and excess is trimmed before sending to the api"))
         await ctx.send(embed=embed)
 
     @commands.command(name="clearconvo")
@@ -213,9 +211,7 @@ If a file has no extension it will still try to read it only if it can be decode
 
             embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
             if not embeddings:
-                return await ctx.send(
-                    _("No embeddings could be related to this query with the current settings")
-                )
+                return await ctx.send(_("No embeddings could be related to this query with the current settings"))
             for name, em, score, dimension in embeddings:
                 for p in pagify(em, page_length=4000):
                     txt = (

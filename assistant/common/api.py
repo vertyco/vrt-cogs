@@ -6,6 +6,7 @@ import math
 from typing import Dict, List, Optional, Tuple
 
 import discord
+import tiktoken
 from aiohttp import ClientConnectionError
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
@@ -20,7 +21,7 @@ from .calls import (
     request_tokens_raw,
 )
 from .constants import CHAT, MODELS
-from .models import Conversation, GuildSettings
+from .models import GuildSettings
 from .utils import compile_messages
 
 log = logging.getLogger("red.vrt.assistant.api")
@@ -43,14 +44,18 @@ class API(MixinMeta):
             api_base = None
             api_key = conf.api_key
 
+        model = conf.get_user_model(member)
+
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_response_tokens = conf.get_user_max_response_tokens(member)
 
         # Overestimate by 5%
-        current_convo_tokens = await self.payload_token_count(conf, messages)
+        current_convo_tokens = await self.count_payload_tokens(messages, conf, model)
+        if functions:
+            current_convo_tokens += await self.count_function_tokens(functions, conf, model)
+
         current_convo_tokens = round(current_convo_tokens * 1.05)
 
-        model = conf.get_user_model(member)
         # Dynamically adjust to lower model to save on cost
         if "-16k" in model and current_convo_tokens < 2000:
             model = model.replace("-16k", "")
@@ -86,7 +91,7 @@ class API(MixinMeta):
             message = response["choices"][0]["message"]
         else:
             compiled = compile_messages(messages)
-            prompt = await self.cut_text_by_tokens(compiled, conf, self.get_max_tokens(conf, member))
+            prompt = await self.cut_text_by_tokens(compiled, conf, member)
             response = await request_completion_raw(
                 model=model,
                 prompt=prompt,
@@ -128,6 +133,137 @@ class API(MixinMeta):
     # ----------------------- HELPERS -----------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
+
+    async def count_payload_tokens(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        model: str = "gpt-3.5-turbo-0613",
+    ):
+        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
+            log.debug("Using external tokenizer")
+            endpoint = conf.endpoint_override or self.db.endpoint_override
+            num_tokens = 0
+            valid_endpoint = True
+            for message in messages:
+                if not valid_endpoint:
+                    break
+                num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
+                for key, value in message.items():
+                    if isinstance(value, list):
+                        for i in value:
+                            if i["type"] == "image_url":
+                                num_tokens += 65
+                                continue
+                            try:
+                                tokens = await request_tokens_raw(i["text"], f"{endpoint}/tokenize")
+                                num_tokens += len(tokens)
+                            except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
+                                # Break and fall back to local encoder
+                                valid_endpoint = False
+                    try:
+                        tokens = await request_tokens_raw(value, f"{endpoint}/tokenize")
+                        num_tokens += len(tokens)
+                        if key == "name":  # if there's a name, the role is omitted
+                            num_tokens += -1  # role is always required and always 1 token
+                    except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
+                        # Break and fall back to local encoder
+                        valid_endpoint = False
+                num_tokens += 2  # every reply is primed with <im_start>assistant
+            else:
+                return num_tokens
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = 0
+        for message in messages:
+            num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
+            for key, value in message.items():
+                if isinstance(value, list):
+                    for i in value:
+                        if i["type"] == "image_url":
+                            num_tokens += 65
+                            if i.get("detail", "") == "high":
+                                num_tokens += 65
+                            continue
+                        encoded = await asyncio.to_thread(encoding.encode, i["text"])
+                        num_tokens += len(encoded)
+                else:
+                    encoded = await asyncio.to_thread(encoding.encode, value)
+                    num_tokens += len(encoded)
+                if key == "name":  # if there's a name, the role is omitted
+                    num_tokens += -1  # role is always required and always 1 token
+        num_tokens += 2  # every reply is primed with <im_start>assistant
+        return num_tokens
+
+    async def count_function_tokens(
+        self,
+        functions: List[dict],
+        conf: GuildSettings,
+        model: str = "gpt-3.5-turbo-0613",
+    ):
+        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
+            log.debug("Using external tokenizer")
+            endpoint = conf.endpoint_override or self.db.endpoint_override
+            num_tokens = 0
+            for func in functions:
+                dump = json.dumps(func)
+                try:
+                    tokens = await request_tokens_raw(dump, f"{endpoint}/tokenize")
+                    num_tokens += len(tokens)
+                except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
+                    # Break and fall back to local encoder
+                    break
+            else:
+                return num_tokens
+
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = 0
+        for func in functions:
+            dump = json.dumps(func)
+            encoded = await asyncio.to_thread(encoding.encode, dump)
+            num_tokens += len(encoded)
+        return num_tokens
+
+    async def get_tokens(
+        self,
+        text: str,
+        conf: GuildSettings,
+        model: str = "gpt-3.5-turbo-0613",
+    ) -> list:
+        """Get token list from text"""
+        if not text:
+            log.debug("No text to get tokens from!")
+            return []
+        if isinstance(text, bytes):
+            text = text.decode(encoding="utf-8")
+
+        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
+            log.debug("Using external tokenizer")
+            endpoint = conf.endpoint_override or self.db.endpoint_override
+            try:
+                return await request_tokens_raw(text, f"{endpoint}/tokenize")
+            except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
+                pass
+
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+
+        return await asyncio.to_thread(encoding.encode, text)
+
+    async def count_tokens(self, text: str, conf: GuildSettings, model: str) -> int:
+        if not text:
+            log.debug("No text to get token count from!")
+            # raise Exception("No text to get token count from!")
+            return 0
+        tokens = await self.get_tokens(text, conf, model)
+        return len(tokens)
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
         cant = [
@@ -177,38 +313,12 @@ class API(MixinMeta):
         user_max = conf.get_user_max_tokens(user)
         return min(user_max, MODELS[conf.get_user_model(user)] - 96)
 
-    async def cut_text_by_tokens(self, text: str, conf: GuildSettings, max_tokens: int) -> str:
+    async def cut_text_by_tokens(self, text: str, conf: GuildSettings, user: Optional[discord.Member]) -> str:
         if not text:
             log.debug("No text to cut by tokens!")
             return text
-        tokens = await self.get_tokens(text, conf)
-        return await self.get_text(tokens[:max_tokens], conf)
-
-    async def get_token_count(self, text: str, conf: GuildSettings) -> int:
-        if not text:
-            log.debug("No text to get token count from!")
-            # raise Exception("No text to get token count from!")
-            return 0
-        tokens = await self.get_tokens(text, conf)
-        return len(tokens)
-
-    async def get_tokens(self, text: str, conf: GuildSettings) -> list:
-        """Get token list from text"""
-        if not text:
-            log.debug("No text to get tokens from!")
-            return []
-        if isinstance(text, bytes):
-            text = text.decode(encoding="utf-8")
-
-        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
-            log.debug("Using external tokenizer")
-            endpoint = conf.endpoint_override or self.db.endpoint_override
-            try:
-                return await request_tokens_raw(text, f"{endpoint}/tokenize")
-            except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
-                pass
-
-        return await asyncio.to_thread(self.tokenizer.encode, text)
+        tokens = await self.get_tokens(text, conf, conf.get_user_model(user))
+        return await self.get_text(tokens[: self.get_max_tokens(conf, user)], conf)
 
     async def get_text(self, tokens: list, conf: GuildSettings) -> str:
         """Get text from token list"""
@@ -219,29 +329,6 @@ class API(MixinMeta):
             return await request_text_raw(tokens, f"{endpoint}/untokenize")
 
         return await asyncio.to_thread(self.tokenizer.decode, tokens)
-
-    async def convo_token_count(self, conf: GuildSettings, convo: Conversation) -> int:
-        """Fetch token count of stored messages"""
-        return sum([(await self.get_token_count(i["content"], conf)) for i in convo.messages if i["content"]])
-
-    async def payload_token_count(self, conf: GuildSettings, messages: List[dict]):
-        total = 0
-        for message in messages:
-            total += await self.get_token_count(json.dumps(message), conf)
-        return total
-
-    async def prompt_token_count(self, conf: GuildSettings) -> int:
-        """Fetch token count of system and initial prompts"""
-        return (await self.get_token_count(conf.prompt, conf)) + (await self.get_token_count(conf.system_prompt, conf))
-
-    async def function_token_count(self, conf: GuildSettings, functions: List[dict]) -> int:
-        if not functions:
-            return 0
-        dumpped = []
-        for i in functions:
-            dumpped.append(json.dumps(i))
-        joined = "".join(dumpped)
-        return await self.get_token_count(joined, conf)
 
     # -------------------------------------------------------
     # -------------------------------------------------------
@@ -265,9 +352,17 @@ class API(MixinMeta):
         Returns:
             Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded
         """
-        # Calculate the initial total token count
-        total_tokens = await self.get_token_count(json.dumps(messages), conf)
-        total_tokens += await self.get_token_count(json.dumps(function_list), conf)
+
+        def _degrade_message(msg: str) -> str:
+            words = msg.split()
+            if len(words) > 1:
+                return " ".join(words[:-1])
+            else:
+                return ""
+
+        model = conf.get_user_model(user)
+        total_tokens = await self.count_payload_tokens(messages, conf, model)
+        total_tokens += await self.count_function_tokens(function_list, conf, model)
 
         # Check if the total token count is already under the max token limit
         max_response_tokens = conf.get_user_max_response_tokens(user)
@@ -278,18 +373,11 @@ class API(MixinMeta):
         if total_tokens <= max_tokens:
             return messages, function_list, False
 
-        def _degrade_message(msg: str) -> str:
-            words = msg.split()
-            if len(words) > 1:
-                return " ".join(words[:-1])
-            else:
-                return ""
-
         log.debug(f"Removing functions (total: {total_tokens}/max: {max_tokens})")
         # Degrade function_list first
         while total_tokens > max_tokens and len(function_list) > 0:
             popped = function_list.pop(0)
-            total_tokens -= await self.get_token_count(json.dumps(popped), conf)
+            total_tokens -= await self.count_tokens(json.dumps(popped), conf, model)
             if total_tokens <= max_tokens:
                 return messages, function_list, True
 
@@ -312,10 +400,15 @@ class API(MixinMeta):
                 i += 1
                 continue
             messages.pop(i)
+            total_tokens -= 5  # Minus role and name
+
+        if total_tokens <= max_tokens:
+            return messages, function_list, True
 
         log.debug(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
         # Degrade the conversation except for the most recent user, assistant, and function messages
         i = 0
+
         while total_tokens > max_tokens and i < len(messages):
             if (
                 messages[i]["role"] == "system"
@@ -329,42 +422,68 @@ class API(MixinMeta):
             if not messages[i]["content"]:
                 if "function_call" not in messages[i]:
                     messages.pop(i)
+                    total_tokens -= 5
                 else:
                     i += 1
                 continue
 
-            degraded_content = _degrade_message(messages[i]["content"])
-            if degraded_content:
-                token_diff = (await self.get_token_count(messages[i]["content"], conf)) - (
-                    await self.get_token_count(degraded_content, conf)
-                )
-                messages[i]["content"] = degraded_content
-                total_tokens -= token_diff
+            if total_tokens <= max_tokens:
+                return messages, function_list, True
+
+            if isinstance(messages[i]["content"], list):
+                for idx, msg in enumerate(messages[i]["content"]):
+                    if msg["type"] == "image_url":
+                        continue
+                    degraded_content = _degrade_message(msg)
+                    pre = await self.count_tokens(msg, conf, model)
+                    post = await self.count_tokens(degraded_content, conf, model)
+                    diff = pre - post
+                    messages[i]["content"][idx] = degraded_content
+                    total_tokens -= diff
             else:
-                total_tokens -= await self.get_token_count(messages[i]["content"], conf)
-                messages.pop(i)
+                degraded_content = _degrade_message(messages[i]["content"])
+                pre = await self.count_tokens(messages[i]["content"], conf, model)
+                if degraded_content:
+                    post = await self.count_tokens(degraded_content, conf, model)
+                    diff = pre - post
+                    messages[i]["content"] = degraded_content
+                    total_tokens -= diff
+                else:
+                    total_tokens -= pre
+                    total_tokens -= 4
+                    messages.pop(i)
 
             if total_tokens <= max_tokens:
                 return messages, function_list, True
 
         # Degrade the most recent user and function messages as the last resort
-        log.debug(f"Degrating user/function messages (total: {total_tokens}/max: {max_tokens})")
+        log.debug(f"Degrading user/function messages (total: {total_tokens}/max: {max_tokens})")
         for i in [most_recent_function, most_recent_user]:
             if total_tokens <= max_tokens:
                 return messages, function_list, True
             while total_tokens > max_tokens:
-                degraded_content = _degrade_message(messages[i]["content"])
-                if degraded_content:
-                    token_diff = (await self.get_token_count(messages[i]["content"], conf)) - (
-                        await self.get_token_count(degraded_content, conf)
-                    )
-                    messages[i]["content"] = degraded_content
-                    total_tokens -= token_diff
+                if isinstance(messages[i]["content"], list):
+                    for idx, msg in enumerate(messages[i]["content"]):
+                        if msg["type"] == "image_url":
+                            continue
+                        degraded_content = _degrade_message(msg)
+                        pre = await self.count_tokens(msg, conf, model)
+                        post = await self.count_tokens(degraded_content, conf, model)
+                        diff = pre - post
+                        messages[i]["content"][idx] = degraded_content
+                        total_tokens -= diff
                 else:
-                    total_tokens -= await self.get_token_count(messages[i]["content"], conf)
-                    messages.pop(i)
-                    break
-
+                    degraded_content = _degrade_message(messages[i]["content"])
+                    pre = await self.count_tokens(messages[i]["content"], conf, model)
+                    if degraded_content:
+                        post = await self.count_tokens(degraded_content, conf, model)
+                        diff = pre - post
+                        messages[i]["content"] = degraded_content
+                        total_tokens -= diff
+                    else:
+                        total_tokens -= pre
+                        total_tokens -= 4
+                        messages.pop(i)
         return messages, function_list, True
 
     async def token_pagify(self, text: str, conf: GuildSettings) -> List[str]:
@@ -417,6 +536,7 @@ class API(MixinMeta):
                 }
 
         conf = self.db.get_conf(user.guild)
+        model = conf.get_user_model(user)
 
         pages = sum(len(v) for v in registry.values())
         page = 1
@@ -441,7 +561,7 @@ class API(MixinMeta):
                         inline=False,
                     )
                 schema = json.dumps(func["jsonschema"], indent=2)
-                tokens = await self.get_token_count(schema, conf)
+                tokens = await self.count_tokens(schema, conf, model)
 
                 schema_text = _("This function consumes `{}` input tokens each call\n").format(humanize_number(tokens))
 
@@ -480,6 +600,7 @@ class API(MixinMeta):
         embeddings = sorted(conf.embeddings.items(), key=lambda x: x[0])
         embeds = []
         pages = math.ceil(len(embeddings) / 5)
+        model = conf.get_user_model()
         start = 0
         stop = 5
         for page in range(pages):
@@ -489,7 +610,7 @@ class API(MixinMeta):
             num = 0
             for i in range(start, stop):
                 name, embedding = embeddings[i]
-                tokens = await self.get_token_count(embedding.text, conf)
+                tokens = await self.count_tokens(embedding.text, conf, model)
                 text = (
                     box(f"{embedding.text[:30].strip()}...")
                     if len(embedding.text) > 33
