@@ -2,6 +2,7 @@ MODELS = {
     "gpt-3.5-turbo": 4096,
     "gpt-3.5-turbo-0301": 4096,
     "gpt-3.5-turbo-0613": 4096,
+    "gpt-3.5-turbo-1106": 16385,
     "gpt-3.5-turbo-16k": 16384,
     "gpt-3.5-turbo-16k-0301": 16384,
     "gpt-3.5-turbo-16k-0613": 16384,
@@ -13,6 +14,8 @@ MODELS = {
     "gpt-4-32k": 32768,
     "gpt-4-32k-0301": 32768,
     "gpt-4-32k-0613": 32768,
+    "gpt-4-1106-preview": 128000,
+    "gpt-4-vision-preview": 128000,
     "code-davinci-002": 8001,
     "text-davinci-003": 4097,
     "text-davinci-002": 4097,
@@ -26,6 +29,7 @@ PRICES = {
     "gpt-3.5-turbo": [0.0015, 0.002],
     "gpt-3.5-turbo-0301": [0.0015, 0.002],
     "gpt-3.5-turbo-0613": [0.0015, 0.002],
+    "gpt-3.5-turbo-1106": [0.001, 0.002],
     "gpt-3.5-turbo-16k": [0.003, 0.004],
     "gpt-3.5-turbo-16k-0301": [0.003, 0.004],
     "gpt-3.5-turbo-16k-0613": [0.003, 0.004],
@@ -34,6 +38,8 @@ PRICES = {
     "gpt-4": [0.03, 0.06],
     "gpt-4-0301": [0.03, 0.06],
     "gpt-4-0613": [0.03, 0.06],
+    "gpt-4-1106-preview": [0.01, 0.03],
+    "gpt-4-1106-vision-preview": [0.01, 0.03],
     "gpt-4-32k": [0.06, 0.12],
     "gpt-4-32k-0301": [0.06, 0.12],
     "gpt-4-32k-0613": [0.06, 0.12],
@@ -46,20 +52,28 @@ PRICES = {
     "text-embedding-ada-002": [0.0001, 0.0001],
     "text-embedding-ada-002-v2": [0.0001, 0.0001],
 }
+MODELS_1106 = [
+    "gpt-3.5-turbo-1106",
+    "gpt-4-1106-preview",
+    "gpt-4-vision-preview",
+]
 SUPPORTS_FUNCTIONS = [
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-0613",
+    "gpt-3.5-turbo-1106",
     "gpt-3.5-turbo-16k",
     "gpt-3.5-turbo-16k-0613",
     "gpt-4",
     "gpt-4-0613",
     "gpt-4-32k",
     "gpt-4-32k-0613",
+    "gpt-4-1106-preview",
 ]
 CHAT = [
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-0301",
     "gpt-3.5-turbo-0613",
+    "gpt-3.5-turbo-1106",
     "gpt-3.5-turbo-16k",
     "gpt-3.5-turbo-16k-0301",
     "gpt-3.5-turbo-16k-0613",
@@ -69,6 +83,8 @@ CHAT = [
     "gpt-4-32k",
     "gpt-4-32k-0301",
     "gpt-4-32k-0613",
+    "gpt-4-1106-preview",
+    "gpt-4-vision-preview",
     "code-davinci-002",
 ]
 COMPLETION = [

@@ -19,7 +19,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import SUPPORTS_FUNCTIONS
+from .constants import MODELS_1106, SUPPORTS_FUNCTIONS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -77,6 +77,9 @@ async def request_chat_completion_raw(
     api_base: Optional[str] = None,
     functions: Optional[List[dict]] = None,
     timeout: int = 60,
+    frequency_penalty: float = 0.0,
+    presence_penalty: float = 0.0,
+    seed: int = None,
 ) -> Dict[str, str]:
     log.debug(f"request_chat_completion_raw: {model}")
     kwargs = {
@@ -86,12 +89,20 @@ async def request_chat_completion_raw(
         "api_key": api_key,
         "api_base": api_base,
         "timeout": timeout,
+        "frequency_penalty": frequency_penalty,
+        "presence_penalty": presence_penalty,
     }
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
     if functions and VERSION >= "0.27.6" and model in SUPPORTS_FUNCTIONS:
         log.debug(f"Calling model with {len(functions)} functions")
         kwargs["functions"] = functions
+        # if model in MODELS_1106:
+        #     kwargs["tools"] = functions
+        # else:
+        #     kwargs["functions"] = functions
+    if model in MODELS_1106:
+        kwargs["seed"] = seed
     return await openai.ChatCompletion.acreate(**kwargs)
 
 

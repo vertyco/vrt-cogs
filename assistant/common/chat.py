@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import functools
 import json
 import logging
@@ -46,21 +47,27 @@ class ChatHandler(MixinMeta):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
         get_last_message_pattern = r"--last"
+        image_url_pattern = r"(http(s?):)([/|.|\w|\s|-])*\.(?:jpg|gif|png|jpeg|webp)"
 
         # Extract the optional arguments and their values
         outputfile_match = re.search(outputfile_pattern, question)
         extract_match = re.search(extract_pattern, question)
         get_last_message_match = re.search(get_last_message_pattern, question)
+        image_url_match = re.search(image_url_pattern, question)
 
         # Remove the optional arguments from the input string to obtain the question variable
         question = re.sub(outputfile_pattern, "", question)
         question = re.sub(extract_pattern, "", question)
         question = re.sub(get_last_message_pattern, "", question)
+        question = re.sub(image_url_pattern, "", question)
 
         # Check if the optional arguments were present and set the corresponding variables
         outputfile = outputfile_match.group(1) if outputfile_match else None
         extract = bool(extract_match)
         get_last_message = bool(get_last_message_match)
+        images = []
+        if image_url_match:
+            images.append(image_url_match.group(1))
 
         question = question.replace(self.bot.user.mention, self.bot.user.display_name)
 
@@ -80,8 +87,16 @@ class ChatHandler(MixinMeta):
                 f"<@&{mention.id}>",
                 f"[Role: {mention.name} | Mention: {mention.mention}]",
             )
+
+        img_ext = ["png", "jpg", "jpeg", "gif", "webp"]
         for i in get_attachments(message):
             has_extension = i.filename.count(".") > 0
+            if any(i.filename.lower().endswith(ext) for ext in img_ext):
+                image_bytes: bytes = await i.read()
+                image_b64 = base64.b64encode(image_bytes).decode()
+                images.append(image_b64)
+                continue
+
             if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
                 continue
 
@@ -130,6 +145,7 @@ class ChatHandler(MixinMeta):
                     message.channel,
                     conf,
                     message_obj=message,
+                    images=images,
                 )
             except APIConnectionError as e:
                 reply = _("Failed to communicate with endpoint!")
@@ -214,6 +230,7 @@ class ChatHandler(MixinMeta):
         function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
         message_obj: Optional[discord.Message] = None,
+        images: list[str] = None,
     ) -> str:
         """Call the API asynchronously"""
         if function_calls is None:
@@ -240,7 +257,8 @@ class ChatHandler(MixinMeta):
             channel = guild.get_channel(channel)
 
         query_embedding = []
-        message_tokens = await self.get_token_count(message, conf)
+        user = author if isinstance(author, discord.Member) else None
+        message_tokens = await self.count_tokens(message, conf, conf.get_user_model(user))
         words = message.split(" ")
         if conf.top_n and message_tokens < 8191 and len(words) > 5:
             # Save on tokens by only getting embeddings if theyre enabled
@@ -288,6 +306,7 @@ class ChatHandler(MixinMeta):
             query_embedding,
             extras,
             function_calls,
+            images,
         )
         reply = None
 
@@ -348,7 +367,7 @@ class ChatHandler(MixinMeta):
                 break
 
             # If content is None then function call must exist
-            function_call = response.get("function_call")
+            function_call = response.get("function_call", response.get("tool_calls"))
             if not function_call:
                 continue
 
@@ -494,6 +513,7 @@ class ChatHandler(MixinMeta):
         query_embedding: List[float],
         extras: dict,
         function_calls: List[dict],
+        images: list[str] | None,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -521,10 +541,10 @@ class ChatHandler(MixinMeta):
 
         system_prompt = format_string(conf.system_prompt)
         initial_prompt = format_string(conf.prompt)
-
-        current_tokens = await self.get_token_count(message + system_prompt + initial_prompt, conf)
-        current_tokens += await self.convo_token_count(conf, conversation)
-        current_tokens += await self.function_token_count(conf, function_calls)
+        model = conf.get_user_model(author)
+        current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, conf, model)
+        current_tokens += await self.count_payload_tokens(conversation.messages, conf, model)
+        current_tokens += await self.count_function_tokens(function_calls, conf, model)
 
         max_tokens = self.get_max_tokens(conf, author)
 
@@ -533,7 +553,7 @@ class ChatHandler(MixinMeta):
         embeddings = []
         # Get related embeddings (Name, text, score, dimensions)
         for i in related:
-            embed_tokens = await self.get_token_count(i[1], conf)
+            embed_tokens = await self.count_tokens(i[1], conf, model)
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
@@ -566,6 +586,7 @@ class ChatHandler(MixinMeta):
             initial_prompt.strip(),
             system_prompt.strip(),
             name=process_username(author.name) if author else None,
+            images=images,
         )
         return messages
 

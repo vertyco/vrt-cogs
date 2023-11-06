@@ -8,7 +8,7 @@ from discord.ext.commands.cog import CogMeta
 from redbot.core import commands
 from redbot.core.bot import Red
 
-from .common.models import DB, Conversation, GuildSettings
+from .common.models import DB, GuildSettings
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -41,9 +41,7 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def can_call_llm(
-        self, conf: GuildSettings, ctx: Optional[commands.Context] = None
-    ) -> bool:
+    async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
         raise NotImplementedError
 
     @abstractmethod
@@ -59,27 +57,39 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_token_count(self, text: str, conf: GuildSettings) -> int:
+    async def count_payload_tokens(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        model: str = "gpt-3.5-turbo-0613",
+    ):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_tokens(self, text: str, conf: GuildSettings) -> list:
+    async def count_function_tokens(
+        self,
+        functions: List[dict],
+        conf: GuildSettings,
+        model: str = "gpt-3.5-turbo-0613",
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def count_tokens(self, text: str, conf: GuildSettings, model: str) -> int:
+        raise NotImplementedError
+
+
+    @abstractmethod
+    async def get_tokens(
+        self,
+        text: str,
+        conf: GuildSettings,
+        model: str = "gpt-3.5-turbo-0613",
+    ) -> list:
         raise NotImplementedError
 
     @abstractmethod
     async def get_text(self, tokens: list, conf: GuildSettings) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def convo_token_count(self, conf: GuildSettings, convo: Conversation) -> int:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def prompt_token_count(self, conf: GuildSettings) -> int:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def function_token_count(self, conf: GuildSettings, functions: List[dict]) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -101,9 +111,7 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_embbedding_menu_embeds(
-        self, conf: GuildSettings, place: int
-    ) -> List[discord.Embed]:
+    async def get_embbedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
         raise NotImplementedError
 
     # -------------------------------------------------------

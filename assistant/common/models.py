@@ -271,6 +271,8 @@ class Conversation(AssistantBaseModel):
         initial_prompt: str,
         system_prompt: str,
         name: str = None,
+        images: List[str] = None,
+        resolution: str = "low",
     ) -> List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
@@ -279,11 +281,28 @@ class Conversation(AssistantBaseModel):
         if initial_prompt:
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
-        user_message = {"role": "user", "content": user_message}
+
+        if images:
+            content = []
+            for img in images:
+                if img.lower().startswith("http"):
+                    content.append({"type": "image_url", "image_url": img, "detail": resolution})
+                else:
+                    content.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{img}", "detail": resolution},
+                        }
+                    )
+            content.append({"type": "text", "text": user_message})
+        else:
+            content = user_message
+
+        user_message_payload = {"role": "user", "content": content}
         if name:
-            user_message["name"] = name
-        prepared.append(user_message)
-        self.messages.append(user_message)
+            user_message_payload["name"] = name
+        prepared.append(user_message_payload)
+        self.messages.append(user_message_payload)
         self.refresh()
         return prepared
 
