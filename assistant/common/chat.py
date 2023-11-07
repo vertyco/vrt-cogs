@@ -12,8 +12,10 @@ from io import BytesIO
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
+import openai
 import pytz
-from openai.error import APIConnectionError, AuthenticationError, RateLimitError
+
+# from openai import APIConnectionError, AuthenticationError, RateLimitError
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
@@ -148,15 +150,15 @@ class ChatHandler(MixinMeta):
                     message_obj=message,
                     images=images,
                 )
-            except APIConnectionError as e:
+            except openai.APIConnectionError as e:
                 reply = _("Failed to communicate with endpoint!")
                 log.error(f"APIConnectionError (From listener: {listener})", exc_info=e)
-            except AuthenticationError:
+            except openai.AuthenticationError:
                 if message.author == message.guild.owner:
                     reply = _("Invalid API key, please set a new valid key!")
                 else:
                     reply = _("Uh oh, looks like my API key is invalid!")
-            except RateLimitError as e:
+            except openai.RateLimitError as e:
                 reply = str(e)
             except KeyError as e:
                 log.debug("get_chat_response error", exc_info=e)
@@ -335,7 +337,7 @@ class ChatHandler(MixinMeta):
                     f"FUNCTIONS: {json.dumps(function_calls, indent=2) if function_calls else 'None'}",
                     exc_info=e,
                 )
-                break
+                raise e
 
             if reply := response["content"]:
                 break

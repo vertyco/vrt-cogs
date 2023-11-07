@@ -87,6 +87,9 @@ class API(MixinMeta):
                 max_tokens=response_tokens,
                 api_base=api_base,
                 functions=functions,
+                frequency_penalty=conf.frequency_penalty,
+                presence_penalty=conf.presence_penalty,
+                seed=conf.seed,
             )
             message = response.choices[0].message
             print(f"MESSAGE: {type(message)}")

@@ -15,7 +15,6 @@ import pandas as pd
 import pytz
 from aiocache import cached
 from discord.app_commands import Choice
-from openai.version import VERSION
 from pydantic import ValidationError
 from rapidfuzz import fuzz
 from redbot.core import app_commands, commands
@@ -96,7 +95,7 @@ class Admin(MixinMeta):
                 pass
 
         desc = (
-            _("`OpenAI Version:      `{}\n").format(VERSION)
+            _("`OpenAI Version:      `{}\n").format(openai.VERSION)
             + _("`Model:               `{}\n").format(model_text)
             + _("`Enabled:             `{}\n").format(conf.enabled)
             + _("`Timezone:            `{}\n").format(conf.timezone)
@@ -109,6 +108,9 @@ class Admin(MixinMeta):
             + _("`Max Response Tokens: `{}\n").format(conf.max_response_tokens)
             + _("`Min Length:          `{}\n").format(conf.min_length)
             + _("`Temperature:         `{}\n").format(conf.temperature)
+            + _("`Frequency Penalty:   `{}\n").format(conf.frequency_penalty)
+            + _("`Presence Penalty:    `{}\n").format(conf.presence_penalty)
+            + _("`Seed:                `{}\n").format(conf.seed)
             + _("`System Message:      `{} tokens\n").format(humanize_number(system_tokens))
             + _("`Initial Prompt:      `{} tokens\n").format(humanize_number(prompt_tokens))
         )
@@ -131,7 +133,7 @@ class Admin(MixinMeta):
         embedding_field = (
             _("`Top N Embeddings:  `{}\n").format(conf.top_n)
             + _("`Min Relatedness:   `{}\n").format(conf.min_relatedness)
-            + _("`Embedding Method:  `{}\n").format(conf.embed_method)
+            + _("`Embedding Method:  `{}\n").format(conf.embed_method.value)
             + _("`Encodings:         `{}").format(encoded_by)
         )
         embed_num = humanize_number(len(conf.embeddings))
@@ -682,6 +684,7 @@ class Admin(MixinMeta):
     async def set_temperature(self, ctx: commands.Context, temperature: float):
         """
         Set the temperature for the model (0.0 - 2.0)
+        - Defaults is 1
 
         Closer to 0 is more concise and accurate while closer to 2 is more imaginative
         """
@@ -692,6 +695,53 @@ class Admin(MixinMeta):
         conf.temperature = temperature
         await self.save_conf()
         await ctx.send(_("Temperature has been set to **{}**").format(temperature))
+
+    @assistant.command(name="frequency")
+    async def set_frequency_penalty(self, ctx: commands.Context, frequency_penalty: float):
+        """
+        Set the frequency penalty for the model (-2.0 to 2.0)
+        - Defaults is 0
+
+        Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
+        """
+        if not -2 <= frequency_penalty <= 2:
+            return await ctx.send(_("Frequency penalty must be between **-2.0** and **2.0**"))
+        frequency_penalty = round(frequency_penalty, 2)
+        conf = self.db.get_conf(ctx.guild)
+        conf.frequency_penalty = frequency_penalty
+        await self.save_conf()
+        await ctx.send(_("Frequency penalty has been set to **{}**").format(frequency_penalty))
+
+    @assistant.command(name="presence")
+    async def set_presence_penalty(self, ctx: commands.Context, presence_penalty: float):
+        """
+        Set the presence penalty for the model (-2.0 to 2.0)
+        - Defaults is 0
+
+        Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+        """
+        if not -2 <= presence_penalty <= 2:
+            return await ctx.send(_("Presence penalty must be between **-2.0** and **2.0**"))
+        presence_penalty = round(presence_penalty, 2)
+        conf = self.db.get_conf(ctx.guild)
+        conf.presence_penalty = presence_penalty
+        await self.save_conf()
+        await ctx.send(_("Presence penalty has been set to **{}**").format(presence_penalty))
+
+    @assistant.command(name="seed")
+    async def set_seed(self, ctx: commands.Context, seed: int = None):
+        """
+        Make the model more deterministic by setting a seed for the model.
+        - Default is None
+
+        If specified, the system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result.
+        """
+        if seed is not None and seed < 0:
+            return await ctx.send(_("Seed must be a positive integer"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.seed = seed
+        await self.save_conf()
+        await ctx.send(_("The seed has been set to **{}**").format(seed))
 
     @assistant.command(name="refreshembeds", aliases=["refreshembeddings"])
     async def refresh_embeddings(self, ctx: commands.Context):
@@ -818,42 +868,24 @@ class Admin(MixinMeta):
     async def set_model(self, ctx: commands.Context, model: str = None):
         """
         Set the OpenAI model to use
-
-        Valid models and their context info:
-        - Model-Name: MaxTokens, ModelType
-        - gpt-3.5-turbo: 4096, chat
-        - gpt-3.5-turbo-16k: 16384, chat
-        - gpt-4: 8192, chat
-        - gpt-4-32k: 32768, chat
-        - code-davinci-002: 8001, chat
-        - text-davinci-003: 4097, completion
-        - text-davinci-002: 4097, completion
-        - text-curie-001: 2049, completion
-        - text-babbage-001: 2049, completion
-        - text-ada-001: 2049, completion
-
-        Other sub-models are also included
         """
-        valid_raw = CHAT + COMPLETION
-        valid = _("**Chat**\n{}\n**Completion**\n{}\n").format(box(humanize_list(CHAT)), box(humanize_list(COMPLETION)))
-
-        if not model:
-            return await ctx.send(_("Valid models are:\n{}").format(valid))
         model = model.lower().strip()
         conf = self.db.get_conf(ctx.guild)
         if not await self.can_call_llm(conf, ctx):
             return
 
+        valid = _("**Chat**\n{}\n**Completion**\n{}\n").format(box(humanize_list(CHAT)), box(humanize_list(COMPLETION)))
+
+        if not model:
+            return await ctx.send(_("Valid models are:\n{}").format(valid))
+
         if conf.api_key:
             try:
-                await openai.Model.aretrieve(model, api_key=conf.api_key)
-            except openai.InvalidRequestError as e:
-                err = e._message or ""
-                txt = _("This model is not available for the API key provided!{}").format(f"\n{err}" if err else "")
+                client = openai.AsyncOpenAI(api_key=conf.api_key)
+                await client.models.retrieve(model)
+            except openai.NotFoundError as e:
+                txt = _("Error: {}").format(e.response.json()["error"]["message"])
                 return await ctx.send(txt)
-
-        if model not in valid_raw:
-            return await ctx.send(_("Invalid model type! Available model types are:\n{}").format(valid))
 
         conf.model = model
         await ctx.send(_("The **{}** model will now be used").format(model))
@@ -1443,16 +1475,18 @@ class Admin(MixinMeta):
         if not await self.can_call_llm(conf, ctx):
             return
 
-        if model not in CHAT + COMPLETION:
-            valid = humanize_list(CHAT + COMPLETION)
-            return await ctx.send(
-                _("Assistant does not support this model yet! Valid model types are\n{}").format(box(valid))
-            )
+        valid = _("**Chat**\n{}\n**Completion**\n{}\n").format(box(humanize_list(CHAT)), box(humanize_list(COMPLETION)))
 
-        try:
-            await openai.Model.aretrieve(model, api_key=conf.api_key)
-        except openai.InvalidRequestError:
-            return await ctx.send(_("This model is not available for the API key provided!"))
+        if not model:
+            return await ctx.send(_("Valid models are:\n{}").format(valid))
+
+        if conf.api_key:
+            try:
+                client = openai.AsyncOpenAI(api_key=conf.api_key)
+                await client.models.retrieve(model)
+            except openai.NotFoundError as e:
+                txt = _("Error: {}").format(e.response.json()["error"]["message"])
+                return await ctx.send(txt)
 
         if role.id in conf.role_overrides:
             if conf.role_overrides[role.id] == model:
