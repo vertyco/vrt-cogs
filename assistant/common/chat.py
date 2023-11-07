@@ -13,7 +13,7 @@ from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import pytz
-from openai.error import (
+from openai import (
     APIConnectionError,
     AuthenticationError,
     InvalidRequestError,
