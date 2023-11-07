@@ -47,7 +47,7 @@ class ChatHandler(MixinMeta):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
         get_last_message_pattern = r"--last"
-        image_url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+\.(?:jpg|jpeg|png|gif|bmp|webp)"
+        image_url_pattern = r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+\.(?:jpg|jpeg|png|gif|bmp|webp))"
 
         # Extract the optional arguments and their values
         outputfile_match = re.search(outputfile_pattern, question)
@@ -67,7 +67,8 @@ class ChatHandler(MixinMeta):
         get_last_message = bool(get_last_message_match)
         images = []
         if image_url_match:
-            images.append(image_url_match.group(1))
+            for url in image_url_match.groups():
+                images.append(url)
 
         question = question.replace(self.bot.user.mention, self.bot.user.display_name)
 
