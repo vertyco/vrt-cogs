@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-07-24 20:42-0400\n"
-"PO-Revision-Date: 2023-07-28 02:20\n"
+"POT-Creation-Date: 2023-11-07 16:20-0500\n"
+"PO-Revision-Date: 2023-11-07 22:51\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 53\n"
 "Language: ko_KR\n"
 
-#: commands\admin.py:48
+#: commands\admin.py:46
 #, docstring
 msgid "\n"
 "        Setup the assistant\n\n"
@@ -28,7 +28,7 @@ msgstr "어시스턴트 설정하기\n\n"
 "ChatGPT와 다른 모델을 사용하려면 OpenAI에서 **[API 키](https://platform.openai.com/account/api-keys)**가 필요합니다.\n\n"
 "이 기능은 [셀프 호스팅](https://github.com/vertyco/gpt-api) 모델에 대한 엔드포인트 재정의를 지원합니다        "
 
-#: commands\admin.py:60
+#: commands\admin.py:58
 #, docstring
 msgid "\n"
 "        View current settings\n\n"
@@ -37,65 +37,77 @@ msgid "\n"
 msgstr "현재 설정 보기\n\n"
 "현재 채널을 전송하려면 `[p]어시스턴트 보기 false`를 사용하세요        "
 
-#: commands\admin.py:68 commands\admin.py:175
+#: commands\admin.py:66 commands\admin.py:175
 msgid "Not Set"
 msgstr "설정되지 않음"
 
-#: commands\admin.py:95
+#: commands\admin.py:92
 msgid "{} (Global Override)"
 msgstr "{} (전역 재정의)"
 
-#: commands\admin.py:101
+#: commands\admin.py:98
 msgid "`OpenAI Version:      `{}\n"
 msgstr "`OpenAI 버전:      `{}\n"
 
-#: commands\admin.py:102
+#: commands\admin.py:99
 msgid "`Model:               `{}\n"
 msgstr "`모델: `{}\n"
 
-#: commands\admin.py:103
+#: commands\admin.py:100
 msgid "`Enabled:             `{}\n"
 msgstr "`활성화됨:             `{}\n"
 
-#: commands\admin.py:104
+#: commands\admin.py:101
 msgid "`Timezone:            `{}\n"
 msgstr "`표준 시간대: `{}\n"
 
-#: commands\admin.py:105
+#: commands\admin.py:102
 msgid "`Channel:             `{}\n"
 msgstr "`채널:             `{}\n"
 
-#: commands\admin.py:106
+#: commands\admin.py:103
 msgid "`? Required:          `{}\n"
 msgstr "`? 필수입니다:          `{}\n"
 
-#: commands\admin.py:107
+#: commands\admin.py:104
 msgid "`Mentions:            `{}\n"
 msgstr "`멘션:            `{}\n"
 
-#: commands\admin.py:108
+#: commands\admin.py:105
 msgid "`Max Retention:       `{}\n"
 msgstr "`최대 보존 기간: `{}\n"
 
-#: commands\admin.py:109
+#: commands\admin.py:106
 msgid "`Retention Expire:    `{}s\n"
 msgstr "`보존 만료:    `{}s\n"
 
-#: commands\admin.py:110
+#: commands\admin.py:107
 msgid "`Max Tokens:          `{}\n"
 msgstr "`최대 토큰: `{}\n"
 
-#: commands\admin.py:111
+#: commands\admin.py:108
 msgid "`Max Response Tokens: `{}\n"
 msgstr "`최대 응답 토큰: `{}\n"
 
-#: commands\admin.py:112
+#: commands\admin.py:109
 msgid "`Min Length:          `{}\n"
 msgstr "`최소 길이:          `{}\n"
 
-#: commands\admin.py:113
+#: commands\admin.py:110
 msgid "`Temperature:         `{}\n"
 msgstr "`온도:         `{}\n"
+
+#: commands\admin.py:111
+msgid "`Frequency Penalty:   `{}\n"
+msgstr ""
+
+#: commands\admin.py:112
+msgid "`Presence Penalty:    `{}\n"
+msgstr ""
+
+#: commands\admin.py:113
+msgid "`Seed:                `{}\n"
+msgstr ""
 
 #: commands\admin.py:114
 msgid "`System Message:      `{} tokens\n"
@@ -134,8 +146,8 @@ msgid "`Embedding Method:  `{}\n"
 msgstr "`임베딩 방법:  `{}\n"
 
 #: commands\admin.py:137
-msgid "`Encoded By:        `{}"
-msgstr "`인코딩 대상:        `{}"
+msgid "`Encodings:         `{}"
+msgstr ""
 
 #: commands\admin.py:141
 msgid "Embeddings ({})"
@@ -183,80 +195,80 @@ msgstr "정규식 실패 차단"
 msgid "Block reply if regex replacement fails: **{}**"
 msgstr "정규식 대체에 실패하면 답글을 차단합니다: **{}**"
 
-#: commands\admin.py:192
+#: commands\admin.py:190
 msgid "Conversations are stored persistently"
 msgstr "대화는 영구적으로 저장됩니다"
 
-#: commands\admin.py:194
+#: commands\admin.py:192
 msgid "conversations are stored in memory until reboot or reload"
 msgstr "대화는 재부팅하거나 다시 로드할 때까지 메모리에 저장됩니다"
 
-#: commands\admin.py:196
+#: commands\admin.py:194
 msgid "Persistent Conversations"
 msgstr "지속적인 대화"
 
-#: commands\admin.py:210
+#: commands\admin.py:208
 msgid "Blacklist"
 msgstr "블랙리스트"
 
-#: commands\admin.py:222
+#: commands\admin.py:220
 msgid "Model Role Overrides"
 msgstr "모델 역할 재정의"
 
-#: commands\admin.py:233
+#: commands\admin.py:231
 msgid "Max Token Role Overrides"
 msgstr "최대 토큰 역할 재정의"
 
-#: commands\admin.py:245
+#: commands\admin.py:242
 msgid "Max Message Retention Role Overrides"
 msgstr "최대 메시지 보존 역할 재정의"
 
-#: commands\admin.py:258
+#: commands\admin.py:254
 msgid "Max Message Retention Time Role Overrides"
 msgstr "최대 메시지 보존 시간 역할 재정의"
 
-#: commands\admin.py:273
+#: commands\admin.py:268
 msgid "Max Response Token Role Overrides"
 msgstr "최대 응답 토큰 역할 재정의"
 
-#: commands\admin.py:276
+#: commands\admin.py:270
 msgid "Showing settings for {}"
 msgstr "{}에 대한 설정을 표시합니다"
 
-#: commands\admin.py:282
+#: commands\admin.py:276
 msgid "SystemPrompt"
 msgstr "시스템 프롬프트"
 
-#: commands\admin.py:288
+#: commands\admin.py:282
 msgid "InitialPrompt"
 msgstr "초기 프롬프트"
 
-#: commands\admin.py:300
+#: commands\admin.py:292
 msgid "Sent your current settings for this server in DMs!"
 msgstr "이 서버에 대한 현재 설정을 DM으로 보냈습니다!"
 
-#: commands\admin.py:302
+#: commands\admin.py:294
 msgid "You need to allow DMs so I can message you!"
 msgstr "내가 메시지를 보낼 수 있도록 DM을 허용해야 합니다!"
 
-#: commands\admin.py:309
+#: commands\admin.py:301
 #, docstring
 msgid "View the token usage stats for this server"
 msgstr "이 서버의 토큰 사용 통계를 확인하세요"
 
-#: commands\admin.py:312
+#: commands\admin.py:304
 msgid "There is no usage data yet!"
 msgstr "아직 사용 데이터가 없습니다!"
 
-#: commands\admin.py:338
+#: commands\admin.py:330
 msgid "`Total:  `{} (${} @ ${}/1k tokens)"
 msgstr "`합계:  `{} (${} @ ${}/1천 토큰)"
 
-#: commands\admin.py:345
+#: commands\admin.py:337
 msgid "Free/Self-Hosted"
 msgstr "무료/자체 호스팅"
 
-#: commands\admin.py:349
+#: commands\admin.py:341
 msgid "`Input:  `{} (${} @ ${}/1k tokens)\n"
 "`Output: `{} (${} @ ${}/1k tokens)\n"
 "`Total:  `{} (${})"
@@ -264,7 +276,7 @@ msgstr "`입력:  `{} (${} @ ${}/1k 토큰)\n"
 "`출력: `{} (${} @ ${}/1k 토큰)\n"
 "`합계:  `{} (${})"
 
-#: commands\admin.py:365
+#: commands\admin.py:355
 msgid "**Overall Token Usage and Cost**\n"
 "`Input:  `{} (${})\n"
 "`Output: `{} (${})\n"
@@ -274,56 +286,55 @@ msgstr "**전체 토큰 사용량 및 비용**\n"
 "`출력: `{} (${})\n"
 "`총계:  `{} (${})"
 
-#: commands\admin.py:384
+#: commands\admin.py:371
 #, docstring
 msgid "Reset the token usage stats for this server"
 msgstr "이 서버의 토큰 사용 통계를 재설정하세요"
 
-#: commands\admin.py:387
+#: commands\admin.py:374
 msgid "Token usage stats have been reset!"
 msgstr "토큰 사용 통계가 초기화되었습니다!"
 
-#: commands\admin.py:393
+#: commands\admin.py:380
 #, docstring
-msgid "Set your OpenAI key"
-msgstr "OpenAI 키를 설정하세요"
+msgid "\n"
+"        Set your OpenAI key\n\n"
+"        Setting this will disable any endpoint overrides you have for this server.\n"
+"        "
+msgstr ""
 
-#: commands\admin.py:397
+#: commands\admin.py:388
 msgid "Click to set your OpenAI key\n\n"
 "To remove your keys, enter `none`"
 msgstr "OpenAI 키를 설정하려면 클릭하세요\n\n"
 "키를 제거하려면 `none`을 입력하세요"
 
-#: commands\admin.py:403 commands\admin.py:406
-msgid "none"
-msgstr "없음"
-
-#: commands\admin.py:405
+#: commands\admin.py:396
 msgid "OpenAI key has been removed!"
 msgstr "OpenAI 키가 제거되었습니다!"
 
-#: commands\admin.py:408
+#: commands\admin.py:399
 msgid "No API key was entered!"
 msgstr "API 키가 입력되지 않았습니다!"
 
-#: commands\admin.py:411
+#: commands\admin.py:402
 msgid "OpenAI key has been set!"
 msgstr "OpenAI 키가 설정되었습니다!"
 
-#: commands\admin.py:417
+#: commands\admin.py:408
 #, docstring
 msgid "Set the timezone used for prompt placeholders"
 msgstr "프롬프트 자리 표시자에 사용되는 시간대를 설정하세요"
 
-#: commands\admin.py:425
+#: commands\admin.py:414
 msgid "Invalid Timezone, did you mean `{}`?"
 msgstr "시간대가 잘못되었습니다. `{}`를 의미하시나요?"
 
-#: commands\admin.py:427
+#: commands\admin.py:416
 msgid "Timezone set to **{}** (`{}`)"
 msgstr "표준 시간대를 **{}**(`{}`)로 설정합니다"
 
-#: commands\admin.py:434
+#: commands\admin.py:423
 #, docstring
 msgid "\n"
 "        Set the initial prompt for GPT to use\n\n"
@@ -384,35 +395,35 @@ msgstr "GPT가 사용할 초기 프롬프트를 설정합니다.\n\n"
 "- **bank**: 은행 이름\n"
 "- **balance**: 사용자의 현재 잔액        "
 
-#: commands\admin.py:470 commands\admin.py:549
+#: commands\admin.py:459 commands\admin.py:537
 msgid "Failed to read `{}`, bot owner can use `{}` for more information"
 msgstr "읽기 실패: `{}`, 봇 소유자는 더 많은 정보를 얻기 위해 `{}`를 사용할 수 있습니다"
 
-#: commands\admin.py:486 commands\admin.py:565
+#: commands\admin.py:475 commands\admin.py:554
 msgid "Your system and initial prompt combined will use {} tokens!\n"
 "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
 msgstr "시스템과 초기 프롬프트가 {} 토큰을 사용합니다!\n"
 "응답에 사용할 토큰의 최대 10%를 남기기 위해 {} 토큰 이하로 프롬프트 조합을 작성하세요."
 
-#: commands\admin.py:494
+#: commands\admin.py:483
 msgid "The initial prompt has been removed!"
 msgstr "초기 프롬프트가 제거되었습니다!"
 
-#: commands\admin.py:497
+#: commands\admin.py:486
 msgid "Please include an initial prompt or .txt file!\n"
 "Use `{}` to view details for this command"
 msgstr "초기 프롬프트 또는 .txt 파일을 포함하세요!\n"
 "이 명령에 대한 자세한 내용을 보려면 `{}`를 사용하세요"
 
-#: commands\admin.py:504
+#: commands\admin.py:492
 msgid "The initial prompt has been overwritten!"
 msgstr "초기 프롬프트가 덮어씌워졌습니다!"
 
-#: commands\admin.py:507
+#: commands\admin.py:495
 msgid "Initial prompt has been set!"
 msgstr "초기 프롬프트가 설정되었습니다!"
 
-#: commands\admin.py:513
+#: commands\admin.py:501
 #, docstring
 msgid "\n"
 "        Set the system prompt for GPT to use\n\n"
@@ -473,81 +484,81 @@ msgstr "GPT의 시스템 프롬프트를 설정하세요.\n\n"
 "- **은행**: 은행 이름\n"
 "- **잔액**: 사용자의 현재 잔액        "
 
-#: commands\admin.py:573
+#: commands\admin.py:562
 msgid "The system prompt has been removed!"
 msgstr "시스템 프롬프트가 제거되었습니다!"
 
-#: commands\admin.py:576
+#: commands\admin.py:565
 msgid "Please include a system prompt or .txt file!\n"
 "Use `{}` to view details for this command"
 msgstr "시스템 프롬프트 또는 .txt 파일을 포함하세요!\n"
 "이 명령에 대한 자세한 내용을 보려면 `{}`를 사용하세요"
 
-#: commands\admin.py:583
+#: commands\admin.py:571
 msgid "The system prompt has been overwritten!"
 msgstr "시스템 프롬프트가 덮어썼습니다!"
 
-#: commands\admin.py:586
+#: commands\admin.py:574
 msgid "System prompt has been set!"
 msgstr "시스템 프롬프트가 설정되었습니다!"
 
-#: commands\admin.py:600
+#: commands\admin.py:588
 #, docstring
 msgid "Set the channel for the assistant"
 msgstr "어시스턴트의 채널을 설정하세요"
 
-#: commands\admin.py:605
+#: commands\admin.py:593
 msgid "Assistant channel has been removed"
 msgstr "어시스턴트 채널이 제거되었습니다"
 
-#: commands\admin.py:608
+#: commands\admin.py:596
 msgid "Assistant channel has been overwritten"
 msgstr "어시스턴트 채널이 덮어썼습니다"
 
-#: commands\admin.py:611
+#: commands\admin.py:599
 msgid "Channel id has been set"
 msgstr "채널 아이디가 설정되었습니다"
 
-#: commands\admin.py:617
+#: commands\admin.py:605
 #, docstring
 msgid "Toggle whether questions need to end with **__?__**"
 msgstr "질문이 **__?__**로 끝나야 하는지 전환하기"
 
-#: commands\admin.py:621
+#: commands\admin.py:609
 msgid "Questions will be answered regardless of if they end with **?**"
 msgstr "질문이 **?**로 끝나는지 여부와 관계없이 답변이 제공됩니다"
 
-#: commands\admin.py:624
+#: commands\admin.py:612
 msgid "Questions must end in **?** to be answered"
 msgstr "질문은 **?**로 끝나야 답변할 수 있습니다"
 
-#: commands\admin.py:629
+#: commands\admin.py:617
 #, docstring
 msgid "Toggle the assistant on or off"
 msgstr "어시스턴트를 켜거나 끄십시오"
 
-#: commands\admin.py:633
+#: commands\admin.py:621
 msgid "The assistant is now **Disabled**"
 msgstr "보조원은 지금 **비활성화**되었습니다"
 
-#: commands\admin.py:636
+#: commands\admin.py:624
 msgid "The assistant is now **Enabled**"
 msgstr "어시스턴트가 지금 **활성화**되었습니다"
 
-#: commands\admin.py:641
+#: commands\admin.py:629
 #, docstring
 msgid "Toggle whether to ping the user on replies"
 msgstr "사용자에게 답변 시 핑 여부를 전환하세요"
 
-#: commands\admin.py:645
+#: commands\admin.py:633
 msgid "Mentions are now **Disabled**"
 msgstr "이제 멘션은 **비활성화**되었습니다"
 
-#: commands\admin.py:648
+#: commands\admin.py:636
 msgid "Mentions are now **Enabled**"
 msgstr "이제 멘션은 **활성화**되었습니다"
 
-#: commands\admin.py:653
+#: commands\admin.py:641
 #, docstring
 msgid "\n"
 "        Set the max messages for a conversation\n\n"
@@ -564,19 +575,19 @@ msgstr "\n"
 "대화 보존을 비활성화하려면 0으로 설정하세요.\n\n"
 "**참고:** *API 호출 중에 실제 메시지 수가 최대 보존을 초과할 수 있습니다*        "
 
-#: commands\admin.py:666 commands\admin.py:1578
+#: commands\admin.py:654 commands\admin.py:1561
 msgid "Max retention needs to be at least 0 or higher"
 msgstr "최대 보존 기간은 최소 0 이상이어야 합니다"
 
-#: commands\admin.py:670
+#: commands\admin.py:658
 msgid "Conversation retention has been disabled"
 msgstr "대화 보존 기능이 비활성화되었습니다"
 
-#: commands\admin.py:673
+#: commands\admin.py:660
 msgid "Conversations can now retain up to **{}** messages"
 msgstr "이제 대화에 최대 **{}**개의 메시지를 보관할 수 있습니다"
 
-#: commands\admin.py:679
+#: commands\admin.py:665
 #, docstring
 msgid "\n"
 "        Set the conversation expiration time\n\n"
@@ -589,36 +600,87 @@ msgstr "대화 만료 시간 설정\n\n"
 "이는 사용자와 봇 간의 모든 대화에 적용됩니다.\n\n"
 "대화를 영구히 저장하려면 0으로 설정하거나 봇을 다시 시작하거나 코그를 다시로드하면 저장됩니다.        "
 
-#: commands\admin.py:688 commands\admin.py:1605
+#: commands\admin.py:674 commands\admin.py:1584
 msgid "Max retention time needs to be at least 0 or higher"
 msgstr "최대 보존 시간은 최소 0 이상이어야 합니다"
 
-#: commands\admin.py:693
+#: commands\admin.py:678
 msgid "Conversations will be stored until the bot restarts or the cog is reloaded"
 msgstr "대화는 봇이 다시 시작되거나 코그가 다시로드될 때까지 저장됩니다"
 
-#: commands\admin.py:697
+#: commands\admin.py:680
 msgid "Conversations will be considered active for **{}** seconds"
 msgstr "대화는 **{}**초 동안 활성 상태로 간주됩니다"
 
-#: commands\admin.py:705
+#: commands\admin.py:685
 #, docstring
 msgid "\n"
-"        Set the temperature for the model (0.0 - 2.0)\n\n"
+"        Set the temperature for the model (0.0 - 2.0)\n"
+"        - Defaults is 1\n\n"
 "        Closer to 0 is more concise and accurate while closer to 2 is more imaginative\n"
 "        "
-msgstr "모델의 온도를 설정하세요 (0.0 - 2.0)\n\n"
-"0에 가까울수록 더 간결하고 정확하며, 2에 가까울수록 더 상상력이 풍부합니다               "
+msgstr ""
 
-#: commands\admin.py:711
+#: commands\admin.py:692
 msgid "Temperature must be between **0.0** and **2.0**"
 msgstr "온도는 **0.0**에서 **2.0** 사이여야 합니다"
 
-#: commands\admin.py:716
+#: commands\admin.py:697
 msgid "Temperature has been set to **{}**"
 msgstr "온도가 **{}**로 설정되었습니다"
 
-#: commands\admin.py:720
+#: commands\admin.py:701
+#, docstring
+msgid "\n"
+"        Set the frequency penalty for the model (-2.0 to 2.0)\n"
+"        - Defaults is 0\n\n"
+"        Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:708
+msgid "Frequency penalty must be between **-2.0** and **2.0**"
+msgstr ""
+
+#: commands\admin.py:713
+msgid "Frequency penalty has been set to **{}**"
+msgstr ""
+
+#: commands\admin.py:717
+#, docstring
+msgid "\n"
+"        Set the presence penalty for the model (-2.0 to 2.0)\n"
+"        - Defaults is 0\n\n"
+"        Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:724
+msgid "Presence penalty must be between **-2.0** and **2.0**"
+msgstr ""
+
+#: commands\admin.py:729
+msgid "Presence penalty has been set to **{}**"
+msgstr ""
+
+#: commands\admin.py:733
+#, docstring
+msgid "\n"
+"        Make the model more deterministic by setting a seed for the model.\n"
+"        - Default is None\n\n"
+"        If specified, the system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:740
+msgid "Seed must be a positive integer"
+msgstr ""
+
+#: commands\admin.py:744
+msgid "The seed has been set to **{}**"
+msgstr ""
+
+#: commands\admin.py:748
 #, docstring
 msgid "\n"
 "        Refresh embedding weights\n\n"
@@ -629,15 +691,15 @@ msgstr "임베딩 가중치를 새로 고침합니다.\n\n"
 "*이 명령은 자체 호스팅 llm에서 사용하는 임베딩 방법을 변경할 때 사용할 수 있습니다.*\n\n"
 "OpenAI로 생성된 임베딩은 자체 호스팅 모델과 호환되지 않으며 그 반대의 경우도 마찬가지입니다.        "
 
-#: commands\admin.py:733
+#: commands\admin.py:761
 msgid "{} embeddings have been updated"
 msgstr "{} 임베딩이 업데이트되었습니다"
 
-#: commands\admin.py:735
+#: commands\admin.py:763
 msgid "No embeddings needed to be refreshed"
 msgstr "임베딩을 새로 고칠 필요가 없습니다"
 
-#: commands\admin.py:739
+#: commands\admin.py:767
 #, docstring
 msgid "Toggle whether GPT can call functions\n\n"
 "        Only the following models can call functions at the moment (With OpenAI key only)\n"
@@ -652,15 +714,15 @@ msgstr "현재 다음 모델들만 함수를 호출할 수 있습니다 (OpenAI 
 "- gpt-4\n"
 "- gpt-4-32k               "
 
-#: commands\admin.py:750
+#: commands\admin.py:778
 msgid "Assistant will not call functions"
 msgstr "번역할 수 없습니다. 저는 함수를 호출할 수 없습니다. 저는 번역된 텍스트만 제공할 수 있습니다. 어떤 다른 질문이 있으신가요?"
 
-#: commands\admin.py:753
+#: commands\admin.py:781
 msgid "Assistant will now call functions as needed"
 msgstr "번역을 시작하겠습니다"
 
-#: commands\admin.py:758
+#: commands\admin.py:786
 #, docstring
 msgid "Set the maximum function calls allowed in a row\n\n"
 "        This sets how many times the model can call functions in a row\n\n"
@@ -677,15 +739,15 @@ msgstr "연속으로 함수를 호출할 수 있는 최대 횟수를 설정합�
 "- gpt-4\n"
 "- gpt-4-32k        "
 
-#: commands\admin.py:771
+#: commands\admin.py:799
 msgid "Function calls will not be used since recursion is 0"
 msgstr "재귀가 0이므로 함수 호출은 사용되지 않습니다"
 
-#: commands\admin.py:773
+#: commands\admin.py:801
 msgid "The model can now call various functions up to {} times before returning a response"
 msgstr "모델은 응답을 반환하기 전에 최대 {}번까지 다양한 함수를 호출할 수 있습니다"
 
-#: commands\admin.py:781
+#: commands\admin.py:807
 #, docstring
 msgid "\n"
 "        set min character length for questions\n\n"
@@ -694,19 +756,19 @@ msgid "\n"
 msgstr "질문에 대한 최소 문자 길이를 설정하세요.\n\n"
 "0으로 설정하면 모든 것에 대해 응답합니다.               "
 
-#: commands\admin.py:787
+#: commands\admin.py:813
 msgid "Minimum length needs to be at least 0 or higher"
 msgstr "최소 길이는 0 이상이어야 합니다"
 
-#: commands\admin.py:792
+#: commands\admin.py:817
 msgid "{} will respond regardless of message length"
 msgstr "{}는 메시지의 길이에 관계없이 응답합니다"
 
-#: commands\admin.py:796
+#: commands\admin.py:820
 msgid "{} will respond to messages with more than **{}** characters"
 msgstr "{}는 **{}**자 이상의 메시지에 응답할 것입니다"
 
-#: commands\admin.py:804
+#: commands\admin.py:828
 #, docstring
 msgid "\n"
 "        Set the max tokens that the bot will send to the model\n\n"
@@ -723,17 +785,17 @@ msgstr "모델이 전송할 수 있는 최대 토큰 수를 설정하세요.\n\n
 "- 이상적으로는 모델의 최대값보다 500개 더 적게 최대값을 설정하여 적절한 응답을 허용하세요.\n\n"
 "모델이 처리할 수 있는 것보다 많이 사용하면 예외가 발생합니다.               "
 
-#: commands\admin.py:815 commands\admin.py:1521
+#: commands\admin.py:839 commands\admin.py:1512
 msgid "Use at least 100 tokens"
 msgstr "최소 100개의 토큰을 사용하세요"
 
-#: commands\admin.py:818
+#: commands\admin.py:842
 msgid "The maximum amount of tokens sent in a payload will be {}.\n"
 "*Note that models with token limits lower than this will still be trimmed*"
 msgstr "페이로드로 전송되는 토큰의 최대 양은 {}입니다.\n"
 "*참고로, 이보다 낮은 토큰 제한을 가진 모델은 여전히 잘릴 수 있습니다.*"
 
-#: commands\admin.py:827
+#: commands\admin.py:851
 #, docstring
 msgid "\n"
 "        Set the max response tokens the model can respond with\n\n"
@@ -742,51 +804,26 @@ msgid "\n"
 msgstr "모델이 응답할 수 있는 최대 응답 토큰을 설정하세요.\n\n"
 "응답 토큰을 동적으로 설정하려면 0으로 설정하세요.               "
 
-#: commands\admin.py:833 commands\admin.py:1549
+#: commands\admin.py:857 commands\admin.py:1538
 msgid "Cannot be a negative number!"
 msgstr "음수일 수 없습니다!"
 
-#: commands\admin.py:837
+#: commands\admin.py:861
 msgid "The maximum amount of tokens in the models responses will be {}."
 msgstr "모델의 응답에서 토큰의 최대 개수는 {}입니다."
 
-#: commands\admin.py:841
+#: commands\admin.py:863
 msgid "Response tokens will now be dynamic"
 msgstr "응답 토큰은 이제 동적으로 될 것입니다"
 
-#: commands\admin.py:847
+#: commands\admin.py:869
 #, docstring
 msgid "\n"
-"        Set the OpenAI model to use\n\n"
-"        Valid models and their context info:\n"
-"        - Model-Name: MaxTokens, ModelType\n"
-"        - gpt-3.5-turbo: 4096, chat\n"
-"        - gpt-3.5-turbo-16k: 16384, chat\n"
-"        - gpt-4: 8192, chat\n"
-"        - gpt-4-32k: 32768, chat\n"
-"        - code-davinci-002: 8001, chat\n"
-"        - text-davinci-003: 4097, completion\n"
-"        - text-davinci-002: 4097, completion\n"
-"        - text-curie-001: 2049, completion\n"
-"        - text-babbage-001: 2049, completion\n"
-"        - text-ada-001: 2049, completion\n\n"
-"        Other sub-models are also included\n"
+"        Set the OpenAI model to use\n"
 "        "
-msgstr "유효한 모델과 해당 컨텍스트 정보:\n"
-"- 모델 이름: MaxTokens, ModelType\n"
-"- gpt-3.5-turbo: 4096, 채팅\n"
-"- gpt-3.5-turbo-16k: 16384, 채팅\n"
-"- gpt-4: 8192, 채팅\n"
-"- gpt-4-32k: 32768, 채팅\n"
-"- code-davinci-002: 8001, 채팅\n"
-"- text-davinci-003: 4097, 완성\n"
-"- text-davinci-002: 4097, 완성\n"
-"- text-curie-001: 2049, 완성\n"
-"- text-babbage-001: 2049, 완성\n"
-"- text-ada-001: 2049, 완성\n\n"
-"다른 하위 모델도 포함되어 있습니다.               "
+msgstr ""
 
-#: commands\admin.py:866
+#: commands\admin.py:877 commands\admin.py:1478
 msgid "**Chat**\n"
 "{}\n"
 "**Completion**\n"
@@ -796,56 +833,55 @@ msgstr "**채팅**\n"
 "**완료**\n"
 "{}\n"
 
-#: commands\admin.py:871
+#: commands\admin.py:880 commands\admin.py:1481
 msgid "Valid models are:\n"
 "{}"
 msgstr "유효한 모델은 다음과 같습니다:\n"
 "{}"
 
-#: commands\admin.py:881 commands\admin.py:1496
-msgid "This model is not available for the API key provided!"
-msgstr "이 모델은 제공된 API 키로 사용할 수 없습니다!"
+#: commands\admin.py:887 commands\admin.py:1488
+msgid "Error: {}"
+msgstr ""
 
-#: commands\admin.py:885
-msgid "Invalid model type! Available model types are:\n"
-"{}"
-msgstr "잘못된 모델 유형입니다! 사용 가능한 모델 유형은 다음과 같습니다:\n"
-"{}"
-
-#: commands\admin.py:889
+#: commands\admin.py:891
 msgid "The **{}** model will now be used"
 msgstr "**{}** 모델이 이제 사용될 것입니다"
 
-#: commands\admin.py:894
+#: commands\admin.py:896
 #, docstring
 msgid "\n"
 "        Set a custom endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api)\n\n"
-"        Example: `http://localhost:8000/v1`\n"
+"        Example: `http://localhost:8000/v1`\n\n"
+"        Endpoint overrides will not be used if there is an API key set.\n"
 "        "
-msgstr "[x]http://localhost:8000/v1[x]를 사용하도록 사용자 정의 엔드포인트를 설정하세요. [self-hosted model](https://github.com/vertyco/gpt-api)을 사용합니다. 예시: `http://localhost:8000/v1`        "
+msgstr ""
 
-#: commands\admin.py:902 commands\admin.py:922
+#: commands\admin.py:904 commands\admin.py:929
+msgid "Invalid URL, must start with `http`"
+msgstr ""
+
+#: commands\admin.py:908 commands\admin.py:932
 msgid "Endpoint has been reset!"
 msgstr "엔드포인트가 재설정되었습니다!"
 
-#: commands\admin.py:905 commands\admin.py:925
+#: commands\admin.py:911 commands\admin.py:935
 msgid "Endpoint has been overwritten!"
 msgstr "엔드포인트가 덮어쓰여졌습니다!"
 
-#: commands\admin.py:908 commands\admin.py:928
+#: commands\admin.py:914 commands\admin.py:938
 msgid "Endpoint has been set!"
 msgstr "엔드포인트가 설정되었습니다!"
 
-#: commands\admin.py:915
+#: commands\admin.py:921
 #, docstring
 msgid "\n"
 "        Set a custom global endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api) for all guilds as a fallback\n\n"
-"        Example: `http://localhost:8000/v1`\n"
+"        Example: `http://localhost:8000/v1`\n\n"
+"        Endpoint overrides will not be used if there is an API key set.\n"
 "        "
-msgstr "모든 길드에 대해 [자체 호스팅 모델](https://github.com/vertyco/gpt-api)을 대체로 사용하도록 사용자 지정 글로벌 엔드포인트를 설정하세요.\n\n"
-"예시: `http://localhost:8000/v1`        "
+msgstr ""
 
-#: commands\admin.py:935
+#: commands\admin.py:945
 #, docstring
 msgid "\n"
 "        Wipe saved embeddings for the assistant\n\n"
@@ -854,15 +890,15 @@ msgid "\n"
 msgstr "어시스턴트의 저장된 임베딩을 지웁니다.\n\n"
 "이 작업은 어시스턴트의 모든 저장된 임베딩 훈련 데이터를 삭제합니다.               "
 
-#: commands\admin.py:941 commands\admin.py:1744
+#: commands\admin.py:951 commands\admin.py:1716
 msgid "Not wiping embedding data"
 msgstr "임베딩 데이터를 지우지 않음"
 
-#: commands\admin.py:944
+#: commands\admin.py:954
 msgid "All embedding data has been wiped!"
 msgstr "모든 임베딩 데이터가 삭제되었습니다!"
 
-#: commands\admin.py:949
+#: commands\admin.py:959
 #, docstring
 msgid "\n"
 "        Wipe saved conversations for the assistant in this server\n\n"
@@ -871,15 +907,15 @@ msgid "\n"
 msgstr "이 서버에서 어시스턴트의 저장된 대화 기록을 삭제합니다.\n\n"
 "이로 인해 어시스턴트의 모든 저장된 대화가 삭제됩니다.        "
 
-#: commands\admin.py:955 commands\admin.py:1717
+#: commands\admin.py:965 commands\admin.py:1689
 msgid "Not wiping conversations"
 msgstr "대화를 지우지 않습니다"
 
-#: commands\admin.py:959
+#: commands\admin.py:969
 msgid "Conversations have been wiped in this server!"
 msgstr "이 서버에서 대화가 삭제되었습니다!"
 
-#: commands\admin.py:964
+#: commands\admin.py:974
 #, docstring
 msgid "\n"
 "        Set the embedding inclusion amout\n\n"
@@ -888,19 +924,19 @@ msgid "\n"
 msgstr "임베딩 포함량을 설정하세요.\n\n"
 "상위 N은 초기 프롬프트와 함께 포함할 임베딩의 양입니다.        "
 
-#: commands\admin.py:970
+#: commands\admin.py:980
 msgid "Top N must be between 0 and 10"
 msgstr "상위 N은 0에서 10 사이여야 합니다"
 
-#: commands\admin.py:974
+#: commands\admin.py:984
 msgid "Embeddings will not be pulled during conversations"
 msgstr "대화 중에는 임베딩이 당겨지지 않습니다"
 
-#: commands\admin.py:977
+#: commands\admin.py:986
 msgid "Up to **{}** embeddings will be pulled for each interaction"
 msgstr "각 상호작용에 대해 최대 **{}**개의 임베딩이 가져옵니다"
 
-#: commands\admin.py:983
+#: commands\admin.py:991
 #, docstring
 msgid "\n"
 "        Set the minimum relatedness an embedding must be to include with the prompt\n\n"
@@ -913,32 +949,32 @@ msgstr "임베딩이 프롬프트와 함께 포함해야 하는 최소 관련성
 "질문은 임베딩으로 변환되고 저장된 임베딩과 비교하여 가장 관련성이 높은 것을 가져오는데, 이 비교에서 파생되는 점수가 바로 이 점수입니다.\n\n"
 "**힌트**: 1에 가까울수록 결과가 더 결정적이고 정확할 수 있지만, 너무 엄격하지 않으면 결과가 나오지 않을 수 있습니다.               "
 
-#: commands\admin.py:993
+#: commands\admin.py:1001
 msgid "Minimum relatedness must be between 0 and 1"
 msgstr "최소 연관성은 0에서 1 사이여야 합니다"
 
-#: commands\admin.py:996
+#: commands\admin.py:1004
 msgid "Minimum relatedness has been set to **{}**"
 msgstr "최소 관련성이 **{}**로 설정되었습니다"
 
-#: commands\admin.py:1001
+#: commands\admin.py:1009
 #, docstring
 msgid "Remove certain words/phrases in the bot's responses"
 msgstr "I apologize for any confusion. I will make sure to revise the translation to maintain the core meaning of the source text and avoid adding any unwarranted extra content. Please provide the text you would like me to translate, and I will provide the updated translation"
 
-#: commands\admin.py:1005
+#: commands\admin.py:1013
 msgid "That regex is invalid"
 msgstr "그 정규식은 유효하지 않습니다"
 
-#: commands\admin.py:1009
+#: commands\admin.py:1017
 msgid "`{}` has been **Removed** from the blacklist"
 msgstr "`{}`가 블랙리스트에서 **삭제됨**되었습니다"
 
-#: commands\admin.py:1012
+#: commands\admin.py:1020
 msgid "`{}` has been **Added** to the blacklist"
 msgstr "`{}`가 블랙리스트에 **추가**되었습니다"
 
-#: commands\admin.py:1017
+#: commands\admin.py:1025
 #, docstring
 msgid "\n"
 "        Toggle whether failed regex blocks the assistant's reply\n\n"
@@ -949,15 +985,15 @@ msgstr "대화 도중 실패한 정규식이 대화 도우미의 응답을 차�
 "일부 정규식은 [파괴적인 되풀이](https://www.rexegg.com/regex-explosive-quantifiers.html)를 일으킬 수 있습니다.\n"
 "대화 도우미는 이런 경우에 안전하게 처리할 수 있으며 계속 진행하거나 응답을 차단할 수 있습니다.        "
 
-#: commands\admin.py:1026
+#: commands\admin.py:1034
 msgid "If a regex blacklist fails, the bots reply will be blocked"
 msgstr "정규식 블랙리스트가 실패하면 봇의 응답이 차단됩니다"
 
-#: commands\admin.py:1029
+#: commands\admin.py:1037
 msgid "If a reges blacklist fails, the bot will still reply"
 msgstr "레지스 블랙리스트가 실패하더라도 봇은 여전히 응답합니다"
 
-#: commands\admin.py:1034
+#: commands\admin.py:1042
 #, docstring
 msgid "\n"
 "        Cycle between embedding methods\n\n"
@@ -973,19 +1009,19 @@ msgstr "임베딩 방법 사이를 순환합니다.\n\n"
 "**하이브리드** 임베딩은 첫 번째 임베딩이 대화에 저장되고 나머지는 동적으로 조합되어 토큰 사용량을 약간 절약합니다.\n\n"
 "동적 임베딩은 Q&A에 유용하지만 임베딩에서 가져온 컨텍스트를 유지해야 하는 채팅에는 그렇게 유용하지 않습니다. 하이브리드 방법은 좋은 중간 지점입니다.               "
 
-#: commands\admin.py:1049
+#: commands\admin.py:1057
 msgid "Embedding method has been set to **Static**"
 msgstr "임베딩 방법이 정적(Static)으로 설정되었습니다"
 
-#: commands\admin.py:1052
+#: commands\admin.py:1060
 msgid "Embedding method has been set to **Hybrid**"
 msgstr "임베딩 방법이 **Hybrid**으로 설정되었습니다"
 
-#: commands\admin.py:1055
+#: commands\admin.py:1063
 msgid "Embedding method has been set to **Dynamic**"
 msgstr "임베딩 방법이 동적으로 설정되었습니다"
 
-#: commands\admin.py:1060
+#: commands\admin.py:1068
 #, docstring
 msgid "Import embeddings to use with the assistant\n\n"
 "        Args:\n"
@@ -997,23 +1033,23 @@ msgstr "어시스턴트에 사용할 임베딩을 가져옵니다.\n\n"
 "- overwrite (bool): 기존 항목 이름과 임베딩을 덮어쓸지 여부\n\n"
 "이는 엑셀 파일도 읽을 수 있습니다.        "
 
-#: commands\admin.py:1073
+#: commands\admin.py:1081
 msgid "You must attach **.csv** files to this command or reference a message that has them!"
 msgstr "이 명령에는 **.csv** 파일을 첨부하거나 해당 파일이 있는 메시지를 참조해야 합니다!"
 
-#: commands\admin.py:1089 commands\admin.py:1176
+#: commands\admin.py:1094 commands\admin.py:1173
 msgid "Error reading **{}**: {}"
 msgstr "**{}** 읽기 오류: {}"
 
-#: commands\admin.py:1098
+#: commands\admin.py:1102
 msgid "**{}** contains invalid formatting, columns must be "
 msgstr "**{}** 유효한 형식이 아닙니다. 열은 이어져야 합니다 "
 
-#: commands\admin.py:1108
+#: commands\admin.py:1110
 msgid "There are no valid files to import!"
 msgstr "유효한 가져올 파일이 없습니다!"
 
-#: commands\admin.py:1110
+#: commands\admin.py:1112
 msgid "Processing the following files in the background\n"
 "{}"
 msgstr "다음 파일을 백그라운드에서 처리 중입니다. {}"
@@ -1055,21 +1091,21 @@ msgstr "어시스턴트에 사용할 임베딩을 가져옵니다.\n\n"
 "인수:\n"
 "- overwrite (bool): 기존 항목 이름과 임베딩을 덮어쓸지 여부        "
 
-#: commands\admin.py:1161 commands\admin.py:1699
+#: commands\admin.py:1161 commands\admin.py:1673
 msgid "You must attach **.json** files to this command or reference a message that has them!"
 msgstr "이 명령에는 **.json** 파일을 첨부하거나 해당 파일을 참조해야 합니다!"
 
-#: commands\admin.py:1188
+#: commands\admin.py:1184
 msgid "Failed to import **{}** because it contains invalid formatting!"
 msgstr "잘못된 형식을 포함하여 **{}**를 가져올 수 없습니다!"
 
-#: commands\admin.py:1195
+#: commands\admin.py:1189
 msgid "Imported the following files: `{}`\n"
 "{} embeddings imported"
 msgstr "다음 파일을 가져왔습니다: `{}`\n"
 "{} 임베딩이 가져와졌습니다"
 
-#: commands\admin.py:1204
+#: commands\admin.py:1198
 #, docstring
 msgid "Export embeddings to a .csv file\n\n"
 "        **Note:** csv exports do not include the embedding values\n"
@@ -1077,29 +1113,29 @@ msgid "Export embeddings to a .csv file\n\n"
 msgstr "임베딩을 .csv 파일로 내보내기\n\n"
 "**참고:** csv 내보내기에는 임베딩 값이 포함되지 않습니다        "
 
-#: commands\admin.py:1210 commands\admin.py:1254
+#: commands\admin.py:1204 commands\admin.py:1248
 msgid "There are no embeddings to export!"
 msgstr "내보낼 임베딩이 없습니다!"
 
-#: commands\admin.py:1223 commands\admin.py:1243 commands\admin.py:1262
-#: commands\admin.py:1282 commands\admin.py:1685
+#: commands\admin.py:1217 commands\admin.py:1237 commands\admin.py:1256
+#: commands\admin.py:1276 commands\admin.py:1659
 msgid "Here is your embeddings export!"
 msgstr "여기에 당신의 임베딩 내보내기가 있습니다!"
 
-#: commands\admin.py:1226 commands\admin.py:1265 commands\admin.py:1667
+#: commands\admin.py:1220 commands\admin.py:1259 commands\admin.py:1641
 msgid "File too large, attempting to compress..."
 msgstr "파일이 너무 크므로 압축을 시도합니다..."
 
-#: commands\admin.py:1246 commands\admin.py:1285 commands\admin.py:1688
+#: commands\admin.py:1240 commands\admin.py:1279 commands\admin.py:1662
 msgid "File is still too large even with compression!"
 msgstr "압축을 해도 파일이 여전히 너무 큽니다!"
 
-#: commands\admin.py:1251
+#: commands\admin.py:1245
 #, docstring
 msgid "Export embeddings to a json file"
 msgstr "임베딩을 json 파일로 내보내세요"
 
-#: commands\admin.py:1293
+#: commands\admin.py:1287
 #, docstring
 msgid "\n"
 "        Manage embeddings for training\n\n"
@@ -1114,7 +1150,7 @@ msgstr "관리 임베딩을 위해\n\n"
 "**참고**\n"
 "이 명령어로 검색어를 입력하면 메뉴를 불러와 해당 임베딩 선택 항목으로 바로 이동할 수 있습니다.               "
 
-#: commands\admin.py:1341
+#: commands\admin.py:1335
 #, docstring
 msgid "\n"
 "        Add custom function calls for Assistant to use\n\n"
@@ -1122,7 +1158,7 @@ msgid "\n"
 "        - [Function Call Docs](https://platform.openai.com/docs/guides/gpt/function-calling)\n"
 "        - [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_with_chat_models.ipynb)\n"
 "        - [JSON Schema Reference](https://json-schema.org/understanding-json-schema/)\n\n"
-"        Only these two models can use function calls as of now:\n"
+"        Only these models can use function calls as of now:\n"
 "        - gpt-3.5-turbo\n"
 "        - gpt-3.5-turbo-16k\n"
 "        - gpt-4\n"
@@ -1140,30 +1176,9 @@ msgid "\n"
 "        ```\n"
 "        Only bot owner can manage this, guild owners can see descriptions but not code\n"
 "        "
-msgstr "Assistant가 사용할 사용자 정의 함수 호출을 추가하세요.\n\n"
-"**읽기**\n"
-"- [함수 호출 문서](https://platform.openai.com/docs/guides/gpt/function-calling)\n"
-"- [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_call_functions_with_chat_models.ipynb)\n"
-"- [JSON 스키마 참조](https://json-schema.org/understanding-json-schema/)\n\n"
-"현재 다음 두 모델만 함수 호출을 사용할 수 있습니다.\n"
-"- gpt-3.5-turbo\n"
-"- gpt-3.5-turbo-16k\n"
-"- gpt-4\n"
-"- gpt-4-32k\n\n"
-"다음 객체들은 키워드 인수로 기본적으로 전달됩니다.\n"
-"- **user**: 현재 채팅 중인 사용자 (discord.Member)\n"
-"- **channel**: 사용자가 채팅 중인 채널 (TextChannel|Thread|ForumChannel)\n"
-"- **guild**: 현재 길드 (discord.Guild)\n"
-"- **bot**: 봇 객체 (Red)\n"
-"- **conf**: Assistant의 구성 모델 (GuildSettings)\n"
-"- 모든 함수는 매개변수에 `*args, **kwargs`를 포함하고 문자열을 반환해야 합니다.\n"
-"```python\n"
-"# sync 또는 async일 수 있습니다.\n"
-"async def func(*args, **kwargs) -> str:\n"
-"```\n"
-"봇 소유자만 관리할 수 있으며, 길드 소유자는 설명을 볼 수 있지만 코드는 볼 수 없습니다.               "
+msgstr ""
 
-#: commands\admin.py:1423
+#: commands\admin.py:1417
 #, docstring
 msgid "\n"
 "        Add/Remove items from the blacklist\n\n"
@@ -1173,15 +1188,15 @@ msgstr "\n"
 "블랙리스트에서 항목을 추가/제거하세요.\n\n"
 "`channel_role_member`는 멤버, 역할, 채널 또는 카테고리 채널이 될 수 있습니다        "
 
-#: commands\admin.py:1432
+#: commands\admin.py:1425
 msgid "{} has been removed from the blacklist"
 msgstr "{} 는 블랙리스트에서 제거되었습니다"
 
-#: commands\admin.py:1437
+#: commands\admin.py:1428
 msgid "{} has been added to the blacklist"
 msgstr "{}는 블랙리스트에 추가되었습니다"
 
-#: commands\admin.py:1451
+#: commands\admin.py:1441
 #, docstring
 msgid "\n"
 "        Add/Remove items from the tutor list.\n\n"
@@ -1193,20 +1208,24 @@ msgstr "\n"
 "OpenAI의 함수 호출 및 튜터와 대화를 사용하는 경우, AI는 나중에 기억하기 위해 자체 임베딩을 생성할 수 있습니다.\n\n"
 "`role_or_member`은 멤버 또는 역할이 될 수 있습니다        "
 
-#: commands\admin.py:1462
+#: commands\admin.py:1451
 msgid "{} has been removed from the tutor list"
 msgstr "{}이(가) 튜터 목록에서 제거되었습니다"
 
-#: commands\admin.py:1466
+#: commands\admin.py:1454
 msgid "{} has been added to the tutor list"
 msgstr "{}가 튜터 목록에 추가되었습니다"
 
-#: commands\admin.py:1471
+#: commands\admin.py:1459
 #, docstring
-msgid "Override settings for specific roles"
-msgstr "특정 역할에 대한 설정 재정의하기"
+msgid "\n"
+"        Override settings for specific roles\n\n"
+"        **NOTE**\n"
+"        If a user has two roles with override settings, override associated with the higher role will be used.\n"
+"        "
+msgstr ""
 
-#: commands\admin.py:1475
+#: commands\admin.py:1468
 #, docstring
 msgid "\n"
 "        Assign a role to use a model\n\n"
@@ -1216,24 +1235,19 @@ msgstr "\n"
 "모델을 사용하기 위해 역할을 할당하십시오.\n\n"
 "*동일한 역할과 모델을 지정하여 재정의를 제거하십시오*        "
 
-#: commands\admin.py:1488
-msgid "Assistant does not support this model yet! Valid model types are\n"
-"{}"
-msgstr "번역 모델을 아직 지원하지 않습니다! 유효한 모델 유형은 다음과 같습니다: {}"
-
-#: commands\admin.py:1501
+#: commands\admin.py:1494
 msgid "Role override for {} removed!"
 msgstr "{}의 역할 재정의가 제거되었습니다!"
 
-#: commands\admin.py:1504
+#: commands\admin.py:1497
 msgid "Role override for {} overwritten!"
 msgstr "역할 재정의가 {}에 덮어쓰였습니다!"
 
-#: commands\admin.py:1507
+#: commands\admin.py:1500
 msgid "Role override for {} added!"
 msgstr "{}에 대한 역할 재정의가 추가되었습니다!"
 
-#: commands\admin.py:1515
+#: commands\admin.py:1506
 #, docstring
 msgid "\n"
 "        Assign a max token override to a role\n\n"
@@ -1243,19 +1257,19 @@ msgstr "\n"
 "역할에 최대 토큰 재정의를 할당하세요.\n\n"
 "*동일한 역할과 토큰 수를 지정하여 재정의를 제거하세요*        "
 
-#: commands\admin.py:1527
+#: commands\admin.py:1518
 msgid "Max token override for {} removed!"
 msgstr "{}에 대한 최대 토큰 재정의가 제거되었습니다!"
 
-#: commands\admin.py:1530
+#: commands\admin.py:1521
 msgid "Max token override for {} overwritten!"
 msgstr "{}에 대한 최대 토큰 재정의가 덮어쓰였습니다!"
 
-#: commands\admin.py:1533
+#: commands\admin.py:1524
 msgid "Max token override for {} added!"
 msgstr "{}에 대한 최대 토큰 재정의가 추가되었습니다!"
 
-#: commands\admin.py:1541
+#: commands\admin.py:1530
 #, docstring
 msgid "\n"
 "        Assign a max response token override to a role\n\n"
@@ -1267,19 +1281,19 @@ msgstr "\n"
 "응답 토큰을 동적으로 사용하려면 0으로 설정하세요\n\n"
 "*동일한 역할과 토큰 수를 지정하여 재정의를 제거하세요*        "
 
-#: commands\admin.py:1556
+#: commands\admin.py:1544
 msgid "Max response token override for {} removed!"
 msgstr "{}에 대한 최대 응답 토큰 재정의가 제거되었습니다!"
 
-#: commands\admin.py:1561
+#: commands\admin.py:1547
 msgid "Max response token override for {} overwritten!"
 msgstr "Max response token override for {} has been overwritten!"
 
-#: commands\admin.py:1565
+#: commands\admin.py:1550
 msgid "Max response token override for {} added!"
 msgstr "{}에 대한 최대 응답 토큰 재정의가 추가되었습니다!"
 
-#: commands\admin.py:1572
+#: commands\admin.py:1555
 #, docstring
 msgid "\n"
 "        Assign a max message retention override to a role\n\n"
@@ -1289,19 +1303,19 @@ msgstr "\n"
 "역할에 최대 메시지 보존 재정의를 할당하세요.\n\n"
 "*동일한 역할과 보존량을 지정하여 재정의를 제거하세요*        "
 
-#: commands\admin.py:1584
+#: commands\admin.py:1567
 msgid "Max retention override for {} removed!"
 msgstr "{}에 대한 최대 보존 재정의가 제거되었습니다!"
 
-#: commands\admin.py:1588
+#: commands\admin.py:1570
 msgid "Max retention override for {} overwritten!"
 msgstr "최대 보존 기간 {}에 대한 재정의가 덮어쓰였습니다!"
 
-#: commands\admin.py:1592
+#: commands\admin.py:1573
 msgid "Max retention override for {} added!"
 msgstr "{}에 대한 최대 보존 재정의가 추가되었습니다!"
 
-#: commands\admin.py:1599
+#: commands\admin.py:1578
 #, docstring
 msgid "\n"
 "        Assign a max retention time override to a role\n\n"
@@ -1311,32 +1325,32 @@ msgstr "\n"
 "역할에 최대 보존 시간 재정의를 할당합니다.\n\n"
 "*동일한 역할과 시간을 지정하여 재정의를 제거합니다.*        "
 
-#: commands\admin.py:1612
+#: commands\admin.py:1590
 msgid "Max retention time override for {} removed!"
 msgstr "{}에 대한 최대 보존 시간 재정의가 제거되었습니다!"
 
-#: commands\admin.py:1617
+#: commands\admin.py:1593
 msgid "Max retention time override for {} overwritten!"
 msgstr "{}에 대한 최대 보존 시간 재정의가 덮어쓰여졌습니다!"
 
-#: commands\admin.py:1621
+#: commands\admin.py:1596
 msgid "Max retention time override for {} added!"
 msgstr "{}에 대한 최대 보존 시간 재정의가 추가되었습니다!"
 
-#: commands\admin.py:1633
+#: commands\admin.py:1608
 #, docstring
 msgid "Wipe all settings and data for entire cog"
 msgstr "전체 코그에 대한 모든 설정 및 데이터를 삭제하세요"
 
-#: commands\admin.py:1635
+#: commands\admin.py:1610
 msgid "Not wiping cog"
 msgstr "톱니바퀴를 닦지 않음"
 
-#: commands\admin.py:1640
+#: commands\admin.py:1615
 msgid "Cog has been wiped!"
 msgstr "코그가 지워졌습니다!"
 
-#: commands\admin.py:1645
+#: commands\admin.py:1620
 #, docstring
 msgid "\n"
 "        Take a backup of the cog\n\n"
@@ -1345,22 +1359,22 @@ msgid "\n"
 msgstr "코그의 백업을 만들어주세요.\n\n"
 "- 이는 대화 데이터를 백업하지 않습니다        "
 
-#: commands\admin.py:1664
+#: commands\admin.py:1638
 msgid "Here is your export!"
 msgstr "여기에 내보내기 파일이 있습니다!"
 
-#: commands\admin.py:1693
+#: commands\admin.py:1667
 #, docstring
 msgid "\n"
 "        Restore the cog from a backup\n"
 "        "
 msgstr "백업에서 코그를 복원하세요               "
 
-#: commands\admin.py:1705
+#: commands\admin.py:1677
 msgid "Cog has been restored!"
 msgstr "코그가 복원되었습니다!"
 
-#: commands\admin.py:1711
+#: commands\admin.py:1683
 #, docstring
 msgid "\n"
 "        Wipe saved conversations for the assistant in all servers\n\n"
@@ -1369,24 +1383,24 @@ msgid "\n"
 msgstr "모든 서버에서 어시스턴트의 저장된 대화를 삭제합니다.        \n\n"
 "이로 인해 어시스턴트의 모든 저장된 대화가 삭제됩니다.        "
 
-#: commands\admin.py:1720
+#: commands\admin.py:1692
 msgid "Conversations have been wiped for all servers!"
 msgstr "모든 서버의 대화가 삭제되었습니다!"
 
-#: commands\admin.py:1726
+#: commands\admin.py:1698
 #, docstring
 msgid "Toggle persistent conversations"
 msgstr "영구 대화 전환"
 
-#: commands\admin.py:1729
+#: commands\admin.py:1701
 msgid "Persistent conversations have been **Disabled**"
 msgstr "지속적인 대화가 **비활성화**되었습니다"
 
-#: commands\admin.py:1732
+#: commands\admin.py:1704
 msgid "Persistent conversations have been **Enabled**"
 msgstr "지속적인 대화가 **활성화**되었습니다"
 
-#: commands\admin.py:1738
+#: commands\admin.py:1710
 #, docstring
 msgid "\n"
 "        Wipe saved embeddings for all servers\n\n"
@@ -1396,11 +1410,11 @@ msgstr "\n"
 "모든 서버의 저장된 임베딩을 지웁니다.        \n\n"
 "이 작업은 어시스턴트의 모든 저장된 임베딩 훈련 데이터를 삭제합니다        "
 
-#: commands\admin.py:1747
+#: commands\admin.py:1719
 msgid "All embedding data has been wiped for all servers!"
 msgstr "모든 서버의 임베딩 데이터가 삭제되었습니다!"
 
-#: commands\admin.py:1753
+#: commands\admin.py:1725
 #, docstring
 msgid "\n"
 "        Toggle whether the assistant listens to other bots\n\n"
@@ -1410,15 +1424,52 @@ msgstr "\n"
 "다른 봇들의 음성을 듣도록 조절하세요.\n\n"
 "**공개 봇에는 권장하지 않습니다!**        "
 
-#: commands\admin.py:1760
+#: commands\admin.py:1732
 msgid "Assistant will no longer listen to other bot messages"
 msgstr "어시스턴트는 더 이상 다른 봇 메시지를 듣지 않을 것입니다"
 
-#: commands\admin.py:1763
+#: commands\admin.py:1735
 msgid "Assistant will listen to other bot messages"
 msgstr "어시스턴트는 다른 봇 메시지를 듣습니다"
 
-#: commands\base.py:36
+#: commands\base.py:23
+#, docstring
+msgid "Get help using assistant"
+msgstr ""
+
+#: commands\base.py:25
+msgid "\n"
+"# How to Use\n\n"
+"### Commands\n"
+"`[p]convostats` - view your conversation message count/token usage for that convo.\n"
+"`[p]clearconvo` - reset your conversation for the current channel/thread/forum.\n"
+"`[p]showconvo` - get a json dump of your current conversation (this is mostly for debugging)\n"
+"`[p]chat` or `[p]ask` - command prefix for chatting with the bot outside of the live chat, or just @ it.\n\n"
+"### Chat Arguments\n"
+"`[p]chat --last` - resend the last message of the conversation.\n"
+"`[p]chat --extract` - extract all markdown text to be sent as a separate message.\n"
+"`[p]chat --outputfile <filename>` - sends the reply as a file instead.\n\n"
+"### Argument Use-Cases\n"
+"`[p]chat --last --outpufile test.py` - output the last message the bot sent as a file.\n"
+"`[p]chat write a python script to do X... --extract --outputfile test.py` - all code blocks from the output will be sent as a file in addition to the reply.\n"
+"`[p]chat --last --extract --outputfile test.py` - extract code blocks from the last message to send as a file.\n\n"
+"### File Comprehension\n"
+"Files may be uploaded with the chat command to be included with the question or query, so rather than pasting snippets, the entire file can be uploaded so that you can ask a question about it.\n"
+"At the moment the bot is capable of reading the following file extensions.\n"
+"```json\n"
+"{}\n"
+"```\n"
+"If a file has no extension it will still try to read it only if it can be decoded to utf-8.\n"
+"### Tips\n"
+"- Replying to someone else's message while using the `[p]chat` command will include their message in *your* conversation, useful if someone says something helpful and you want to include it in your current convo with GPT.\n"
+"- Replying to a message with a file attachment will have that file be read and included in your conversation. Useful if you upload a file and forget to use the chat command with it, or if someone else uploads a file you want to query the bot with.\n"
+"- Conversations are *Per* user *Per* channel, so each channel you interact with GPT in is a different convo.\n"
+"- Talking to the bot like a person rather than a search engine generally yields better results. The more verbose you can be, the better.\n"
+"- Conversations are persistent, if you want the bot to forget the convo so far, use the `[p]clearconvo` command\n"
+"        "
+msgstr ""
+
+#: commands\base.py:83
 #, docstring
 msgid "\n"
 "        Chat with [botname]!\n\n"
@@ -1444,7 +1495,7 @@ msgstr "다음은 수정된 한국어 번역입니다. \n\n"
 "        - `--outputfile hello.py --extract`를 포함하면 코드 블록만 포함된 파일이 출력되고 나머지는 텍스트로 전송됩니다.\n"
 "        - `--extract`을 포함하면 코드가 응답과 별도로 전송됩니다        "
 
-#: commands\base.py:62
+#: commands\base.py:109
 #, docstring
 msgid "\n"
 "        Check the token and message count of yourself or another user's conversation for this channel\n\n"
@@ -1455,11 +1506,11 @@ msgstr "이 채널에서 자신 또는 다른 사용자의 대화의 토큰 및 
 "대화는 사용자 및 채널별로 *개별적으로* 유지되므로 한 채널에서의 대화는 다른 채널에서의 대화와 별도로 메모리에 유지됩니다.\n\n"
 "대화는 봇이 다시 시작되거나 코그가 다시로드될 때까지만 메모리에 저장됩니다.               "
 
-#: commands\base.py:107
+#: commands\base.py:154
 msgid "Could not fetch external model"
 msgstr "외부 모델을 가져올 수 없습니다"
 
-#: commands\base.py:113
+#: commands\base.py:160
 msgid "`Messages: `{}/{}\n"
 "`Tokens:   `{}/{}\n"
 "`Expired:  `{}\n"
@@ -1469,15 +1520,15 @@ msgstr "`메시지: `{}/{}\n"
 "`만료되었습니다: `{}\n"
 "`모델: `{}"
 
-#: commands\base.py:127
+#: commands\base.py:174
 msgid "Conversation stats for {}"
 msgstr "{}의 대화 통계입니다"
 
-#: commands\base.py:131
+#: commands\base.py:177
 msgid "Token limit is a soft cap and excess is trimmed before sending to the api"
 msgstr "토큰 한도는 소프트 캡이며 초과분은 API로 전송하기 전에 잘립니다"
 
-#: commands\base.py:138
+#: commands\base.py:183
 #, docstring
 msgid "\n"
 "        Reset your conversation with the bot\n\n"
@@ -1486,11 +1537,11 @@ msgid "\n"
 msgstr "봇과의 대화를 초기화하시겠습니까?\n\n"
 "이 작업은 이 채널에서 당신과 봇 사이의 모든 메시지 기록을 지웁니다        "
 
-#: commands\base.py:145
+#: commands\base.py:190
 msgid "Your conversation in this channel has been reset!"
 msgstr "이 채널에서의 대화가 초기화되었습니다!"
 
-#: commands\base.py:150
+#: commands\base.py:195
 #, docstring
 msgid "\n"
 "        Fetch related embeddings according to the current settings along with their scores\n\n"
@@ -1499,35 +1550,35 @@ msgid "\n"
 msgstr "현재 설정에 따라 관련 임베딩을 가져와서 점수와 함께 사용할 수 있습니다. \n"
 "귀하의 어시스턴트에 대한 최소 관련성을 세밀하게 조정하는 데 사용할 수 있습니다.               "
 
-#: commands\base.py:157
+#: commands\base.py:202
 msgid "You do not have any embeddings configured!"
 msgstr "임베딩이 구성되어 있지 않습니다!"
 
-#: commands\base.py:159
+#: commands\base.py:204
 msgid "Top N is set to 0 so no embeddings will be returned"
 msgstr "Top N가 0으로 설정되어 있으므로 임베딩이 반환되지 않습니다"
 
-#: commands\base.py:165
+#: commands\base.py:210
 msgid "Failed to get embedding for your query"
 msgstr "쿼리에 대한 임베딩을 가져오지 못했습니다"
 
-#: commands\base.py:170
+#: commands\base.py:214
 msgid "No embeddings could be related to this query with the current settings"
 msgstr "현재 설정으로는 이 쿼리와 관련된 임베딩을 찾을 수 없습니다"
 
-#: commands\base.py:175
+#: commands\base.py:218
 msgid "`Entry Name:  `{}\n"
 msgstr "`항목 이름:  `{}\n"
 
-#: commands\base.py:176
+#: commands\base.py:219
 msgid "`Relatedness: `{}\n"
 msgstr "`관련성: `{}\n"
 
-#: commands\base.py:177
+#: commands\base.py:220
 msgid "`Dimensions:  `{}\n"
 msgstr "`크기:  `{}\n"
 
-#: commands\base.py:189
+#: commands\base.py:232
 #, docstring
 msgid "\n"
 "        View the current transcript of a conversation\n\n"
@@ -1536,11 +1587,11 @@ msgid "\n"
 msgstr "현재 대화의 대본을 확인하세요.\n\n"
 "이는 주로 검열 목적으로 제공됩니다.        "
 
-#: commands\base.py:198
+#: commands\base.py:241
 msgid "You have no conversation in this channel!"
 msgstr "이 채널에는 대화가 없습니다!"
 
-#: commands\base.py:210
+#: commands\base.py:253
 msgid "Here is your conversation transcript!"
 msgstr "여기는 대화 내용입니다!"
 
