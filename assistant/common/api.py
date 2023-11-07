@@ -343,7 +343,7 @@ class API(MixinMeta):
     ):
         model = conf.get_user_model(user)
         if model not in SUPPORTS_VISION:
-            for idx, message in messages:
+            for idx, message in enumerate(messages):
                 if isinstance(message["content"], list):
                     for obj in message["content"]:
                         if obj["type"] != "text":
