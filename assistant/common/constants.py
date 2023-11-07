@@ -16,6 +16,7 @@ MODELS = {
     "gpt-4-32k-0613": 32768,
     "gpt-4-1106-preview": 128000,
     "gpt-4-vision-preview": 128000,
+    "gpt-4-1106-vision-preview": 128000,
     "code-davinci-002": 8001,
     "text-davinci-003": 4097,
     "text-davinci-002": 4097,
@@ -39,6 +40,7 @@ PRICES = {
     "gpt-4-0301": [0.03, 0.06],
     "gpt-4-0613": [0.03, 0.06],
     "gpt-4-1106-preview": [0.01, 0.03],
+    "gpt-4-vision-preview": [0.01, 0.03],
     "gpt-4-1106-vision-preview": [0.01, 0.03],
     "gpt-4-32k": [0.06, 0.12],
     "gpt-4-32k-0301": [0.06, 0.12],
@@ -56,8 +58,12 @@ MODELS_1106 = [
     "gpt-3.5-turbo-1106",
     "gpt-4-1106-preview",
     "gpt-4-vision-preview",
+    "gpt-4-1106-vision-preview",
 ]
-SUPPORTS_VISION = ["gpt-4-vision-preview"]
+SUPPORTS_VISION = [
+    "gpt-4-vision-preview",
+    "gpt-4-1106-vision-preview",
+]
 SUPPORTS_FUNCTIONS = [
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-0613",
@@ -86,6 +92,7 @@ CHAT = [
     "gpt-4-32k-0613",
     "gpt-4-1106-preview",
     "gpt-4-vision-preview",
+    "gpt-4-1106-vision-preview",
     "code-davinci-002",
 ]
 COMPLETION = [
