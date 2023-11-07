@@ -144,23 +144,26 @@ def get_attachments(ctx) -> List[discord.Attachment]:
 
 
 def get_leaderboard(
-    ctx: commands.Context, settings: dict, stat: str, lbtype: str
+    ctx: commands.Context,
+    settings: dict,
+    stat: str,
+    lbtype: str,
+    is_global: bool,
 ) -> Union[List[discord.Embed], str]:
     if lbtype == "weekly":
         lb = settings["weekly"]["users"]
-        title = _("Weekly ")
+        title = _("Global Weekly ") if is_global else _("Weekly ")
     else:
         lb = settings["users"]
-        title = _("LevelUp ")
+        title = _("Global LevelUp ") if is_global else _("LevelUp ")
 
         if "xp" in stat.lower():
             lb = {uid: data.copy() for uid, data in settings["users"].items()}
-            prestige_req = settings["prestige"]
-            for uid, data in lb.items():
-                if prestige := data["prestige"]:
-                    data["xp"] += prestige * get_xp(
-                        prestige_req, settings["base"], settings["exp"]
-                    )
+            if prestige_req := settings.get("prestige"):
+                # If this isnt pulled its global lb
+                for uid, data in lb.items():
+                    if prestige := data["prestige"]:
+                        data["xp"] += prestige * get_xp(prestige_req, settings["base"], settings["exp"])
 
     if "v" in stat.lower():
         sorted_users = sorted(lb.items(), key=lambda x: x[1]["voice"], reverse=True)
@@ -228,7 +231,7 @@ def get_leaderboard(
         txt = ""
         for i in range(start, stop, 1):
             uid = sorted_users[i][0]
-            user_obj = ctx.guild.get_member(int(uid))
+            user_obj = ctx.guild.get_member(int(uid)) or ctx.bot.get_user(int(uid))
             user = user_obj.name if user_obj else uid
             data = sorted_users[i][1]
 
@@ -247,7 +250,8 @@ def get_leaderboard(
                     stat = str(round(v))
 
                 if key == "xp" and lbtype != "weekly":
-                    stat += f" 🎖{data['level']}"
+                    if lvl := data.get("level"):
+                        stat += f" 🎖{lvl}"
 
             txt += f"{place}. {user} ({stat})\n"
 

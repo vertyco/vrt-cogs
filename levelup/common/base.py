@@ -1031,13 +1031,21 @@ class UserCommands(MixinMeta, ABC):
     @commands.command(name="lvltop", aliases=["topstats", "membertop", "topranks"])
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
-    async def leaderboard(self, ctx: commands.Context, stat: Optional[str]):
+    async def leaderboard(
+        self,
+        ctx: commands.Context,
+        stat: Optional[str] = None,
+        global_stats: Optional[bool] = False,
+    ):
         """
         View the Leaderboard
 
         **Arguments**
         `stat`: What kind of stat to display the weekly leaderboard for
-        Valid options are `exp`, `messages`, and `voice`
+        - Valid options are `exp`, `messages`, and `voice`
+
+        `global_stats`: Include stats for all servers.
+
         Abbreviations of those arguments may also be used
         """
         if not stat:
@@ -1045,10 +1053,27 @@ class UserCommands(MixinMeta, ABC):
         if "star" in stat.lower():
             txt = _("Use the `") + str(ctx.clean_prefix) + _("startop` command for that")
             return await ctx.send(txt)
-        conf = self.data[ctx.guild.id]
+
+        if global_stats:
+            conf = {"users": {}, "weekly": {"users": {}}}
+            for data in self.data.values():
+                # Load user stats
+                for uid, stats in data["users"].items():
+                    if uid in conf["users"]:
+                        conf["users"][uid]["xp"] += stats["xp"]
+                        conf["users"][uid]["voice"] += stats["voice"]
+                        conf["users"][uid]["messages"] += stats["messages"]
+                    else:
+                        conf["users"][uid] = {
+                            "xp": stats["xp"],
+                            "voice": stats["voice"],
+                            "messages": stats["messages"],
+                        }
+        else:
+            conf = self.data[ctx.guild.id]
 
         async with ctx.typing():
-            embeds = await asyncio.to_thread(get_leaderboard, ctx, conf, stat, "normal")
+            embeds = await asyncio.to_thread(get_leaderboard, ctx, conf, stat, "normal", global_stats)
         if isinstance(embeds, str):
             return await ctx.send(embeds)
         if not embeds:
@@ -1063,9 +1088,24 @@ class UserCommands(MixinMeta, ABC):
     @commands.command(name="startop", aliases=["starlb"])
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
-    async def star_leaderboard(self, ctx: commands.Context):
+    async def star_leaderboard(
+        self,
+        ctx: commands.Context,
+        global_stars: Optional[bool] = False,
+    ):
         """View the star leaderboard"""
-        conf = self.data[ctx.guild.id]
+        if global_stars:
+            conf = {"users": {}, "weekly": {"users": {}}}
+            for data in self.data.values():
+                # Load user stats
+                for uid, stats in data["users"].items():
+                    if uid in conf["users"]:
+                        conf["users"][uid]["stars"] += stats["stars"]
+                    else:
+                        conf["users"][uid] = {"stars": stats["stars"]}
+        else:
+            conf = self.data[ctx.guild.id]
+
         embeds = []
         leaderboard = {}
         total_stars = 0
@@ -1095,7 +1135,7 @@ class UserCommands(MixinMeta, ABC):
         pages = math.ceil(len(sorted_users) / 10)
         start = 0
         stop = 10
-        title = _("Star Leaderboard")
+        title = _("Global Star Leaderboard") if global_stars else _("Star Leaderboard")
         base_desc = _("Total ⭐'s: {}\n").format(f"`{humanize_number(total_stars)}`")
 
         for p in range(pages):
@@ -1104,7 +1144,7 @@ class UserCommands(MixinMeta, ABC):
             txt = ""
             for i in range(start, stop, 1):
                 uid = sorted_users[i][0]
-                user = ctx.guild.get_member(int(uid))
+                user = ctx.guild.get_member(int(uid)) or self.bot.get_user(int(uid))
                 if user:
                     user = user.name
                 else:
@@ -1138,23 +1178,49 @@ class UserCommands(MixinMeta, ABC):
     @commands.command(name="weekly")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
-    async def weekly_lb(self, ctx: commands.Context, stat: Optional[str]):
+    async def weekly_lb(
+        self,
+        ctx: commands.Context,
+        stat: Optional[str] = None,
+        global_stats: Optional[bool] = False,
+    ):
         """
         View the weekly leaderboard
 
         **Arguments**
         `stat`: What kind of stat to display the weekly leaderboard for
-        Valid options are `exp`, `messages`, `stars`, and `voice`
+        - Valid options are `exp`, `messages`, `stars`, and `voice`
+
+        `global_stats`: Include stats for all servers.
+
+
         Abbreviations of those arguments may also be used
         """
         if not stat:
             stat = "exp"
-        conf = self.data[ctx.guild.id]
-        if not conf["weekly"]["on"]:
-            return await ctx.send(_("Weekly stats are disabled for this guild"))
-        if not conf["weekly"]["users"]:
-            return await ctx.send(_("There is no data for the weekly leaderboard yet, please chat a bit first."))
-        embeds = await asyncio.to_thread(get_leaderboard, ctx, conf, stat, "weekly")
+        if global_stats:
+            conf = {"users": {}, "weekly": {"users": {}}}
+            for data in self.data.values():
+                # Load user stats
+                for uid, stats in data["users"].items():
+                    if uid in conf["users"]:
+                        conf["users"][uid]["xp"] += stats["xp"]
+                        conf["users"][uid]["voice"] += stats["voice"]
+                        conf["users"][uid]["messages"] += stats["messages"]
+                    else:
+                        conf["users"][uid] = {
+                            "xp": stats["xp"],
+                            "voice": stats["voice"],
+                            "messages": stats["messages"],
+                        }
+        else:
+            conf = self.data[ctx.guild.id]
+            if not conf["weekly"]["on"]:
+                return await ctx.send(_("Weekly stats are disabled for this guild"))
+            if not conf["weekly"]["users"]:
+                return await ctx.send(_("There is no data for the weekly leaderboard yet, please chat a bit first."))
+
+        embeds = await asyncio.to_thread(get_leaderboard, ctx, conf, stat, "weekly", global_stats)
         if isinstance(embeds, str):
             return await ctx.send(embeds)
 
