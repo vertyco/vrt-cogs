@@ -283,10 +283,10 @@ class Conversation(AssistantBaseModel):
         prepared.extend(self.messages)
 
         if images:
-            content = []
+            content = [{"type": "text", "text": user_message}]
             for img in images:
                 if img.lower().startswith("http"):
-                    content.append({"type": "image_url", "image_url": img, "detail": resolution})
+                    content.append({"type": "image_url", "image_url": img})
                 else:
                     content.append(
                         {
@@ -294,7 +294,7 @@ class Conversation(AssistantBaseModel):
                             "image_url": {"url": f"data:image/jpeg;base64,{img}", "detail": resolution},
                         }
                     )
-            content.append({"type": "text", "text": user_message})
+
         else:
             content = user_message
 
