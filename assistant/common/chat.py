@@ -24,7 +24,12 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
-from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_VISION
+from .constants import (
+    READ_EXTENSIONS,
+    SUPPORTS_FUNCTIONS,
+    SUPPORTS_TOOLS,
+    SUPPORTS_VISION,
+)
 from .models import Conversation, GuildSettings
 from .utils import (
     extract_code_blocks,
@@ -314,6 +319,7 @@ class ChatHandler(MixinMeta):
         calls = 0
         last_func = None
         repeats = 0
+        model = conf.get_user_model(author)
         while True:
             if calls >= conf.max_function_calls:
                 function_calls = []
@@ -339,7 +345,12 @@ class ChatHandler(MixinMeta):
                     member=author,
                 )
             except InvalidRequestError as e:
-                log.warning(f"Function response failed. functions: {len(function_calls)}", exc_info=e)
+                log.error(
+                    f"Invalid request!\n"
+                    f"MESSAGES: {json.dumps(messages, indent=2)}\n"
+                    f"FUNCTIONS: {json.dumps(function_calls, indent=2) if function_calls else 'None'}",
+                    exc_info=e,
+                )
                 if await self.bot.is_owner(author) and len(function_calls) > 64:
                     dump = json.dumps(function_calls, indent=2)
                     buffer = BytesIO(dump.encode())
@@ -357,115 +368,138 @@ class ChatHandler(MixinMeta):
                         member=author,
                     )
                 except InvalidRequestError as e:
-                    log.error(f"MESSAGES: {json.dumps(messages)}", exc_info=e)
+                    log.error(
+                        f"Invalid request!\nMESSAGES: {json.dumps(messages, indent=2)}",
+                        exc_info=e,
+                    )
                     raise e
-            # except APIError as e:
-            #     reply = e.user_message
-            #     break
             except Exception as e:
-                log.error(f"Exception occured for chat response.\nMessages: {messages}", exc_info=e)
+                log.error(
+                    f"Response Exception!\n"
+                    f"MESSAGES: {json.dumps(messages, indent=2)}\n"
+                    f"FUNCTIONS: {json.dumps(function_calls, indent=2) if function_calls else 'None'}",
+                    exc_info=e,
+                )
                 break
 
             if reply := response["content"]:
                 break
 
             # If content is None then function call must exist
-            function_call = response.get("function_call", response.get("tool_calls"))
-            if not function_call:
+            if model in SUPPORTS_TOOLS:
+                response_functions = response.get("tool_calls", [])
+            elif response.get("function_call"):
+                response_functions = [response["function_call"]]
+            else:
+                response_functions = None
+
+            if not response_functions:
                 continue
 
-            calls += 1
+            if len(response_functions) > 1:
+                log.info(f"Calling {len(response_functions)} functions at once")
 
-            function_name = function_call["name"]
-            if last_func is None:
-                last_func = function_name
-            elif last_func == function_name:
-                repeats += 1
-                if repeats > 4:  # Skip before calling same function a 5th time
-                    log.error(f"Too many repeats: {function_name}")
+            conversation.messages.append(response)
+            messages.append(response)
+
+            for function_call in response_functions:
+                if model in SUPPORTS_TOOLS:
+                    function_name = function_call["function"]["name"]
+                    arguments = function_call["function"]["arguments"]
+                    tool_id = function_call["id"]
+                else:
+                    function_name = function_call["name"]
+                    arguments = function_call["arguments"]
+                    tool_id = None
+
+                calls += 1
+
+                if last_func is None:
+                    last_func = function_name
+                elif last_func == function_name:
+                    repeats += 1
+                    if repeats > 4:  # Skip before calling same function a 5th time
+                        log.error(f"Too many repeats: {function_name}")
+                        function_calls = pop_schema(function_name, function_calls)
+                        continue
+                else:
+                    repeats = 0
+
+                if function_name not in function_map:
+                    log.error(f"GPT suggested a function not provided: {function_name}")
+                    function_calls = pop_schema(function_name, function_calls)  # Just in case
+                    messages.append(
+                        {
+                            "role": "system",
+                            "content": f"{function_name} is not a valid function name",
+                        }
+                    )
+                    continue
+
+                try:
+                    params = json.loads(arguments)
+                except json.JSONDecodeError:
+                    params = {}
+                    log.error(f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}")
+
+                extras = {
+                    "user": guild.get_member(author) if isinstance(author, int) else author,
+                    "channel": guild.get_channel_or_thread(channel) if isinstance(channel, int) else channel,
+                    "guild": guild,
+                    "bot": self.bot,
+                    "conf": conf,
+                }
+                kwargs = {**params, **extras}
+                func = function_map[function_name]
+                try:
+                    if iscoroutinefunction(func):
+                        func_result = await func(**kwargs)
+                    else:
+                        func_result = await asyncio.to_thread(func, **kwargs)
+                except Exception as e:
+                    log.error(
+                        f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
+                        exc_info=e,
+                    )
                     function_calls = pop_schema(function_name, function_calls)
                     continue
-            else:
-                repeats = 0
 
-            if function_name not in function_map:
-                log.error(f"GPT suggested a function not provided: {function_name}")
-                function_calls = pop_schema(function_name, function_calls)  # Just in case
-                messages.append(
-                    {
-                        "role": "system",
-                        "content": f"{function_name} is not a valid function name",
-                    }
+                # Prep framework for alternative response types!
+                if isinstance(func_result, dict):
+                    result = func_result["content"]
+                    file = discord.File(
+                        BytesIO(func_result["file_bytes"]),
+                        filename=func_result["file_name"],
+                    )
+                    try:
+                        await channel.send(file=file)
+                    except discord.Forbidden:
+                        result = "You do not have permissions to upload files in this channel"
+                        function_calls = pop_schema(function_name, function_calls)
+
+                if isinstance(func_result, bytes):
+                    result = func_result.decode()
+                else:  # Is a string
+                    result = str(func_result)
+
+                # Ensure response isnt too large
+                result = await self.cut_text_by_tokens(result, conf, max_tokens)
+                info = (
+                    f"Called function {function_name} in {guild.name} for {author.display_name}\n"
+                    f"Params: {params}\nResult: {result}"
                 )
-                continue
-
-            # Add function call to messages
-            messages.append(response)
-            conversation.messages.append(response)
-            conversation.refresh()
-
-            arguments = function_call.get("arguments", "{}")
-            try:
-                params = json.loads(arguments)
-            except json.JSONDecodeError:
-                params = {}
-                log.error(f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}")
-            # Try continuing anyway
-
-            extras = {
-                "user": guild.get_member(author) if isinstance(author, int) else author,
-                "channel": guild.get_channel_or_thread(channel) if isinstance(channel, int) else channel,
-                "guild": guild,
-                "bot": self.bot,
-                "conf": conf,
-            }
-            kwargs = {**params, **extras}
-            func = function_map[function_name]
-            try:
-                if iscoroutinefunction(func):
-                    func_result = await func(**kwargs)
-                else:
-                    func_result = await asyncio.to_thread(func, **kwargs)
-            except Exception as e:
-                log.error(
-                    f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
-                    exc_info=e,
-                )
-                function_calls = pop_schema(function_name, function_calls)
-                continue
-
-            # Prep framework for alternative response types!
-            if isinstance(func_result, dict):
-                result = func_result["content"]
-                file = discord.File(
-                    BytesIO(func_result["file_bytes"]),
-                    filename=func_result["file_name"],
-                )
-                try:
-                    await channel.send(file=file)
-                except discord.Forbidden:
-                    result = "You do not have permissions to upload files in this channel"
-                    function_calls = pop_schema(function_name, function_calls)
-
-            if isinstance(func_result, bytes):
-                result = func_result.decode()
-            else:  # Is a string
-                result = str(func_result)
-
-            # Ensure response isnt too large
-            result = await self.cut_text_by_tokens(result, conf, max_tokens)
-            info = (
-                f"Called function {function_name} in {guild.name} for {author.display_name}\n"
-                f"Params: {params}\nResult: {result}"
-            )
-            log.info(info)
-            messages.append({"role": "function", "name": function_name, "content": result})
-            conversation.update_messages(result, "function", process_username(function_name))
-            if message_obj and function_name in ["create_memory", "edit_memory"]:
-                try:
-                    await message_obj.add_reaction("\N{BRAIN}")
-                except (discord.Forbidden, discord.NotFound):
-                    pass
+                log.info(info)
+                role = "tool" if model in SUPPORTS_TOOLS else "function"
+                entry = {"role": role, "name": function_name, "content": result}
+                if tool_id:
+                    entry["tool_call_id"] = tool_id
+                messages.append(entry)
+                conversation.update_messages(result, role, process_username(function_name), tool_id)
+                if message_obj and function_name in ["create_memory", "edit_memory"]:
+                    try:
+                        await message_obj.add_reaction("\N{BRAIN}")
+                    except (discord.Forbidden, discord.NotFound):
+                        pass
 
         # Handle the rest of the reply
         if calls > 1:
@@ -487,7 +521,9 @@ class ChatHandler(MixinMeta):
 
         if block:
             reply = _("Response failed due to invalid regex, check logs for more info.")
+
         conversation.cleanup(conf, author)
+        conversation.refresh()
         return reply
 
     async def safe_regex(self, regex: str, content: str):

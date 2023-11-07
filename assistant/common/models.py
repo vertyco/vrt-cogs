@@ -252,7 +252,7 @@ class Conversation(AssistantBaseModel):
                 continue
             self.messages.append(i)
 
-    def update_messages(self, message: str, role: str, name: str = None) -> None:
+    def update_messages(self, message: str, role: str, name: str = None, tool_id: str = None) -> None:
         """Update conversation cache
 
         Args:
@@ -263,6 +263,8 @@ class Conversation(AssistantBaseModel):
         message = {"role": role, "content": message}
         if name:
             message["name"] = name
+        if tool_id:
+            message["tool_call_id"] = tool_id
         self.messages.append(message)
         self.refresh()
 
