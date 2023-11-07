@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 import aiohttp
 import openai
@@ -19,7 +19,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import MODELS_1106, SUPPORTS_FUNCTIONS
+from .constants import MODELS_1106, SUPPORTS_FUNCTIONS, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -80,7 +80,7 @@ async def request_chat_completion_raw(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     seed: int = None,
-) -> Dict[str, str]:
+) -> openai.openai_object.OpenAIObject:
     log.debug(f"request_chat_completion_raw: {model}")
     kwargs = {
         "model": model,
@@ -94,16 +94,21 @@ async def request_chat_completion_raw(
     }
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
-    if functions and VERSION >= "0.27.6" and model in SUPPORTS_FUNCTIONS:
-        log.debug(f"Calling model with {len(functions)} functions")
-        kwargs["functions"] = functions
-        # if model in MODELS_1106:
-        #     kwargs["tools"] = functions
-        # else:
-        #     kwargs["functions"] = functions
     if model in MODELS_1106:
         kwargs["seed"] = seed
-    return await openai.ChatCompletion.acreate(**kwargs)
+    if functions and VERSION >= "0.27.6" and model in SUPPORTS_FUNCTIONS:
+        log.debug(f"Calling model with {len(functions)} functions")
+        if model in SUPPORTS_TOOLS:
+            tools = []
+            for func in functions:
+                function = {"type": "function", "function": func, "name": func["name"]}
+                tools.append(function)
+            if tools:
+                kwargs["tools"] = tools
+        else:
+            kwargs["functions"] = functions
+    response = await openai.ChatCompletion.acreate(**kwargs)
+    return response
 
 
 @retry(

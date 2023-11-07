@@ -3,11 +3,12 @@ import inspect
 import json
 import logging
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import discord
 import tiktoken
 from aiohttp import ClientConnectionError
+from openai.openai_object import OpenAIObject
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -37,7 +38,7 @@ class API(MixinMeta):
         functions: Optional[List[dict]] = None,
         member: Optional[discord.Member] = None,
         response_token_override: int = None,
-    ) -> Dict[str, str]:
+    ) -> Union[Dict[str, str], OpenAIObject]:
         api_base = conf.endpoint_override or self.db.endpoint_override
         api_key = "unset"
         if conf.api_key:
@@ -79,7 +80,7 @@ class API(MixinMeta):
                 response_tokens = min(response_tokens, max_response_tokens)
 
         if model in CHAT:
-            response = await request_chat_completion_raw(
+            response: OpenAIObject = await request_chat_completion_raw(
                 model=model,
                 messages=messages,
                 temperature=conf.temperature,
@@ -88,7 +89,8 @@ class API(MixinMeta):
                 api_base=api_base,
                 functions=functions,
             )
-            message = response["choices"][0]["message"]
+            message = response.choices[0].message
+            print(f"MESSAGE: {type(message)}")
         else:
             compiled = compile_messages(messages)
             prompt = await self.cut_text_by_tokens(compiled, conf, member)
@@ -160,7 +162,7 @@ class API(MixinMeta):
                                 num_tokens += 65
                                 continue
                             try:
-                                tokens = await request_tokens_raw(i["text"], f"{endpoint}/tokenize")
+                                tokens = await request_tokens_raw(i, f"{endpoint}/tokenize")
                                 num_tokens += len(tokens)
                             except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
                                 # Break and fall back to local encoder
@@ -194,9 +196,9 @@ class API(MixinMeta):
                                 num_tokens += 65
                             continue
                         try:
-                            encoded = await asyncio.to_thread(encoding.encode, i["text"])
+                            encoded = await asyncio.to_thread(encoding.encode, i.get("text") or str(i))
                         except Exception as e:
-                            log.error(f"Failed to encode: {i['text']}", exc_info=e)
+                            log.error(f"Failed to encode: {i.get('text') or str(i)}", exc_info=e)
                             encoded = []
                         num_tokens += len(encoded)
                 else:
