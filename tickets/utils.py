@@ -119,6 +119,9 @@ async def close_ticket(
         closer_name,
         str(reason),
     )
+    if isinstance(channel, discord.Thread) and not conf["thread_close"]:
+        desc += _("`Thread:    `{}").format(channel.mention)
+
     backup_text = _("Ticket Closed\n{}\nCurrently missing permissions to send embeds to this channel!").format(desc)
     embed = discord.Embed(
         title=_("Ticket Closed"),
