@@ -4,7 +4,8 @@ from typing import List, Optional, Union
 import aiohttp
 import openai
 from aiocache import cached
-from openai import VERSION, APIConnectionError, APIError, RateLimitError, Timeout
+from openai.error import APIConnectionError, APIError, RateLimitError, Timeout
+from openai.version import VERSION
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -71,7 +72,7 @@ async def request_chat_completion_raw(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     seed: int = None,
-) -> openai.openai_object.OpenAIObject:
+):
     log.debug(f"request_chat_completion_raw: {model}")
     kwargs = {
         "model": model,
@@ -99,6 +100,7 @@ async def request_chat_completion_raw(
         else:
             kwargs["functions"] = functions
     response = await openai.ChatCompletion.acreate(**kwargs)
+    log.debug(f"RESPONSE TYPE: {type(response)}")
     return response
 
 

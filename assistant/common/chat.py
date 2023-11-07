@@ -13,7 +13,7 @@ from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import pytz
-from openai import APIConnectionError, AuthenticationError, RateLimitError
+from openai.error import APIConnectionError, AuthenticationError, RateLimitError
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
