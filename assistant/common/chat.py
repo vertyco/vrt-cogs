@@ -350,8 +350,12 @@ class ChatHandler(MixinMeta):
             # If content is None then function call must exist
             if model in SUPPORTS_TOOLS:
                 response_functions = response.get("tool_calls", [])
+                if "function_call" in response:
+                    del response["function_call"]
             elif response.get("function_call"):
                 response_functions = [response["function_call"]]
+                if "tool_calls" in response:
+                    del response["tool_calls"]
             else:
                 response_functions = None
 

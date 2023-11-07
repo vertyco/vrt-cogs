@@ -18,7 +18,6 @@ async def request_chat_completion_raw(
     max_tokens: int,
     api_base: Optional[str] = None,
     functions: Optional[List[dict]] = None,
-    timeout: int = 60,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     seed: int = None,
@@ -33,13 +32,12 @@ async def request_chat_completion_raw(
         "model": model,
         "messages": messages,
         "temperature": temperature,
-        "timeout": timeout,
         "frequency_penalty": frequency_penalty,
         "presence_penalty": presence_penalty,
     }
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
-    if model in MODELS_1106:
+    if seed and model in MODELS_1106:
         kwargs["seed"] = seed
     if functions and model in SUPPORTS_FUNCTIONS:
         log.debug(f"Calling model with {len(functions)} functions")

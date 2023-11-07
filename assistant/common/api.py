@@ -12,6 +12,7 @@ from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.completion import Completion
 from openai.types.completion_choice import CompletionChoice
+from openai.types.create_embedding_response import CreateEmbeddingResponse
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -128,12 +129,15 @@ class API(MixinMeta):
             api_base = conf.endpoint_override or self.db.endpoint_override
             api_key = "unset"
 
-        response = await request_embedding_raw(text, api_key, api_base)
+        response: CreateEmbeddingResponse = await request_embedding_raw(text, api_key, api_base)
 
-        prompt_tokens = response["usage"].get("prompt_tokens", 0)
-        total_tokens = response["usage"].get("total_tokens", 0)
-        conf.update_usage(response["model"], total_tokens, prompt_tokens, 0)
-        return response["data"][0]["embedding"]
+        conf.update_usage(
+            response.model,
+            response.usage.total_tokens,
+            response.usage.prompt_tokens,
+            0,
+        )
+        return response.data[0].embedding
 
     # -------------------------------------------------------
     # -------------------------------------------------------
