@@ -140,6 +140,8 @@ class API(MixinMeta):
         conf: GuildSettings,
         model: str = "gpt-3.5-turbo-0613",
     ):
+        if not messages:
+            return 0
         if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
             log.debug("Using external tokenizer")
             endpoint = conf.endpoint_override or self.db.endpoint_override
