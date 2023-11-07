@@ -60,7 +60,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "4.18.4"
+    __version__ = "4.18.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -316,6 +316,7 @@ class Assistant(
         self,
         guild: discord.Guild,
         channel_id: Union[str, int],
+        user: discord.Member,
         *args,
         **kwargs,
     ):
@@ -323,6 +324,8 @@ class Assistant(
             if not channel_id.isdigit():
                 return "channel_id must be a valid integer!"
         if channel := guild.get_channel_or_thread(int(channel_id)):
+            if not channel.permissions_for(user).view_channel:
+                return "The user you are chatting with doesnt have permission to view that channel"
             ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
             return f"the name of the {ctype} channel with ID {channel_id} is {channel.name}"
         return "a channel with that ID could not be found!"
@@ -331,9 +334,15 @@ class Assistant(
         self,
         guild: discord.Guild,
         channel_name: str,
+        user: discord.Member,
         *args,
         **kwargs,
     ):
+        channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
+        valid_channels = [i for i in channels if i.permissions_for(user).view_channel]
+        if not valid_channels:
+            return "There are no channels this user can view"
+
         def clean_name(name: str) -> str:
             chars = string.ascii_letters + string.hexdigits
             for char in name:
@@ -342,8 +351,9 @@ class Assistant(
             return name
 
         def match_channels() -> tuple:
-            channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
-            scores = [(i, fuzz.ratio(clean_name(channel_name.lower()), clean_name(i.name.lower()))) for i in channels]
+            scores = [
+                (i, fuzz.ratio(clean_name(channel_name.lower()), clean_name(i.name.lower()))) for i in valid_channels
+            ]
             sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
             return sorted_scores[0]
 
