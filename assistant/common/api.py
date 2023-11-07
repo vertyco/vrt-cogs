@@ -20,7 +20,7 @@ from .calls import (
     request_text_raw,
     request_tokens_raw,
 )
-from .constants import CHAT, MODELS
+from .constants import CHAT, MODELS, SUPPORTS_VISION
 from .models import GuildSettings
 from .utils import compile_messages
 
@@ -335,6 +335,23 @@ class API(MixinMeta):
     # -------------------- FORMATTING -----------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
+    async def ensure_supports_vision(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        user: Optional[discord.Member],
+    ):
+        model = conf.get_user_model(user)
+        if model not in SUPPORTS_VISION:
+            for idx, message in messages:
+                if isinstance(message["content"], list):
+                    for obj in message["content"]:
+                        if obj["type"] != "text":
+                            continue
+                        messages[idx]["content"] = obj["text"]
+                        break
+        return messages
+
     async def degrade_conversation(
         self,
         messages: List[dict],

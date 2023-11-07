@@ -78,7 +78,6 @@ class MixinMeta(metaclass=ABCMeta):
     async def count_tokens(self, text: str, conf: GuildSettings, model: str) -> int:
         raise NotImplementedError
 
-
     @abstractmethod
     async def get_tokens(
         self,
@@ -90,6 +89,15 @@ class MixinMeta(metaclass=ABCMeta):
 
     @abstractmethod
     async def get_text(self, tokens: list, conf: GuildSettings) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def ensure_supports_vision(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        user: Optional[discord.Member],
+    ):
         raise NotImplementedError
 
     @abstractmethod

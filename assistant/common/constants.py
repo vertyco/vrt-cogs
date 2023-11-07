@@ -57,6 +57,7 @@ MODELS_1106 = [
     "gpt-4-1106-preview",
     "gpt-4-vision-preview",
 ]
+SUPPORTS_VISION = ["gpt-4-vision-preview"]
 SUPPORTS_FUNCTIONS = [
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-0613",

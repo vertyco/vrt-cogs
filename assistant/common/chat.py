@@ -24,7 +24,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
-from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS
+from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
 from .utils import (
     extract_code_blocks,
@@ -317,6 +317,8 @@ class ChatHandler(MixinMeta):
             if calls >= conf.max_function_calls:
                 function_calls = []
 
+            messages = await self.ensure_supports_vision(messages, conf, author)
+
             if len(messages) > 1:
                 # Iteratively degrade the conversation to ensure it is always under the token limit
                 messages, function_calls, degraded = await self.degrade_conversation(
@@ -580,7 +582,7 @@ class ChatHandler(MixinMeta):
                 if len(embeddings) > 1:
                     joined = "\n".join([i[1] for i in embeddings[1:]])
                     initial_prompt += f"\n\n{joined}"
-
+        images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(
             message,
             initial_prompt.strip(),
