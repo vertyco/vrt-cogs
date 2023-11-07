@@ -104,7 +104,11 @@ class GuildSettings(AssistantBaseModel):
     endpoint_override: Optional[str] = None
 
     timezone: str = "UTC"
-    temperature: float = 0.0
+    temperature: float = 0.0  # 0.0 - 2.0
+    frequency_penalty: float = 0.0  # -2.0 - 2.0
+    presence_penalty: float = 0.0  # -2.0 - 2.0
+    seed: int | None = None
+
     regex_blacklist: List[str] = [r"^As an AI language model,"]
     block_failed_regex: bool = False
 

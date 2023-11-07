@@ -1,65 +1,15 @@
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import aiohttp
-import openai
 from aiocache import cached
-from openai.error import APIConnectionError, APIError, RateLimitError, Timeout
-from openai.version import VERSION
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_random_exponential,
-)
+from openai import AsyncOpenAI
 
 from .constants import MODELS_1106, SUPPORTS_FUNCTIONS, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
 
-@retry(
-    retry=retry_if_exception_type(
-        Union[
-            APIError,
-            Timeout,
-            APIConnectionError,
-            RateLimitError,
-        ]
-    ),
-    wait=wait_random_exponential(min=5, max=15),
-    stop=stop_after_attempt(3),
-    reraise=True,
-)
-@cached(ttl=21600)
-async def request_embedding_raw(
-    text: str,
-    api_key: str,
-    api_base: Optional[str] = None,
-) -> List[float]:
-    log.debug("request_embedding_raw")
-    return await openai.Embedding.acreate(
-        input=text,
-        model="text-embedding-ada-002",
-        api_key=api_key,
-        api_base=api_base,
-        timeout=30,
-    )
-
-
-@retry(
-    retry=retry_if_exception_type(
-        Union[
-            Timeout,
-            APIConnectionError,
-            RateLimitError,
-            APIError,
-        ]
-    ),
-    wait=wait_random_exponential(min=5, max=30),
-    stop=stop_after_attempt(4),
-    reraise=True,
-)
 async def request_chat_completion_raw(
     model: str,
     messages: List[dict],
@@ -74,6 +24,11 @@ async def request_chat_completion_raw(
     seed: int = None,
 ):
     log.debug(f"request_chat_completion_raw: {model}")
+    client = AsyncOpenAI(
+        api_key=api_key,
+        api_base=api_base,
+        max_retries=5,
+    )
     kwargs = {
         "model": model,
         "messages": messages,
@@ -88,7 +43,7 @@ async def request_chat_completion_raw(
         kwargs["max_tokens"] = max_tokens
     if model in MODELS_1106:
         kwargs["seed"] = seed
-    if functions and VERSION >= "0.27.6" and model in SUPPORTS_FUNCTIONS:
+    if functions and model in SUPPORTS_FUNCTIONS:
         log.debug(f"Calling model with {len(functions)} functions")
         if model in SUPPORTS_TOOLS:
             tools = []
@@ -99,24 +54,11 @@ async def request_chat_completion_raw(
                 kwargs["tools"] = tools
         else:
             kwargs["functions"] = functions
-    response = await openai.ChatCompletion.acreate(**kwargs)
-    log.debug(f"RESPONSE TYPE: {type(response)}")
+    response = await client.chat.completions.create(**kwargs)
+    log.debug(f"CHAT RESPONSE TYPE: {type(response)}")
     return response
 
 
-@retry(
-    retry=retry_if_exception_type(
-        Union[
-            Timeout,
-            APIConnectionError,
-            RateLimitError,
-            APIError,
-        ]
-    ),
-    wait=wait_random_exponential(min=5, max=30),
-    stop=stop_after_attempt(4),
-    reraise=True,
-)
 async def request_completion_raw(
     model: str,
     prompt: str,
@@ -127,6 +69,11 @@ async def request_completion_raw(
     timeout: int = 60,
 ) -> str:
     log.debug(f"request_completion_raw: {model}")
+    client = AsyncOpenAI(
+        api_key=api_key,
+        api_base=api_base,
+        max_retries=5,
+    )
     kwargs = {
         "model": model,
         "prompt": prompt,
@@ -137,7 +84,30 @@ async def request_completion_raw(
     }
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
-    return await openai.Completion.acreate(**kwargs)
+    response = await client.completions.create(**kwargs)
+    log.debug(f"COMPLETION RESPONSE TYPE: {type(response)}")
+    return response
+
+
+@cached(ttl=3600)
+async def request_embedding_raw(
+    text: str,
+    api_key: str,
+    api_base: Optional[str] = None,
+) -> List[float]:
+    log.debug("request_embedding_raw")
+    client = AsyncOpenAI(
+        api_key=api_key,
+        api_base=api_base,
+        max_retries=5,
+    )
+    response = await client.embeddings.create(
+        input=text,
+        model="text-embedding-ada-002",
+        timeout=30,
+    )
+    log.debug(f"EMBED RESPONSE TYPE: {type(response)}")
+    return response
 
 
 @cached(ttl=30)
