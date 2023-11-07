@@ -33,7 +33,8 @@
     "tenacity",
     "matplotlib",
     "plotly",
-    "pandas"
+    "pandas",
+    "numpy",
   ],
   "short": "Another Chat GPT Cog",
   "tags": [

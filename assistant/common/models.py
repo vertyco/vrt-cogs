@@ -4,8 +4,8 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import discord
+import numpy as np
 import orjson
-from openai.embeddings_utils import cosine_similarity
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
@@ -127,6 +127,9 @@ class GuildSettings(AssistantBaseModel):
         top_n_override: Optional[int] = None,
         relatedness_override: Optional[float] = None,
     ) -> List[Tuple[str, str, float, int]]:
+        def cosine_similarity(a, b):
+            return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
         # Name, text, score, dimensions
         q_length = len(query_embedding)
         top_n = top_n_override or self.top_n
