@@ -128,31 +128,32 @@ class GuildSettings(AssistantBaseModel):
         relatedness_override: Optional[float] = None,
     ) -> List[Tuple[str, str, float, int]]:
         # Name, text, score, dimensions
+        q_length = len(query_embedding)
+        top_n = top_n_override or self.top_n
+        min_relatedness = relatedness_override or self.min_relatedness
 
-        if not self.top_n or len(query_embedding) == 0 or not self.embeddings:
+        if not top_n or q_length == 0 or not self.embeddings:
             return []
 
         strings_and_relatedness = []
         for name, em in self.embeddings.items():
-            if len(query_embedding) != len(em.embedding):
+            if q_length != len(em.embedding):
                 continue
             try:
                 score = cosine_similarity(query_embedding, em.embedding)
-                strings_and_relatedness.append((name, em.text, score, len(em.embedding)))
+                if score >= min_relatedness:
+                    strings_and_relatedness.append((name, em.text, score, len(em.embedding)))
             except ValueError as e:
                 log.error(
-                    f"Failed to match '{name}' embedding {len(query_embedding)} - {len(em.embedding)}",
+                    f"Failed to compare '{name}' embedding {q_length} - {len(em.embedding)}",
                     exc_info=e,
                 )
-
-        min_relatedness = relatedness_override or self.min_relatedness
-        strings_and_relatedness = [i for i in strings_and_relatedness if i[2] >= min_relatedness]
 
         if not strings_and_relatedness:
             return []
 
         strings_and_relatedness.sort(key=lambda x: x[2], reverse=True)
-        return strings_and_relatedness[: top_n_override or self.top_n]
+        return strings_and_relatedness[:top_n]
 
     def update_usage(
         self,
