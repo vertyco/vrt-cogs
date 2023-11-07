@@ -4,14 +4,14 @@ from typing import List, Optional, Union
 import aiohttp
 import openai
 from aiocache import cached
-from openai.error import (
+from openai import (
+    VERSION,
     APIConnectionError,
     APIError,
     RateLimitError,
     ServiceUnavailableError,
     Timeout,
 )
-from openai.version import VERSION
 from tenacity import (
     retry,
     retry_if_exception_type,

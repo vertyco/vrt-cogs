@@ -21,7 +21,7 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "openai>=0.27.6",
+    "openai>=1.1.1",
     "aiocache",
     "ujson",
     "msgpack",
@@ -34,7 +34,7 @@
     "matplotlib",
     "plotly",
     "pandas",
-    "numpy",
+    "numpy"
   ],
   "short": "Another Chat GPT Cog",
   "tags": [

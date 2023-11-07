@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import discord
 import tiktoken
 from aiohttp import ClientConnectionError
-from openai.openai_object import OpenAIObject
+from openai import OpenAIObject
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
