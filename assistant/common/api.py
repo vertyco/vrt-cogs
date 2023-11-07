@@ -3,12 +3,11 @@ import inspect
 import json
 import logging
 import math
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import discord
 import tiktoken
 from aiohttp import ClientConnectionError
-from openai import OpenAIObject
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -38,7 +37,7 @@ class API(MixinMeta):
         functions: Optional[List[dict]] = None,
         member: Optional[discord.Member] = None,
         response_token_override: int = None,
-    ) -> Union[Dict[str, str], OpenAIObject]:
+    ):
         api_base = conf.endpoint_override or self.db.endpoint_override
         api_key = "unset"
         if conf.api_key:
@@ -80,7 +79,7 @@ class API(MixinMeta):
                 response_tokens = min(response_tokens, max_response_tokens)
 
         if model in CHAT:
-            response: OpenAIObject = await request_chat_completion_raw(
+            response = await request_chat_completion_raw(
                 model=model,
                 messages=messages,
                 temperature=conf.temperature,
