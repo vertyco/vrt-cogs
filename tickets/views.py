@@ -469,7 +469,17 @@ class SupportButton(Button):
             "displayname": user.display_name,
             "mention": user.mention,
             "id": str(user.id),
+            "server": guild.name,
+            "guild": guild.name,
+            "members": int(guild.member_count or len(guild.members)),
+            "toprole": user.top_role.name,
         }
+
+        def fmt_params(text: str) -> str:
+            for k, v in params.items():
+                text = text.replace("{" + k + "}", v)
+            return text
+
         content = "" if panel.get("threads") else user.mention
         if support_mentions:
             if not panel.get("threads"):
@@ -487,14 +497,14 @@ class SupportButton(Button):
             embeds = []
             for index, einfo in enumerate(messages):
                 em = discord.Embed(
-                    title=einfo["title"].format(**params) if einfo["title"] else None,
-                    description=einfo["desc"].format(**params),
+                    title=fmt_params(einfo["title"]) if einfo["title"] else None,
+                    description=fmt_params(einfo["desc"]),
                     color=user.color,
                 )
                 if index == 0:
                     em.set_thumbnail(url=user.display_avatar.url)
                 if einfo["footer"]:
-                    em.set_footer(text=einfo["footer"].format(**params))
+                    em.set_footer(text=fmt_params(einfo["footer"]))
                 embeds.append(em)
 
             msg = await channel_or_thread.send(
