@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.10.0"
+    __version__ = "3.10.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1520,6 +1520,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         import_by: str,
         replace: bool,
         include_settings: bool,
+        all_users: bool,
         i_agree: bool,
     ):
         """
@@ -1533,6 +1534,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         If level is entered, it will import their level and calculate their exp based off of that.
         `replace` - (True/False) if True, it will replace the user's exp or level, otherwise it will add it
         `include_settings` - (True/False) import level roles and exp settings from MEE6
+        `all_users` - (True/False) if True, import ALL users regardless of if they are still in the server
         `i_agree` - (Yes/No) Just an extra option to make sure you want to execute this command
 
         **Note**
@@ -1614,10 +1616,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         async with ctx.typing():
             async for user in AsyncIter(players):
                 uid = str(user["id"])
-                member = ctx.guild.get_member(int(uid))
-                if not member:
-                    failed += 1
-                    continue
+                if not all_users:
+                    member = ctx.guild.get_member(int(uid)) or self.bot.get_user(int(uid))
+                    if not member:
+                        failed += 1
+                        continue
 
                 lvl = user["level"]
                 xp = user["xp"]
