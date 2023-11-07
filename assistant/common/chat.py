@@ -13,12 +13,7 @@ from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import pytz
-from openai import (
-    APIConnectionError,
-    AuthenticationError,
-    InvalidRequestError,
-    RateLimitError,
-)
+from openai import APIConnectionError, AuthenticationError, RateLimitError
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
@@ -156,17 +151,6 @@ class ChatHandler(MixinMeta):
             except APIConnectionError as e:
                 reply = _("Failed to communicate with endpoint!")
                 log.error(f"APIConnectionError (From listener: {listener})", exc_info=e)
-            except InvalidRequestError as e:
-                if error := e.error:
-                    # OpenAI related error, doesn't need to be restricted to bot owner only
-                    reply = _("Error: {}").format(error["message"])
-                    log.error(
-                        f"Invalid Request Error (From listener: {listener})\nERROR: {error}",
-                        exc_info=e,
-                    )
-                else:
-                    log.error(f"Invalid Request Error (From listener: {listener})", exc_info=e)
-                    return
             except AuthenticationError:
                 if message.author == message.guild.owner:
                     reply = _("Invalid API key, please set a new valid key!")
@@ -344,35 +328,6 @@ class ChatHandler(MixinMeta):
                     functions=function_calls,
                     member=author,
                 )
-            except InvalidRequestError as e:
-                log.error(
-                    f"Invalid request!\n"
-                    f"MESSAGES: {json.dumps(messages, indent=2)}\n"
-                    f"FUNCTIONS: {json.dumps(function_calls, indent=2) if function_calls else 'None'}",
-                    exc_info=e,
-                )
-                if await self.bot.is_owner(author) and len(function_calls) > 64:
-                    dump = json.dumps(function_calls, indent=2)
-                    buffer = BytesIO(dump.encode())
-                    buffer.name = "FunctionDump.json"
-                    buffer.seek(0)
-                    file = discord.File(buffer)
-                    try:
-                        await channel.send(_("Too many functions called"), file=file)
-                    except discord.HTTPException:
-                        pass
-                try:
-                    response = await self.request_response(
-                        messages=messages,
-                        conf=conf,
-                        member=author,
-                    )
-                except InvalidRequestError as e:
-                    log.error(
-                        f"Invalid request!\nMESSAGES: {json.dumps(messages, indent=2)}",
-                        exc_info=e,
-                    )
-                    raise e
             except Exception as e:
                 log.error(
                     f"Response Exception!\n"
