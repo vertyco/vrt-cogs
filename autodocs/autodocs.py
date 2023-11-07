@@ -263,9 +263,9 @@ class AutoDocs(commands.Cog):
             level = "botowner"
         elif user.id == guild.owner_id or user.guild_permissions.manage_guild:
             level = "guildowner"
-        elif (await is_admin_or_superior(self, user)) or user.guild_permissions.manage_roles:
+        elif (await is_admin_or_superior(self.bot, user)) or user.guild_permissions.manage_roles:
             level = "admin"
-        elif (await is_mod_or_superior(self, user)) or user.guild_permissions.manage_messages:
+        elif (await is_mod_or_superior(self.bot, user)) or user.guild_permissions.manage_messages:
             level = "mod"
         else:
             level = "user"
