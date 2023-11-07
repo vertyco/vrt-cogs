@@ -150,6 +150,8 @@ class API(MixinMeta):
                     break
                 num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
                 for key, value in message.items():
+                    if not value:
+                        continue
                     if isinstance(value, list):
                         for i in value:
                             if i["type"] == "image_url":
@@ -180,6 +182,8 @@ class API(MixinMeta):
         for message in messages:
             num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
             for key, value in message.items():
+                if not value:
+                    continue
                 if isinstance(value, list):
                     for i in value:
                         if i["type"] == "image_url":
@@ -187,10 +191,18 @@ class API(MixinMeta):
                             if i.get("detail", "") == "high":
                                 num_tokens += 65
                             continue
-                        encoded = await asyncio.to_thread(encoding.encode, i["text"])
+                        try:
+                            encoded = await asyncio.to_thread(encoding.encode, i["text"])
+                        except Exception as e:
+                            log.error(f"Failed to encode: {i['text']}", exc_info=e)
+                            encoded = []
                         num_tokens += len(encoded)
                 else:
-                    encoded = await asyncio.to_thread(encoding.encode, value)
+                    try:
+                        encoded = await asyncio.to_thread(encoding.encode, str(value))
+                    except Exception as e:
+                        log.error(f"Failed to encode: {value}", exc_info=e)
+                        encoded = []
                     num_tokens += len(encoded)
                 if key == "name":  # if there's a name, the role is omitted
                     num_tokens += -1  # role is always required and always 1 token
