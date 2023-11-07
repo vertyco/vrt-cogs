@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 import discord
 import tiktoken
 from discord.ext.commands.cog import CogMeta
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands
 from redbot.core.bot import Red
 
@@ -33,7 +34,7 @@ class MixinMeta(metaclass=ABCMeta):
         functions: Optional[List[dict]] = None,
         member: discord.Member = None,
         response_token_override: int = None,
-    ) -> Dict[str, str]:
+    ) -> Union[ChatCompletionMessage, str]:
         raise NotImplementedError
 
     @abstractmethod
