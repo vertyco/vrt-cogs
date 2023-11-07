@@ -73,11 +73,7 @@ class AssistantListener(MixinMeta):
 
         if not await can_use(message, conf.blacklist, respond=False):
             return
-        if (
-            not message.content.endswith("?")
-            and conf.endswith_questionmark
-            and self.bot.user.id not in mention_ids
-        ):
+        if not message.content.endswith("?") and conf.endswith_questionmark and self.bot.user.id not in mention_ids:
             return
 
         if len(message.content.strip()) < conf.min_length:
@@ -147,6 +143,10 @@ class AssistantListener(MixinMeta):
                 {"role": "user", "content": initial_content},
             ]
             embed_response = await self.request_response(messages=messages, conf=conf)
+            if isinstance(embed_response, str):
+                embed_response = {"role": "assistant", "content": embed_response}
+            else:
+                embed_response = embed_response.model_dump()
             messages.append(embed_response)
             messages.append({"role": "user", "content": REACT_NAME_MESSAGE})
 
@@ -158,9 +158,11 @@ class AssistantListener(MixinMeta):
                 {"role": "user", "content": embed_response["content"]},
             ]
             name_response = await self.request_response(messages=messages, conf=conf)
-            embedding = await self.add_embedding(
-                guild, name_response["content"], embed_response["content"]
-            )
+            if isinstance(name_response, str):
+                name_response = {"role": "assistant", "content": name_response}
+            else:
+                name_response = name_response.model_dump()
+            embedding = await self.add_embedding(guild, name_response["content"], embed_response["content"])
             if embedding is None:
                 success = False
             else:

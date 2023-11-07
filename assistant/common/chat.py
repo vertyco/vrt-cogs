@@ -339,6 +339,11 @@ class ChatHandler(MixinMeta):
                 )
                 raise e
 
+            if isinstance(response, str):
+                response = {"role": "assistant", "content": response}
+            else:
+                response = response.model_dump()
+
             if reply := response["content"]:
                 break
 

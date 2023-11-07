@@ -26,15 +26,13 @@ async def request_chat_completion_raw(
     log.debug(f"request_chat_completion_raw: {model}")
     client = AsyncOpenAI(
         api_key=api_key,
-        api_base=api_base,
+        base_url=api_base,
         max_retries=5,
     )
     kwargs = {
         "model": model,
         "messages": messages,
         "temperature": temperature,
-        "api_key": api_key,
-        "api_base": api_base,
         "timeout": timeout,
         "frequency_penalty": frequency_penalty,
         "presence_penalty": presence_penalty,
@@ -71,15 +69,13 @@ async def request_completion_raw(
     log.debug(f"request_completion_raw: {model}")
     client = AsyncOpenAI(
         api_key=api_key,
-        api_base=api_base,
+        base_url=api_base,
         max_retries=5,
     )
     kwargs = {
         "model": model,
         "prompt": prompt,
         "temperature": temperature,
-        "api_key": api_key,
-        "api_base": api_base,
         "timeout": timeout,
     }
     if max_tokens > 0:
@@ -98,7 +94,7 @@ async def request_embedding_raw(
     log.debug("request_embedding_raw")
     client = AsyncOpenAI(
         api_key=api_key,
-        api_base=api_base,
+        base_url=api_base,
         max_retries=5,
     )
     response = await client.embeddings.create(

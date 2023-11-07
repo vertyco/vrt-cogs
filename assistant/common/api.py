@@ -3,11 +3,15 @@ import inspect
 import json
 import logging
 import math
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import discord
 import tiktoken
 from aiohttp import ClientConnectionError
+from openai.types.chat.chat_completion import ChatCompletion
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
+from openai.types.completion import Completion
+from openai.types.completion_choice import CompletionChoice
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -37,7 +41,7 @@ class API(MixinMeta):
         functions: Optional[List[dict]] = None,
         member: Optional[discord.Member] = None,
         response_token_override: int = None,
-    ):
+    ) -> Union[ChatCompletionMessage, str]:
         api_base = conf.endpoint_override or self.db.endpoint_override
         api_key = "unset"
         if conf.api_key:
@@ -79,7 +83,7 @@ class API(MixinMeta):
                 response_tokens = min(response_tokens, max_response_tokens)
 
         if model in CHAT:
-            response = await request_chat_completion_raw(
+            response: ChatCompletion = await request_chat_completion_raw(
                 model=model,
                 messages=messages,
                 temperature=conf.temperature,
@@ -91,12 +95,11 @@ class API(MixinMeta):
                 presence_penalty=conf.presence_penalty,
                 seed=conf.seed,
             )
-            message = response.choices[0].message
-            print(f"MESSAGE: {type(message)}")
+            message: ChatCompletionMessage = response.choices[0].message
         else:
             compiled = compile_messages(messages)
             prompt = await self.cut_text_by_tokens(compiled, conf, member)
-            response = await request_completion_raw(
+            response: Completion = await request_completion_raw(
                 model=model,
                 prompt=prompt,
                 temperature=conf.temperature,
@@ -104,16 +107,16 @@ class API(MixinMeta):
                 max_tokens=response_tokens,
                 api_base=api_base,
             )
-            text = response["choices"][0]["text"]
-            for i in ["Assistant:", "assistant:", "System:", "system:", "User:", "user:"]:
-                text = text.replace(i, "").strip()
-            message = {"content": text, "role": "assistant"}
+            choice: CompletionChoice = response.choices[0]
+            message = choice.text
 
-        total_tokens = response["usage"].get("total_tokens", 0)
-        prompt_tokens = response["usage"].get("prompt_tokens", 0)
-        completion_tokens = response["usage"].get("completion_tokens", 0)
-        conf.update_usage(response["model"], total_tokens, prompt_tokens, completion_tokens)
-
+        conf.update_usage(
+            response.model,
+            response.usage.total_tokens,
+            response.usage.prompt_tokens,
+            response.usage.completion_tokens,
+        )
+        log.debug(f"MESSAGE TYPE: {type(message)}")
         return message
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
