@@ -4,14 +4,7 @@ from typing import List, Optional, Union
 import aiohttp
 import openai
 from aiocache import cached
-from openai import (
-    VERSION,
-    APIConnectionError,
-    APIError,
-    RateLimitError,
-    ServiceUnavailableError,
-    Timeout,
-)
+from openai import VERSION, APIConnectionError, APIError, RateLimitError, Timeout
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -31,7 +24,6 @@ log = logging.getLogger("red.vrt.assistant.calls")
             Timeout,
             APIConnectionError,
             RateLimitError,
-            ServiceUnavailableError,
         ]
     ),
     wait=wait_random_exponential(min=5, max=15),
@@ -60,7 +52,6 @@ async def request_embedding_raw(
             Timeout,
             APIConnectionError,
             RateLimitError,
-            ServiceUnavailableError,
             APIError,
         ]
     ),
@@ -118,7 +109,6 @@ async def request_chat_completion_raw(
             APIConnectionError,
             RateLimitError,
             APIError,
-            ServiceUnavailableError,
         ]
     ),
     wait=wait_random_exponential(min=5, max=30),
