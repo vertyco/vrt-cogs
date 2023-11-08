@@ -477,7 +477,7 @@ class SupportButton(Button):
 
         def fmt_params(text: str) -> str:
             for k, v in params.items():
-                text = text.replace("{" + k + "}", v)
+                text = text.replace("{" + str(k) + "}", str(v))
             return text
 
         content = "" if panel.get("threads") else user.mention
