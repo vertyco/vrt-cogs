@@ -8,6 +8,7 @@ from io import BytesIO
 from typing import List, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
+import aiohttp
 import discord
 import openai
 import orjson
@@ -94,8 +95,20 @@ class Admin(MixinMeta):
                 log.warning("Could not fetch external model", exc_info=e)
                 pass
 
+        try:
+            timeout = aiohttp.ClientTimeout(total=5)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(url="https://status.openai.com/api/v2/status.json") as res:
+                    data = await res.json()
+                    status = data["status"]["description"]
+                    # ind = data["status"]["indicator"]
+        except Exception as e:
+            log.error("Failed to fetch OpenAI API status", exc_info=e)
+            status = _("Failed to fetch!")
+
         desc = (
             _("`OpenAI Version:      `{}\n").format(openai.VERSION)
+            + _("`OpenAI API Status:   `{}\n").format(status)
             + _("`Model:               `{}\n").format(model_text)
             + _("`Enabled:             `{}\n").format(conf.enabled)
             + _("`Timezone:            `{}\n").format(conf.timezone)
