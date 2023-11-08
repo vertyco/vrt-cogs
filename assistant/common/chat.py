@@ -457,12 +457,13 @@ class ChatHandler(MixinMeta):
                     f"Params: {params}\nResult: {result}"
                 )
                 log.info(info)
-                role = "tool" if model in SUPPORTS_TOOLS else "function"
-                entry = {"role": role, "name": function_name, "content": result}
                 if tool_id:
-                    entry["tool_call_id"] = tool_id
+                    entry = {"role": "tool", "name": function_name, "content": result, "tool_call_id": tool_id}
+                    conversation.update_messages(result, "tool", process_username(function_name), tool_id)
+                else:
+                    entry = {"role": "function", "name": function_name, "content": result}
+                    conversation.update_messages(result, "function", process_username(function_name), tool_id)
                 messages.append(entry)
-                conversation.update_messages(result, role, process_username(function_name), tool_id)
                 if message_obj and function_name in ["create_memory", "edit_memory"]:
                     try:
                         await message_obj.add_reaction("\N{BRAIN}")
