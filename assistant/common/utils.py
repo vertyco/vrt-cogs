@@ -54,9 +54,7 @@ async def can_use(message: discord.Message, blacklist: list, respond: bool = Tru
         allowed = False
     elif any(role.id in blacklist for role in message.author.roles):
         if respond:
-            await message.channel.send(
-                _("You have a blacklisted role and cannot use this command!")
-            )
+            await message.channel.send(_("You have a blacklisted role and cannot use this command!"))
         allowed = False
     elif message.channel.id in blacklist:
         if respond:
@@ -64,9 +62,7 @@ async def can_use(message: discord.Message, blacklist: list, respond: bool = Tru
         allowed = False
     elif message.channel.category_id in blacklist:
         if respond:
-            await message.channel.send(
-                _("You cannot use that command in any channels under this category")
-            )
+            await message.channel.send(_("You cannot use that command in any channels under this category"))
         allowed = False
     return allowed
 
@@ -189,7 +185,7 @@ def get_params(
 ) -> dict:
     roles = [role for role in author.roles if "everyone" not in role.name] if author else []
     display_name = author.display_name if author else ""
-    return {
+    params = {
         **extras,
         "botname": bot.user.name,
         "timestamp": f"<t:{round(now.timestamp())}:F>",
@@ -215,4 +211,7 @@ def get_params(
         "channelname": channel.name if channel else "",
         "channelmention": channel.mention if channel else "",
         "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
+        "userjoindate": author.joined_at.strftime("%B %d, %Y") if author else "[unknown date]",
+        "userjointime": author.joined_at.strftime("%I:%M %p %Z") if author else "[unknown time]",
     }
+    return params
