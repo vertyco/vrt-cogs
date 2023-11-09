@@ -4,12 +4,14 @@ from typing import List, Optional
 import aiohttp
 from aiocache import cached
 from openai import AsyncOpenAI
+from perftracker import perf
 
 from .constants import MODELS_1106, SUPPORTS_FUNCTIONS, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
 
+@perf()
 async def request_chat_completion_raw(
     model: str,
     messages: List[dict],
@@ -27,6 +29,7 @@ async def request_chat_completion_raw(
         api_key=api_key,
         base_url=api_base,
         max_retries=5,
+        timeout=20,
     )
     kwargs = {
         "model": model,
@@ -55,6 +58,7 @@ async def request_chat_completion_raw(
     return response
 
 
+@perf()
 async def request_completion_raw(
     model: str,
     prompt: str,
@@ -62,7 +66,7 @@ async def request_completion_raw(
     api_key: str,
     max_tokens: int,
     api_base: Optional[str] = None,
-    timeout: int = 60,
+    timeout: int = 30,
 ) -> str:
     log.debug(f"request_completion_raw: {model}")
     client = AsyncOpenAI(
@@ -83,6 +87,7 @@ async def request_completion_raw(
     return response
 
 
+@perf()
 @cached(ttl=3600)
 async def request_embedding_raw(
     text: str,
@@ -98,12 +103,13 @@ async def request_embedding_raw(
     response = await client.embeddings.create(
         input=text,
         model="text-embedding-ada-002",
-        timeout=30,
+        timeout=10,
     )
     log.debug(f"EMBED RESPONSE TYPE: {type(response)}")
     return response
 
 
+@perf()
 @cached(ttl=30)
 async def request_tokens_raw(text: str, url: str):
     payload = {"text": text, "tokens": None}
@@ -114,6 +120,7 @@ async def request_tokens_raw(text: str, url: str):
             return res["tokens"]
 
 
+@perf()
 @cached(ttl=30)
 async def request_text_raw(tokens: list, url: str):
     payload = {"text": None, "tokens": tokens}
@@ -124,6 +131,7 @@ async def request_text_raw(tokens: list, url: str):
             return res["text"]
 
 
+@perf()
 @cached(ttl=1800)
 async def request_model(url: str):
     timeout = aiohttp.ClientTimeout(total=60)

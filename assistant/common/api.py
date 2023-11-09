@@ -5,6 +5,7 @@ import logging
 import math
 from typing import List, Optional, Tuple
 
+import aiohttp
 import discord
 import tiktoken
 from aiohttp import ClientConnectionError
@@ -36,6 +37,20 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class API(MixinMeta):
+    @perf()
+    async def openai_status(self) -> str:
+        try:
+            timeout = aiohttp.ClientTimeout(total=5)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(url="https://status.openai.com/api/v2/status.json") as res:
+                    data = await res.json()
+                    status = data["status"]["description"]
+                    # ind = data["status"]["indicator"]
+        except Exception as e:
+            log.error("Failed to fetch OpenAI API status", exc_info=e)
+            status = _("Failed to fetch!")
+        return status
+
     async def request_response(
         self,
         messages: List[dict],

@@ -8,7 +8,6 @@ from io import BytesIO
 from typing import List, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
-import aiohttp
 import discord
 import openai
 import orjson
@@ -78,6 +77,8 @@ class Admin(MixinMeta):
         embed = discord.Embed(title=_("Performance Stats"), description=box(txt), color=ctx.author.color)
         await ctx.send(embed=embed)
 
+
+
     @assistant.command(name="view")
     @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context, private: bool = True):
@@ -120,16 +121,7 @@ class Admin(MixinMeta):
                 log.warning("Could not fetch external model", exc_info=e)
                 pass
 
-        try:
-            timeout = aiohttp.ClientTimeout(total=5)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(url="https://status.openai.com/api/v2/status.json") as res:
-                    data = await res.json()
-                    status = data["status"]["description"]
-                    # ind = data["status"]["indicator"]
-        except Exception as e:
-            log.error("Failed to fetch OpenAI API status", exc_info=e)
-            status = _("Failed to fetch!")
+        status = await self.openai_status()
 
         desc = (
             _("`OpenAI Version:      `{}\n").format(openai.VERSION)

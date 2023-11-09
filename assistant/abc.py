@@ -27,6 +27,10 @@ class MixinMeta(metaclass=ABCMeta):
     tokenizer: tiktoken.core.Encoding
 
     @abstractmethod
+    async def openai_status(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
     async def request_response(
         self,
         messages: List[dict],

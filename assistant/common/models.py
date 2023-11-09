@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import discord
 import numpy as np
 import orjson
+from perftracker import perf
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
@@ -125,6 +126,7 @@ class GuildSettings(AssistantBaseModel):
     max_function_calls: int = 10  # Max calls in a row
     disabled_functions: List[str] = []
 
+    @perf()
     def get_related_embeddings(
         self,
         query_embedding: List[float],
@@ -343,6 +345,7 @@ class DB(AssistantBaseModel):
         self.conversations[key] = Conversation()
         return self.conversations[key]
 
+    @perf()
     def prep_functions(
         self,
         bot: Red,
