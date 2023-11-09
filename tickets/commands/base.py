@@ -93,12 +93,20 @@ class BaseCommands(MixinMeta):
 
         if not can_rename:
             return await ctx.send(_("You do not have permissions to rename this ticket"))
-        await ctx.channel.edit(name=new_name)
-        # Threads already alert to name changes
+        if not ctx.channel.permissions_for(ctx.me).manage_channels:
+            return await ctx.send(_("I no longer have permission to edit this channel"))
+
         if isinstance(ctx.channel, discord.TextChannel):
-            await ctx.send(_("Ticket has been renamed"))
-        elif ctx.interaction:
-            await ctx.interaction.response.defer()
+            txt = _("Renaming channel to {}").format(f"**{new_name}**")
+            if ctx.interaction:
+                await ctx.interaction.response.send_message(txt)
+            else:
+                await ctx.send(txt)
+        else:
+            # Threads already alert to name changes
+            await ctx.tick()
+
+        await ctx.channel.edit(name=new_name)
 
     @commands.hybrid_command(name="close", description="Close your ticket")
     @app_commands.describe(reason="Reason for closing the ticket")
