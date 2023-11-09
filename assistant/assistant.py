@@ -1,7 +1,5 @@
 import asyncio
-import json
 import logging
-import string
 from multiprocessing.pool import Pool
 from time import perf_counter
 from typing import Callable, Dict, List, Optional, Union
@@ -10,7 +8,6 @@ import discord
 import tiktoken
 from discord.ext import tasks
 from pydantic import ValidationError
-from rapidfuzz import fuzz
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
@@ -22,9 +19,13 @@ from .common.constants import (
     CREATE_MEMORY,
     EDIT_MEMORY,
     GET_CHANNEL_ID,
+    GET_CHANNEL_LIST,
+    GET_CHANNEL_MENTION,
     GET_CHANNEL_NAMED,
+    GET_CHANNEL_TOPIC,
     SEARCH_MEMORIES,
 )
+from .common.functions import AssistantFunctions
 from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
 from .listener import AssistantListener
@@ -36,9 +37,10 @@ log = logging.getLogger("red.vrt.assistant")
 
 
 class Assistant(
-    AssistantCommands,
-    AssistantListener,
     API,
+    AssistantCommands,
+    AssistantFunctions,
+    AssistantListener,
     ChatHandler,
     commands.Cog,
     metaclass=CompositeMetaClass,
@@ -60,7 +62,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "5.0.3"
+    __version__ = "5.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -117,9 +119,15 @@ class Assistant(
         await self.register_function(self.qualified_name, EDIT_MEMORY)
         await self.register_function(self.qualified_name, GET_CHANNEL_ID)
         await self.register_function(self.qualified_name, GET_CHANNEL_NAMED)
+        await self.register_function(self.qualified_name, GET_CHANNEL_MENTION)
+        await self.register_function(self.qualified_name, GET_CHANNEL_LIST)
+        await self.register_function(self.qualified_name, GET_CHANNEL_TOPIC)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
+        logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
+        logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         self.bot.dispatch("assistant_cog_add", self)
 
         await asyncio.sleep(30)
@@ -215,174 +223,6 @@ class Assistant(
         if not self.db.persistent_conversations:
             return
         await self.save_conf()
-
-    async def create_memory(
-        self,
-        guild: discord.Guild,
-        user: discord.Member,
-        memory_name: str,
-        memory_text: str,
-        *args,
-        **kwargs,
-    ):
-        if len(memory_name) > 100:
-            return "Error: memory_name should be 100 characters or less!"
-        conf = self.db.get_conf(guild)
-        if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
-            return f"User {user.display_name} is not recognized as a tutor!"
-        try:
-            embedding = await self.add_embedding(
-                guild,
-                memory_name,
-                memory_text,
-                overwrite=False,
-                ai_created=True,
-            )
-            if embedding is None:
-                return "Failed to create memory"
-            return f"The memory '{memory_name}' has been created successfully"
-        except EmbeddingEntryExists:
-            return "That memory name already exists"
-
-    async def search_memories(
-        self,
-        guild: discord.Guild,
-        search_query: str,
-        amount: int = 2,
-        *args,
-        **kwargs,
-    ):
-        try:
-            amount = int(amount)
-        except ValueError:
-            return "Error: amount must be an integer"
-        if amount < 1:
-            return "Amount needs to be more than 1"
-
-        conf = self.db.get_conf(guild)
-        if not conf.embeddings:
-            return "There are no memories saved!"
-
-        if search_query in conf.embeddings:
-            embed = conf.embeddings[search_query]
-            return f"Found a memory name that matches exactly: {embed.text}"
-
-        query_embedding = await self.request_embedding(search_query, conf)
-        if not query_embedding:
-            return f"Failed to get memory for your the query '{search_query}'"
-
-        embeddings = await asyncio.to_thread(
-            conf.get_related_embeddings,
-            query_embedding=query_embedding,
-            top_n_override=amount,
-            relatedness_override=0.5,
-        )
-        if not embeddings:
-            return f"No embeddings could be found related to the search query '{search_query}'"
-
-        results = []
-        for embed in embeddings:
-            entry = {"memory name": embed[0], "relatedness": embed[2], "content": embed[1]}
-            results.append(entry)
-
-        return f"Memories related to `{search_query}`\n{json.dumps(results, indent=2)}"
-
-    async def edit_memory(
-        self,
-        guild: discord.Guild,
-        user: discord.Member,
-        memory_name: str,
-        memory_text: str,
-        *args,
-        **kwargs,
-    ):
-        conf = self.db.get_conf(guild)
-        if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
-            return f"User {user.display_name} is not recognized as a tutor!"
-
-        if memory_name not in conf.embeddings:
-            return "A memory with that name does not exist!"
-        embedding = await self.request_embedding(memory_text, conf)
-        if not embedding:
-            return "Could not update the memory!"
-
-        conf.embeddings[memory_name].text = memory_text
-        conf.embeddings[memory_name].embedding = embedding
-        conf.embeddings[memory_name].update()
-        asyncio.create_task(self.save_conf())
-        return "Your memory has been updated!"
-
-    async def get_channel_name_from_id(
-        self,
-        guild: discord.Guild,
-        channel_id: Union[str, int],
-        user: discord.Member,
-        *args,
-        **kwargs,
-    ):
-        if isinstance(channel_id, str):
-            if not channel_id.isdigit():
-                return "channel_id must be a valid integer!"
-        if channel := guild.get_channel_or_thread(int(channel_id)):
-            if not channel.permissions_for(user).view_channel:
-                return "The user you are chatting with doesnt have permission to view that channel"
-            ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
-            return f"the name of the {ctype} channel with ID {channel_id} is {channel.name}"
-        return "a channel with that ID could not be found!"
-
-    async def get_channel_id_from_name(
-        self,
-        guild: discord.Guild,
-        channel_name: str,
-        user: discord.Member,
-        *args,
-        **kwargs,
-    ):
-        channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
-        valid_channels = [i for i in channels if i.permissions_for(user).view_channel]
-        if not valid_channels:
-            return "There are no channels this user can view"
-
-        def clean_name(name: str) -> str:
-            chars = string.ascii_letters + string.hexdigits
-            for char in name:
-                if char not in chars:
-                    name = name.replace(char, "")
-            return name
-
-        def match_channels() -> tuple:
-            scores = [
-                (i, fuzz.ratio(clean_name(channel_name.lower()), clean_name(i.name.lower()))) for i in valid_channels
-            ]
-            sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
-            return sorted_scores[0]
-
-        channel, score = await asyncio.to_thread(match_channels)
-        if score < 50:
-            return "could not find a channel that closely matches that name"
-        ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
-        if clean_name(channel.name) == clean_name(channel_name):
-            return f"The ID for the {ctype} channel named {channel_name} is {channel.id}"
-        return (
-            f"found {ctype} channel ID {channel.id} for {channel_name} with a relatedness score of {round(score)}/100"
-        )
-
-    async def make_search_url(
-        self,
-        site: str,
-        search_query: str,
-        *args,
-        **kwargs,
-    ):
-        site = site.lower()
-        chars = string.ascii_letters + string.hexdigits
-        for char in search_query:
-            if char not in chars:
-                search_query = search_query.replace(char, "")
-        search_query = search_query.replace(" ", "+")
-        if site == "youtube":
-            return f"https://www.youtube.com/results?search_query={search_query}"
-        return f"https://www.google.com/search?q={search_query}"
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
