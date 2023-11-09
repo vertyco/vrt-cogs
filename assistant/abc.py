@@ -106,6 +106,10 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
+    async def ensure_tool_consitency(self, messages: List[dict]) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     async def degrade_conversation(
         self,
         messages: List[dict],
