@@ -348,7 +348,9 @@ class ChatHandler(MixinMeta):
                 messages, function_calls, degraded = await self.degrade_conversation(
                     messages, function_calls, conf, author
                 )
-                if degraded:
+
+                cleaned = await self.ensure_tool_consitency(messages)
+                if cleaned or degraded:
                     conversation.overwrite(messages)
 
             if not messages:
