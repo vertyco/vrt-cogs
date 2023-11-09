@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from io import BytesIO
 
@@ -242,9 +243,7 @@ If a file has no extension it will still try to read it only if it can be decode
 
         text = ""
         for message in conversation.messages:
-            role = message["role"]
-            content = message["content"]
-            text += f"{role}: {content}\n"
+            text += f"{json.dumps(message, indent=2)}\n"
 
         buffer = BytesIO(text.encode())
         buffer.name = f"{ctx.author.name}_transcript.txt"

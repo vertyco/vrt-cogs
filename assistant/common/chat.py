@@ -14,26 +14,26 @@ from typing import Callable, Dict, List, Optional, Union
 import discord
 import openai
 import pytz
-
-# from openai import APIConnectionError, AuthenticationError, RateLimitError
+from openai.types.chat.chat_completion_message import (
+    ChatCompletionMessage,
+    FunctionCall,
+)
+from openai.types.chat.chat_completion_message_tool_call import (
+    ChatCompletionMessageToolCall,
+)
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
-from .constants import (
-    READ_EXTENSIONS,
-    SUPPORTS_FUNCTIONS,
-    SUPPORTS_TOOLS,
-    SUPPORTS_VISION,
-)
+from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
 from .utils import (
+    clean_name,
     extract_code_blocks,
     extract_code_blocks_with_lang,
     get_attachments,
     get_params,
-    process_username,
     remove_code_blocks,
 )
 
@@ -227,24 +227,52 @@ class ChatHandler(MixinMeta):
         images: list[str] = None,
     ) -> str:
         """Call the API asynchronously"""
-        if function_calls is None:
-            function_calls = []
-        if function_map is None:
-            function_map = {}
+        functions = function_calls.copy() if function_calls else []
+        mapping = function_map.copy() if function_map else {}
 
         if conf.use_function_calls and extend_function_calls and conf.model in SUPPORTS_FUNCTIONS:
             # Prepare registry and custom functions
             prepped_function_calls, prepped_function_map = self.db.prep_functions(
                 bot=self.bot, conf=conf, registry=self.registry
             )
-            function_calls.extend(prepped_function_calls)
-            function_map.update(prepped_function_map)
+            functions.extend(prepped_function_calls)
+            mapping.update(prepped_function_map)
 
         conversation = self.db.get_conversation(
             member_id=author if isinstance(author, int) else author.id,
             channel_id=channel if isinstance(channel, int) else channel.id,
             guild_id=guild.id,
         )
+        try:
+            return await self._get_chat_response(
+                message,
+                author,
+                guild,
+                channel,
+                conf,
+                conversation,
+                functions,
+                mapping,
+                message_obj,
+                images,
+            )
+        finally:
+            conversation.cleanup(conf, author)
+            conversation.refresh()
+
+    async def _get_chat_response(
+        self,
+        message: str,
+        author: Union[discord.Member, int],
+        guild: discord.Guild,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
+        conf: GuildSettings,
+        conversation: Conversation,
+        function_calls: List[dict],
+        function_map: Dict[str, Callable],
+        message_obj: Optional[discord.Message] = None,
+        images: list[str] = None,
+    ) -> str:
         if isinstance(author, int):
             author = guild.get_member(author)
         if isinstance(channel, int):
@@ -254,7 +282,7 @@ class ChatHandler(MixinMeta):
         user = author if isinstance(author, discord.Member) else None
         message_tokens = await self.count_tokens(message, conf, conf.get_user_model(user))
         words = message.split(" ")
-        if conf.top_n and message_tokens < 8191 and len(words) > 5:
+        if conf.top_n and message_tokens < 8191 and len(words) > 3:
             # Save on tokens by only getting embeddings if theyre enabled
             query_embedding = await self.request_embedding(message, conf)
 
@@ -267,26 +295,23 @@ class ChatHandler(MixinMeta):
             "balance": bal,
         }
 
-        def pop_schema(name: str, calls: List[dict]):
-            return [func for func in calls if func["name"] != name]
-
         # Don't include if user is not a tutor
         not_tutor = [
             author.id not in conf.tutors,
             not any([role.id in conf.tutors for role in author.roles]),
         ]
-        if all(not_tutor):
-            if "create_memory" in function_map:
-                function_calls = pop_schema("create_memory", function_calls)
-                del function_map["create_memory"]
+
+        if "create_memory" in function_map and all(not_tutor):
+            function_calls = [i for i in function_calls if i["name"] != "create_memory"]
+            del function_map["create_memory"]
 
         if "edit_memory" in function_map and (not conf.embeddings or all(not_tutor)):
-            function_calls = pop_schema("edit_memory", function_calls)
+            function_calls = [i for i in function_calls if i["name"] != "edit_memory"]
             del function_map["edit_memory"]
 
         # Don't include if there are no embeddings
         if "search_memories" in function_map and not conf.embeddings:
-            function_calls = pop_schema("search_memories", function_calls)
+            function_calls = [i for i in function_calls if i["name"] != "search_memories"]
             del function_map["search_memories"]
 
         max_tokens = self.get_max_tokens(conf, author)
@@ -305,9 +330,8 @@ class ChatHandler(MixinMeta):
         reply = None
 
         calls = 0
-        last_func = None
         repeats = 0
-        model = conf.get_user_model(author)
+        last_function: str = ""
         while True:
             if calls >= conf.max_function_calls:
                 function_calls = []
@@ -326,7 +350,7 @@ class ChatHandler(MixinMeta):
                 log.error("Messages got pruned too aggressively, increase token limit!")
                 break
             try:
-                response = await self.request_response(
+                response: ChatCompletionMessage = await self.request_response(
                     messages=messages,
                     conf=conf,
                     functions=function_calls,
@@ -341,73 +365,63 @@ class ChatHandler(MixinMeta):
                 )
                 raise e
 
-            if isinstance(response, str):
-                response = {"role": "assistant", "content": response}
-            else:
-                response = response.model_dump()
-
-            if reply := response["content"]:
+            if reply := response.content:
                 break
 
-            # If content is None then function call must exist
-            if model in SUPPORTS_TOOLS:
-                response_functions = response.get("tool_calls", [])
-                if "function_call" in response:
-                    del response["function_call"]
-            elif response.get("function_call"):
-                response_functions = [response["function_call"]]
-                if "tool_calls" in response:
-                    del response["tool_calls"]
+            if response.tool_calls:
+                response_functions: list[ChatCompletionMessageToolCall] = response.tool_calls
+            elif response.function_call:
+                response_functions: list[FunctionCall] = [response.function_call]
             else:
-                response_functions = None
-
-            if not response_functions:
                 continue
 
             if len(response_functions) > 1:
                 log.info(f"Calling {len(response_functions)} functions at once")
 
-            conversation.messages.append(response)
-            messages.append(response)
+            dump = response.model_dump()
+            if not dump["function_call"]:
+                del dump["function_call"]
+            if not dump["tool_calls"]:
+                del dump["tool_calls"]
+
+            conversation.messages.append(dump)
+            messages.append(dump)
 
             for function_call in response_functions:
-                if model in SUPPORTS_TOOLS:
-                    function_name = function_call["function"]["name"]
-                    arguments = function_call["function"]["arguments"]
-                    tool_id = function_call["id"]
+                if isinstance(function_call, ChatCompletionMessageToolCall):
+                    function_name = function_call.function.name
+                    arguments = function_call.function.arguments
+                    tool_id = function_call.id
+                    role = "tool"
                 else:
-                    function_name = function_call["name"]
-                    arguments = function_call["arguments"]
+                    function_name = function_call.name
+                    arguments = function_call.arguments
                     tool_id = None
+                    role = "function"
+
+                if function_name == last_function:
+                    repeats += 1
+
+                last_function = function_name
+
+                if repeats >= 2:
+                    function_calls = [i for i in function_calls if i["name"] != function_name]
+                    repeats = 0
+                    log.info(f"Function '{function_name}' repeated 3 times, popping from list")
+                    continue
 
                 calls += 1
 
-                if last_func is None:
-                    last_func = function_name
-                elif last_func == function_name:
-                    repeats += 1
-                    if repeats > 4:  # Skip before calling same function a 5th time
-                        log.error(f"Too many repeats: {function_name}")
-                        function_calls = pop_schema(function_name, function_calls)
-                        continue
-                else:
-                    repeats = 0
-
                 if function_name not in function_map:
                     log.error(f"GPT suggested a function not provided: {function_name}")
-                    function_calls = pop_schema(function_name, function_calls)  # Just in case
-                    messages.append(
-                        {
-                            "role": "system",
-                            "content": f"{function_name} is not a valid function name",
-                        }
-                    )
+                    e = {"role": "system", "content": f"{function_name} is not a valid function name"}
+                    messages.append(e)
                     continue
 
                 try:
-                    params = json.loads(arguments)
+                    args = json.loads(arguments)
                 except json.JSONDecodeError:
-                    params = {}
+                    args = {}
                     log.error(f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}")
 
                 extras = {
@@ -417,7 +431,7 @@ class ChatHandler(MixinMeta):
                     "bot": self.bot,
                     "conf": conf,
                 }
-                kwargs = {**params, **extras}
+                kwargs = {**args, **extras}
                 func = function_map[function_name]
                 try:
                     if iscoroutinefunction(func):
@@ -429,7 +443,7 @@ class ChatHandler(MixinMeta):
                         f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
                         exc_info=e,
                     )
-                    function_calls = pop_schema(function_name, function_calls)
+                    function_calls = [i for i in function_calls if i["name"] != function_name]
                     continue
 
                 # Prep framework for alternative response types!
@@ -443,9 +457,8 @@ class ChatHandler(MixinMeta):
                         await channel.send(file=file)
                     except discord.Forbidden:
                         result = "You do not have permissions to upload files in this channel"
-                        function_calls = pop_schema(function_name, function_calls)
-
-                if isinstance(func_result, bytes):
+                        function_calls = [i for i in function_calls if i["name"] != function_name]
+                elif isinstance(func_result, bytes):
                     result = func_result.decode()
                 else:  # Is a string
                     result = str(func_result)
@@ -454,16 +467,15 @@ class ChatHandler(MixinMeta):
                 result = await self.cut_text_by_tokens(result, conf, max_tokens)
                 info = (
                     f"Called function {function_name} in {guild.name} for {author.display_name}\n"
-                    f"Params: {params}\nResult: {result}"
+                    f"Params: {args}\nResult: {result}"
                 )
                 log.info(info)
+                e = {"role": role, "name": function_name, "content": result}
                 if tool_id:
-                    entry = {"role": "tool", "name": function_name, "content": result, "tool_call_id": tool_id}
-                    conversation.update_messages(result, "tool", process_username(function_name), tool_id)
-                else:
-                    entry = {"role": "function", "name": function_name, "content": result}
-                    conversation.update_messages(result, "function", process_username(function_name), tool_id)
-                messages.append(entry)
+                    e["tool_call_id"] = tool_id
+                messages.append(e)
+                conversation.update_messages(result, role, function_name, tool_id)
+
                 if message_obj and function_name in ["create_memory", "edit_memory"]:
                     try:
                         await message_obj.add_reaction("\N{BRAIN}")
@@ -486,13 +498,11 @@ class ChatHandler(MixinMeta):
                 except Exception as e:
                     log.error("Regex sub error", exc_info=e)
 
-            conversation.update_messages(reply, "assistant", process_username(self.bot.user.name))
+            conversation.update_messages(reply, "assistant", clean_name(self.bot.user.name))
 
         if block:
             reply = _("Response failed due to invalid regex, check logs for more info.")
 
-        conversation.cleanup(conf, author)
-        conversation.refresh()
         return reply
 
     async def safe_regex(self, regex: str, content: str):
@@ -573,27 +583,26 @@ class ChatHandler(MixinMeta):
                 entry = {"memory name": embed[0], "relatedness": embed[2], "content": embed[1]}
                 results.append(f"- Embedding: {json.dumps(entry)}")
 
-            role = "function" if function_calls else "user"
-            name = "embedding" if function_calls else process_username(author.name) if author else None
-
             if conf.embed_method == "static":
-                conversation.update_messages(results, role, name)
+                for i in embeddings:
+                    conversation.update_messages(i[1], "system", clean_name(i[0]))
 
             elif conf.embed_method == "dynamic":
-                joined = "\n".join([i[1] for i in results])
-                initial_prompt += f"\n\n{joined}"
+                for i in embeddings:
+                    system_prompt += f"\n\nContext: {i[1]}"
 
             else:  # Hybrid embedding
-                conversation.update_messages(results[0], role, name)
+                conversation.update_messages(embeddings[0][1], "system", clean_name(embeddings[0][0]))
                 if len(embeddings) > 1:
-                    joined = "\n".join([i[1] for i in results[1:]])
-                    initial_prompt += f"\n\n{joined}"
+                    for i in embeddings[1:]:
+                        system_prompt += f"\n\nContext: {i[1]}"
+
         images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(
             message,
             initial_prompt.strip(),
             system_prompt.strip(),
-            name=process_username(author.name) if author else None,
+            name=clean_name(author.name) if author else None,
             images=images,
         )
         return messages

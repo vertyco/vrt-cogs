@@ -15,6 +15,26 @@ log = logging.getLogger("red.vrt.assistant.utils")
 _ = Translator("Assistant", __file__)
 
 
+def clean_name(name: str):
+    """
+    Cleans the function name to ensure it only contains alphanumeric characters,
+    underscores, or dashes and is not longer than 64 characters.
+
+    Args:
+        name (str): The original function name to clean.
+
+    Returns:
+        str: The cleaned function name.
+    """
+    # Remove any characters that are not alphanumeric, underscore, or dash
+    cleaned_name = re.sub(r"[^a-zA-Z0-9_-]", "", name)
+
+    # Truncate the string to 64 characters if it's longer
+    cleaned_name = cleaned_name[:64]
+
+    return cleaned_name
+
+
 def get_attachments(message: discord.Message) -> List[discord.Attachment]:
     """Get all attachments from context"""
     attachments = []
@@ -79,18 +99,6 @@ def embed_to_content(message: discord.Message) -> None:
     for field in embed.fields:
         extracted += f"## {field.name}\n{field.value}\n"
     message.content = extracted
-
-
-def process_username(username: str):
-    username = username.replace(".", "")
-    pattern = re.compile("^[a-zA-Z0-9_-]{1,64}$")
-    if not pattern.match(username):
-        # Username is not valid, replace invalid characters
-        username = re.sub("[^a-zA-Z0-9_-]", "-", username)
-
-        # Username should not exceed 64 characters
-        username = username[:64]
-    return username
 
 
 def extract_code_blocks(content: str) -> List[str]:

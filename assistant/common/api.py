@@ -3,7 +3,7 @@ import inspect
 import json
 import logging
 import math
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import discord
 import tiktoken
@@ -13,6 +13,7 @@ from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.completion import Completion
 from openai.types.completion_choice import CompletionChoice
 from openai.types.create_embedding_response import CreateEmbeddingResponse
+from perftracker import perf
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -42,7 +43,7 @@ class API(MixinMeta):
         functions: Optional[List[dict]] = None,
         member: Optional[discord.Member] = None,
         response_token_override: int = None,
-    ) -> Union[ChatCompletionMessage, str]:
+    ) -> ChatCompletionMessage:
         api_base = conf.endpoint_override or self.db.endpoint_override
         api_key = "unset"
         if conf.api_key:
@@ -109,7 +110,7 @@ class API(MixinMeta):
                 api_base=api_base,
             )
             choice: CompletionChoice = response.choices[0]
-            message = choice.text
+            message = ChatCompletionMessage.model_validate({"role": "assistant", "content": choice.text})
 
         conf.update_usage(
             response.model,
@@ -377,6 +378,7 @@ class API(MixinMeta):
                         break
         return messages
 
+    @perf()
     async def degrade_conversation(
         self,
         messages: List[dict],
@@ -394,6 +396,8 @@ class API(MixinMeta):
         Returns:
             Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded
         """
+        messages = messages.copy()
+        function_list = function_list.copy()
 
         def _degrade_message(msg: str) -> str:
             words = msg.split()
@@ -424,12 +428,14 @@ class API(MixinMeta):
                 return messages, function_list, True
 
         # Find the indices of the most recent messages for each role
-        most_recent_user = most_recent_function = most_recent_assistant = -1
+        most_recent_user = most_recent_function = most_recent_assistant, most_recent_tool = -1
         for i, msg in enumerate(reversed(messages)):
             if most_recent_user == -1 and msg["role"] == "user":
                 most_recent_user = len(messages) - 1 - i
             if most_recent_function == -1 and msg["role"] == "function":
                 most_recent_function = len(messages) - 1 - i
+            if most_recent_tool == -1 and msg["role"] == "tool":
+                most_recent_tool = len(messages) - 1 - i
             if most_recent_assistant == -1 and msg["role"] == "assistant":
                 most_recent_assistant = len(messages) - 1 - i
             if most_recent_user != -1 and most_recent_function != -1 and most_recent_assistant != -1:
@@ -448,14 +454,14 @@ class API(MixinMeta):
             return messages, function_list, True
 
         log.debug(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
-        # Degrade the conversation except for the most recent user, assistant, and function messages
+        # Degrade the conversation except for the most recent user, assistant, and function/tool messages
         i = 0
-
         while total_tokens > max_tokens and i < len(messages):
             if (
                 messages[i]["role"] == "system"
                 or i == most_recent_user
                 or i == most_recent_function
+                or i == most_recent_tool
                 or i == most_recent_assistant
             ):
                 i += 1
@@ -498,9 +504,17 @@ class API(MixinMeta):
             if total_tokens <= max_tokens:
                 return messages, function_list, True
 
+        # Wipe all tool call messages:
+        i = 0
+        while total_tokens > max_tokens and i < len(messages):
+            if "tool_calls" not in messages[i] and messages[i]["role"] != "tool":
+                i += 1
+                continue
+            messages.pop(i)
+
         # Degrade the most recent user and function messages as the last resort
         log.debug(f"Degrading user/function messages (total: {total_tokens}/max: {max_tokens})")
-        for i in [most_recent_function, most_recent_user]:
+        for i in [most_recent_function, most_recent_user, most_recent_tool]:
             if total_tokens <= max_tokens:
                 return messages, function_list, True
             while total_tokens > max_tokens:

@@ -16,6 +16,7 @@ import pandas as pd
 import pytz
 from aiocache import cached
 from discord.app_commands import Choice
+from perftracker import get_stats
 from pydantic import ValidationError
 from rapidfuzz import fuzz
 from redbot.core import app_commands, commands
@@ -52,6 +53,30 @@ class Admin(MixinMeta):
         This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.
         """
         pass
+
+    @assistant.command(name="perf")
+    @commands.bot_has_permissions(embed_links=True)
+    @commands.is_owner()
+    async def view_perf_stats(self, ctx: commands.Context):
+        """View current performance statistics about the cog"""
+        stats = get_stats()
+        results = []
+        for key in stats.function_times:
+            split = key.split(".")
+            module, func_name = split[0], split[-1]
+            if module != "assistant":
+                continue
+            cpm = stats.cpm(key)
+            avg = stats.avg_time(key)
+            results.append((func_name, round(cpm), round(avg, 1)))
+        if not results:
+            return await ctx.send(_("No stats gathered yet"))
+        sorted_stats = sorted(results, key=lambda x: x[2], reverse=True)
+        txt = ""
+        for func_name, cpm, avg in sorted_stats:
+            txt += _("- {}: {}ms, {}cpm\n").format(func_name, avg, cpm)
+        embed = discord.Embed(title=_("Performance Stats"), description=box(txt), color=ctx.author.color)
+        await ctx.send(embed=embed)
 
     @assistant.command(name="view")
     @commands.bot_has_permissions(embed_links=True)

@@ -286,9 +286,9 @@ class Conversation(AssistantBaseModel):
     ) -> List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
-        if system_prompt:
+        if system_prompt.strip():
             prepared.append({"role": "system", "content": system_prompt})
-        if initial_prompt:
+        if initial_prompt.strip():
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
 
