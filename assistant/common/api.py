@@ -402,13 +402,13 @@ class API(MixinMeta):
             if msg["role"] == "assistant" and "tool_calls" in msg:
                 # Step 2: Extract 'tool_call_id' values
                 for tool_call in msg["tool_calls"]:
-                    tool_call_id = tool_call["tool_call_id"]
+                    tool_call_id = tool_call["id"]
                     tool_call_ids[tool_call_id] = {"found": False, "idx": idx}  # Initialize as not found
 
         # Step 3: Search for tool messages responding to 'tool_call_id'
         for msg in messages:
-            if msg["role"] == "tool" and "responds_to" in msg:
-                tool_call_id = msg["responds_to"]
+            if msg["role"] == "tool" and "tool_call_id" in msg:
+                tool_call_id = msg["tool_call_id"]
                 if tool_call_id in tool_call_ids:
                     # Step 4: Mark the tool_call_id as found
                     tool_call_ids[tool_call_id]["found"] = True

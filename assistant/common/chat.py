@@ -164,10 +164,6 @@ class ChatHandler(MixinMeta):
                     reply = _("Uh oh, looks like my API key is invalid!")
             except openai.RateLimitError as e:
                 reply = str(e)
-            except KeyError as e:
-                log.debug("get_chat_response error", exc_info=e)
-                await message.channel.send(_("**KeyError in prompt or system message**\n{}").format(box(str(e), "py")))
-                return
             except Exception as e:
                 prefix = (await self.bot.get_valid_prefixes(message.guild))[0]
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
