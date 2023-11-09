@@ -176,7 +176,7 @@ class ChatHandler(MixinMeta):
                 reply = _("Uh oh, something went wrong! Bot owner can use `{}` to view the error.").format(
                     f"{prefix}traceback"
                 )
-                reply += "\n" + _("API Status: {}").format(status)
+                reply += "\n\n" + _("API Status: {}").format(status)
 
         if reply is None:
             return
