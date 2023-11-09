@@ -443,7 +443,7 @@ class API(MixinMeta):
                 return messages, function_list, True
 
         # Find the indices of the most recent messages for each role
-        most_recent_user = most_recent_function = most_recent_assistant, most_recent_tool = -1
+        most_recent_user = most_recent_function = most_recent_assistant = most_recent_tool = -1
         for i, msg in enumerate(reversed(messages)):
             if most_recent_user == -1 and msg["role"] == "user":
                 most_recent_user = len(messages) - 1 - i
