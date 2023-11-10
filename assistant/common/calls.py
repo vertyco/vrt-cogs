@@ -29,7 +29,7 @@ async def request_chat_completion_raw(
         api_key=api_key,
         base_url=api_base,
         max_retries=5,
-        timeout=20,
+        timeout=60,
     )
     kwargs = {
         "model": model,
@@ -66,7 +66,7 @@ async def request_completion_raw(
     api_key: str,
     max_tokens: int,
     api_base: Optional[str] = None,
-    timeout: int = 30,
+    timeout: int = 60,
 ) -> str:
     log.debug(f"request_completion_raw: {model}")
     client = AsyncOpenAI(
