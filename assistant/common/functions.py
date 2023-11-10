@@ -12,7 +12,7 @@ from ..abc import MixinMeta
 from .models import EmbeddingEntryExists
 from .utils import clean_name
 
-log = logging.getLogger("red.vrt.assistant.chathandler")
+log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
 
 
