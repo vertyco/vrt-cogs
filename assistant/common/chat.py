@@ -250,7 +250,7 @@ class ChatHandler(MixinMeta):
             guild_id=guild.id,
         )
         if conf.collab_convos and isinstance(author, discord.Member):
-            message = f"{author.display_name} said: "
+            message = f"{author.display_name} said: {message}"
         try:
             return await self._get_chat_response(
                 message,
