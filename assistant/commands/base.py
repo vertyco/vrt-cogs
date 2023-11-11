@@ -189,7 +189,11 @@ If a file has no extension it will still try to read it only if it can be decode
         """
         conf = self.db.get_conf(ctx.guild)
         mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
-        perms = [await self.bot.is_mod(ctx.author), ctx.channel.permissions_for(ctx.author).manage_messages]
+        perms = [
+            await self.bot.is_mod(ctx.author),
+            ctx.channel.permissions_for(ctx.author).manage_messages,
+            ctx.author.id in self.bot.owner_ids,
+        ]
         if conf.collab_convos and not any(perms):
             txt = _("Only moderators can clear channel conversations when collaborative conversations are enabled!")
             return await ctx.send(txt)
