@@ -13,12 +13,6 @@ from redbot.core.bot import Red
 log = logging.getLogger("red.vrt.assistant.models")
 
 
-class EmbedMethod(Enum):
-    DYNAMIC = "dynamic"
-    STATIC = "static"
-    HYBRID = "hybrid"
-
-
 class ImageSize(Enum):
     SMALL = "256x256"
     MEDIUM = "512x512"
@@ -89,7 +83,7 @@ class GuildSettings(AssistantBaseModel):
     tutors: List[int] = []  # Role or user IDs
     top_n: int = 3
     min_relatedness: float = 0.75
-    embed_method: EmbedMethod = EmbedMethod.DYNAMIC
+    embed_method: str = "dynamic"
     channel_id: Optional[int] = 0
     api_key: Optional[str] = None
     endswith_questionmark: bool = False
