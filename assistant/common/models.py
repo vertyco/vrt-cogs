@@ -103,6 +103,7 @@ class GuildSettings(AssistantBaseModel):
     enabled: bool = True
     model: str = "gpt-3.5-turbo"
     endpoint_override: Optional[str] = None
+    collab_convos: bool = False
 
     timezone: str = "UTC"
     temperature: float = 0.0  # 0.0 - 2.0
