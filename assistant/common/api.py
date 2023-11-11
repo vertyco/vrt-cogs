@@ -470,6 +470,13 @@ class API(MixinMeta):
             if total_tokens <= max_tokens:
                 return messages, function_list, True
 
+        # Pop one random message from the first quarter of the conversation
+        index = round(len(messages) / 4)
+        popped = messages.pop(index)
+        total_tokens -= await self.count_tokens(json.dumps(popped), conf, model)
+        if total_tokens <= max_tokens:
+            return messages, function_list, True
+
         # Find the indices of the most recent messages for each role
         most_recent_user = most_recent_function = most_recent_assistant = most_recent_tool = -1
         for i, msg in enumerate(reversed(messages)):
@@ -487,7 +494,7 @@ class API(MixinMeta):
         # Clear out function calls (not the result, just the message of it being called)
         i = 0
         while total_tokens > max_tokens and i < len(messages):
-            if messages[i]["content"]:
+            if messages[i]["content"] or messages[i].get("tool_calls"):
                 i += 1
                 continue
             messages.pop(i)
