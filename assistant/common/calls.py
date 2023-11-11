@@ -29,7 +29,7 @@ async def request_chat_completion_raw(
         api_key=api_key,
         base_url=api_base,
         max_retries=5,
-        timeout=120,
+        timeout=240,
     )
     kwargs = {
         "model": model,
@@ -66,19 +66,18 @@ async def request_completion_raw(
     api_key: str,
     max_tokens: int,
     api_base: Optional[str] = None,
-    timeout: int = 120,
 ) -> str:
     log.debug(f"request_completion_raw: {model}")
     client = AsyncOpenAI(
         api_key=api_key,
         base_url=api_base,
         max_retries=5,
+        timeout=240,
     )
     kwargs = {
         "model": model,
         "prompt": prompt,
         "temperature": temperature,
-        "timeout": timeout,
     }
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
@@ -99,11 +98,11 @@ async def request_embedding_raw(
         api_key=api_key,
         base_url=api_base,
         max_retries=5,
+        timeout=15,
     )
     response = await client.embeddings.create(
         input=text,
         model="text-embedding-ada-002",
-        timeout=15,
     )
     log.debug(f"EMBED RESPONSE TYPE: {type(response)}")
     return response
