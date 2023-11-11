@@ -168,13 +168,15 @@ If a file has no extension it will still try to read it only if it can be decode
                 model,
             )
         )
+        if conf.collab_convos:
+            desc += "\n" + _("*Collabroative conversations are enabled*")
         embed = discord.Embed(
             description=desc,
             color=color,
         )
         embed.set_author(
-            name=_("Conversation stats for {}").format(user.display_name),
-            icon_url=user.display_avatar,
+            name=_("Conversation stats for {}").format(ctx.channel.name if conf.collab_convos else user.display_name),
+            icon_url=ctx.guild.icon if conf.collab_convos else user.display_avatar,
         )
         embed.set_footer(text=_("Token limit is a soft cap and excess is trimmed before sending to the api"))
         await ctx.send(embed=embed)
