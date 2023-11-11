@@ -24,6 +24,7 @@ from .common.constants import (
     GET_CHANNEL_MENTION,
     GET_CHANNEL_NAMED,
     GET_CHANNEL_TOPIC,
+    GET_SEARCH_URL,
     SEARCH_MEMORIES,
 )
 from .common.functions import AssistantFunctions
@@ -63,7 +64,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "5.2.0"
+    __version__ = "5.2.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -123,6 +124,7 @@ class Assistant(
         await self.register_function(self.qualified_name, GET_CHANNEL_MENTION)
         await self.register_function(self.qualified_name, GET_CHANNEL_LIST)
         await self.register_function(self.qualified_name, GET_CHANNEL_TOPIC)
+        await self.register_function(self.qualified_name, GET_SEARCH_URL)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)

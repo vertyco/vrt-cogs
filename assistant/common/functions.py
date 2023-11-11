@@ -268,3 +268,15 @@ class AssistantFunctions(MixinMeta):
         if site == "youtube":
             return f"https://www.youtube.com/results?search_query={search_query}"
         return f"https://www.google.com/search?q={search_query}"
+
+    async def get_user_from_id(
+        self,
+        guild: discord.Guild,
+        discord_id: int,
+        *args,
+        **kwargs,
+    ):
+        member = guild.get_member(int(discord_id))
+        if not member:
+            return "A member with that ID does not exist!"
+        return member.name

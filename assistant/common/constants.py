@@ -287,3 +287,17 @@ GET_SEARCH_URL = {
         "required": ["site", "search_query"],
     },
 }
+GET_SEARCH_URL = {
+    "name": "get_user_from_id",
+    "description": "Get a discord member's name from their ID",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "discord_id": {
+                "type": "integer",
+                "description": "Discord user's ID",
+            },
+        },
+        "required": ["discord_id"],
+    },
+}
