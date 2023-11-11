@@ -162,7 +162,7 @@ class Admin(MixinMeta):
         embedding_field = (
             _("`Top N Embeddings:  `{}\n").format(conf.top_n)
             + _("`Min Relatedness:   `{}\n").format(conf.min_relatedness)
-            + _("`Embedding Method:  `{}\n").format(conf.embed_method.value)
+            + _("`Embedding Method:  `{}\n").format(conf.embed_method)
             + _("`Encodings:         `{}").format(encoded_by)
         )
         embed_num = humanize_number(len(conf.embeddings))
@@ -1097,14 +1097,14 @@ class Admin(MixinMeta):
         Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground
         """
         conf = self.db.get_conf(ctx.guild)
-        if conf.embed_method.value == "dynamic":
-            conf.embed_method.value = "static"
+        if conf.embed_method == "dynamic":
+            conf.embed_method = "static"
             await ctx.send(_("Embedding method has been set to **Static**"))
-        elif conf.embed_method.value == "static":
-            conf.embed_method.value = "hybrid"
+        elif conf.embed_method == "static":
+            conf.embed_method = "hybrid"
             await ctx.send(_("Embedding method has been set to **Hybrid**"))
         else:  # Conf is hybrid
-            conf.embed_method.value = "dynamic"
+            conf.embed_method = "dynamic"
             await ctx.send(_("Embedding method has been set to **Dynamic**"))
         await self.save_conf()
 
