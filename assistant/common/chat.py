@@ -249,6 +249,8 @@ class ChatHandler(MixinMeta):
             channel_id=chan_id,
             guild_id=guild.id,
         )
+        if conf.collab_convos and isinstance(author, discord.Member):
+            message = f"{author.display_name} said: "
         try:
             return await self._get_chat_response(
                 message,
