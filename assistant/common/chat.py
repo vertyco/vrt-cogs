@@ -139,7 +139,8 @@ class ChatHandler(MixinMeta):
                     )
 
         if get_last_message:
-            conversation = self.db.get_conversation(message.author.id, message.channel.id, message.guild.id)
+            mem_id = message.channel.id if conf.collab_convos else message.author.id
+            conversation = self.db.get_conversation(mem_id, message.channel.id, message.guild.id)
             reply = conversation.messages[-1]["content"] if conversation.messages else _("No message history!")
         else:
             try:
@@ -239,9 +240,13 @@ class ChatHandler(MixinMeta):
             functions.extend(prepped_function_calls)
             mapping.update(prepped_function_map)
 
+        mem_id = author if isinstance(author, int) else author.id
+        chan_id = channel if isinstance(channel, int) else channel.id
+        if conf.collab_convos:
+            mem_id = chan_id
         conversation = self.db.get_conversation(
-            member_id=author if isinstance(author, int) else author.id,
-            channel_id=channel if isinstance(channel, int) else channel.id,
+            member_id=mem_id,
+            channel_id=chan_id,
             guild_id=guild.id,
         )
         try:
