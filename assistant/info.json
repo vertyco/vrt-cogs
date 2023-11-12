@@ -21,7 +21,7 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "openai==1.2.2",
+    "openai==1.2.3",
     "aiocache",
     "ujson",
     "msgpack",
