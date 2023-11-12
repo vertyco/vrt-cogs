@@ -391,7 +391,6 @@ class API(MixinMeta):
                             continue
                         messages[idx]["content"] = obj["text"]
                         break
-        return messages
 
     async def ensure_tool_consitency(self, messages: List[dict]) -> bool:
         """Modify a message payload in-place to ensure all tool calls have preceeding tool_id call for it"""
@@ -414,11 +413,17 @@ class API(MixinMeta):
                     tool_call_ids[tool_call_id]["found"] = True
 
         # Step 5: Check for any 'tool_call_id' without a corresponding tool message
+        indices_to_remove = []
         for tool_call_id, i in tool_call_ids.items():
             if not i["found"]:
-                messages.pop(i["idx"])
+                indices_to_remove.append(i["idx"])
                 log.debug(f"Popping message with index {i['idx']} since it has no preceeding tool call")
                 cleaned = True
+
+        # Remove the messages with missing tool calls in reverse order to avoid index shifting
+        for idx in sorted(indices_to_remove, reverse=True):
+            messages.pop(idx)
+            cleaned = True
         return cleaned
 
     @perf()

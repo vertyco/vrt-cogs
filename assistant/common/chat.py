@@ -12,6 +12,7 @@ from io import BytesIO
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
+import httpx
 import openai
 import pytz
 from openai.types.chat.chat_completion_message import (
@@ -164,6 +165,8 @@ class ChatHandler(MixinMeta):
                 else:
                     reply = _("Uh oh, looks like my API key is invalid!")
             except openai.RateLimitError as e:
+                reply = str(e)
+            except httpx.ReadTimeout as e:
                 reply = str(e)
             except Exception as e:
                 prefix = (await self.bot.get_valid_prefixes(message.guild))[0]
@@ -344,17 +347,14 @@ class ChatHandler(MixinMeta):
             if calls >= conf.max_function_calls:
                 function_calls = []
 
-            messages = await self.ensure_supports_vision(messages, conf, author)
+            await self.ensure_supports_vision(messages, conf, author)
 
-            if len(messages) > 1:
-                # Iteratively degrade the conversation to ensure it is always under the token limit
-                messages, function_calls, degraded = await self.degrade_conversation(
-                    messages, function_calls, conf, author
-                )
+            # Iteratively degrade the conversation to ensure it is always under the token limit
+            messages, function_calls, degraded = await self.degrade_conversation(messages, function_calls, conf, author)
 
-                cleaned = await self.ensure_tool_consitency(messages)
-                if cleaned or degraded:
-                    conversation.overwrite(messages)
+            cleaned = await self.ensure_tool_consitency(messages)
+            if cleaned or degraded:
+                conversation.overwrite(messages)
 
             if not messages:
                 log.error("Messages got pruned too aggressively, increase token limit!")
@@ -366,6 +366,9 @@ class ChatHandler(MixinMeta):
                     functions=function_calls,
                     member=author,
                 )
+            except httpx.ReadTimeout as e:
+                log.error("Response timed out", exc_info=e)
+                raise e
             except Exception as e:
                 log.error(
                     f"Response Exception!\n"
