@@ -914,7 +914,7 @@ class Admin(MixinMeta):
         """
         Set the OpenAI model to use
         """
-        model = model.lower().strip()
+        model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)
         if not await self.can_call_llm(conf, ctx):
             return
