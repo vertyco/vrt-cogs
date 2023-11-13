@@ -396,23 +396,22 @@ class API(MixinMeta):
         """Modify a message payload in-place to ensure all tool calls have preceeding tool_id call for it"""
         cleaned = False
         tool_call_ids = {}
-        # Step 1: Identify assistant messages with 'tool_calls'
+        # Identify tool responses
         for idx, msg in enumerate(messages):
+            if msg["role"] == "tool":
+                tool_call_id = msg["tool_call_id"]
+                tool_call_ids[tool_call_id] = {"found": False, "idx": idx}
+
+        # Search for matching tool calls
+        for msg in messages:
             if msg["role"] == "assistant" and "tool_calls" in msg:
-                # Step 2: Extract 'tool_call_id' values
+                # Extract 'tool_call_id' values
                 for tool_call in msg["tool_calls"]:
                     tool_call_id = tool_call["id"]
-                    tool_call_ids[tool_call_id] = {"found": False, "idx": idx}  # Initialize as not found
+                    if tool_call_id in tool_call_ids:
+                        tool_call_ids[tool_call_id]["found"] = True
 
-        # Step 3: Search for tool messages responding to 'tool_call_id'
-        for msg in messages:
-            if msg["role"] == "tool" and "tool_call_id" in msg:
-                tool_call_id = msg["tool_call_id"]
-                if tool_call_id in tool_call_ids:
-                    # Step 4: Mark the tool_call_id as found
-                    tool_call_ids[tool_call_id]["found"] = True
-
-        # Step 5: Check for any 'tool_call_id' without a corresponding tool message
+        # Check for any tool response without a corresponding tool_call_id
         indices_to_remove = []
         for tool_call_id, i in tool_call_ids.items():
             if not i["found"]:
