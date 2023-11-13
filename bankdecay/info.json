@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Inactivity-based economy credit decay with customizable settings",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any private data about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing! Type `[p]bankdecay` to view the commands.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["pydantic", "pytz", "apscheduler"],
+  "short": "Inactivity-based economy credit decay",
+  "tags": [],
+  "type": "COG"
+}
