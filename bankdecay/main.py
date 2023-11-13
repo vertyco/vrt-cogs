@@ -29,7 +29,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -85,6 +85,8 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
         for guild_id in ids:
             guild = self.bot.get_guild(guild_id)
             if not guild:
+                # Remove guids that the bot is no longer a part of
+                del self.db.configs[guild_id]
                 continue
             await self.decay_guild(guild)
 
@@ -99,6 +101,8 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
         for user_id in uids:
             user = guild.get_member(user_id)
             if not user:
+                # Remove members no longer in the server
+                del conf.users[user_id]
                 continue
             last_active = conf.users[user_id].last_active
             delta = now - last_active
@@ -106,6 +110,8 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
                 continue
             bal = await bank.get_balance(user)
             if not bal:
+                # Remove the user from the config as they are now both inactive and have no credits
+                del conf.users[user_id]
                 continue
             new_bal = max(0, round(bal - (bal * conf.percent_decay)))
             await bank.set_balance(user, new_bal)
