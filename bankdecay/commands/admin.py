@@ -70,6 +70,9 @@ class Admin(MixinMeta):
     async def set_percent_decay(self, ctx: commands.Context, percent: float):
         """
         Set the percentage of decay that occurs after the inactive period.
+
+        **Example**
+        If decay is 5%, then after the set days of inactivity they will lose 5% of their balance every day.
         """
         if not 0 <= percent <= 1:
             await ctx.send(_("Percent decay must be between 0 and 1."))
