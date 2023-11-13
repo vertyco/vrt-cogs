@@ -120,7 +120,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
             total_decayed += bal - new_bal
 
         await self.save()
-        log.debug(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
+        log.info(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
         return users_decayed, total_decayed
 
     async def save(self) -> None:
