@@ -1,0 +1,34 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2023-11-13 14:01-0500\n"
+"PO-Revision-Date: 2023-11-13 19:09\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /main/bankdecay/locales/messages.pot\n"
+"X-Crowdin-File-ID: 110\n"
+"Language: tr_TR\n"
+
+#: main.py:23
+#, docstring
+msgid "\n"
+"    Economy decay!\n\n"
+"    Periodically reduces users' red currency based on inactivity, encouraging engagement.\n"
+"    Server admins can configure decay parameters, view settings, and manually trigger decay cycles.\n"
+"    User activity is tracked via messages and reactions.\n"
+"    "
+msgstr ""
+
+#: main.py:138
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
