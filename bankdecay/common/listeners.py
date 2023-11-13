@@ -46,3 +46,36 @@ class Listeners(MixinMeta):
             return
         self.db.refresh_user(user)
         await self.save()
+
+    @commands.Cog.listener()
+    async def on_presence_update(self, before: discord.Member, after: discord.Member) -> None:
+        guild = before.guild or after.guild
+        if not guild:
+            return
+        author = before or after
+        if author.bot:
+            return
+        self.db.refresh_user(author)
+        await self.save()
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
+        guild = before.guild or after.guild
+        if not guild:
+            return
+        author = before or after
+        if author.bot:
+            return
+        self.db.refresh_user(author)
+        await self.save()
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
+    ) -> None:
+        if not member.guild:
+            return
+        if member.bot:
+            return
+        self.db.refresh_user(member)
+        await self.save()
