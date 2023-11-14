@@ -352,7 +352,7 @@ class ChatHandler(MixinMeta):
             # Iteratively degrade the conversation to ensure it is always under the token limit
             messages, function_calls, degraded = await self.degrade_conversation(messages, function_calls, conf, author)
 
-            cleaned = await self.ensure_tool_consitency(messages)
+            cleaned = await self.ensure_tool_consistency(messages)
             if cleaned or degraded:
                 conversation.overwrite(messages)
 
