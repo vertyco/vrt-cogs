@@ -23,6 +23,7 @@ class Admin(MixinMeta):
     async def view_settings(self, ctx: commands.Context):
         """View Bank Decay Settings"""
         conf = self.db.get_conf(ctx.guild)
+        ignored_roles = [f"<@&{i}>" for i in conf.ignored_roles]
         txt = _(
             "`Decay Enabled: `{}\n"
             "`Inactive Days: `{}\n"
@@ -36,6 +37,9 @@ class Admin(MixinMeta):
             len(conf.users),
             conf.total_decayed,
         )
+        if ignored_roles:
+            joined = ", ".join(ignored_roles)
+            txt += _("**Ignored Roles**\n") + joined
         embed = discord.Embed(
             title=_("BankDecay Settings"),
             description=txt,
