@@ -392,52 +392,55 @@ class API(MixinMeta):
                         messages[idx]["content"] = obj["text"]
                         break
 
-    async def ensure_tool_consitency(self, messages: List[dict]) -> bool:
-        """Modify a message payload in-place to ensure all tool calls have preceeding tool_id call for it"""
+    async def ensure_tool_consistency(self, messages: List[dict]) -> bool:
+        """Modify a message payload in-place to ensure all tool calls have a following tool response,
+        and all tool responses have a preceding tool call."""
         cleaned = False
-        tool_call_ids = {}
-        tools_called = {}
-        # Identify tool responses
+        tool_call_ids = {}  # To track tool calls
+        tool_responses = {}  # To track tool responses
+
+        # First pass: Identify tool calls and responses
         for idx, msg in enumerate(messages):
-            if msg["role"] == "tool":
-                tool_call_id = msg["tool_call_id"]
-                tool_call_ids[tool_call_id] = {"found": False, "idx": idx}
-            elif msg["role"] == "assistant" and "tool_calls" in msg:
-                for tool_call in msg["tool_calls"]:
-                    tool_call_id = tool_call["id"]
-                    tools_called[tool_call_id] = {"found": False, "idx": idx}
-
-        # Search for matching tool calls
-        for msg in messages:
             if msg["role"] == "assistant" and "tool_calls" in msg:
-                # Extract 'tool_call_id' values
                 for tool_call in msg["tool_calls"]:
                     tool_call_id = tool_call["id"]
-                    if tool_call_id in tool_call_ids:
+                    tool_call_ids[tool_call_id] = {"found": False, "idx": idx}
+            elif msg["role"] == "tool":
+                tool_response_id = msg["tool_call_id"]
+                tool_responses[tool_response_id] = {"found": False, "idx": idx}
+
+        # Second pass: Match tool calls with responses and vice versa
+        for idx, msg in enumerate(messages):
+            if msg["role"] == "assistant" and "tool_calls" in msg:
+                for tool_call in msg["tool_calls"]:
+                    tool_call_id = tool_call["id"]
+                    if tool_call_id in tool_responses:
+                        tool_responses[tool_call_id]["found"] = True
                         tool_call_ids[tool_call_id]["found"] = True
-            elif msg["role"] == "tool" and "tool_call_id" in msg:
-                tool_call_id = msg["tool_call_id"]
-                if tool_call_id in tools_called:
-                    # Step 4: Mark the tool_call_id as found
-                    tools_called[tool_call_id]["found"] = True
+            elif msg["role"] == "tool":
+                tool_response_id = msg["tool_call_id"]
+                if tool_response_id in tool_call_ids:
+                    tool_responses[tool_response_id]["found"] = True
+                    tool_call_ids[tool_response_id]["found"] = True
 
-        # Check for any tool response without a corresponding tool_call_id
+        # Check for any tool response without a corresponding tool call or tool call without a response
         indices_to_remove = []
-        for tool_call_id, i in tool_call_ids.items():
-            if not i["found"]:
-                indices_to_remove.append(i["idx"])
-                log.debug(f"Popping message with index {i['idx']} since it has no preceeding tool call")
-                cleaned = True
-        for tool_call_id, i in tools_called.items():
-            if not i["found"]:
-                indices_to_remove.append(i["idx"])
-                log.debug(f"Popping message with index {i['idx']} since it has no responging tool calls")
+        for tool_call_id, data in tool_call_ids.items():
+            if not data["found"]:
+                indices_to_remove.append(data["idx"])
+                log.debug(f"Popping message with index {data['idx']} since it has no following tool response")
                 cleaned = True
 
-        # Remove the messages with missing tool calls in reverse order to avoid index shifting
+        for tool_response_id, data in tool_responses.items():
+            if not data["found"]:
+                indices_to_remove.append(data["idx"])
+                log.debug(f"Popping message with index {data['idx']} since it has no preceding tool call")
+                cleaned = True
+
+        # Remove the messages with missing tool calls or responses in reverse order to avoid index shifting
         for idx in sorted(indices_to_remove, reverse=True):
             messages.pop(idx)
-            cleaned = True
+
         return cleaned
 
     @perf()
