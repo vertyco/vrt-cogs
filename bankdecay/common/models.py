@@ -24,6 +24,7 @@ class GuildSettings(Base):
     percent_decay: float = 0.05  # 5%
     users: dict[int, User] = {}
     total_decayed: int = 0
+    ignored_roles: list[int] = []
 
     def get_user(self, user: discord.Member | discord.User | int) -> User:
         uid = user if isinstance(user, int) else user.id

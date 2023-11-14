@@ -140,3 +140,20 @@ class Admin(MixinMeta):
         user: User = conf.get_user(uid)
         txt = _("User was last seen {}").format(f"{user.seen_f} ({user.seen_r})")
         await ctx.send(txt)
+
+    @bankdecay.command(name="ignorerole")
+    async def ignore_role(self, ctx: commands.Context, *, role: discord.Role):
+        """
+        Add/Remove a role from the ignore list
+
+        Users with an ignored role will not have their balance decay
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if role.id in conf.ignored_roles:
+            conf.ignored_roles.remove(role.id)
+            txt = _("Role removed from the ignore list.")
+        else:
+            conf.ignored_roles.append(role.id)
+            txt = _("Role added to the ignore list.")
+        await ctx.send(txt)
+        await self.save()

@@ -29,7 +29,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -103,6 +103,9 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
             if not user:
                 # Remove members no longer in the server
                 del conf.users[user_id]
+                continue
+            if any(r.id in conf.ignored_roles for r in user.roles):
+                # Don't decay user balances with roles in the ignore list
                 continue
             last_active = conf.users[user_id].last_active
             delta = now - last_active
