@@ -396,48 +396,36 @@ class API(MixinMeta):
         """Modify a message payload in-place to ensure all tool calls have a following tool response,
         and all tool responses have a preceding tool call."""
         cleaned = False
-        tool_call_ids = {}  # To track tool calls
-        tool_responses = {}  # To track tool responses
+        tool_calls_and_responses = {}  # Tracks the pairing of tool calls and responses
 
-        # First pass: Identify tool calls and responses
+        # First pass: Identify tool calls and their expected responses
         for idx, msg in enumerate(messages):
             if msg["role"] == "assistant" and "tool_calls" in msg:
                 for tool_call in msg["tool_calls"]:
                     tool_call_id = tool_call["id"]
-                    tool_call_ids[tool_call_id] = {"found": False, "idx": idx}
+                    tool_calls_and_responses[tool_call_id] = {"call_idx": idx, "response_idx": None}
             elif msg["role"] == "tool":
-                tool_response_id = msg["tool_call_id"]
-                tool_responses[tool_response_id] = {"found": False, "idx": idx}
+                tool_call_id = msg["tool_call_id"]
+                if tool_call_id in tool_calls_and_responses:
+                    tool_calls_and_responses[tool_call_id]["response_idx"] = idx
 
-        # Second pass: Match tool calls with responses and vice versa
-        for idx, msg in enumerate(messages):
-            if msg["role"] == "assistant" and "tool_calls" in msg:
-                for tool_call in msg["tool_calls"]:
-                    tool_call_id = tool_call["id"]
-                    if tool_call_id in tool_responses:
-                        tool_responses[tool_call_id]["found"] = True
-                        tool_call_ids[tool_call_id]["found"] = True
-            elif msg["role"] == "tool":
-                tool_response_id = msg["tool_call_id"]
-                if tool_response_id in tool_call_ids:
-                    tool_responses[tool_response_id]["found"] = True
-                    tool_call_ids[tool_response_id]["found"] = True
-
-        # Check for any tool response without a corresponding tool call or tool call without a response
+        # Check for any inconsistencies
         indices_to_remove = []
-        for tool_call_id, data in tool_call_ids.items():
-            if not data["found"]:
-                indices_to_remove.append(data["idx"])
-                log.debug(f"Popping message with index {data['idx']} since it has no following tool response")
+        for tool_call_id, data in tool_calls_and_responses.items():
+            call_idx = data["call_idx"]
+            response_idx = data["response_idx"]
+            # Check if there is a response without a preceding call
+            if response_idx is not None and (call_idx is None or call_idx > response_idx):
+                indices_to_remove.append(response_idx)
+                log.debug(f"Popping message with index {response_idx} since it has no preceding tool call")
+                cleaned = True
+            # Check if there is a call without a following response
+            elif call_idx is not None and (response_idx is None or response_idx < call_idx):
+                indices_to_remove.append(call_idx)
+                log.debug(f"Popping message with index {call_idx} since it has no following tool response")
                 cleaned = True
 
-        for tool_response_id, data in tool_responses.items():
-            if not data["found"]:
-                indices_to_remove.append(data["idx"])
-                log.debug(f"Popping message with index {data['idx']} since it has no preceding tool call")
-                cleaned = True
-
-        # Remove the messages with missing tool calls or responses in reverse order to avoid index shifting
+        # Remove the messages with inconsistencies in reverse order to avoid index shifting
         for idx in sorted(indices_to_remove, reverse=True):
             messages.pop(idx)
 
