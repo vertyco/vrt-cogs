@@ -396,11 +396,16 @@ class API(MixinMeta):
         """Modify a message payload in-place to ensure all tool calls have preceeding tool_id call for it"""
         cleaned = False
         tool_call_ids = {}
+        tools_called = {}
         # Identify tool responses
         for idx, msg in enumerate(messages):
             if msg["role"] == "tool":
                 tool_call_id = msg["tool_call_id"]
                 tool_call_ids[tool_call_id] = {"found": False, "idx": idx}
+            elif msg["role"] == "assistant" and "tool_calls" in msg:
+                for tool_call in msg["tool_calls"]:
+                    tool_call_id = tool_call["id"]
+                    tools_called[tool_call_id] = {"found": False, "idx": idx}
 
         # Search for matching tool calls
         for msg in messages:
@@ -410,6 +415,11 @@ class API(MixinMeta):
                     tool_call_id = tool_call["id"]
                     if tool_call_id in tool_call_ids:
                         tool_call_ids[tool_call_id]["found"] = True
+            elif msg["role"] == "tool" and "tool_call_id" in msg:
+                tool_call_id = msg["tool_call_id"]
+                if tool_call_id in tools_called:
+                    # Step 4: Mark the tool_call_id as found
+                    tools_called[tool_call_id]["found"] = True
 
         # Check for any tool response without a corresponding tool_call_id
         indices_to_remove = []
@@ -417,6 +427,11 @@ class API(MixinMeta):
             if not i["found"]:
                 indices_to_remove.append(i["idx"])
                 log.debug(f"Popping message with index {i['idx']} since it has no preceeding tool call")
+                cleaned = True
+        for tool_call_id, i in tools_called.items():
+            if not i["found"]:
+                indices_to_remove.append(i["idx"])
+                log.debug(f"Popping message with index {i['idx']} since it has no responging tool calls")
                 cleaned = True
 
         # Remove the messages with missing tool calls in reverse order to avoid index shifting
