@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.12.0"
+    __version__ = "1.12.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -129,9 +129,7 @@ class VrtUtils(commands.Cog):
         cmd = f"{executable} -m {command}"
 
         def exe():
-            results = subprocess.run(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-            )
+            results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             return results.stdout.decode("utf-8") or results.stderr.decode("utf-8")
 
         res = await asyncio.to_thread(exe)
@@ -451,9 +449,7 @@ class VrtUtils(commands.Cog):
             description="Below are various stats about the bot and the system it runs on.",
             color=color,
         )
-        embed.set_footer(
-            text=f"System: {ostype}\nUptime: {sys_uptime}", icon_url=self.bot.user.display_avatar
-        )
+        embed.set_footer(text=f"System: {ostype}\nUptime: {sys_uptime}", icon_url=self.bot.user.display_avatar)
 
         botstats = (
             f"Servers:  {servers} ({shards} {'shard' if shards == 1 else 'shards'})\n"
@@ -554,12 +550,8 @@ class VrtUtils(commands.Cog):
                 member = await self.bot.get_or_fetch_user(user_id.id)
             except discord.NotFound:
                 return await ctx.send(f"I could not find any users with the ID `{user_id.id}`")
-        since_created = (
-            f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-        )
-        user_created = (
-            f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-        )
+        since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+        user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
         created_on = f"Joined Discord on {user_created}\n({since_created})"
         embed = discord.Embed(
             title=f"{member.name} - {member.id}",
@@ -625,22 +617,14 @@ class VrtUtils(commands.Cog):
                 page = i
             guild_splash = guild.splash.url if guild.splash else None
             guild_icon = guild.icon.url if guild.icon else None
-            created = (
-                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-            )
-            time_elapsed = (
-                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-            )
+            created = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            time_elapsed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
             try:
                 joined_at = guild.me.joined_at
             except AttributeError:
                 joined_at = discord.utils.utcnow()
-            bot_joined = (
-                f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-            )
-            since_joined = (
-                f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-            )
+            bot_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            since_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
 
             humans = sum(1 for x in guild.members if not x.bot)
             bots = sum(1 for x in guild.members if x.bot)
@@ -649,9 +633,7 @@ class VrtUtils(commands.Cog):
             dnd = sum(1 for x in guild.members if x.status is discord.Status.do_not_disturb)
             offline = sum(1 for x in guild.members if x.status is discord.Status.offline)
             streaming = sum(
-                1
-                for x in guild.members
-                if x.activity is not None and x.activity.type is discord.ActivityType.streaming
+                1 for x in guild.members if x.activity is not None and x.activity.type is discord.ActivityType.streaming
             )
 
             desc = (
@@ -676,9 +658,7 @@ class VrtUtils(commands.Cog):
             if guild_icon:
                 em.set_thumbnail(url=guild_icon)
 
-            owner = (
-                guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
-            )
+            owner = guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
             verlevel = guild.verification_level
             nitro = guild.premium_tier
             boosters = guild.premium_subscription_count
@@ -700,23 +680,11 @@ class VrtUtils(commands.Cog):
             text_channels = len(guild.text_channels)
             nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
             voice_channels = len(guild.voice_channels)
-            field = (
-                f"`Text:  `{text_channels}\n"
-                f"`Voice: `{voice_channels}\n"
-                f"`NSFW:  `{nsfw_channels}"
-            )
+            field = f"`Text:  `{text_channels}\n" f"`Voice: `{voice_channels}\n" f"`NSFW:  `{nsfw_channels}"
             em.add_field(name="Channels", value=field)
 
-            elevated_roles = [
-                r
-                for r in guild.roles
-                if any([p[0] in elevated_perms for p in r.permissions if p[1]])
-            ]
-            normal_roles = [
-                r
-                for r in guild.roles
-                if not any([p[0] in elevated_perms for p in r.permissions if p[1]])
-            ]
+            elevated_roles = [r for r in guild.roles if any([p[0] in elevated_perms for p in r.permissions if p[1]])]
+            normal_roles = [r for r in guild.roles if not any([p[0] in elevated_perms for p in r.permissions if p[1]])]
             field = (
                 f"`Elevated: `{len(elevated_roles)}\n"
                 f"`Normal:   `{len(normal_roles)}\n"
@@ -810,9 +778,7 @@ class VrtUtils(commands.Cog):
     async def oldestchannels(self, ctx, amount: int = 10):
         """See which channel is the oldest"""
         async with ctx.typing():
-            channels = [
-                c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)
-            ]
+            channels = [c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)]
             c_sort = sorted(channels, key=lambda x: x.created_at)
             txt = "\n".join(
                 [
@@ -933,9 +899,7 @@ class VrtUtils(commands.Cog):
         """
         Clear all voice channels from a server
         """
-        msg = await ctx.send(
-            "Are you sure you want to clear **ALL** Voice Channels from this server?"
-        )
+        msg = await ctx.send("Are you sure you want to clear **ALL** Voice Channels from this server?")
         yes = await confirm(ctx, msg)
         if yes is None:
             return
@@ -998,10 +962,7 @@ class VrtUtils(commands.Cog):
     async def binary2text(self, ctx: commands.Context, *, binary_string: str):
         """Convert a binary string to text"""
         try:
-            text = "".join(
-                chr(int(binary_string[i * 8 : i * 8 + 8], 2))
-                for i in range(len(binary_string) // 8)
-            )
+            text = "".join(chr(int(binary_string[i * 8 : i * 8 + 8], 2)) for i in range(len(binary_string) // 8))
             await ctx.send(text)
         except ValueError:
             await ctx.send("I could not convert that binary string to text :(")
@@ -1016,9 +977,7 @@ class VrtUtils(commands.Cog):
 
     @commands.command(name="emojidata")
     @commands.bot_has_permissions(embed_links=True)
-    async def emoji_info(
-        self, ctx: commands.Context, emoji: t.Union[discord.Emoji, discord.PartialEmoji, str]
-    ):
+    async def emoji_info(self, ctx: commands.Context, emoji: t.Union[discord.Emoji, discord.PartialEmoji, str]):
         """Get info about an emoji"""
 
         def _url():
@@ -1096,9 +1055,7 @@ class VrtUtils(commands.Cog):
             archive_name += ".zip"
         attachments = get_attachments(ctx.message)
         if not attachments:
-            return await ctx.send(
-                "Please attach your files to the command or reply to a message with attachments"
-            )
+            return await ctx.send("Please attach your files to the command or reply to a message with attachments")
 
         def zip_files(prepped: list) -> discord.File:
             zip_buffer = BytesIO()
@@ -1132,9 +1089,7 @@ class VrtUtils(commands.Cog):
         """
         attachments = get_attachments(ctx.message)
         if not attachments:
-            return await ctx.send(
-                "Please attach a zip file to the command or reply to a message with a zip file"
-            )
+            return await ctx.send("Please attach a zip file to the command or reply to a message with a zip file")
 
         def unzip_files(prepped: list) -> t.List[discord.File]:
             files = []
@@ -1190,3 +1145,30 @@ class VrtUtils(commands.Cog):
                     await ctx.send(names[:2000], files=file_list)
                 except discord.HTTPException:
                     await ctx.send(f"Failed to dump the following files: {names}")
+
+    @commands.command(name="shared")
+    @commands.is_owner()
+    async def shared_guilds(self, ctx: commands.Context, server: t.Union[discord.Guild, int]):
+        """
+        View members in a specified server that are also in this server
+        """
+        if isinstance(server, int):
+            server = self.bot.get_guild(server)
+            if not server:
+                return await ctx.send("I am not in a server with that ID.")
+        local_members = set(i.id for i in ctx.guild.members)
+        txt = ""
+        for member in server.members:
+            if member.id in local_members:
+                txt += f"{member.name} (`{member.id}`)\n"
+        if not txt:
+            return await ctx.send("That server has no members that are also in this one.")
+
+        pages = [p for p in pagify(txt)]
+        embeds = []
+        for idx, i in enumerate(pages):
+            embed = discord.Embed(title="Shared Members", description=i, color=ctx.author.color)
+            embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
+            embeds.append(embed)
+
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
