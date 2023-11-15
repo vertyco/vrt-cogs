@@ -397,15 +397,21 @@ class AdminCommands(MixinMeta):
         preview: Optional[discord.Message] = None,
     ):
         if not existing_modal:
+            # User wants to add or delete a field
             panels = await self.config.guild(ctx.guild).panels()
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))
 
             existing = panels[panel_name].get("modals", {})
             if field_name in existing:
+                # Delete field
                 async with self.config.guild(ctx.guild).panels() as panels:
                     del panels[panel_name]["modals"][field_name]
                     return await ctx.send(_("Field for {} panel has been removed!").format(panel_name))
+
+            if len(existing) >= 5:
+                txt = _("The most fields a modal can have is 5!")
+                return await ctx.send(txt)
 
         async def make_preview(m, mm: discord.Message):
             txt = ""
@@ -420,7 +426,7 @@ class AdminCommands(MixinMeta):
             )
 
         async def cancel(m):
-            await m.edit(embed=discord.Embed(description="Modal field addition cancelled", color=color))
+            await m.edit(embed=discord.Embed(description=_("Modal field addition cancelled"), color=color))
 
         foot = _("type 'cancel' to cancel at any time")
         color = ctx.author.color
