@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-10-11 19:12-0400\n"
+"POT-Creation-Date: 2023-11-14 20:55-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,242 +11,242 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: commands\admin.py:24
+#: commands\admin.py:25
 #, docstring
 msgid "Base support ticket settings"
 msgstr ""
 
-#: commands\admin.py:29 commands\admin.py:36
+#: commands\admin.py:30 commands\admin.py:35
 #, docstring
 msgid "Ticket Setup Guide"
 msgstr ""
 
-#: commands\admin.py:31
+#: commands\admin.py:32
 msgid "To create a support ticket panel, type "
 msgstr ""
 
-#: commands\admin.py:33
+#: commands\admin.py:32
 msgid " <panel_name>`"
 msgstr ""
 
-#: commands\admin.py:40
+#: commands\admin.py:39
 msgid ""
 "Set the category ID that new tickets will be created under if using channel "
 "tickets.\n"
 msgstr ""
 
-#: commands\admin.py:43
+#: commands\admin.py:40
 msgid "<panel_name> <category_id>`"
 msgstr ""
 
-#: commands\admin.py:44
+#: commands\admin.py:41
 msgid "Step 1"
 msgstr ""
 
-#: commands\admin.py:45
+#: commands\admin.py:42
 msgid "Set the channel that the bots ticket panel will be located in.\n"
 msgstr ""
 
-#: commands\admin.py:46
+#: commands\admin.py:43
 msgid "<panel_name> <channel_id>`"
 msgstr ""
 
-#: commands\admin.py:47
+#: commands\admin.py:44
 msgid "Step 2"
 msgstr ""
 
-#: commands\admin.py:48
+#: commands\admin.py:45
 msgid "Set the ID of the bots ticket panel message.\n"
 msgstr ""
 
-#: commands\admin.py:49
+#: commands\admin.py:46
 msgid "<panel_name> <message_id>`\n"
 msgstr ""
 
-#: commands\admin.py:50
+#: commands\admin.py:47
 msgid ""
 "At this point the ticket panel will be activated, all following steps are for extra customization.\n"
 "If you need a message to add the buttons to, you can use the `{}tickets embed` command.\n"
 msgstr ""
 
-#: commands\admin.py:55
+#: commands\admin.py:52
 msgid ""
 "If the bot is having trouble finding the message, run the command in the "
 "same channel as it."
 msgstr ""
 
-#: commands\admin.py:58
+#: commands\admin.py:53
 msgid "Step 3"
 msgstr ""
 
-#: commands\admin.py:59
+#: commands\admin.py:54
 msgid "Set the text of the ticket panel button.\n"
 msgstr ""
 
-#: commands\admin.py:60
+#: commands\admin.py:55
 msgid "<panel_name> <button_text>`"
 msgstr ""
 
-#: commands\admin.py:61
+#: commands\admin.py:56
 msgid "Button Text"
 msgstr ""
 
-#: commands\admin.py:62
+#: commands\admin.py:57
 msgid "Set the ticket panel button color.\n"
 msgstr ""
 
-#: commands\admin.py:63
+#: commands\admin.py:58
 msgid "Valid colors are "
 msgstr ""
 
-#: commands\admin.py:64
+#: commands\admin.py:59
 msgid "<panel_name> <button_color>`"
 msgstr ""
 
-#: commands\admin.py:65
+#: commands\admin.py:60
 msgid "Button Color"
 msgstr ""
 
-#: commands\admin.py:66
+#: commands\admin.py:61
 msgid "Set the button emoji for the ticket panel.\n"
 msgstr ""
 
-#: commands\admin.py:67
+#: commands\admin.py:62
 msgid "<panel_name> <emoji>`"
 msgstr ""
 
-#: commands\admin.py:68
+#: commands\admin.py:63
 msgid "Button Emoji"
 msgstr ""
 
-#: commands\admin.py:70
+#: commands\admin.py:65
 msgid "Use threads instead of channels for tickets\n"
 msgstr ""
 
-#: commands\admin.py:71 commands\admin.py:75 commands\admin.py:79
+#: commands\admin.py:66 commands\admin.py:70 commands\admin.py:74
 msgid "<panel_name>`"
 msgstr ""
 
-#: commands\admin.py:72 commands\admin.py:954
+#: commands\admin.py:67 commands\admin.py:958
 msgid "Thread Tickets"
 msgstr ""
 
-#: commands\admin.py:74
+#: commands\admin.py:69
 msgid "Add a message the bot sends to the user in their ticket.\n"
 msgstr ""
 
-#: commands\admin.py:76
+#: commands\admin.py:71
 msgid "Ticket Messages"
 msgstr ""
 
-#: commands\admin.py:78
+#: commands\admin.py:73
 msgid "View and remove a messages the bot sends to the user in their ticket.\n"
 msgstr ""
 
-#: commands\admin.py:80
+#: commands\admin.py:75
 msgid "Remove/View Ticket Messages"
 msgstr ""
 
-#: commands\admin.py:82
+#: commands\admin.py:77
 msgid "Set the naming format for ticket channels that are opened.\n"
 msgstr ""
 
-#: commands\admin.py:83
+#: commands\admin.py:78
 msgid "<panel_name> <name_format>`"
 msgstr ""
 
-#: commands\admin.py:84
+#: commands\admin.py:79
 msgid "Ticket Channel Name"
 msgstr ""
 
-#: commands\admin.py:85
+#: commands\admin.py:80
 msgid "Set log channel for a ticket panel.\n"
 msgstr ""
 
-#: commands\admin.py:86
+#: commands\admin.py:81
 msgid "<panel_name> <channel>`"
 msgstr ""
 
-#: commands\admin.py:87
+#: commands\admin.py:82
 msgid "Log Channel"
 msgstr ""
 
-#: commands\admin.py:89
+#: commands\admin.py:84
 msgid ""
 "Tip: you can create multiple support panels using the same message for a "
 "multi-button panel"
 msgstr ""
 
-#: commands\admin.py:97
+#: commands\admin.py:90
 #, docstring
 msgid "Add a support ticket panel"
 msgstr ""
 
-#: commands\admin.py:100
+#: commands\admin.py:93
 msgid " Panel Saved"
 msgstr ""
 
-#: commands\admin.py:101
+#: commands\admin.py:94
 msgid "Your panel has been added and will need to be configured."
 msgstr ""
 
-#: commands\admin.py:106
+#: commands\admin.py:99
 msgid "Panel already exists!"
 msgstr ""
 
-#: commands\admin.py:117
+#: commands\admin.py:110
 #, docstring
 msgid "Set the category ID for a ticket panel"
 msgstr ""
 
-#: commands\admin.py:121
+#: commands\admin.py:113
 msgid "I need the `manage channels` permission to set this category"
 msgstr ""
 
-#: commands\admin.py:124
+#: commands\admin.py:115
 msgid "I need `manage permissions` enabled in this category"
 msgstr ""
 
-#: commands\admin.py:126
+#: commands\admin.py:117
 msgid "I need the `attach files` permission to set this category"
 msgstr ""
 
-#: commands\admin.py:128
+#: commands\admin.py:119
 msgid "I cannot see that category!"
 msgstr ""
 
-#: commands\admin.py:130
+#: commands\admin.py:121
 msgid "I cannot see message history in that category!"
 msgstr ""
 
-#: commands\admin.py:133 commands\admin.py:153 commands\admin.py:168
-#: commands\admin.py:193 commands\admin.py:215 commands\admin.py:242
-#: commands\admin.py:267 commands\admin.py:278 commands\admin.py:337
-#: commands\admin.py:350 commands\admin.py:393 commands\admin.py:620
-#: commands\admin.py:704 commands\admin.py:776 commands\admin.py:1020
-#: commands\admin.py:1047 commands\admin.py:1063 commands\admin.py:1103
-#: commands\admin.py:1120 commands\admin.py:1133
+#: commands\admin.py:124 commands\admin.py:144 commands\admin.py:159
+#: commands\admin.py:182 commands\admin.py:202 commands\admin.py:227
+#: commands\admin.py:246 commands\admin.py:280 commands\admin.py:291
+#: commands\admin.py:346 commands\admin.py:359 commands\admin.py:403
+#: commands\admin.py:627 commands\admin.py:711 commands\admin.py:783
+#: commands\admin.py:1024 commands\admin.py:1045 commands\admin.py:1061
+#: commands\admin.py:1098 commands\admin.py:1115 commands\admin.py:1128
 msgid "Panel does not exist!"
 msgstr ""
 
-#: commands\admin.py:136
+#: commands\admin.py:127
 msgid "New tickets will now be opened under that category!"
 msgstr ""
 
-#: commands\admin.py:145
+#: commands\admin.py:136
 #, docstring
 msgid "Set the channel ID where a ticket panel is located"
 msgstr ""
 
-#: commands\admin.py:148 commands\admin.py:326
+#: commands\admin.py:139 commands\admin.py:335
 msgid "I cannot see that channel!"
 msgstr ""
 
-#: commands\admin.py:150 commands\admin.py:328
+#: commands\admin.py:141 commands\admin.py:337
 msgid "I cannot see message history in that channel!"
 msgstr ""
 
-#: commands\admin.py:159
+#: commands\admin.py:150
 #, docstring
 msgid ""
 "\n"
@@ -255,50 +255,68 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:170
+#: commands\admin.py:161
 msgid "Category ID must be set for this panel first!"
 msgstr ""
 
-#: commands\admin.py:180
+#: commands\admin.py:171
 #, docstring
 msgid "Set the button text for a support ticket panel"
 msgstr ""
 
-#: commands\admin.py:184
+#: commands\admin.py:174
 msgid "The text content of a button must be less than 80 characters!"
 msgstr ""
 
-#: commands\admin.py:188
+#: commands\admin.py:177
 msgid "This is what your button will look like with this text!"
 msgstr ""
 
-#: commands\admin.py:200
+#: commands\admin.py:189
 #, docstring
 msgid "Set the button color for a support ticket panel"
 msgstr ""
 
-#: commands\admin.py:206
+#: commands\admin.py:194
 msgid " is not valid, must be one of the following\n"
 msgstr ""
 
-#: commands\admin.py:210
+#: commands\admin.py:197
 msgid "This is what your button will look like with this color!"
 msgstr ""
 
-#: commands\admin.py:228
+#: commands\admin.py:215
 #, docstring
 msgid "Set the button emoji for a support ticket panel"
 msgstr ""
 
-#: commands\admin.py:233
+#: commands\admin.py:220
 msgid "This is what your button will look like with this emoji!"
 msgstr ""
 
-#: commands\admin.py:238
+#: commands\admin.py:224
 msgid "Failed to create test button. Error:\n"
 msgstr ""
 
-#: commands\admin.py:249
+#: commands\admin.py:238
+#, docstring
+msgid ""
+"\n"
+"        Toggle a panel on/off\n"
+"\n"
+"        Disabled panels will still show the button but it will be disabled\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:252
+msgid "Panel **Enabled**"
+msgstr ""
+
+#: commands\admin.py:255
+msgid "Panel **Disabled**"
+msgstr ""
+
+#: commands\admin.py:262
 #, docstring
 msgid ""
 "\n"
@@ -317,79 +335,79 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:274
+#: commands\admin.py:287
 #, docstring
 msgid "Toggle whether a certain panel uses threads or channels"
 msgstr ""
 
-#: commands\admin.py:281
+#: commands\admin.py:294
 msgid "Set a panel channel first!"
 msgstr ""
 
-#: commands\admin.py:284
+#: commands\admin.py:297
 msgid "I am missing the `Create Private Threads` permission!"
 msgstr ""
 
-#: commands\admin.py:286
+#: commands\admin.py:299
 msgid "I am missing the `Send Messages in Threads` permission!"
 msgstr ""
 
-#: commands\admin.py:290
+#: commands\admin.py:303
 msgid "The {} panel will no longer use threads"
 msgstr ""
 
-#: commands\admin.py:293
+#: commands\admin.py:306
 msgid "The {} panel will now use threads"
 msgstr ""
 
-#: commands\admin.py:298
+#: commands\admin.py:311
 #, docstring
 msgid "Throw a modal when the close button is clicked to enter a reason"
 msgstr ""
 
-#: commands\admin.py:307
+#: commands\admin.py:319
 msgid "The {} panel will no longer show a close reason modal"
 msgstr ""
 
-#: commands\admin.py:312
+#: commands\admin.py:322
 msgid "The {} panel will now show a close reason modal"
 msgstr ""
 
-#: commands\admin.py:323
+#: commands\admin.py:332
 #, docstring
 msgid "Set the logging channel for each panel's tickets"
 msgstr ""
 
-#: commands\admin.py:330
+#: commands\admin.py:339
 msgid "I cannot send messages in that channel!"
 msgstr ""
 
-#: commands\admin.py:332
+#: commands\admin.py:341
 msgid "I cannot embed links in that channel!"
 msgstr ""
 
-#: commands\admin.py:334
+#: commands\admin.py:343
 msgid "I cannot attach files in that channel!"
 msgstr ""
 
-#: commands\admin.py:344
+#: commands\admin.py:353
 #, docstring
 msgid "Set a title for a ticket panel's modal"
 msgstr ""
 
-#: commands\admin.py:346
+#: commands\admin.py:355
 msgid "The max length is 45!"
 msgstr ""
 
-#: commands\admin.py:353
+#: commands\admin.py:362
 msgid "Modal title set!"
 msgstr ""
 
-#: commands\admin.py:356
+#: commands\admin.py:365
 msgid "Modal title removed!"
 msgstr ""
 
-#: commands\admin.py:361
+#: commands\admin.py:370
 #, docstring
 msgid ""
 "\n"
@@ -411,138 +429,146 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:400
+#: commands\admin.py:410
 msgid "Field for {} panel has been removed!"
 msgstr ""
 
-#: commands\admin.py:420
-msgid "type 'cancel' to cancel at any time"
+#: commands\admin.py:413
+msgid "The most fields a modal can have is 5!"
 msgstr ""
 
 #: commands\admin.py:429
+msgid "Modal field addition cancelled"
+msgstr ""
+
+#: commands\admin.py:431
+msgid "type 'cancel' to cancel at any time"
+msgstr ""
+
+#: commands\admin.py:440
 msgid "What would you like the field label to be? (45 chars or less)"
 msgstr ""
 
-#: commands\admin.py:439
+#: commands\admin.py:450
 msgid "Modal field labels must be 45 characters or less!"
 msgstr ""
 
-#: commands\admin.py:452
+#: commands\admin.py:463
 msgid "What style would you like the text box to be? (long/short)"
 msgstr ""
 
-#: commands\admin.py:462
+#: commands\admin.py:473
 msgid "Style must be long or short!"
 msgstr ""
 
-#: commands\admin.py:471
+#: commands\admin.py:482
 msgid ""
 "Would you like to set a placeholder for the text field?\n"
 "This is text that shows up in the box before the user types."
 msgstr ""
 
-#: commands\admin.py:483
+#: commands\admin.py:494
 msgid "Type your desired placeholder below (100 chars max)"
 msgstr ""
 
-#: commands\admin.py:493
+#: commands\admin.py:504
 msgid "Placeholders must be 100 characters or less!"
 msgstr ""
 
-#: commands\admin.py:502
+#: commands\admin.py:513
 msgid "Would you like to set a default value for the text field?"
 msgstr ""
 
-#: commands\admin.py:511
+#: commands\admin.py:522
 msgid "Type your desired default value below"
 msgstr ""
 
-#: commands\admin.py:524
+#: commands\admin.py:535
 msgid "Would you like to make this field required?"
 msgstr ""
 
-#: commands\admin.py:537
+#: commands\admin.py:548
 msgid "Would you like to set a minimum length for this field?"
 msgstr ""
 
-#: commands\admin.py:546
+#: commands\admin.py:557
 msgid "Type the minimum length for this field below (less than 4000)"
 msgstr ""
 
-#: commands\admin.py:556 commands\admin.py:586
+#: commands\admin.py:567 commands\admin.py:595
 msgid "That is not a number!"
 msgstr ""
 
-#: commands\admin.py:567
+#: commands\admin.py:576
 msgid "Would you like to set a maximum length for this field?"
 msgstr ""
 
-#: commands\admin.py:576
+#: commands\admin.py:585
 msgid "Type the maximum length for this field below (up to 4000)"
 msgstr ""
 
-#: commands\admin.py:604
+#: commands\admin.py:611
 msgid "Your modal field has been added!"
 msgstr ""
 
-#: commands\admin.py:606
+#: commands\admin.py:613
 msgid "Your modal field has been edited!"
 msgstr ""
 
-#: commands\admin.py:616 commands\admin.py:772
+#: commands\admin.py:623 commands\admin.py:779
 #, docstring
 msgid "View/Delete a ticket message for a support ticket panel"
 msgstr ""
 
-#: commands\admin.py:623
+#: commands\admin.py:630
 msgid "This panel does not have any modal fields set!"
 msgstr ""
 
-#: commands\admin.py:627
+#: commands\admin.py:634
 msgid "`Label: `{}\n"
 msgstr ""
 
-#: commands\admin.py:628
+#: commands\admin.py:635
 msgid "`Style: `{}\n"
 msgstr ""
 
-#: commands\admin.py:629
+#: commands\admin.py:636
 msgid "`Placeholder: `{}\n"
 msgstr ""
 
-#: commands\admin.py:630
+#: commands\admin.py:637
 msgid "`Default:     `{}\n"
 msgstr ""
 
-#: commands\admin.py:631
+#: commands\admin.py:638
 msgid "`Required:    `{}\n"
 msgstr ""
 
-#: commands\admin.py:632
+#: commands\admin.py:639
 msgid "`Min Length:  `{}\n"
 msgstr ""
 
-#: commands\admin.py:633
+#: commands\admin.py:640
 msgid "`Max Length:  `{}\n"
 msgstr ""
 
-#: commands\admin.py:636 commands\admin.py:790
+#: commands\admin.py:643 commands\admin.py:797
 msgid "Page"
 msgstr ""
 
-#: commands\admin.py:639
+#: commands\admin.py:646
 msgid "Modal Fields for {}"
 msgstr ""
 
-#: commands\admin.py:657
+#: commands\admin.py:664
 msgid "Editing {} modal field for {}!"
 msgstr ""
 
-#: commands\admin.py:669
+#: commands\admin.py:676
 msgid "Modal field has been deleted from "
 msgstr ""
 
-#: commands\admin.py:691
+#: commands\admin.py:698
 #, docstring
 msgid ""
 "\n"
@@ -557,274 +583,278 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:705
+#: commands\admin.py:712
 msgid "type 'cancel' to cancel the setup"
 msgstr ""
 
-#: commands\admin.py:709
+#: commands\admin.py:716
 msgid "Would you like this ticket embed to have a title?"
 msgstr ""
 
-#: commands\admin.py:717
+#: commands\admin.py:724
 msgid "Type your desired title below"
 msgstr ""
 
-#: commands\admin.py:722 commands\admin.py:735 commands\admin.py:738
-#: commands\admin.py:756
+#: commands\admin.py:729 commands\admin.py:742 commands\admin.py:745
+#: commands\admin.py:763
 msgid "Ticket message addition cancelled"
 msgstr ""
 
-#: commands\admin.py:728
+#: commands\admin.py:735
 msgid "Type your desired ticket message below"
 msgstr ""
 
-#: commands\admin.py:742
+#: commands\admin.py:749
 msgid "Would you like this ticket embed to have a footer?"
 msgstr ""
 
-#: commands\admin.py:751
+#: commands\admin.py:758
 msgid "Type your footer"
 msgstr ""
 
-#: commands\admin.py:755 commands\admin.py:1369 commands\admin.py:1392
-#: commands\admin.py:1411
+#: commands\admin.py:762 commands\admin.py:1368 commands\admin.py:1391
+#: commands\admin.py:1410
 msgid "cancel"
 msgstr ""
 
-#: commands\admin.py:766
+#: commands\admin.py:773
 msgid "Your ticket message has been added!"
 msgstr ""
 
-#: commands\admin.py:779
+#: commands\admin.py:786
 msgid "This panel does not have any messages added!"
 msgstr ""
 
-#: commands\admin.py:782
+#: commands\admin.py:789
 msgid "**Title**\n"
 msgstr ""
 
-#: commands\admin.py:783
+#: commands\admin.py:790
 msgid "**Description**\n"
 msgstr ""
 
-#: commands\admin.py:784
+#: commands\admin.py:791
 msgid "**Footer**\n"
 msgstr ""
 
-#: commands\admin.py:786 commands\admin.py:799
+#: commands\admin.py:793 commands\admin.py:806
 msgid "Ticket Messages for: "
 msgstr ""
 
-#: commands\admin.py:802
+#: commands\admin.py:809
 msgid "Ticket message has been deleted from "
 msgstr ""
 
-#: commands\admin.py:816
+#: commands\admin.py:823
 #, docstring
 msgid "View/Delete currently configured support ticket panels"
 msgstr ""
 
-#: commands\admin.py:820
+#: commands\admin.py:827
 msgid ""
 "There are no panels available!\n"
 "Use "
 msgstr ""
 
-#: commands\admin.py:822
+#: commands\admin.py:827
 msgid "to create one."
 msgstr ""
 
-#: commands\admin.py:834
+#: commands\admin.py:839
 msgid "(alt)"
 msgstr ""
 
-#: commands\admin.py:853
-msgid "`Category:       `"
-msgstr ""
-
-#: commands\admin.py:854
-msgid "`Channel:        `"
-msgstr ""
-
-#: commands\admin.py:855
-msgid "`MessageID:      `"
-msgstr ""
-
 #: commands\admin.py:856
-msgid "`ButtonText:     `"
+msgid "`Disabled:       `"
 msgstr ""
 
 #: commands\admin.py:857
-msgid "`ButtonColor:    `"
+msgid "`Category:       `"
 msgstr ""
 
 #: commands\admin.py:858
-msgid "`ButtonEmoji:    `"
+msgid "`Channel:        `"
 msgstr ""
 
 #: commands\admin.py:859
-msgid "`TicketNum:      `"
+msgid "`MessageID:      `"
 msgstr ""
 
 #: commands\admin.py:860
-msgid "`Use Threads:    `"
+msgid "`ButtonText:     `"
 msgstr ""
 
 #: commands\admin.py:861
-msgid "`TicketMessages: `"
+msgid "`ButtonColor:    `"
 msgstr ""
 
 #: commands\admin.py:862
-msgid "`TicketName:     `"
+msgid "`ButtonEmoji:    `"
 msgstr ""
 
 #: commands\admin.py:863
-msgid "`Modal Fields:   `"
+msgid "`TicketNum:      `"
 msgstr ""
 
 #: commands\admin.py:864
-msgid "`Modal Title:    `"
+msgid "`Use Threads:    `"
 msgstr ""
 
 #: commands\admin.py:865
-msgid "`LogChannel:     `"
+msgid "`TicketMessages: `"
 msgstr ""
 
 #: commands\admin.py:866
-msgid "`Priority:       `"
+msgid "`TicketName:     `"
 msgstr ""
 
 #: commands\admin.py:867
-msgid "`Button Row:     `"
+msgid "`Modal Fields:   `"
 msgstr ""
 
 #: commands\admin.py:868
-msgid "`Reason Modal:   `"
+msgid "`Modal Title:    `"
 msgstr ""
 
 #: commands\admin.py:869
+msgid "`LogChannel:     `"
+msgstr ""
+
+#: commands\admin.py:870
+msgid "`Priority:       `"
+msgstr ""
+
+#: commands\admin.py:871
+msgid "`Button Row:     `"
+msgstr ""
+
+#: commands\admin.py:872
+msgid "`Reason Modal:   `"
+msgstr ""
+
+#: commands\admin.py:873
 msgid "`Max Claims:     `"
 msgstr ""
 
-#: commands\admin.py:877
+#: commands\admin.py:881
 msgid "Panel Roles(Mention)"
 msgstr ""
 
-#: commands\admin.py:879
+#: commands\admin.py:883
 msgid "Required Roles to Open"
 msgstr ""
 
-#: commands\admin.py:880
+#: commands\admin.py:884
 msgid "Page "
 msgstr ""
 
-#: commands\admin.py:892
+#: commands\admin.py:896
 msgid " panel has been deleted!"
 msgstr ""
 
-#: commands\admin.py:900
+#: commands\admin.py:904
 msgid "There are no more panels configured!"
 msgstr ""
 
-#: commands\admin.py:907
+#: commands\admin.py:911
 #, docstring
 msgid "View support ticket settings"
 msgstr ""
 
-#: commands\admin.py:910
+#: commands\admin.py:914
 msgid "hours"
 msgstr ""
 
-#: commands\admin.py:911
+#: commands\admin.py:915
 msgid "hour"
 msgstr ""
 
-#: commands\admin.py:914
+#: commands\admin.py:918
 msgid "Disabled"
 msgstr ""
 
-#: commands\admin.py:915
+#: commands\admin.py:919
 msgid "`Max Tickets:      `"
 msgstr ""
 
-#: commands\admin.py:916
+#: commands\admin.py:920
 msgid "`DM Alerts:        `"
 msgstr ""
 
-#: commands\admin.py:917
+#: commands\admin.py:921
 msgid "`Users can Rename: `"
 msgstr ""
 
-#: commands\admin.py:918
+#: commands\admin.py:922
 msgid "`Users can Close:  `"
 msgstr ""
 
-#: commands\admin.py:919
+#: commands\admin.py:923
 msgid "`Users can Manage: `"
 msgstr ""
 
-#: commands\admin.py:920
+#: commands\admin.py:924
 msgid "`Save Transcripts: `"
 msgstr ""
 
-#: commands\admin.py:921
+#: commands\admin.py:925
 msgid "`Auto Close:       `"
 msgstr ""
 
-#: commands\admin.py:921
+#: commands\admin.py:925
 msgid "On"
 msgstr ""
 
-#: commands\admin.py:921
+#: commands\admin.py:925
 msgid "Off"
 msgstr ""
 
-#: commands\admin.py:922
+#: commands\admin.py:926
 msgid "`NoResponseDelete: `"
 msgstr ""
 
-#: commands\admin.py:939
+#: commands\admin.py:943
 msgid "Invalid"
 msgstr ""
 
-#: commands\admin.py:941
+#: commands\admin.py:945
 msgid "Tickets Core Settings"
 msgstr ""
 
-#: commands\admin.py:946
+#: commands\admin.py:950
 msgid "Support Roles(Mention)"
 msgstr ""
 
-#: commands\admin.py:948
+#: commands\admin.py:952
 msgid "Blacklist"
 msgstr ""
 
-#: commands\admin.py:951
+#: commands\admin.py:955
 msgid "Thread tickets will be closed/archived rather than deleted"
 msgstr ""
 
-#: commands\admin.py:953
+#: commands\admin.py:957
 msgid "Thread tickets will be deleted instead of closed/archived"
 msgstr ""
 
-#: commands\admin.py:957
+#: commands\admin.py:961
 msgid "Thread Ticket Auto-Add"
 msgstr ""
 
-#: commands\admin.py:958
+#: commands\admin.py:962
 msgid "Auto-add support and panel roles to tickets that use threads: **{}**"
 msgstr ""
 
-#: commands\admin.py:966
+#: commands\admin.py:970
 #, docstring
 msgid "Set the max tickets a user can have open at one time of any kind"
 msgstr ""
 
-#: commands\admin.py:968
+#: commands\admin.py:972
 msgid "Max ticket amount must be greater than 0!"
 msgstr ""
 
-#: commands\admin.py:979
+#: commands\admin.py:983
 #, docstring
 msgid ""
 "\n"
@@ -836,15 +866,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:991
+#: commands\admin.py:995
 msgid "{} has been removed from support roles"
 msgstr ""
 
-#: commands\admin.py:995
+#: commands\admin.py:999
 msgid " has been added to support roles"
 msgstr ""
 
-#: commands\admin.py:1006
+#: commands\admin.py:1010
 #, docstring
 msgid ""
 "\n"
@@ -859,30 +889,30 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:1027
+#: commands\admin.py:1030
 msgid "{} has been removed from the {} panel roles"
 msgstr ""
 
-#: commands\admin.py:1035
+#: commands\admin.py:1034
 msgid " has been added to the {} panel roles"
 msgstr ""
 
-#: commands\admin.py:1041
+#: commands\admin.py:1039
 #, docstring
 msgid ""
 "Set how many staff members can claim/join a ticket before the join button is"
 " disabled (If using threads)"
 msgstr ""
 
-#: commands\admin.py:1044
+#: commands\admin.py:1042
 msgid "Amount cannot be negative!"
 msgstr ""
 
-#: commands\admin.py:1050
+#: commands\admin.py:1048
 msgid "Up to {} staff member(s) can claim a single ticket"
 msgstr ""
 
-#: commands\admin.py:1055
+#: commands\admin.py:1053
 #, docstring
 msgid ""
 "\n"
@@ -892,15 +922,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:1070
+#: commands\admin.py:1068
 msgid "{} has been removed from the {} panel's required open roles"
 msgstr ""
 
-#: commands\admin.py:1078
+#: commands\admin.py:1073
 msgid " has been added to the {} panel's required open roles"
 msgstr ""
 
-#: commands\admin.py:1090
+#: commands\admin.py:1085
 #, docstring
 msgid ""
 "\n"
@@ -915,47 +945,47 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:1107
+#: commands\admin.py:1102
 msgid "Alt channel has been removed for this panel!"
 msgstr ""
 
-#: commands\admin.py:1109
+#: commands\admin.py:1104
 msgid "Alt channel has been set to {}!"
 msgstr ""
 
-#: commands\admin.py:1114
+#: commands\admin.py:1109
 #, docstring
 msgid "Set the priority order of a panel's button"
 msgstr ""
 
-#: commands\admin.py:1116
+#: commands\admin.py:1111
 msgid "Priority needs to be between 1 and 25"
 msgstr ""
 
-#: commands\admin.py:1122
+#: commands\admin.py:1117
 msgid "Priority for this panel has been set to {}!"
 msgstr ""
 
-#: commands\admin.py:1127
+#: commands\admin.py:1122
 #, docstring
 msgid "Set the row of a panel's button (0 - 4)"
 msgstr ""
 
-#: commands\admin.py:1129
+#: commands\admin.py:1124
 msgid "Row needs to be between 0 and 4"
 msgstr ""
 
-#: commands\admin.py:1149
+#: commands\admin.py:1144
 msgid ""
 "This panel message already has the max amount of buttons for that specific "
 "row"
 msgstr ""
 
-#: commands\admin.py:1154
+#: commands\admin.py:1147
 msgid "The row number for this panel has been set to {}!"
 msgstr ""
 
-#: commands\admin.py:1164
+#: commands\admin.py:1157
 #, docstring
 msgid ""
 "\n"
@@ -965,25 +995,33 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:1172
+#: commands\admin.py:1165
 msgid " has been removed from the blacklist"
 msgstr ""
 
-#: commands\admin.py:1175
+#: commands\admin.py:1168
 msgid " has been added to the blacklist"
 msgstr ""
 
-#: commands\admin.py:1179
+#: commands\admin.py:1172
 #, docstring
 msgid ""
 "\n"
 "        Auto-close ticket if opener doesn't say anything after X hours of opening\n"
 "\n"
 "        Set to 0 to disable this\n"
+"\n"
+"        If using thread tickets, this translates to the thread's \"Hide after inactivity\" setting.\n"
+"        Your options are:\n"
+"        - 1 hour\n"
+"        - 24 hours (1 day)\n"
+"        - 72 hours (3 days)\n"
+"        - 168 hours (1 week)\n"
+"        Tickets will default to the closest value you select.\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:1194
+#: commands\admin.py:1195
 #, docstring
 msgid ""
 "\n"
@@ -993,86 +1031,86 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:1200
+#: commands\admin.py:1201
 msgid "Overview channel has been **Disabled**"
 msgstr ""
 
-#: commands\admin.py:1203
+#: commands\admin.py:1204
 msgid "Overview channel has been set to {}"
 msgstr ""
 
-#: commands\admin.py:1212
+#: commands\admin.py:1213
 #, docstring
 msgid "Toggle whether channels are mentioned in the active ticket overview"
 msgstr ""
 
-#: commands\admin.py:1216
+#: commands\admin.py:1217
 msgid ""
 "Ticket channels will no longer be mentioned in the active ticket channel"
 msgstr ""
 
-#: commands\admin.py:1219
+#: commands\admin.py:1220
 msgid "Ticket channels now be mentioned in the active ticket channel"
 msgstr ""
 
-#: commands\admin.py:1224
+#: commands\admin.py:1225
 #, docstring
 msgid "Cleanup tickets that no longer exist"
 msgstr ""
 
-#: commands\admin.py:1232
+#: commands\admin.py:1233
 #, docstring
 msgid "(Toggle) The bot sending DM's for ticket alerts"
 msgstr ""
 
-#: commands\admin.py:1236
+#: commands\admin.py:1237
 msgid "DM alerts have been **Disabled**"
 msgstr ""
 
-#: commands\admin.py:1239
+#: commands\admin.py:1240
 msgid "DM alerts have been **Enabled**"
 msgstr ""
 
-#: commands\admin.py:1243
+#: commands\admin.py:1244
 #, docstring
 msgid "(Toggle) Thread tickets being closed & archived instead of deleted"
 msgstr ""
 
-#: commands\admin.py:1247
+#: commands\admin.py:1248
 msgid "Closed ticket threads will be **Deleted**"
 msgstr ""
 
-#: commands\admin.py:1250
+#: commands\admin.py:1251
 msgid "Closed ticket threads will be **Closed & Archived**"
 msgstr ""
 
-#: commands\admin.py:1254
+#: commands\admin.py:1255
 #, docstring
 msgid "(Toggle) If users can rename their own tickets"
 msgstr ""
 
-#: commands\admin.py:1258
+#: commands\admin.py:1259
 msgid "User can no longer rename their support channel"
 msgstr ""
 
-#: commands\admin.py:1261
+#: commands\admin.py:1262
 msgid "User can now rename their support channel"
 msgstr ""
 
-#: commands\admin.py:1265
+#: commands\admin.py:1266
 #, docstring
 msgid "(Toggle) If users can close their own tickets"
 msgstr ""
 
-#: commands\admin.py:1269
+#: commands\admin.py:1270
 msgid "User can no longer close their support ticket channel"
 msgstr ""
 
-#: commands\admin.py:1272
+#: commands\admin.py:1273
 msgid "User can now close their support ticket channel"
 msgstr ""
 
-#: commands\admin.py:1276
+#: commands\admin.py:1277
 #, docstring
 msgid ""
 "\n"
@@ -1082,15 +1120,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:1284
+#: commands\admin.py:1285
 msgid "User can no longer manage their support ticket channel"
 msgstr ""
 
-#: commands\admin.py:1287
+#: commands\admin.py:1288
 msgid "User can now manage their support ticket channel"
 msgstr ""
 
-#: commands\admin.py:1291
+#: commands\admin.py:1292
 #, docstring
 msgid ""
 "\n"
@@ -1104,11 +1142,11 @@ msgstr ""
 msgid "Support and panel roles will no longer be auto-added to thread tickets"
 msgstr ""
 
-#: commands\admin.py:1304
+#: commands\admin.py:1303
 msgid "Support and panel roles will be auto-added to thread tickets"
 msgstr ""
 
-#: commands\admin.py:1308
+#: commands\admin.py:1307
 #, docstring
 msgid ""
 "\n"
@@ -1118,88 +1156,88 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:1316
+#: commands\admin.py:1315
 msgid "Transcripts of closed tickets will no longer be saved"
 msgstr ""
 
-#: commands\admin.py:1319
+#: commands\admin.py:1318
 msgid "Transcripts of closed tickets will now be saved"
 msgstr ""
 
-#: commands\admin.py:1328
+#: commands\admin.py:1327
 #, docstring
 msgid ""
 "Update a message with another message (Target gets updated using the source)"
 msgstr ""
 
-#: commands\admin.py:1340
+#: commands\admin.py:1339
 msgid "Failed to update message!"
 msgstr ""
 
-#: commands\admin.py:1352
+#: commands\admin.py:1351
 #, docstring
 msgid "Create an embed for ticket panel buttons to be added to"
 msgstr ""
 
-#: commands\admin.py:1353
+#: commands\admin.py:1352
 msgid "type 'cancel' to cancel"
 msgstr ""
 
-#: commands\admin.py:1358
+#: commands\admin.py:1357
 msgid "Would you like this embed to have a footer?"
 msgstr ""
 
-#: commands\admin.py:1365
+#: commands\admin.py:1364
 msgid "Enter the desired footer"
 msgstr ""
 
-#: commands\admin.py:1370 commands\admin.py:1393 commands\admin.py:1412
+#: commands\admin.py:1369 commands\admin.py:1392 commands\admin.py:1411
 msgid "Embed creation cancelled"
 msgstr ""
 
-#: commands\admin.py:1377
+#: commands\admin.py:1376
 msgid "Would you like this embed to have a thumbnail?"
 msgstr ""
 
-#: commands\admin.py:1388
+#: commands\admin.py:1387
 msgid "Enter a url for the thumbnail"
 msgstr ""
 
-#: commands\admin.py:1400
+#: commands\admin.py:1399
 msgid "Would you like this embed to have an image?"
 msgstr ""
 
-#: commands\admin.py:1407
+#: commands\admin.py:1406
 msgid "Enter a url for the image"
 msgstr ""
 
-#: commands\admin.py:1429
+#: commands\admin.py:1428
 msgid "Would you like to add a field to this embed?"
 msgstr ""
 
-#: commands\admin.py:1434
+#: commands\admin.py:1433
 msgid ""
 "Would you like to add another field to this embed?\n"
 "*There are currently {} fields*"
 msgstr ""
 
-#: commands\admin.py:1442
+#: commands\admin.py:1441
 msgid "Enter the name of the field"
 msgstr ""
 
-#: commands\admin.py:1448
+#: commands\admin.py:1447
 msgid "Enter the value of the field"
 msgstr ""
 
-#: commands\admin.py:1455
+#: commands\admin.py:1454
 msgid "Do you want this field to be inline?"
 msgstr ""
 
-#: commands\admin.py:1468
+#: commands\admin.py:1467
 msgid "Your embed has been sent!"
 msgstr ""
 
-#: commands\admin.py:1470
+#: commands\admin.py:1469
 msgid ""
 "Failed to send embed!\n"
 "Exception: {}"
@@ -1235,11 +1273,15 @@ msgstr ""
 msgid "You do not have permissions to rename this ticket"
 msgstr ""
 
-#: commands\base.py:99
-msgid "Ticket has been renamed"
+#: commands\base.py:97
+msgid "I no longer have permission to edit this channel"
 msgstr ""
 
-#: commands\base.py:107
+#: commands\base.py:100
+msgid "Renaming channel to {}"
+msgstr ""
+
+#: commands\base.py:115
 #, docstring
 msgid ""
 "\n"
@@ -1253,24 +1295,24 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\base.py:121
+#: commands\base.py:128
 msgid ""
 "Cannot find the owner of this ticket! Maybe it is not a ticket channel or "
 "was cleaned from the config?"
 msgstr ""
 
-#: commands\base.py:128
+#: commands\base.py:135
 msgid "You do not have permissions to close this ticket"
 msgstr ""
 
-#: commands\base.py:146
+#: commands\base.py:153
 msgid "This ticket will close {}"
 msgstr ""
 
-#: commands\base.py:154
+#: commands\base.py:161
 msgid "Closing cancelled!"
 msgstr ""
 
-#: commands\base.py:165
+#: commands\base.py:172
 msgid "Closing..."
 msgstr ""
