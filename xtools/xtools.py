@@ -3,7 +3,7 @@ import contextlib
 import json
 import logging
 import traceback
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Optional
 
 import aiohttp
@@ -41,7 +41,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "3.10.4"
+    __version__ = "3.10.5"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -82,9 +82,7 @@ class XTools(commands.Cog):
     @staticmethod
     async def microsoft_services_status():
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                "https://xnotify.xboxlive.com/servicestatusv6/US/en-US"
-            ) as resp:
+            async with session.get("https://xnotify.xboxlive.com/servicestatusv6/US/en-US") as resp:
                 data = xmltojson.parse(await resp.text())  # Parse HTML response to JSON
                 data = json.loads(data)
                 return data
@@ -333,9 +331,7 @@ class XTools(commands.Cog):
                 if not xbl_client:
                     return
                 try:
-                    profile_data = json.loads(
-                        (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                    )
+                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
                 except aiohttp.ClientResponseError:
                     return await ctx.send("Invalid Gamertag. Try again.")
                 # Format json data
@@ -357,9 +353,7 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid Gamertag. Try again.")
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -373,9 +367,7 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_xuid(xuid)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_xuid(xuid)).json())
             except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid XUID. Try again.")
             gt, _, _, _, _, _, _, _, _ = profile(profile_data)
@@ -398,16 +390,12 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            friends_data = json.loads(
-                (await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json()
-            )
+            friends_data = json.loads((await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json())
 
             # Manually get presence and activity info since xbox webapi method is outdated
             token = await self.get_token(session)
@@ -452,20 +440,14 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
                 data = json.loads(
-                    (
-                        await xbl_client.screenshots.get_saved_screenshots_by_xuid(
-                            xuid=xuid, max_items=10000
-                        )
-                    ).json()
+                    (await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)).json()
                 )
             except aiohttp.ClientResponseError as e:
                 if e.message == "Forbidden":
@@ -505,9 +487,7 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
@@ -557,9 +537,7 @@ class XTools(commands.Cog):
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
             except asyncio.TimeoutError:
-                return await msg.edit(
-                    embed=discord.Embed(description="You took too long :yawning_face:")
-                )
+                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
             if reply.content.lower() == "cancel":
                 return await msg.edit(embed=discord.Embed(description="Game search canceled."))
             titles = game_data["titles"]
@@ -571,19 +549,16 @@ class XTools(commands.Cog):
                     gamelist.append((name, title["titleId"], gs))
             if len(gamelist) == 0:
                 return await msg.edit(
-                    embed=discord.Embed(
-                        description=f"Couldn't find {reply.content} in your game history."
-                    )
+                    embed=discord.Embed(description=f"Couldn't find {reply.content} in your game history.")
                 )
             elif len(gamelist) > 1:
-                games = ""
-                count = 1
-                for item in gamelist:
-                    games += f"**{count}.** {item[0]}\n"
-                    count += 1
+                txt = StringIO()
+                for idx, item in enumerate(gamelist):
+                    txt.write(f"**{idx + 1}.** {item[0]}\n")
+
                 embed = discord.Embed(
                     title="Type the number of the game you want to select",
-                    description=games,
+                    description=txt.getvalue(),
                     color=discord.Color.random(),
                 )
                 embed.set_footer(text='Reply "cancel" to close the menu')
@@ -591,17 +566,13 @@ class XTools(commands.Cog):
                 try:
                     reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
                 except asyncio.TimeoutError:
-                    return await msg.edit(
-                        embed=discord.Embed(description="You took too long :yawning_face:")
-                    )
+                    return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
                 if reply.content.lower() == "cancel":
                     return await msg.edit(embed=discord.Embed(description="Game select canceled."))
                 elif not reply.content.isdigit():
                     return await msg.edit(embed=discord.Embed(description="That's not a number"))
                 elif int(reply.content) > len(gamelist):
-                    return await msg.edit(
-                        embed=discord.Embed(description="That's not a valid number")
-                    )
+                    return await msg.edit(embed=discord.Embed(description="That's not a valid number"))
                 i = int(reply.content) - 1
                 gamename = gamelist[i][0]
                 title_id = gamelist[i][1]
@@ -617,11 +588,7 @@ class XTools(commands.Cog):
 
             title_info = json.loads((await xbl_client.titlehub.get_title_info(title_id)).json())
             achievement_data = json.loads(
-                (
-                    await xbl_client.achievements.get_achievements_xboxone_gameprogress(
-                        xuid, title_id
-                    )
-                ).json()
+                (await xbl_client.achievements.get_achievements_xboxone_gameprogress(xuid, title_id)).json()
             )
             data = {
                 "stats": game_stats,
@@ -652,36 +619,24 @@ class XTools(commands.Cog):
                 embed.set_thumbnail(url=LOADING)
                 msg = await ctx.send(embed=embed)
                 try:
-                    profile_data = json.loads(
-                        (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                    )
+                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
                 except aiohttp.ClientResponseError:
                     embed = discord.Embed(description="Invalid Gamertag. Try again.")
                     return await msg.edit(embed=embed)
                 except Exception as e:
                     if "Forbidden" in str(e):
-                        embed = discord.Embed(
-                            description="Failed to gather data, Gamertag may be set to private."
-                        )
+                        embed = discord.Embed(description="Failed to gather data, Gamertag may be set to private.")
                         return await msg.edit(embed=embed)
-                    embed = discord.Embed(
-                        description=f"Failed to gather data!\nError: {box(str(e), 'py')}"
-                    )
+                    embed = discord.Embed(description=f"Failed to gather data!\nError: {box(str(e), 'py')}")
                     return await msg.edit(embed=embed)
                 gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
                 try:
-                    friend_data = json.loads(
-                        (await xbl_client.people.get_friends_by_xuid(xuid)).json()
-                    )
+                    friend_data = json.loads((await xbl_client.people.get_friends_by_xuid(xuid)).json())
                 except aiohttp.ClientResponseError as e:
                     if e.status == 403:
-                        return await msg.edit(
-                            embed=None, content="This persons friends list is private!"
-                        )
+                        return await msg.edit(embed=None, content="This persons friends list is private!")
                     log.error("Failed to get friends list", exc_info=e)
-                    return await msg.edit(
-                        embed=None, content="Failed to fetch this person's friends list!"
-                    )
+                    return await msg.edit(embed=None, content="Failed to fetch this person's friends list!")
                 self.cache[str(ctx.author.id)] = friend_data
                 pages = friend_embeds(friend_data, gt)
                 if len(pages) == 0:
@@ -712,9 +667,7 @@ class XTools(commands.Cog):
         try:
             reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
         except asyncio.TimeoutError:
-            return await msg.edit(
-                embed=discord.Embed(description="You took too long :yawning_face:")
-            )
+            return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
         if reply.content.lower() == "cancel":
             return await msg.edit(embed=discord.Embed(description="Search canceled."))
         players = []
@@ -722,9 +675,7 @@ class XTools(commands.Cog):
             if reply.content.lower() in player["gamertag"].lower():
                 players.append(player["gamertag"])
         if len(players) == 0:
-            return await msg.edit(
-                embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list.")
-            )
+            return await msg.edit(embed=discord.Embed(description=f"Couldn't find {reply.content} in friends list."))
 
         elif len(players) > 1:
             flist = ""
@@ -742,9 +693,7 @@ class XTools(commands.Cog):
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=mcheck)
             except asyncio.TimeoutError:
-                return await msg.edit(
-                    embed=discord.Embed(description="You took too long :yawning_face:")
-                )
+                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
             if reply.content.lower() == "cancel":
                 return await msg.edit(embed=discord.Embed(description="Selection canceled."))
             elif not reply.content.isdigit():
@@ -775,17 +724,13 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
-                data = json.loads(
-                    (await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json()
-                )
+                data = json.loads((await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json())
             except Exception as e:
                 if "Forbidden" in str(e):
                     embed = discord.Embed(
@@ -812,10 +757,7 @@ class XTools(commands.Cog):
     async def get_microsoft_status(self, ctx: commands.Context):
         """Check Microsoft Services Status"""
         data = await self.microsoft_services_status()
-        if (
-            ctx.author.id == 350053505815281665
-            and ctx.channel.permissions_for(ctx.me).attach_files
-        ):
+        if ctx.author.id == 350053505815281665 and ctx.channel.permissions_for(ctx.me).attach_files:
             file = discord.File(BytesIO(json.dumps(data).encode()), filename="status.json")
             await ctx.send(file=file)
         embeds = ms_status(data)
@@ -841,9 +783,7 @@ class XTools(commands.Cog):
                     xbl_client = await self.auth_manager(session, ctx)
                     if not xbl_client:
                         return
-                    game_data = json.loads(
-                        (await xbl_client.catalog.get_products(game_ids)).json()
-                    )
+                    game_data = json.loads((await xbl_client.catalog.get_products(game_ids)).json())
                     products = game_data["products"]
                     pages = gwg_embeds(products)
                     return await menu(ctx, pages, DEFAULT_CONTROLS)
@@ -864,9 +804,7 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
@@ -923,17 +861,13 @@ class XTools(commands.Cog):
                         most_played[title["name"]] = 0
                         if len(data["statlistscollection"][0]["stats"]) > 0:
                             if "value" in data["statlistscollection"][0]["stats"][0]:
-                                most_played[title["name"]] = int(
-                                    data["statlistscollection"][0]["stats"][0]["value"]
-                                )
+                                most_played[title["name"]] = int(data["statlistscollection"][0]["stats"][0]["value"])
                             else:
                                 not_found = True
                                 cant_find += f"{title['name']}\n"
             pages = mostplayed(most_played, gt)
             if not_found:
-                embed = discord.Embed(
-                    description=f"Couldn't find playtime data for:\n" f"{box(cant_find)}"
-                )
+                embed = discord.Embed(description=f"Couldn't find playtime data for:\n" f"{box(cant_find)}")
                 await msg.edit(embed=embed)
             else:
                 await msg.delete()
@@ -992,9 +926,7 @@ class XTools(commands.Cog):
         }
         await cog.register_function("XTools", schema)
 
-    async def get_gamertag_profile(
-        self, user: discord.Member, gamertag: str = None, *args, **kwargs
-    ):
+    async def get_gamertag_profile(self, user: discord.Member, gamertag: str = None, *args, **kwargs):
         async with aiohttp.ClientSession() as session:
             if not gamertag:
                 users = await self.config.users()
@@ -1006,16 +938,12 @@ class XTools(commands.Cog):
                 return "Could not communicate with XSAPI"
 
             try:
-                profile_data = json.loads(
-                    (await xbl_client.profile.get_profile_by_gamertag(gamertag)).json()
-                )
+                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 return "Invalid Gamertag. Try again."
 
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            friends_data = json.loads(
-                (await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json()
-            )
+            friends_data = json.loads((await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json())
 
             # Manually get presence and activity info since xbox webapi method is outdated
             token = await self.get_token(session)

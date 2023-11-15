@@ -2,6 +2,7 @@ import logging
 import math
 import random
 from datetime import datetime, timedelta
+from io import StringIO
 from typing import List, Union
 
 import discord
@@ -230,7 +231,7 @@ def get_leaderboard(
         if stop > len(sorted_users):
             stop = len(sorted_users)
 
-        txt = ""
+        buf = StringIO()
         for i in range(start, stop, 1):
             uid = sorted_users[i][0]
             user_obj = ctx.guild.get_member(int(uid)) or ctx.bot.get_user(int(uid))
@@ -255,11 +256,11 @@ def get_leaderboard(
                     if lvl := data.get("level"):
                         stat += f" 🎖{lvl}"
 
-            txt += f"{place}. {user} ({stat})\n"
+            buf.write(f"{place}. {user} ({stat})\n")
 
         embed = discord.Embed(
             title=title,
-            description=desc + box(txt, lang="python"),
+            description=desc + box(buf.getvalue(), lang="python"),
             color=discord.Color.random(),
         )
         if DPY2:
