@@ -140,8 +140,8 @@ class Admin(MixinMeta):
             + _("`Frequency Penalty:   `{}\n").format(conf.frequency_penalty)
             + _("`Presence Penalty:    `{}\n").format(conf.presence_penalty)
             + _("`Seed:                `{}\n").format(conf.seed)
-            + _("`System Message:      `{} tokens\n").format(humanize_number(system_tokens))
-            + _("`Initial Prompt:      `{} tokens\n").format(humanize_number(prompt_tokens))
+            + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
+            + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
         )
 
         embed = discord.Embed(
@@ -149,6 +149,13 @@ class Admin(MixinMeta):
             description=desc,
             color=ctx.author.color,
         )
+
+        if conf.allow_sys_prompt_override:
+            val = _("System prompt override is **Allowed**, users can set a personal system prompt per convo.")
+        else:
+            val = _("System prompt override is **Disabled**, users cannot set a personal system prompt per convo.")
+        val += _("\n*This will be restricted to mods if collaborative conversations are enabled!*")
+        embed.add_field(name=_("System Prompt Overriding"), value=val, inline=False)
 
         types = set(len(i.embedding) for i in conf.embeddings.values())
 
@@ -627,6 +634,18 @@ class Admin(MixinMeta):
         else:
             await ctx.send(_("Channel id has been set"))
             conf.channel_id = channel.id
+        await self.save_conf()
+
+    @assistant.command(name="sysoverride")
+    async def toggle_systemoverride(self, ctx: commands.Context):
+        """Toggle allowing per-conversation system prompt overriding"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.allow_sys_prompt_override:
+            conf.allow_sys_prompt_override = False
+            await ctx.send(_("System prompt overriding **Disabled**, users cannot set per-convo system prompts"))
+        else:
+            conf.allow_sys_prompt_override = True
+            await ctx.send(_("System prompt overriding **Enabled**, users can now set per-convo system prompts"))
         await self.save_conf()
 
     @assistant.command(name="questionmark")

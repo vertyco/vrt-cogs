@@ -77,6 +77,7 @@ class Usage(AssistantBaseModel):
 class GuildSettings(AssistantBaseModel):
     system_prompt: str = "You are a helpful discord assistant named {botname}"
     prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
+    allow_sys_prompt_override: bool = False  # Per convo system prompt
     embeddings: Dict[str, Embedding] = {}
     usage: Dict[str, Usage] = {}
     blacklist: List[int] = []  # Channel/Role/User IDs
@@ -221,6 +222,7 @@ class GuildSettings(AssistantBaseModel):
 class Conversation(AssistantBaseModel):
     messages: List[dict] = []
     last_updated: float = 0.0
+    system_prompt_override: Optional[str] = None
 
     def function_count(self) -> int:
         if not self.messages:
@@ -283,8 +285,9 @@ class Conversation(AssistantBaseModel):
     ) -> List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
-        if system_prompt.strip():
-            prepared.append({"role": "system", "content": system_prompt})
+        sys_prompt = self.system_prompt_override or system_prompt
+        if sys_prompt.strip():
+            prepared.append({"role": "system", "content": sys_prompt})
         if initial_prompt.strip():
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
@@ -334,11 +337,7 @@ class DB(AssistantBaseModel):
         guild_id: int,
     ) -> Conversation:
         key = f"{member_id}-{channel_id}-{guild_id}"
-        if key in self.conversations:
-            return self.conversations[key]
-
-        self.conversations[key] = Conversation()
-        return self.conversations[key]
+        return self.conversations.setdefault(key, Conversation())
 
     @perf()
     def prep_functions(

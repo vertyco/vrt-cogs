@@ -6,7 +6,7 @@ from io import BytesIO
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, escape, pagify
+from redbot.core.utils.chat_formatting import box, escape, pagify, text_to_file
 
 from ..abc import MixinMeta
 from ..common.calls import request_model
@@ -180,6 +180,9 @@ If a file has no extension it will still try to read it only if it can be decode
         )
         embed.set_footer(text=_("Token limit is a soft cap and excess is trimmed before sending to the api"))
         await ctx.send(embed=embed)
+        if conversation.system_prompt_override:
+            file = text_to_file(conversation.system_prompt_override)
+            await ctx.send(_("System prompt override for this conversation"), file=file)
 
     @commands.command(name="clearconvo")
     @commands.guild_only()
@@ -202,6 +205,35 @@ If a file has no extension it will still try to read it only if it can be decode
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
         conversation.reset()
         await ctx.send(_("Your conversation in this channel has been reset!"))
+
+    @commands.command(name="convoprompt")
+    @commands.guild_only()
+    async def conversation_prompt(self, ctx: commands.Context, *, prompt: str = None):
+        """
+        Set a system prompt for this conversation!
+
+        This allows customization of assistant behavior on a per channel basis!
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.allow_sys_prompt_override:
+            txt = _("Conversation system prompt overriding is **Disabled**.")
+            return await ctx.send(txt)
+        mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
+        perms = [
+            await self.bot.is_mod(ctx.author),
+            ctx.channel.permissions_for(ctx.author).manage_messages,
+            ctx.author.id in self.bot.owner_ids,
+        ]
+        if conf.collab_convos and not any(perms):
+            txt = _("Only moderators can set conversation prompts when collaborative conversations are enabled!")
+            return await ctx.send(txt)
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        conversation.system_prompt_override = prompt
+        if prompt:
+            txt = _("System prompt has been set for this conversation!")
+        else:
+            txt = _("System prompt has been **Removed** for this conversation!")
+        await ctx.send(txt)
 
     @commands.command(name="query")
     @commands.bot_has_permissions(embed_links=True)
