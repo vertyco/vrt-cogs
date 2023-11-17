@@ -77,9 +77,7 @@ class EconomyTrackCommands(MixinMeta):
         try:
             tz = pytz.timezone(timezone)
         except pytz.UnknownTimeZoneError:
-            likely_match = sorted(
-                pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True
-            )[0]
+            likely_match = sorted(pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True)[0]
             return await ctx.send(f"Invalid Timezone, did you mean `{likely_match}`?")
         time = datetime.datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
         await ctx.send(f"Timezone set to **{timezone}** (`{time}`)")
@@ -110,9 +108,7 @@ class EconomyTrackCommands(MixinMeta):
             f"`Collected:  `{humanize_number(points)} ({ptime if ptime else 'None'})\n"
             f"`LoopTime:   `{avg_iter}ms"
         )
-        embed = discord.Embed(
-            title="EconomyTrack Settings", description=desc, color=ctx.author.color
-        )
+        embed = discord.Embed(title="EconomyTrack Settings", description=desc, color=ctx.author.color)
         memtime = humanize_timedelta(seconds=len(conf["member_data"]) * 60)
         embed.add_field(
             name="Member Tracking",
@@ -227,11 +223,10 @@ class EconomyTrackCommands(MixinMeta):
             )
             return await ctx.send(embed=embed)
 
+        delta: datetime.timedelta = df.index[-1] - df.index[0]
         if timespan.lower() == "all":
-            alltime = humanize_timedelta(seconds=len(data) * 60)
-            title = f"Total economy balance for all time ({alltime})"
+            title = f"Total economy balance for all time ({humanize_timedelta(timedelta=delta)})"
         else:
-            delta: datetime.timedelta = df.index[-1] - df.index[0]
             title = f"Total economy balance over the last {humanize_timedelta(timedelta=delta)}"
 
         lowest = df.min().total
@@ -320,11 +315,10 @@ class EconomyTrackCommands(MixinMeta):
             )
             return await ctx.send(embed=embed)
 
+        delta: datetime.timedelta = df.index[-1] - df.index[0]
         if timespan.lower() == "all":
-            alltime = humanize_timedelta(seconds=len(data) * 60)
-            title = f"Total member count for all time ({alltime})"
+            title = f"Total member count for all time ({humanize_timedelta(timedelta=delta)})"
         else:
-            delta: datetime.timedelta = df.index[-1] - df.index[0]
             title = f"Total member count over the last {humanize_timedelta(timedelta=delta)}"
 
         lowest = df.min().total
