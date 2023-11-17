@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.12.1"
+    __version__ = "1.12.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -581,8 +581,8 @@ class VrtUtils(commands.Cog):
     @commands.is_owner()
     @commands.bot_has_permissions(attach_files=True)
     async def usersjson(self, ctx: commands.Context):
-        """Get a json file containing all usernames/ID's in this guild"""
-        members = {str(member.id): member.name for member in ctx.guild.members}
+        """Get a json file containing all non-bot usernames/ID's in this guild"""
+        members = {str(member.id): member.name for member in ctx.guild.members if not member.bot}
         file = text_to_file(json.dumps(members))
         await ctx.send("Here are all usernames and their ID's for this guild", file=file)
 
