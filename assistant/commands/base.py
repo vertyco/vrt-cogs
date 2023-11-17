@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import traceback
 from io import BytesIO
 
 import discord
@@ -11,7 +12,7 @@ from redbot.core.utils.chat_formatting import box, escape, pagify, text_to_file
 from ..abc import MixinMeta
 from ..common.calls import request_model
 from ..common.constants import READ_EXTENSIONS
-from ..common.utils import can_use
+from ..common.utils import can_use, get_attachments
 
 log = logging.getLogger("red.vrt.assistant.base")
 _ = Translator("Assistant", __file__)
@@ -218,6 +219,7 @@ If a file has no extension it will still try to read it only if it can be decode
         if not conf.allow_sys_prompt_override:
             txt = _("Conversation system prompt overriding is **Disabled**.")
             return await ctx.send(txt)
+
         mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
         perms = [
             await self.bot.is_mod(ctx.author),
@@ -227,6 +229,30 @@ If a file has no extension it will still try to read it only if it can be decode
         if conf.collab_convos and not any(perms):
             txt = _("Only moderators can set conversation prompts when collaborative conversations are enabled!")
             return await ctx.send(txt)
+
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                prompt = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse conversation prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()
+                return
+
+        model = conf.get_user_model(ctx.author)
+        ptokens = await self.count_tokens(conf.prompt, conf, model) if conf.prompt else 0
+        max_tokens = conf.get_user_max_tokens(ctx.author)
+        if ptokens > (max_tokens * 0.9):
+            txt = _(
+                "This prompt is uses {} tokens which is more than 90% of the maximum tokens allowed per conversation!\n"
+                "Write a prompt using {} tokens or less to leave 10% of your token limit for responses"
+            ).format(ptokens, round(max_tokens * 0.9))
+            return await ctx.send(txt)
+
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
         conversation.system_prompt_override = prompt
         if prompt:
