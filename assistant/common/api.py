@@ -396,37 +396,43 @@ class API(MixinMeta):
         """Modify a message payload in-place to ensure all tool calls have a following tool response,
         and all tool responses have a preceding tool call."""
         cleaned = False
-        tool_calls_and_responses = {}  # Tracks the pairing of tool calls and responses
+        tool_calls_to_find = {}  # Maps tool_call_id to its expected position
+        tool_responses_to_check = {}  # Maps tool_call_id to its actual position
 
         # First pass: Identify tool calls and their expected responses
         for idx, msg in enumerate(messages):
             if msg["role"] == "assistant" and "tool_calls" in msg:
                 for tool_call in msg["tool_calls"]:
                     tool_call_id = tool_call["id"]
-                    tool_calls_and_responses[tool_call_id] = {"call_idx": idx, "response_idx": None}
+                    # Store the index where we expect to find the response
+                    tool_calls_to_find[tool_call_id] = idx + 1
             elif msg["role"] == "tool":
                 tool_call_id = msg["tool_call_id"]
-                if tool_call_id in tool_calls_and_responses:
-                    tool_calls_and_responses[tool_call_id]["response_idx"] = idx
+                # Store the index where we found the response
+                tool_responses_to_check[tool_call_id] = idx
 
         # Check for any inconsistencies
         indices_to_remove = []
-        for tool_call_id, data in tool_calls_and_responses.items():
-            call_idx = data["call_idx"]
-            response_idx = data["response_idx"]
-            # Check if there is a response without a preceding call
-            if response_idx is not None and (call_idx is None or call_idx > response_idx):
-                indices_to_remove.append(response_idx)
-                log.debug(f"Popping message with index {response_idx} since it has no preceding tool call")
+        for tool_call_id, expected_response_idx in tool_calls_to_find.items():
+            actual_response_idx = tool_responses_to_check.get(tool_call_id)
+            # Check if there is a call without a following response or response is out of order
+            if actual_response_idx is None or actual_response_idx < expected_response_idx:
+                indices_to_remove.append(expected_response_idx - 1)
+                log.debug(
+                    f"Popping message with index {expected_response_idx - 1} since it has no following tool response"
+                )
                 cleaned = True
-            # Check if there is a call without a following response
-            elif call_idx is not None and (response_idx is None or response_idx < call_idx):
-                indices_to_remove.append(call_idx)
-                log.debug(f"Popping message with index {call_idx} since it has no following tool response")
+
+        for tool_call_id, actual_response_idx in tool_responses_to_check.items():
+            expected_response_idx = tool_calls_to_find.get(tool_call_id)
+            # Check if there is a response without a preceding call or call is out of order
+            if expected_response_idx is None or actual_response_idx < expected_response_idx:
+                indices_to_remove.append(actual_response_idx)
+                log.debug(f"Popping message with index {actual_response_idx} since it has no preceding tool call")
                 cleaned = True
 
         # Remove the messages with inconsistencies in reverse order to avoid index shifting
-        for idx in sorted(indices_to_remove, reverse=True):
+        for idx in sorted(set(indices_to_remove), reverse=True):
             messages.pop(idx)
 
         return cleaned
@@ -471,14 +477,6 @@ class API(MixinMeta):
 
         if total_tokens <= max_tokens:
             return messages, function_list, False
-
-        log.debug(f"Removing functions (total: {total_tokens}/max: {max_tokens})")
-        # Degrade function_list first
-        while total_tokens > max_tokens and len(function_list) > 0:
-            popped = function_list.pop(0)
-            total_tokens -= await self.count_tokens(json.dumps(popped), conf, model)
-            if total_tokens <= max_tokens:
-                return messages, function_list, True
 
         # Pop one random message from the first quarter of the conversation
         index = round(len(messages) / 4)
@@ -571,6 +569,14 @@ class API(MixinMeta):
                 i += 1
                 continue
             messages.pop(i)
+
+        log.debug(f"Removing functions (total: {total_tokens}/max: {max_tokens})")
+        # Degrade function_list before last resort
+        while total_tokens > max_tokens and len(function_list) > 0:
+            popped = function_list.pop(0)
+            total_tokens -= await self.count_tokens(json.dumps(popped), conf, model)
+            if total_tokens <= max_tokens:
+                return messages, function_list, True
 
         # Degrade the most recent user and function messages as the last resort
         log.debug(f"Degrading user/function messages (total: {total_tokens}/max: {max_tokens})")
