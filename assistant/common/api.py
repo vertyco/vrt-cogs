@@ -539,13 +539,13 @@ class API(MixinMeta):
             # Content is either a list or a string
             if isinstance(messages[i]["content"], list):
                 for idx, msg in enumerate(messages[i]["content"]):
-                    if msg["type"] == "image_url":
+                    if msg["type"] != "text":
                         continue
                     degraded_content = _degrade_message(msg["text"])
                     pre = await self.count_tokens(msg["text"], conf, model)
                     post = await self.count_tokens(degraded_content, conf, model)
                     diff = pre - post
-                    messages[i]["content"][idx] = degraded_content
+                    messages[i]["content"][idx]["text"] = degraded_content
                     total_tokens -= diff
             else:
                 degraded_content = _degrade_message(messages[i]["content"])
@@ -587,13 +587,13 @@ class API(MixinMeta):
             while total_tokens > max_tokens:
                 if isinstance(messages[i]["content"], list):
                     for idx, msg in enumerate(messages[i]["content"]):
-                        if msg["type"] == "image_url":
+                        if msg["type"] != "text":
                             continue
                         degraded_content = _degrade_message(msg["text"])
                         pre = await self.count_tokens(msg["text"], conf, model)
                         post = await self.count_tokens(degraded_content, conf, model)
                         diff = pre - post
-                        messages[i]["content"][idx] = degraded_content
+                        messages[i]["content"][idx]["text"] = degraded_content
                         total_tokens -= diff
                 else:
                     degraded_content = _degrade_message(messages[i]["content"])
