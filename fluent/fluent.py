@@ -34,7 +34,7 @@ class Fluent(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.1.4"
+    __version__ = "2.1.5"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -48,6 +48,7 @@ class Fluent(commands.Cog):
         self.config = Config.get_conf(self, identifier=11701170)
         self.config.register_guild(channels={})
         logging.getLogger("hpack.hpack").setLevel(logging.INFO)
+        logging.getLogger("deepl").setLevel(logging.WARNING)
 
     @cached(ttl=10)
     async def get_channels(self, guild: discord.Guild) -> dict:
