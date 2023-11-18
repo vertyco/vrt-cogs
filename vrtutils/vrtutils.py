@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.12.2"
+    __version__ = "1.12.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -275,11 +275,10 @@ class VrtUtils(commands.Cog):
             command = f"pip {command}"
             res = await self.do_shell_command(command)
             embeds = []
-            page = 1
-            for p in pagify(res):
+            pages = [p for p in pagify(res)]
+            for idx, p in enumerate(pages):
                 embed = discord.Embed(title="Pip Command Results", description=box(p))
-                embed.set_footer(text=f"Page {page}")
-                page += 1
+                embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
                 embeds.append(embed)
             if len(embeds) > 1:
                 await menu(ctx, embeds, DEFAULT_CONTROLS)
