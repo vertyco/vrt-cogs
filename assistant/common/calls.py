@@ -20,7 +20,13 @@ log = logging.getLogger("red.vrt.assistant.calls")
 
 
 @retry(
-    retry=retry_if_exception_type(t.Union[httpx.TimeoutException, openai.BadRequestError]),
+    retry=retry_if_exception_type(
+        t.Union[
+            httpx.TimeoutException,
+            openai.BadRequestError,
+            httpx.ReadTimeout,
+        ]
+    ),
     wait=wait_random_exponential(min=5, max=15),
     stop=stop_after_attempt(3),
     reraise=True,
@@ -73,7 +79,13 @@ async def request_chat_completion_raw(
 
 
 @retry(
-    retry=retry_if_exception_type(t.Union[httpx.TimeoutException, openai.BadRequestError]),
+    retry=retry_if_exception_type(
+        t.Union[
+            httpx.TimeoutException,
+            openai.BadRequestError,
+            httpx.ReadTimeout,
+        ]
+    ),
     wait=wait_random_exponential(min=5, max=15),
     stop=stop_after_attempt(3),
     reraise=True,
@@ -107,7 +119,13 @@ async def request_completion_raw(
 
 
 @retry(
-    retry=retry_if_exception_type(t.Union[httpx.TimeoutException, openai.BadRequestError]),
+    retry=retry_if_exception_type(
+        t.Union[
+            httpx.TimeoutException,
+            openai.BadRequestError,
+            httpx.ReadTimeout,
+        ]
+    ),
     wait=wait_random_exponential(min=5, max=15),
     stop=stop_after_attempt(3),
     reraise=True,
