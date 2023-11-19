@@ -366,9 +366,9 @@ class ChatHandler(MixinMeta):
                     functions=function_calls,
                     member=author,
                 )
-            except httpx.ReadTimeout as e:
-                log.error("Response timed out", exc_info=e)
-                raise e
+            except httpx.ReadTimeout:
+                reply = _("Request timed out, please try again.")
+                break
             except Exception as e:
                 log.error(
                     f"Response Exception!\n"
