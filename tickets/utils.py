@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import zipfile
 from contextlib import suppress
 from datetime import datetime
 from io import BytesIO
@@ -131,6 +133,7 @@ async def close_ticket(
     embed.set_thumbnail(url=pfp)
     log_chan = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
     text = ""
+    files: List[dict] = []
     filename = f"{member.name}-{member.id}.txt"
     filename = filename.replace("/", "")
     if conf["transcript"]:
@@ -151,7 +154,16 @@ async def close_ticket(
                 continue
             if not msg:
                 continue
-            att = [a.filename for a in msg.attachments]
+            att = []
+            for i in msg.attachments:
+                att.append(i.filename)
+                if i.size < guild.filesize_limit:
+                    files.append(
+                        {
+                            "filename": i.filename,
+                            "content": await i.read(),
+                        }
+                    )
             if msg.content:
                 text += f"{msg.author.name}: {msg.content}\n"
             if att:
@@ -160,6 +172,23 @@ async def close_ticket(
             await temp_message.delete()
     else:
         history = await fetch_channel_history(channel, limit=1)
+
+    def zip_files():
+        if files:
+            # Create a zip archive in memory
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zip_file:
+                for file_dict in files:
+                    zip_file.writestr(
+                        file_dict["filename"],
+                        file_dict["content"],
+                        compress_type=zipfile.ZIP_DEFLATED,
+                        compresslevel=9,
+                    )
+            zip_buffer.seek(0)
+            return zip_buffer.getvalue()
+
+    zip_bytes = await asyncio.to_thread(zip_files)
 
     # Send off new messages
     view = None
@@ -174,20 +203,44 @@ async def close_ticket(
             )
         )
     if log_chan and ticket["logmsg"]:
-        file = None
-        if text:
-            file = discord.File(BytesIO(text.encode()), filename=filename)
+        text_file = text_to_file(text, filename) if text else None
+        zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
 
         perms = [
             log_chan.permissions_for(guild.me).embed_links,
             log_chan.permissions_for(guild.me).attach_files,
         ]
-        if all(perms):
-            await log_chan.send(embed=embed, file=file, view=view)
-        elif perms[0]:
-            await log_chan.send(embed=embed, view=view)
-        elif perms[1]:
-            await log_chan.send(backup_text, file=file, view=view)
+
+        attachments = []
+        text_file_size = 0
+        if text_file:
+            text_file_size = text_file.__sizeof__()
+            attachments.append(text_file)
+        if zip_file and ((zip_file.__sizeof__() + text_file_size) < guild.filesize_limit):
+            attachments.append(zip_file)
+
+        try:
+            if all(perms):
+                await log_chan.send(embed=embed, files=attachments or None, view=view)
+            elif perms[0]:
+                await log_chan.send(embed=embed, view=view)
+            elif perms[1]:
+                await log_chan.send(backup_text, files=attachments or None, view=view)
+        except discord.HTTPException as e:
+            if "Payload Too Large" in e.text:
+                # Pop last element and try again
+                if text_file:
+                    attachments.pop(-1)
+                else:
+                    attachments = None
+                if all(perms):
+                    await log_chan.send(embed=embed, files=attachments or None, view=view)
+                elif perms[0]:
+                    await log_chan.send(embed=embed, view=view)
+                elif perms[1]:
+                    await log_chan.send(backup_text, files=attachments or None, view=view)
+            else:
+                raise e
 
         # Delete old log msg
         log_msg_id = ticket["logmsg"]
@@ -205,8 +258,8 @@ async def close_ticket(
     if conf["dm"]:
         try:
             if text:
-                file = discord.File(BytesIO(text.encode()), filename=filename)
-                await member.send(embed=embed, file=file)
+                text_file = text_to_file(text, filename) if text else None
+                await member.send(embed=embed, file=text_file)
             else:
                 await member.send(embed=embed)
         except discord.Forbidden:
@@ -314,7 +367,6 @@ async def prune_invalid_tickets(
 
 
 def prep_overview_text(guild: discord.Guild, opened: dict, mention: bool = False) -> str:
-    title = _("Ticket Overview")
     active = []
     for uid, opened_tickets in opened.items():
         member = guild.get_member(int(uid))
@@ -338,13 +390,6 @@ def prep_overview_text(guild: discord.Guild, opened: dict, mention: bool = False
 
     if not active:
         return _("There are no active tickets.")
-        embed = discord.Embed(
-            title=title,
-            description=_("There are no active tickets."),
-            color=discord.Color.greyple(),
-            timestamp=datetime.now(),
-        )
-        return [embed]
 
     sorted_active = sorted(active, key=lambda x: x[2])
 
@@ -353,17 +398,6 @@ def prep_overview_text(guild: discord.Guild, opened: dict, mention: bool = False
         chan_mention, panel, ts, username = i
         desc += f"{index + 1}. {chan_mention}({panel}) <t:{ts}:R> - {username}\n"
     return desc
-
-    embeds = []
-    for p in pagify(desc, page_length=4000):
-        embed = discord.Embed(
-            title=title,
-            description=p,
-            color=discord.Color.blue(),
-            timestamp=datetime.now(),
-        )
-        embeds.append(embed)
-    return embeds
 
 
 async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[int]:
