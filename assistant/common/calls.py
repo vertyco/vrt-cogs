@@ -7,6 +7,7 @@ import httpx
 import openai
 from aiocache import cached
 from perftracker import perf
+from sentry_sdk import add_breadcrumb
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -73,6 +74,13 @@ async def request_chat_completion_raw(
                 kwargs["tools"] = tools
         else:
             kwargs["functions"] = functions
+
+    add_breadcrumb(
+        category="api",
+        message=f"Calling request_chat_completion_raw: {model}",
+        level="info",
+        data=kwargs,
+    )
     response = await client.chat.completions.create(**kwargs)
     log.debug(f"CHAT RESPONSE TYPE: {type(response)}")
     return response
@@ -113,6 +121,12 @@ async def request_completion_raw(
     }
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
+    add_breadcrumb(
+        category="api",
+        message=f"Calling request_completion_raw: {model}",
+        level="info",
+        data=kwargs,
+    )
     response = await client.completions.create(**kwargs)
     log.debug(f"COMPLETION RESPONSE TYPE: {type(response)}")
     return response
@@ -143,6 +157,12 @@ async def request_embedding_raw(
         base_url=api_base,
         max_retries=5,
         timeout=15,
+    )
+    add_breadcrumb(
+        category="api",
+        message="Calling request_embedding_raw",
+        level="info",
+        data={"text": text},
     )
     response = await client.embeddings.create(
         input=text,

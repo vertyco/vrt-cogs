@@ -218,7 +218,7 @@ async def close_ticket(
             attachments.append(text_file)
         if zip_file and ((zip_file.__sizeof__() + text_file_size) < guild.filesize_limit):
             attachments.append(zip_file)
-
+        # attachment://image.webp
         try:
             if all(perms):
                 await log_chan.send(embed=embed, files=attachments or None, view=view)
