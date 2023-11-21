@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.10.1"
+    __version__ = "3.11.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1012,7 +1012,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.save_cache(guild)
 
     @commands.group(name="lvlset", aliases=["lset", "levelup"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def lvl_group(self, ctx: commands.Context):
         """Access LevelUp setting commands"""
@@ -1173,6 +1173,45 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         await ctx.send(embed=embed)
 
+    @lvl_group.command(name="setemojis")
+    @commands.bot_has_permissions(embed_links=True)
+    async def set_emojis(
+        self,
+        ctx: commands.Context,
+        level: discord.Emoji | discord.PartialEmoji | str,
+        prestige: discord.Emoji | discord.PartialEmoji | str,
+        chat: discord.Emoji | discord.PartialEmoji | str,
+        voicetime: discord.Emoji | discord.PartialEmoji | str,
+        experience: discord.Emoji | discord.PartialEmoji | str,
+        balance: discord.Emoji | discord.PartialEmoji | str,
+    ):
+        """Set the emojis for embed profiles"""
+
+        async def test_reactions(
+            ctx: commands.Context,
+            emojis: list[discord.Emoji | discord.PartialEmoji | str],
+        ) -> bool:
+            try:
+                [await ctx.message.add_reaction(e) for e in emojis]
+                return True
+            except Exception as e:
+                await ctx.send(f"Cannot add reactions: {e}")
+                return False
+
+        reactions = [level, prestige, chat, voicetime, experience, balance]
+        if not await test_reactions(ctx, reactions):
+            return
+        conf = self.data[ctx.guild.id]
+        conf["emojis"]["level"] = level if isinstance(level, str) else level.id
+        conf["emojis"]["trophy"] = prestige if isinstance(prestige, str) else prestige.id
+        conf["emojis"]["star"] = prestige if isinstance(prestige, str) else prestige.id
+        conf["emojis"]["chat"] = chat if isinstance(chat, str) else chat.id
+        conf["emojis"]["mic"] = voicetime if isinstance(voicetime, str) else voicetime.id
+        conf["emojis"]["bulb"] = experience if isinstance(experience, str) else experience.id
+        conf["emojis"]["money"] = balance if isinstance(balance, str) else balance.id
+        await ctx.tick()
+        await self.save_cache()
+
     @lvl_group.group(name="admin")
     @commands.guildowner()
     @commands.bot_has_permissions(embed_links=True)
@@ -1223,7 +1262,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             text = _("Not resetting all guilds")
             return await msg.edit(content=text)
         for gid in self.data.copy():
-            self.data[gid] = self.config.defaults["GUILD"]
+            self.data[gid] = constants.default_guild
         await msg.edit(content=_("Settings and stats for all guilds have been reset"))
         await ctx.tick()
         await self.save_cache()
@@ -1237,7 +1276,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not yes:
             text = _("Not resetting config")
             return await msg.edit(content=text)
-        self.data[ctx.guild.id] = self.config.defaults["GUILD"]
+        self.data[ctx.guild.id] = constants.default_guild
         await msg.edit(content=_("All settings and stats reset"))
         await ctx.tick()
         await self.save_cache(ctx.guild)
