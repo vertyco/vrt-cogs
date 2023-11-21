@@ -54,6 +54,15 @@ default_guild = {
         "bonus": 0,  # Bonus exp to award the top X winners
         "last_embed": {},  # Dict repr of last winner embed
     },
+    "emojis": {
+        "level": "\N{SPORTS MEDAL}",
+        "trophy": "\N{TROPHY}",
+        "star": "\N{WHITE MEDIUM STAR}",
+        "chat": "\N{SPEECH BALLOON}",
+        "mic": "\N{STUDIO MICROPHONE}\N{VARIATION SELECTOR-16}",
+        "bulb": "\N{ELECTRIC LIGHT BULB}",
+        "money": "\N{MONEY BAG}",
+    },
 }
 
 default_global = {
