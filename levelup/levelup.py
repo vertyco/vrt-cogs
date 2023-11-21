@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.0"
+    __version__ = "3.11.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1173,13 +1173,14 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         await ctx.send(embed=embed)
 
-    @lvl_group.command(name="setemojis")
+    @lvl_group.command(name="embedemojis")
     @commands.bot_has_permissions(embed_links=True)
     async def set_emojis(
         self,
         ctx: commands.Context,
         level: discord.Emoji | discord.PartialEmoji | str,
         prestige: discord.Emoji | discord.PartialEmoji | str,
+        star: discord.Emoji | discord.PartialEmoji | str,
         chat: discord.Emoji | discord.PartialEmoji | str,
         voicetime: discord.Emoji | discord.PartialEmoji | str,
         experience: discord.Emoji | discord.PartialEmoji | str,
@@ -1198,13 +1199,13 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 await ctx.send(f"Cannot add reactions: {e}")
                 return False
 
-        reactions = [level, prestige, chat, voicetime, experience, balance]
+        reactions = [level, prestige, star, chat, voicetime, experience, balance]
         if not await test_reactions(ctx, reactions):
             return
         conf = self.data[ctx.guild.id]
         conf["emojis"]["level"] = level if isinstance(level, str) else level.id
         conf["emojis"]["trophy"] = prestige if isinstance(prestige, str) else prestige.id
-        conf["emojis"]["star"] = prestige if isinstance(prestige, str) else prestige.id
+        conf["emojis"]["star"] = star if isinstance(star, str) else star.id
         conf["emojis"]["chat"] = chat if isinstance(chat, str) else chat.id
         conf["emojis"]["mic"] = voicetime if isinstance(voicetime, str) else voicetime.id
         conf["emojis"]["bulb"] = experience if isinstance(experience, str) else experience.id
