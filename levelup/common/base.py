@@ -32,6 +32,7 @@ from levelup.utils.formatter import (
 )
 
 from ..abc import MixinMeta
+from .constants import default_guild
 
 if version_info >= VersionInfo.from_str("3.5.0"):
     from .dpymenu import DEFAULT_CONTROLS, menu
@@ -851,10 +852,17 @@ class UserCommands(MixinMeta, ABC):
         def get_emoji(name: str):
             raw = buttons[name]
             if isinstance(raw, str) and raw.isdigit():
-                return ctx.guild.get_emoji(int(raw))
-            if isinstance(raw, int):
-                return ctx.guild.get_emoji(raw)
-            return raw
+                emoji = self.bot.get_emoji(int(raw))
+            elif isinstance(raw, int):
+                emoji = self.bot.get_emoji(raw)
+            else:
+                emoji = raw
+
+            if not emoji:
+                # Get default
+                emoji = get_emoji(default_guild["buttons"][name])
+
+            return emoji
 
         level_emoji = get_emoji("level")
         trophy_emoji = get_emoji("trophy")
