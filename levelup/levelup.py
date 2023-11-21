@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.1"
+    __version__ = "3.11.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -733,7 +733,10 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 bxp = random.choice(range(bmin, bmax))
                 xp_to_give += bxp
             cid = str(message.channel.id)
-            cat_cid = str(message.channel.category.id) if message.channel.category else "0"
+            try:
+                cat_cid = str(message.channel.category.id) if message.channel.category else "0"
+            except discord.ClientException:
+                cat_cid = "0"
             if cid in channel_bonuses or cat_cid in channel_bonuses:
                 bonus_id = cid if cid in channel_bonuses else cat_cid
                 bonuschannelrange = channel_bonuses[bonus_id]
@@ -801,10 +804,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 addxp = False
             # Ignore if user is only one in channel
             in_voice = 0
-            for mem in voice_state.channel.members:
-                if mem.bot:
-                    continue
-                in_voice += 1
+            if voice_state.channel:
+                for mem in voice_state.channel.members:
+                    if mem.bot:
+                        continue
+                    in_voice += 1
             if conf["solo"] and in_voice <= 1:
                 addxp = False
             # Check ignored roles
