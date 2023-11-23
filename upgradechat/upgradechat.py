@@ -21,7 +21,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.15"
+    __version__ = "0.1.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -125,9 +125,7 @@ class UpgradeChat(commands.Cog):
                 return await ctx.send("UpgradeChat API credentials have not been set yet!")
             status, results, newtoken = await API().get_product(conf, uuid)
             if status != 200:
-                return await ctx.send(
-                    f"I could not find any products with that UUID!\n" f"`status {status}`"
-                )
+                return await ctx.send(f"I could not find any products with that UUID!\n" f"`status {status}`")
             product = results["data"]
             async with self.config.guild(ctx.guild).products() as products:
                 products[uuid] = product
@@ -146,8 +144,7 @@ class UpgradeChat(commands.Cog):
                     for pid, data in products.items():
                         text += f"`{pid}: `{data['name']}\n"
                     return await ctx.send(
-                        "UUID not found in existing products. Here are the current products you have set.\n"
-                        f"{text}"
+                        "UUID not found in existing products. Here are the current products you have set.\n" f"{text}"
                     )
                 await ctx.send(f"Product with title `{products[uuid]['name']}` has been deleted!")
                 del products[uuid]
@@ -160,7 +157,7 @@ class UpgradeChat(commands.Cog):
             await ctx.send(f"Claim log channel has been set to `{channel.name}`")
 
     @upgradechat.command()
-    async def purchases(self, ctx: commands.Context, *, member: discord.Member = None):
+    async def purchases(self, ctx: commands.Context, *, member: discord.Member | int = None):
         """View user purchase history"""
         users = await self.config.guild(ctx.guild).users()
 
@@ -170,8 +167,13 @@ class UpgradeChat(commands.Cog):
         for index, user_id in enumerate(users.keys()):
             purchases = users[user_id]
             user = ctx.guild.get_member(int(user_id))
-            if member and user and user.id == member.id:
-                page = index
+            if member:
+                if isinstance(member, int):
+                    uid = member
+                else:
+                    uid = member.id
+                if uid == int(user_id):
+                    page = index
 
             name = f"{user.name} ({user.id})" if user else user_id
 
@@ -202,9 +204,7 @@ class UpgradeChat(commands.Cog):
         """View your current products"""
         conf = await self.config.guild(ctx.guild).all()
         users = conf["users"]
-        total = sum(
-            [sum([p["price"] for p in purchases.values()]) for purchases in users.values()]
-        )
+        total = sum([sum([p["price"] for p in purchases.values()]) for purchases in users.values()])
         purchases = sum([len(purchases) for purchases in users.values()])
         currency_name = await bank.get_currency_name(ctx.guild)
         token = conf["bearer_token"] if conf["bearer_token"] else "Not Authorized Yet"
@@ -223,8 +223,7 @@ class UpgradeChat(commands.Cog):
         ratio = conf["conversion_ratio"]
         producs = conf["products"]
         desc = (
-            f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n"
-            f"`Claim Message:    `{conf['claim_msg']}\n"
+            f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n" f"`Claim Message:    `{conf['claim_msg']}\n"
         )
         if producs:
             text = ""
@@ -261,9 +260,7 @@ class UpgradeChat(commands.Cog):
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
             if not conf["id"] or not conf["secret"]:
-                return await ctx.send(
-                    "The owner of this guild has not set up their API tokens for Upgrade.Chat yet!"
-                )
+                return await ctx.send("The owner of this guild has not set up their API tokens for Upgrade.Chat yet!")
             status, purchases, newtoken = await API().get_user_purchases(conf, ctx.author.id)
             if newtoken:
                 await self.config.guild(ctx.guild).bearer_token.set(newtoken)
@@ -309,11 +306,7 @@ class UpgradeChat(commands.Cog):
             except BalanceTooHigh as e:
                 await bank.set_balance(ctx.author, e.max_balance)
 
-            title = (
-                "🎉Purchase claimed successfully!🎉"
-                if valid_purchases == 1
-                else "🎉Purchases claimed successfully!🎉"
-            )
+            title = "🎉Purchase claimed successfully!" if valid_purchases == 1 else "🎉Purchases claimed successfully!"
             desc = f"{ctx.author.display_name}, you have claimed {'{:,}'.format(amount_to_give)} {currency_name}!"
             claim_msg = conf["claim_msg"]
             if "default" not in claim_msg:
@@ -345,10 +338,7 @@ class UpgradeChat(commands.Cog):
                 if uid in ashopusers:
                     cluster = ashopusers[uid]["cluster"]
 
-            desc = (
-                f"`Spent:   `${amount_spent}\n"
-                f"`Awarded: `{'{:,}'.format(amount_to_give)} {currency_name}"
-            )
+            desc = f"`Spent:   `${amount_spent}\n" f"`Awarded: `{'{:,}'.format(amount_to_give)} {currency_name}"
 
             if cluster:
                 desc += f"\n`Cluster: `{cluster}"
