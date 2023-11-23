@@ -54,7 +54,7 @@ default_guild = {
         "bonus": 0,  # Bonus exp to award the top X winners
         "last_embed": {},  # Dict repr of last winner embed
     },
-    "emojis": {
+    "emojis": {  # For embed profiles only
         "level": "\N{SPORTS MEDAL}",
         "trophy": "\N{TROPHY}",
         "star": "\N{WHITE MEDIUM STAR}",
