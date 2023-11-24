@@ -1,5 +1,3 @@
-# redgettext base.py generator.py levelup.py utils/formatter.py --command-docstring
-
 from redbot.core.bot import Red
 from redbot.core.utils import get_end_user_data_statement
 
