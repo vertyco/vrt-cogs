@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import string
-from typing import Union
+from typing import List, Tuple, Union
 
 import discord
 from rapidfuzz import fuzz
@@ -219,11 +219,11 @@ class AssistantFunctions(MixinMeta):
         *args,
         **kwargs,
     ):
-        valid_channels = [i for i in guild.channels if i.permissions_for(user).view_channel]
+        valid_channels = [i for i in guild.text_channels if i.permissions_for(user).view_channel]
         if not valid_channels:
             return "There are no channels this user can view"
 
-        matches: list[discord.TextChannel] = []
+        matches: List[Tuple[discord.TextChannel, int]] = []
         for channel in valid_channels:
             if clean_name(channel.name) == channel_name_or_id:
                 return channel.mention
@@ -242,7 +242,7 @@ class AssistantFunctions(MixinMeta):
         if not matches:
             return "No channels found with that name or id!"
 
-        matches = [i for i in matches if i.topic]
+        matches = [i for i in matches if i[0].topic]
         if not matches:
             return "No channels found with a topic!"
 
