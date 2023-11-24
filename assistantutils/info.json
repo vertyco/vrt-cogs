@@ -4,7 +4,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not store any information.",
   "hidden": false,
-  "install_msg": "Thank you for installing!",
+  "install_msg": "Thank you for installing! This cog does not have any commands, but registers pre-baked functions with the Assistant cog",
   "min_bot_version": "3.5.3",
   "min_python_version": [3, 9, 1],
   "permissions": ["administrator"],
