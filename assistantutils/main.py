@@ -11,7 +11,9 @@ log = logging.getLogger("red.vrt.assistantutils")
 
 
 class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
-    """Assistant Utils adds pre-baked functions to the Assistant cog, allowing extended functionality."""
+    """
+    Assistant Utils adds pre-baked functions to the Assistant cog, allowing extended functionality.
+    """
 
     __author__ = "Vertyco#0117"
     __version__ = "0.0.1"
