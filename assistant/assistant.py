@@ -16,17 +16,7 @@ from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
-from .common.constants import (
-    CREATE_MEMORY,
-    EDIT_MEMORY,
-    GET_CHANNEL_ID,
-    GET_CHANNEL_LIST,
-    GET_CHANNEL_MENTION,
-    GET_CHANNEL_NAMED,
-    GET_CHANNEL_TOPIC,
-    GET_SEARCH_URL,
-    SEARCH_MEMORIES,
-)
+from .common.constants import CREATE_MEMORY, EDIT_MEMORY, LIST_MEMORIES, SEARCH_MEMORIES
 from .common.functions import AssistantFunctions
 from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
@@ -64,7 +54,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "5.4.1"
+    __version__ = "5.5.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -119,12 +109,7 @@ class Assistant(
         await self.register_function(self.qualified_name, CREATE_MEMORY)
         await self.register_function(self.qualified_name, SEARCH_MEMORIES)
         await self.register_function(self.qualified_name, EDIT_MEMORY)
-        await self.register_function(self.qualified_name, GET_CHANNEL_ID)
-        await self.register_function(self.qualified_name, GET_CHANNEL_NAMED)
-        await self.register_function(self.qualified_name, GET_CHANNEL_MENTION)
-        await self.register_function(self.qualified_name, GET_CHANNEL_LIST)
-        await self.register_function(self.qualified_name, GET_CHANNEL_TOPIC)
-        await self.register_function(self.qualified_name, GET_SEARCH_URL)
+        await self.register_function(self.qualified_name, LIST_MEMORIES)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)

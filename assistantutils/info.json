@@ -1,0 +1,18 @@
+{
+  "author": ["Vertyco"],
+  "description": "Assistant Utils adds pre-baked functions to the Assistant cog, allowing extended functionality.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any information.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 9, 1],
+  "permissions": ["administrator"],
+  "required_cogs": {
+    "assistant": "https://github.com/vertyco/vrt-cogs"
+  },
+  "requirements": [],
+  "short": "Extended functionality for Assistant",
+  "tags": ["assistant", "ai", "chat", "functions", "utility"],
+  "type": "COG"
+}
