@@ -124,7 +124,7 @@ class ChatHandler(MixinMeta):
         # If referencing a message that isnt part of the user's conversation, include the context
         if hasattr(message, "reference") and message.reference:
             ref = message.reference.resolved
-            if ref and ref.author.id != message.author.id:
+            if ref and ref.author.id != message.author.id and ref.author.id != self.bot.user.id:
                 # If we're referencing the bot, make sure the bot's message isnt referencing the convo
                 include = True
                 if hasattr(ref, "reference") and ref.reference:
