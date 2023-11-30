@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import random
+import re
 import sys
 from datetime import datetime
 from io import BytesIO
@@ -81,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.3"
+    __version__ = "3.11.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -721,7 +722,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             addxp = False
 
         if conf["length"]:  # Make sure message meets minimum length requirements
-            if len(message.content) < conf["length"]:
+            regex = r"<(@!|#)[0-9]{18}>|<a{0,1}:[a-zA-Z0-9_.]{2,32}:[0-9]{18,19}>"
+            cleaned = re.sub(regex, "", message)
+            if len(cleaned) < conf["length"]:
                 addxp = False
 
         if addxp:  # Give XP
