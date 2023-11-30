@@ -22,5 +22,5 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def decay_guild(self, guild: discord.Guild) -> tuple[int, int]:
+    async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> tuple[int, int]:
         raise NotImplementedError
