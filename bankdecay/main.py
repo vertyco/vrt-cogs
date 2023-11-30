@@ -29,7 +29,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.5"
+    __version__ = "0.0.6"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -90,11 +90,11 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
                 continue
             await self.decay_guild(guild)
 
-    async def decay_guild(self, guild: discord.Guild) -> tuple[int, int]:
+    async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> tuple[int, int]:
         now = datetime.now()
         conf = self.db.get_conf(guild)
         if not conf.enabled:
-            return
+            return 0, 0
         users_decayed = 0
         total_decayed = 0
         uids = [i for i in conf.users]
@@ -102,7 +102,8 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
             user = guild.get_member(user_id)
             if not user:
                 # Remove members no longer in the server
-                del conf.users[user_id]
+                if not check_only:
+                    del conf.users[user_id]
                 continue
             if any(r.id in conf.ignored_roles for r in user.roles):
                 # Don't decay user balances with roles in the ignore list
@@ -114,16 +115,19 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
             bal = await bank.get_balance(user)
             if not bal:
                 # Remove the user from the config as they are now both inactive and have no credits
-                del conf.users[user_id]
+                if not check_only:
+                    del conf.users[user_id]
                 continue
             new_bal = max(0, round(bal - (bal * conf.percent_decay)))
-            await bank.set_balance(user, new_bal)
-            conf.total_decayed += bal - new_bal
+            if not check_only:
+                await bank.set_balance(user, new_bal)
+                conf.total_decayed += bal - new_bal
             users_decayed += 1
             total_decayed += bal - new_bal
 
-        await self.save()
-        log.info(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
+        if not check_only:
+            await self.save()
+            log.info(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
         return users_decayed, total_decayed
 
     async def save(self) -> None:

@@ -1,8 +1,11 @@
+from datetime import timedelta
+
 import discord
-from redbot.core import commands
+from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
+from ..common.confirm_view import ConfirmView
 from ..common.models import User
 
 _ = Translator("BankDecay", __file__)
@@ -97,26 +100,51 @@ class Admin(MixinMeta):
         await self.save()
 
     @bankdecay.command(name="decaynow")
-    async def decay_now(self, ctx: commands.Context, confirm: bool):
+    async def decay_now(self, ctx: commands.Context, force: bool = False):
         """
         Run a decay cycle on this server right now
         """
-        if not confirm:
-            txt = _("Not decaying user bank accounts")
-            return await ctx.send(txt)
         conf = self.db.get_conf(ctx.guild)
         if not conf.enabled:
             txt = _("The decay system is currently disabled!")
             return await ctx.send(txt)
         async with ctx.typing():
+            currency = await bank.get_currency_name(ctx.guild)
+            if not force:
+                users_decayed, total_decayed = await self.decay_guild(ctx.guild, check_only=True)
+                if not users_decayed:
+                    txt = _("There were no users affected by the decay cycle")
+                    return await ctx.send(txt)
+                grammar = _("account") if users_decayed == 1 else _("accounts")
+                txt = _("Are you sure you want to decay {} for a total of {}?").format(
+                    f"**{users_decayed}** {grammar}", f"**{total_decayed}** {currency}"
+                )
+                view = ConfirmView(ctx.author)
+                msg = await ctx.send(txt, view=view)
+                await view.wait()
+                if not view.value:
+                    txt = _("Decay cycle cancelled")
+                    return await msg.edit(content=txt, view=None)
+                txt = _("Decaying user accounts, one moment...")
+                await msg.edit(content=txt, view=None)
+            else:
+                txt = _("Decaying user accounts, one moment...")
+                msg = await ctx.send(txt)
+
             users_decayed, total_decayed = await self.decay_guild(ctx.guild)
-        txt = _("- Users Affected: {}\n- Total Credits Decayed: {}").format(users_decayed, total_decayed)
-        await ctx.send(txt)
+
+            txt = _("User accounts have been decayed!\n- Users Affected: {}\n- Total {} Decayed: {}").format(
+                users_decayed, currency, total_decayed
+            )
+            await msg.edit(content=txt)
 
     @bankdecay.command(name="initialize")
-    async def initialize_guild(self, ctx: commands.Context):
+    async def initialize_guild(self, ctx: commands.Context, as_expired: bool):
         """
         Initialize the server and add every member to the config.
+
+        **Arguments**
+        - as_expired: (t/f) if True, initialize users as already expired
         """
         initialized = 0
         conf = self.db.get_conf(ctx.guild)
@@ -125,8 +153,11 @@ class Admin(MixinMeta):
                 continue
             if member.id in conf.users:
                 continue
-            conf.get_user(member)  # This will add the member to the config if not already present
+            user = conf.get_user(member)  # This will add the member to the config if not already present
             initialized += 1
+            if as_expired:
+                user.last_active = user.last_active - timedelta(days=36500)
+
         grammar = _("member") if initialized == 1 else _("members")
         await ctx.send(_("Server initialized! {} added to the config.").format(f"{initialized} {grammar}"))
         await self.save()
