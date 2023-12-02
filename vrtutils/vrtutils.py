@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.12.3"
+    __version__ = "1.13.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -1171,3 +1171,26 @@ class VrtUtils(commands.Cog):
             embeds.append(embed)
 
         await menu(ctx, embeds, DEFAULT_CONTROLS)
+
+    @commands.command(name="react")
+    @commands.mod_or_permissions(add_reactions=True)
+    @commands.bot_has_guild_permissions(add_reactions=True)
+    async def add_a_reaction(
+        self,
+        ctx: commands.Context,
+        emoji: t.Union[discord.Emoji, discord.PartialEmoji, str],
+        message: discord.Message = None,
+    ):
+        """
+        Add a reaction to a message
+        """
+        if not message and hasattr(ctx.message, "reference") and hasattr(ctx.message.reference, "resolved"):
+            message = ctx.message.reference.resolved
+        if not message or not isinstance(message, discord.Message):
+            message = ctx.message
+
+        if not message.channel.permissions_for(ctx.me).add_reactions:
+            return await ctx.send("I don't have permissions to react in that channel!")
+        if not message.channel.permissions_for(ctx.author).add_reactions:
+            return await ctx.send("You don't have permissions to react in that channel!")
+        await message.add_reaction(emoji)
