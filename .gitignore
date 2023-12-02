@@ -167,9 +167,10 @@ uncomp/
 compress.py
 
 
-# Temporary
+# WIP/Temp
 backups/
 orchestrator/
 welcomer/
 cookiecutter/
 fishing/
+osmosis/
