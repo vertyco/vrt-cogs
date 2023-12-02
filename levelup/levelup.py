@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.5"
+    __version__ = "3.11.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -723,7 +723,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         if conf["length"]:  # Make sure message meets minimum length requirements
             regex = r"<(@!|#)[0-9]{18}>|<a{0,1}:[a-zA-Z0-9_.]{2,32}:[0-9]{18,19}>"
-            cleaned = re.sub(regex, "", message)
+            cleaned = re.sub(regex, "", message.content)
             if len(cleaned) < conf["length"]:
                 addxp = False
 
