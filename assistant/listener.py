@@ -13,10 +13,16 @@ _ = Translator("Assistant", __file__)
 
 
 class AssistantListener(MixinMeta):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.responding_to = set()
+
     @commands.Cog.listener("on_message_without_command")
     async def handler(self, message: discord.Message):
         # If message object is None for some reason
         if not message:
+            return
+        if message.author.id in self.responding_to:
             return
         # If message was from a bot
         if message.author.bot and not self.db.listen_to_bots:
@@ -79,8 +85,12 @@ class AssistantListener(MixinMeta):
         if len(message.content.strip()) < conf.min_length:
             return
 
-        async with channel.typing():
-            await self.handle_message(message, message.content, conf, listener=True)
+        self.responding_to.add(message.author.id)
+        try:
+            async with channel.typing():
+                await self.handle_message(message, message.content, conf, listener=True)
+        finally:
+            self.responding_to.remove(message.author.id)
 
     @commands.Cog.listener("on_guild_remove")
     async def cleanup(self, guild: discord.Guild):
