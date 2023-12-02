@@ -396,43 +396,55 @@ class API(MixinMeta):
         """Modify a message payload in-place to ensure all tool calls have a following tool response,
         and all tool responses have a preceding tool call."""
         cleaned = False
-        tool_calls_to_find = {}  # Maps tool_call_id to its expected position
-        tool_responses_to_check = {}  # Maps tool_call_id to its actual position
 
-        # First pass: Identify tool calls and their expected responses
+        # Tracks the last index where a response is expected for each tool_call_id
+        expected_response_positions = {}
+
+        # Stores the positions of tool calls and responses
+        tool_call_positions = {}
+        tool_response_positions = {}
+
+        # First pass: Identify the positions of tool calls and the expected positions of responses
         for idx, msg in enumerate(messages):
             if msg["role"] == "assistant" and "tool_calls" in msg:
                 for tool_call in msg["tool_calls"]:
                     tool_call_id = tool_call["id"]
-                    # Store the index where we expect to find the response
-                    tool_calls_to_find[tool_call_id] = idx + 1
+                    tool_call_positions[tool_call_id] = idx
+                    # Initially, assume the response will be at least after this message
+                    expected_response_positions[tool_call_id] = idx
             elif msg["role"] == "tool":
-                tool_call_id = msg["tool_call_id"]
-                # Store the index where we found the response
-                tool_responses_to_check[tool_call_id] = idx
+                tool_response_id = msg["tool_call_id"]
+                tool_response_positions[tool_response_id] = idx
+                # If we've already seen the call, update the expected response position
+                if tool_response_id in expected_response_positions:
+                    expected_response_positions[tool_response_id] = max(
+                        expected_response_positions[tool_response_id], idx
+                    )
 
-        # Check for any inconsistencies
-        indices_to_remove = []
-        for tool_call_id, expected_response_idx in tool_calls_to_find.items():
-            actual_response_idx = tool_responses_to_check.get(tool_call_id)
-            # Check if there is a call without a following response or response is out of order
-            if actual_response_idx is None or actual_response_idx < expected_response_idx:
-                indices_to_remove.append(expected_response_idx - 1)
+        # Detect tool calls without a corresponding response or responses out of order
+        indices_to_remove = set()
+        for tool_call_id, call_idx in tool_call_positions.items():
+            response_idx = tool_response_positions.get(tool_call_id)
+            # If there is no response, or if the response is before the call, mark the tool call for removal
+            if response_idx is None or response_idx < call_idx:
+                indices_to_remove.add(call_idx)
                 log.debug(
-                    f"Popping message with index {expected_response_idx - 1} since it has no following tool response"
+                    f"Popping message at index {call_idx} due to lack of response for tool_call_id '{tool_call_id}'."
                 )
                 cleaned = True
 
-        for tool_call_id, actual_response_idx in tool_responses_to_check.items():
-            expected_response_idx = tool_calls_to_find.get(tool_call_id)
-            # Check if there is a response without a preceding call or call is out of order
-            if expected_response_idx is None or actual_response_idx < expected_response_idx:
-                indices_to_remove.append(actual_response_idx)
-                log.debug(f"Popping message with index {actual_response_idx} since it has no preceding tool call")
+        # Detect responses without a corresponding call
+        for tool_response_id, response_idx in tool_response_positions.items():
+            call_idx = tool_call_positions.get(tool_response_id)
+            expected_position = expected_response_positions.get(tool_response_id)
+            # If there is no call, or the call is not correctly paired with this response, mark the response for removal
+            if call_idx is None or response_idx != expected_position:
+                indices_to_remove.add(response_idx)
+                log.debug(f"Popping message at index {response_idx} because it is not preceded by correct tool call.")
                 cleaned = True
 
-        # Remove the messages with inconsistencies in reverse order to avoid index shifting
-        for idx in sorted(set(indices_to_remove), reverse=True):
+        # Remove messages with inconsistencies in reverse order to avoid index shifting
+        for idx in sorted(indices_to_remove, reverse=True):
             messages.pop(idx)
 
         return cleaned
