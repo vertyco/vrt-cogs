@@ -232,7 +232,7 @@ If a file has no extension it will still try to read it only if it can be decode
             return await ctx.send(txt)
         last = conversation.messages.pop()
         dump = json.dumps(last, indent=2)
-        file = discord.File(dump, "popped.json")
+        file = text_to_file(dump, "popped.json")
         await ctx.send(_("Removed the last message from this conversation"), file=file)
 
     @commands.command(name="convoprompt")
