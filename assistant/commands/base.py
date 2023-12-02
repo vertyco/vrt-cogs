@@ -207,6 +207,34 @@ If a file has no extension it will still try to read it only if it can be decode
         conversation.reset()
         await ctx.send(_("Your conversation in this channel has been reset!"))
 
+    @commands.command(name="convopop")
+    @commands.guild_only()
+    @commands.bot_has_guild_permissions(attach_files=True)
+    async def pop_last_message(self, ctx: commands.Context, *, user: discord.Member = None):
+        """
+        pop the last message from your conversation
+        """
+        if not user:
+            user = ctx.author
+        conf = self.db.get_conf(ctx.guild)
+        mem_id = ctx.channel.id if conf.collab_convos else user.id
+        perms = [
+            await self.bot.is_mod(ctx.author),
+            ctx.channel.permissions_for(ctx.author).manage_messages,
+            ctx.author.id in self.bot.owner_ids,
+        ]
+        if conf.collab_convos and not any(perms):
+            txt = _("Only moderators can pop messages from conversations when collaborative conversations are enabled!")
+            return await ctx.send(txt)
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        if not conversation.messages:
+            txt = _("There are no messages in this conversation yet!")
+            return await ctx.send(txt)
+        last = conversation.messages.pop()
+        dump = json.dumps(last, indent=2)
+        file = discord.File(dump, "popped.json")
+        await ctx.send(_("Removed the last message from this conversation"), file=file)
+
     @commands.command(name="convoprompt")
     @commands.guild_only()
     async def conversation_prompt(self, ctx: commands.Context, *, prompt: str = None):
