@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.6"
+    __version__ = "3.11.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -660,14 +660,14 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         leveltime = monotonic()
         if roles_to_add:
             try:
-                await member.add_roles(*roles_to_add)
+                await member.add_roles(*roles_to_add, reason=_("Leveled Up!"))
             except discord.Forbidden:
-                pass
+                log.warning(f"Lacking permissions to add roles to {member.name} in {member.guild.name}")
         if roles_to_remove:
             try:
-                await member.add_roles(*roles_to_remove)
+                await member.add_roles(*roles_to_remove, reason=_("Auto-remove previous level roles"))
             except discord.Forbidden:
-                pass
+                log.warning(f"Lacking permissions to remove roles from {member.name} in {member.guild.name}")
 
         t = int((monotonic() - leveltime) * 1000)
         get_stats().add("levelup.level_assignment", t)
