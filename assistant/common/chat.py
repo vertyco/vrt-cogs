@@ -255,6 +255,9 @@ class ChatHandler(MixinMeta):
         )
         if conf.collab_convos and isinstance(author, discord.Member):
             message = f"{author.display_name}: {message}"
+
+        conversation.cleanup(conf, author)
+        conversation.refresh()
         try:
             return await self._get_chat_response(
                 message,
