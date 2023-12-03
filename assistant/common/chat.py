@@ -465,8 +465,8 @@ class ChatHandler(MixinMeta):
                         f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
                         exc_info=e,
                     )
+                    func_result = traceback.format_exc()
                     function_calls = [i for i in function_calls if i["name"] != function_name]
-                    continue
 
                 # Prep framework for alternative response types!
                 if isinstance(func_result, dict):
