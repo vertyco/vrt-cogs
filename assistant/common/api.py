@@ -393,59 +393,52 @@ class API(MixinMeta):
                         break
 
     async def ensure_tool_consistency(self, messages: List[dict]) -> bool:
-        """Modify a message payload in-place to ensure all tool calls have a following tool response,
-        and all tool responses have a preceding tool call."""
         cleaned = False
-
-        # Tracks the last index where a response is expected for each tool_call_id
-        expected_response_positions = {}
-
-        # Stores the positions of tool calls and responses
-        tool_call_positions = {}
+        # Mapping from tool_call id to the index of the response message
         tool_response_positions = {}
+        # Mapping from tool_call id to the index of the call message
+        tool_call_positions = {}
+        # List of tool_call ids awaiting a response
+        awaiting_responses = set()
 
-        # First pass: Identify the positions of tool calls and the expected positions of responses
+        # First pass: Map tool_calls and tool_responses and mark those awaiting responses.
         for idx, msg in enumerate(messages):
-            if msg["role"] == "assistant" and "tool_calls" in msg:
+            if msg.get("role") == "assistant" and "tool_calls" in msg:
+                # Process all tool_calls within this assistant message
                 for tool_call in msg["tool_calls"]:
                     tool_call_id = tool_call["id"]
                     tool_call_positions[tool_call_id] = idx
-                    # Initially, assume the response will be at least after this message
-                    expected_response_positions[tool_call_id] = idx
-            elif msg["role"] == "tool":
-                tool_response_id = msg["tool_call_id"]
-                tool_response_positions[tool_response_id] = idx
-                # If we've already seen the call, update the expected response position
-                if tool_response_id in expected_response_positions:
-                    expected_response_positions[tool_response_id] = max(
-                        expected_response_positions[tool_response_id], idx
-                    )
+                    awaiting_responses.add(tool_call_id)
+            elif msg.get("role") == "tool":
+                tool_call_id = msg["tool_call_id"]
 
-        # Detect tool calls without a corresponding response or responses out of order
-        indices_to_remove = set()
-        for tool_call_id, call_idx in tool_call_positions.items():
-            response_idx = tool_response_positions.get(tool_call_id)
-            # If there is no response, or if the response is before the call, mark the tool call for removal
-            if response_idx is None or response_idx < call_idx:
-                indices_to_remove.add(call_idx)
-                log.debug(
-                    f"Popping message at index {call_idx} due to lack of response for tool_call_id '{tool_call_id}'."
-                )
+                tool_response_positions[tool_call_id] = idx
+                # If this response matches an awaiting call, remove from the awaiting set
+                if tool_call_id in awaiting_responses:
+                    awaiting_responses.remove(tool_call_id)
+
+        # Second pass: Remove all tool_calls that don't have responses or have misplaced responses.
+        tool_call_ids = list(tool_call_positions.keys())
+        for tool_call_id in tool_call_ids:
+            call_pos = tool_call_positions[tool_call_id]
+            response_pos = tool_response_positions.get(tool_call_id)
+
+            if tool_call_id in awaiting_responses or (response_pos and response_pos <= call_pos):
                 cleaned = True
-
-        # Detect responses without a corresponding call
-        for tool_response_id, response_idx in tool_response_positions.items():
-            call_idx = tool_call_positions.get(tool_response_id)
-            expected_position = expected_response_positions.get(tool_response_id)
-            # If there is no call, or the call is not correctly paired with this response, mark the response for removal
-            if call_idx is None or response_idx != expected_position:
-                indices_to_remove.add(response_idx)
-                log.debug(f"Popping message at index {response_idx} because it is not preceded by correct tool call.")
-                cleaned = True
-
-        # Remove messages with inconsistencies in reverse order to avoid index shifting
-        for idx in sorted(indices_to_remove, reverse=True):
-            messages.pop(idx)
+                messages.pop(call_pos)
+                # Update the stored positions because we've altered the messages list.
+                del tool_call_positions[tool_call_id]
+                if response_pos:
+                    del tool_response_positions[tool_call_id]
+                # Adjust subsequent message positions
+                for key, pos in tool_call_positions.items():
+                    if pos > call_pos:
+                        tool_call_positions[key] = pos - 1
+                for key, pos in tool_response_positions.items():
+                    if pos > call_pos:
+                        tool_response_positions[key] = pos - 1
+                # Restart the check as the messages list has changed.
+                return await self.ensure_tool_consistency(messages)
 
         return cleaned
 

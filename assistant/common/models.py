@@ -75,8 +75,8 @@ class Usage(AssistantBaseModel):
 
 
 class GuildSettings(AssistantBaseModel):
-    system_prompt: str = "You are a helpful discord assistant named {botname}"
-    prompt: str = "Current time: {timestamp}\nDiscord server you are chatting in: {server}"
+    system_prompt: str = "You are a discord bot named {botname}, and are chatting with {username}."
+    prompt: str = ""
     allow_sys_prompt_override: bool = False  # Per convo system prompt
     embeddings: Dict[str, Embedding] = {}
     usage: Dict[str, Usage] = {}
