@@ -64,7 +64,6 @@ async def request_chat_completion_raw(
     if seed and model in MODELS_1106:
         kwargs["seed"] = seed
     if functions and model in SUPPORTS_FUNCTIONS:
-        log.debug(f"Calling model with {len(functions)} functions")
         if model in SUPPORTS_TOOLS:
             tools = []
             for func in functions:
@@ -82,7 +81,7 @@ async def request_chat_completion_raw(
         data=kwargs,
     )
     response = await client.chat.completions.create(**kwargs)
-    log.debug(f"CHAT RESPONSE TYPE: {type(response)}")
+    # log.debug(f"CHAT RESPONSE TYPE: {type(response)}")
     return response
 
 
@@ -128,7 +127,7 @@ async def request_completion_raw(
         data=kwargs,
     )
     response = await client.completions.create(**kwargs)
-    log.debug(f"COMPLETION RESPONSE TYPE: {type(response)}")
+    # log.debug(f"COMPLETION RESPONSE TYPE: {type(response)}")
     return response
 
 
@@ -168,7 +167,7 @@ async def request_embedding_raw(
         input=text,
         model="text-embedding-ada-002",
     )
-    log.debug(f"EMBED RESPONSE TYPE: {type(response)}")
+    # log.debug(f"EMBED RESPONSE TYPE: {type(response)}")
     return response
 
 

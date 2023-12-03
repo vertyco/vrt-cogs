@@ -26,6 +26,7 @@ from perftracker import perf
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
+from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
 from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_VISION
@@ -291,7 +292,8 @@ class ChatHandler(MixinMeta):
 
         query_embedding = []
         user = author if isinstance(author, discord.Member) else None
-        message_tokens = await self.count_tokens(message, conf, conf.get_user_model(user))
+        model = conf.get_user_model(user)
+        message_tokens = await self.count_tokens(message, conf, model)
         words = message.split(" ")
         if conf.top_n and message_tokens < 8191 and len(words) > 3:
             # Save on tokens by only getting embeddings if theyre enabled
@@ -370,10 +372,17 @@ class ChatHandler(MixinMeta):
                 reply = _("Request timed out, please try again.")
                 break
             except Exception as e:
-                log.error(
-                    f"Response Exception!\n"
-                    f"MESSAGES: {json.dumps(messages, indent=2)}\n"
-                    f"FUNCTIONS: {json.dumps(function_calls, indent=2) if function_calls else 'None'}",
+                add_breadcrumb(
+                    category="chat",
+                    message=f"Response Exception: {model}",
+                    level="info",
+                    data={
+                        "conversation": json.dumps(messages, indent=2),
+                        "functions": json.dumps(function_calls, indent=2) if function_calls else "None",
+                    },
+                )
+                log.debug(
+                    f"Response Exception!\nConversation: {json.dumps(messages, indent=2)}\n",
                     exc_info=e,
                 )
                 raise e
