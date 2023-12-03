@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.13.0"
+    __version__ = "1.13.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -360,7 +360,7 @@ class VrtUtils(commands.Cog):
             field = embed.fields[-1]
             latency_txt += f"\nMessage:   {humanize_number(round((end - start) * 1000, 2))} ms"
             embed.set_field_at(
-                index=5,
+                index=embed.fields.index(field),
                 name=field.name,
                 value=box(latency_txt, lang="python"),
                 inline=False,
