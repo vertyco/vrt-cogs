@@ -445,31 +445,36 @@ class ChatHandler(MixinMeta):
 
                 try:
                     args = json.loads(arguments)
+                    parse_success = True
                 except json.JSONDecodeError:
+                    parse_success = False
                     args = {}
-                    log.error(f"Failed to parse parameters for custom function {function_name}\nArguments: {arguments}")
 
-                extras = {
-                    "user": guild.get_member(author) if isinstance(author, int) else author,
-                    "channel": guild.get_channel_or_thread(channel) if isinstance(channel, int) else channel,
-                    "guild": guild,
-                    "bot": self.bot,
-                    "conf": conf,
-                }
-                kwargs = {**args, **extras}
-                func = function_map[function_name]
-                try:
-                    if iscoroutinefunction(func):
-                        func_result = await func(**kwargs)
-                    else:
-                        func_result = await asyncio.to_thread(func, **kwargs)
-                except Exception as e:
-                    log.error(
-                        f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
-                        exc_info=e,
-                    )
-                    func_result = traceback.format_exc()
-                    function_calls = [i for i in function_calls if i["name"] != function_name]
+                if parse_success:
+                    extras = {
+                        "user": guild.get_member(author) if isinstance(author, int) else author,
+                        "channel": guild.get_channel_or_thread(channel) if isinstance(channel, int) else channel,
+                        "guild": guild,
+                        "bot": self.bot,
+                        "conf": conf,
+                    }
+                    kwargs = {**args, **extras}
+                    func = function_map[function_name]
+                    try:
+                        if iscoroutinefunction(func):
+                            func_result = await func(**kwargs)
+                        else:
+                            func_result = await asyncio.to_thread(func, **kwargs)
+                    except Exception as e:
+                        log.error(
+                            f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
+                            exc_info=e,
+                        )
+                        func_result = traceback.format_exc()
+                        function_calls = [i for i in function_calls if i["name"] != function_name]
+                else:
+                    # Help the model self-correct
+                    func_result = f"JSONDecodeError: Failed to parse arguments for function {function_name}"
 
                 # Prep framework for alternative response types!
                 if isinstance(func_result, dict):
