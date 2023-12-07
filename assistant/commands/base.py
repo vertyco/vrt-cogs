@@ -12,6 +12,7 @@ from redbot.core.utils.chat_formatting import box, escape, pagify, text_to_file
 from ..abc import MixinMeta
 from ..common.calls import request_model
 from ..common.constants import READ_EXTENSIONS
+from ..common.models import Conversation
 from ..common.utils import can_use, get_attachments
 
 log = logging.getLogger("red.vrt.assistant.base")
@@ -185,7 +186,7 @@ If a file has no extension it will still try to read it only if it can be decode
             file = text_to_file(conversation.system_prompt_override)
             await ctx.send(_("System prompt override for this conversation"), file=file)
 
-    @commands.command(name="clearconvo")
+    @commands.command(name="convoclear", aliases=["clearconvo"])
     @commands.guild_only()
     async def clear_convo(self, ctx: commands.Context):
         """
@@ -210,14 +211,12 @@ If a file has no extension it will still try to read it only if it can be decode
     @commands.command(name="convopop")
     @commands.guild_only()
     @commands.bot_has_guild_permissions(attach_files=True)
-    async def pop_last_message(self, ctx: commands.Context, *, user: discord.Member = None):
+    async def pop_last_message(self, ctx: commands.Context):
         """
-        pop the last message from your conversation
+        Pop the last message from your conversation
         """
-        if not user:
-            user = ctx.author
         conf = self.db.get_conf(ctx.guild)
-        mem_id = ctx.channel.id if conf.collab_convos else user.id
+        mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
         perms = [
             await self.bot.is_mod(ctx.author),
             ctx.channel.permissions_for(ctx.author).manage_messages,
@@ -234,6 +233,51 @@ If a file has no extension it will still try to read it only if it can be decode
         dump = json.dumps(last, indent=2)
         file = text_to_file(dump, "popped.json")
         await ctx.send(_("Removed the last message from this conversation"), file=file)
+
+    @commands.command(name="convocopy")
+    @commands.guild_only()
+    @commands.bot_has_guild_permissions(attach_files=True)
+    async def copy_conversation(
+        self, ctx: commands.Context, *, channel: discord.TextChannel | discord.Thread | discord.ForumChannel
+    ):
+        """
+        Copy the conversation to another channel, thread, or forum
+        """
+        conf = self.db.get_conf(ctx.guild)
+        mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
+        perms = [
+            await self.bot.is_mod(ctx.author),
+            ctx.channel.permissions_for(ctx.author).manage_messages,
+            ctx.author.id in self.bot.owner_ids,
+        ]
+        if conf.collab_convos and not any(perms):
+            txt = _("Only moderators can copy conversations when collaborative conversations are enabled!")
+            return await ctx.send(txt)
+
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        conversation.cleanup(conf, ctx.author)
+        conversation.refresh()
+
+        if not conversation.messages:
+            txt = _("There are no messages in this conversation yet!")
+            return await ctx.send(txt)
+        if not channel.permissions_for(ctx.author).view_channel:
+            txt = _("You cannot copy a conversation to a channel you can't see!")
+            return await ctx.send(txt)
+
+        new_mem_id = channel.id if conf.collab_convos else ctx.author.id
+        key = f"{new_mem_id}-{channel.id}-{ctx.guild.id}"
+        print(key)
+        if key in self.db.conversations:
+            txt = _("This conversation has been overwritten in {}").format(channel.mention)
+        else:
+            txt = _("This conversation has been copied over to {}").format(channel.mention)
+        await ctx.send(txt)
+
+        self.db.conversations[key] = Conversation.model_validate(conversation.model_dump())
+        print(self.db.conversations[key])
+
+        await self.save_conf()
 
     @commands.command(name="convoprompt")
     @commands.guild_only()
@@ -289,6 +333,33 @@ If a file has no extension it will still try to read it only if it can be decode
             txt = _("System prompt has been **Removed** for this conversation!")
         await ctx.send(txt)
 
+    @commands.command(name="convoshow", aliases=["showconvo"])
+    @commands.guild_only()
+    @commands.guildowner()
+    async def show_convo(self, ctx: commands.Context, *, user: discord.Member = None):
+        """
+        View the current transcript of a conversation
+
+        This is mainly here for moderation purposes
+        """
+        if not user:
+            user = ctx.author
+        conf = self.db.get_conf(ctx.guild)
+        mem_id = ctx.channel.id if conf.collab_convos else user.id
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        if not conversation.messages:
+            return await ctx.send(_("You have no conversation in this channel!"))
+
+        text = ""
+        for message in conversation.messages:
+            text += f"{json.dumps(message, indent=2)}\n"
+
+        buffer = BytesIO(text.encode())
+        buffer.name = f"{ctx.author.name}_transcript.txt"
+        buffer.seek(0)
+        file = discord.File(buffer)
+        await ctx.send(_("Here is your conversation transcript!"), file=file)
+
     @commands.command(name="query")
     @commands.bot_has_permissions(embed_links=True)
     async def test_embedding_response(self, ctx: commands.Context, *, query: str):
@@ -324,30 +395,3 @@ If a file has no extension it will still try to read it only if it can be decode
                     txt += boxed
                     embed = discord.Embed(description=txt)
                     await ctx.send(embed=embed)
-
-    @commands.command(name="showconvo")
-    @commands.guild_only()
-    @commands.guildowner()
-    async def show_convo(self, ctx: commands.Context, *, user: discord.Member = None):
-        """
-        View the current transcript of a conversation
-
-        This is mainly here for moderation purposes
-        """
-        if not user:
-            user = ctx.author
-        conf = self.db.get_conf(ctx.guild)
-        mem_id = ctx.channel.id if conf.collab_convos else user.id
-        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
-        if not conversation.messages:
-            return await ctx.send(_("You have no conversation in this channel!"))
-
-        text = ""
-        for message in conversation.messages:
-            text += f"{json.dumps(message, indent=2)}\n"
-
-        buffer = BytesIO(text.encode())
-        buffer.name = f"{ctx.author.name}_transcript.txt"
-        buffer.seek(0)
-        file = discord.File(buffer)
-        await ctx.send(_("Here is your conversation transcript!"), file=file)
