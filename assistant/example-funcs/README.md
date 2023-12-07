@@ -32,11 +32,11 @@ The following objects are passed by default as keyword arguments and do not need
 - **bot**: the bot object (Red)
 - **conf**: the config model for Assistant (GuildSettings)
 
-All functions **MUST** take `*args, **kwargs` as parameters to handle excess objects being passed
+All functions **MUST** take `*args, **kwargs` as end parameters to handle excess objects being passed
 
 ## Custom Functions
 
-Here is an example of a function that gets a member's VC balance by name:
+Here is an example of a function that gets a member's credit balance by name:
 
 ```python
 import discord
@@ -46,7 +46,7 @@ async def get_member_balance(guild: discord.Guild, name: str, *args, **kwargs) -
     if not user:
         return "Could not find that user"
     bal = await bank.get_balance(user)
-    return f"{bal} VC"
+    return f"{bal} credits"
 ```
 
 Here is an example of a JSON schema for the `get_member_balance` function (note how the `guild` object from the function above isnt included):
@@ -54,7 +54,7 @@ Here is an example of a JSON schema for the `get_member_balance` function (note 
 ```json
 {
   "name": "get_member_balance",
-  "description": "Get a member's VC balance by name",
+  "description": "Get a member's credit balance by name",
   "parameters": {
     "type": "object",
     "properties": {
