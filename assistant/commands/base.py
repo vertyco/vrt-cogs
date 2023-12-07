@@ -267,7 +267,6 @@ If a file has no extension it will still try to read it only if it can be decode
 
         new_mem_id = channel.id if conf.collab_convos else ctx.author.id
         key = f"{new_mem_id}-{channel.id}-{ctx.guild.id}"
-        print(key)
         if key in self.db.conversations:
             txt = _("This conversation has been overwritten in {}").format(channel.mention)
         else:
@@ -275,7 +274,6 @@ If a file has no extension it will still try to read it only if it can be decode
         await ctx.send(txt)
 
         self.db.conversations[key] = Conversation.model_validate(conversation.model_dump())
-        print(self.db.conversations[key])
 
         await self.save_conf()
 
