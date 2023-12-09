@@ -77,7 +77,7 @@ class Functions(MixinMeta):
         guild = user.guild
         conf = await self.config.guild(guild).all()
         if user.id in conf["blacklist"]:
-            return "This user has been blacklisted from opening tickets!"
+            return _("This user has been blacklisted from opening tickets!")
         if any(r.id in conf["blacklist"] for r in user.roles):
             return _("This user has a role that is blacklisted from opening tickets!")
 
@@ -89,7 +89,7 @@ class Functions(MixinMeta):
 
         panels = conf["panels"]
         if not panels:
-            return "There are no support ticket panels available!"
+            return _("There are no support ticket panels available!")
 
         buffer = StringIO()
         for panel_name, panel_data in panels.items():
@@ -97,9 +97,9 @@ class Functions(MixinMeta):
             if panel_data.get("disabled", False):
                 continue
 
-            # Check if the member can see the channel where the panel is located
+            # Check if the channel exists
             channel = guild.get_channel(panel_data["channel_id"])
-            if channel is None or not channel.permissions_for(user).view_channel:
+            if channel is None:
                 continue
 
             # Check if the member has the required roles to open a ticket from this panel
