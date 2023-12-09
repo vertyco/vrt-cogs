@@ -31,6 +31,7 @@
     "pandas",
     "numpy",
     "perftracker",
+    "pytz",
     "tenacity",
     "sentry_sdk"
   ],
