@@ -3,7 +3,7 @@ import contextlib
 import logging
 import re
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import List, Union
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -1160,9 +1160,6 @@ class Admin(MixinMeta):
             invalid = ["name" not in df.columns, "text" not in df.columns]
             if any(invalid):
                 await ctx.send(
-                    f"**{attachment.filename}** contains invalid formatting, columns must be ['name', 'text']",
-                )
-                await ctx.send(
                     _("**{}** contains invalid formatting, columns must be ").format(attachment.filename)
                     + "['name', 'text']",
                 )
@@ -1255,6 +1252,140 @@ class Admin(MixinMeta):
                 )
             )
         await self.save_conf()
+
+    @assistant.command(name="importexcel")
+    async def import_embeddings_excel(self, ctx: commands.Context, overwrite: bool):
+        """Import embeddings from an .xlsx file
+
+        Args:
+            overwrite (bool): overwrite embeddings with existing entry names
+        """
+        conf = self.db.get_conf(ctx.guild)
+        tz = pytz.timezone(conf.timezone)
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send(
+                _("You must attach **.xlsx** files to this command or reference a message that has them!")
+            )
+
+        imported = 0
+        files = []
+        frames = []
+        async with ctx.typing():
+            for attachment in attachments:
+                file_bytes = await attachment.read()
+                try:
+                    # Read the Excel file into a DataFrame
+                    df = pd.read_excel(BytesIO(file_bytes), sheet_name="embeddings")
+                except Exception as e:
+                    log.error("Error reading uploaded file", exc_info=e)
+                    await ctx.send(_("Error reading **{}**: {}").format(attachment.filename, box(str(e))))
+                    continue
+                invalid = [
+                    "name" not in df.columns,
+                    "text" not in df.columns,
+                    "created" not in df.columns,
+                    "ai_created" not in df.columns,
+                ]
+                if any(invalid):
+                    txt = _("{} is invalid! Must contain the following columns: {}").format(
+                        f"**{attachment.filename}**", "name, text, created, ai_created"
+                    )
+                    await ctx.send(txt)
+                    continue
+                frames.append(df)
+                files.append(attachment.filename)
+
+            message_text = _("Processing the following files in the background\n{}").format(box(humanize_list(files)))
+            message = await ctx.send(message_text)
+            df = await asyncio.to_thread(pd.concat, frames)
+            entries = len(df.index)
+            split_by = 10
+            if entries > 300:
+                split_by = round(entries / 25)
+            imported = 0
+            for index, row in df.iterrows():
+                name = row["name"]
+                text = row["text"]
+                proc = _("processing")
+                if name in conf.embeddings:
+                    proc = _("overwriting")
+                    if not overwrite or conf.embeddings[name].text == text:
+                        continue
+                created_tz = pd.to_datetime(row["created"]).tz_localize(tz)
+
+                if index and (index + 1) % split_by == 0:
+                    with contextlib.suppress(discord.DiscordServerError):
+                        await message.edit(
+                            content=_("{}\n`Currently {}: `**{}** ({}/{})").format(
+                                message_text, proc, name, index + 1, len(df)
+                            )
+                        )
+
+                query_embedding = await self.request_embedding(text, conf)
+                if len(query_embedding) == 0:
+                    await ctx.send(_("Failed to process embedding: `{}`").format(name))
+                    continue
+
+                conf.embeddings[name] = Embedding(
+                    text=text,
+                    embedding=query_embedding,
+                    ai_created=row["ai_created"],
+                    created=created_tz,
+                )
+                imported += 1
+
+            if imported:
+                await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
+                await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
+                await self.save_conf()
+            else:
+                await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
+                await ctx.send(_("No embeddings needed to be updated!"))
+
+    @assistant.command(name="exportexcel")
+    @commands.bot_has_permissions(attach_files=True)
+    async def export_embeddings_excel(self, ctx: commands.Context):
+        """
+        Export embeddings to an .xlsx file
+
+        **Note:** csv exports do not include the embedding values
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.embeddings:
+            return await ctx.send(_("There are no embeddings to export!"))
+
+        columns = {
+            "name": str,
+            "text": str,
+            "created": "datetime64[ns]",  # Use numpy datetime64 type for datetime
+            "ai_created": bool,
+        }
+
+        def _get_file() -> discord.File:
+            rows = []
+            for name, em in conf.embeddings.items():
+                created_utc_naive = em.created.astimezone(timezone.utc).replace(tzinfo=None)
+                rows.append([name, em.text, created_utc_naive, em.ai_created])
+            df = pd.DataFrame(rows, columns=columns.keys())
+
+            # Convert the columns to the specified types
+            for column, dtype in columns.items():
+                if dtype == "datetime64[ns]":
+                    df[column] = pd.to_datetime(df[column], utc=True).dt.tz_convert(None)
+                else:
+                    df[column] = df[column].astype(dtype)
+
+            buffer = BytesIO()
+            buffer.name = "embeddings-export.xlsx"
+            with pd.ExcelWriter(buffer) as f:
+                df.to_excel(f, index=False, sheet_name="embeddings")
+            buffer.seek(0)
+            return discord.File(buffer)
+
+        async with ctx.typing():
+            file = await asyncio.to_thread(_get_file)
+            await ctx.send(file=file)
 
     @assistant.command(name="exportcsv")
     @commands.bot_has_permissions(attach_files=True)
