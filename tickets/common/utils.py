@@ -457,7 +457,11 @@ async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[i
             pass
 
     if message:
-        await message.edit(embeds=embeds, attachments=attachments)
+        try:
+            await message.edit(content=None, embeds=embeds, attachments=attachments)
+        except discord.Forbidden:
+            message = await channel.send(embeds=embeds, files=attachments)
+            return message.id
     else:
         message = await channel.send(embeds=embeds, files=attachments)
         return message.id
