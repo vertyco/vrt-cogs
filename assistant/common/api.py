@@ -694,13 +694,13 @@ class API(MixinMeta):
                 schema_text = _("This function consumes `{}` input tokens each call\n").format(humanize_number(tokens))
 
                 if user.id in self.bot.owner_ids:
-                    if len(schema) > 1000:
-                        schema_text += box(schema[:1000] + "...", "py")
+                    if len(schema) > 900:
+                        schema_text += box(schema[:900] + "...", "py")
                     else:
                         schema_text += box(schema, "py")
 
-                    if len(func["code"]) > 1000:
-                        code_text = box(func["code"][:1000] + "...", "py")
+                    if len(func["code"]) > 900:
+                        code_text = box(func["code"][:900] + "...", "py")
                     else:
                         code_text = box(func["code"], "py")
 
