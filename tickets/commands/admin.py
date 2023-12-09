@@ -9,9 +9,9 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
-from ..menu import SMALL_CONTROLS, MenuButton, menu
-from ..utils import prune_invalid_tickets, update_active_overview
-from ..views import TestButton, confirm, wait_reply
+from ..common.menu import SMALL_CONTROLS, MenuButton, menu
+from ..common.utils import prune_invalid_tickets, update_active_overview
+from ..common.views import TestButton, confirm, wait_reply
 
 log = logging.getLogger("red.vrt.admincommands")
 _ = Translator("TicketsCommands", __file__)

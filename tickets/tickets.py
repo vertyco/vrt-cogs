@@ -12,13 +12,14 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
 from .commands import TicketCommands
-from .utils import (
+from .common.functions import Functions
+from .common.utils import (
     close_ticket,
     prune_invalid_tickets,
     ticket_owner_hastyped,
     update_active_overview,
 )
-from .views import CloseView, LogView, PanelView
+from .common.views import CloseView, LogView, PanelView
 
 log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
@@ -26,13 +27,13 @@ _ = Translator("Tickets", __file__)
 
 # redgettext -D tickets.py commands/base.py commands/admin.py views.py menu.py utils.py
 @cog_i18n(_)
-class Tickets(TicketCommands, commands.Cog, metaclass=CompositeMetaClass):
+class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaClass):
     """
     Support ticket system with multi-panel functionality
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.4.11"
+    __version__ = "2.5.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
