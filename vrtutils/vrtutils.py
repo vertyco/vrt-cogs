@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.13.1"
+    __version__ = "1.13.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -818,9 +818,12 @@ class VrtUtils(commands.Cog):
                     for i, m in enumerate(m_sort[:amount])
                 ]
             )
-            for p in pagify(txt, page_length=4000):
-                em = discord.Embed(description=p, color=ctx.author.color)
-                await ctx.send(embed=em)
+
+        embeds = [discord.Embed(description=p, color=ctx.author.color) for p in pagify(txt, page_length=2000)]
+        pages = len(embeds)
+        for idx, i in enumerate(embeds):
+            i.set_footer(text=f"Page {idx + 1}/{pages}")
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command()
     @commands.guild_only()
@@ -850,9 +853,12 @@ class VrtUtils(commands.Cog):
                     for i, m in enumerate(m_sort[:amount])
                 ]
             )
-            for p in pagify(txt, page_length=4000):
-                em = discord.Embed(description=p, color=ctx.author.color)
-                await ctx.send(embed=em)
+
+        embeds = [discord.Embed(description=p, color=ctx.author.color) for p in pagify(txt, page_length=2000)]
+        pages = len(embeds)
+        for idx, i in enumerate(embeds):
+            i.set_footer(text=f"Page {idx + 1}/{pages}")
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.command()
     @commands.guild_only()
