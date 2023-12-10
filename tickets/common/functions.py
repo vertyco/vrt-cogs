@@ -32,7 +32,7 @@ class Functions(MixinMeta):
             "name": "create_ticket_for_user",
             "description": (
                 "Create a support ticket for the user you are speaking with if you are unable to help sufficiently. "
-                "Use `get_ticket_types` function before this one to get the panel names and response section requirements."
+                "Use `get_ticket_types` function before this one to get the panel names and response section requirements. "
             ),
             "parameters": {
                 "type": "object",
@@ -43,23 +43,23 @@ class Functions(MixinMeta):
                     },
                     "answer1": {
                         "type": "string",
-                        "description": "The response to the first ticket question or prompt.",
+                        "description": "Response to first question.",
                     },
                     "answer2": {
                         "type": "string",
-                        "description": "The response to the second ticket question or prompt.",
+                        "description": "Response to second question.",
                     },
                     "answer3": {
                         "type": "string",
-                        "description": "The response to the third ticket question or prompt.",
+                        "description": "Response to third question.",
                     },
                     "answer4": {
                         "type": "string",
-                        "description": "The response to the fourth ticket question or prompt.",
+                        "description": "Response to fourth question.",
                     },
                     "answer5": {
                         "type": "string",
-                        "description": "The response to the fifth ticket question or prompt.",
+                        "description": "Response to fifth question.",
                     },
                 },
                 "required": ["panel_name"],
@@ -125,6 +125,8 @@ class Functions(MixinMeta):
                     if maxlength := i["max_length"]:
                         txt += _("- Maximum length: {}\n").format(maxlength)
                     section += 1
+
+            txt += "\n"
 
             buffer.write(txt)
 
@@ -203,8 +205,11 @@ class Functions(MixinMeta):
         answers = {}
         if modal := panel.get("modal"):
             for idx, i in enumerate(list(modal.values())):
-                response = responses[idx]
-                answers[i["label"]] = str(response)
+                response = str(responses[idx])
+                if "DISCOVERABLE" in guild.features:
+                    response = response.replace("Discord", "").replace("discord", "")
+
+                answers[i["label"]] = response
 
         form_embed = discord.Embed()
         if answers:

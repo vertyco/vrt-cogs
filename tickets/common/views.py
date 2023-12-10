@@ -325,6 +325,10 @@ class SupportButton(Button):
                 else:
                     has_response = True
 
+                if "DISCOVERABLE" in guild.features and "discord" in answer.lower():
+                    txt = _("Your response cannot contain the word 'Discord' in discoverable servers.")
+                    return await interaction.followup.send(txt, ephemeral=True)
+
                 answers[question] = answer
 
                 if len(answer) <= 1024:
