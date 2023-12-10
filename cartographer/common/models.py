@@ -643,7 +643,7 @@ class GuildBackup(FriendlyBase):
     def has_duplcate_roles(self) -> bool:
         existing = set()
         for i in self.roles:
-            if i.name in self.roles:
+            if i.name in existing:
                 return True
             existing.add(i.name)
         return False
@@ -652,7 +652,7 @@ class GuildBackup(FriendlyBase):
     def has_duplcate_text_channels(self) -> bool:
         existing = set()
         for i in self.text_channels:
-            if i.name in self.text_channels:
+            if i.name in existing:
                 return True
             existing.add(i.name)
         return False
@@ -661,7 +661,7 @@ class GuildBackup(FriendlyBase):
     def has_duplcate_categories(self) -> bool:
         existing = set()
         for i in self.categories:
-            if i.name in self.categories:
+            if i.name in existing:
                 return True
             existing.add(i.name)
         return False
@@ -670,7 +670,7 @@ class GuildBackup(FriendlyBase):
     def has_duplcate_voice_channels(self) -> bool:
         existing = set()
         for i in self.voice_channels:
-            if i.name in self.voice_channels:
+            if i.name in existing:
                 return True
             existing.add(i.name)
         return False
@@ -679,7 +679,7 @@ class GuildBackup(FriendlyBase):
     def has_duplcate_forum_channels(self) -> bool:
         existing = set()
         for i in self.forums:
-            if i.name in self.forums:
+            if i.name in existing:
                 return True
             existing.add(i.name)
         return False
