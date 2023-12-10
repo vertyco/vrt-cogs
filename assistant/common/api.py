@@ -393,54 +393,63 @@ class API(MixinMeta):
                         break
 
     async def ensure_tool_consistency(self, messages: List[dict]) -> bool:
+        """
+        Ensure all tool calls satisfy schema requirements, modifying the message payload in-place.
+
+        All tool calls must have a following tool response.
+        All tool call responses must have a preceeding tool call.
+        """
         cleaned = False
-        # Mapping from tool_call id to the index of the response message
-        tool_response_positions = {}
-        # Mapping from tool_call id to the index of the call message
-        tool_call_positions = {}
-        # List of tool_call ids awaiting a response
-        awaiting_responses = set()
 
-        # First pass: Map tool_calls and tool_responses and mark those awaiting responses.
+        # Map of tool call IDs and their position
+        tool_calls = {}
+        # Map of tool responses and their position
+        tool_responses = {}
+
+        # Map out all existing tool calls and responses
         for idx, msg in enumerate(messages):
-            if msg.get("role") == "assistant" and "tool_calls" in msg:
-                # Process all tool_calls within this assistant message
-                for tool_call in msg["tool_calls"]:
+            if msg_tool_calls := msg.get("tool_calls"):
+                for tool_call in msg_tool_calls:
                     tool_call_id = tool_call["id"]
-                    tool_call_positions[tool_call_id] = idx
-                    awaiting_responses.add(tool_call_id)
-            elif msg.get("role") == "tool":
+                    tool_calls[tool_call_id] = idx
+            elif msg["role"] == "tool":
                 tool_call_id = msg["tool_call_id"]
+                tool_responses[tool_call_id] = idx
 
-                tool_response_positions[tool_call_id] = idx
-                # If this response matches an awaiting call, remove from the awaiting set
-                if tool_call_id in awaiting_responses:
-                    awaiting_responses.remove(tool_call_id)
+        indexes_to_purge = set()
 
-        # Second pass: Remove all tool_calls that don't have responses or have misplaced responses.
-        tool_call_ids = list(tool_call_positions.keys())
-        for tool_call_id in tool_call_ids:
-            call_pos = tool_call_positions[tool_call_id]
-            response_pos = tool_response_positions.get(tool_call_id)
-
-            if tool_call_id in awaiting_responses or (response_pos and response_pos <= call_pos):
+        # Find tool calls with no responses
+        for tool_call_id, idx in tool_calls.items():
+            if tool_call_id not in tool_responses:
+                # Tool call has no response
+                indexes_to_purge.add(idx)
                 cleaned = True
-                messages.pop(call_pos)
-                # Update the stored positions because we've altered the messages list.
-                del tool_call_positions[tool_call_id]
-                if response_pos:
-                    del tool_response_positions[tool_call_id]
-                # Adjust subsequent message positions
-                for key, pos in tool_call_positions.items():
-                    if pos > call_pos:
-                        tool_call_positions[key] = pos - 1
-                for key, pos in tool_response_positions.items():
-                    if pos > call_pos:
-                        tool_response_positions[key] = pos - 1
-                # Restart the check as the messages list has changed.
-                return await self.ensure_tool_consistency(messages)
+            elif tool_call_id in tool_responses and idx > tool_responses[tool_call_id]:
+                # This shouldnt happen, but just in case...
+                log.error(f"Tool call came after tool response!\n{json.dumps(messages, indent=2)}")
+                indexes_to_purge.add(idx)
+                cleaned = True
 
-        return cleaned
+        # Find orphaned tool responses
+        for tool_call_id, idx in tool_responses.items():
+            if tool_call_id not in tool_calls:
+                # Tool response has no tool call
+                indexes_to_purge.add(idx)
+                cleaned = True
+            elif tool_call_id in tool_calls and idx < tool_calls[tool_call_id]:
+                # This shouldnt happen, but just in case...
+                log.error(f"Tool response came before tool call!\n{json.dumps(messages, indent=2)}")
+                indexes_to_purge.add(idx)
+                cleaned = True
+
+        if not cleaned:
+            return False
+
+        # Sort reverse order to pop last indexes first
+        to_purge = sorted(indexes_to_purge, reverse=True)
+        for idx in to_purge:
+            messages.pop(idx)
+        log.info(f"Purged {len(to_purge)} tool call items from message payload!")
 
     @perf()
     async def degrade_conversation(
