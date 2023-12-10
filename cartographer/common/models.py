@@ -388,7 +388,7 @@ class TextChannel(FriendlyBase):
         channel = await guild.create_text_channel(
             name=self.name,
             category=get_named_category(guild, self.category),
-            news=self.news,
+            news="COMMUNITY" in guild.features and self.news,
             topic=self.topic,
             nsfw=self.nsfw,
             slowmode_delay=self.slowmode_delay,
