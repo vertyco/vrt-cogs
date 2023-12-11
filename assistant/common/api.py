@@ -394,52 +394,57 @@ class API(MixinMeta):
 
     async def ensure_tool_consistency(self, messages: List[dict]) -> bool:
         """
-        Ensure all tool calls satisfy schema requirements, modifying the message payload in-place.
+        Ensure all tool calls satisfy schema requirements, returning the new message payload
 
         All tool calls must have a following tool response.
         All tool call responses must have a preceeding tool call.
+
+        Tool calls can be in more than one place with the same tool call id, this is a pain in the ass.
+
         """
         cleaned = False
 
         # Map of tool call IDs and their position
-        tool_calls = {}
+        tool_calls = []
         # Map of tool responses and their position
-        tool_responses = {}
+        tool_responses = []
 
         # Map out all existing tool calls and responses
         for idx, msg in enumerate(messages):
             if msg_tool_calls := msg.get("tool_calls"):
                 for tool_call in msg_tool_calls:
                     tool_call_id = tool_call["id"]
-                    tool_calls[tool_call_id] = idx
+                    tool_calls.append((tool_call_id, idx))
             elif msg["role"] == "tool":
                 tool_call_id = msg["tool_call_id"]
-                tool_responses[tool_call_id] = idx
+                tool_responses.append((tool_call_id, idx))
 
         indexes_to_purge = set()
 
         # Find tool calls with no responses
-        for tool_call_id, idx in tool_calls.items():
-            if tool_call_id not in tool_responses:
-                # Tool call has no response
-                indexes_to_purge.add(idx)
-                cleaned = True
-            elif tool_call_id in tool_responses and idx > tool_responses[tool_call_id]:
-                # This shouldnt happen, but just in case...
-                log.error(f"Tool call came after tool response!\n{json.dumps(messages, indent=2)}")
-                indexes_to_purge.add(idx)
+        for tool_call_id, tool_call_index in tool_calls:
+            # Ensure there is at least 1 tool response to this tool call and that it comes after
+            for response_id, ridx in tool_responses:
+                if response_id == tool_call_id and tool_call_index < ridx:
+                    # If a response is found that comes after the tool call then we're good
+                    break
+                await asyncio.sleep(0)
+            else:
+                indexes_to_purge.add(tool_call_index)
+                log.info(f"Purging tool call with no response: {tool_call_id}")
                 cleaned = True
 
         # Find orphaned tool responses
-        for tool_call_id, idx in tool_responses.items():
-            if tool_call_id not in tool_calls:
-                # Tool response has no tool call
-                indexes_to_purge.add(idx)
-                cleaned = True
-            elif tool_call_id in tool_calls and idx < tool_calls[tool_call_id]:
-                # This shouldnt happen, but just in case...
-                log.error(f"Tool response came before tool call!\n{json.dumps(messages, indent=2)}")
-                indexes_to_purge.add(idx)
+        for response_id, response_index in tool_responses:
+            # Ensure there is a preceeding tool call for every tool response
+            for tool_call_id, tool_call_index in tool_calls:
+                if response_id == tool_call_id and tool_call_index < response_index:
+                    # If a tool call is found that comes before the response then we're good
+                    break
+                await asyncio.sleep(0)
+            else:
+                indexes_to_purge.add(response_index)
+                log.info(f"Purging orphaned tool call response: {response_id}")
                 cleaned = True
 
         if not cleaned:
