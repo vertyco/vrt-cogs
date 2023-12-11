@@ -336,15 +336,15 @@ class UpgradeChat(commands.Cog):
             cluster = ""
             # If bot has ArkShop installed, get the user's registered cluster
             try:
-                if arktools := self.bot.get_cog("ArkTools"):
-                    # For arktools rewrite, which include shop
-                    if pref_cluster := await arktools.db_utils.get_preferred_cluster_from_discord_id(ctx.author):
-                        cluster = pref_cluster
-                elif arkshop := self.bot.get_cog("ArkShop"):
+                if arkshop := self.bot.get_cog("ArkShop"):
                     # For old versions
                     ashopusers = await arkshop.config.guild(ctx.guild).users()
                     if uid in ashopusers:
                         cluster = ashopusers[uid]["cluster"]
+                elif arktools := self.bot.get_cog("ArkTools"):
+                    # For arktools rewrite, which include shop
+                    if pref_cluster := await arktools.db_utils.get_preferred_cluster_from_discord_id(ctx.author):
+                        cluster = pref_cluster
             except Exception as e:
                 log.error("Failed to fetch cluster from Arktools", exc_info=e)
 
