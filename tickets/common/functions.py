@@ -43,23 +43,23 @@ class Functions(MixinMeta):
                     },
                     "answer1": {
                         "type": "string",
-                        "description": "Response to first question.",
+                        "description": "The answer to the first question if one exists.",
                     },
                     "answer2": {
                         "type": "string",
-                        "description": "Response to second question.",
+                        "description": "The answer to the second question if one exists.",
                     },
                     "answer3": {
                         "type": "string",
-                        "description": "Response to third question.",
+                        "description": "The answer to the third question if one exists.",
                     },
                     "answer4": {
                         "type": "string",
-                        "description": "Response to fourth question.",
+                        "description": "The answer to the fourth question if one exists.",
                     },
                     "answer5": {
                         "type": "string",
-                        "description": "Response to fifth question.",
+                        "description": "The answer to the fifth question if one exists.",
                     },
                 },
                 "required": ["panel_name"],
