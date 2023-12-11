@@ -21,7 +21,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.16"
+    __version__ = "0.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -330,10 +330,14 @@ class UpgradeChat(commands.Cog):
             if not logchan:
                 return
 
-            # If bot has ArkShop installed, get the user's registered cluster
-            arkshop = self.bot.get_cog("ArkShop")
             cluster = ""
-            if arkshop:
+            # If bot has ArkShop installed, get the user's registered cluster
+            if arktools := self.bot.get_cog("ArkTools"):
+                # For arktools rewrite, which include shop
+                if pref_cluster := await arktools.db_utils.get_preferred_cluster_from_discord_id(ctx.author):
+                    cluster = pref_cluster
+            elif arkshop := self.bot.get_cog("ArkShop"):
+                # For old versions
                 ashopusers = await arkshop.config.guild(ctx.guild).users()
                 if uid in ashopusers:
                     cluster = ashopusers[uid]["cluster"]
