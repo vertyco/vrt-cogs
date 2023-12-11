@@ -860,7 +860,7 @@ class UserCommands(MixinMeta, ABC):
 
             if not emoji:
                 # Get default
-                emoji = get_emoji(default_guild["buttons"][name])
+                emoji = get_emoji(default_guild["emojis"][name])
 
             return emoji
 
