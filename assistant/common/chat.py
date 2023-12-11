@@ -25,7 +25,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
 from perftracker import perf
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number, pagify
+from redbot.core.utils.chat_formatting import box, humanize_number, pagify, text_to_file
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
@@ -357,7 +357,11 @@ class ChatHandler(MixinMeta):
             # Iteratively degrade the conversation to ensure it is always under the token limit
             messages, function_calls, degraded = await self.degrade_conversation(messages, function_calls, conf, author)
 
+            before = len(messages)
             cleaned = await self.ensure_tool_consistency(messages)
+            if cleaned and len(before) != len(messages):
+                log.error("Something went wrong while ensuring tool call consistency")
+
             if cleaned or degraded:
                 conversation.overwrite(messages)
 
@@ -379,15 +383,12 @@ class ChatHandler(MixinMeta):
                     category="chat",
                     message=f"Response Exception: {model}",
                     level="info",
-                    data={
-                        "conversation": json.dumps(messages, indent=2),
-                        "functions": json.dumps(function_calls, indent=2) if function_calls else "None",
-                    },
                 )
-                log.debug(
-                    f"Response Exception!\nConversation: {json.dumps(messages, indent=2)}\n",
-                    exc_info=e,
-                )
+                if guild.id == 625757527765811240:
+                    # Dump payload for debugging if its my guild
+                    dump_file = text_to_file(json.dumps(messages, indent=2), filename=f"{author}_convo.json")
+                    await channel.send(file=dump_file)
+
                 raise e
 
             if reply := response.content:
