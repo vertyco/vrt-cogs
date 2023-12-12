@@ -521,6 +521,7 @@ class API(MixinMeta):
                 most_recent_assistant = len(messages) - 1 - i
             if most_recent_user != -1 and most_recent_function != -1 and most_recent_assistant != -1:
                 break
+            await asyncio.sleep(0)
 
         # Clear out function calls (not the result, just the message of it being called)
         i = 0
@@ -530,6 +531,7 @@ class API(MixinMeta):
                 continue
             messages.pop(i)
             total_tokens -= 5  # Minus role and name
+            await asyncio.sleep(0)
 
         if total_tokens <= max_tokens:
             return messages, function_list, True
@@ -570,6 +572,7 @@ class API(MixinMeta):
                     diff = pre - post
                     messages[i]["content"][idx]["text"] = degraded_content
                     total_tokens -= diff
+                    await asyncio.sleep(0)
             else:
                 degraded_content = _degrade_message(messages[i]["content"])
                 pre = await self.count_tokens(messages[i]["content"], conf, model)
@@ -586,6 +589,8 @@ class API(MixinMeta):
             if total_tokens <= max_tokens:
                 return messages, function_list, True
 
+            await asyncio.sleep(0)
+
         # Wipe all tool call messages:
         i = 0
         while total_tokens > max_tokens and i < len(messages):
@@ -593,6 +598,7 @@ class API(MixinMeta):
                 i += 1
                 continue
             messages.pop(i)
+            await asyncio.sleep(0)
 
         log.debug(f"Removing functions (total: {total_tokens}/max: {max_tokens})")
         # Degrade function_list before last resort
@@ -601,6 +607,7 @@ class API(MixinMeta):
             total_tokens -= await self.count_tokens(json.dumps(popped), conf, model)
             if total_tokens <= max_tokens:
                 return messages, function_list, True
+            await asyncio.sleep(0)
 
         # Degrade the most recent user and function messages as the last resort
         log.debug(f"Degrading user/function messages (total: {total_tokens}/max: {max_tokens})")
@@ -618,6 +625,7 @@ class API(MixinMeta):
                         diff = pre - post
                         messages[i]["content"][idx]["text"] = degraded_content
                         total_tokens -= diff
+                        await asyncio.sleep(0)
                 else:
                     degraded_content = _degrade_message(messages[i]["content"])
                     pre = await self.count_tokens(messages[i]["content"], conf, model)
@@ -630,6 +638,7 @@ class API(MixinMeta):
                         total_tokens -= pre
                         total_tokens -= 4
                         messages.pop(i)
+                await asyncio.sleep(0)
         return messages, function_list, True
 
     async def token_pagify(self, text: str, conf: GuildSettings) -> List[str]:
