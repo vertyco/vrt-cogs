@@ -291,10 +291,14 @@ class API(MixinMeta):
             except (KeyError, ClientConnectionError):  # API probably old or bad endpoint
                 pass
 
-        try:
-            encoding = tiktoken.encoding_for_model(model)
-        except KeyError:
-            encoding = tiktoken.get_encoding("cl100k_base")
+        def get_encoding():
+            try:
+                enc = tiktoken.encoding_for_model(model)
+            except KeyError:
+                enc = tiktoken.get_encoding("cl100k_base")
+            return enc
+
+        encoding = await asyncio.to_thread(get_encoding)
 
         return await asyncio.to_thread(encoding.encode, text)
 
