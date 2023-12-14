@@ -107,7 +107,7 @@ class Functions(MixinMeta):
             if required_roles and not any(role.id in required_roles for role in user.roles):
                 continue
 
-            txt = _("# SUPPORT TICKET PANEL: {}\n").format(panel_name)
+            txt = _("# SUPPORT TICKET PANEL NAME: {}\n").format(panel_name)
             if btext := panel_data["button_text"]:
                 txt += _("Button label: {}\n").format(btext)
 
