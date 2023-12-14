@@ -212,6 +212,8 @@ class Functions(MixinMeta):
         answers = {}
         if modal := panel.get("modal"):
             for idx, i in enumerate(list(modal.values())):
+                if i.get("required") and not responses[idx]:
+                    return f"THE FOLLOWING TICKET QUESTION WAS NOT ANSWERED!\n{i['label']}"
                 response = str(responses[idx])
                 if "DISCOVERABLE" in guild.features:
                     response = response.replace("Discord", "").replace("discord", "")
