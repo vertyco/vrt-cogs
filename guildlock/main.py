@@ -28,7 +28,7 @@ class GuildLock(BaseCommands, Listener, commands.Cog, metaclass=CompositeMetaCla
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
 
     def __init__(self, bot: Red):
         super().__init__()
