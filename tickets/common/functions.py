@@ -166,7 +166,14 @@ class Functions(MixinMeta):
 
         # Validate the panel_name
         if panel_name not in panels or panels[panel_name].get("disabled", False):
-            return "The specified panel does not exist or is disabled."
+            panel_names = ", ".join(list(panels.keys()))
+            txt = "The specified ticket panel does not exist!\n"
+            txt += "Use the `get_ticket_types` function to get ticket panel details!\n"
+            txt += f"Available ticket panel names are {panel_names}"
+            return txt
+
+        if panels[panel_name].get("disabled", False):
+            return "That ticket panel is disabled!"
 
         panel = panels[panel_name]
         logchannel = guild.get_channel(panel["log_channel"])
