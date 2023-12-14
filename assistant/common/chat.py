@@ -612,22 +612,22 @@ class ChatHandler(MixinMeta):
         if embeddings:
             results = []
             for embed in embeddings:
-                entry = {"memory name": embed[0], "relatedness": embed[2], "content": embed[1]}
-                results.append(f"- Embedding: {json.dumps(entry)}")
+                entry = f"# Memory Context ({embed[0]})\n{embed[1]}\n"
+                results.append(entry)
+
+            joined = "".join(results)
 
             if conf.embed_method == "static":
-                for i in embeddings:
-                    conversation.update_messages(i[1], "system", clean_name(i[0]))
+                conversation.update_messages(joined, "system", "memories")
 
             elif conf.embed_method == "dynamic":
-                for i in embeddings:
-                    system_prompt += f"\n\nContext: {i[1]}"
+                system_prompt += f"\n\n{joined}"
 
             else:  # Hybrid embedding
-                conversation.update_messages(embeddings[0][1], "system", clean_name(embeddings[0][0]))
-                if len(embeddings) > 1:
-                    for i in embeddings[1:]:
-                        system_prompt += f"\n\nContext: {i[1]}"
+                conversation.update_messages(results[0], "system", "memories")
+                if len(results) > 1:
+                    joined = "".join(results[1:])
+                    system_prompt += f"\n\n{joined}"
 
         images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(
