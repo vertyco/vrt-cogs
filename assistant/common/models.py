@@ -258,20 +258,31 @@ class Conversation(AssistantBaseModel):
                 continue
             self.messages.append(i)
 
-    def update_messages(self, message: str, role: str, name: str = None, tool_id: str = None) -> None:
+    def update_messages(
+        self,
+        message: str,
+        role: str,
+        name: str = None,
+        tool_id: str = None,
+        position: int = None,
+    ) -> None:
         """Update conversation cache
 
         Args:
             message (str): the message
             role (str): 'system', 'user' or 'assistant'
             name (str): the name of the bot or user
+            position (int): the index to place the message in
         """
         message = {"role": role, "content": message}
         if name:
             message["name"] = name
         if tool_id:
             message["tool_call_id"] = tool_id
-        self.messages.append(message)
+        if position:
+            self.messages.insert(position, message)
+        else:
+            self.messages.append(message)
         self.refresh()
 
     def prepare_chat(
@@ -284,12 +295,11 @@ class Conversation(AssistantBaseModel):
         resolution: str = "low",
     ) -> List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
-        prepared = []
+        prepared = self.messages.copy()
         if system_prompt.strip():
             prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt.strip():
             prepared.append({"role": "user", "content": initial_prompt})
-        prepared.extend(self.messages)
 
         if images:
             content = [{"type": "text", "text": user_message}]
