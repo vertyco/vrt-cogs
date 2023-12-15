@@ -295,11 +295,12 @@ class Conversation(AssistantBaseModel):
         resolution: str = "low",
     ) -> List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
-        prepared = self.messages.copy()
+        prepared = []
         if system_prompt.strip():
             prepared.append({"role": "system", "content": system_prompt})
         if initial_prompt.strip():
             prepared.append({"role": "user", "content": initial_prompt})
+        prepared.extend(self.messages)
 
         if images:
             content = [{"type": "text", "text": user_message}]
