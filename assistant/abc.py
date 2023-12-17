@@ -97,19 +97,6 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def ensure_supports_vision(
-        self,
-        messages: List[dict],
-        conf: GuildSettings,
-        user: Optional[discord.Member],
-    ):
-        raise NotImplementedError
-
-    @abstractmethod
-    async def ensure_tool_consistency(self, messages: List[dict]) -> bool:
-        raise NotImplementedError
-
-    @abstractmethod
     async def degrade_conversation(
         self,
         messages: List[dict],

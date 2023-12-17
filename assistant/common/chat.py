@@ -33,6 +33,8 @@ from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
 from .utils import (
     clean_name,
+    ensure_supports_vision,
+    ensure_tool_consistency,
     extract_code_blocks,
     extract_code_blocks_with_lang,
     get_attachments,
@@ -346,20 +348,18 @@ class ChatHandler(MixinMeta):
         reply = None
 
         calls = 0
-        repeats = 0
-        last_function: str = ""
         while True:
             if calls >= conf.max_function_calls:
                 function_calls = []
 
-            await self.ensure_supports_vision(messages, conf, author)
+            await ensure_supports_vision(messages, conf, author)
 
             # Iteratively degrade the conversation to ensure it is always under the token limit
             messages, function_calls, degraded = await self.degrade_conversation(messages, function_calls, conf, author)
 
             before = len(messages)
-            cleaned = await self.ensure_tool_consistency(messages)
-            if cleaned and len(before) != len(messages):
+            cleaned = await ensure_tool_consistency(messages)
+            if cleaned and before == len(messages):
                 log.error("Something went wrong while ensuring tool call consistency")
 
             if cleaned or degraded:
@@ -399,6 +399,7 @@ class ChatHandler(MixinMeta):
             elif response.function_call:
                 response_functions: list[FunctionCall] = [response.function_call]
             else:
+                log.error("No reply and no function calls???")
                 continue
 
             if len(response_functions) > 1:
@@ -425,23 +426,13 @@ class ChatHandler(MixinMeta):
                     tool_id = None
                     role = "function"
 
-                if function_name == last_function:
-                    repeats += 1
-
-                last_function = function_name
-
-                if repeats >= 2:
-                    function_calls = [i for i in function_calls if i["name"] != function_name]
-                    repeats = 0
-                    log.info(f"Function '{function_name}' repeated 3 times, popping from list")
-                    continue
-
                 calls += 1
 
                 if function_name not in function_map:
                     log.error(f"GPT suggested a function not provided: {function_name}")
                     e = {"role": "system", "content": f"{function_name} is not a valid function name"}
-                    messages.append(e)
+                    messages.insert(0, e)
+                    conversation.messages.insert(0, e)
                     continue
 
                 try:
@@ -505,7 +496,7 @@ class ChatHandler(MixinMeta):
                 if tool_id:
                     e["tool_call_id"] = tool_id
                 messages.append(e)
-                conversation.update_messages(result, role, function_name, tool_id)
+                conversation.messages.append(e)
 
                 if message_obj and function_name in ["create_memory", "edit_memory"]:
                     try:
