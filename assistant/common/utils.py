@@ -11,6 +11,9 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
+from .constants import SUPPORTS_VISION
+from .models import GuildSettings
+
 log = logging.getLogger("red.vrt.assistant.utils")
 _ = Translator("Assistant", __file__)
 
@@ -223,3 +226,120 @@ def get_params(
         "userjointime": author.joined_at.strftime("%I:%M %p %Z") if author else "[unknown time]",
     }
     return params
+
+
+async def ensure_supports_vision(messages: List[dict], conf: GuildSettings, user: Optional[discord.Member]) -> bool:
+    """Make sure that if a conversation payload contains images that the model supports vision"""
+    cleaned = False
+
+    model = conf.get_user_model(user)
+    if model in SUPPORTS_VISION:
+        return cleaned
+
+    if model not in SUPPORTS_VISION:
+        for idx, message in enumerate(messages):
+            if isinstance(message["content"], list):
+                for obj in message["content"]:
+                    if obj["type"] != "text":
+                        continue
+                    messages[idx]["content"] = obj["text"]
+                    cleaned = True
+                    break
+    return cleaned
+
+
+async def ensure_tool_consistency(messages: List[dict]) -> bool:
+    """
+    Ensure all tool calls satisfy schema requirements, modifying the messages payload in-place.
+
+    The "messages" param is a list of message payloads.
+
+    ## Schema
+    - Messages with they key "tool_calls" are calling a tool or tools.
+    - The "tool_calls" value is a list of tool call dicts, each containing an "id" key that maps to a tool response
+    - Messages with the role "tool" are tool call responses, each with a "tool_call_id" key that corresponds to a tool call "id"
+
+    ## Tool Call Message Payload Example
+    {
+        "content": None,
+        "role": "assistant",
+        "tool_calls": [
+            {
+                "id": "call_HRdAUGb9xMM0jfqF2MajDMrA",
+                "type": "function",
+                "function": {
+                    "arguments": {},
+                    "name": "function_name",
+                }
+            }
+        ]
+    }
+
+    ## Tool Response Message Payload Example
+    {
+        "role": "tool",
+        "name": "function_name",
+        "content": "The results of the function in text",
+        "tool_call_id": "call_HRdAUGb9xMM0jfqF2MajDMrA",
+    }
+
+    ## Rules
+    - A message payload can contain multiple tool calls, each with their own id
+    - A message with tool_calls must be followed up with messages containing the role "tool" with the corresponding "tool_call_id"
+    - All messages with "tool_calls" must be followed by messages with the tool responses
+    - All tool call responses must have a preceeding tool call.
+
+    Returns: boolean, True if any tool calls or responses were purged.
+    """
+    tool_call_ids = set()
+    tool_response_ids = set()
+    purged = False
+
+    # First pass: Collect all tool call ids and tool response ids
+    for message in messages:
+        if "tool_calls" in message:
+            for tool_call in message["tool_calls"]:
+                if tool_call["id"] in tool_call_ids:
+                    log.error("Message payload contains duplicate tool call ids!")
+                tool_call_ids.add(tool_call["id"])
+        elif message.get("role") == "tool":
+            if message["tool_call_id"] in tool_response_ids:
+                log.error("Message payload contains duplicate tool response ids!")
+            tool_response_ids.add(message["tool_call_id"])
+
+    if len(tool_call_ids) != len(tool_response_ids):
+        log.warning(f"Collected {len(tool_call_ids)} tool call IDs and {len(tool_response_ids)} tool response IDs.")
+
+    indexes_to_purge = set()
+    # Second pass: Remove tool calls without a corresponding response
+    for idx, message in enumerate(messages):
+        if "tool_calls" in message:
+            original_tool_calls = message["tool_calls"].copy()
+            if len(original_tool_calls) == 1 and original_tool_calls[0]["id"] not in tool_response_ids:
+                # Drop the message
+                indexes_to_purge.add(idx)
+                log.info(f"Purging tool call message with no response: {message}")
+                purged = True
+                continue
+            message["tool_calls"] = [
+                tool_call for tool_call in original_tool_calls if tool_call["id"] in tool_response_ids
+            ]
+            if len(message["tool_calls"]) != len(original_tool_calls):
+                diff = len(original_tool_calls) - len(message["tool_calls"])
+                purged = True
+                log.info(f"Purged {diff} tool calls without response from message with tool calls: {message}")
+
+    # Third pass: Remove tool responses without a preceding tool call
+    for idx, message in enumerate(messages):
+        if message["role"] != "tool":
+            continue
+        if message["tool_call_id"] not in tool_call_ids:
+            indexes_to_purge.add(idx)
+            log.info(f"Purging tool response with no tool call: {message}")
+
+    if indexes_to_purge:
+        purged = True
+        for idx in sorted(indexes_to_purge, reverse=True):
+            messages.pop(idx)
+
+    return purged

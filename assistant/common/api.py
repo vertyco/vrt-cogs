@@ -27,7 +27,7 @@ from .calls import (
     request_text_raw,
     request_tokens_raw,
 )
-from .constants import CHAT, MODELS, SUPPORTS_VISION
+from .constants import CHAT, MODELS
 from .models import GuildSettings
 from .utils import compile_messages
 
@@ -380,86 +380,6 @@ class API(MixinMeta):
     # -------------------- FORMATTING -----------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
-    async def ensure_supports_vision(
-        self,
-        messages: List[dict],
-        conf: GuildSettings,
-        user: Optional[discord.Member],
-    ):
-        model = conf.get_user_model(user)
-        if model not in SUPPORTS_VISION:
-            for idx, message in enumerate(messages):
-                if isinstance(message["content"], list):
-                    for obj in message["content"]:
-                        if obj["type"] != "text":
-                            continue
-                        messages[idx]["content"] = obj["text"]
-                        break
-
-    async def ensure_tool_consistency(self, messages: List[dict]) -> bool:
-        """
-        Ensure all tool calls satisfy schema requirements, returning the new message payload
-
-        All tool calls must have a following tool response.
-        All tool call responses must have a preceeding tool call.
-
-        Tool calls can be in more than one place with the same tool call id, this is a pain in the ass.
-
-        """
-        cleaned = False
-
-        # Map of tool call IDs and their position
-        tool_calls = []
-        # Map of tool responses and their position
-        tool_responses = []
-
-        # Map out all existing tool calls and responses
-        for idx, msg in enumerate(messages):
-            if msg_tool_calls := msg.get("tool_calls"):
-                for tool_call in msg_tool_calls:
-                    tool_call_id = tool_call["id"]
-                    tool_calls.append((tool_call_id, idx))
-            elif msg["role"] == "tool":
-                tool_call_id = msg["tool_call_id"]
-                tool_responses.append((tool_call_id, idx))
-
-        indexes_to_purge = set()
-
-        # Find tool calls with no responses
-        for tool_call_id, tool_call_index in tool_calls:
-            # Ensure there is at least 1 tool response to this tool call and that it comes after
-            for response_id, ridx in tool_responses:
-                if response_id == tool_call_id and tool_call_index < ridx:
-                    # If a response is found that comes after the tool call then we're good
-                    break
-                await asyncio.sleep(0)
-            else:
-                indexes_to_purge.add(tool_call_index)
-                log.info(f"Purging tool call with no response: {tool_call_id}")
-                cleaned = True
-
-        # Find orphaned tool responses
-        for response_id, response_index in tool_responses:
-            # Ensure there is a preceeding tool call for every tool response
-            for tool_call_id, tool_call_index in tool_calls:
-                if response_id == tool_call_id and tool_call_index < response_index:
-                    # If a tool call is found that comes before the response then we're good
-                    break
-                await asyncio.sleep(0)
-            else:
-                indexes_to_purge.add(response_index)
-                log.info(f"Purging orphaned tool call response: {response_id}")
-                cleaned = True
-
-        if not cleaned:
-            return False
-
-        # Sort reverse order to pop last indexes first
-        to_purge = sorted(indexes_to_purge, reverse=True)
-        for idx in to_purge:
-            messages.pop(idx)
-        log.info(f"Purged {len(to_purge)} tool call items from message payload!")
-
     @perf()
     async def degrade_conversation(
         self,
@@ -501,13 +421,6 @@ class API(MixinMeta):
         if total_tokens <= max_tokens:
             return messages, function_list, False
 
-        # Pop one random message from the first quarter of the conversation
-        index = round(len(messages) / 4)
-        popped = messages.pop(index)
-        total_tokens -= await self.count_tokens(json.dumps(popped), conf, model)
-        if total_tokens <= max_tokens:
-            return messages, function_list, True
-
         # Find the indices of the most recent messages for each role
         most_recent_user = most_recent_function = most_recent_assistant = most_recent_tool = -1
         for i, msg in enumerate(reversed(messages)):
@@ -521,9 +434,10 @@ class API(MixinMeta):
                 most_recent_assistant = len(messages) - 1 - i
             if most_recent_user != -1 and most_recent_function != -1 and most_recent_assistant != -1:
                 break
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.00001)
 
         # Clear out function calls (not the result, just the message of it being called)
+        log.info(f"Degrading function calls (total: {total_tokens}/max: {max_tokens})")
         i = 0
         while total_tokens > max_tokens and i < len(messages):
             if messages[i]["content"] or messages[i].get("tool_calls"):
@@ -531,12 +445,12 @@ class API(MixinMeta):
                 continue
             messages.pop(i)
             total_tokens -= 5  # Minus role and name
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.00001)
 
         if total_tokens <= max_tokens:
             return messages, function_list, True
 
-        log.debug(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
+        log.info(f"Degrading messages (total: {total_tokens}/max: {max_tokens})")
         # Degrade the conversation except for the most recent user, assistant, and function/tool messages
         i = 0
         while total_tokens > max_tokens and i < len(messages):
@@ -572,7 +486,7 @@ class API(MixinMeta):
                     diff = pre - post
                     messages[i]["content"][idx]["text"] = degraded_content
                     total_tokens -= diff
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(0.00001)
             else:
                 degraded_content = _degrade_message(messages[i]["content"])
                 pre = await self.count_tokens(messages[i]["content"], conf, model)
@@ -589,7 +503,7 @@ class API(MixinMeta):
             if total_tokens <= max_tokens:
                 return messages, function_list, True
 
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.00001)
 
         # Wipe all tool call messages:
         i = 0
@@ -598,7 +512,7 @@ class API(MixinMeta):
                 i += 1
                 continue
             messages.pop(i)
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.00001)
 
         log.debug(f"Removing functions (total: {total_tokens}/max: {max_tokens})")
         # Degrade function_list before last resort
@@ -607,7 +521,7 @@ class API(MixinMeta):
             total_tokens -= await self.count_tokens(json.dumps(popped), conf, model)
             if total_tokens <= max_tokens:
                 return messages, function_list, True
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.00001)
 
         # Degrade the most recent user and function messages as the last resort
         log.debug(f"Degrading user/function messages (total: {total_tokens}/max: {max_tokens})")
@@ -625,7 +539,7 @@ class API(MixinMeta):
                         diff = pre - post
                         messages[i]["content"][idx]["text"] = degraded_content
                         total_tokens -= diff
-                        await asyncio.sleep(0)
+                        await asyncio.sleep(0.00001)
                 else:
                     degraded_content = _degrade_message(messages[i]["content"])
                     pre = await self.count_tokens(messages[i]["content"], conf, model)
@@ -638,7 +552,7 @@ class API(MixinMeta):
                         total_tokens -= pre
                         total_tokens -= 4
                         messages.pop(i)
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.00001)
         return messages, function_list, True
 
     async def token_pagify(self, text: str, conf: GuildSettings) -> List[str]:

@@ -252,11 +252,8 @@ class Conversation(AssistantBaseModel):
         self.last_updated = datetime.now().timestamp()
 
     def overwrite(self, messages: List[dict]):
-        self.reset()
-        for i in messages:
-            if i["role"] == "system":
-                continue
-            self.messages.append(i)
+        self.refresh()
+        self.messages = [i for i in messages if i["role"] != "system"]
 
     def update_messages(
         self,
