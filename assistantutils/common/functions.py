@@ -118,14 +118,16 @@ class Functions(MixinMeta):
         if not valid_channels:
             return "There are no channels this user can view"
 
+        notfound = "This channel does not have a topic set!"
         matches: List[Tuple[discord.TextChannel, int]] = []
         for channel in valid_channels:
             if clean_name(channel.name) == channel_name_or_id:
-                return channel.mention
+                return channel.topic or notfound
             if channel.name == channel_name_or_id:
-                return channel.mention
+                return channel.topic or notfound
             if str(channel.id) == channel_name_or_id:
-                return channel.mention
+                return channel.topic or notfound
+
             name_score = fuzz.ratio(clean_name(channel.name), clean_name(channel_name_or_id.lower()))
             if name_score >= 80:
                 matches.append((channel, name_score))
@@ -142,10 +144,7 @@ class Functions(MixinMeta):
             return "No channels found with a topic!"
 
         matches.sort(key=lambda x: x[1], reverse=True)
-        txt = ""
-        for channel in valid_channels:
-            txt += f"{clean_name(channel.name)}\n"
-        return txt
+        return matches[0][0].topic
 
     async def make_search_url(
         self,
