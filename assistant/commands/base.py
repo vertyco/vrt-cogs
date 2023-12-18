@@ -284,6 +284,8 @@ If a file has no extension it will still try to read it only if it can be decode
         Set a system prompt for this conversation!
 
         This allows customization of assistant behavior on a per channel basis!
+
+        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.
         """
         conf = self.db.get_conf(ctx.guild)
         if not conf.allow_sys_prompt_override:
