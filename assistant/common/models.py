@@ -169,9 +169,12 @@ class GuildSettings(AssistantBaseModel):
     ) -> None:
         if model not in self.usage:
             self.usage[model] = Usage()
-        self.usage[model].total_tokens += total_tokens
-        self.usage[model].input_tokens += input_tokens
-        self.usage[model].output_tokens += output_tokens
+        if total_tokens:
+            self.usage[model].total_tokens += total_tokens
+        if input_tokens:
+            self.usage[model].input_tokens += input_tokens
+        if output_tokens:
+            self.usage[model].output_tokens += output_tokens
 
     def get_user_model(self, member: Optional[discord.Member] = None) -> str:
         if not member or not self.role_overrides:
