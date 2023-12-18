@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.9"
+    __version__ = "3.11.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1290,17 +1290,16 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.save_cache(ctx.guild)
 
     @admin_group.command(name="statreset")
-    async def reset_xp(self, ctx: commands.Context):
+    async def reset_xp(self, ctx: commands.Context, confirm: bool):
         """Reset everyone's exp and level"""
+        if not confirm:
+            txt = _("Not resetting everyone's exp and levels")
+            return await ctx.send(txt)
         users = self.data[ctx.guild.id]["users"].copy()
         count = len(users.keys())
         text = _("Are you sure you want to reset ") + str(count) + _(" users' stats?") + " (y/n)"
         text += _("\nThis will reset their exp, voice time, messages, level, prestige and stars")
         msg = await ctx.send(text)
-        yes = await confirm(ctx)
-        if not yes:
-            text = _("Not resetting user stats")
-            return await msg.edit(content=text)
         async with ctx.typing():
             deleted = 0
             for uid, data in users.items():
