@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import logging
 from datetime import datetime
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 
 import discord
 from redbot.core import VersionInfo, commands, version_info
@@ -16,9 +16,9 @@ class Listen:
         self.bans = {}
         self.acting_on = {}
 
-    async def action_cooldown(
-        self, guild: discord.Guild, member: Union[discord.Member, discord.User]
-    ):
+        self.audit_log_cache: Dict[int, List[discord.AuditLogEntry]] = {}
+
+    async def action_cooldown(self, guild: discord.Guild, member: Union[discord.Member, discord.User]):
         if member.id == self.bot.user.id:
             return
         if isinstance(member, discord.User):
@@ -60,9 +60,7 @@ class Listen:
 
             self.cache[gid][uid] = {"count": 1, "time": now}
 
-    async def perform_action(
-        self, guild: discord.Guild, member: Union[discord.Member, discord.User]
-    ):
+    async def perform_action(self, guild: discord.Guild, member: Union[discord.Member, discord.User]):
         audit_reason = get_audit_reason(self.bot.user, "Anti-Nuke Detection")
         dm = self.settings[guild.id]["dm"]
         overload = self.settings[guild.id]["overload"]
@@ -77,22 +75,18 @@ class Listen:
         logchan = self.settings[guild.id]["log"] if self.settings[guild.id]["log"] else None
         logchan = guild.get_channel(logchan) if logchan else None
 
-        userwarn = (
-            f"Slow down there! You have exceeded {overload} mod actions in {cooldown} seconds."
-        )
+        userwarn = f"Slow down there! You have exceeded {overload} mod actions in {cooldown} seconds."
         failwarn = None
         success = None
         if action == "ban":
             userwarn = (
-                f"You have been banned from {guild.name} "
-                f"for exceeding {overload} mod actions in {cooldown} seconds"
+                f"You have been banned from {guild.name} " f"for exceeding {overload} mod actions in {cooldown} seconds"
             )
             failwarn = "Failed to ban"
             success = "been banned"
         elif action == "kick":
             userwarn = (
-                f"You have been kicked from {guild.name} "
-                f"for exceeding {overload} mod actions in {cooldown} seconds"
+                f"You have been kicked from {guild.name} " f"for exceeding {overload} mod actions in {cooldown} seconds"
             )
             failwarn = "Failed to kick"
             success = "been kicked"
@@ -187,26 +181,56 @@ class Listen:
         em.set_thumbnail(url=pfp)
         await logchan.send(embed=em)
 
-    @staticmethod
     async def get_audit_log_reason(
+        self,
         guild: discord.Guild,
         target: Union[discord.abc.GuildChannel, discord.Member, discord.Role],
         action: discord.AuditLogAction,
     ) -> Optional[discord.abc.User]:
-        user = None
-        me = guild.me
-        if not me:
-            return user
-        if guild.me.guild_permissions.view_audit_log:
-            try:
-                async for entry in guild.audit_logs(limit=5, action=action):
-                    if entry.target.id == target.id:
-                        user = entry.user
-                        break
-            except discord.Forbidden:
-                # Bot left guild before finishing process
-                pass
-        return user
+        await asyncio.sleep(1)  # Wait for cache to populate maybe
+        if guild.id not in self.audit_log_cache:
+            log.info(f"Guild {guild.name} not in cache!")
+            return
+
+        if not guild.me:
+            log.info("No guild.me?")
+            return
+
+        entries = [i for i in self.audit_log_cache[guild.id] if i.action == action]
+        for entry in reversed(entries):
+            if entry.target.id == target.id:
+                return entry.user
+
+        # user = None
+        # me = guild.me
+        # if not me:
+        #     return user
+        # if guild.me.guild_permissions.view_audit_log:
+        #     try:
+        #         async for entry in guild.audit_logs(limit=5, action=action):
+        #             if entry.target.id == target.id:
+        #                 user = entry.user
+        #                 break
+        #     except discord.Forbidden:
+        #         # Bot left guild before finishing process
+        #         pass
+        # return user
+
+    @commands.Cog.listener()
+    async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        # action: discord.AuditLogAction = entry.action
+        # target: discord.audit_logs.TargetType = entry.target
+        log.debug(f"Audit entry created: {repr(entry)}")
+
+        gid = entry.guild.id
+
+        if gid in self.audit_log_cache:
+            self.audit_log_cache[gid].append(entry)
+        else:
+            self.audit_log_cache[gid] = [entry]
+
+        # Only keep the last 50 entries for each guild
+        self.audit_log_cache[gid] = self.audit_log_cache[gid][-50:]
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, member: discord.Member):
@@ -231,38 +255,28 @@ class Listen:
     @commands.Cog.listener()
     async def on_guild_channel_create(self, new_channel: discord.abc.GuildChannel):
         guild = new_channel.guild
-        user = await self.get_audit_log_reason(
-            guild, new_channel, discord.AuditLogAction.channel_create
-        )
+        user = await self.get_audit_log_reason(guild, new_channel, discord.AuditLogAction.channel_create)
         if user:
             await self.action_cooldown(guild, user)
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, old_channel: discord.abc.GuildChannel):
         guild = old_channel.guild
-        user = await self.get_audit_log_reason(
-            guild, old_channel, discord.AuditLogAction.channel_delete
-        )
+        user = await self.get_audit_log_reason(guild, old_channel, discord.AuditLogAction.channel_delete)
         if user:
             await self.action_cooldown(guild, user)
 
     @commands.Cog.listener()
     async def on_thread_delete(self, old_channel: discord.Thread):
         guild = old_channel.guild
-        user = await self.get_audit_log_reason(
-            guild, old_channel, discord.AuditLogAction.channel_delete
-        )
+        user = await self.get_audit_log_reason(guild, old_channel, discord.AuditLogAction.channel_delete)
         if user:
             await self.action_cooldown(guild, user)
 
     @commands.Cog.listener()
-    async def on_guild_channel_update(
-        self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel
-    ):
+    async def on_guild_channel_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
         guild = before.guild
-        user = await self.get_audit_log_reason(
-            guild, before, discord.AuditLogAction.channel_update
-        )
+        user = await self.get_audit_log_reason(guild, before, discord.AuditLogAction.channel_update)
         if user:
             await self.action_cooldown(guild, user)
 

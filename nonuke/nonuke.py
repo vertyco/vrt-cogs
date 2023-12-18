@@ -23,7 +23,7 @@ class NoNuke(Listen, commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.6"
+    __version__ = "0.3.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -150,9 +150,7 @@ class NoNuke(Listen, commands.Cog):
         Role Creation/Edit/Deletion
         """
         if not ctx.guild.me.guild_permissions.view_audit_log:
-            return await ctx.send(
-                "I do not have permission to view the audit log for this server!"
-            )
+            return await ctx.send("I do not have permission to view the audit log for this server!")
         action = await self.config.guild(ctx.guild).action()
         if action == "kick":
             if not ctx.guild.me.guild_permissions.kick_members:
@@ -179,9 +177,7 @@ class NoNuke(Listen, commands.Cog):
         `notify` - just sends a report to the log channel
         """
         if not ctx.guild.me.guild_permissions.view_audit_log:
-            return await ctx.send(
-                "I do not have permission to view the audit log for this server!"
-            )
+            return await ctx.send("I do not have permission to view the audit log for this server!")
         action = action.lower()
         if action not in ["kick", "ban", "notify", "strip"]:
             return await ctx.send("That is not a valid action type!")
@@ -235,6 +231,4 @@ class NoNuke(Listen, commands.Cog):
         }
         missing = [k for k, v in perms.items() if not v]
         if missing:
-            await ctx.send(
-                f"Just a heads up, I do not have the following permissions\n{box(humanize_list(missing))}"
-            )
+            await ctx.send(f"Just a heads up, I do not have the following permissions\n{box(humanize_list(missing))}")
