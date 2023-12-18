@@ -459,6 +459,8 @@ class Admin(MixinMeta):
         """
         Set the initial prompt for GPT to use
 
+        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.
+
         **Placeholders**
         - **botname**: [botname]
         - **timestamp**: discord timestamp
@@ -536,6 +538,8 @@ class Admin(MixinMeta):
     async def set_system_prompt(self, ctx: commands.Context, *, system_prompt: str = None):
         """
         Set the system prompt for GPT to use
+
+        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.
 
         **Placeholders**
         - **botname**: [botname]
