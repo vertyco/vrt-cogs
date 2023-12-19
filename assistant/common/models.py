@@ -121,6 +121,7 @@ class GuildSettings(AssistantBaseModel):
     use_function_calls: bool = False
     max_function_calls: int = 10  # Max calls in a row
     disabled_functions: List[str] = []
+    functions_called: int = 0
 
     @perf()
     def get_related_embeddings(
@@ -230,7 +231,7 @@ class Conversation(AssistantBaseModel):
     def function_count(self) -> int:
         if not self.messages:
             return 0
-        return sum(i["role"] == "function" for i in self.messages)
+        return sum(i["role"] in ["function", "tool"] for i in self.messages)
 
     def is_expired(self, conf: GuildSettings, member: Optional[discord.Member] = None):
         if not conf.get_user_max_time(member):

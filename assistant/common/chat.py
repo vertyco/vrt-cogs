@@ -414,6 +414,9 @@ class ChatHandler(MixinMeta):
             conversation.messages.append(dump)
             messages.append(dump)
 
+            # Add function call count
+            conf.functions_called += len(response_functions)
+
             for function_call in response_functions:
                 if isinstance(function_call, ChatCompletionMessageToolCall):
                     function_name = function_call.function.name

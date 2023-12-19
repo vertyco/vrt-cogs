@@ -11,7 +11,7 @@ from redbot.core.utils.chat_formatting import box, escape, pagify, text_to_file
 
 from ..abc import MixinMeta
 from ..common.calls import request_model
-from ..common.constants import READ_EXTENSIONS
+from ..common.constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_TOOLS
 from ..common.models import Conversation
 from ..common.utils import can_use, get_attachments
 
@@ -161,7 +161,7 @@ If a file has no extension it will still try to read it only if it can be decode
         desc = (
             ctx.channel.mention
             + "\n"
-            + _("`Messages: `{}/{}\n`Tokens:   `{}/{}\n`Expired:  `{}\n`Model:    `{}").format(
+            + _("`Messages:   `{}/{}\n" "`Tokens:     `{}/{}\n" "`Expired:    `{}\n" "`Model:      `{}").format(
                 messages,
                 conf.get_user_max_retention(ctx.author),
                 convo_tokens,
@@ -170,6 +170,8 @@ If a file has no extension it will still try to read it only if it can be decode
                 model,
             )
         )
+        if model in SUPPORTS_TOOLS or model in SUPPORTS_FUNCTIONS:
+            desc += _("\n`Tool Calls: `{}").format(conversation.function_count())
         if conf.collab_convos:
             desc += "\n" + _("*Collabroative conversations are enabled*")
         embed = discord.Embed(

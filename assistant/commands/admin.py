@@ -389,7 +389,11 @@ class Admin(MixinMeta):
             embed.add_field(name=model_name, value=field, inline=False)
 
         desc = _(
-            "**Overall Token Usage and Cost**\n" "`Input:  `{} (${})\n" "`Output: `{} (${})\n" "`Total:  `{} (${})"
+            "**Overall Token Usage and Cost**\n"
+            "`Input:      `{} (${})\n"
+            "`Output:     `{} (${})\n"
+            "`Total:      `{} (${})\n"
+            "`Tool Calls: `{}\n"
         ).format(
             humanize_number(overall_input),
             round(total_input_cost, 2),
@@ -397,6 +401,7 @@ class Admin(MixinMeta):
             round(total_output_cost, 2),
             humanize_number(overall_tokens),
             round(total_cost, 2),
+            humanize_number(conf.functions_called),
         )
         embed.description = desc
         return await ctx.send(embed=embed)
