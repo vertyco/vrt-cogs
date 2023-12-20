@@ -38,7 +38,7 @@ class Admin(MixinMeta):
             "`Percent Decay: `{}\n"
             "`Saved Users:   `{}\n"
             "`Total Decayed: `{}\n"
-            "`Log Channel:   `{}"
+            "`Log Channel:   `{}\n"
         ).format(
             conf.enabled,
             conf.inactive_days,
