@@ -12,6 +12,7 @@ from redbot.core.utils.chat_formatting import humanize_number
 
 from .abc import CompositeMetaClass
 from .commands.admin import Admin
+from .common.listeners import Listeners
 from .common.models import DB
 from .common.scheduler import scheduler
 
@@ -23,7 +24,7 @@ _ = Translator("BankDecay", __file__)
 
 
 @cog_i18n(_)
-class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
+class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
     Economy decay!
 
@@ -33,7 +34,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()

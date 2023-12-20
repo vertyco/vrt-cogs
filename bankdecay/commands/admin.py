@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta
 
 import discord
@@ -215,3 +216,31 @@ class Admin(MixinMeta):
         conf.log_channel = channel.id
         await ctx.send(_("Log channel has been set!"))
         await self.save()
+
+    @bankdecay.command(name="bulkaddpercent")
+    async def bulk_add_percent(self, ctx: commands.Context, percent: int, confirm: bool):
+        """
+        Add a percentage to all member balances.
+
+        Accidentally decayed too many credits? Bulk add to every user's balance in the server based on a percentage of their current balance.
+        """
+        if not confirm:
+            txt = _("Not adding credits to users")
+            return await ctx.send(txt)
+
+        if not 1 <= percent <= 100:
+            txt = _("Percent must be between 1 and 100!")
+            return await ctx.send(txt)
+
+        async with ctx.typing():
+            refunded = 0
+            ratio = 100 / percent
+            conf = self.db.get_conf(ctx.guild)
+            users = [ctx.guild.get_member(int(i)) for i in conf.users if ctx.guild.get_member(int(i))]
+            for user in users:
+                bal = await bank.get_balance(user)
+                to_give = math.ceil(bal * ratio)
+                await bank.set_balance(user, bal + to_give)
+                refunded += to_give
+
+            await ctx.send(_("Credits added: {}").format(humanize_number(refunded)))
