@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import discord
 from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_number
 
 from .abc import CompositeMetaClass
 from .commands.admin import Admin
@@ -16,10 +18,11 @@ from .common.scheduler import scheduler
 log = logging.getLogger("red.vrt.bankdecay")
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
-
+_ = Translator("BankDecay", __file__)
 # redgettext -D main.py commands/admin.py --command-docstring
 
 
+@cog_i18n(_)
 class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
     Economy decay!
@@ -30,7 +33,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.9"
+    __version__ = "0.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -93,7 +96,10 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
                 # Remove guids that the bot is no longer a part of
                 del self.db.configs[guild_id]
                 continue
-            users, total = await self.decay_guild(guild)
+            affected, decayed = await self.decay_guild(guild)
+            total_affected += affected
+            total_decayed += decayed
+
         if total_affected or total_decayed:
             log.info(f"Decayed {total_affected} users balances for a total of {total_decayed} credits!")
 
@@ -134,10 +140,39 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
             users_decayed += 1
             total_decayed += credits_to_remove
 
-        if not check_only:
-            conf.total_decayed += total_decayed
-            await self.save()
-            log.info(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
+        if check_only:
+            return users_decayed, total_decayed
+
+        conf.total_decayed += total_decayed
+        await self.save()
+        log.info(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
+
+        log_channel = guild.get_channel(conf.log_channel)
+        if not log_channel:
+            return users_decayed, total_decayed
+        if not log_channel.permissions_for(guild.me).embed_links:
+            return users_decayed, total_decayed
+
+        title = _("Bank Decay Cycle")
+        if users_decayed:
+            txt = _("- User Balances Decayed: {}\n- Total Amount Decayed: {}").format(
+                f"`{humanize_number(users_decayed)}`", f"`{humanize_number(total_decayed)}`"
+            )
+            color = discord.Color.yellow()
+        else:
+            txt = _("No user balances were decayed during this cycle.")
+            color = discord.Color.blue()
+
+        embed = discord.Embed(
+            title=title,
+            description=txt,
+            color=color,
+        )
+        try:
+            await log_channel.send(embed=embed)
+        except Exception as e:
+            log.error(f"Failed to send decay log to {log_channel.name} in {guild.name}", exc_info=e)
+
         return users_decayed, total_decayed
 
     async def save(self) -> None:
