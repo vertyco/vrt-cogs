@@ -2,7 +2,8 @@ from datetime import timedelta
 
 import discord
 from redbot.core import bank, commands
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
 from ..common.confirm_view import ConfirmView
@@ -11,6 +12,7 @@ from ..common.models import User
 _ = Translator("BankDecay", __file__)
 
 
+@cog_i18n(_)
 class Admin(MixinMeta):
     @commands.group(aliases=["bdecay"])
     @commands.admin_or_permissions(manage_guild=True)
@@ -27,18 +29,23 @@ class Admin(MixinMeta):
         """View Bank Decay Settings"""
         conf = self.db.get_conf(ctx.guild)
         ignored_roles = [f"<@&{i}>" for i in conf.ignored_roles]
+        log_channel = (
+            ctx.guild.get_channel(conf.log_channel) if ctx.guild.get_channel(conf.log_channel) else _("Not Set")
+        )
         txt = _(
             "`Decay Enabled: `{}\n"
             "`Inactive Days: `{}\n"
             "`Percent Decay: `{}\n"
             "`Saved Users:   `{}\n"
             "`Total Decayed: `{}\n"
+            "`Log Channel:   `{}"
         ).format(
             conf.enabled,
             conf.inactive_days,
             round(conf.percent_decay * 100),
-            len(conf.users),
-            conf.total_decayed,
+            humanize_number(len(conf.users)),
+            humanize_number(conf.total_decayed),
+            log_channel,
         )
         if ignored_roles:
             joined = ", ".join(ignored_roles)
@@ -117,7 +124,8 @@ class Admin(MixinMeta):
                     return await ctx.send(txt)
                 grammar = _("account") if users_decayed == 1 else _("accounts")
                 txt = _("Are you sure you want to decay {} for a total of {}?").format(
-                    f"**{users_decayed}** {grammar}", f"**{total_decayed}** {currency}"
+                    f"**{humanize_number(users_decayed)}** {grammar}",
+                    f"**{humanize_number(total_decayed)}** {currency}",
                 )
                 view = ConfirmView(ctx.author)
                 msg = await ctx.send(txt, view=view)
@@ -134,7 +142,7 @@ class Admin(MixinMeta):
             users_decayed, total_decayed = await self.decay_guild(ctx.guild)
 
             txt = _("User accounts have been decayed!\n- Users Affected: {}\n- Total {} Decayed: {}").format(
-                users_decayed, currency, total_decayed
+                humanize_number(users_decayed), currency, humanize_number(total_decayed)
             )
             await msg.edit(content=txt)
 
@@ -191,4 +199,14 @@ class Admin(MixinMeta):
             conf.ignored_roles.append(role.id)
             txt = _("Role added to the ignore list.")
         await ctx.send(txt)
+        await self.save()
+
+    @bankdecay.command(name="logchannel")
+    async def set_log_channel(self, ctx: commands.Context, *, channel: discord.TextChannel):
+        """
+        Set the log channel, each time the decay cycle runs this will be updated
+        """
+        conf = self.db.get_conf(ctx.guild)
+        conf.log_channel = channel.id
+        await ctx.send(_("Log channel has been set!"))
         await self.save()
