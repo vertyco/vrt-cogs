@@ -30,7 +30,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.8"
+    __version__ = "0.0.9"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -85,14 +85,17 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
             return
 
         log.info("Running decay_guilds!")
-        ids = [i for i in self.db.configs]
-        for guild_id in ids:
+        total_affected = 0
+        total_decayed = 0
+        for guild_id in self.db.configs.copy():
             guild = self.bot.get_guild(guild_id)
             if not guild:
                 # Remove guids that the bot is no longer a part of
                 del self.db.configs[guild_id]
                 continue
-            await self.decay_guild(guild)
+            users, total = await self.decay_guild(guild)
+        if total_affected or total_decayed:
+            log.info(f"Decayed {total_affected} users balances for a total of {total_decayed} credits!")
 
     async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> tuple[int, int]:
         now = datetime.now()
