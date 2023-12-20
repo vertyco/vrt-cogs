@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import discord
 from redbot.core import bank, commands
@@ -32,6 +32,9 @@ class Admin(MixinMeta):
         log_channel = (
             ctx.guild.get_channel(conf.log_channel) if ctx.guild.get_channel(conf.log_channel) else _("Not Set")
         )
+        now = datetime.now()
+        next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        next_run = f"<t:{round(next_midnight.timestamp())}:R>"
         txt = _(
             "`Decay Enabled: `{}\n"
             "`Inactive Days: `{}\n"
@@ -47,6 +50,8 @@ class Admin(MixinMeta):
             humanize_number(conf.total_decayed),
             log_channel,
         )
+        if conf.enabled:
+            txt += _("`Next Runtime:  `{}\n").format(next_run)
         if ignored_roles:
             joined = ", ".join(ignored_roles)
             txt += _("**Ignored Roles**\n") + joined
