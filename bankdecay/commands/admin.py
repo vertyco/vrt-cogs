@@ -234,7 +234,7 @@ class Admin(MixinMeta):
 
         async with ctx.typing():
             refunded = 0
-            ratio = 100 / percent
+            ratio = percent / 100
             conf = self.db.get_conf(ctx.guild)
             users = [ctx.guild.get_member(int(i)) for i in conf.users if ctx.guild.get_member(int(i))]
             for user in users:
