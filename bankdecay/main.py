@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import typing as t
 from datetime import datetime, timedelta
 
@@ -29,7 +30,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.6"
+    __version__ = "0.0.8"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -80,7 +81,10 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
 
     async def decay_guilds(self):
         if await bank.is_global():
+            log.error("This cog cannot be used with a global bank!")
             return
+
+        log.info("Running decay_guilds!")
         ids = [i for i in self.db.configs]
         for guild_id in ids:
             guild = self.bot.get_guild(guild_id)
@@ -118,14 +122,17 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
                 if not check_only:
                     del conf.users[user_id]
                 continue
-            new_bal = max(0, round(bal - (bal * conf.percent_decay)))
+
+            credits_to_remove = math.ceil(bal * conf.percent_decay)
+            new_bal = bal - credits_to_remove
             if not check_only:
                 await bank.set_balance(user, new_bal)
                 conf.total_decayed += bal - new_bal
             users_decayed += 1
-            total_decayed += bal - new_bal
+            total_decayed += credits_to_remove
 
         if not check_only:
+            conf.total_decayed += total_decayed
             await self.save()
             log.info(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
         return users_decayed, total_decayed
