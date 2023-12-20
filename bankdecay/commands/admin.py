@@ -228,8 +228,8 @@ class Admin(MixinMeta):
             txt = _("Not adding credits to users")
             return await ctx.send(txt)
 
-        if not 1 <= percent <= 100:
-            txt = _("Percent must be between 1 and 100!")
+        if percent < 1:
+            txt = _("Percent must be greater than 1!")
             return await ctx.send(txt)
 
         async with ctx.typing():
@@ -244,3 +244,31 @@ class Admin(MixinMeta):
                 refunded += to_give
 
             await ctx.send(_("Credits added: {}").format(humanize_number(refunded)))
+
+    @bankdecay.command(name="bulkrempercent")
+    async def bulk_rem_percent(self, ctx: commands.Context, percent: int, confirm: bool):
+        """
+        Remove a percentage from all member balances.
+
+        Accidentally refunded too many credits with bulkaddpercent? Bulk remove from every user's balance in the server based on a percentage of their current balance.
+        """
+        if not confirm:
+            txt = _("Not removing credits from users")
+            return await ctx.send(txt)
+
+        if percent < 1:
+            txt = _("Percent must be greater than 1!")
+            return await ctx.send(txt)
+
+        async with ctx.typing():
+            taken = 0
+            ratio = percent / 100
+            conf = self.db.get_conf(ctx.guild)
+            users = [ctx.guild.get_member(int(i)) for i in conf.users if ctx.guild.get_member(int(i))]
+            for user in users:
+                bal = await bank.get_balance(user)
+                to_take = math.ceil(bal * ratio)
+                await bank.withdraw_credits(user, to_take)
+                taken += to_take
+
+            await ctx.send(_("Credits removed: {}").format(humanize_number(taken)))
