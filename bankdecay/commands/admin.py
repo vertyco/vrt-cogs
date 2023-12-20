@@ -170,7 +170,7 @@ class Admin(MixinMeta):
             user = conf.get_user(member)  # This will add the member to the config if not already present
             initialized += 1
             if as_expired:
-                user.last_active = user.last_active - timedelta(days=36500)
+                user.last_active = user.last_active - timedelta(days=conf.inactive_days)
 
         grammar = _("member") if initialized == 1 else _("members")
         await ctx.send(_("Server initialized! {} added to the config.").format(f"{initialized} {grammar}"))
