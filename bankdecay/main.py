@@ -33,7 +33,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -167,6 +167,7 @@ class BankDecay(Admin, commands.Cog, metaclass=CompositeMetaClass):
             title=title,
             description=txt,
             color=color,
+            timestamp=datetime.now(),
         )
         try:
             await log_channel.send(embed=embed)
