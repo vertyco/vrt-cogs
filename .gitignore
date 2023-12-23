@@ -175,4 +175,5 @@ cookiecutter/
 fishing/
 osmosis/
 botarena/
+dbtest/
 function_wizard.py
