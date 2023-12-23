@@ -168,23 +168,46 @@ class UserCommands(MixinMeta, ABC):
 
     @commands.command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
-    async def give_star(self, ctx: commands.Context, *, user: discord.Member):
+    async def give_star(self, ctx: commands.Context, *, user: discord.Member = None):
         """
         Reward a good noodle
         Give a star to a user for being a good noodle
         """
         now = datetime.datetime.now()
-        user_id = str(user.id)
+
         star_giver = str(ctx.author.id)
         guild_id = ctx.guild.id
+
         if guild_id not in self.data:
             return await ctx.send(_("Cache not loaded yet, wait a few more seconds."))
+
+        if guild_id not in self.stars:
+            self.stars[guild_id] = {}
+
+        if not user:
+            if star_giver in self.stars[guild_id]:
+                # If no user is given and they have a cooldown, show time left
+                cooldown = self.data[guild_id]["starcooldown"]
+                lastused = self.stars[guild_id][star_giver]
+                td = now - lastused
+                td = td.total_seconds()
+                if td < cooldown:
+                    time_left = cooldown - td
+                    tstring = time_formatter(time_left)
+                    msg = _("You can give more stars in {}").format(f"**{tstring}**")
+                    return await ctx.send(msg)
+                else:
+                    msg = _("You can give more stars now! Just mention a user in this command.")
+                    return await ctx.send(msg)
+            else:
+                # If no user is given and they have no cooldown, show help
+                return await ctx.send_help()
+
         if ctx.author == user:
             return await ctx.send(_("You can't give stars to yourself!"))
         if user.bot:
             return await ctx.send(_("You can't give stars to a bot!"))
-        if guild_id not in self.stars:
-            self.stars[guild_id] = {}
+
         if star_giver not in self.stars[guild_id]:
             self.stars[guild_id][star_giver] = now
         else:
@@ -199,8 +222,10 @@ class UserCommands(MixinMeta, ABC):
                 tstring = time_formatter(time_left)
                 msg = _("You need to wait ") + f"**{tstring}**" + _(" before you can give more stars!")
                 return await ctx.send(msg)
+
         mention = self.data[guild_id]["mention"]
         users = self.data[guild_id]["users"]
+        user_id = str(user.id)
         if user_id not in users:
             return await ctx.send(_("No data available for that user yet!"))
         self.data[guild_id]["users"][user_id]["stars"] += 1
