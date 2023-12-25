@@ -29,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.6.9"
+    __version__ = "0.7.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -53,6 +53,7 @@ class AutoDocs(commands.Cog):
         include_hidden: bool,
         privilege_level: str,
         embedding_style: bool = False,
+        min_privilage_level: str = "user",
     ) -> Tuple[str, pd.DataFrame]:
         columns = [_("name"), _("text")]
         rows = []
@@ -76,6 +77,7 @@ class AutoDocs(commands.Cog):
                 extended_info,
                 privilege_level,
                 embedding_style,
+                min_privilage_level,
             )
             doc = c.get_doc()
             if not doc:
@@ -96,6 +98,7 @@ class AutoDocs(commands.Cog):
                 extended_info,
                 privilege_level,
                 embedding_style,
+                min_privilage_level,
             )
             doc = c.get_doc()
             if doc is None:
@@ -123,6 +126,7 @@ class AutoDocs(commands.Cog):
         include_hidden=_("Include hidden commands"),
         privilege_level=_("Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"),
         csv_export=_("Include a csv with each command isolated per row"),
+        min_privilage_level=_("Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"),
     )
     @commands.is_owner()
     @commands.bot_has_permissions(attach_files=True)
@@ -136,6 +140,7 @@ class AutoDocs(commands.Cog):
         include_hidden: Optional[bool] = False,
         privilege_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "botowner",
         csv_export: Optional[bool] = False,
+        min_privilage_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "user",
     ):
         """
         Create a Markdown docs page for a cog and send to discord
@@ -175,6 +180,7 @@ class AutoDocs(commands.Cog):
                             include_hidden,
                             privilege_level,
                             csv_export,
+                            min_privilage_level,
                         )
                         docs, df = await self.bot.loop.run_in_executor(None, partial_func)
                         filename = f"{folder_name}/{cog.qualified_name}.md"
@@ -214,6 +220,7 @@ class AutoDocs(commands.Cog):
                     include_hidden,
                     privilege_level,
                     csv_export,
+                    min_privilage_level,
                 )
                 docs, df = await self.bot.loop.run_in_executor(None, partial_func)
                 if csv_export:
