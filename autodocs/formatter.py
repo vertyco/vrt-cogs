@@ -54,6 +54,7 @@ class CustomCmdFmt:
         extended_info: bool,
         privilege_level: str,
         embedding_style: bool = False,
+        min_privilage_level: str = "user",
     ):
         self.bot = bot
         self.cmd = cmd
@@ -62,6 +63,7 @@ class CustomCmdFmt:
         self.extended_info = extended_info
         self.privilege_level = privilege_level
         self.embedding_style = embedding_style
+        self.min_privilage_level = min_privilage_level
 
         self.is_slash: bool = isinstance(cmd, SlashCommand)
         self.is_hybrid: bool = any(
@@ -174,10 +176,13 @@ class CustomCmdFmt:
                 doc += f" - {SLASH} {USAGE}: `{usage}`\n"
 
             limit = PRIVILEGES[self.privilege_level]
+            minimum = PRIVILEGES[self.min_privilage_level]
             if perms := self.perms:
                 priv = perms.privilege_level
                 if priv:
                     if priv.value > limit:
+                        return None
+                    if priv.value < minimum:
                         return None
                     if priv.value > 1:
                         RESTRICTED = _("Restricted to")
