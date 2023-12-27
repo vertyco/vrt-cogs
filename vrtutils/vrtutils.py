@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.14.0"
+    __version__ = "1.14.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -1183,7 +1183,7 @@ class VrtUtils(commands.Cog):
 
     @commands.command(name="botshared")
     @commands.is_owner()
-    async def bot_shared_guilds(self, ctx: commands.Context, *, user: t.Union[discord.Member, discord.User]):
+    async def shared_guilds_with_bot(self, ctx: commands.Context, *, user: t.Union[discord.Member, discord.User]):
         """View servers that the bot and a user are both in together
 
         Does not include the server this command is run in
