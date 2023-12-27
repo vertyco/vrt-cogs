@@ -129,11 +129,11 @@ class MenuView(View):
         except discord.NotFound:
             pass
 
-    async def handle_page(self, edit_func):
+    async def handle_page(self, interaction: Interaction):
         if isinstance(self.pages[0], discord.Embed):
-            await edit_func(embed=self.pages[self.page])
+            await interaction.response.edit_message(embed=self.pages[self.page])
         else:
-            await edit_func(content=self.pages[self.page])
+            await interaction.response.edit_message(content=self.pages[self.page])
 
     async def start(self):
         current_page = self.pages[self.page]
@@ -199,9 +199,7 @@ async def menu(
         raise RuntimeError("Must provide at least 1 page.")
     if not isinstance(pages[0], (discord.Embed, str)):
         raise RuntimeError("Pages must be of type discord.Embed or str")
-    if not all(isinstance(x, discord.Embed) for x in pages) and not all(
-        isinstance(x, str) for x in pages
-    ):
+    if not all(isinstance(x, discord.Embed) for x in pages) and not all(isinstance(x, str) for x in pages):
         raise RuntimeError("All pages must be of the same type")
     for key, value in controls.items():
         maybe_coro = value
@@ -228,7 +226,7 @@ async def close_menu(instance: MenuView, interaction: Interaction):
 async def left(instance: MenuView, interaction: Interaction):
     instance.page -= 1
     instance.page %= len(instance.pages)
-    await instance.handle_page(interaction.response.edit_message)
+    await instance.handle_page(interaction)
 
 
 async def left10(instance: MenuView, interaction: Interaction):
@@ -236,13 +234,13 @@ async def left10(instance: MenuView, interaction: Interaction):
         instance.page = instance.page + len(instance.pages) - 10
     else:
         instance.page -= 10
-    await instance.handle_page(interaction.response.edit_message)
+    await instance.handle_page(interaction)
 
 
 async def right(instance: MenuView, interaction: Interaction):
     instance.page += 1
     instance.page %= len(instance.pages)
-    await instance.handle_page(interaction.response.edit_message)
+    await instance.handle_page(interaction)
 
 
 async def right10(instance: MenuView, interaction: Interaction):
@@ -250,7 +248,7 @@ async def right10(instance: MenuView, interaction: Interaction):
         instance.page = 10 - (len(instance.pages) - instance.page)
     else:
         instance.page += 10
-    await instance.handle_page(interaction.response.edit_message)
+    await instance.handle_page(interaction)
 
 
 DEFAULT_CONTROLS = {
