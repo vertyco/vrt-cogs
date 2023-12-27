@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.13.3"
+    __version__ = "1.14.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -1176,6 +1176,28 @@ class VrtUtils(commands.Cog):
         embeds = []
         for idx, i in enumerate(pages):
             embed = discord.Embed(title="Shared Members", description=i, color=ctx.author.color)
+            embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
+            embeds.append(embed)
+
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
+
+    @commands.command(name="botshared")
+    @commands.is_owner()
+    async def bot_shared_guilds(self, ctx: commands.Context, *, user: t.Union[discord.Member, discord.User]):
+        """View servers that the bot and a user are both in together
+
+        Does not include the server this command is run in
+        """
+        txt = ""
+        for guild in self.bot.guilds:
+            if guild.get_member(user.id):
+                txt += f"{guild.name} (`{guild.id}`)\n"
+        if not txt:
+            return await ctx.send("I am not in any servers with that user.")
+        pages = [p for p in pagify(txt)]
+        embeds = []
+        for idx, i in enumerate(pages):
+            embed = discord.Embed(title="Shared Servers", description=i, color=ctx.author.color)
             embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
             embeds.append(embed)
 
