@@ -83,7 +83,7 @@ class VrtUtils(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.13.2"
+    __version__ = "1.13.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -714,8 +714,11 @@ class VrtUtils(commands.Cog):
             return
         if yes:
             guild = self.bot.get_guild(int(guildid))
-            await guild.leave()
-            await instance.respond(interaction, f"I have left **{guildname}**")
+            if not guild:
+                await instance.respond(interaction, "I could not find that guild")
+            else:
+                await guild.leave()
+                await instance.respond(interaction, f"I have left **{guildname}**")
         else:
             await instance.respond(interaction, f"Not leaving **{guildname}**")
         await menu(
