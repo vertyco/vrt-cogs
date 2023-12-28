@@ -38,7 +38,7 @@ class Admin(MixinMeta):
             member = ctx.guild.get_member(uid)
             if not member:
                 left_server += 1
-            elif user.expired:
+            elif user.last_active + timedelta(days=conf.inactive_days) < datetime.now():
                 expired += 1
             else:
                 active += 1
