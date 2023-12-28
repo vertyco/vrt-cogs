@@ -180,13 +180,19 @@ class Admin(MixinMeta):
             if not decayed:
                 txt = _("There were no users that would be affected by the decay cycle")
                 return await ctx.send(txt)
+
+            grammar = _("account") if len(decayed) == 1 else _("accounts")
+            txt = _("This would decay {} for a total of {}?").format(
+                f"**{humanize_number(len(decayed))}** {grammar}",
+                f"**{humanize_number(sum(decayed.values()))}** credits",
+            )
             # Create a text file with the list of users and how much they will lose
             buffer = StringIO()
             for user, amount in decayed.items():
                 buffer.write(f"{user}: {amount}\n")
             buffer.seek(0)
             file = text_to_file(buffer.getvalue(), filename="expired_users.txt")
-            await ctx.send(file=file)
+            await ctx.send(txt, file=file)
 
     @bankdecay.command(name="cleanup")
     async def cleanup(self, ctx: commands.Context, confirm: bool):

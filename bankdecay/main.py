@@ -107,7 +107,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> t.Dict[str, int]:
         now = datetime.now()
         conf = self.db.get_conf(guild)
-        if not conf.enabled:
+        if not conf.enabled and not check_only:
             return {}
 
         # Decayed users: dict[username, amount]
