@@ -197,7 +197,7 @@ class Admin(MixinMeta):
             )
             # Create a text file with the list of users and how much they will lose
             buffer = StringIO()
-            for user, amount in decayed.items():
+            for user, amount in sorted(decayed.items(), key=lambda x: x[1], reverse=True):
                 buffer.write(f"{user}: {amount}\n")
             buffer.seek(0)
             file = text_to_file(buffer.getvalue(), filename="expired_users.txt")
