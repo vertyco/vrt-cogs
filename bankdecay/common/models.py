@@ -42,6 +42,4 @@ class DB(Base):
 
     def refresh_user(self, user: discord.Member | discord.User) -> None:
         conf = self.get_conf(user.guild)
-        if not conf.enabled:
-            return
         conf.get_user(user).last_active = datetime.now()
