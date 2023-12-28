@@ -1,3 +1,4 @@
+import typing as t
 from abc import ABCMeta, abstractmethod
 
 import discord
@@ -22,5 +23,5 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> tuple[int, int]:
+    async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> t.Dict[str, int]:
         raise NotImplementedError

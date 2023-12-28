@@ -1,10 +1,11 @@
 import math
 from datetime import datetime, timedelta
+from io import StringIO
 
 import discord
 from redbot.core import bank, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from ..abc import MixinMeta
 from ..common.confirm_view import ConfirmView
@@ -29,6 +30,19 @@ class Admin(MixinMeta):
     async def view_settings(self, ctx: commands.Context):
         """View Bank Decay Settings"""
         conf = self.db.get_conf(ctx.guild)
+
+        expired = 0
+        active = 0
+        left_server = 0
+        for uid, user in conf.users.items():
+            member = ctx.guild.get_member(uid)
+            if not member:
+                left_server += 1
+            elif user.expired:
+                expired += 1
+            else:
+                active += 1
+
         ignored_roles = [f"<@&{i}>" for i in conf.ignored_roles]
         log_channel = (
             ctx.guild.get_channel(conf.log_channel) if ctx.guild.get_channel(conf.log_channel) else _("Not Set")
@@ -41,6 +55,9 @@ class Admin(MixinMeta):
             "`Inactive Days: `{}\n"
             "`Percent Decay: `{}\n"
             "`Saved Users:   `{}\n"
+            "`Active Users:  `{}\n"
+            "`Expired Users: `{}\n"
+            "`Stale Users:   `{}\n"
             "`Total Decayed: `{}\n"
             "`Log Channel:   `{}\n"
         ).format(
@@ -48,6 +65,9 @@ class Admin(MixinMeta):
             conf.inactive_days,
             round(conf.percent_decay * 100),
             humanize_number(len(conf.users)),
+            humanize_number(active),
+            humanize_number(expired),
+            humanize_number(left_server),
             humanize_number(conf.total_decayed),
             log_channel,
         )
@@ -124,14 +144,14 @@ class Admin(MixinMeta):
         async with ctx.typing():
             currency = await bank.get_currency_name(ctx.guild)
             if not force:
-                users_decayed, total_decayed = await self.decay_guild(ctx.guild, check_only=True)
-                if not users_decayed:
+                decayed = await self.decay_guild(ctx.guild, check_only=True)
+                if not decayed:
                     txt = _("There were no users affected by the decay cycle")
                     return await ctx.send(txt)
-                grammar = _("account") if users_decayed == 1 else _("accounts")
+                grammar = _("account") if len(decayed) == 1 else _("accounts")
                 txt = _("Are you sure you want to decay {} for a total of {}?").format(
-                    f"**{humanize_number(users_decayed)}** {grammar}",
-                    f"**{humanize_number(total_decayed)}** {currency}",
+                    f"**{humanize_number(len(decayed))}** {grammar}",
+                    f"**{humanize_number(sum(decayed.values()))}** {currency}",
                 )
                 view = ConfirmView(ctx.author)
                 msg = await ctx.send(txt, view=view)
@@ -145,12 +165,56 @@ class Admin(MixinMeta):
                 txt = _("Decaying user accounts, one moment...")
                 msg = await ctx.send(txt)
 
-            users_decayed, total_decayed = await self.decay_guild(ctx.guild)
+            decayed = await self.decay_guild(ctx.guild)
 
             txt = _("User accounts have been decayed!\n- Users Affected: {}\n- Total {} Decayed: {}").format(
-                humanize_number(users_decayed), currency, humanize_number(total_decayed)
+                humanize_number(len(decayed)), currency, humanize_number(sum(decayed.values()))
             )
             await msg.edit(content=txt)
+
+    @bankdecay.command(name="getexpired")
+    async def get_expired_users(self, ctx: commands.Context):
+        """Get a list of users who are currently expired and how much they will lose if decayed"""
+        async with ctx.typing():
+            decayed = await self.decay_guild(ctx.guild, check_only=True)
+            if not decayed:
+                txt = _("There were no users that would be affected by the decay cycle")
+                return await ctx.send(txt)
+            # Create a text file with the list of users and how much they will lose
+            buffer = StringIO()
+            for user, amount in decayed.items():
+                buffer.write(f"{user}: {amount}\n")
+            buffer.seek(0)
+            file = text_to_file(buffer.getvalue(), filename="expired_users.txt")
+            await ctx.send(file=file)
+
+    @bankdecay.command(name="cleanup")
+    async def cleanup(self, ctx: commands.Context, confirm: bool):
+        """
+        Remove users from the config that are no longer in the server or have no balance
+        """
+        if not confirm:
+            txt = _("Not removing users from the config")
+            return await ctx.send(txt)
+
+        conf = self.db.get_conf(ctx.guild)
+        global_bank = await bank.is_global()
+        cleaned = 0
+        for uid in conf.users.copy():
+            member = ctx.guild.get_member(uid)
+            if not member:
+                del conf.users[uid]
+                cleaned += 1
+            elif not global_bank and await bank.get_balance(member) == 0:
+                del conf.users[uid]
+                cleaned += 1
+        if not cleaned:
+            txt = _("No users were removed from the config.")
+            return await ctx.send(txt)
+
+        grammar = _("user") if cleaned == 1 else _("users")
+        txt = _("Removed {} from the config.").format(f"{cleaned} {grammar}")
+        await ctx.send(txt)
 
     @bankdecay.command(name="initialize")
     async def initialize_guild(self, ctx: commands.Context, as_expired: bool):
@@ -170,7 +234,7 @@ class Admin(MixinMeta):
             user = conf.get_user(member)  # This will add the member to the config if not already present
             initialized += 1
             if as_expired:
-                user.last_active = user.last_active - timedelta(days=conf.inactive_days)
+                user.last_active = user.last_active - timedelta(days=conf.inactive_days + 1)
 
         grammar = _("member") if initialized == 1 else _("members")
         await ctx.send(_("Server initialized! {} added to the config.").format(f"{initialized} {grammar}"))
