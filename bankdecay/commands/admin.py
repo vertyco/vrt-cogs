@@ -88,6 +88,9 @@ class Admin(MixinMeta):
         """
         Toggle the bank decay feature on or off.
         """
+        if await bank.is_global():
+            await ctx.send(_("This command is not available when using global bank."))
+            return
         conf = self.db.get_conf(ctx.guild)
         conf.enabled = not conf.enabled
         await ctx.send(_("Bank decay has been {}.").format(_("enabled") if conf.enabled else _("disabled")))
@@ -137,6 +140,9 @@ class Admin(MixinMeta):
         """
         Run a decay cycle on this server right now
         """
+        if await bank.is_global():
+            await ctx.send(_("This command is not available when using global bank."))
+            return
         conf = self.db.get_conf(ctx.guild)
         if not conf.enabled:
             txt = _("The decay system is currently disabled!")
@@ -175,6 +181,9 @@ class Admin(MixinMeta):
     @bankdecay.command(name="getexpired")
     async def get_expired_users(self, ctx: commands.Context):
         """Get a list of users who are currently expired and how much they will lose if decayed"""
+        if await bank.is_global():
+            await ctx.send(_("This command is not available when using global bank."))
+            return
         async with ctx.typing():
             decayed = await self.decay_guild(ctx.guild, check_only=True)
             if not decayed:
@@ -199,6 +208,10 @@ class Admin(MixinMeta):
         """
         Remove users from the config that are no longer in the server or have no balance
         """
+        if await bank.is_global():
+            await ctx.send(_("This command is not available when using global bank."))
+            return
+
         if not confirm:
             txt = _("Not removing users from the config")
             return await ctx.send(txt)
@@ -230,6 +243,10 @@ class Admin(MixinMeta):
         **Arguments**
         - as_expired: (t/f) if True, initialize users as already expired
         """
+        if await bank.is_global():
+            await ctx.send(_("This command is not available when using global bank."))
+            return
+
         initialized = 0
         conf = self.db.get_conf(ctx.guild)
         for member in ctx.guild.members:
@@ -294,6 +311,10 @@ class Admin(MixinMeta):
 
         Accidentally decayed too many credits? Bulk add to every user's balance in the server based on a percentage of their current balance.
         """
+        if await bank.is_global():
+            await ctx.send(_("This command is not available when using global bank."))
+            return
+
         if not confirm:
             txt = _("Not adding credits to users")
             return await ctx.send(txt)
@@ -322,6 +343,10 @@ class Admin(MixinMeta):
 
         Accidentally refunded too many credits with bulkaddpercent? Bulk remove from every user's balance in the server based on a percentage of their current balance.
         """
+        if await bank.is_global():
+            await ctx.send(_("This command is not available when using global bank."))
+            return
+
         if not confirm:
             txt = _("Not removing credits from users")
             return await ctx.send(txt)
