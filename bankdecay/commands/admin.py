@@ -191,7 +191,7 @@ class Admin(MixinMeta):
                 return await ctx.send(txt)
 
             grammar = _("account") if len(decayed) == 1 else _("accounts")
-            txt = _("This would decay {} for a total of {}?").format(
+            txt = _("This would decay {} for a total of {}").format(
                 f"**{humanize_number(len(decayed))}** {grammar}",
                 f"**{humanize_number(sum(decayed.values()))}** credits",
             )
