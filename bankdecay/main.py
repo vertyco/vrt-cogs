@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.2.3"
+    __version__ = "0.3.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -97,40 +97,38 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
                 # Remove guids that the bot is no longer a part of
                 del self.db.configs[guild_id]
                 continue
-            affected, decayed = await self.decay_guild(guild)
-            total_affected += affected
-            total_decayed += decayed
+            decayed = await self.decay_guild(guild)
+            total_affected += len(decayed)
+            total_decayed += sum(decayed.values())
 
         if total_affected or total_decayed:
             log.info(f"Decayed {total_affected} users balances for a total of {total_decayed} credits!")
 
-    async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> tuple[int, int]:
+    async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> t.Dict[str, int]:
         now = datetime.now()
         conf = self.db.get_conf(guild)
         if not conf.enabled:
-            return 0, 0
-        users_decayed = 0
-        total_decayed = 0
+            return {}
+
+        # Decayed users: dict[username, amount]
+        decayed: t.Dict[str, int] = {}
         uids = [i for i in conf.users]
         for user_id in uids:
             user = guild.get_member(user_id)
             if not user:
-                # Remove members no longer in the server
-                if not check_only:
-                    del conf.users[user_id]
                 continue
+
             if any(r.id in conf.ignored_roles for r in user.roles):
                 # Don't decay user balances with roles in the ignore list
                 continue
+
             last_active = conf.users[user_id].last_active
             delta = now - last_active
             if delta.days <= conf.inactive_days:
                 continue
+
             bal = await bank.get_balance(user)
             if not bal:
-                # Remove the user from the config as they are now both inactive and have no credits
-                if not check_only:
-                    del conf.users[user_id]
                 continue
 
             credits_to_remove = math.ceil(bal * conf.percent_decay)
@@ -138,26 +136,26 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             if not check_only:
                 await bank.set_balance(user, new_bal)
                 conf.total_decayed += bal - new_bal
-            users_decayed += 1
-            total_decayed += credits_to_remove
+
+            decayed[user.name] = credits_to_remove
 
         if check_only:
-            return users_decayed, total_decayed
+            return decayed
 
-        conf.total_decayed += total_decayed
+        conf.total_decayed += sum(decayed.values())
         await self.save()
-        log.info(f"Decayed guild {guild.name}.\nUsers decayed: {users_decayed}\nTotal: {total_decayed}")
+        log.info(f"Decayed guild {guild.name}.\nUsers decayed: {len(decayed)}\nTotal: {sum(decayed.values())}")
 
         log_channel = guild.get_channel(conf.log_channel)
         if not log_channel:
-            return users_decayed, total_decayed
+            return decayed
         if not log_channel.permissions_for(guild.me).embed_links:
-            return users_decayed, total_decayed
+            return decayed
 
         title = _("Bank Decay Cycle")
-        if users_decayed:
+        if decayed:
             txt = _("- User Balances Decayed: {}\n- Total Amount Decayed: {}").format(
-                f"`{humanize_number(users_decayed)}`", f"`{humanize_number(total_decayed)}`"
+                f"`{humanize_number(len(decayed))}`", f"`{humanize_number(sum(decayed.values()))}`"
             )
             color = discord.Color.yellow()
         else:
@@ -175,7 +173,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         except Exception as e:
             log.error(f"Failed to send decay log to {log_channel.name} in {guild.name}", exc_info=e)
 
-        return users_decayed, total_decayed
+        return decayed
 
     async def save(self) -> None:
         if self.saving:
