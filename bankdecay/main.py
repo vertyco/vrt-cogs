@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -110,6 +110,9 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         if not conf.enabled and not check_only:
             return {}
 
+        _bank_members = await bank._config.all_members(guild)
+        bank_members: t.Dict[int, int] = {int(k): v["balance"] for k, v in _bank_members.items()}
+
         # Decayed users: dict[username, amount]
         decayed: t.Dict[str, int] = {}
         uids = [i for i in conf.users]
@@ -127,7 +130,8 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             if delta.days <= conf.inactive_days:
                 continue
 
-            bal = await bank.get_balance(user)
+            bal = bank_members.get(user_id)
+            # bal = await bank.get_balance(user)
             if not bal:
                 continue
 
