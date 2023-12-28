@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -182,9 +182,15 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     async def save(self) -> None:
         if self.saving:
             return
+
+        def _get_dump():
+            copied = self.db.copy(deep=True)
+            dump = copied.model_dump(mode="json")
+            return dump
+
         try:
             self.saving = True
-            dump = await asyncio.to_thread(self.db.model_dump, mode="json")
+            dump = await asyncio.to_thread(_get_dump)
             await self.config.db.set(dump)
         except Exception as e:
             log.exception("Failed to save config", exc_info=e)
