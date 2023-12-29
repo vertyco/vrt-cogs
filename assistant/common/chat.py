@@ -355,7 +355,7 @@ class ChatHandler(MixinMeta):
             await ensure_supports_vision(messages, conf, author)
 
             # Iteratively degrade the conversation to ensure it is always under the token limit
-            messages, function_calls, degraded = await self.degrade_conversation(messages, function_calls, conf, author)
+            degraded = await self.degrade_conversation(messages, function_calls, conf, author)
 
             before = len(messages)
             cleaned = await ensure_tool_consistency(messages)
