@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from multiprocessing.pool import Pool
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import discord
 import tiktoken
@@ -103,7 +103,7 @@ class MixinMeta(metaclass=ABCMeta):
         function_list: List[dict],
         conf: GuildSettings,
         user: Optional[discord.Member],
-    ) -> Tuple[List[dict], List[dict], bool]:
+    ) -> bool:
         raise NotImplementedError
 
     @abstractmethod
