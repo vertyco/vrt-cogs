@@ -148,6 +148,7 @@ READ_EXTENSIONS = [
     ".env",
     ".sh",
     ".bat",
+    ".pde",
 ]
 REACT_SUMMARY_MESSAGE = """
 Your job is to summarize text to use as embeddings. Respond only with the summary of the text.
