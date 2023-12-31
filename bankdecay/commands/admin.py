@@ -247,21 +247,22 @@ class Admin(MixinMeta):
             await ctx.send(_("This command is not available when using global bank."))
             return
 
-        initialized = 0
-        conf = self.db.get_conf(ctx.guild)
-        for member in ctx.guild.members:
-            if member.bot:  # Skip bots
-                continue
-            if member.id in conf.users:
-                continue
-            user = conf.get_user(member)  # This will add the member to the config if not already present
-            initialized += 1
-            if as_expired:
-                user.last_active = user.last_active - timedelta(days=conf.inactive_days + 1)
+        async with ctx.typing():
+            initialized = 0
+            conf = self.db.get_conf(ctx.guild)
+            for member in ctx.guild.members:
+                if member.bot:  # Skip bots
+                    continue
+                if member.id in conf.users:
+                    continue
+                user = conf.get_user(member)  # This will add the member to the config if not already present
+                initialized += 1
+                if as_expired:
+                    user.last_active = user.last_active - timedelta(days=conf.inactive_days + 1)
 
-        grammar = _("member") if initialized == 1 else _("members")
-        await ctx.send(_("Server initialized! {} added to the config.").format(f"{initialized} {grammar}"))
-        await self.save()
+            grammar = _("member") if initialized == 1 else _("members")
+            await ctx.send(_("Server initialized! {} added to the config.").format(f"{initialized} {grammar}"))
+            await self.save()
 
     @bankdecay.command(name="seen")
     async def last_seen(self, ctx: commands.Context, *, user: discord.Member | int):
