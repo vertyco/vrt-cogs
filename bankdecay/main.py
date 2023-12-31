@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.4"
+    __version__ = "0.3.5"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -73,12 +73,23 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
                 # If we missed the last run, run the job immediately
                 await self.decay_guilds()
 
+        # Schedule decay job
         scheduler.add_job(
             func=self.decay_guilds,
             trigger="cron",
             minute=0,
             hour=0,
             id=job_id,
+            replace_existing=True,
+            misfire_grace_time=3600,  # 1 hour grace time for missed job
+        )
+
+        # Schedule save loop
+        scheduler.add_job(
+            func=self.save,
+            trigger="interval",
+            seconds=60,
+            id="save",
             replace_existing=True,
             misfire_grace_time=3600,  # 1 hour grace time for missed job
         )
