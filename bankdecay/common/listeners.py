@@ -14,7 +14,6 @@ class Listeners(MixinMeta):
         if message.author.bot:
             return
         self.db.refresh_user(message.author)
-        await self.save()
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
@@ -27,7 +26,6 @@ class Listeners(MixinMeta):
         if author.bot:
             return
         self.db.refresh_user(author)
-        await self.save()
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.Member | discord.User) -> None:
@@ -36,7 +34,6 @@ class Listeners(MixinMeta):
         if user.bot:
             return
         self.db.refresh_user(user)
-        await self.save()
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction: discord.Reaction, user: discord.Member | discord.User) -> None:
@@ -45,7 +42,6 @@ class Listeners(MixinMeta):
         if user.bot:
             return
         self.db.refresh_user(user)
-        await self.save()
 
     @commands.Cog.listener()
     async def on_presence_update(self, before: discord.Member, after: discord.Member) -> None:
@@ -56,7 +52,6 @@ class Listeners(MixinMeta):
         if author.bot:
             return
         self.db.refresh_user(author)
-        await self.save()
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
@@ -67,7 +62,6 @@ class Listeners(MixinMeta):
         if author.bot:
             return
         self.db.refresh_user(author)
-        await self.save()
 
     @commands.Cog.listener()
     async def on_voice_state_update(
@@ -78,4 +72,3 @@ class Listeners(MixinMeta):
         if member.bot:
             return
         self.db.refresh_user(member)
-        await self.save()
