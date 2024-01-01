@@ -154,7 +154,7 @@ class CloseView(View):
         self.owner_id = owner_id
         self.channel = channel
 
-        self.close_ticket.custom_id = str(channel.id)
+        self.closeticket.custom_id = str(channel.id)
 
     async def on_error(self, interaction: Interaction, error: Exception, item: Item[Any]):
         log.warning(
@@ -164,7 +164,7 @@ class CloseView(View):
         return await super().on_error(interaction, error, item)
 
     @discord.ui.button(label="Close", style=ButtonStyle.danger)
-    async def close_ticket(self, interaction: Interaction, button: Button):
+    async def closeticket(self, interaction: Interaction, button: Button):
         conf = await self.config.guild(interaction.guild).all()
         if not await can_close(self.bot, interaction.guild, interaction.channel, interaction.user, self.owner_id, conf):
             return await interaction.response.send_message(
@@ -187,6 +187,7 @@ class CloseView(View):
         if not owner:
             owner = await self.bot.fetch_user(int(self.owner_id))
         await close_ticket(
+            bot=self.bot,
             member=owner,
             guild=self.channel.guild,
             channel=self.channel,

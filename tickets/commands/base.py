@@ -171,6 +171,7 @@ class BaseCommands(MixinMeta):
         if ctx.interaction:
             await ctx.interaction.response.send_message(_("Closing..."), ephemeral=True, delete_after=4)
         await close_ticket(
+            bot=self.bot,
             member=owner,
             guild=ctx.guild,
             channel=ctx.channel,
