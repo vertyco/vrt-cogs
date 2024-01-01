@@ -6,7 +6,7 @@ Arguments:
     blocks_count = Total quantity of blocks
     block_size = Side of each block (in bytes)
 
-Found source code online and modified to use with my VrtUtils cog
+Found source code online and modified to use with VrtUtils
 Original author is thodnev
 https://github.com/thodnev/MonkeyTest
 """
