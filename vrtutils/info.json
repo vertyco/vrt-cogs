@@ -4,7 +4,7 @@
   ],
   "description": "Assorted utility commands for viewing bot stats and users",
   "disabled": false,
-  "end_user_data_statement": "This cog does not store data about users.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/vrtutils/README.md",
+  "end_user_data_statement": "This cog contains a collection of random commands I have found useful over the years. The cog does not store data about users.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/vrtutils/README.md",
   "hidden": false,
   "install_msg": "Thank you for installing!",
   "min_bot_version": "3.5.0",
@@ -17,7 +17,8 @@
   "required_cogs": {},
   "requirements": [
     "py-cpuinfo",
-    "speedtest-cli>=2.1.3"
+    "speedtest-cli>=2.1.3",
+    "chat-exporter"
   ],
   "short": "Assorted utility commands",
   "tags": [
