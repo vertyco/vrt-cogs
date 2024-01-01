@@ -258,6 +258,7 @@ async def ensure_tool_consistency(messages: List[dict]) -> bool:
     - Messages with they key "tool_calls" are calling a tool or tools.
     - The "tool_calls" value is a list of tool call dicts, each containing an "id" key that maps to a tool response
     - Messages with the role "tool" are tool call responses, each with a "tool_call_id" key that corresponds to a tool call "id"
+    - More than one message can contain the same tool call id within the same conversation payload, which is a pain in the ass
 
     ## Tool Call Message Payload Example
     {
@@ -299,12 +300,12 @@ async def ensure_tool_consistency(messages: List[dict]) -> bool:
     for message in messages:
         if "tool_calls" in message:
             for tool_call in message["tool_calls"]:
-                if tool_call["id"] in tool_call_ids:
-                    log.error("Message payload contains duplicate tool call ids!")
+                # if tool_call["id"] in tool_call_ids:
+                #     log.error("Message payload contains duplicate tool call ids!")
                 tool_call_ids.add(tool_call["id"])
         elif message.get("role") == "tool":
-            if message["tool_call_id"] in tool_response_ids:
-                log.error("Message payload contains duplicate tool response ids!")
+            # if message["tool_call_id"] in tool_response_ids:
+            #     log.error("Message payload contains duplicate tool response ids!")
             tool_response_ids.add(message["tool_call_id"])
 
     if len(tool_call_ids) != len(tool_response_ids):
