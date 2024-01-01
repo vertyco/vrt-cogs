@@ -6,6 +6,7 @@ from datetime import datetime
 from io import BytesIO
 from typing import List, Optional, Union
 
+import chat_exporter
 import discord
 from discord.utils import escape_markdown
 from redbot.core import Config, commands
@@ -72,6 +73,7 @@ def get_ticket_owner(opened: dict, channel_id: str) -> Optional[str]:
 
 
 async def close_ticket(
+    bot: Red,
     member: Union[discord.Member, discord.User],
     guild: discord.Guild,
     channel: Union[discord.TextChannel, discord.Thread],
@@ -132,18 +134,46 @@ async def close_ticket(
     )
     embed.set_thumbnail(url=pfp)
     log_chan = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
+
     text = ""
     files: List[dict] = []
-    filename = f"{member.name}-{member.id}.txt"
+    filename = (
+        f"{member.name}-{member.id}.html" if conf.get("detailed_transcript") else f"{member.name}-{member.id}.txt"
+    )
     filename = filename.replace("/", "")
-    if conf["transcript"]:
-        em = discord.Embed(
-            description=_("Archiving channel..."),
-            color=discord.Color.magenta(),
-        )
-        em.set_footer(text=_("This channel will be deleted once complete"))
-        em.set_thumbnail(url=LOADING)
+
+    # Prep embed in case we're exporting a transcript
+    em = discord.Embed(
+        description=_("Archiving channel..."),
+        color=discord.Color.magenta(),
+    )
+    em.set_footer(text=_("This channel will be deleted once complete"))
+    em.set_thumbnail(url=LOADING)
+
+    if conf["transcript"] and conf.get("detailed_transcript", False):
         temp_message = await channel.send(embed=em)
+
+        history = await fetch_channel_history(channel, limit=1)
+        try:
+            text = await chat_exporter.export(
+                channel=channel,
+                limit=None,
+                tz_info="UTC",
+                guild=guild,
+                bot=bot,
+                military_time=True,
+                fancy_times=True,
+                support_dev=False,
+            )
+        except AttributeError:
+            pass
+
+        with suppress(discord.HTTPException):
+            await temp_message.delete()
+
+    elif conf["transcript"]:
+        temp_message = await channel.send(embed=em)
+
         answers = ticket.get("answers")
         if answers:
             for q, a in answers.items():
@@ -158,18 +188,15 @@ async def close_ticket(
             for i in msg.attachments:
                 att.append(i.filename)
                 if i.size < guild.filesize_limit:
-                    files.append(
-                        {
-                            "filename": i.filename,
-                            "content": await i.read(),
-                        }
-                    )
+                    files.append({"filename": i.filename, "content": await i.read()})
             if msg.content:
                 text += f"{msg.author.name}: {msg.content}\n"
             if att:
                 text += _("Files uploaded: ") + humanize_list(att) + "\n"
+
         with suppress(discord.HTTPException):
             await temp_message.delete()
+
     else:
         history = await fetch_channel_history(channel, limit=1)
 

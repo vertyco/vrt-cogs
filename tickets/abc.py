@@ -15,8 +15,6 @@ class MixinMeta(metaclass=ABCMeta):
 
     bot: Red
     config: Config
-    ticket_panel_schema: dict
-    modal_schema: dict
 
     @abstractmethod
     async def initialize(self, target_guild: discord.Guild = None) -> None:

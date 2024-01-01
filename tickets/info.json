@@ -25,7 +25,8 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "numpy"
+    "numpy",
+    "chat-exporter"
   ],
   "short": "Advanced support ticket system",
   "tags": [

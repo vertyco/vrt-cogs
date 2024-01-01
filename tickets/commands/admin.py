@@ -9,6 +9,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
+from ..common.constants import MODAL_SCHEMA, TICKET_PANEL_SCHEMA
 from ..common.menu import SMALL_CONTROLS, MenuButton, menu
 from ..common.utils import prune_invalid_tickets, update_active_overview
 from ..common.views import TestButton, confirm, wait_reply
@@ -97,7 +98,7 @@ class AdminCommands(MixinMeta):
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name in panels:
                 return await ctx.send(_("Panel already exists!"))
-            panels[panel_name] = self.ticket_panel_schema
+            panels[panel_name] = TICKET_PANEL_SCHEMA
         await ctx.send(embed=em)
 
     @tickets.command()
@@ -431,7 +432,7 @@ class AdminCommands(MixinMeta):
         foot = _("type 'cancel' to cancel at any time")
         color = ctx.author.color
 
-        modal = self.modal_schema.copy() if not existing_modal else existing_modal
+        modal = MODAL_SCHEMA.copy() if not existing_modal else existing_modal
         if preview:
             await make_preview(modal, preview)
 
@@ -1316,6 +1317,21 @@ class AdminCommands(MixinMeta):
         else:
             await self.config.guild(ctx.guild).transcript.set(True)
             await ctx.send(_("Transcripts of closed tickets will now be saved"))
+
+    @tickets.command(aliases=["intertrans", "itrans", "itranscript"])
+    async def interactivetranscript(self, ctx: commands.Context):
+        """
+        (Toggle) Interactive transcripts
+
+        Transcripts will be an interactive html file to visualize the conversation from your browser.
+        """
+        toggle = await self.config.guild(ctx.guild).detailed_transcript()
+        if toggle:
+            await self.config.guild(ctx.guild).detailed_transcript.set(False)
+            await ctx.send(_("Transcripts of closed tickets will no longer be interactive"))
+        else:
+            await self.config.guild(ctx.guild).detailed_transcript.set(True)
+            await ctx.send(_("Transcripts of closed tickets will now be interactive"))
 
     @tickets.command()
     async def updatemessage(

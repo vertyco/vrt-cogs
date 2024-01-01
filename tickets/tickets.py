@@ -12,6 +12,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
 from .commands import TicketCommands
+from .common.constants import DEFAULT_GUILD
 from .common.functions import Functions
 from .common.utils import (
     close_ticket,
@@ -33,7 +34,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.5.5"
+    __version__ = "2.6.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -47,67 +48,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     def __init__(self, bot: Red):
         self.bot: Red = bot
         self.config = Config.get_conf(self, 117117, force_registration=True)
-        default_guild = {
-            # Settings
-            "support_roles": [],  # Role ids that have access to all tickets
-            "blacklist": [],  # User ids that cannot open any tickets
-            "max_tickets": 1,  # Max amount of tickets a user can have open at a time of any kind
-            "inactive": 0,  # Auto close tickets with X hours of inactivity (0 = disabled)
-            "overview_channel": 0,  # Overview of open tickets across panels
-            "overview_msg": 0,  # Message id of the overview info
-            "overview_mention": False,  # Whether the channel names are displayed or the name
-            # Ticket data
-            "opened": {},  # All opened tickets
-            "panels": {},  # All ticket panels
-            # Toggles
-            "dm": False,  # Whether to DM the user when their ticket is closed
-            "user_can_rename": False,  # Ticket opener can rename their ticket channel
-            "user_can_close": True,  # Ticket opener can close their own ticket
-            "user_can_manage": False,  # Ticket opener can add other users to their ticket
-            "transcript": False,  # Save a transcript of the ticket conversation on close
-            "auto_add": False,  # Auto-add support/subroles to thread tickets
-            "thread_close": True,  # Whether to close/lock the thread instead of deleting it
-        }
-        self.config.register_guild(**default_guild)
-
-        self.ticket_panel_schema = {  # "panel_name" will be the key for the schema
-            # Panel settings
-            "category_id": 0,  # <Required>
-            "channel_id": 0,  # <Required>
-            "message_id": 0,  # <Required>
-            "disabled": False,  # Whether panel is disabled
-            "alt_channel": 0,  # (Optional) Open tickets from another channel/category
-            "required_roles": [],  # (Optional) list of role IDs, empty list if anyone can open
-            "close_reason": True,  # Throw a modal for closing reason on the ticket close button
-            # Button settings
-            "button_text": "Open a Ticket",  # (Optional)
-            "button_color": "blue",  # (Optional)
-            "button_emoji": None,  # (Optional) Either None or an emoji for the button
-            "priority": 1,  # (Optional) Button order
-            "row": None,  # Row for the button to be placed
-            # Ticket settings
-            "ticket_messages": [],  # (Optional) A list of messages to be sent
-            "ticket_name": None,  # (Optional) Name format for the ticket channel
-            "log_channel": 0,  # (Optional) Log open/closed tickets
-            "modal": {},  # (Optional) Modal fields to fill out before ticket is opened
-            "modal_title": "",  # (Optional) Modal title
-            "threads": False,  # Whether this panel makes a thread or channel
-            "roles": [],  # Sub-support roles
-            "max_claims": 0,  # How many cooks in the kitchen (default infinite if 0)
-            # Ticker
-            "ticket_num": 1,
-        }
-        # v1.3.10 schema update (Modals)
-        self.modal_schema = {
-            "label": "",  # <Required>
-            "style": "short",  # <Required>
-            "placeholder": None,  # (Optional)
-            "default": None,  # (Optional)
-            "required": True,  # (Optional)
-            "min_length": None,  # (Optional)
-            "max_length": None,  # (Optional)
-            "answer": None,  # (Optional)
-        }
+        self.config.register_guild(**DEFAULT_GUILD)
 
         # Cache
         self.valid = []  # Valid ticket channels
@@ -342,6 +283,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
                     time = "hours" if inactive != 1 else "hour"
                     try:
                         await close_ticket(
+                            self.bot,
                             member,
                             guild,
                             channel,
@@ -388,6 +330,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
                 continue
             try:
                 await close_ticket(
+                    bot=self.bot,
                     member=member,
                     guild=guild,
                     channel=chan,
