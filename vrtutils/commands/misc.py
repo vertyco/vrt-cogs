@@ -1,4 +1,3 @@
-
 import inspect
 import random
 import typing as t
@@ -61,7 +60,7 @@ class Misc(MixinMeta):
         num = random.randint(minimum, maximum)
         await ctx.send(f"Result: `{num}`")
 
-    @commands.command(name="react")
+    @commands.command(name="addreact")
     @commands.mod_or_permissions(add_reactions=True)
     @commands.bot_has_guild_permissions(add_reactions=True)
     async def add_a_reaction(
