@@ -10,8 +10,9 @@ Various useful and fun cogs for Red V3.
 ![GitHub repo size](https://img.shields.io/github/repo-size/Vertyco/Vrt-Cogs?color=blueviolet&style=for-the-badge)
 
 
-I enjoy working with APIs and making cogs for game servers or other helpful use cases. Check out some of my projects
-below!
+I'm a full time software developer that hosts Ark servers as a hobby.
+I enjoy working with APIs and making tools that are useful to myself and others.
+Check out some of my projects below!
 
 | Cog                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 |----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
