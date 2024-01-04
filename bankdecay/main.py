@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.5"
+    __version__ = "0.3.6"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -114,6 +114,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
 
         if total_affected or total_decayed:
             log.info(f"Decayed {total_affected} users balances for a total of {total_decayed} credits!")
+        await self.save()
 
     async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> t.Dict[str, int]:
         now = datetime.now()
@@ -130,13 +131,15 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         for user_id in uids:
             user = guild.get_member(user_id)
             if not user:
+                # User no longer in guild
                 continue
 
             if any(r.id in conf.ignored_roles for r in user.roles):
                 # Don't decay user balances with roles in the ignore list
                 continue
 
-            last_active = conf.users[user_id].last_active
+            last_active = conf.get_user(user).last_active
+
             delta = now - last_active
             if delta.days <= conf.inactive_days:
                 continue
@@ -158,7 +161,6 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             return decayed
 
         conf.total_decayed += sum(decayed.values())
-        await self.save()
         log.info(f"Decayed guild {guild.name}.\nUsers decayed: {len(decayed)}\nTotal: {sum(decayed.values())}")
 
         log_channel = guild.get_channel(conf.log_channel)

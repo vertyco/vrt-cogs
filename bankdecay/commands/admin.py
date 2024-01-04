@@ -177,6 +177,7 @@ class Admin(MixinMeta):
                 humanize_number(len(decayed)), currency, humanize_number(sum(decayed.values()))
             )
             await msg.edit(content=txt)
+            await self.save()
 
     @bankdecay.command(name="getexpired")
     async def get_expired_users(self, ctx: commands.Context):
@@ -234,6 +235,7 @@ class Admin(MixinMeta):
         grammar = _("user") if cleaned == 1 else _("users")
         txt = _("Removed {} from the config.").format(f"{cleaned} {grammar}")
         await ctx.send(txt)
+        await self.save()
 
     @bankdecay.command(name="initialize")
     async def initialize_guild(self, ctx: commands.Context, as_expired: bool):
