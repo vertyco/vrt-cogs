@@ -298,11 +298,23 @@ class ChatHandler(MixinMeta):
         query_embedding = []
         user = author if isinstance(author, discord.Member) else None
         model = conf.get_user_model(user)
+
+        # Determine if we should embed the user's message
         message_tokens = await self.count_tokens(message, conf, model)
         words = message.split(" ")
-        if conf.top_n and message_tokens < 8191 and len(words) > 3:
-            # Save on tokens by only getting embeddings if theyre enabled
-            query_embedding = await self.request_embedding(message, conf)
+        get_embed_conditions = [
+            conf.embeddings,  # We actually have embeddings to compare with
+            len(words) > 3,  # Message is long enough
+            conf.top_n,  # Top n is greater than 0
+            message_tokens < 8191,
+        ]
+        if all(get_embed_conditions):
+            if conf.question_mode:
+                # If question mode is enabled, only the first message and messages that end with a ? will be embedded
+                if message.endswith("?") or not conversation.messages:
+                    query_embedding = await self.request_embedding(message, conf)
+            else:
+                query_embedding = await self.request_embedding(message, conf)
 
         mem = guild.get_member(author) if isinstance(author, int) else author
         bal = humanize_number(await bank.get_balance(mem)) if mem else _("None")
