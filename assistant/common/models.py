@@ -84,7 +84,8 @@ class GuildSettings(AssistantBaseModel):
     tutors: List[int] = []  # Role or user IDs
     top_n: int = 3
     min_relatedness: float = 0.75
-    embed_method: str = "dynamic"
+    embed_method: str = "dynamic"  # hybrid, dynamic, static
+    question_mode: bool = False  # If True, only the first message and messages that end with ? will have emebddings
     channel_id: Optional[int] = 0
     api_key: Optional[str] = None
     endswith_questionmark: bool = False
@@ -95,7 +96,7 @@ class GuildSettings(AssistantBaseModel):
     max_tokens: int = 4000
     mention: bool = False
     mention_respond: bool = True  # TODO: add command to toggle
-    enabled: bool = True
+    enabled: bool = True  # Auto-reply channel
     model: str = "gpt-3.5-turbo"
     endpoint_override: Optional[str] = None
     collab_convos: bool = False
@@ -132,6 +133,9 @@ class GuildSettings(AssistantBaseModel):
     ) -> List[Tuple[str, str, float, int]]:
         def cosine_similarity(a, b):
             return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+        if not query_embedding:
+            return []
 
         # Name, text, score, dimensions
         q_length = len(query_embedding)

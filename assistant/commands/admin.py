@@ -1110,6 +1110,22 @@ class Admin(MixinMeta):
             await ctx.send(_("If a reges blacklist fails, the bot will still reply"))
         await self.save_conf()
 
+    @assistant.command(name="questionmode")
+    async def toggle_question_mode(self, ctx: commands.Context):
+        """
+        Toggle question mode
+
+        If question mode is on, embeddings will only be sourced during the first message of a conversation and messages that end in **?**
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.question_mode:
+            conf.question_mode = False
+            await ctx.send(_("Question mode is now **Disabled**"))
+        else:
+            conf.question_mode = True
+            await ctx.send(_("Question mode is now **Enabled**"))
+        await self.save_conf()
+
     @assistant.command(name="embedmethod")
     async def toggle_embedding_method(self, ctx: commands.Context):
         """
