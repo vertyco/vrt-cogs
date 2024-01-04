@@ -129,6 +129,7 @@ class Admin(MixinMeta):
             + _("`Timezone:            `{}\n").format(conf.timezone)
             + _("`Channel:             `{}\n").format(channel)
             + _("`? Required:          `{}\n").format(conf.endswith_questionmark)
+            + _("`Question Mode:       `{}\n").format(conf.question_mode)
             + _("`Mentions:            `{}\n").format(conf.mention)
             + _("`Collaborative Mode:  `{}\n").format(conf.collab_convos)
             + _("`Max Retention:       `{}\n").format(conf.max_retention)
