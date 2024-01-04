@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.6"
+    __version__ = "0.3.7"
 
     def __init__(self, bot: Red):
         super().__init__()
