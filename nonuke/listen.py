@@ -187,9 +187,9 @@ class Listen:
         target: Union[discord.abc.GuildChannel, discord.Member, discord.Role],
         action: discord.AuditLogAction,
     ) -> Optional[discord.abc.User]:
-        await asyncio.sleep(1)  # Wait for cache to populate maybe
+        await asyncio.sleep(2)  # Wait for cache to populate maybe
         if guild.id not in self.audit_log_cache:
-            log.info(f"Guild {guild.name} not in cache!")
+            # log.info(f"Guild {guild.name} not in cache!")
             return
 
         if not guild.me:
