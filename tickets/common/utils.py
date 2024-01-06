@@ -287,15 +287,11 @@ async def close_ticket(
                 raise
 
         if log_msg and exporter_success:
-            final_desc = desc + _("**[View Transcript]({})**\n").format(
-                f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
-            )
-            embed = discord.Embed(
-                title=embed_title,
-                description=final_desc,
-                color=discord.Color.green(),
-            )
-            await log_msg.edit(embed=embed)
+            url = f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
+            label = _("View Transcript")
+            view = discord.ui.View()
+            view.add_item(discord.ui.Button(label=label, style=discord.ButtonStyle.link, url=url))
+            await log_msg.edit(view=view)
 
         # Delete old log msg
         log_msg_id = ticket["logmsg"]
