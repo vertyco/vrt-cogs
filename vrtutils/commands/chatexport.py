@@ -9,6 +9,7 @@ from ..abc import MixinMeta
 class ChatExport(MixinMeta):
     @commands.command(name="exportchat")
     @commands.guildowner()
+    @commands.bot_has_permissions(attach_files=True)
     async def export_chat(
         self,
         ctx: commands.Context,
@@ -42,4 +43,6 @@ class ChatExport(MixinMeta):
                 return await ctx.send("Failed to export chat")
 
             file = text_to_file(transcript, filename=f"transcript-{channel.name}.html")
-            await ctx.send(file=file)
+            msg = await ctx.send(file=file)
+            txt = f"**[Click to View Export](https://mahto.id/chat-exporter?url={msg.attachments[0].url})**"
+            await msg.edit(content=txt)
