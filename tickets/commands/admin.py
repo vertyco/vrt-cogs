@@ -917,12 +917,16 @@ class AdminCommands(MixinMeta):
         no_resp = f"{inactive} {singular if inactive == 1 else plural}"
         if not inactive:
             no_resp = _("Disabled")
+
+        detailed = conf.get("detailed_transcript", False)
+        transcript_type = _("Detailed") if detailed else _("Simple")
+
         msg = _("`Max Tickets:      `") + f"{conf['max_tickets']}\n"
         msg += _("`DM Alerts:        `") + f"{conf['dm']}\n"
         msg += _("`Users can Rename: `") + f"{conf['user_can_rename']}\n"
         msg += _("`Users can Close:  `") + f"{conf['user_can_close']}\n"
         msg += _("`Users can Manage: `") + f"{conf['user_can_manage']}\n"
-        msg += _("`Save Transcripts: `") + f"{conf['transcript']}\n"
+        msg += _("`Save Transcripts: `") + f"{conf['transcript']} ({transcript_type})\n"
         msg += _("`Auto Close:       `") + (_("On") if inactive else _("Off")) + "\n"
         msg += _("`NoResponseDelete: `") + no_resp
 
