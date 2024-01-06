@@ -124,11 +124,12 @@ async def close_ticket(
         str(reason),
     )
     if isinstance(channel, discord.Thread) and conf["thread_close"]:
-        desc += _("`Thread:    `{}").format(channel.mention)
+        desc += _("`Thread:    `{}\n").format(channel.mention)
 
     backup_text = _("Ticket Closed\n{}\nCurrently missing permissions to send embeds to this channel!").format(desc)
+    embed_title = _("Ticket Closed")
     embed = discord.Embed(
-        title=_("Ticket Closed"),
+        title=embed_title,
         description=desc,
         color=discord.Color.green(),
     )
@@ -150,49 +151,52 @@ async def close_ticket(
     em.set_footer(text=_("This channel will be deleted once complete"))
     em.set_thumbnail(url=LOADING)
 
-    if conf["transcript"] and conf.get("detailed_transcript", False):
+    use_exporter = conf.get("detailed_transcript", False)
+    is_thread = isinstance(channel, discord.Thread)
+    exporter_success = False
+
+    if conf["transcript"]:
         temp_message = await channel.send(embed=em)
 
-        history = await fetch_channel_history(channel, limit=1)
-        try:
-            text = await chat_exporter.export(
-                channel=channel,
-                limit=None,
-                tz_info="UTC",
-                guild=guild,
-                bot=bot,
-                military_time=True,
-                fancy_times=True,
-                support_dev=False,
-            )
-        except AttributeError:
-            pass
-
-        with suppress(discord.HTTPException):
-            await temp_message.delete()
-
-    elif conf["transcript"]:
-        temp_message = await channel.send(embed=em)
+        if use_exporter:
+            try:
+                text = await chat_exporter.export(
+                    channel=channel,
+                    limit=None,
+                    tz_info="UTC",
+                    guild=guild,
+                    bot=bot,
+                    military_time=True,
+                    fancy_times=True,
+                    support_dev=False,
+                )
+                exporter_success = True
+            except AttributeError:
+                pass
 
         answers = ticket.get("answers")
-        if answers:
+        if answers and not use_exporter:
             for q, a in answers.items():
                 text += _("Question: {}\nResponse: {}\n").format(q, a)
+
         history = await fetch_channel_history(channel)
         for msg in history:
             if msg.author.bot:
                 continue
             if not msg:
                 continue
+
             att = []
             for i in msg.attachments:
                 att.append(i.filename)
-                if i.size < guild.filesize_limit:
+                if i.size < guild.filesize_limit and (not is_thread or conf["thread_close"]):
                     files.append({"filename": i.filename, "content": await i.read()})
-            if msg.content:
-                text += f"{msg.author.name}: {msg.content}\n"
-            if att:
-                text += _("Files uploaded: ") + humanize_list(att) + "\n"
+
+            if not use_exporter:
+                if msg.content:
+                    text += f"{msg.author.name}: {msg.content}\n"
+                if att:
+                    text += _("Files uploaded: ") + humanize_list(att) + "\n"
 
         with suppress(discord.HTTPException):
             await temp_message.delete()
@@ -219,7 +223,7 @@ async def close_ticket(
 
     # Send off new messages
     view = None
-    if history and isinstance(channel, discord.Thread) and conf["thread_close"]:
+    if history and is_thread and conf["thread_close"]:
         jump_url = history[0].jump_url
         view = discord.ui.View()
         view.add_item(
@@ -229,6 +233,7 @@ async def close_ticket(
                 url=jump_url,
             )
         )
+
     if log_chan and ticket["logmsg"]:
         text_file = text_to_file(text, filename) if text else None
         zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
@@ -245,29 +250,52 @@ async def close_ticket(
             attachments.append(text_file)
         if zip_file and ((zip_file.__sizeof__() + text_file_size) < guild.filesize_limit):
             attachments.append(zip_file)
+
+        log_msg: discord.Message = None
         # attachment://image.webp
         try:
             if all(perms):
-                await log_chan.send(embed=embed, files=attachments or None, view=view)
+                log_msg = await log_chan.send(embed=embed, files=attachments or None, view=view)
             elif perms[0]:
-                await log_chan.send(embed=embed, view=view)
+                log_msg = await log_chan.send(embed=embed, view=view)
             elif perms[1]:
-                await log_chan.send(backup_text, files=attachments or None, view=view)
+                log_msg = await log_chan.send(backup_text, files=attachments or None, view=view)
         except discord.HTTPException as e:
             if "Payload Too Large" in e.text:
+                text_file = text_to_file(text, filename) if text else None
+                zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
+                attachments = []
+                text_file_size = 0
+                if text_file:
+                    text_file_size = text_file.__sizeof__()
+                    attachments.append(text_file)
+                if zip_file and ((zip_file.__sizeof__() + text_file_size) < guild.filesize_limit):
+                    attachments.append(zip_file)
+
                 # Pop last element and try again
                 if text_file:
                     attachments.pop(-1)
                 else:
                     attachments = None
                 if all(perms):
-                    await log_chan.send(embed=embed, files=attachments or None, view=view)
+                    log_msg = await log_chan.send(embed=embed, files=attachments or None, view=view)
                 elif perms[0]:
-                    await log_chan.send(embed=embed, view=view)
+                    log_msg = await log_chan.send(embed=embed, view=view)
                 elif perms[1]:
-                    await log_chan.send(backup_text, files=attachments or None, view=view)
+                    log_msg = await log_chan.send(backup_text, files=attachments or None, view=view)
             else:
-                raise e
+                raise
+
+        if log_msg and exporter_success:
+            final_desc = desc + _("**[View Transcript]({})**\n").format(
+                f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
+            )
+            embed = discord.Embed(
+                title=embed_title,
+                description=final_desc,
+                color=discord.Color.green(),
+            )
+            await log_msg.edit(embed=embed)
 
         # Delete old log msg
         log_msg_id = ticket["logmsg"]
@@ -293,7 +321,7 @@ async def close_ticket(
             pass
 
     # Delete/close ticket channel
-    if isinstance(channel, discord.Thread) and conf["thread_close"]:
+    if is_thread and conf["thread_close"]:
         try:
             await channel.edit(archived=True, locked=True)
         except Exception as e:
