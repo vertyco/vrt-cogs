@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.7"
+    __version__ = "0.3.8"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -153,7 +153,6 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             new_bal = bal - credits_to_remove
             if not check_only:
                 await bank.set_balance(user, new_bal)
-                conf.total_decayed += bal - new_bal
 
             decayed[user.name] = credits_to_remove
 
