@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.11"
+    __version__ = "3.11.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1219,6 +1219,23 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         conf["emojis"]["money"] = balance if isinstance(balance, str) else balance.id
         await ctx.tick()
         await self.save_cache()
+
+    @lvl_group.command(name="resetuserweekly")
+    @commands.guildowner()
+    async def reset_user_weekly(self, ctx: commands.Context, *, user: discord.Member):
+        """Reset a user's weekly stats"""
+        if not self.data[ctx.guild.id]["weekly"]["on"]:
+            return await ctx.send(_("Weekly stats are not enabled"))
+        if str(user.id) not in self.data[ctx.guild.id]["weekly"]["users"]:
+            return await ctx.send(_("That user has no weekly stats"))
+        self.data[ctx.guild.id]["weekly"]["users"][str(user.id)] = {
+            "xp": 0,
+            "voice": 0,
+            "messages": 0,
+            "stars": 0,
+        }
+        await ctx.send(_("Reset weekly stats for ") + user.name)
+        await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="admin")
     @commands.guildowner()
