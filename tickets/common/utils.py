@@ -144,12 +144,8 @@ async def close_ticket(
     filename = filename.replace("/", "")
 
     # Prep embed in case we're exporting a transcript
-    em = discord.Embed(
-        description=_("Archiving channel..."),
-        color=discord.Color.magenta(),
-    )
-    em.set_footer(text=_("This channel will be deleted once complete"))
-    em.set_thumbnail(url=LOADING)
+    em = discord.Embed(color=member.color)
+    em.set_author(name=_("Archiving Ticket..."), icon_url=LOADING)
 
     use_exporter = conf.get("detailed_transcript", False)
     is_thread = isinstance(channel, discord.Thread)
