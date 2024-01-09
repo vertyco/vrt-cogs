@@ -234,6 +234,8 @@ async def close_ticket(
             )
         )
 
+    view_label = _("View Transcript")
+
     if log_chan and ticket["logmsg"]:
         text_file = text_to_file(text, filename) if text else None
         zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
@@ -288,9 +290,8 @@ async def close_ticket(
 
         if log_msg and exporter_success:
             url = f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
-            label = _("View Transcript")
             view = discord.ui.View()
-            view.add_item(discord.ui.Button(label=label, style=discord.ButtonStyle.link, url=url))
+            view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
             await log_msg.edit(view=view)
 
         # Delete old log msg
@@ -310,9 +311,14 @@ async def close_ticket(
         try:
             if text:
                 text_file = text_to_file(text, filename) if text else None
-                await member.send(embed=embed, file=text_file)
+                dm_msg = await member.send(embed=embed, file=text_file)
+                url = f"https://mahto.id/chat-exporter?url={dm_msg.attachments[0].url}"
+                view = discord.ui.View()
+                view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
+                await dm_msg.edit(view=view)
             else:
                 await member.send(embed=embed)
+
         except discord.Forbidden:
             pass
 
