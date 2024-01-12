@@ -148,8 +148,6 @@ class AssistantListener(MixinMeta):
             # Get embedding content first
             messages = [
                 {"role": "system", "content": REACT_SUMMARY_MESSAGE.strip()},
-                {"role": "user", "content": "Bob said: My favorite color is red"},
-                {"role": "assistant", "content": "Bob's favorite color is red"},
                 {"role": "user", "content": initial_content},
             ]
             embed_response = await self.request_response(messages=messages, conf=conf)
@@ -163,8 +161,6 @@ class AssistantListener(MixinMeta):
             # Create a name for the embedding
             messages = [
                 {"role": "system", "content": REACT_NAME_MESSAGE.strip()},
-                {"role": "user", "content": "Bob's favorite color is red"},
-                {"role": "assistant", "content": "Bobs fav color"},
                 {"role": "user", "content": embed_response["content"]},
             ]
             name_response = await self.request_response(messages=messages, conf=conf)
