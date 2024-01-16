@@ -24,7 +24,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -284,6 +284,8 @@ class UpgradeChat(commands.Cog):
                 if uid in users and transaction_id in users[uid]:
                     continue
                 ordered_on = purchase["purchased_at"]
+                if not purchase["order_items"]:
+                    continue
                 first_order_item = purchase["order_items"][0]
                 product_id = first_order_item["product"]["uuid"]
                 price = first_order_item["price"]
