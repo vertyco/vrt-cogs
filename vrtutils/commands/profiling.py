@@ -27,5 +27,5 @@ class Profiling(MixinMeta):
 
         async with ctx.typing():
             res = await asyncio.to_thread(f)
-            for p in pagify(res):
+            for p in pagify(res, page_length=1980):
                 await ctx.send(box(p, "py"))
