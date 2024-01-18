@@ -28,7 +28,8 @@
     "botinfo",
     "serverstats",
     "ping",
-    "latency"
+    "latency",
+    "pympler"
   ],
   "type": "COG"
 }
