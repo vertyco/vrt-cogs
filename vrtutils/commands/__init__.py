@@ -4,6 +4,7 @@ from .chatexport import ChatExport
 from .dcord import Dcord
 from .disk import DiskBench
 from .misc import Misc
+from .profiling import Profiling
 from .zipper import Zipper
 
 
@@ -13,6 +14,7 @@ class Utils(
     Dcord,
     DiskBench,
     Misc,
+    Profiling,
     Zipper,
     metaclass=CompositeMetaClass,
 ):
