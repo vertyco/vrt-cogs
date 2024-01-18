@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.12"
+    __version__ = "3.11.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1185,19 +1185,19 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     async def set_emojis(
         self,
         ctx: commands.Context,
-        level: discord.Emoji | discord.PartialEmoji | str,
-        prestige: discord.Emoji | discord.PartialEmoji | str,
-        star: discord.Emoji | discord.PartialEmoji | str,
-        chat: discord.Emoji | discord.PartialEmoji | str,
-        voicetime: discord.Emoji | discord.PartialEmoji | str,
-        experience: discord.Emoji | discord.PartialEmoji | str,
-        balance: discord.Emoji | discord.PartialEmoji | str,
+        level: Union[discord.Emoji, discord.PartialEmoji, str],
+        prestige: Union[discord.Emoji, discord.PartialEmoji, str],
+        star: Union[discord.Emoji, discord.PartialEmoji, str],
+        chat: Union[discord.Emoji, discord.PartialEmoji, str],
+        voicetime: Union[discord.Emoji, discord.PartialEmoji, str],
+        experience: Union[discord.Emoji, discord.PartialEmoji, str],
+        balance: Union[discord.Emoji, discord.PartialEmoji, str],
     ):
         """Set the emojis for embed profiles"""
 
         async def test_reactions(
             ctx: commands.Context,
-            emojis: list[discord.Emoji | discord.PartialEmoji | str],
+            emojis: List[Union[discord.Emoji, discord.PartialEmoji, str]],
         ) -> bool:
             try:
                 [await ctx.message.add_reaction(e) for e in emojis]
