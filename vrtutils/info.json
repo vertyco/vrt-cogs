@@ -29,7 +29,8 @@
     "serverstats",
     "ping",
     "latency",
-    "pympler"
+    "Pympler",
+    "tabulate",
   ],
   "type": "COG"
 }
