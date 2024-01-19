@@ -780,8 +780,11 @@ class AdminCommands(MixinMeta):
         """View/Delete a ticket message for a support ticket panel"""
         panel_name = panel_name.lower()
         panels = await self.config.guild(ctx.guild).panels()
+        if not panels:
+            return await ctx.send(_("There are no panels available!\nUse ") + f"`{ctx.clean_prefix}tset addpanel` " + _("to create one."))
         if panel_name not in panels:
-            return await ctx.send(_("Panel does not exist!"))
+            valid = _("Valid panels are: ") + f"`{', '.join(list(panels.keys()))}`"
+            return await ctx.send(_("Panel does not exist!") + "\n" + valid)
         messages = panels[panel_name]["ticket_messages"]
         if not messages:
             return await ctx.send(_("This panel does not have any messages added!"))
