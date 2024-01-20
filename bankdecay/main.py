@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.9"
+    __version__ = "0.3.10"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -62,26 +62,23 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         await self.start_jobs()
 
     async def start_jobs(self):
-        last_run = self.db.last_run
-        # Check if we missed the last run
-        if last_run is None:
-            next_run_time = datetime.now() + timedelta(seconds=5)
-        else:
-            next_run_time = last_run + timedelta(days=1)
+        kwargs = {
+            "func": self.autodecay_guilds,
+            "trigger": "cron",
+            "minute": 0,
+            "hour": 0,
+            "id": "BankDecay.autodecay_guilds",
+            "replace_existing": True,
+            "misfire_grace_time": 3600,  # 1 hour grace time for missed job
+        }
+        # If it has been more than 24 hours since the last run, schedule it to run now
+        if self.db.last_run is not None and (datetime.now() - self.db.last_run) > timedelta(hours=24):
+            kwargs["next_run_time"] = datetime.now() + timedelta(seconds=5)
 
         # Schedule decay job
-        scheduler.add_job(
-            func=self.decay_guilds,
-            trigger="cron",
-            minute=0,
-            hour=0,
-            id="BankDecay.decay_guilds",
-            next_run_time=next_run_time,
-            replace_existing=True,
-            misfire_grace_time=3600,  # 1 hour grace time for missed job
-        )
+        scheduler.add_job(**kwargs)
 
-    async def decay_guilds(self):
+    async def autodecay_guilds(self):
         if await bank.is_global():
             log.error("This cog cannot be used with a global bank!")
             return
@@ -101,6 +98,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
 
         if total_affected or total_decayed:
             log.info(f"Decayed {total_affected} users balances for a total of {total_decayed} credits!")
+        self.db.last_run = datetime.now()
         await self.save()
 
     async def decay_guild(self, guild: discord.Guild, check_only: bool = False) -> t.Dict[str, int]:
