@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.8"
+    __version__ = "0.3.9"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -59,19 +59,15 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.model_validate, data)
         log.info("Config loaded")
+        await self.start_jobs()
 
-    async def start_job(self):
+    async def start_jobs(self):
         last_run = self.db.last_run
-        now = datetime.now()
-        job_id = "decay_guilds"
         # Check if we missed the last run
         if last_run is None:
-            await self.decay_guilds()
+            next_run_time = datetime.now() + timedelta(seconds=5)
         else:
             next_run_time = last_run + timedelta(days=1)
-            if now >= next_run_time:
-                # If we missed the last run, run the job immediately
-                await self.decay_guilds()
 
         # Schedule decay job
         scheduler.add_job(
@@ -79,17 +75,8 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             trigger="cron",
             minute=0,
             hour=0,
-            id=job_id,
-            replace_existing=True,
-            misfire_grace_time=3600,  # 1 hour grace time for missed job
-        )
-
-        # Schedule save loop
-        scheduler.add_job(
-            func=self.save,
-            trigger="interval",
-            seconds=60,
-            id="save",
+            id="BankDecay.decay_guilds",
+            next_run_time=next_run_time,
             replace_existing=True,
             misfire_grace_time=3600,  # 1 hour grace time for missed job
         )
@@ -194,7 +181,6 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     async def save(self) -> None:
         if self.saving:
             return
-
         try:
             self.saving = True
             dump = self.db.model_dump(mode="json")
