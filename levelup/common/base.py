@@ -844,6 +844,8 @@ class UserCommands(MixinMeta, ABC):
             role_icon = user.top_role.display_icon
             if isinstance(role_icon, str):
                 role_icon = get_twemoji(role_icon)
+            elif role_icon:
+                role_icon = role_icon.url
         else:
             pfp = user.avatar_url
 
@@ -885,6 +887,7 @@ class UserCommands(MixinMeta, ABC):
 
             if not emoji:
                 # Get default
+                log.error(f"Failed to get emoji for {name}, using default")
                 emoji = default_guild["emojis"][name]
 
             return emoji
@@ -929,6 +932,12 @@ class UserCommands(MixinMeta, ABC):
                     "stat": hex_to_rgb(colors["stat"]) if colors["stat"] else None,
                     "levelbar": hex_to_rgb(colors["levelbar"]) if colors["levelbar"] else None,
                 }
+                if isinstance(emoji, dict):
+                    emoji_icon = emoji["url"]
+                else:
+                    emoji_icon = None
+                    if emoji is not None:
+                        log.error(f"Invalid prestige emoji icon: {emoji}")
 
                 args = {
                     "bg_image": bg_image,  # Background image link
@@ -944,7 +953,7 @@ class UserCommands(MixinMeta, ABC):
                     "messages": humanize_number(messages),
                     "voice": time_formatter(voice),
                     "prestige": prestige,
-                    "emoji": emoji["url"] if emoji and isinstance(emoji, dict) else None,
+                    "emoji": emoji_icon,
                     "stars": stars,
                     "balance": bal if showbal else 0,
                     "currency": currency_name,
