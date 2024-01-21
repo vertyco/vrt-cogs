@@ -26,7 +26,7 @@ class Profiling(MixinMeta):
         self.stats.setdefault(command_name, []).append(end_time - start_time)
 
     def _key(self, ctx: commands.Context):
-        return f"{ctx.author.id}-{ctx.command.qualified_name}-{ctx.guild.id}-{ctx.channel.id}-{ctx.message.id}"
+        return f"{ctx.author.id}-{ctx.command.qualified_name}-{ctx.channel.id}-{ctx.message.id}"
 
     @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context):
@@ -110,9 +110,12 @@ class Profiling(MixinMeta):
                 await ctx.send(box(p, "py"))
 
     @profiler.command(name="cmd")
-    async def profile_commands(self, ctx: commands.Context, limit: int = 15):
+    async def profile_commands(self, ctx: commands.Context, limit: int = 15, sort_by: str = "average"):
         """
         Profile execution time of commands
+
+        **limit** is the number of commands to display
+        **sort_by** can be one of: `average`, `count`
         """
         cols = ["command", "count", "average"]
         if not self.stats:
@@ -120,8 +123,13 @@ class Profiling(MixinMeta):
 
         def _f():
             rows = []
-            # Sort by average time
-            sorted_stats = sorted(self.stats.items(), key=lambda x: sum(x[1]) / len(x[1]), reverse=True)
+            if "av" in sort_by:
+                # Sort by average time
+                sorted_stats = sorted(self.stats.items(), key=lambda x: sum(x[1]) / len(x[1]), reverse=True)
+            else:
+                # Sort by count
+                sorted_stats = sorted(self.stats.items(), key=lambda x: len(x[1]), reverse=True)
+
             for command_name, times in sorted_stats[:limit]:
                 rows.append(
                     [
