@@ -15,7 +15,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import MODELS_1106, SUPPORTS_FUNCTIONS, SUPPORTS_TOOLS
+from .constants import SUPPORTS_FUNCTIONS, SUPPORTS_SEED, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -61,7 +61,7 @@ async def request_chat_completion_raw(
     }
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
-    if seed and model in MODELS_1106:
+    if seed and model in SUPPORTS_SEED:
         kwargs["seed"] = seed
     if functions and model in SUPPORTS_FUNCTIONS:
         if model in SUPPORTS_TOOLS:
@@ -165,7 +165,7 @@ async def request_embedding_raw(
     )
     response = await client.embeddings.create(
         input=text,
-        model="text-embedding-ada-002",
+        model="text-embedding-3-small",
     )
     # log.debug(f"EMBED RESPONSE TYPE: {type(response)}")
     return response
