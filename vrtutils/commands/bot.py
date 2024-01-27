@@ -106,6 +106,8 @@ class BotInfo(MixinMeta):
         page = 0
         for i, guild in enumerate(self.bot.guilds):
             guild: discord.Guild = guild
+            if not guild:
+                continue
             if guild.id == ctx.guild.id:
                 page = i
             guild_splash = guild.splash.url if guild.splash else None
