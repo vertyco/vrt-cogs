@@ -91,7 +91,6 @@ class ChatHandler(MixinMeta):
                 f"[Channel: {mention.name} | Mention: {mention.mention}]",
             )
         for mention in message.role_mentions:
-            mention.__dict__
             question = question.replace(
                 f"<@&{mention.id}>",
                 f"[Role: {mention.name} | Mention: {mention.mention}]",
