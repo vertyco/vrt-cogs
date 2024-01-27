@@ -3,6 +3,7 @@ MODELS = {
     "gpt-3.5-turbo-0301": 4096,
     "gpt-3.5-turbo-0613": 4096,
     "gpt-3.5-turbo-1106": 16385,
+    "gpt-3.5-turbo-0125": 16385,
     "gpt-3.5-turbo-16k": 16384,
     "gpt-3.5-turbo-16k-0301": 16384,
     "gpt-3.5-turbo-16k-0613": 16384,
@@ -14,7 +15,9 @@ MODELS = {
     "gpt-4-32k": 32768,
     "gpt-4-32k-0301": 32768,
     "gpt-4-32k-0613": 32768,
+    "gpt-4-turbo-preview": 128000,
     "gpt-4-1106-preview": 128000,
+    "gpt-4-0125-preview": 128000,
     "gpt-4-vision-preview": 128000,
     "gpt-4-1106-vision-preview": 128000,
     "code-davinci-002": 8001,
@@ -31,6 +34,7 @@ PRICES = {
     "gpt-3.5-turbo-0301": [0.0015, 0.002],
     "gpt-3.5-turbo-0613": [0.0015, 0.002],
     "gpt-3.5-turbo-1106": [0.001, 0.002],
+    "gpt-3.5-turbo-0125": [0.0005, 0.0015],
     "gpt-3.5-turbo-16k": [0.003, 0.004],
     "gpt-3.5-turbo-16k-0301": [0.003, 0.004],
     "gpt-3.5-turbo-16k-0613": [0.003, 0.004],
@@ -39,7 +43,9 @@ PRICES = {
     "gpt-4": [0.03, 0.06],
     "gpt-4-0301": [0.03, 0.06],
     "gpt-4-0613": [0.03, 0.06],
+    "gpt-4-turbo-preview": [0.01, 0.03],
     "gpt-4-1106-preview": [0.01, 0.03],
+    "gpt-4-0125-preview": [0.01, 0.03],
     "gpt-4-vision-preview": [0.01, 0.03],
     "gpt-4-1106-vision-preview": [0.01, 0.03],
     "gpt-4-32k": [0.06, 0.12],
@@ -53,12 +59,16 @@ PRICES = {
     "code-davinci-002": [0.03, 0.12],
     "text-embedding-ada-002": [0.0001, 0.0001],
     "text-embedding-ada-002-v2": [0.0001, 0.0001],
+    "text-embedding-3-small": [0.00002, 0.00002],
+    "text-embedding-3-large": [0.00013, 0.00013],
 }
-MODELS_1106 = [
+SUPPORTS_SEED = [
     "gpt-3.5-turbo-1106",
     "gpt-4-1106-preview",
     "gpt-4-vision-preview",
     "gpt-4-1106-vision-preview",
+    "gpt-4-turbo-preview",
+    "gpt-4-0125-preview",
 ]
 SUPPORTS_VISION = [
     "gpt-4-vision-preview",
@@ -67,6 +77,8 @@ SUPPORTS_VISION = [
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
     "gpt-4-1106-preview",
+    "gpt-4-0125-preview",
+    "gpt-4-turbo-preview",
 ]
 SUPPORTS_FUNCTIONS = [
     "gpt-3.5-turbo",
