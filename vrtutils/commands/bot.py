@@ -81,6 +81,7 @@ class BotInfo(MixinMeta):
 
     @commands.command()
     @commands.is_owner()
+    @commands.guild_only()
     async def guilds(self, ctx: commands.Context):
         """View guilds your bot is in"""
         # Just wanted a stripped down version of getguild from Trusty's serverstats cog
@@ -106,8 +107,6 @@ class BotInfo(MixinMeta):
         page = 0
         for i, guild in enumerate(self.bot.guilds):
             guild: discord.Guild = guild
-            if not guild:
-                continue
             if guild.id == ctx.guild.id:
                 page = i
             guild_splash = guild.splash.url if guild.splash else None
