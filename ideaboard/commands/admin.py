@@ -1,11 +1,13 @@
 import logging
 import typing as t
 from contextlib import suppress
+from io import StringIO
 
 import discord
 from discord import app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from ..abc import MixinMeta
 
@@ -602,6 +604,7 @@ class Admin(MixinMeta):
     )
     @app_commands.describe(number=_("Suggestion number to view votes for"))
     @commands.guild_only()
+    @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def view_votes(self, ctx: commands.Context, number: int):
         """View the list of who has upvoted and who has downvoted a suggestion."""
         conf = self.db.get_conf(ctx.guild)
@@ -631,8 +634,34 @@ class Admin(MixinMeta):
         downvoters_label = _("Downvoters") if downvoter_ids else _("No downvotes yet")
 
         embed = discord.Embed(color=discord.Color.blue(), title=_("Votes for Suggestion #{}").format(number))
-        embed.add_field(name=upvoters_label, value=upvoter_mentions or _("N/A"), inline=False)
-        embed.add_field(name=downvoters_label, value=downvoter_mentions or _("N/A"), inline=False)
+
+        file = None
+        if len(upvoter_mentions) > 1024 or len(downvoter_mentions) > 1024:
+            embed.add_field(name=upvoters_label, value=humanize_number(len(upvoter_ids) or _("N/A")), inline=False)
+            embed.add_field(name=downvoters_label, value=humanize_number(len(upvoter_ids) or _("N/A")), inline=False)
+
+            raw = StringIO()
+            raw.write(_("Upvoters:\n"))
+            for uid in upvoter_ids:
+                member = ctx.guild.get_member(uid)
+                if member:
+                    raw.write(f"{member.name} ({member.id})\n")
+                else:
+                    raw.write(f"LEFT SERVER ({uid})\n")
+
+            raw.write(_("\nDownvoters:\n"))
+            for uid in downvoter_ids:
+                member = ctx.guild.get_member(uid)
+                if member:
+                    raw.write(f"{member.name} ({member.id})\n")
+                else:
+                    raw.write(f"LEFT SERVER ({uid})\n")
+
+            file = text_to_file(raw.getvalue(), filename="votes.txt")
+
+        else:
+            embed.add_field(name=upvoters_label, value=upvoter_mentions or _("N/A"), inline=False)
+            embed.add_field(name=downvoters_label, value=downvoter_mentions or _("N/A"), inline=False)
 
         author = ctx.guild.get_member(suggestion.author_id)
         if author:
@@ -643,4 +672,4 @@ class Admin(MixinMeta):
             user = await self.bot.fetch_user(suggestion.author_id)
             embed.set_footer(text=_("Suggested by {} [No longer in server]").format(f"{user.name} ({user.id})"))
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, file=file)
