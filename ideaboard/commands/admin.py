@@ -597,7 +597,8 @@ class Admin(MixinMeta):
         await self.save()
 
     @commands.hybrid_command(
-        name="viewvotes", description=_("View the current upvoters and downvoters of a suggestion.")
+        name="viewvotes",
+        description=_("View the current upvoters and downvoters of a suggestion."),
     )
     @app_commands.describe(number=_("Suggestion number to view votes for"))
     @commands.guild_only()
