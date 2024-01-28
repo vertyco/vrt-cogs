@@ -107,7 +107,7 @@ class VoteView(discord.ui.View):
                     txt = _("You must be registered in the ArkTools database to make suggestions.")
                     await interaction.response.send_message(txt, ephemeral=True)
                     return False
-                playtime_hours = player.playtime / 3600
+                playtime_hours = player.total_playtime / 3600
                 if playtime_hours < conf.min_playtime_to_vote:
                     await interaction.response.send_message(
                         _("You must have at least {hours} hours of playtime to vote.").format(
