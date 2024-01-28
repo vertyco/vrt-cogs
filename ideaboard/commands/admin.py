@@ -115,6 +115,7 @@ class Admin(MixinMeta):
             "Vote: {0.min_level_to_vote}\n"
             "Suggest: {0.min_level_to_suggest}"
         ).format(conf)
+        embed.add_field(name=name, value=value, inline=False)
 
         if self.bot.user.id in [
             770755544448499744,  # Autto
@@ -127,6 +128,7 @@ class Admin(MixinMeta):
                 "Vote: {0.min_playtime_to_vote} hours\n"
                 "Suggest: {0.min_playtime_to_suggest} hours"
             ).format(conf)
+            embed.add_field(name=name, value=value, inline=False)
         await ctx.send(embed=embed)
 
     @ideaset.command(name="channel")

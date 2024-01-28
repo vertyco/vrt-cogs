@@ -18,7 +18,7 @@ class IdeaBoard(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Share Ideas and Suggestions"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.2a"
+    __version__ = "0.0.3a"
 
     def __init__(self, bot: Red):
         super().__init__()
