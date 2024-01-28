@@ -104,7 +104,10 @@ class VoteView(discord.ui.View):
                 arktools = self.bot.get_cog("ArkTools")
                 player = await arktools.db_utils.search_player_cached(self.guild, interaction.user)
                 if not player:
-                    txt = _("You must be registered in the ArkTools database to make suggestions.")
+                    prefixes = await self.bot.get_valid_prefixes()
+                    prefix = prefixes[0]
+                    txt = _("Your in-game profile must be registered in order to vote on suggestions.\n")
+                    txt += _("Use the {} command to link your discord account.").format(f"`{prefix}register`")
                     await interaction.response.send_message(txt, ephemeral=True)
                     return False
                 playtime_hours = player.total_playtime / 3600
