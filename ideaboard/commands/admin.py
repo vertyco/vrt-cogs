@@ -346,7 +346,7 @@ class Admin(MixinMeta):
         )
         await self.save()
 
-    @ideaset.command(name="minplaytime", hidden=True)
+    @ideaset.command(name="minplaytime")
     async def set_min_playtime(self, ctx: commands.Context, to_vote: int, to_suggest: int):
         """
         Set the ArkTools integration minimum playtime required to vote and suggest.
@@ -355,6 +355,13 @@ class Admin(MixinMeta):
             to_vote: Minimum playtime in hours required to vote.
             to_suggest: Minimum playtime in hours required to suggest.
         """
+        if self.bot.user.id not in [
+            770755544448499744,  # Autto
+            859930241119289345,  # VrtDev
+            857070505294430218,  # Arkon
+        ]:
+            txt = _("This command is only available to Vertyco and Arkon.")
+            return await ctx.send(txt)
         if not self.bot.get_cog("ArkTools"):
             txt = _("ArkTools is not loaded. Please load it and try again.")
             return await ctx.send(txt)
