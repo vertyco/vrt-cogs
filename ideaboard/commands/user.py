@@ -72,7 +72,7 @@ class User(MixinMeta):
 
         # Check join time
         if conf.min_join_time_to_suggest:
-            join_age = (datetime.utcnow() - ctx.author.joined_at).total_seconds() / 3600
+            join_age = (datetime.now().astimezone() - ctx.author.joined_at).total_seconds() / 3600
             if join_age < conf.min_join_time_to_suggest:
                 return await resp(_("You haven't been in the server long enough to make suggestions."))
 
