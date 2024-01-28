@@ -487,6 +487,8 @@ class Admin(MixinMeta):
 
         del conf.suggestions[number]
 
+        await ctx.send(_("Suggestion #{} has been approved.").format(number))
+
         await self.save()
 
     @commands.hybrid_command(name="reject", description=_("Reject a suggestion."))
@@ -595,6 +597,8 @@ class Admin(MixinMeta):
                 pass
 
         del conf.suggestions[number]
+
+        await ctx.send(_("Suggestion #{} has been rejected.").format(number))
 
         await self.save()
 
