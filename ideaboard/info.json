@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Allow users to create suggestions for your server. With optional anonymity and customization.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store suggestion text, only the user id's who are making the suggestions and voters.",
+  "hidden": false,
+  "install_msg": "Thank you for installing! Type `[p]help IdeaBoard` to see all commands for this cog.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["pydantic"],
+  "short": "Make suggestions and share ideas anonymously.",
+  "tags": [],
+  "type": "COG"
+}
