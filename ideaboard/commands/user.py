@@ -123,9 +123,15 @@ class User(MixinMeta):
         except Exception as e:
             log.exception(f"Failed to check ArkTools requirement in {ctx.guild.name}", exc_info=e)
 
+        # Check if user has an approver role
+        is_approver = False
+        if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
+            is_approver = True
+
         # Check cooldowns
         profile = conf.get_profile(ctx.author)
-        if profile.last_suggestion:
+        if profile.last_suggestion and not is_approver:
+            # Cooldown only applies to non approvers
             delta = datetime.now() - profile.last_suggestion
             cooldown = conf.base_cooldown
             # Check role cooldowns, use the lowest cooldown of all roles the user has

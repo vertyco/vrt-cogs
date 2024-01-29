@@ -54,7 +54,7 @@ class GuildSettings(Base):
     # Roles required to approve suggestions
     approvers: list[int] = []
 
-    # Voting blacklists
+    # Voting/Suggesting blacklists
     role_blacklist: list[int] = []
     user_blacklist: list[int] = []
 
