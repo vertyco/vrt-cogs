@@ -398,7 +398,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.approvers:
             txt = _("No approvers have been set! Use the {} command to add one.").format(
-                f"`{ctx.clean_prefix}approverole @role`"
+                f"`{ctx.clean_prefix}ideaset approverole @role`"
             )
             return await ctx.send(txt)
         if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
@@ -509,7 +509,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.approvers:
             txt = _("No approvers have been set! Use the {} command to add one.").format(
-                f"`{ctx.clean_prefix}approverole @role`"
+                f"`{ctx.clean_prefix}ideaset approverole @role`"
             )
             return await ctx.send(txt)
         if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
@@ -625,7 +625,7 @@ class Admin(MixinMeta):
 
         if not conf.approvers:
             txt = _("No approvers have been set! Use the {} command to add one.").format(
-                f"`{ctx.clean_prefix}approverole @role`"
+                f"`{ctx.clean_prefix}ideaset approverole @role`"
             )
             return await ctx.send(txt)
 
