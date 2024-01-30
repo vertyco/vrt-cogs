@@ -151,7 +151,7 @@ SEARCH_MEMORIES = {
         "properties": {
             "search_query": {
                 "type": "string",
-                "description": "the keyword or query you want to find information about",
+                "description": "a sentence or phrase that describes what you are looking for, this should be as specific as possible, it will be tokenized to find the best match with related embeddings.",
             },
             "amount": {
                 "type": "integer",
