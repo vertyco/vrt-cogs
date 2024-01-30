@@ -108,6 +108,7 @@ class AssistantFunctions(MixinMeta):
         conf.embeddings[memory_name].text = memory_text
         conf.embeddings[memory_name].embedding = embedding
         conf.embeddings[memory_name].update()
+        conf.embeddings[memory_name].model = conf.embed_model
         asyncio.create_task(self.save_conf())
         return "Your memory has been updated!"
 

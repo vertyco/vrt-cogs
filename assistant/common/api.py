@@ -235,12 +235,13 @@ class API(MixinMeta):
         async def update_embedding(name: str, text: str):
             conf.embeddings[name].embedding = await self.request_embedding(text, conf)
             conf.embeddings[name].update()
+            conf.embeddings[name].model = conf.embed_model
             log.debug(f"Updated embedding: {name}")
 
         synced = 0
         tasks = []
         for name, em in conf.embeddings.items():
-            if len(em.embedding) != len(sample_embed):
+            if conf.embed_model != em.model or len(em.embedding) != len(sample_embed):
                 synced += 1
                 tasks.append(update_embedding(name, em.text))
 
@@ -598,12 +599,14 @@ class API(MixinMeta):
                     "`Tokens:     `{}\n"
                     "`Dimensions: `{}\n"
                     "`AI Created: `{}\n"
+                    "`Model:      `{}\n"
                 ).format(
                     embedding.created_at(),
                     embedding.modified_at(relative=True),
                     tokens,
                     len(embedding.embedding),
                     embedding.ai_created,
+                    conf.embed_model,
                 )
                 val += text
                 fieldname = f"➣ {name}" if place == num else name

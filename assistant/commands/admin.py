@@ -1188,7 +1188,7 @@ class Admin(MixinMeta):
                 await ctx.send(_("Failed to process embedding: `{}`").format(name))
                 continue
 
-            conf.embeddings[name] = Embedding(text=text, embedding=query_embedding)
+            conf.embeddings[name] = Embedding(text=text, embedding=query_embedding, model=conf.embed_model)
             imported += 1
         await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
         await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
@@ -1318,6 +1318,7 @@ class Admin(MixinMeta):
                     embedding=query_embedding,
                     ai_created=row["ai_created"],
                     created=created_tz,
+                    model=conf.embed_model,
                 )
                 imported += 1
 

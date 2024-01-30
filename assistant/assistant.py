@@ -54,7 +54,7 @@ class Assistant(
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "6.0.4"
+    __version__ = "6.0.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -246,7 +246,7 @@ class Assistant(
         embedding = await self.request_embedding(text, conf)
         if not embedding:
             return None
-        conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created)
+        conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created, model=conf.embed_model)
         asyncio.create_task(self.save_conf())
         return embedding
 
