@@ -106,7 +106,8 @@ class Admin(MixinMeta):
             + _("`Channel:             `{}\n").format(channel)
             + _("`? Required:          `{}\n").format(conf.endswith_questionmark)
             + _("`Question Mode:       `{}\n").format(conf.question_mode)
-            + _("`Mentions:            `{}\n").format(conf.mention)
+            + _("`Mention on Reply:    `{}\n").format(conf.mention)
+            + _("`Respond to Mentions: `{}\n").format(conf.mention_respond)
             + _("`Collaborative Mode:  `{}\n").format(conf.collab_convos)
             + _("`Max Retention:       `{}\n").format(conf.max_retention)
             + _("`Retention Expire:    `{}s\n").format(conf.max_retention_time)
@@ -642,6 +643,18 @@ class Admin(MixinMeta):
         else:
             conf.endswith_questionmark = True
             await ctx.send(_("Questions must end in **?** to be answered"))
+        await self.save_conf()
+
+    @assistant.command(name="mentionrespond")
+    async def toggle_mentionrespond(self, ctx: commands.Context):
+        """Toggle whether the bot responds to mentions in any channel"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.mention_respond:
+            conf.mention_respond = False
+            await ctx.send(_("The bot will no longer respond to mentions"))
+        else:
+            conf.mention_respond = True
+            await ctx.send(_("The bot will now respond to mentions"))
         await self.save_conf()
 
     @assistant.command(name="toggle")
