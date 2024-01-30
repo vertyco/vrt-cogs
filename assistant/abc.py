@@ -62,38 +62,23 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def count_payload_tokens(
-        self,
-        messages: List[dict],
-        conf: GuildSettings,
-        model: str = "gpt-3.5-turbo-0613",
-    ):
+    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-3.5-turbo"):
         raise NotImplementedError
 
     @abstractmethod
-    async def count_function_tokens(
-        self,
-        functions: List[dict],
-        conf: GuildSettings,
-        model: str = "gpt-3.5-turbo-0613",
-    ):
+    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-3.5-turbo613"):
         raise NotImplementedError
 
     @abstractmethod
-    async def count_tokens(self, text: str, conf: GuildSettings, model: str) -> int:
+    async def count_tokens(self, text: str, model: str) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_tokens(
-        self,
-        text: str,
-        conf: GuildSettings,
-        model: str = "gpt-3.5-turbo-0613",
-    ) -> list:
+    async def get_tokens(self, text: str, model: str = "gpt-3.5-turbo") -> list:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_text(self, tokens: list, conf: GuildSettings) -> str:
+    async def get_text(self, tokens: list, model: str = "gpt-3.5-turbo") -> str:
         raise NotImplementedError
 
     @abstractmethod

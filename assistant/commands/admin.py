@@ -28,8 +28,7 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.calls import request_model
-from ..common.constants import CHAT, COMPLETION, MODELS, PRICES
+from ..common.constants import MODELS, PRICES
 from ..common.models import DB, Embedding
 from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
@@ -48,8 +47,6 @@ class Admin(MixinMeta):
         Setup the assistant
 
         You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.
-
-        This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.
         """
         pass
 
@@ -90,41 +87,20 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         channel = f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set")
         model = conf.get_user_model(ctx.author)
-        system_tokens = await self.count_tokens(conf.system_prompt, conf, model) if conf.system_prompt else 0
-        prompt_tokens = await self.count_tokens(conf.prompt, conf, model) if conf.prompt else 0
+        system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
+        prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
 
         func_list, __ = self.db.prep_functions(self.bot, conf, self.registry)
-        func_tokens = await self.count_function_tokens(func_list, conf, model)
+        func_tokens = await self.count_function_tokens(func_list, model)
         func_count = len(func_list)
-
-        model_text = conf.model
-        endpoint = conf.endpoint_override or self.db.endpoint_override
-        if not conf.api_key and conf.endpoint_override:
-            try:
-                res = await request_model(f"{endpoint}/model")
-                model = res["model"]
-                model_text = f"{model} ({conf.endpoint_override})"
-            except Exception as e:  # Could be any issue, don't worry about it here
-                log.warning("Could not fetch external model", exc_info=e)
-                pass
-        elif not conf.api_key and self.db.endpoint_override:
-            try:
-                res = await request_model(f"{endpoint}/model")
-                model = res["model"]
-                if ctx.author.id in self.bot.owner_ids:
-                    model_text = f"{model} ({self.db.endpoint_override})"
-                else:
-                    model_text = _("{} (Global Override)").format(model)
-            except Exception as e:  # Could be any issue, don't worry about it here
-                log.warning("Could not fetch external model", exc_info=e)
-                pass
 
         status = await self.openai_status()
 
         desc = (
             _("`OpenAI Version:      `{}\n").format(openai.VERSION)
             + _("`OpenAI API Status:   `{}\n").format(status)
-            + _("`Model:               `{}\n").format(model_text)
+            + _("`Model:               `{}\n").format(conf.model)
+            + _("`Embed Model:         `{}\n").format(conf.embed_model)
             + _("`Enabled:             `{}\n").format(conf.enabled)
             + _("`Timezone:            `{}\n").format(conf.timezone)
             + _("`Channel:             `{}\n").format(channel)
@@ -421,8 +397,6 @@ class Admin(MixinMeta):
     async def set_openai_key(self, ctx: commands.Context):
         """
         Set your OpenAI key
-
-        Setting this will disable any endpoint overrides you have for this server.
         """
         conf = self.db.get_conf(ctx.guild)
 
@@ -510,8 +484,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(prompt, conf, model) if prompt else 0
-        stokens = await self.count_tokens(conf.system_prompt, conf, model) if conf.system_prompt else 0
+        ptokens = await self.count_tokens(prompt, model) if prompt else 0
+        stokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
         if combined >= max_tokens:
@@ -590,8 +564,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(conf.prompt, conf, model) if conf.prompt else 0
-        stokens = await self.count_tokens(system_prompt, conf, model) if system_prompt else 0
+        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
 
         combined = ptokens + stokens
         max_tokens = round(conf.max_tokens * 0.9)
@@ -817,12 +791,12 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send(_("The seed has been set to **{}**").format(seed))
 
-    @assistant.command(name="refreshembeds", aliases=["refreshembeddings"])
+    @assistant.command(name="refreshembeds", aliases=["refreshembeddings", "syncembeds", "syncembeddings"])
     async def refresh_embeddings(self, ctx: commands.Context):
         """
         Refresh embedding weights
 
-        *This command can be used when changing the embedding method you use with your self-hosted llm*
+        *This command can be used when changing the embedding model*
 
         Embeddings that were created using OpenAI cannot be use with the self-hosted model and vice versa
         """
@@ -948,10 +922,11 @@ class Admin(MixinMeta):
         if not await self.can_call_llm(conf, ctx):
             return
 
-        valid = _("**Chat**\n{}\n**Completion**\n{}\n").format(box(humanize_list(CHAT)), box(humanize_list(COMPLETION)))
-
         if not model:
-            return await ctx.send(_("Valid models are:\n{}").format(valid))
+            valid = [i for i in MODELS]
+            humanized = humanize_list(valid)
+            formatted = box(humanized)
+            return await ctx.send(_("Valid models are:\n{}").format(formatted))
 
         if conf.api_key:
             try:
@@ -965,53 +940,23 @@ class Admin(MixinMeta):
         await ctx.send(_("The **{}** model will now be used").format(model))
         await self.save_conf()
 
-    @assistant.command(name="endpoint")
-    async def set_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
-        """
-        Set a custom endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api)
-
-        Example: `http://localhost:8000/v1`
-
-        Endpoint overrides will not be used if there is an API key set.
-        """
-        if endpoint and not endpoint.lower().startswith("http"):
-            return await ctx.send(_("Invalid URL, must start with `http`"))
+    @assistant.command(name="embedmodel")
+    async def set_embedding_model(self, ctx: commands.Context, model: str = None):
+        """Set the OpenAI Embedding model to use"""
+        model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)
-        if conf.endpoint_override and not endpoint:
-            conf.endpoint_override = None
-            await ctx.send(_("Endpoint has been reset!"))
-        elif conf.endpoint_override and endpoint:
-            conf.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been overwritten!"))
-        elif not conf.endpoint_override and endpoint:
-            conf.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been set!"))
-        else:
-            return await ctx.send_help()
-        await self.save_conf()
+        if not await self.can_call_llm(conf, ctx):
+            return
 
-    @assistant.command(name="globalendpoint")
-    async def set_global_endpoint_override(self, ctx: commands.Context, endpoint: str = None):
-        """
-        Set a custom global endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api) for all guilds as a fallback
-
-        Example: `http://localhost:8000/v1`
-
-        Endpoint overrides will not be used if there is an API key set.
-        """
-        if endpoint and not endpoint.lower().startswith("http"):
-            return await ctx.send(_("Invalid URL, must start with `http`"))
-        if self.db.endpoint_override and not endpoint:
-            self.db.endpoint_override = None
-            await ctx.send(_("Endpoint has been reset!"))
-        elif self.db.endpoint_override and endpoint:
-            self.db.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been overwritten!"))
-        elif not self.db.endpoint_override and endpoint:
-            self.db.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been set!"))
-        else:
-            return await ctx.send_help()
+        valid = [
+            "text-embedding-ada-002",
+            "text-embedding-3-small",
+            "text-embedding-3-large",
+        ]
+        if not model or model not in valid:
+            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
+        conf.embed_model = model
+        await ctx.send(_("The **{}** model will now be used for embeddings").format(model))
         await self.save_conf()
 
     @assistant.command(name="resetembeddings")
@@ -1696,10 +1641,8 @@ class Admin(MixinMeta):
         if not await self.can_call_llm(conf, ctx):
             return
 
-        valid = _("**Chat**\n{}\n**Completion**\n{}\n").format(box(humanize_list(CHAT)), box(humanize_list(COMPLETION)))
-
         if not model:
-            return await ctx.send(_("Valid models are:\n{}").format(valid))
+            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys)))))
 
         if conf.api_key:
             try:

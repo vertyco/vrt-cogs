@@ -29,7 +29,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number, pagify, text
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
-from .constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_VISION
+from .constants import READ_EXTENSIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
 from .utils import (
     clean_name,
@@ -123,6 +123,9 @@ class ChatHandler(MixinMeta):
             else:
                 question += f"\n\n### Uploaded File ({i.filename}):\n{text}\n"
 
+        mem_id = message.channel.id if conf.collab_convos else message.author.id
+        conversation = self.db.get_conversation(mem_id, message.channel.id, message.guild.id)
+
         # If referencing a message that isnt part of the user's conversation, include the context
         if hasattr(message, "reference") and message.reference:
             ref = message.reference.resolved
@@ -136,14 +139,9 @@ class ChatHandler(MixinMeta):
                         include = False
 
                 if include:
-                    question = (
-                        f"{ref.author.name} said: {ref.content}\n\n"
-                        f"{message.author.name} replying to {ref.author.name}: {question}"
-                    )
+                    question = f"# {ref.author.name} SAID:\n{ref.content}\n\n" f"# REPLY\n{question}"
 
         if get_last_message:
-            mem_id = message.channel.id if conf.collab_convos else message.author.id
-            conversation = self.db.get_conversation(mem_id, message.channel.id, message.guild.id)
             reply = conversation.messages[-1]["content"] if conversation.messages else _("No message history!")
         else:
             try:
@@ -159,7 +157,7 @@ class ChatHandler(MixinMeta):
             except openai.InternalServerError:
                 reply = _("The server had an error processing your request! Please try again later.")
             except openai.APIConnectionError as e:
-                reply = _("Failed to communicate with endpoint!")
+                reply = _("Failed to communicate with API!")
                 log.error(f"APIConnectionError (From listener: {listener})", exc_info=e)
             except openai.AuthenticationError:
                 if message.author == message.guild.owner:
@@ -237,7 +235,7 @@ class ChatHandler(MixinMeta):
         functions = function_calls.copy() if function_calls else []
         mapping = function_map.copy() if function_map else {}
 
-        if conf.use_function_calls and extend_function_calls and conf.model in SUPPORTS_FUNCTIONS:
+        if conf.use_function_calls and extend_function_calls:
             # Prepare registry and custom functions
             prepped_function_calls, prepped_function_map = self.db.prep_functions(
                 bot=self.bot, conf=conf, registry=self.registry
@@ -299,7 +297,7 @@ class ChatHandler(MixinMeta):
         model = conf.get_user_model(user)
 
         # Determine if we should embed the user's message
-        message_tokens = await self.count_tokens(message, conf, model)
+        message_tokens = await self.count_tokens(message, model)
         words = message.split(" ")
         get_embed_conditions = [
             conf.embeddings,  # We actually have embeddings to compare with
@@ -342,6 +340,9 @@ class ChatHandler(MixinMeta):
         if "search_memories" in function_map and not conf.embeddings:
             function_calls = [i for i in function_calls if i["name"] != "search_memories"]
             del function_map["search_memories"]
+        if "list_memories" in function_map and not conf.embeddings:
+            function_calls = [i for i in function_calls if i["name"] != "list_memories"]
+            del function_map["list_memories"]
 
         max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(
@@ -444,17 +445,29 @@ class ChatHandler(MixinMeta):
 
                 if function_name not in function_map:
                     log.error(f"GPT suggested a function not provided: {function_name}")
-                    e = {"role": "system", "content": f"{function_name} is not a valid function name"}
-                    messages.insert(0, e)
-                    conversation.messages.insert(0, e)
+                    e = {
+                        "role": role,
+                        "name": function_name,
+                        "content": f"{function_name} is not a valid function name",
+                    }
+                    if tool_id:
+                        e["tool_call_id"] = tool_id
+                    messages.append(e)
+                    conversation.messages.append(e)
+                    # Remove the function call from the list
+                    function_calls = [i for i in function_calls if i["name"] != function_name]
                     continue
 
-                try:
-                    args = json.loads(arguments)
-                    parse_success = True
-                except json.JSONDecodeError:
-                    parse_success = False
+                if arguments != "{}":
+                    try:
+                        args = json.loads(arguments)
+                        parse_success = True
+                    except json.JSONDecodeError:
+                        args = {}
+                        parse_success = False
+                else:
                     args = {}
+                    parse_success = True
 
                 if parse_success:
                     extras = {
@@ -597,9 +610,9 @@ class ChatHandler(MixinMeta):
         system_prompt = format_string(conversation.system_prompt_override or conf.system_prompt)
         initial_prompt = format_string(conf.prompt)
         model = conf.get_user_model(author)
-        current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, conf, model)
-        current_tokens += await self.count_payload_tokens(conversation.messages, conf, model)
-        current_tokens += await self.count_function_tokens(function_calls, conf, model)
+        current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, model)
+        current_tokens += await self.count_payload_tokens(conversation.messages, model)
+        current_tokens += await self.count_function_tokens(function_calls, model)
 
         max_tokens = self.get_max_tokens(conf, author)
 
@@ -608,7 +621,7 @@ class ChatHandler(MixinMeta):
         embeddings = []
         # Get related embeddings (Name, text, score, dimensions)
         for i in related:
-            embed_tokens = await self.count_tokens(i[1], conf, model)
+            embed_tokens = await self.count_tokens(i[1], model)
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
