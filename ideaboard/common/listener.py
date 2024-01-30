@@ -36,6 +36,6 @@ class AssistantListener(MixinMeta):
             f"Total upvotes: {profile.upvotes}\n"
             f"Total downvotes: {profile.downvotes}\n"
             f"Suggestions user voted on that won in their favor: {profile.wins}\n"
-            f"Suggestions user voted on that lost in their favor: {profile.losses}\n"
+            f"Suggestions user voted on that did not go in their favor: {profile.losses}\n"
         )
         return txt
