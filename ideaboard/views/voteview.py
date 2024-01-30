@@ -26,9 +26,7 @@ class VoteView(discord.ui.View):
         self.guild = guild
         self.suggestion_number = suggestion_number
 
-        self.conf = cog.db.get_conf(guild)
-
-        up, down = self.conf.get_emojis(cog.bot)
+        up, down = cog.db.get_conf(guild).get_emojis(cog.bot)
         self.upvote.emoji = up
         self.upvote.custom_id = f"upvote_{suggestion_id}"
         self.downvote.emoji = down
@@ -37,9 +35,10 @@ class VoteView(discord.ui.View):
         self.update_labels()
 
     def update_labels(self):
-        if not self.conf.show_vote_counts:
+        conf = self.cog.db.get_conf(self.guild)
+        if not conf.show_vote_counts:
             return
-        if suggestion := self.conf.suggestions.get(self.suggestion_number):
+        if suggestion := conf.suggestions.get(self.suggestion_number):
             if upvotes := len(suggestion.upvotes):
                 self.upvote.label = str(upvotes)
             else:
@@ -173,7 +172,7 @@ class VoteView(discord.ui.View):
         )
         await interaction.followup.send(txt, ephemeral=True)
 
-        if self.conf.show_vote_counts:
+        if conf.show_vote_counts:
             self.update_labels()
             await interaction.message.edit(view=self)
 
@@ -210,7 +209,7 @@ class VoteView(discord.ui.View):
         )
         await interaction.followup.send(txt, ephemeral=True)
 
-        if self.conf.show_vote_counts:
+        if conf.show_vote_counts:
             self.update_labels()
             await interaction.message.edit(view=self)
 
