@@ -163,13 +163,10 @@ class VoteView(discord.ui.View):
             suggestion.upvotes.remove(uid)
             profile.upvotes -= 1
         else:
-            txt = _("You have upvoted this suggestion.\n")
+            txt = _("You have upvoted this suggestion.")
             suggestion.upvotes.append(uid)
             profile.upvotes += 1
 
-        txt += _("There are now {upvotes} upvotes and {downvotes} downvotes.").format(
-            upvotes=len(suggestion.upvotes), downvotes=len(suggestion.downvotes)
-        )
         await interaction.followup.send(txt, ephemeral=True)
 
         if conf.show_vote_counts:
@@ -190,23 +187,20 @@ class VoteView(discord.ui.View):
         suggestion = conf.suggestions[self.suggestion_number]
         uid = interaction.user.id
         if uid in suggestion.upvotes:
-            txt = _("You have switched your upvote to a downvote.\n")
+            txt = _("You have switched your upvote to a downvote.")
             suggestion.upvotes.remove(uid)
             suggestion.downvotes.append(uid)
             profile.upvotes -= 1
             profile.downvotes += 1
         elif uid in suggestion.downvotes:
-            txt = _("You have removed your downvote.\n")
+            txt = _("You have removed your downvote.")
             suggestion.downvotes.remove(uid)
             profile.downvotes -= 1
         else:
-            txt = _("You have downvoted this suggestion.\n")
+            txt = _("You have downvoted this suggestion.")
             suggestion.downvotes.append(uid)
             profile.downvotes += 1
 
-        txt += _("There are now {upvotes} upvotes and {downvotes} downvotes.").format(
-            upvotes=len(suggestion.upvotes), downvotes=len(suggestion.downvotes)
-        )
         await interaction.followup.send(txt, ephemeral=True)
 
         if conf.show_vote_counts:
