@@ -40,6 +40,7 @@ class Embedding(AssistantBaseModel):
     ai_created: bool = False
     created: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     modified: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    model: str = "text-embedding-ada-002"
 
     def created_at(self, relative: bool = False):
         t_type = "R" if relative else "F"
