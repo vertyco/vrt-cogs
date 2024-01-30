@@ -23,7 +23,7 @@ class User(MixinMeta):
     @commands.hybrid_command(name="idea", aliases=["suggest"], description=_("Share an idea/make a suggestion."))
     @app_commands.describe(content="Your idea or suggestion")
     @commands.guild_only()
-    @commands.bot_has_permissions(manage_messages=True)
+    @commands.bot_has_guild_permissions(send_messages=True, embed_links=True)
     async def idea(self, ctx: commands.Context, *, content: str):
         """Share an idea/make a suggestion."""
 
