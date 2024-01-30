@@ -68,7 +68,7 @@ class Assistant(
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bot = bot
+        self.bot: Red = bot
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         self.config.register_global(db={})
         self.db: DB = DB()

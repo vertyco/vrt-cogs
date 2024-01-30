@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import traceback
-from io import BytesIO
+from io import StringIO
 
 import discord
 from redbot.core import commands
@@ -349,14 +349,17 @@ If a file has no extension it will still try to read it only if it can be decode
         if not conversation.messages:
             return await ctx.send(_("You have no conversation in this channel!"))
 
-        text = ""
-        for message in conversation.messages:
-            text += f"{json.dumps(message, indent=2)}\n"
+        if await self.bot.is_mod(user) or user.id in self.bot.owner_ids:
+            dump = json.dumps(conversation.messages, indent=2)
+            file = text_to_file(dump, "conversation.json")
+        else:
+            buffer = StringIO()
+            for message in conversation.messages:
+                name = message.get("name", message["role"])
+                content = message["content"]
+                buffer.write(f"{name}: {content}\n")
+            file = text_to_file(buffer.getvalue(), "conversation.txt")
 
-        buffer = BytesIO(text.encode())
-        buffer.name = f"{ctx.author.name}_transcript.txt"
-        buffer.seek(0)
-        file = discord.File(buffer)
         await ctx.send(_("Here is your conversation transcript!"), file=file)
 
     @commands.command(name="query")
