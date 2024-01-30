@@ -125,7 +125,7 @@ class User(MixinMeta):
 
         # Check if user has an approver role
         is_approver = False
-        if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
+        if any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
             is_approver = True
 
         # Check cooldowns

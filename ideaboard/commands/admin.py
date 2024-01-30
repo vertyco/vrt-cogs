@@ -44,6 +44,7 @@ class Admin(MixinMeta):
             "`DM Result:        `{}\n"
             "`Upvote Emoji:     `{}\n"
             "`Downvote Emoji:   `{}\n"
+            "`Show Vote Counts: `{}\n"
             "`Suggestions:      `{}\n"
             "`Suggestion #:     `{}\n"
         ).format(
@@ -55,6 +56,7 @@ class Admin(MixinMeta):
             conf.dm,
             up,
             down,
+            conf.show_vote_counts,
             len(conf.suggestions),
             conf.counter,
         )
@@ -163,6 +165,15 @@ class Admin(MixinMeta):
         conf.reveal = not conf.reveal
         state = "enabled" if conf.reveal else "disabled"
         await ctx.send(_("Revealing of authors on approval is now {}.").format(state))
+        await self.save()
+
+    @ideaset.command(name="togglevotecount", aliases=["votecount"])
+    async def toggle_vote_count(self, ctx: commands.Context):
+        """Toggle showing vote counts on suggestions"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.show_vote_counts = not conf.show_vote_counts
+        state = "enabled" if conf.show_vote_counts else "disabled"
+        await ctx.send(_("Showing vote counts on suggestions is now {}.").format(state))
         await self.save()
 
     @ideaset.command(name="toggledm", aliases=["dm"])
@@ -629,8 +640,8 @@ class Admin(MixinMeta):
         upvoter_mentions = ", ".join(f"<@{uid}>" for uid in upvoter_ids)
         downvoter_mentions = ", ".join(f"<@{uid}>" for uid in downvoter_ids)
 
-        upvoters_label = _("Upvoters") if upvoter_ids else _("No upvotes yet")
-        downvoters_label = _("Downvoters") if downvoter_ids else _("No downvotes yet")
+        upvoters_label = _("Upvoters ({})").format(len(upvoter_ids)) if upvoter_ids else _("No upvotes yet")
+        downvoters_label = _("Downvoters ({})").format(len(downvoter_ids)) if downvoter_ids else _("No downvotes yet")
 
         embed = discord.Embed(color=discord.Color.blue(), title=_("Votes for Suggestion #{}").format(number))
 
@@ -640,7 +651,7 @@ class Admin(MixinMeta):
             embed.add_field(name=downvoters_label, value=humanize_number(len(upvoter_ids) or _("N/A")), inline=False)
 
             raw = StringIO()
-            raw.write(_("Upvoters:\n"))
+            raw.write(_("Upvoters ({}):\n").format(len(upvoter_ids)))
             for uid in upvoter_ids:
                 member = ctx.guild.get_member(uid)
                 if member:
@@ -648,7 +659,7 @@ class Admin(MixinMeta):
                 else:
                     raw.write(f"LEFT SERVER ({uid})\n")
 
-            raw.write(_("\nDownvoters:\n"))
+            raw.write(_("\nDownvoters ({}):\n").format(len(downvoter_ids)))
             for uid in downvoter_ids:
                 member = ctx.guild.get_member(uid)
                 if member:
