@@ -344,6 +344,11 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "list_memories"]
             del function_map["list_memories"]
 
+        # Remove request_training if no training channel is set
+        if "request_training" in function_map and not conf.training_channel:
+            function_calls = [i for i in function_calls if i["name"] != "request_training"]
+            del function_map["request_training"]
+
         max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(
             message,

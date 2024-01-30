@@ -6,7 +6,7 @@ import discord
 from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
-from .models import EmbeddingEntryExists
+from .models import EmbeddingEntryExists, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
@@ -16,6 +16,7 @@ _ = Translator("Assistant", __file__)
 class AssistantFunctions(MixinMeta):
     async def create_memory(
         self,
+        conf: GuildSettings,
         guild: discord.Guild,
         user: discord.Member,
         memory_name: str,
@@ -23,9 +24,9 @@ class AssistantFunctions(MixinMeta):
         *args,
         **kwargs,
     ):
+        """Create an embedding"""
         if len(memory_name) > 100:
             return "Error: memory_name should be 100 characters or less!"
-        conf = self.db.get_conf(guild)
         if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
             return f"User {user.display_name} is not recognized as a tutor!"
         try:
@@ -44,12 +45,13 @@ class AssistantFunctions(MixinMeta):
 
     async def search_memories(
         self,
-        guild: discord.Guild,
+        conf: GuildSettings,
         search_query: str,
         amount: int = 2,
         *args,
         **kwargs,
     ):
+        """Search for an embedding"""
         try:
             amount = int(amount)
         except ValueError:
@@ -57,7 +59,6 @@ class AssistantFunctions(MixinMeta):
         if amount < 1:
             return "Amount needs to be more than 1"
 
-        conf = self.db.get_conf(guild)
         if not conf.embeddings:
             return "There are no memories saved!"
 
@@ -87,14 +88,14 @@ class AssistantFunctions(MixinMeta):
 
     async def edit_memory(
         self,
-        guild: discord.Guild,
+        conf: GuildSettings,
         user: discord.Member,
         memory_name: str,
         memory_text: str,
         *args,
         **kwargs,
     ):
-        conf = self.db.get_conf(guild)
+        """Edit an embedding"""
         if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
             return f"User {user.display_name} is not recognized as a tutor!"
 
@@ -112,12 +113,32 @@ class AssistantFunctions(MixinMeta):
 
     async def list_memories(
         self,
-        guild: discord.Guild,
+        conf: GuildSettings,
         *args,
         **kwargs,
     ):
-        conf = self.db.get_conf(guild)
+        """List all embeddings"""
         if not conf.embeddings:
             return "You have no memories available!"
         joined = "\n".join([i for i in conf.embeddings])
         return joined
+
+    async def ask_for_training(
+        self,
+        conf: GuildSettings,
+        guild: discord.Guild,
+        message: str,
+        *args,
+        **kwargs,
+    ):
+        if not conf.training_channel:
+            return "No training channel is set!"
+        channel = guild.get_channel(conf.training_channel)
+        if not channel:
+            return "The training channel no longer exists!"
+        roles = [guild.get_role(role) for role in conf.tutors if guild.get_role(role)]
+        pings = [role.mention for role in roles if role.mention]
+        pings = " ".join(pings) if pings else ""
+        mentions = discord.AllowedMentions(roles=True)
+        await channel.send(f"{pings}\n{message}".strip(), allowed_mentions=mentions)
+        return "Your training request has been sent!"
