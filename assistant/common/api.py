@@ -207,7 +207,6 @@ class API(MixinMeta):
     async def count_tokens(self, text: str, model: str) -> int:
         if not text:
             log.debug("No text to get token count from!")
-            # raise Exception("No text to get token count from!")
             return 0
         tokens = await self.get_tokens(text, model)
         return len(tokens)
