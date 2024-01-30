@@ -123,7 +123,7 @@ class AssistantFunctions(MixinMeta):
         joined = "\n".join([i for i in conf.embeddings])
         return joined
 
-    async def ask_for_training(
+    async def request_training(
         self,
         conf: GuildSettings,
         guild: discord.Guild,
