@@ -82,6 +82,7 @@ class GuildSettings(AssistantBaseModel):
     usage: Dict[str, Usage] = {}
     blacklist: List[int] = []  # Channel/Role/User IDs
     tutors: List[int] = []  # Role or user IDs
+    training_channel: int = 0  # Model will ask for training data here
     top_n: int = 3
     min_relatedness: float = 0.78
     embed_method: str = "dynamic"  # hybrid, dynamic, static
@@ -120,7 +121,7 @@ class GuildSettings(AssistantBaseModel):
     image_size: ImageSize = ImageSize.LARGE
 
     use_function_calls: bool = False
-    max_function_calls: int = 10  # Max calls in a row
+    max_function_calls: int = 20  # Max calls in a row
     disabled_functions: List[str] = []
     functions_called: int = 0
 

@@ -85,7 +85,6 @@ class Admin(MixinMeta):
         send_key = [ctx.guild.owner_id == ctx.author.id, ctx.author.id in self.bot.owner_ids]
 
         conf = self.db.get_conf(ctx.guild)
-        channel = f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set")
         model = conf.get_user_model(ctx.author)
         system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
@@ -103,9 +102,12 @@ class Admin(MixinMeta):
             + _("`Embed Model:         `{}\n").format(conf.embed_model)
             + _("`Enabled:             `{}\n").format(conf.enabled)
             + _("`Timezone:            `{}\n").format(conf.timezone)
-            + _("`Channel:             `{}\n").format(channel)
+            + _("`Channel:             `{}\n").format(f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set"))
             + _("`? Required:          `{}\n").format(conf.endswith_questionmark)
             + _("`Question Mode:       `{}\n").format(conf.question_mode)
+            + _("`Training Channel:    `{}\n").format(
+                f"<#{conf.training_channel}>" if conf.training_channel else _("Not Set")
+            )
             + _("`Mention on Reply:    `{}\n").format(conf.mention)
             + _("`Respond to Mentions: `{}\n").format(conf.mention_respond)
             + _("`Collaborative Mode:  `{}\n").format(conf.collab_convos)
@@ -1631,6 +1633,24 @@ class Admin(MixinMeta):
         else:
             conf.tutors.append(role_or_member.id)
             await ctx.send(_("{} has been added to the tutor list").format(role_or_member.name))
+        await self.save_conf()
+
+    @assistant.command(name="trainingchannel")
+    async def training_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
+        """
+        Set the channel for training messages
+
+        If no channel is specified, the channel will be reset
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not channel:
+            conf.training_channel = None
+            await ctx.send(_("Training channel has been reset!"))
+        else:
+            if not channel.permissions_for(ctx.guild.me).send_messages:
+                return await ctx.send(_("I do not have permission to send messages in that channel"))
+            conf.training_channel = channel.id
+            await ctx.send(_("Training channel has been set to {}").format(channel.mention))
         await self.save_conf()
 
     @assistant.group(name="override")

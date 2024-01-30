@@ -3,7 +3,7 @@ import inspect
 import json
 import logging
 from contextlib import suppress
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Tuple
 
 import discord
 import json5
@@ -96,14 +96,15 @@ class EmbeddingModal(discord.ui.Modal):
         self.stop()
 
 
-class EmbeddingSearch(discord.ui.Modal):
-    def __init__(self):
+class SearchModal(discord.ui.Modal):
+    def __init__(self, title: str, current: str = None):
         self.query = None
-        super().__init__(title=_("Search for an embedding"), timeout=120)
+        super().__init__(title=title, timeout=120)
         self.field = discord.ui.TextInput(
             label=_("Search Query"),
             style=discord.TextStyle.short,
             required=True,
+            default=current,
         )
         self.add_item(self.field)
 
@@ -341,25 +342,37 @@ class EmbeddingMenu(discord.ui.View):
     async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.conf.embeddings:
             return await interaction.response.send_message(_("No embeddings to search!"), ephemeral=True)
-        modal = EmbeddingSearch()
+        modal = SearchModal(_("Search for an embedding"))
         await interaction.response.send_modal(modal)
         await modal.wait()
         if modal.query is None:
             return
-
         query = modal.query.lower()
-        sorted_embeddings = sorted(
-            self.conf.embeddings.items(),
-            key=lambda x: fuzz.ratio(query, x[0].lower()),
-            reverse=True,
-        )
-        embedding = sorted_embeddings[0][0]
-        await interaction.followup.send(_("Search result: **{}**").format(embedding), ephemeral=True)
+
+        def _get_matches():
+            matches: List[Tuple[int, int]] = []
+            for name, embedding in self.conf.embeddings.items():
+                if query == name.lower():
+                    matches.append((name, 100))
+                    break
+                if query in embedding.text.lower():
+                    matches.append((name, 98))
+                    continue
+                matches.append((name, fuzz.ratio(query, name.lower())))
+                matches.append((name, fuzz.ratio(query, embedding.text.lower())))
+            if len(matches) > 1:
+                matches.sort(key=lambda x: x[1], reverse=True)
+
+            return matches
+
+        sorted_embeddings = await asyncio.to_thread(_get_matches)
+        embedding_name = sorted_embeddings[0][0]
+        await interaction.followup.send(_("Search result: **{}**").format(embedding_name), ephemeral=True)
         for page_index, embed in enumerate(self.pages):
             found = False
             for place_index, field in enumerate(embed.fields):
                 name = field.name.replace("➣ ", "", 1)
-                if name == embedding:
+                if name == embedding_name:
                     self.page = page_index
                     self.place = place_index
                     found = True
@@ -739,3 +752,49 @@ class CodeMenu(discord.ui.View):
         self.update_button()
         await self.message.edit(view=self)
         await self.save()
+
+    @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="\N{LEFT-POINTING MAGNIFYING GLASS}", row=2)
+    async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = SearchModal(_("Search for a function"))
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if modal.query is None:
+            return
+        if modal.query.isdigit():
+            self.page = int(modal.query) - 1
+            self.page %= len(self.pages)
+            return await self.message.edit(embed=self.pages[self.page], view=self)
+
+        query = modal.query.lower()
+        # Search by
+        # Description
+        # Field 0 (json schema)
+        # Field 1 (code)
+
+        def _get_matches():
+            matches: List[Tuple[int, int]] = []
+            for i, embed in enumerate(self.pages):
+                if query == embed.description.lower():
+                    matches.append((100, i))
+                    break
+                if query in embed.fields[0].value.lower():
+                    matches.append((98, i))
+                    continue
+                if query in embed.fields[1].value.lower():
+                    matches.append((98, i))
+                    continue
+                matches.append((fuzz.ratio(query, embed.description.lower()), i))
+                matches.append((fuzz.ratio(query, embed.fields[0].value.lower()), i))
+                matches.append((fuzz.ratio(query, embed.fields[1].value.lower()), i))
+
+            if len(matches) > 1:
+                matches.sort(key=lambda x: x[0], reverse=True)
+
+            return matches
+
+        sorted_functions = await asyncio.to_thread(_get_matches)
+        best = sorted_functions[0][1]
+
+        self.page = best
+        self.page %= len(self.pages)
+        await self.message.edit(embed=self.pages[self.page], view=self)

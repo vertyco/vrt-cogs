@@ -15,7 +15,13 @@ from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
-from .common.constants import CREATE_MEMORY, EDIT_MEMORY, LIST_MEMORIES, SEARCH_MEMORIES
+from .common.constants import (
+    CREATE_MEMORY,
+    EDIT_MEMORY,
+    LIST_MEMORIES,
+    REQUEST_TRAINING,
+    SEARCH_MEMORIES,
+)
 from .common.functions import AssistantFunctions
 from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
@@ -102,6 +108,7 @@ class Assistant(
         await self.register_function(self.qualified_name, SEARCH_MEMORIES)
         await self.register_function(self.qualified_name, EDIT_MEMORY)
         await self.register_function(self.qualified_name, LIST_MEMORIES)
+        await self.register_function(self.qualified_name, REQUEST_TRAINING)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
