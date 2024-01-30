@@ -352,7 +352,7 @@ If a file has no extension it will still try to read it only if it can be decode
         if not conversation.messages:
             return await ctx.send(_("You have no conversation in this channel!"))
 
-        if await self.bot.is_mod(user) or user.id in self.bot.owner_ids:
+        if await self.bot.is_mod(user) or ctx.author.id in self.bot.owner_ids:
             dump = json.dumps(conversation.messages, indent=2)
             file = text_to_file(dump, "conversation.json")
         else:
