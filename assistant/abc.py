@@ -3,7 +3,6 @@ from multiprocessing.pool import Pool
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
-import tiktoken
 from discord.ext.commands.cog import CogMeta
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands
@@ -23,8 +22,6 @@ class MixinMeta(metaclass=ABCMeta):
     db: DB
     mp_pool: Pool
     registry: Dict[str, Dict[str, dict]]
-
-    tokenizer: tiktoken.core.Encoding
 
     @abstractmethod
     async def openai_status(self) -> str:
