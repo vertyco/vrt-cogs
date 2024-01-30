@@ -160,11 +160,15 @@ class Admin(MixinMeta):
 
     @ideaset.command(name="togglereveal", aliases=["reveal"])
     async def toggle_reveal(self, ctx: commands.Context):
-        """Toggle reveal suggestion author on approval"""
+        """
+        Toggle reveal suggestion author on approval
+
+        Approved suggestions are ALWAYS revealed regardless of this setting.
+        """
         conf = self.db.get_conf(ctx.guild)
         conf.reveal = not conf.reveal
         state = "enabled" if conf.reveal else "disabled"
-        await ctx.send(_("Revealing of authors on approval is now {}.").format(state))
+        await ctx.send(_("Revealing of authors on rejection is now {}.").format(state))
         await self.save()
 
     @ideaset.command(name="togglevotecount", aliases=["votecount"])
