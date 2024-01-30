@@ -26,11 +26,29 @@ class VoteView(discord.ui.View):
         self.guild = guild
         self.suggestion_number = suggestion_number
 
-        up, down = cog.db.get_conf(guild).get_emojis(cog.bot)
+        self.conf = cog.db.get_conf(guild)
+
+        up, down = self.conf.get_emojis(cog.bot)
         self.upvote.emoji = up
         self.upvote.custom_id = f"upvote_{suggestion_id}"
         self.downvote.emoji = down
         self.downvote.custom_id = f"downvote_{suggestion_id}"
+
+        self.update_labels()
+
+    def update_labels(self):
+        if not self.conf.show_vote_counts:
+            return
+        if suggestion := self.conf.suggestions.get(self.suggestion_number):
+            if upvotes := len(suggestion.upvotes):
+                self.upvote.label = str(upvotes)
+            else:
+                self.upvote.label = None
+
+            if downvotes := len(suggestion.downvotes):
+                self.downvote.label = str(downvotes)
+            else:
+                self.downvote.label = None
 
     async def check(self, interaction: discord.Interaction) -> bool:
         """Return True if the user can vote"""
@@ -155,6 +173,10 @@ class VoteView(discord.ui.View):
         )
         await interaction.followup.send(txt, ephemeral=True)
 
+        if self.conf.show_vote_counts:
+            self.update_labels()
+            await interaction.message.edit(view=self)
+
         await self.cog.save()
 
     @discord.ui.button(style=discord.ButtonStyle.primary)
@@ -187,5 +209,9 @@ class VoteView(discord.ui.View):
             upvotes=len(suggestion.upvotes), downvotes=len(suggestion.downvotes)
         )
         await interaction.followup.send(txt, ephemeral=True)
+
+        if self.conf.show_vote_counts:
+            self.update_labels()
+            await interaction.message.edit(view=self)
 
         await self.cog.save()

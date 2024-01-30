@@ -46,6 +46,7 @@ class GuildSettings(Base):
     # Upvote/downvote emojis
     upvote: str | int = "\N{THUMBS UP SIGN}"
     downvote: str | int = "\N{THUMBS DOWN SIGN}"
+    show_vote_counts: bool = True
 
     # Roles required to make suggestions and vote
     vote_roles: list[int] = []
