@@ -252,8 +252,8 @@ class ChatHandler(MixinMeta):
             channel_id=chan_id,
             guild_id=guild.id,
         )
-        if conf.collab_convos and isinstance(author, discord.Member):
-            message = f"{author.display_name}: {message}"
+        # if conf.collab_convos and isinstance(author, discord.Member):
+        #     message = f"{author.display_name}: {message}"
 
         conversation.cleanup(conf, author)
         conversation.refresh()
