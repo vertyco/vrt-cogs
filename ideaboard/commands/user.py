@@ -203,14 +203,15 @@ class User(MixinMeta):
     @commands.guild_only()
     async def view_profile(self, ctx: commands.Context, *, member: t.Optional[discord.Member] = None):
         """Display your current profile stats for suggestions and votes."""
-        conf = self.db.get_conf(ctx.guild)
-        if not member:
-            member = ctx.author
+        embed = await self.fetch_profile(member or ctx.author)
+        await ctx.send(embed=embed)
 
-        profile = conf.get_profile(member)
+    async def fetch_profile(self, user: discord.Member) -> discord.Embed:
+        conf = self.db.get_conf(user.guild)
+        profile = conf.get_profile(user)
 
-        embed = discord.Embed(color=discord.Color.gold(), title=_("Stats for {}").format(member.display_name))
-        embed.set_thumbnail(url=member.display_avatar)
+        embed = discord.Embed(color=discord.Color.gold(), title=_("Stats for {}").format(user.display_name))
+        embed.set_thumbnail(url=user.display_avatar)
 
         embed.add_field(
             name=_("Suggestion Summary"),
@@ -233,4 +234,4 @@ class User(MixinMeta):
             inline=False,
         )
 
-        await ctx.send(embed=embed)
+        return embed

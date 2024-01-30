@@ -118,12 +118,7 @@ class Admin(MixinMeta):
             "Suggest: {0.min_level_to_suggest}"
         ).format(conf)
         embed.add_field(name=name, value=value, inline=False)
-
-        if self.bot.user.id in [
-            770755544448499744,  # Autto
-            859930241119289345,  # VrtDev
-            857070505294430218,  # Arkon
-        ]:
+        if self.bot.get_cog("ArkTools"):
             name = _("Ark Playtime Integration")
             value = _(
                 "Minimum playtime to vote or make suggestions\n"

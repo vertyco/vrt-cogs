@@ -6,6 +6,7 @@ from redbot.core.bot import Red
 
 from .abc import CompositeMetaClass
 from .commands import Commands
+from .common.listener import AssistantListener
 from .common.models import DB
 from .views.voteview import VoteView
 
@@ -14,11 +15,11 @@ log = logging.getLogger("red.vrt.ideaboard")
 # redgettext -D views/voteview.py commands/user.py commands/admin.py --command-docstring
 
 
-class IdeaBoard(Commands, commands.Cog, metaclass=CompositeMetaClass):
+class IdeaBoard(Commands, AssistantListener, commands.Cog, metaclass=CompositeMetaClass):
     """Share Ideas and Suggestions"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()

@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+import discord
 from discord.ext.commands.cog import CogMeta
 from redbot.core.bot import Red
 
@@ -19,4 +20,9 @@ class MixinMeta(metaclass=ABCMeta):
     @abstractmethod
     async def save(self) -> None:
         """Save the config"""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def fetch_profile(self, user: discord.Member) -> discord.Embed:
+        """Get the user's profile"""
         raise NotImplementedError
