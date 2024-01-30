@@ -37,8 +37,9 @@ class User(MixinMeta):
             else:
                 await ctx.send(txt)
 
-            with suppress(discord.NotFound):
-                await ctx.message.delete()
+            if ctx.channel.permissions_for(ctx.me).manage_messages:
+                with suppress(discord.NotFound, discord.Forbidden):
+                    await ctx.message.delete()
 
         conf = self.db.get_conf(ctx.guild)
         if not conf.pending:
@@ -150,8 +151,9 @@ class User(MixinMeta):
                     )
                 )
 
-        with suppress(discord.NotFound):
-            await ctx.message.delete()
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
+            with suppress(discord.NotFound, discord.Forbidden):
+                await ctx.message.delete()
 
         suggestion_number = conf.counter + 1
         profile.last_suggestion = datetime.now()
