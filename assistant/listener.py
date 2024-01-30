@@ -49,10 +49,7 @@ class AssistantListener(MixinMeta):
             return
 
         conf = self.db.get_conf(message.guild)
-        if not conf.enabled:
-            return
-        no_api = [not conf.api_key, not conf.endpoint_override, not self.db.endpoint_override]
-        if all(no_api):
+        if not conf.enabled or not conf.api_key:
             return
 
         channel = message.channel
@@ -130,8 +127,7 @@ class AssistantListener(MixinMeta):
         conf = self.db.get_conf(guild)
         if not conf.enabled:
             return
-        no_api = [not conf.api_key, not conf.endpoint_override, not self.db.endpoint_override]
-        if all(no_api):
+        if not conf.api_key:
             return
         # Check if cog is disabled
         if await self.bot.cog_disabled_in_guild(self, guild):

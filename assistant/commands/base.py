@@ -7,11 +7,16 @@ from io import BytesIO
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, escape, pagify, text_to_file
+from redbot.core.utils.chat_formatting import (
+    box,
+    escape,
+    humanize_list,
+    pagify,
+    text_to_file,
+)
 
 from ..abc import MixinMeta
-from ..common.calls import request_model
-from ..common.constants import READ_EXTENSIONS, SUPPORTS_FUNCTIONS, SUPPORTS_TOOLS
+from ..common.constants import READ_EXTENSIONS
 from ..common.models import Conversation
 from ..common.utils import can_use, get_attachments
 
@@ -61,7 +66,7 @@ If a file has no extension it will still try to read it only if it can be decode
         """
             )
             .replace("[p]", ctx.clean_prefix)
-            .format(", ".join(READ_EXTENSIONS))
+            .format(humanize_list(READ_EXTENSIONS))
         )
         embed = discord.Embed(description=txt.strip(), color=ctx.me.color)
         await ctx.send(embed=embed)
@@ -91,6 +96,7 @@ If a file has no extension it will still try to read it only if it can be decode
         **Optional Arguments**
         `--outputfile <filename>` - uploads a file with the reply instead (no spaces)
         `--extract` - extracts code blocks from the reply
+        `--last` - resends the last message of the conversation
 
         **Example**
         `[p]chat write a python script that prints "Hello World!"`
@@ -143,20 +149,12 @@ If a file has no extension it will still try to read it only if it can be decode
             # Return the new RGB color
             return (green, blue)
 
-        convo_tokens = await self.count_payload_tokens(conversation.messages, conf, conf.get_user_model(user))
+        convo_tokens = await self.count_payload_tokens(conversation.messages, conf.get_user_model(user))
         g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
         gg, bb = generate_color(convo_tokens, max_tokens)
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
         model = conf.get_user_model(ctx.author)
-        if not conf.api_key and (conf.endpoint_override or self.db.endpoint_override):
-            endpoint = conf.endpoint_override or self.db.endpoint_override
-            try:
-                res = await request_model(f"{endpoint}/model")
-                model = res["model"]
-            except Exception as e:  # Could be any issue, don't worry about it here
-                log.warning(_("Could not fetch external model"), exc_info=e)
-                pass
 
         desc = (
             ctx.channel.mention
@@ -170,8 +168,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 model,
             )
         )
-        if model in SUPPORTS_TOOLS or model in SUPPORTS_FUNCTIONS:
-            desc += _("\n`Tool Calls: `{}").format(conversation.function_count())
+        desc += _("\n`Tool Calls: `{}").format(conversation.function_count())
         if conf.collab_convos:
             desc += "\n" + _("*Collabroative conversations are enabled*")
         embed = discord.Embed(
@@ -318,7 +315,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 return
 
         model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(conf.prompt, conf, model) if conf.prompt else 0
+        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         max_tokens = conf.get_user_max_tokens(ctx.author)
         if ptokens > (max_tokens * 0.9):
             txt = _(

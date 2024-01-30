@@ -1,41 +1,30 @@
 {
-  "author": [
-    "Vertyco"
-  ],
+  "author": ["Vertyco"],
   "description": "Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models, with configurable prompt injection, dynamic embeddings, custom function calling, and more",
   "disabled": false,
   "end_user_data_statement": "This cog stores prompts and OpenAI API keys on a per server basis. If enabled, conversations with the bot are also persistently stored",
   "hidden": false,
-  "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys\n\n**Warning**\nIt is not recommended to run this cog on a public bot or on a server with limited resources!.\n\n**Note**\nThis cog allows other 3rd party cogs to register functions with it, extending functionality. Be aware of what functions other cogs are registering with `[p]customfunc`\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/assistant/README.md",
+  "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands. and `[p]chathelp` for tips on how to interact.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys\n\n**Warning**\nIt is not recommended to run this cog on a public bot or on a server with limited resources!.\n\n**Note**\nThis cog allows other 3rd party cogs to register functions with it, extending functionality. Be aware of what functions other cogs are registering with `[p]customfunc`\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/assistant/README.md",
   "min_bot_version": "3.5.0",
-  "min_python_version": [
-    3,
-    9,
-    1
-  ],
-  "permissions": [
-    "read_messages",
-    "send_messages",
-    "embed_links",
-    "attach_files"
-  ],
+  "min_python_version": [3, 10, 0],
+  "permissions": ["read_messages", "send_messages", "embed_links", "attach_files"],
   "required_cogs": {},
   "requirements": [
-    "openai==1.2.3",
     "aiocache",
-    "ujson",
-    "msgpack",
-    "pydantic",
     "json5",
-    "tiktoken",
-    "pandas",
+    "msgpack",
     "numpy",
+    "openai>=1.10.0",
+    "pandas",
     "perftracker",
+    "pydantic",
     "pytz",
+    "sentry_sdk",
     "tenacity",
-    "sentry_sdk"
+    "tiktoken",
+    "ujson"
   ],
-  "short": "Another Chat GPT Cog",
+  "short": "Advanced AI assistant (or chat) cog for your server with OpenAI's ChatGPT language models",
   "tags": [
     "utility",
     "assistant",

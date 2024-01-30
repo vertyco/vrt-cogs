@@ -5,7 +5,6 @@ from time import perf_counter
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
-import tiktoken
 from discord.ext import tasks
 from perftracker import perf
 from pydantic import ValidationError
@@ -46,15 +45,10 @@ class Assistant(
     - **[p]chat**: talk with the assistant
     - **[p]convostats**: view a user's token usage/conversation message count for the channel
     - **[p]clearconvo**: reset your conversation with the assistant in the channel
-
-    **Support for self-hosted endpoints!**
-    Assistant supports usage of **[Self-Hosted Models](https://github.com/vertyco/gpt-api)** via endpoint overrides.
-    To set a custom endpoint for example: `[p]assist endpoint http://localhost:8000/v1`
-    This will now make calls to your self-hosted api.
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "5.9.1"
+    __version__ = "6.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -73,8 +67,6 @@ class Assistant(
         self.config.register_global(db={})
         self.db: DB = DB()
         self.mp_pool = Pool()
-
-        self.tokenizer: tiktoken.core.Encoding = tiktoken.get_encoding("cl100k_base")
 
         # {cog_name: {function_name: {function_json_schema}}}
         self.registry: Dict[str, Dict[str, dict]] = {}

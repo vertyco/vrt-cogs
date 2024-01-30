@@ -98,7 +98,7 @@ class GuildSettings(AssistantBaseModel):
     mention_respond: bool = True  # TODO: add command to toggle
     enabled: bool = True  # Auto-reply channel
     model: str = "gpt-3.5-turbo"
-    endpoint_override: Optional[str] = None
+    embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
 
     timezone: str = "UTC"
@@ -338,8 +338,6 @@ class DB(AssistantBaseModel):
     persistent_conversations: bool = False
     functions: Dict[str, CustomFunction] = {}
     listen_to_bots: bool = False
-
-    endpoint_override: Optional[str] = None
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
