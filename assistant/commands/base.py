@@ -366,7 +366,7 @@ If a file has no extension it will still try to read it only if it can be decode
     @commands.bot_has_permissions(embed_links=True)
     async def test_embedding_response(self, ctx: commands.Context, *, query: str):
         """
-        Fetch related embeddings according to the current settings along with their scores
+        Fetch related embeddings according to the current topn setting along with their scores
 
         You can use this to fine-tune the minimum relatedness for your assistant
         """
@@ -382,7 +382,7 @@ If a file has no extension it will still try to read it only if it can be decode
             if not query_embedding:
                 return await ctx.send(_("Failed to get embedding for your query"))
 
-            embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
+            embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding, relatedness_override=0.1)
             if not embeddings:
                 return await ctx.send(_("No embeddings could be related to this query with the current settings"))
             for name, em, score, dimension in embeddings:
