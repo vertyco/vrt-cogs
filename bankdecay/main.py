@@ -3,12 +3,13 @@ import logging
 import math
 import typing as t
 from datetime import datetime, timedelta
+from io import StringIO
 
 import discord
 from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from .abc import CompositeMetaClass
 from .commands.admin import Admin
@@ -34,7 +35,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.3.10"
+    __version__ = "0.3.11"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -169,8 +170,24 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             color=color,
             timestamp=datetime.now(),
         )
+        # Create a text file with the list of users and how much they will lose
+        buffer = StringIO()
+        for user, amount in sorted(decayed.items(), key=lambda x: x[1], reverse=True):
+            buffer.write(f"{user}: {amount}\n")
+
+        file = text_to_file(buffer.getvalue(), filename="decay.txt")
+        perms = [
+            log_channel.permissions_for(guild.me).attach_files,
+            log_channel.permissions_for(guild.me).embed_links,
+        ]
+        if not any(perms):
+            return decayed
+
         try:
-            await log_channel.send(embed=embed)
+            if perms[0] and perms[1]:
+                await log_channel.send(embed=embed, file=file)
+            elif perms[1]:
+                await log_channel.send(embed=embed)
         except Exception as e:
             log.error(f"Failed to send decay log to {log_channel.name} in {guild.name}", exc_info=e)
 
