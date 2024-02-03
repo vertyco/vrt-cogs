@@ -61,7 +61,7 @@ class User(MixinMeta):
 
         # Check user's permission to suggest
         if conf.suggest_roles and not any(
-            role.id in [role.id for role in ctx.author.roles] for role in conf.suggest_roles
+            role in [role.id for role in ctx.author.roles] for role in conf.suggest_roles
         ):
             return await resp(_("You do not have the required roles to make suggestions."))
 
@@ -79,7 +79,7 @@ class User(MixinMeta):
 
         # Check role blacklist
         if conf.role_blacklist and any(
-            role.id in [role.id for role in ctx.author.roles] for role in conf.role_blacklist
+            role in [role.id for role in ctx.author.roles] for role in conf.role_blacklist
         ):
             return await resp(_("You are not allowed to make suggestions due to a blacklisted role."))
 
