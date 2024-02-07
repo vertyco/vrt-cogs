@@ -3,7 +3,6 @@ import datetime
 import logging
 import math
 import random
-import traceback
 from abc import ABC
 from io import BytesIO
 from pathlib import Path
@@ -76,15 +75,14 @@ class UserCommands(MixinMeta, ABC):
             return
         try:
             # Try running it through profile generator blind to see if it errors
-
             params = {"bg_image": image_url}
             await asyncio.to_thread(self.generate_profile, **params)
         except Exception as e:
+            log.error(f"Failed to validate image url for {ctx.author.name} in {ctx.guild.name}", exc_info=e)
             if "cannot identify image file" in str(e):
                 await ctx.send(_("Uh Oh, looks like that is not a valid image, cannot identify the file"))
                 return
             else:
-                log.warning(f"background set failed: {traceback.format_exc()}")
                 await ctx.send(_("Uh Oh, looks like that is not a valid image"))
                 return
         return True
@@ -721,38 +719,43 @@ class UserCommands(MixinMeta, ABC):
 
         # If image url is given, run some checks
         if not image_url and not get_attachments(ctx):
-            return await ctx.send(_("You must provide a url, filename, or attach a file"))
+            if self.data[ctx.guild.id]["users"][user_id]["background"] is None:
+                return await ctx.send(_("You must provide a url, filename, or attach a file"))
+            else:
+                self.data[ctx.guild.id]["users"][user_id]["background"] = None
+                return await ctx.send(_("Your background has been removed!"))
 
-        filepath = None
-        if att := get_attachments(ctx):
-            image_url = att[0].url
+        if image_url is None:
+            # User uploaded image
+            image_url = get_attachments(ctx)[0].url
             if not await self.valid_url(ctx, image_url):
                 return
-        elif image_url.lower().startswith("http"):
+            self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
+            return await ctx.send(_("Your profile background has been set!"))
+
+        if image_url.lower() == "random":
+            self.data[ctx.guild.id]["users"][user_id]["background"] = "random"
+            return await ctx.send(
+                _("Your profile background will be randomized each time you run the profile command!")
+            )
+
+        # Check if the user provided a url
+        if image_url.lower().startswith("http"):
             if not await self.valid_url(ctx, image_url):
                 return
+            return await ctx.send(_("Your profile background has been set!"))
         else:
+            # Check if the user provided a filename
             for file in backgrounds:
                 if image_url.lower() in file.name.lower():
-                    image_url = file.name
-                    filepath = file
                     break
-
-        if image_url:
-            self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
-            if image_url == "random":
-                await ctx.send("Your profile background will be randomized each time you run the profile command!")
             else:
-                # Either a valid url or a specified default file
-                if filepath:
-                    file = discord.File(filepath)
-                    await ctx.send(_("Your background image has been set to `{}`!").format(image_url), file=file)
-                else:
-                    await ctx.send(_("Your background image has been set to `{}`!").format(image_url))
-        else:
-            self.data[ctx.guild.id]["users"][user_id]["background"] = None
-            await ctx.send(_("Your background has been removed since you did not specify a url!"))
-        await ctx.tick()
+                return await ctx.send(_("I could not find a background image with that name"))
+
+            txt = _("Your background image has been set to `{}`!").format(file.name)
+            file = discord.File(file)
+            self.data[ctx.guild.id]["users"][user_id]["background"] = file.name
+            return await ctx.send(txt, file=file)
 
     @set_profile.command(name="font")
     async def set_user_font(self, ctx: commands.Context, *, font_name: str):
