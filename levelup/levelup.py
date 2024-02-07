@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.15"
+    __version__ = "3.11.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2497,9 +2497,13 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await ctx.tick()
         await self.save_cache(ctx.guild)
 
-    @lvl_group.group(name="algorithm")
+    @lvl_group.group(name="algorithm", aliases=["algo"])
     async def algo_edit(self, ctx: commands.Context):
-        """Customize the leveling algorithm for your guild"""
+        """Customize the leveling algorithm for your guild
+
+        - Default base is 100
+        - Default exp is 2
+        """
         pass
 
     @algo_edit.command(name="base")
@@ -2508,6 +2512,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         Base multiplier for the leveling algorithm
 
         Affects leveling on a more linear scale(higher values makes leveling take longer)
+
+        Default is 100
         """
         self.data[ctx.guild.id]["base"] = base_multiplier
         await ctx.tick()
@@ -2519,6 +2525,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         Exponent multiplier for the leveling algorithm
 
         Affects leveling on an exponential scale(higher values makes leveling take exponentially longer)
+
+        Default is 2
         """
         if exponent_multiplier <= 0:
             return await ctx.send(_("Your exponent needs to be higher than 0"))
