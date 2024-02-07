@@ -94,22 +94,25 @@ class Generator(MixinMeta, ABC):
         # Get background
         available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
         card = None
-        if bg_image and str(bg_image) != "random":
-            if not bg_image.lower().startswith("http"):
-                for file in available:
-                    if bg_image.lower() in file.name.lower():
-                        try:
-                            card = Image.open(file)
-                            break
-                        except OSError:
-                            log.info(f"Failed to load {bg_image}")
-
-            if not card and bg_image.lower().startswith("http"):
-                try:
-                    bg_bytes = self.get_image_content_from_url(bg_image)
-                    card = Image.open(BytesIO(bg_bytes))
-                except UnidentifiedImageError:
-                    pass
+        if bg_image is None or str(bg_image) == "random":
+            card = self.get_random_background()
+        elif bg_image.startswith("http"):
+            try:
+                bg_bytes = self.get_image_content_from_url(bg_image)
+                card = Image.open(BytesIO(bg_bytes))
+            except UnidentifiedImageError as e:
+                log.error(f"Failed to load {bg_image}", exc_info=e)
+                card = self.get_random_background()
+        else:
+            # Local file
+            for file in available:
+                if bg_image.lower() in file.name.lower():
+                    try:
+                        card = Image.open(file)
+                        break
+                    except OSError:
+                        log.info(f"Failed to load {bg_image}")
+                        card = self.get_random_background()
 
         if not card:
             card = self.get_random_background()
