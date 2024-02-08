@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-01-30 12:15-0500\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,76 +11,72 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: views\voteview.py:54
+#: views\voteview.py:53
 #, docstring
 msgid "Return True if the user can vote"
 msgstr ""
 
-#: views\voteview.py:58
+#: views\voteview.py:57
 msgid "This suggestion no longer exists in the config!"
 msgstr ""
 
-#: views\voteview.py:69
+#: views\voteview.py:68
 msgid "You are blacklisted from voting."
 msgstr ""
 
-#: views\voteview.py:72
+#: views\voteview.py:71
 msgid "You have a blacklisted role and cannot vote."
 msgstr ""
 
-#: views\voteview.py:77
+#: views\voteview.py:76
 msgid "You do not have the required roles to vote."
 msgstr ""
 
-#: views\voteview.py:85
+#: views\voteview.py:84
 msgid "Your account is too young to vote. You must wait {age} more hours."
 msgstr ""
 
-#: views\voteview.py:97
+#: views\voteview.py:96
 msgid "You must wait {age} more hours before you can vote."
 msgstr ""
 
-#: views\voteview.py:113
+#: views\voteview.py:112
 msgid "You must be level {level} to vote."
 msgstr ""
 
-#: views\voteview.py:127
+#: views\voteview.py:126
 msgid ""
 "Your in-game profile must be registered in order to vote on suggestions.\n"
 msgstr ""
 
-#: views\voteview.py:128
+#: views\voteview.py:127
 msgid "Use the {} command to link your discord account."
 msgstr ""
 
-#: views\voteview.py:134
+#: views\voteview.py:133
 msgid "You must have at least {hours} hours of playtime to vote."
 msgstr ""
 
-#: views\voteview.py:157
+#: views\voteview.py:156
 msgid "You have switched your downvote to an upvote."
 msgstr ""
 
-#: views\voteview.py:163
+#: views\voteview.py:162
 msgid "You have removed your upvote."
 msgstr ""
 
-#: views\voteview.py:167
-msgid "You have upvoted this suggestion.\n"
+#: views\voteview.py:166
+msgid "You have upvoted this suggestion."
 msgstr ""
 
-#: views\voteview.py:171 views\voteview.py:208
-msgid "There are now {upvotes} upvotes and {downvotes} downvotes."
+#: views\voteview.py:190
+msgid "You have switched your upvote to a downvote."
 msgstr ""
 
-#: views\voteview.py:194
-msgid "You have switched your upvote to a downvote.\n"
+#: views\voteview.py:196
+msgid "You have removed your downvote."
 msgstr ""
 
 #: views\voteview.py:200
-msgid "You have removed your downvote.\n"
-msgstr ""
-
-#: views\voteview.py:204
-msgid "You have downvoted this suggestion.\n"
+msgid "You have downvoted this suggestion."
 msgstr ""

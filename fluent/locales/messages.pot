@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-07-26 19:16-0400\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: fluent.py:23
+#: fluent.py:22
 #, docstring
 msgid ""
 "\n"
@@ -29,45 +29,45 @@ msgid ""
 "    "
 msgstr ""
 
-#: fluent.py:42
+#: fluent.py:41
 msgid ""
 "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: fluent.py:47
+#: fluent.py:44
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: fluent.py:72
+#: fluent.py:67
 #, docstring
 msgid "Translate a message"
 msgstr ""
 
-#: fluent.py:75
+#: fluent.py:71
 msgid "The target language `{}` was not found."
 msgstr ""
 
-#: fluent.py:84
+#: fluent.py:80
 msgid "Could not find any content to translate!"
 msgstr ""
 
-#: fluent.py:90
+#: fluent.py:86
 msgid "An error occured while translating, Check logs for more info."
 msgstr ""
 
-#: fluent.py:97
+#: fluent.py:93
 msgid "❌ Translation failed."
 msgstr ""
 
-#: fluent.py:122
+#: fluent.py:118
 #, docstring
 msgid "Base command"
 msgstr ""
 
-#: fluent.py:140
+#: fluent.py:136
 #, docstring
 msgid ""
 "\n"
@@ -78,58 +78,63 @@ msgid ""
 "        "
 msgstr ""
 
-#: fluent.py:153
-msgid "Both of those languages are invalid."
+#: fluent.py:146
+msgid ""
+"You can't use the same language for both parameters. {} to {} is still {}..."
 msgstr ""
 
 #: fluent.py:156
-msgid "Language 1 is invalid."
+msgid "Both of those languages are invalid."
 msgstr ""
 
 #: fluent.py:159
+msgid "Language 1 is invalid."
+msgstr ""
+
+#: fluent.py:162
 msgid "Language 2 is invalid."
 msgstr ""
 
-#: fluent.py:165
+#: fluent.py:168
 msgid "❌ {} is already a fluent channel."
 msgstr ""
 
-#: fluent.py:169
+#: fluent.py:172
 msgid "✅ Fluent channel has been set!"
 msgstr ""
 
-#: fluent.py:185
+#: fluent.py:188
 #, docstring
 msgid "Remove a channel from Fluent"
 msgstr ""
 
-#: fluent.py:193
+#: fluent.py:196
 msgid "✅ Fluent channel has been deleted!"
 msgstr ""
 
-#: fluent.py:195
+#: fluent.py:198
 msgid "❌ {} isn't a fluent channel!"
 msgstr ""
 
-#: fluent.py:199
+#: fluent.py:202
 #, docstring
 msgid "View all fluent channels"
 msgstr ""
 
-#: fluent.py:211
+#: fluent.py:214
 msgid "There are no fluent channels at this time."
 msgstr ""
 
-#: fluent.py:212
+#: fluent.py:215
 msgid ""
 "**Fluent Settings**\n"
 "{}"
 msgstr ""
 
-#: fluent.py:257
+#: fluent.py:273
 msgid "Unable to finish translation, perhaps the API is down."
 msgstr ""
 
-#: fluent.py:298
+#: fluent.py:315
 msgid "Invalid target language"
 msgstr ""

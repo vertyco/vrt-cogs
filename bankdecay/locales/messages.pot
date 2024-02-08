@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-01-04 12:10-0500\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: main.py:28
+#: main.py:29
 #, docstring
 msgid ""
 "\n"
@@ -23,17 +23,17 @@ msgid ""
 "    "
 msgstr ""
 
-#: main.py:172
+#: main.py:157
 msgid "Bank Decay Cycle"
 msgstr ""
 
-#: main.py:174
+#: main.py:159
 msgid ""
 "- User Balances Decayed: {}\n"
 "- Total Amount Decayed: {}"
 msgstr ""
 
-#: main.py:179
+#: main.py:164
 msgid "No user balances were decayed during this cycle."
 msgstr ""
 

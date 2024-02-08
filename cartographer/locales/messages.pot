@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-10-16 17:37-0400\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -92,6 +92,10 @@ msgstr ""
 #: main.py:183
 #, docstring
 msgid "View current global settings"
+msgstr ""
+
+#: main.py:185 main.py:186
+msgid "None Set"
 msgstr ""
 
 #: main.py:187
