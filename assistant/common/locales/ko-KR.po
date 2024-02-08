@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-11-07 16:20-0500\n"
-"PO-Revision-Date: 2023-11-07 22:51\n"
+"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"PO-Revision-Date: 2024-02-08 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -17,28 +17,24 @@ msgstr ""
 "X-Crowdin-File-ID: 55\n"
 "Language: ko_KR\n"
 
-#: common\api.py:256
+#: common\api.py:41
+msgid "Failed to fetch: {}"
+msgstr ""
+
+#: common\api.py:189
 #, docstring
 msgid "Get token list from text"
 msgstr "텍스트에서 토큰 목록을 가져옵니다"
 
-#: common\api.py:294
+#: common\api.py:217
 msgid "There are no API keys set!\n"
 msgstr "API 키가 설정되어 있지 않습니다!\n"
 
-#: common\api.py:296
+#: common\api.py:219
 msgid "- Set your OpenAI key with `{}`\n"
 msgstr "- 오픈AI 키를 `{}`로 설정하세요.\n"
 
-#: common\api.py:297
-msgid "- Or set an endpoint override to your self-hosted LLM with `{}`\n"
-msgstr "- 또는 자체 호스팅된 LLM에 대한 엔드포인트 오버라이드를 설정하십시오. `{}`\n"
-
-#: common\api.py:301
-msgid "- Alternatively you can set a global endpoint with `{}`"
-msgstr "- 또는 `{}`로 전역 엔드포인트를 설정할 수도 있습니다"
-
-#: common\api.py:309
+#: common\api.py:225
 #, docstring
 msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
@@ -46,138 +42,148 @@ msgid "Update embeds to match current dimensions\n\n"
 msgstr "현재 차원과 일치하도록 임베드를 업데이트합니다. \n\n"
 "현재 임베드 방법을 사용하여 샘플을 가져와 나머지를 차원에 맞게 업데이트합니다        "
 
-#: common\api.py:342
+#: common\api.py:265
 #, docstring
 msgid "Get text from token list"
 msgstr "I apologize for any confusion. Could you please provide the specific text that you would like me to translate?"
 
-#: common\api.py:380
+#: common\api.py:291
 #, docstring
-msgid "Iteratively degrade a conversation payload, prioritizing more recent messages and critical context\n\n"
+msgid "\n"
+"        Iteratively degrade a conversation payload in-place to fit within the max token limit, prioritizing more recent messages and critical context.\n\n"
+"        Order of importance:\n"
+"        - System messages\n"
+"        - Function calls available to model\n"
+"        - Most recent user message\n"
+"        - Most recent assistant message\n"
+"        - Most recent function/tool message\n\n"
+"        System messages are always ignored.\n\n"
 "        Args:\n"
 "            messages (List[dict]): message entries sent to the api\n"
 "            function_list (List[dict]): list of json function schemas for the model\n"
 "            conf: (GuildSettings): current settings\n\n"
 "        Returns:\n"
-"            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
+"            bool: whether the conversation was degraded\n"
 "        "
-msgstr "대화 페이로드를 순차적으로 저하시키되, 최근 메시지와 중요한 맥락을 우선으로 처리합니다.\n\n"
-"인수:\n"
-"    messages (list[dict]): API에 전송된 메시지 항목들\n"
-"    function_list (list[dict]): 모델에 대한 JSON 함수 스키마 목록\n"
-"    conf: (GuildSettings): 현재 설정\n\n"
-"반환값:\n"
-"    (list[dict], list[dict], bool): 업데이트된 메시지 목록, 함수 목록, 대화가 저하되었는지 여부        "
+msgstr ""
 
-#: common\api.py:525
+#: common\api.py:467
 #, docstring
 msgid "Pagify a long string by tokens rather than characters"
 msgstr "토큰 대신 문자로 긴 문자열을 페이지로 나누세요"
 
-#: common\api.py:582
+#: common\api.py:524
 msgid "Custom Functions"
 msgstr "사용자 정의 함수"
 
-#: common\api.py:588
+#: common\api.py:530
 msgid "3rd Party"
 msgstr "3rd Party"
 
-#: common\api.py:589
+#: common\api.py:531
 msgid "This function is managed by the `{}` cog"
 msgstr "이 함수는 `{}` 코그에 의해 관리됩니다"
 
-#: common\api.py:594
+#: common\api.py:536
 msgid "Internal Function"
 msgstr "내부 함수"
 
-#: common\api.py:595
+#: common\api.py:537
 msgid "This is an internal command that can only be used when interacting with a tutor"
 msgstr "이것은 튜터와 상호 작용할 때에만 사용할 수 있는 내부 명령입니다"
 
-#: common\api.py:601
+#: common\api.py:543
 msgid "This function consumes `{}` input tokens each call\n"
 msgstr "이 함수는 각 호출마다 `{}` 입력 토큰을 소비합니다.\n"
 
-#: common\api.py:616
+#: common\api.py:558
 msgid "Hidden..."
 msgstr "숨겨진...\n"
 "숨겨진..."
 
-#: common\api.py:618
+#: common\api.py:560
 msgid "Schema"
 msgstr "스키마"
 
-#: common\api.py:619
+#: common\api.py:561
 msgid "Code"
 msgstr "코드"
 
-#: common\api.py:621 common\api.py:644
+#: common\api.py:563 common\api.py:586
 msgid "Page {}/{}"
 msgstr "페이지 {}/{}"
 
-#: common\api.py:628
+#: common\api.py:570
 msgid "No custom code has been added yet!"
 msgstr "아직 사용자 정의 코드가 추가되지 않았습니다!"
 
-#: common\api.py:643
+#: common\api.py:585
 msgid "Embeddings"
 msgstr "임베딩(embeddings)은 텍스트나 이미지와 같은 데이터를 수치화하여 컴퓨터가 이해할 수 있는 형태로 변환하는 기술입니다. 임베딩은 주어진 데이터의 의미와 특징을 포착하여 벡터 형태로 표현합니다. 이러한 임베딩 벡터는 유사한 의미를 가진 데이터들이 비슷한 벡터 공간에 위치하게 됩니다. 임베딩은 자연어 처리, 이미지 분류, 추천 시스템 등 다양한 분야에서 활용됩니다"
 
-#: common\api.py:654
+#: common\api.py:596
 msgid "`Created:    `{}\n"
 "`Modified:   `{}\n"
 "`Tokens:     `{}\n"
 "`Dimensions: `{}\n"
 "`AI Created: `{}\n"
+"`Model:      `{}\n"
 msgstr ""
 
-#: common\api.py:679
+#: common\api.py:623
 msgid "No embeddings have been added!"
 msgstr "임베딩이 추가되지 않았습니다!"
 
-#: common\chat.py:141
+#: common\chat.py:145
 msgid "No message history!"
 msgstr "메시지 기록이 없습니다!"
 
-#: common\chat.py:154
-msgid "Failed to communicate with endpoint!"
-msgstr "엔드포인트와의 통신에 실패했습니다!"
-
 #: common\chat.py:158
+msgid "The server had an error processing your request! Please try again later."
+msgstr ""
+
+#: common\chat.py:160
+msgid "Failed to communicate with API!"
+msgstr ""
+
+#: common\chat.py:164
 msgid "Invalid API key, please set a new valid key!"
 msgstr "잘못된 API 키입니다. 새로운 유효한 키를 설정해주세요!"
 
-#: common\chat.py:160
+#: common\chat.py:166
 msgid "Uh oh, looks like my API key is invalid!"
 msgstr "앗, API 키가 유효하지 않은 것 같아요!"
 
-#: common\chat.py:165
-msgid "**KeyError in prompt or system message**\n"
-"{}"
-msgstr "텍스트를 한국어로 번역합니다"
-
-#: common\chat.py:171
+#: common\chat.py:176
 msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
 msgstr "앗, 문제가 발생했습니다! 봇 소유자는 `{}`를 사용하여 오류를 확인할 수 있습니다."
 
-#: common\chat.py:206
+#: common\chat.py:179
+msgid "API Status: {}"
+msgstr ""
+
+#: common\chat.py:212
 msgid "No results found"
 msgstr "결과를 찾을 수 없습니다"
 
-#: common\chat.py:227
+#: common\chat.py:234
 #, docstring
 msgid "Call the API asynchronously"
 msgstr "API를 비동기적으로 호출하세요"
 
-#: common\chat.py:260
+#: common\chat.py:317
 msgid "None"
 msgstr ""
 
-#: common\chat.py:480
+#: common\chat.py:396
+msgid "Request timed out, please try again."
+msgstr ""
+
+#: common\chat.py:558
 msgid "Response failed due to invalid regex, check logs for more info."
 msgstr "응답이 잘못된 정규식으로 인해 실패했습니다. 자세한 정보는 로그를 확인하세요."
 
-#: common\chat.py:514
+#: common\chat.py:591
 #, docstring
 msgid "Prepare content for calling the GPT API\n\n"
 "        Args:\n"
@@ -203,43 +209,101 @@ msgstr "GPT API를 호출하기 위한 콘텐츠를 준비합니다.\n\n"
 "        Returns:\n"
 "            List[dict]: API에 준비된 메시지 목록        "
 
-#: common\chat.py:532
+#: common\chat.py:609
 #, docstring
 msgid "Instead of format(**params) possibly giving a KeyError if prompt has code in it"
 msgstr "프롬프트에 코드가 있는 경우, format(**params)를 사용하면 KeyError가 발생할 수 있습니다"
 
-#: common\chat.py:601
+#: common\chat.py:670
 msgid "\n"
 "Missing 'attach files' permissions!"
 msgstr "\n"
 "'파일 첨부' 권한이 없습니다!"
 
-#: common\utils.py:19
+#: common\utils.py:22
+#, docstring
+msgid "\n"
+"    Cleans the function name to ensure it only contains alphanumeric characters,\n"
+"    underscores, or dashes and is not longer than 64 characters.\n\n"
+"    Args:\n"
+"        name (str): The original function name to clean.\n\n"
+"    Returns:\n"
+"        str: The cleaned function name.\n"
+"    "
+msgstr ""
+
+#: common\utils.py:42
 #, docstring
 msgid "Get all attachments from context"
 msgstr "Context에서 모든 첨부 파일을 가져옵니다"
 
-#: common\utils.py:40
+#: common\utils.py:63
 msgid "Canceled"
 msgstr "취소됨"
 
-#: common\utils.py:53
+#: common\utils.py:76
 msgid "You have been blacklisted from using this command!"
 msgstr "이 명령어 사용이 차단되었습니다!"
 
-#: common\utils.py:58
+#: common\utils.py:80
 msgid "You have a blacklisted role and cannot use this command!"
 msgstr "당신은 블랙리스트에 등록된 역할이므로 이 명령을 사용할 수 없습니다!"
 
-#: common\utils.py:63
+#: common\utils.py:84
 msgid "You cannot use that command in this channel!"
 msgstr "이 채널에서는 해당 명령을 사용할 수 없습니다!"
 
-#: common\utils.py:68
+#: common\utils.py:88
 msgid "You cannot use that command in any channels under this category"
 msgstr "이 카테고리에 속한 모든 채널에서는 해당 명령을 사용할 수 없습니다"
 
-#: common\utils.py:116 common\utils.py:117
+#: common\utils.py:123 common\utils.py:124
 msgid "[Code Removed]"
 msgstr "I apologize for the confusion. Please provide the text you would like me to translate, and I will be happy to assist you"
+
+#: common\utils.py:200
+#, docstring
+msgid "Make sure that if a conversation payload contains images that the model supports vision"
+msgstr ""
+
+#: common\utils.py:220
+#, docstring
+msgid "\n"
+"    Ensure all tool calls satisfy schema requirements, modifying the messages payload in-place.\n\n"
+"    The \"messages\" param is a list of message payloads.\n\n"
+"    ## Schema\n"
+"    - Messages with they key \"tool_calls\" are calling a tool or tools.\n"
+"    - The \"tool_calls\" value is a list of tool call dicts, each containing an \"id\" key that maps to a tool response\n"
+"    - Messages with the role \"tool\" are tool call responses, each with a \"tool_call_id\" key that corresponds to a tool call \"id\"\n"
+"    - More than one message can contain the same tool call id within the same conversation payload, which is a pain in the ass\n\n"
+"    ## Tool Call Message Payload Example\n"
+"    {\n"
+"        \"content\": None,\n"
+"        \"role\": \"assistant\",\n"
+"        \"tool_calls\": [\n"
+"            {\n"
+"                \"id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"                \"type\": \"function\",\n"
+"                \"function\": {\n"
+"                    \"arguments\": {},\n"
+"                    \"name\": \"function_name\",\n"
+"                }\n"
+"            }\n"
+"        ]\n"
+"    }\n\n"
+"    ## Tool Response Message Payload Example\n"
+"    {\n"
+"        \"role\": \"tool\",\n"
+"        \"name\": \"function_name\",\n"
+"        \"content\": \"The results of the function in text\",\n"
+"        \"tool_call_id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"    }\n\n"
+"    ## Rules\n"
+"    - A message payload can contain multiple tool calls, each with their own id\n"
+"    - A message with tool_calls must be followed up with messages containing the role \"tool\" with the corresponding \"tool_call_id\"\n"
+"    - All messages with \"tool_calls\" must be followed by messages with the tool responses\n"
+"    - All tool call responses must have a preceeding tool call.\n\n"
+"    Returns: boolean, True if any tool calls or responses were purged.\n"
+"    "
+msgstr ""
 
