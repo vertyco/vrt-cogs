@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-07-26 19:16-0400\n"
-"PO-Revision-Date: 2023-08-26 21:07\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-02-08 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 63\n"
 "Language: ko_KR\n"
 
-#: fluent.py:23
+#: fluent.py:22
 #, docstring
 msgid "\n"
 "    Seamless translation between two languages in one channel. Or manual translation to various languages.\n\n"
@@ -31,7 +31,7 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: fluent.py:42
+#: fluent.py:41
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
@@ -39,38 +39,38 @@ msgstr "{}\n"
 "코그 버전: {}\n"
 "작성자: {}"
 
-#: fluent.py:47
+#: fluent.py:44
 #, docstring
 msgid "No data to delete"
 msgstr "삭제할 데이터가 없습니다"
 
-#: fluent.py:72
+#: fluent.py:67
 #, docstring
 msgid "Translate a message"
 msgstr "번역할 메시지를 입력하세요"
 
-#: fluent.py:75
+#: fluent.py:71
 msgid "The target language `{}` was not found."
 msgstr "대상 언어 `{}`를 찾을 수 없습니다."
 
-#: fluent.py:84
+#: fluent.py:80
 msgid "Could not find any content to translate!"
 msgstr "번역할 콘텐츠를 찾을 수 없습니다!"
 
-#: fluent.py:90
+#: fluent.py:86
 msgid "An error occured while translating, Check logs for more info."
 msgstr "번역하는 동안 오류가 발생했습니다. 자세한 내용은 로그를 확인하세요."
 
-#: fluent.py:97
+#: fluent.py:93
 msgid "❌ Translation failed."
 msgstr "❌ 번역 실패했습니다."
 
-#: fluent.py:122
+#: fluent.py:118
 #, docstring
 msgid "Base command"
 msgstr "기본 명령"
 
-#: fluent.py:140
+#: fluent.py:136
 #, docstring
 msgid "\n"
 "        Add a channel and languages to translate between\n\n"
@@ -80,59 +80,63 @@ msgid "\n"
 msgstr "         번역할 채널과 언어 추가하기\n"
 "         Tip: 언어 1이 가장 먼저 변환됩니다. 예를 들어, 대부분의 대화가 영어로 이루어질 것으로 예상되는 경우, API 호출을 적게 사용하려면 영어를 2번 언어로 설정하세요        "
 
-#: fluent.py:153
+#: fluent.py:146
+msgid "You can't use the same language for both parameters. {} to {} is still {}..."
+msgstr ""
+
+#: fluent.py:156
 msgid "Both of those languages are invalid."
 msgstr "두 언어 모두 유효하지 않습니다."
 
-#: fluent.py:156
+#: fluent.py:159
 msgid "Language 1 is invalid."
 msgstr "언어 1은 유효하지 않습니다."
 
-#: fluent.py:159
+#: fluent.py:162
 msgid "Language 2 is invalid."
 msgstr "언어 2가 유효하지 않습니다."
 
-#: fluent.py:165
+#: fluent.py:168
 msgid "❌ {} is already a fluent channel."
 msgstr "❌ {}는 이미 유창한 채널입니다."
 
-#: fluent.py:169
+#: fluent.py:172
 msgid "✅ Fluent channel has been set!"
 msgstr "✅ 유창한 채널이 설정되었습니다!"
 
-#: fluent.py:185
+#: fluent.py:188
 #, docstring
 msgid "Remove a channel from Fluent"
 msgstr "Fluent에서 채널을 제거하세요"
 
-#: fluent.py:193
+#: fluent.py:196
 msgid "✅ Fluent channel has been deleted!"
 msgstr "✅ 유창한 채널이 삭제되었습니다!"
 
-#: fluent.py:195
+#: fluent.py:198
 msgid "❌ {} isn't a fluent channel!"
 msgstr "❌ {}은 유창한 채널이 아닙니다!"
 
-#: fluent.py:199
+#: fluent.py:202
 #, docstring
 msgid "View all fluent channels"
 msgstr "모든 유창한 채널 보기"
 
-#: fluent.py:211
+#: fluent.py:214
 msgid "There are no fluent channels at this time."
 msgstr "현재 유창한 채널이 없습니다."
 
-#: fluent.py:212
+#: fluent.py:215
 msgid "**Fluent Settings**\n"
 "{}"
 msgstr "**유창한 설정**\n"
 "{}"
 
-#: fluent.py:257
+#: fluent.py:273
 msgid "Unable to finish translation, perhaps the API is down."
 msgstr "번역을 완료할 수 없습니다. 아마도 API가 작동하지 않는 것 같습니다."
 
-#: fluent.py:298
+#: fluent.py:315
 msgid "Invalid target language"
 msgstr "잘못된 대상 언어입니다"
 
