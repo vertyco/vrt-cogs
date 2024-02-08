@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-01-28 14:10-0500\n"
-"PO-Revision-Date: 2024-01-28 19:31\n"
+"POT-Creation-Date: 2024-01-29 23:31-0500\n"
+"PO-Revision-Date: 2024-01-30 05:08\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -50,39 +50,43 @@ msgstr ""
 msgid "You must be level {level} to vote."
 msgstr ""
 
-#: views\voteview.py:107
-msgid "You must be registered in the ArkTools database to make suggestions."
+#: views\voteview.py:109
+msgid "Your in-game profile must be registered in order to vote on suggestions.\n"
 msgstr ""
 
-#: views\voteview.py:113
+#: views\voteview.py:110
+msgid "Use the {} command to link your discord account."
+msgstr ""
+
+#: views\voteview.py:116
 msgid "You must have at least {hours} hours of playtime to vote."
 msgstr ""
 
-#: views\voteview.py:136
+#: views\voteview.py:139
 msgid "You have switched your downvote to an upvote."
 msgstr ""
 
-#: views\voteview.py:142
+#: views\voteview.py:145
 msgid "You have removed your upvote."
 msgstr ""
 
-#: views\voteview.py:146
+#: views\voteview.py:149
 msgid "You have upvoted this suggestion.\n"
 msgstr ""
 
-#: views\voteview.py:150 views\voteview.py:183
+#: views\voteview.py:153 views\voteview.py:186
 msgid "There are now {upvotes} upvotes and {downvotes} downvotes."
 msgstr ""
 
-#: views\voteview.py:169
+#: views\voteview.py:172
 msgid "You have switched your upvote to a downvote.\n"
 msgstr ""
 
-#: views\voteview.py:175
+#: views\voteview.py:178
 msgid "You have removed your downvote.\n"
 msgstr ""
 
-#: views\voteview.py:179
+#: views\voteview.py:182
 msgid "You have downvoted this suggestion.\n"
 msgstr ""
 
