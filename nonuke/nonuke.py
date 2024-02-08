@@ -34,7 +34,7 @@ class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -253,6 +253,9 @@ class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
             f"`IgnoreBots: `{conf.ignore_bots}\n"
             f"`LogChannel: `{lchan}",
         )
+
+        whitelisted_users = [f"<@{uid}>" for uid in conf.whitelist]
+        em.add_field(name="Whitelisted Users", value=humanize_list(whitelisted_users) or "None")
         await ctx.send(embed=em)
         perms = {
             "manage_roles": ctx.guild.me.guild_permissions.manage_roles,
