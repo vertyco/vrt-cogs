@@ -117,8 +117,8 @@ class Listen(MixinMeta):
             try:
                 await user.send(f"Slow down there! You are doing too many things too quickly in {entry.guild.name}!")
                 log_desc += "- User has been notified!"
-            except discord.HTTPException:
-                log_desc += "- Failed to notify user!"
+            except Exception as e:
+                log_desc += f"- Failed to notify user! ({e})"
 
         elif conf.action == "kick":
             if conf.dm:
@@ -127,14 +127,14 @@ class Listen(MixinMeta):
                         f"You have been kicked from {entry.guild.name} for exceeding the mod action rate limit!"
                     )
                     log_desc += "- User has been notified!\n"
-                except discord.HTTPException:
-                    log_desc += "- Failed to notify user!\n"
+                except Exception as e:
+                    log_desc += f"- Failed to notify user! ({e})\n"
 
             try:
                 await user.kick(reason=audit_reason)
                 log_desc += "- User has been kicked!"
-            except discord.HTTPException:
-                log_desc += "- Failed to kick user!"
+            except Exception as e:
+                log_desc += f"- Failed to kick user! ({e})"
 
         elif conf.action == "ban":
             if conf.dm:
@@ -143,14 +143,14 @@ class Listen(MixinMeta):
                         f"You have been banned from {entry.guild.name} for exceeding the mod action rate limit!"
                     )
                     log_desc += "- User has been notified!\n"
-                except discord.HTTPException:
-                    log_desc += "- Failed to notify user!\n"
+                except Exception as e:
+                    log_desc += f"- Failed to notify user! ({e})\n"
 
             try:
                 await user.ban(reason=audit_reason)
                 log_desc += "- User has been banned!"
-            except discord.HTTPException:
-                log_desc += "- Failed to ban user!"
+            except Exception as e:
+                log_desc += f"- Failed to ban user! ({e})"
 
         elif conf.action == "strip":
             # Strip all roles from the user
@@ -160,8 +160,8 @@ class Listen(MixinMeta):
                         f"You have had your roles stripped in {entry.guild.name} for exceeding the mod action rate limit!"
                     )
                     log_desc += "- User has been notified!\n"
-                except discord.HTTPException:
-                    log_desc += "- Failed to notify user!\n"
+                except Exception as e:
+                    log_desc += f"- Failed to notify user! ({e})\n"
 
             # Strip all roles from the user with any elevated permissions
             to_strip = [
@@ -190,8 +190,10 @@ class Listen(MixinMeta):
                 try:
                     await user.remove_roles(*list(to_remove), reason=audit_reason)
                     log_desc += "- User has had their roles stripped!"
-                except discord.HTTPException as e:
+                except Exception as e:
                     log_desc += f"- Failed to strip roles from user! ({e})"
+            else:
+                log_desc += "- User has no dangerous roles to strip!"
 
         embed = discord.Embed(
             title="Anti-Nuke Triggered!",
