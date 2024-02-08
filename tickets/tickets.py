@@ -26,7 +26,7 @@ log = logging.getLogger("red.vrt.tickets")
 _ = Translator("Tickets", __file__)
 
 
-# redgettext -D tickets.py commands/base.py commands/admin.py views.py menu.py utils.py
+# redgettext -D tickets.py commands/base.py commands/admin.py common/views.py common/menu.py common/utils.py
 @cog_i18n(_)
 class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaClass):
     """

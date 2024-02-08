@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2023-10-26 15:12-0400\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -280,17 +280,21 @@ msgid ""
 msgstr ""
 
 #: commands\base.py:294
-msgid "Guilds with {}% or more bots"
-msgstr ""
-
-#: commands\base.py:295
-msgid "Guilds with less than {} members"
+msgid "No guilds found!"
 msgstr ""
 
 #: commands\base.py:296
-msgid "Blacklisted guilds"
+msgid "Guilds with {}% or more bots"
 msgstr ""
 
 #: commands\base.py:297
+msgid "Guilds with less than {} members"
+msgstr ""
+
+#: commands\base.py:298
+msgid "Blacklisted guilds"
+msgstr ""
+
+#: commands\base.py:299
 msgid "Un-Whitelisted guilds"
 msgstr ""
