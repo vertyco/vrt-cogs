@@ -35,7 +35,6 @@ class Listen(MixinMeta):
             discord.AuditLogAction.kick,
             discord.AuditLogAction.ban,
             discord.AuditLogAction.unban,
-            discord.AuditLogAction.member_role_update,
             discord.AuditLogAction.bot_add,
             discord.AuditLogAction.webhook_delete,
             discord.AuditLogAction.emoji_delete,
