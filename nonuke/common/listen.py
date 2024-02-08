@@ -43,7 +43,6 @@ class Listen(MixinMeta):
         ignore = [
             entry.user_id == self.bot.user.id,
             entry.guild.owner_id == entry.user_id,
-            entry.guild.me.top_role <= entry.user.top_role,
             action not in valid_actions,
             not conf.enabled,
             entry.user_id in conf.whitelist,
@@ -111,6 +110,8 @@ class Listen(MixinMeta):
             f"**{user.name}** (`{user.id}`) has triggered NoNuke!\n"
             f"Exceeded {conf.overload} mod actions in {conf.cooldown} seconds\n"
         )
+        if entry.guild.me.top_role <= user.top_role:
+            log_desc += "- User has a higher role than me!\n"
 
         if conf.action == "notify":
             # Just notify the log channel and user
