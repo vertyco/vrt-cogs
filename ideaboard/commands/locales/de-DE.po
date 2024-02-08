@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-01-28 14:10-0500\n"
-"PO-Revision-Date: 2024-01-28 19:31\n"
+"POT-Creation-Date: 2024-01-30 12:15-0500\n"
+"PO-Revision-Date: 2024-01-30 17:36\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -17,17 +17,17 @@ msgstr ""
 "X-Crowdin-File-ID: 122\n"
 "Language: de_DE\n"
 
-#: commands\admin.py:21
+#: commands\admin.py:23
 #, docstring
 msgid "Manage IdeaBoard settings"
 msgstr ""
 
-#: commands\admin.py:27
+#: commands\admin.py:29
 #, docstring
 msgid "View IdeaBoard settings"
 msgstr ""
 
-#: commands\admin.py:36
+#: commands\admin.py:38
 msgid "`Approved Channel: `{}\n"
 "`Rejected Channel: `{}\n"
 "`Pending Channel:  `{}\n"
@@ -36,83 +36,84 @@ msgid "`Approved Channel: `{}\n"
 "`DM Result:        `{}\n"
 "`Upvote Emoji:     `{}\n"
 "`Downvote Emoji:   `{}\n"
+"`Show Vote Counts: `{}\n"
 "`Suggestions:      `{}\n"
 "`Suggestion #:     `{}\n"
 msgstr ""
 
-#: commands\admin.py:48 commands\admin.py:49 commands\admin.py:50
+#: commands\admin.py:51 commands\admin.py:52 commands\admin.py:53
 msgid "Not set"
 msgstr ""
 
-#: commands\admin.py:63
+#: commands\admin.py:67
 msgid "Ideaboard Settings"
 msgstr ""
 
-#: commands\admin.py:65
+#: commands\admin.py:69
 msgid "Cooldowns"
 msgstr ""
 
-#: commands\admin.py:66
+#: commands\admin.py:70
 msgid "Base: {0.base_cooldown} seconds\n"
 "Role Cooldowns: {1}"
 msgstr ""
 
-#: commands\admin.py:67 commands\admin.py:91 commands\admin.py:100
-#: commands\admin.py:108
+#: commands\admin.py:71 commands\admin.py:95 commands\admin.py:104
+#: commands\admin.py:112
 msgid "None Set"
 msgstr ""
 
-#: commands\admin.py:71
+#: commands\admin.py:75
 msgid "Account Age"
 msgstr ""
 
-#: commands\admin.py:72
+#: commands\admin.py:76
 msgid "Minimum age of account to vote or suggest\n"
 "Vote: {0.min_account_age_to_vote} hours\n"
 "Suggest: {0.min_account_age_to_suggest} hours"
 msgstr ""
 
-#: commands\admin.py:79
+#: commands\admin.py:83
 msgid "Join Time"
 msgstr ""
 
-#: commands\admin.py:80
+#: commands\admin.py:84
 msgid "Minimum time in server to vote or suggest\n"
 "Vote: {0.min_join_time_to_vote} hours\n"
 "Suggest: {0.min_join_time_to_suggest} hours"
 msgstr ""
 
-#: commands\admin.py:87
+#: commands\admin.py:91
 msgid "Vote Roles"
 msgstr ""
 
-#: commands\admin.py:89
+#: commands\admin.py:93
 msgid "Roles required to vote\n"
 "If no roles are set, anyone can vote.\n"
 msgstr ""
 
-#: commands\admin.py:95
+#: commands\admin.py:99
 msgid "Suggest Roles"
 msgstr ""
 
-#: commands\admin.py:97
+#: commands\admin.py:101
 msgid "Roles required to suggest\n"
 "If no roles are set, anyone can make suggestions.\n"
 msgstr ""
 
-#: commands\admin.py:104
+#: commands\admin.py:108
 msgid "Approvers"
 msgstr ""
 
-#: commands\admin.py:106
+#: commands\admin.py:110
 msgid "Roles required to approve suggestions\n"
 msgstr ""
 
-#: commands\admin.py:112
+#: commands\admin.py:116
 msgid "LevelUp Integration"
 msgstr ""
 
-#: commands\admin.py:113
+#: commands\admin.py:117
 msgid "Minimum level required to vote or make suggestions.\n"
 "Vote: {0.min_level_to_vote}\n"
 "Suggest: {0.min_level_to_suggest}"
@@ -128,150 +129,162 @@ msgid "Minimum playtime to vote or make suggestions\n"
 "Suggest: {0.min_playtime_to_suggest} hours"
 msgstr ""
 
-#: commands\admin.py:139
+#: commands\admin.py:140
 #, docstring
 msgid "Set the approved, rejected, or pending channels for IdeaBoard"
 msgstr ""
 
-#: commands\admin.py:147
+#: commands\admin.py:148
 msgid "Set {} channel to {}"
 msgstr ""
 
-#: commands\admin.py:153
+#: commands\admin.py:154
 #, docstring
 msgid "Toggle allowing anonymous suggestions"
 msgstr ""
 
-#: commands\admin.py:157
+#: commands\admin.py:158
 msgid "Anonymous suggestions are now {}."
 msgstr ""
 
-#: commands\admin.py:162
+#: commands\admin.py:163
 #, docstring
-msgid "Toggle reveal suggestion author on approval"
-msgstr ""
-
-#: commands\admin.py:166
-msgid "Revealing of authors on approval is now {}."
+msgid "\n"
+"        Toggle reveal suggestion author on approval\n\n"
+"        Approved suggestions are ALWAYS revealed regardless of this setting.\n"
+"        "
 msgstr ""
 
 #: commands\admin.py:171
+msgid "Revealing of authors on rejection is now {}."
+msgstr ""
+
+#: commands\admin.py:176
+#, docstring
+msgid "Toggle showing vote counts on suggestions"
+msgstr ""
+
+#: commands\admin.py:180
+msgid "Showing vote counts on suggestions is now {}."
+msgstr ""
+
+#: commands\admin.py:185
 #, docstring
 msgid "Toggle DMing users the results of suggestions they made"
 msgstr ""
 
-#: commands\admin.py:175
+#: commands\admin.py:189
 msgid "DMing users about suggestion results is now {}."
 msgstr ""
 
-#: commands\admin.py:180
+#: commands\admin.py:194
 #, docstring
 msgid "Set the upvote emoji"
 msgstr ""
 
-#: commands\admin.py:183
+#: commands\admin.py:197
 msgid "Upvote emoji set to {}"
 msgstr ""
 
-#: commands\admin.py:188
+#: commands\admin.py:202
 #, docstring
 msgid "Set the downvote emoji"
 msgstr ""
 
-#: commands\admin.py:191
+#: commands\admin.py:205
 msgid "Downvote emoji set to {}"
 msgstr ""
 
-#: commands\admin.py:196
+#: commands\admin.py:210
 #, docstring
 msgid "Set the base cooldown for making suggestions"
 msgstr ""
 
-#: commands\admin.py:200
+#: commands\admin.py:214
 msgid "Base cooldown set to {} seconds."
 msgstr ""
 
-#: commands\admin.py:202
+#: commands\admin.py:216
 msgid "Base cooldown disabled."
 msgstr ""
 
-#: commands\admin.py:207
+#: commands\admin.py:221
 #, docstring
 msgid "Set the suggestion cooldown for a specific role\n\n"
 "        To remove a role cooldown, specify 0 as the cooldown.\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:215
+#: commands\admin.py:229
 msgid "Cooldown for role {} updated to {} seconds."
 msgstr ""
 
-#: commands\admin.py:218
+#: commands\admin.py:232
 msgid "Cooldown for role {} removed."
 msgstr ""
 
-#: commands\admin.py:222
+#: commands\admin.py:236
 msgid "Cooldown for role {} set to {} seconds."
 msgstr ""
 
-#: commands\admin.py:224
+#: commands\admin.py:238
 msgid "Cooldown for role {} already disabled."
 msgstr ""
 
-#: commands\admin.py:229
+#: commands\admin.py:243
 #, docstring
 msgid "Add/remove a role to the voting role whitelist"
 msgstr ""
 
-#: commands\admin.py:237
+#: commands\admin.py:251
 msgid "Role {} `{}` voting whitelist."
 msgstr ""
 
-#: commands\admin.py:242
+#: commands\admin.py:256
 #, docstring
 msgid "Add/remove a role to the suggest role whitelist"
 msgstr ""
 
-#: commands\admin.py:250
+#: commands\admin.py:264
 msgid "Role {} `{}` suggest whitelist."
 msgstr ""
 
-#: commands\admin.py:255
+#: commands\admin.py:269
 #, docstring
 msgid "Add/remove a role to the approver role list"
 msgstr ""
 
-#: commands\admin.py:263
+#: commands\admin.py:277
 msgid "Role {} `{}` approvers list."
 msgstr ""
 
-#: commands\admin.py:268
+#: commands\admin.py:282
 #, docstring
 msgid "Add/remove a role to/from the role blacklist"
 msgstr ""
 
-#: commands\admin.py:272
+#: commands\admin.py:286
 msgid "Role `{}` removed from blacklist."
 msgstr ""
 
-#: commands\admin.py:275
+#: commands\admin.py:289
 msgid "Role `{}` added to blacklist."
 msgstr ""
 
-#: commands\admin.py:280
+#: commands\admin.py:294
 #, docstring
 msgid "Add/remove a user to/from the user blacklist"
 msgstr ""
 
-#: commands\admin.py:284
+#: commands\admin.py:298
 msgid "User `{}` removed from blacklist."
 msgstr ""
 
-#: commands\admin.py:287
+#: commands\admin.py:301
 msgid "User `{}` added to blacklist."
 msgstr ""
 
-#: commands\admin.py:292
+#: commands\admin.py:306
 #, docstring
 msgid "\n"
 "        Set the minimum account age required to vote and suggest.\n\n"
@@ -281,11 +294,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:303
+#: commands\admin.py:317
 msgid "Minimum account age to vote is set to {0} hours and to suggest is set to {1} hours."
 msgstr ""
 
-#: commands\admin.py:311
+#: commands\admin.py:325
 #, docstring
 msgid "\n"
 "        Set the minimum time a user must be in the server to vote and suggest.\n\n"
@@ -295,11 +308,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:322
+#: commands\admin.py:336
 msgid "Minimum join time to vote is set to {0} hours and to suggest is set to {1} hours."
 msgstr ""
 
-#: commands\admin.py:330
+#: commands\admin.py:344
 #, docstring
 msgid "\n"
 "        Set the LevelUp integration minimum level required to vote and suggest.\n\n"
@@ -309,15 +322,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:338
+#: commands\admin.py:352
 msgid "LevelUp is not loaded. Please load it and try again."
 msgstr ""
 
-#: commands\admin.py:345
+#: commands\admin.py:359
 msgid "Minimum level to vote is set to {0} and to suggest is set to {1}."
 msgstr ""
 
-#: commands\admin.py:351
+#: commands\admin.py:365
 #, docstring
 msgid "\n"
 "        Set the ArkTools integration minimum playtime required to vote and suggest.\n\n"
@@ -327,162 +340,184 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:359
+#: commands\admin.py:377
+msgid "This command is only available to Vertyco and Arkon."
+msgstr ""
+
+#: commands\admin.py:380
 msgid "ArkTools is not loaded. Please load it and try again."
 msgstr ""
 
-#: commands\admin.py:366
+#: commands\admin.py:387
 msgid "Minimum playtime to vote is set to {0} hours and to suggest is set to {1} hours."
 msgstr ""
 
-#: commands\admin.py:376
+#: commands\admin.py:397
 #, docstring
 msgid "Approve an idea/suggestion."
 msgstr ""
 
-#: commands\admin.py:379 commands\admin.py:488 commands\admin.py:600
+#: commands\admin.py:400 commands\admin.py:511 commands\admin.py:627
 msgid "No approvers have been set! Use the {} command to add one."
 msgstr ""
 
-#: commands\admin.py:384
+#: commands\admin.py:405
 msgid "You do not have the required roles to approve suggestions."
 msgstr ""
 
-#: commands\admin.py:388 commands\admin.py:497 commands\user.py:45
+#: commands\admin.py:409 commands\admin.py:520 commands\user.py:46
 msgid "The pending suggestions channel has not been set!"
 msgstr ""
 
-#: commands\admin.py:391
+#: commands\admin.py:412
 msgid "The approved suggestions channel has not been set!"
 msgstr ""
 
-#: commands\admin.py:396 commands\admin.py:505 commands\user.py:50
+#: commands\admin.py:417 commands\admin.py:528 commands\user.py:51
 msgid "The pending suggestions channel no longer exists!"
 msgstr ""
 
-#: commands\admin.py:400 commands\admin.py:454
+#: commands\admin.py:421 commands\admin.py:475
 msgid "The approved suggestions channel no longer exists!"
 msgstr ""
 
-#: commands\admin.py:410 commands\admin.py:519
+#: commands\admin.py:431 commands\admin.py:542
 msgid "I do not have the required permissions to send messages in the suggestion channels."
 msgstr ""
 
-#: commands\admin.py:415 commands\admin.py:524 commands\admin.py:611
+#: commands\admin.py:436 commands\admin.py:547 commands\admin.py:638
 msgid "That suggestion does not exist!"
 msgstr ""
 
-#: commands\admin.py:420 commands\admin.py:529
+#: commands\admin.py:441 commands\admin.py:552
 msgid "Cannot find the message associated with this suggestion! Cleaning from config..."
 msgstr ""
 
-#: commands\admin.py:427
+#: commands\admin.py:448
 msgid "Approved Suggestion"
 msgstr ""
 
-#: commands\admin.py:429 commands\admin.py:540 commands\admin.py:630
+#: commands\admin.py:450 commands\admin.py:563 commands\admin.py:683
 msgid "Suggested by {}"
 msgstr ""
 
-#: commands\admin.py:432
+#: commands\admin.py:453
 msgid "Suggested by a user who is no longer in the server."
 msgstr ""
 
-#: commands\admin.py:435
+#: commands\admin.py:456
 msgid "Reason"
 msgstr ""
 
-#: commands\admin.py:439 commands\admin.py:548
+#: commands\admin.py:460 commands\admin.py:571
 msgid "Results"
 msgstr ""
 
-#: commands\admin.py:448 commands\admin.py:557 commands\user.py:153
+#: commands\admin.py:469 commands\admin.py:580 commands\user.py:161
 msgid "Suggestion #{}"
 msgstr ""
 
-#: commands\admin.py:451
+#: commands\admin.py:472
 msgid "I do not have the required permissions to send messages in the approved suggestions channel."
 msgstr ""
 
-#: commands\admin.py:471
+#: commands\admin.py:492
 msgid "Your [suggestion]({}) has been approved!"
 msgstr ""
 
-#: commands\admin.py:485
+#: commands\admin.py:500
+msgid "Suggestion #{} has been approved."
+msgstr ""
+
+#: commands\admin.py:508
 #, docstring
 msgid "Reject an idea/suggestion."
 msgstr ""
 
-#: commands\admin.py:493
+#: commands\admin.py:516
 msgid "You do not have the required roles to reject suggestions."
 msgstr ""
 
-#: commands\admin.py:500
+#: commands\admin.py:523
 msgid "The rejected suggestions channel has not been set!"
 msgstr ""
 
-#: commands\admin.py:509
+#: commands\admin.py:532
 msgid "The rejected suggestions channel no longer exists!"
 msgstr ""
 
-#: commands\admin.py:536
+#: commands\admin.py:559
 msgid "Rejected Suggestion"
 msgstr ""
 
-#: commands\admin.py:538
+#: commands\admin.py:561
 msgid "Suggested anonymously"
 msgstr ""
 
-#: commands\admin.py:544
+#: commands\admin.py:567
 msgid "Reason for Rejection"
 msgstr ""
 
-#: commands\admin.py:560
+#: commands\admin.py:583
 msgid "I do not have the required permissions to send messages in the denied suggestions channel."
 msgstr ""
 
-#: commands\admin.py:563
+#: commands\admin.py:586
 msgid "The denied suggestions channel no longer exists!"
 msgstr ""
 
-#: commands\admin.py:580
+#: commands\admin.py:603
 msgid "Your [suggestion]({}) has been rejected!"
 msgstr ""
 
-#: commands\admin.py:596
+#: commands\admin.py:611
+msgid "Suggestion #{} has been rejected."
+msgstr ""
+
+#: commands\admin.py:623
 #, docstring
 msgid "View the list of who has upvoted and who has downvoted a suggestion."
 msgstr ""
 
-#: commands\admin.py:606
+#: commands\admin.py:633
 msgid "You do not have the required roles to inspect suggestions."
 msgstr ""
 
-#: commands\admin.py:620
-msgid "Upvoters"
+#: commands\admin.py:647
+msgid "Upvoters ({})"
 msgstr ""
 
-#: commands\admin.py:620
+#: commands\admin.py:647
 msgid "No upvotes yet"
 msgstr ""
 
-#: commands\admin.py:621
-msgid "Downvoters"
+#: commands\admin.py:648
+msgid "Downvoters ({})"
 msgstr ""
 
-#: commands\admin.py:621
+#: commands\admin.py:648
 msgid "No downvotes yet"
 msgstr ""
 
-#: commands\admin.py:623
+#: commands\admin.py:650
 msgid "Votes for Suggestion #{}"
 msgstr ""
 
-#: commands\admin.py:624 commands\admin.py:625
+#: commands\admin.py:654 commands\admin.py:655 commands\admin.py:677
+#: commands\admin.py:678
 msgid "N/A"
 msgstr ""
 
-#: commands\admin.py:634
+#: commands\admin.py:658
+msgid "Upvoters ({}):\n"
+msgstr ""
+
+#: commands\admin.py:666
+msgid "\n"
+"Downvoters ({}):\n"
+msgstr ""
+
+#: commands\admin.py:687
 msgid "Suggested by {} [No longer in server]"
 msgstr ""
 
@@ -495,87 +530,87 @@ msgstr ""
 msgid "Return a response to the user, and delete their message if possible."
 msgstr ""
 
-#: commands\user.py:58
+#: commands\user.py:59
 msgid "I do not have the required permissions to send messages in the pending suggestions channel."
 msgstr ""
 
-#: commands\user.py:65
+#: commands\user.py:66
 msgid "You do not have the required roles to make suggestions."
 msgstr ""
 
-#: commands\user.py:71
+#: commands\user.py:72
 msgid "Your account is too young to make suggestions."
 msgstr ""
 
-#: commands\user.py:77
+#: commands\user.py:78
 msgid "You haven't been in the server long enough to make suggestions."
 msgstr ""
 
-#: commands\user.py:83
+#: commands\user.py:84
 msgid "You are not allowed to make suggestions due to a blacklisted role."
 msgstr ""
 
-#: commands\user.py:87
+#: commands\user.py:88
 msgid "You are blacklisted from making suggestions."
 msgstr ""
 
-#: commands\user.py:90
+#: commands\user.py:91
 msgid "No approvers have been set! Admins needs to use the {} command to add one."
 msgstr ""
 
-#: commands\user.py:97
+#: commands\user.py:98
 msgid "You must be level {} or higher to make suggestions.\n"
 "Use the {} command to check your level."
 msgstr ""
 
-#: commands\user.py:114
+#: commands\user.py:115
 msgid "You must be registered in the ArkTools database to make suggestions."
 msgstr ""
 
-#: commands\user.py:119
+#: commands\user.py:120
 msgid "You must have at least {} hours of playtime to make suggestions."
 msgstr ""
 
-#: commands\user.py:142
+#: commands\user.py:149
 msgid "You must wait `{}` before making another suggestion."
 msgstr ""
 
-#: commands\user.py:157
+#: commands\user.py:165
 msgid "Posted anonymously"
 msgstr ""
 
-#: commands\user.py:159
+#: commands\user.py:167
 msgid "Posted by {}"
 msgstr ""
 
-#: commands\user.py:172
+#: commands\user.py:180
 msgid "Your [suggestion]({}) has been posted!"
 msgstr ""
 
-#: commands\user.py:199
+#: commands\user.py:207
 #, docstring
 msgid "Display your current profile stats for suggestions and votes."
 msgstr ""
 
-#: commands\user.py:206
+#: commands\user.py:215
 msgid "Stats for {}"
 msgstr ""
 
-#: commands\user.py:210
+#: commands\user.py:219
 msgid "Suggestion Summary"
 msgstr ""
 
-#: commands\user.py:211
+#: commands\user.py:220
 msgid "Suggestions Made: {}\n"
 "Suggestions Approved: {}\n"
 "Suggestions Denied: {}"
 msgstr ""
 
-#: commands\user.py:220
+#: commands\user.py:229
 msgid "Voting Summary"
 msgstr ""
 
-#: commands\user.py:221
+#: commands\user.py:230
 msgid "Total Upvotes: {}\n"
 "Total Downvotes: {}\n"
 "Successful Votes (Wins): {}\n"
