@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-11-07 16:20-0500\n"
-"PO-Revision-Date: 2023-11-07 22:51\n"
+"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"PO-Revision-Date: 2024-02-08 23:50\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,28 +17,24 @@ msgstr ""
 "X-Crowdin-File-ID: 55\n"
 "Language: es_ES\n"
 
-#: common\api.py:256
+#: common\api.py:41
+msgid "Failed to fetch: {}"
+msgstr ""
+
+#: common\api.py:189
 #, docstring
 msgid "Get token list from text"
 msgstr "Obtener lista de tokens a partir de texto"
 
-#: common\api.py:294
+#: common\api.py:217
 msgid "There are no API keys set!\n"
 msgstr "¡No se han establecido claves API!\n"
 
-#: common\api.py:296
+#: common\api.py:219
 msgid "- Set your OpenAI key with `{}`\n"
 msgstr "- Establece tu clave de OpenAI con `{}`\n"
 
-#: common\api.py:297
-msgid "- Or set an endpoint override to your self-hosted LLM with `{}`\n"
-msgstr "- O establezca una anulación de punto final para su LLM autohospedado con `{}`\n"
-
-#: common\api.py:301
-msgid "- Alternatively you can set a global endpoint with `{}`"
-msgstr "- Alternativamente, puedes establecer un punto final global con `{}`"
-
-#: common\api.py:309
+#: common\api.py:225
 #, docstring
 msgid "Update embeds to match current dimensions\n\n"
 "        Takes a sample using current embed method, the updates the rest to match dimensions\n"
@@ -46,137 +42,147 @@ msgid "Update embeds to match current dimensions\n\n"
 msgstr "Actualizar las incrustaciones para que coincidan con las dimensiones actuales.\n\n"
 "Toma una muestra utilizando el método de incrustación actual y actualiza el resto para que coincidan con las dimensiones        "
 
-#: common\api.py:342
+#: common\api.py:265
 #, docstring
 msgid "Get text from token list"
 msgstr "Obtener texto de la lista de tokens"
 
-#: common\api.py:380
+#: common\api.py:291
 #, docstring
-msgid "Iteratively degrade a conversation payload, prioritizing more recent messages and critical context\n\n"
+msgid "\n"
+"        Iteratively degrade a conversation payload in-place to fit within the max token limit, prioritizing more recent messages and critical context.\n\n"
+"        Order of importance:\n"
+"        - System messages\n"
+"        - Function calls available to model\n"
+"        - Most recent user message\n"
+"        - Most recent assistant message\n"
+"        - Most recent function/tool message\n\n"
+"        System messages are always ignored.\n\n"
 "        Args:\n"
 "            messages (List[dict]): message entries sent to the api\n"
 "            function_list (List[dict]): list of json function schemas for the model\n"
 "            conf: (GuildSettings): current settings\n\n"
 "        Returns:\n"
-"            Tuple[List[dict], List[dict], bool]: updated messages list, function list, and whether the conversation was degraded\n"
+"            bool: whether the conversation was degraded\n"
 "        "
-msgstr "Degradar de forma iterativa una carga de conversación, priorizando los mensajes más recientes y el contexto crítico.\n\n"
-"Args:\n"
-"    mensajes (List[dict]): entradas de mensajes enviados a la API\n"
-"    function_list (List[dict]): lista de esquemas de funciones JSON para el modelo\n"
-"    conf: (GuildSettings): configuración actual\n\n"
-"Devuelve:\n"
-"    Tuple[List[dict], List[dict], bool]: lista de mensajes actualizada, lista de funciones y si se degradó la conversación        "
+msgstr ""
 
-#: common\api.py:525
+#: common\api.py:467
 #, docstring
 msgid "Pagify a long string by tokens rather than characters"
 msgstr "Paginar una cadena larga por tokens en lugar de caracteres"
 
-#: common\api.py:582
+#: common\api.py:524
 msgid "Custom Functions"
 msgstr "Funciones personalizadas"
 
-#: common\api.py:588
+#: common\api.py:530
 msgid "3rd Party"
 msgstr "3ª Parte"
 
-#: common\api.py:589
+#: common\api.py:531
 msgid "This function is managed by the `{}` cog"
 msgstr "Esta función es gestionada por el engranaje `{}`"
 
-#: common\api.py:594
+#: common\api.py:536
 msgid "Internal Function"
 msgstr "Función interna"
 
-#: common\api.py:595
+#: common\api.py:537
 msgid "This is an internal command that can only be used when interacting with a tutor"
 msgstr "Este es un comando interno que solo se puede utilizar al interactuar con un tutor"
 
-#: common\api.py:601
+#: common\api.py:543
 msgid "This function consumes `{}` input tokens each call\n"
 msgstr "Esta función consume {} tokens de entrada en cada llamada.\n"
 
-#: common\api.py:616
+#: common\api.py:558
 msgid "Hidden..."
 msgstr "Oculto..."
 
-#: common\api.py:618
+#: common\api.py:560
 msgid "Schema"
 msgstr "Esquema"
 
-#: common\api.py:619
+#: common\api.py:561
 msgid "Code"
 msgstr "Código"
 
-#: common\api.py:621 common\api.py:644
+#: common\api.py:563 common\api.py:586
 msgid "Page {}/{}"
 msgstr "Página {}/{}"
 
-#: common\api.py:628
+#: common\api.py:570
 msgid "No custom code has been added yet!"
 msgstr "¡Aún no se ha añadido ningún código personalizado!"
 
-#: common\api.py:643
+#: common\api.py:585
 msgid "Embeddings"
 msgstr "Incrustaciones"
 
-#: common\api.py:654
+#: common\api.py:596
 msgid "`Created:    `{}\n"
 "`Modified:   `{}\n"
 "`Tokens:     `{}\n"
 "`Dimensions: `{}\n"
 "`AI Created: `{}\n"
+"`Model:      `{}\n"
 msgstr ""
 
-#: common\api.py:679
+#: common\api.py:623
 msgid "No embeddings have been added!"
 msgstr "¡No se han añadido incrustaciones!"
 
-#: common\chat.py:141
+#: common\chat.py:145
 msgid "No message history!"
 msgstr "¡Sin historial de mensajes!"
 
-#: common\chat.py:154
-msgid "Failed to communicate with endpoint!"
-msgstr "¡No se ha podido comunicar con el punto final!"
-
 #: common\chat.py:158
+msgid "The server had an error processing your request! Please try again later."
+msgstr ""
+
+#: common\chat.py:160
+msgid "Failed to communicate with API!"
+msgstr ""
+
+#: common\chat.py:164
 msgid "Invalid API key, please set a new valid key!"
 msgstr "¡Clave API no válida, por favor establezca una nueva clave válida!"
 
-#: common\chat.py:160
+#: common\chat.py:166
 msgid "Uh oh, looks like my API key is invalid!"
 msgstr "¡Parece que mi clave API no es válida!"
 
-#: common\chat.py:165
-msgid "**KeyError in prompt or system message**\n"
-"{}"
-msgstr "KeyError en el prompt o mensaje de sistema. {}"
-
-#: common\chat.py:171
+#: common\chat.py:176
 msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
 msgstr "Uh oh, ¡algo salió mal! El propietario del bot puede usar `{}` para ver el error."
 
-#: common\chat.py:206
+#: common\chat.py:179
+msgid "API Status: {}"
+msgstr ""
+
+#: common\chat.py:212
 msgid "No results found"
 msgstr "No se encontraron resultados"
 
-#: common\chat.py:227
+#: common\chat.py:234
 #, docstring
 msgid "Call the API asynchronously"
 msgstr "Llamar a la API de forma asíncrona"
 
-#: common\chat.py:260
+#: common\chat.py:317
 msgid "None"
 msgstr ""
 
-#: common\chat.py:480
+#: common\chat.py:396
+msgid "Request timed out, please try again."
+msgstr ""
+
+#: common\chat.py:558
 msgid "Response failed due to invalid regex, check logs for more info."
 msgstr "La respuesta ha fallado debido a una expresión regular no válida, verifica los registros para obtener más información."
 
-#: common\chat.py:514
+#: common\chat.py:591
 #, docstring
 msgid "Prepare content for calling the GPT API\n\n"
 "        Args:\n"
@@ -202,43 +208,101 @@ msgstr "Preparar el contenido para llamar a la API GPT\n\n"
 "        Devuelve:\n"
 "            List[dict]: lista de mensajes preparados para api        "
 
-#: common\chat.py:532
+#: common\chat.py:609
 #, docstring
 msgid "Instead of format(**params) possibly giving a KeyError if prompt has code in it"
 msgstr "En lugar de format(**params) que posiblemente genere un KeyError si el prompt contiene código en él"
 
-#: common\chat.py:601
+#: common\chat.py:670
 msgid "\n"
 "Missing 'attach files' permissions!"
 msgstr "\n"
 "¡Faltan permisos para adjuntar archivos!"
 
-#: common\utils.py:19
+#: common\utils.py:22
+#, docstring
+msgid "\n"
+"    Cleans the function name to ensure it only contains alphanumeric characters,\n"
+"    underscores, or dashes and is not longer than 64 characters.\n\n"
+"    Args:\n"
+"        name (str): The original function name to clean.\n\n"
+"    Returns:\n"
+"        str: The cleaned function name.\n"
+"    "
+msgstr ""
+
+#: common\utils.py:42
 #, docstring
 msgid "Get all attachments from context"
 msgstr "Obtener todos los archivos adjuntos del contexto"
 
-#: common\utils.py:40
+#: common\utils.py:63
 msgid "Canceled"
 msgstr "Cancelado"
 
-#: common\utils.py:53
+#: common\utils.py:76
 msgid "You have been blacklisted from using this command!"
 msgstr "¡Has sido incluido en la lista negra de usuarios de este comando!"
 
-#: common\utils.py:58
+#: common\utils.py:80
 msgid "You have a blacklisted role and cannot use this command!"
 msgstr "¡Tienes un rol en la lista negra y no puedes usar este comando!"
 
-#: common\utils.py:63
+#: common\utils.py:84
 msgid "You cannot use that command in this channel!"
 msgstr "¡No puedes usar ese comando en este canal!"
 
-#: common\utils.py:68
+#: common\utils.py:88
 msgid "You cannot use that command in any channels under this category"
 msgstr "No puedes usar ese comando en ningún canal bajo esta categoría"
 
-#: common\utils.py:116 common\utils.py:117
+#: common\utils.py:123 common\utils.py:124
 msgid "[Code Removed]"
 msgstr "[Código eliminado]"
+
+#: common\utils.py:200
+#, docstring
+msgid "Make sure that if a conversation payload contains images that the model supports vision"
+msgstr ""
+
+#: common\utils.py:220
+#, docstring
+msgid "\n"
+"    Ensure all tool calls satisfy schema requirements, modifying the messages payload in-place.\n\n"
+"    The \"messages\" param is a list of message payloads.\n\n"
+"    ## Schema\n"
+"    - Messages with they key \"tool_calls\" are calling a tool or tools.\n"
+"    - The \"tool_calls\" value is a list of tool call dicts, each containing an \"id\" key that maps to a tool response\n"
+"    - Messages with the role \"tool\" are tool call responses, each with a \"tool_call_id\" key that corresponds to a tool call \"id\"\n"
+"    - More than one message can contain the same tool call id within the same conversation payload, which is a pain in the ass\n\n"
+"    ## Tool Call Message Payload Example\n"
+"    {\n"
+"        \"content\": None,\n"
+"        \"role\": \"assistant\",\n"
+"        \"tool_calls\": [\n"
+"            {\n"
+"                \"id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"                \"type\": \"function\",\n"
+"                \"function\": {\n"
+"                    \"arguments\": {},\n"
+"                    \"name\": \"function_name\",\n"
+"                }\n"
+"            }\n"
+"        ]\n"
+"    }\n\n"
+"    ## Tool Response Message Payload Example\n"
+"    {\n"
+"        \"role\": \"tool\",\n"
+"        \"name\": \"function_name\",\n"
+"        \"content\": \"The results of the function in text\",\n"
+"        \"tool_call_id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"    }\n\n"
+"    ## Rules\n"
+"    - A message payload can contain multiple tool calls, each with their own id\n"
+"    - A message with tool_calls must be followed up with messages containing the role \"tool\" with the corresponding \"tool_call_id\"\n"
+"    - All messages with \"tool_calls\" must be followed by messages with the tool responses\n"
+"    - All tool call responses must have a preceeding tool call.\n\n"
+"    Returns: boolean, True if any tool calls or responses were purged.\n"
+"    "
+msgstr ""
 
