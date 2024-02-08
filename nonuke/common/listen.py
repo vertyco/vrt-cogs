@@ -208,3 +208,50 @@ class Listen(MixinMeta):
                 await channel.send(log_desc)
             else:
                 log.warning(f"Could not send Anti-Nuke log to {channel.name} in {entry.guild.name}!")
+
+    @commands.Cog.listener()
+    async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
+        guild = before.guild or after.guild
+        conf = self.db.get_conf(guild)
+        if not conf.enabled:
+            return
+        if not conf.log:
+            return
+        channel = guild.get_channel(conf.log)
+        if not channel:
+            return
+
+        # Check if any dangerous permissions have been added to the role
+        dangerous_perms = [
+            "administrator",
+            "ban_members",
+            "kick_members",
+            "manage_channels",
+            "manage_guild",
+            "manage_emojis",
+            "manage_messages",
+            "manage_roles",
+            "manage_webhooks",
+        ]
+        # Figure out which permissions were added
+        added_perms = [perm for perm, value in after.permissions if value and not getattr(before.permissions, perm)]
+
+        # Verify if any added permissions are dangerous and make a list of them
+        dangerous_additions = [perm for perm in added_perms if perm in dangerous_perms]
+
+        # If dangerous permissions were added, send an alert message
+        if dangerous_additions:
+            alert_message = (
+                f"Dangerous permission changes detected in the {after.mention} role.\n"
+                f"The following permissions were added: {', '.join(dangerous_additions)}."
+            )
+            embed = discord.Embed(
+                title="⚠️ NoNuke Security Alert! ⚠️",
+                description=alert_message,
+                color=discord.Color.yellow(),
+                timestamp=datetime.now(),
+            )
+            if channel.permissions_for(guild.me).embed_links:
+                await channel.send(embed=embed)
+            elif channel.permissions_for(guild.me).send_messages:
+                await channel.send(alert_message)

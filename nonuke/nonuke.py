@@ -28,11 +28,13 @@ class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
     Set an overload count(X events in X seconds)
     Set an action(kick, ban, strip, notify)
 
-    If a user or bot exceeds X mod events within X seconds, the set action will be performed
+    If a user or bot exceeds X mod events within X seconds, the set action will be performed.
+
+    Additionally, any dangerous permissions added to a role will be logged.
     """
 
     __author__ = "Vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
