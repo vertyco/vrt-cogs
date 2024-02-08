@@ -88,7 +88,10 @@ class Generator(MixinMeta, ABC):
         if profile_image:
             pfp_image = self.get_image_content_from_url(str(profile_image))
             profile_bytes = BytesIO(pfp_image)
-            profile = Image.open(profile_bytes)
+            try:
+                profile = Image.open(profile_bytes)
+            except UnidentifiedImageError:
+                profile = Image.open(self.default_pfp)
         else:
             profile = Image.open(self.default_pfp)
         # Get background
