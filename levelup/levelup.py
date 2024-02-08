@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.11.17"
+    __version__ = "3.12.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -572,42 +572,43 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         new_role = roles_to_add[-1].mention if roles_to_add else None
 
-        # Send levelup messages
-        if not usepics:
-            if notify:
-                if dm:
-                    if new_role:
-                        txt = _("You have just reached level {} in {} and obtained the {} role!").format(
-                            new_level, guild.name, new_role
-                        )
-                    else:
-                        txt = _("You have just reached level {} in {}!").format(new_level, guild.name)
-                    dmembed = discord.Embed(description=txt, color=member.color)
-                    dmembed.set_thumbnail(url=pfp)
-                    try:
-                        await member.send(embed=dmembed)
-                    except discord.Forbidden:
-                        pass
-                elif all(perms) and channel:
-                    if new_role:
-                        txt = _("You have just reached level {} and obtained the {} role!").format(new_level, new_role)
-                    else:
-                        txt = _("Just reached level {}!").format(new_level)
-                    channelembed = discord.Embed(description=txt, color=member.color)
-                    channelembed.set_author(name=name, icon_url=pfp)
-                    try:
-                        if mention:
-                            await channel.send(mentionuser, embed=channelembed)
-                        else:
-                            await channel.send(embed=channelembed)
-                    except Exception as e:
-                        log.warning(f"Failed to send levelup alert to {channel.name}!", exc_info=e)
+        placeholders = {
+            "username": member.name,
+            "displayname": member.display_name,
+            "mention": member.mention,
+            "level": new_level,
+            "role": new_role,
+            "server": guild.name,
+        }
+        if new_role:
+            if dm_txt := conf.get("lvlup_dm_role"):
+                dm_txt = dm_txt.format(**placeholders)
+            else:
+                dm_txt = _("You have just reached level {} in {} and obtained the {} role!").format(
+                    new_level, guild.name, new_role
+                )
 
+            if msg_txt := conf.get("lvlup_msg_role"):
+                msg_txt = msg_txt.format(**placeholders)
+            else:
+                msg_txt = _("{} just reached level {} and obtained the {} role!").format(
+                    mentionuser if mention else name, new_level, new_role
+                )
         else:
-            # Generate LevelUP Image
-            banner = bg if bg else await self.get_banner(member)
+            if dm_txt := conf.get("lvlup_dm"):
+                placeholders.pop("role")
+                dm_txt = dm_txt.format(**placeholders)
+            else:
+                dm_txt = _("You have just reached level {} in {}!").format(new_level, guild.name)
 
-            color = str(member.colour)
+            if msg_txt := conf.get("lvlup_msg"):
+                msg_txt = msg_txt.format(**placeholders)
+            else:
+                msg_txt = _("{} just reached level {}!").format(mentionuser if mention else name, new_level)
+
+        if usepics and notify:
+            banner = bg if bg else await self.get_banner(member)
+            color = str(member.color)
             if color == "#000000":  # Don't use default color
                 color = str(discord.Color.random())
             color = hex_to_rgb(color)
@@ -623,34 +624,41 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             temp = BytesIO()
             try:
                 temp.name = f"{member.id}.webp"
-                img.save(temp, format="WEBP")
+                await asyncio.to_thread(img.save, temp, format="WEBP")
             except KeyError:
                 temp.name = f"{member.id}.png"
-                img.save(temp, format="PNG")
+                await asyncio.to_thread(img.save, temp, format="PNG")
             temp.seek(0)
             file = discord.File(temp)
 
-            if notify:
-                if dm:
-                    if new_role:
-                        txt = _("You have just leveled up in {} and obtained the {} role!").format(guild.name, new_role)
+            if dm:
+                try:
+                    await member.send(dm_txt, file=file)
+                except discord.Forbidden:
+                    pass
+            elif all(perms) and channel:
+                try:
+                    await channel.send(msg_txt, file=file)
+                except Exception as e:
+                    log.warning(f"Failed to send levelup alert to {channel.name}!", exc_info=e)
+
+        elif notify:
+            # Via Embed instead of image
+            if dm:
+                em = discord.Embed(description=dm_txt, color=member.color).set_thumbnail(url=pfp)
+                try:
+                    await member.send(embed=em)
+                except discord.Forbidden:
+                    pass
+            elif all(perms) and channel:
+                em = discord.Embed(description=msg_txt, color=member.color).set_author(name=name, icon_url=pfp)
+                try:
+                    if mention:
+                        await channel.send(member.mention, embed=em)
                     else:
-                        txt = _("You just leveled up in {}!").format(guild.name)
-                    try:
-                        await member.send(txt, file=file)
-                    except discord.Forbidden:
-                        pass
-                elif all(perms) and channel:
-                    if new_role:
-                        txt = _("**{} just leveled up and obtained the {} role!**").format(
-                            mentionuser if mention else name, new_role
-                        )
-                    else:
-                        txt = _("**{} just leveled up!**").format(mentionuser if mention else name)
-                    try:
-                        await channel.send(txt, file=file)
-                    except Exception as e:
-                        log.warning(f"Failed to send levelup alert to {channel.name}!", exc_info=e)
+                        await channel.send(embed=em)
+                except Exception as e:
+                    log.warning(f"Failed to send levelup alert to {channel.name}!", exc_info=e)
 
         if not roleperms:
             return
@@ -663,6 +671,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 await member.add_roles(*roles_to_add, reason=_("Leveled Up!"))
             except discord.Forbidden:
                 log.warning(f"Lacking permissions to add roles to {member.name} in {member.guild.name}")
+
         if roles_to_remove:
             try:
                 await member.add_roles(*roles_to_remove, reason=_("Auto-remove previous level roles"))
@@ -1177,6 +1186,16 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             text = humanize_list(ignored)
             if ignored:
                 embed.add_field(name=_("Ignored Users"), value=text, inline=False)
+
+        # Get levelup messages
+        if dm_role := conf.get("lvlup_dm_role"):
+            embed.add_field(name=_("LevelUp DM Role Message"), value=dm_role, inline=False)
+        if dm := conf.get("lvlup_dm"):
+            embed.add_field(name=_("LevelUp DM Message"), value=dm, inline=False)
+        if msg_role := conf.get("lvlup_msg_role"):
+            embed.add_field(name=_("LevelUp Channel Role Message"), value=msg_role, inline=False)
+        if msg := conf.get("lvlup_msg"):
+            embed.add_field(name=_("LevelUp Channel Message"), value=msg, inline=False)
 
         await ctx.send(embed=embed)
 
@@ -2753,6 +2772,158 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         """
         self.data[ctx.guild.id]["starcooldown"] = time_in_seconds
         await ctx.tick()
+        await self.save_cache(ctx.guild)
+
+    @lvl_group.group(name="alerts")
+    async def set_levelup_alerts(self, ctx: commands.Context):
+        """Level up alert messages"""
+
+    @set_levelup_alerts.command(name="dm")
+    async def set_levelup_dm(self, ctx: commands.Context, *, message: str = None):
+        """
+        Set the DM a user gets when they level up (Without recieving a role).
+
+        **Arguments**
+        The following placeholders can be used:
+        - `{username}`: The user's name
+        - `{mention}`: Mentions the user
+        - `{displayname}`: The user's display name
+        - `{level}`: The level the user just reached
+        - `{server}`: The server the user is in
+        """
+        if not message:
+            if self.data[ctx.guild.id]["lvlup_dm"]:
+                self.data[ctx.guild.id]["lvlup_dm"] = None
+                await self.save_cache(ctx.guild)
+                return await ctx.send(_("Level up DM message has been removed"))
+            return await ctx.send(_("You need to provide a message"))
+
+        params = {
+            "username": ctx.author.name,
+            "mention": ctx.author.mention,
+            "displayname": ctx.author.display_name,
+            "level": 69420,
+            "server": ctx.guild.name,
+        }
+        try:
+            msg = message.format(**params)
+        except KeyError as e:
+            return await ctx.send(_("Invalid placeholder: ") + str(e))
+
+        await ctx.send(_("Level up DM message has been set"), embed=discord.Embed(description=msg))
+        self.data[ctx.guild.id]["lvlup_dm"] = message
+        await self.save_cache(ctx.guild)
+
+    @set_levelup_alerts.command(name="dmrole")
+    async def set_levelup_dmrole(self, ctx: commands.Context, *, message: str = None):
+        """
+        Set the DM a user gets when they level up and recieve a role.
+
+        **Arguments**
+        The following placeholders can be used:
+        - `{username}`: The user's name
+        - `{mention}`: Mentions the user
+        - `{displayname}`: The user's display name
+        - `{level}`: The level the user just reached
+        - `{server}`: The server the user is in
+        - `{role}`: The role the user just recieved
+        """
+        if not message:
+            if self.data[ctx.guild.id]["lvlup_dm_role"]:
+                self.data[ctx.guild.id]["lvlup_dm_role"] = None
+                await self.save_cache(ctx.guild)
+                return await ctx.send(_("Level up DM role message has been removed"))
+            return await ctx.send(_("You need to provide a message"))
+
+        params = {
+            "username": ctx.author.name,
+            "mention": ctx.author.mention,
+            "displayname": ctx.author.display_name,
+            "level": 69420,
+            "server": ctx.guild.name,
+            "role": "TESTROLE",
+        }
+        try:
+            msg = message.format(**params)
+        except KeyError as e:
+            return await ctx.send(_("Invalid placeholder: ") + str(e))
+
+        await ctx.send(_("Level up DM role message has been set"), embed=discord.Embed(description=msg))
+        self.data[ctx.guild.id]["lvlup_dm_role"] = message
+        await self.save_cache(ctx.guild)
+
+    @set_levelup_alerts.command(name="msg")
+    async def set_levelup_msg(self, ctx: commands.Context, *, message: str = None):
+        """
+        Set the message sent when a user levels up.
+
+        **Arguments**
+        The following placeholders can be used:
+        - `{username}`: The user's name
+        - `{mention}`: Mentions the user
+        - `{displayname}`: The user's display name
+        - `{level}`: The level the user just reached
+        - `{server}`: The server the user is in
+        """
+        if not message:
+            if self.data[ctx.guild.id]["lvlup_msg"]:
+                self.data[ctx.guild.id]["lvlup_msg"] = None
+                await self.save_cache(ctx.guild)
+                return await ctx.send(_("Level up message has been removed"))
+            return await ctx.send(_("You need to provide a message"))
+
+        params = {
+            "username": ctx.author.name,
+            "mention": ctx.author.mention,
+            "displayname": ctx.author.display_name,
+            "level": 69420,
+            "server": ctx.guild.name,
+        }
+        try:
+            msg = message.format(**params)
+        except KeyError as e:
+            return await ctx.send(_("Invalid placeholder: ") + str(e))
+
+        await ctx.send(_("Level up message has been set"), embed=discord.Embed(description=msg))
+        self.data[ctx.guild.id]["lvlup_msg"] = message
+        await self.save_cache(ctx.guild)
+
+    @set_levelup_alerts.command(name="msgrole")
+    async def set_levelup_msgrole(self, ctx: commands.Context, *, message: str = None):
+        """
+        Set the message sent when a user levels up and recieves a role.
+
+        **Arguments**
+        The following placeholders can be used:
+        - `{username}`: The user's name
+        - `{mention}`: Mentions the user
+        - `{displayname}`: The user's display name
+        - `{level}`: The level the user just reached
+        - `{server}`: The server the user is in
+        - `{role}`: The role the user just recieved
+        """
+        if not message:
+            if self.data[ctx.guild.id]["lvlup_msg_role"]:
+                self.data[ctx.guild.id]["lvlup_msg_role"] = None
+                await self.save_cache(ctx.guild)
+                return await ctx.send(_("Level up role message has been removed"))
+            return await ctx.send(_("You need to provide a message"))
+
+        params = {
+            "username": ctx.author.name,
+            "mention": ctx.author.mention,
+            "displayname": ctx.author.display_name,
+            "level": 69420,
+            "server": ctx.guild.name,
+            "role": "TESTROLE",
+        }
+        try:
+            msg = message.format(**params)
+        except KeyError as e:
+            return await ctx.send(_("Invalid placeholder: ") + str(e))
+
+        await ctx.send(_("Level up role message has been set"), embed=discord.Embed(description=msg))
+        self.data[ctx.guild.id]["lvlup_msg_role"] = message
         await self.save_cache(ctx.guild)
 
     @lvl_group.group(name="roles")
