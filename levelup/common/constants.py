@@ -63,6 +63,11 @@ default_guild = {
         "bulb": "\N{ELECTRIC LIGHT BULB}",
         "money": "\N{MONEY BAG}",
     },
+    # LevelUp messages for DM and channel
+    "lvlup_dm_role": None,
+    "lvlup_dm": None,
+    "lvlup_msg_role": None,
+    "lvlup_msg": None,
 }
 
 default_global = {
