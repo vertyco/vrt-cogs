@@ -23,9 +23,9 @@ _ = Translator("Tickets", __file__)
 async def can_close(
     bot: Red,
     guild: discord.Guild,
-    channel: Union[discord.TextChannel, discord.Thread],
+    channel: Union[discord.TextChannel, discord.Thread, discord.interactions.InteractionChannel],
     author: discord.Member,
-    owner_id: str,
+    owner_id: int,
     conf: dict,
 ):
     if str(owner_id) not in conf["opened"]:
@@ -52,7 +52,7 @@ async def can_close(
     return can_close
 
 
-async def fetch_channel_history(channel: discord.TextChannel, limit: int = None) -> List[discord.Message]:
+async def fetch_channel_history(channel: discord.TextChannel, limit: int | None = None) -> List[discord.Message]:
     history = []
     async for msg in channel.history(oldest_first=True, limit=limit):
         history.append(msg)
@@ -78,7 +78,7 @@ async def close_ticket(
     guild: discord.Guild,
     channel: Union[discord.TextChannel, discord.Thread],
     conf: dict,
-    reason: str,
+    reason: str | None,
     closedby: str,
     config: Config,
 ) -> None:

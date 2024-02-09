@@ -34,7 +34,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "Vertyco"
-    __version__ = "2.7.4"
+    __version__ = "2.7.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -71,7 +71,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         await asyncio.sleep(6)
         await self.initialize()
 
-    async def initialize(self, target_guild: discord.Guild = None) -> None:
+    async def initialize(self, target_guild: discord.Guild | None = None) -> None:
         if target_guild:
             data = await self.config.guild(target_guild).all()
             return await self._init_guild(target_guild, data)
@@ -130,6 +130,8 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
 
             category = guild.get_channel(category_id)
             channel_obj = guild.get_channel(channel_id)
+            if isinstance(channel_obj, discord.ForumChannel) or isinstance(channel_obj, discord.CategoryChannel):
+                continue
             if any([not category, not channel_obj]):
                 continue
 
