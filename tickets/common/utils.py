@@ -23,7 +23,7 @@ _ = Translator("Tickets", __file__)
 async def can_close(
     bot: Red,
     guild: discord.Guild,
-    channel: Union[discord.TextChannel, discord.Thread, discord.interactions.InteractionChannel],
+    channel: Union[discord.TextChannel, discord.Thread],
     author: discord.Member,
     owner_id: int,
     conf: dict,
