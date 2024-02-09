@@ -178,3 +178,5 @@ botarena/
 dbtest/
 function_wizard.py
 dbtestnew/
+locallm/
+llm/
