@@ -53,10 +53,10 @@ def get_color(color: str) -> ButtonStyle:
     return style
 
 
-def get_modal_style(style: str) -> TextStyle:
-    if style == "short":
+def get_modal_style(styletype: str) -> TextStyle:
+    if styletype == "short":
         style = TextStyle.short
-    elif style == "long":
+    elif styletype == "long":
         style = TextStyle.long
     else:
         style = TextStyle.paragraph
@@ -165,8 +165,14 @@ class CloseView(View):
 
     @discord.ui.button(label="Close", style=ButtonStyle.danger)
     async def closeticket(self, interaction: Interaction, button: Button):
+        if not interaction.guild or not interaction.channel:
+            return
+        user = interaction.guild.get_member(interaction.user.id)
+        if not user:
+            return
+
         conf = await self.config.guild(interaction.guild).all()
-        if not await can_close(self.bot, interaction.guild, interaction.channel, interaction.user, self.owner_id, conf):
+        if not await can_close(self.bot, interaction.guild, interaction.channel, user, self.owner_id, conf):
             return await interaction.response.send_message(
                 _("You do not have permissions to close this ticket"), ephemeral=True
             )
@@ -245,8 +251,11 @@ class SupportButton(Button):
 
     async def create_ticket(self, interaction: Interaction):
         guild = interaction.guild
-        user = interaction.user
-        channel = interaction.channel
+        user = guild.get_member(interaction.user.id)
+        if not isinstance(interaction.channel, discord.TextChannel) or not guild:
+            return
+
+        channel: discord.TextChannel = interaction.channel
         roles = [r.id for r in user.roles]
         conf = await self.view.config.guild(guild).all()
 
@@ -290,6 +299,14 @@ class SupportButton(Button):
         if not category:
             em = discord.Embed(
                 description=_("The category for this support panel cannot be found!\n" "please contact an admin!"),
+                color=discord.Color.red(),
+            )
+            return await interaction.response.send_message(embed=em, ephemeral=True)
+        if not isinstance(category, discord.CategoryChannel):
+            em = discord.Embed(
+                description=_(
+                    "The category for this support panel is not a category channel!\n" "please contact an admin!"
+                ),
                 color=discord.Color.red(),
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
@@ -423,9 +440,9 @@ class SupportButton(Button):
                 auto_archive_duration = int(arr[index])
 
                 reason = _("{} ticket for {}").format(self.panel_name, str(interaction.user))
-                channel_or_thread: discord.Thread = await channel.create_thread(
+                channel_or_thread = await channel.create_thread(
                     name=channel_name,
-                    auto_archive_duration=auto_archive_duration,
+                    auto_archive_duration=auto_archive_duration,  # type: ignore
                     reason=reason,
                     invitable=conf["user_can_manage"],
                 )
@@ -442,9 +459,7 @@ class SupportButton(Button):
                     elif alt_channel and isinstance(alt_channel, discord.TextChannel):
                         if alt_channel.category:
                             category = alt_channel.category
-                channel_or_thread: discord.TextChannel = await category.create_text_channel(
-                    channel_name, overwrites=overwrite
-                )
+                channel_or_thread = await category.create_text_channel(channel_name, overwrites=overwrite)
         except discord.Forbidden:
             txt = _(
                 "I am missing the required permissions to create a ticket for you. "
@@ -539,7 +554,11 @@ class SupportButton(Button):
             else:
                 asyncio.create_task(interaction.followup.send(embed=em, ephemeral=True))
 
-        if logchannel:
+        if (
+            logchannel
+            and isinstance(logchannel, discord.TextChannel)
+            and logchannel.permissions_for(guild.me).send_messages
+        ):
             ts = int(now.timestamp())
             kwargs = {
                 "user": str(user),
@@ -611,6 +630,8 @@ class PanelView(View):
 
     async def start(self):
         chan = self.guild.get_channel(self.panels[0]["channel_id"])
+        if not isinstance(chan, discord.TextChannel):
+            return
         message = await chan.fetch_message(self.panels[0]["message_id"])
         await message.edit(view=self)
 
@@ -632,7 +653,9 @@ class LogView(View):
 
     @discord.ui.button(label="Join Ticket", style=ButtonStyle.green)
     async def join_ticket(self, interaction: Interaction, button: Button):
-        user = interaction.user
+        user = interaction.guild.get_member(interaction.user.id)
+        if not user:
+            return
         if user.id in self.added:
             return await interaction.response.send_message(
                 _("You have already been added to the ticket **{}**!").format(self.channel.name),
