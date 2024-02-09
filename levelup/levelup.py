@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.12.0"
+    __version__ = "3.12.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -937,9 +937,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     async def reset_weekly_stats(self, guild: discord.Guild, ctx: commands.Context = None):
         """Announce and reset the weekly leaderboard"""
         w = self.data[guild.id]["weekly"].copy()
-        users = {
-            guild.get_member(int(k)): v for k, v in w["users"].items() if (v["xp"] > 0 and guild.get_member(int(k)))
-        }
+        users = {guild.get_member(int(k)): v for k, v in w["users"].items() if v["xp"] > 0}
+        users = {k: v for k, v in users.items() if k}
         channel = guild.get_channel(w["channel"]) if w["channel"] else None
         if not users:
             if ctx:
@@ -959,8 +958,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         desc += _("`Total Voice:    `") + total_voicetime
         em = discord.Embed(title=title, description=desc, color=discord.Color.green())
 
-        if ctx:
+        if ctx and ctx.guild:
             guild = ctx.guild
+
         if self.dpy2:
             em.set_thumbnail(url=guild.icon)
         else:
@@ -996,7 +996,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         top = sorted_users[: int(w["count"])]
         if w["role_all"]:
-            winners: List[discord.Member] = [i[0] for i in top]
+            winners: List[discord.Member] = [i[0] for i in top if i[0]]
         else:
             winners: List[discord.Member] = [top[0][0]]
 

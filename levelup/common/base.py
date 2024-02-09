@@ -157,7 +157,7 @@ class UserCommands(MixinMeta, ABC):
 
     # Hacky way to get user banner
     @cached(ttl=7200)
-    async def get_banner(self, user: discord.Member) -> str:
+    async def get_banner(self, user: discord.Member) -> Union[str, None]:
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user.id))
         banner_id = req["banner"]
         if banner_id:
@@ -681,7 +681,7 @@ class UserCommands(MixinMeta, ABC):
 
     @set_profile.command(name="background", aliases=["bg"])
     @commands.cooldown(1, 30, commands.BucketType.user)
-    async def set_user_background(self, ctx: commands.Context, image_url: str = None):
+    async def set_user_background(self, ctx: commands.Context, image_url: Union[str, None] = None):
         """
         Set a background for your profile
 
@@ -746,15 +746,16 @@ class UserCommands(MixinMeta, ABC):
             return await ctx.send(_("Your profile background has been set!"))
         else:
             # Check if the user provided a filename
-            for file in backgrounds:
-                if image_url.lower() in file.name.lower():
+            for path in backgrounds:
+                if image_url.lower() in path.name.lower():
                     break
             else:
                 return await ctx.send(_("I could not find a background image with that name"))
 
-            txt = _("Your background image has been set to `{}`!").format(file.name)
-            file = discord.File(file)
-            self.data[ctx.guild.id]["users"][user_id]["background"] = file.name
+            txt = _("Your background image has been set to `{}`!").format(path.name)
+
+            file = discord.File(path)
+            self.data[ctx.guild.id]["users"][user_id]["background"] = file.filename
             return await ctx.send(txt, file=file)
 
     @set_profile.command(name="font")
@@ -812,6 +813,8 @@ class UserCommands(MixinMeta, ABC):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
+        if not isinstance(ctx.author, discord.Member):
+            return
         if not user:
             user = ctx.author
         if user.bot:
