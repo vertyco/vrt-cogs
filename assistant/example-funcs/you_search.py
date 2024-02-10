@@ -1,4 +1,4 @@
-async def search_internet(bot, query: str, num_results: int = 1, *args, **kwargs) -> str:
+async def search_internet(bot, query: str, num_results: int = 2, *args, **kwargs) -> str:
     """Search via you.com API https://documentation.you.com/quickstart"""
     from io import StringIO
 
@@ -12,7 +12,7 @@ async def search_internet(bot, query: str, num_results: int = 1, *args, **kwargs
         return "Service exists but no API key has been set"
     base_url = "https://api.ydc-index.io/search"
     headers = {"X-API-KEY": api_key}
-    params = {"query": query, "num_web_results": num_results, "safesearch": "off"}
+    params = {"query": query, "num_web_results": min(19, num_results), "safesearch": "off"}
     async with aiohttp.ClientSession() as session:
         async with session.get(base_url, headers=headers, params=params) as response:
             if response.status == 200:
