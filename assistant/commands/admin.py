@@ -161,8 +161,8 @@ class Admin(MixinMeta):
         tutors = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.tutors]
         mentions = [i.mention for i in tutors]
         tutor_field = _(
-            "The following roles/users are considered tutors, "
-            "if function calls are on the model can create its own embeddings: "
+            "The following roles/users are considered tutors. "
+            "If function calls are on and create_memory is enabled, the model can create its own embeddings: "
         )
         tutor_field += humanize_list(sorted(mentions))
         if mentions:
