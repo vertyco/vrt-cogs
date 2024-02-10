@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:29-0500\n"
-"PO-Revision-Date: 2024-02-08 23:51\n"
+"POT-Creation-Date: 2024-02-10 17:37-0500\n"
+"PO-Revision-Date: 2024-02-10 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -206,8 +206,8 @@ msgid "Embeddings ({})"
 msgstr "Embeddings ({})"
 
 #: commands\admin.py:163
-msgid "The following roles/users are considered tutors, if function calls are on the model can create its own embeddings: "
-msgstr "As seguintes funções/utilizadores são considerados tutores, se as chamadas de função estiverem ativas, o modelo pode criar suas próprias incorporações: "
+msgid "The following roles/users are considered tutors. If function calls are on and create_memory is enabled, the model can create its own embeddings: "
+msgstr ""
 
 #: commands\admin.py:172
 msgid "`Function Calling:  `{}\n"
