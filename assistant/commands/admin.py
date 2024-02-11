@@ -226,8 +226,8 @@ class Admin(MixinMeta):
         if not private:
             if overrides := conf.role_overrides:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
                 for role, model in sorted_roles:
                     if not role:
                         continue
@@ -237,8 +237,8 @@ class Admin(MixinMeta):
 
             if overrides := conf.max_token_role_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
                 for role, tokens in sorted_roles:
                     if not role:
                         continue
@@ -248,8 +248,8 @@ class Admin(MixinMeta):
 
             if overrides := conf.max_retention_role_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
                 for role, retention in sorted_roles:
                     if not role:
                         continue
@@ -259,8 +259,8 @@ class Admin(MixinMeta):
 
             if overrides := conf.max_time_role_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
                 for role, retention_time in sorted_roles:
                     if not role:
                         continue
@@ -274,8 +274,8 @@ class Admin(MixinMeta):
 
             if overrides := conf.max_response_token_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items()}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0], reverse=True)
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
                 for role, retention_time in sorted_roles:
                     if not role:
                         continue
