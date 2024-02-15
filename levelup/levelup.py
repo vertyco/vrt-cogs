@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "3.12.1"
+    __version__ = "3.12.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2776,7 +2776,16 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     @lvl_group.group(name="alerts")
     async def set_levelup_alerts(self, ctx: commands.Context):
-        """Level up alert messages"""
+        """Level up alert messages
+
+        **Arguments**
+        The following placeholders can be used:
+        - `{username}`: The user's name
+        - `{mention}`: Mentions the user
+        - `{displayname}`: The user's display name
+        - `{level}`: The level the user just reached
+        - `{server}`: The server the user is in
+        """
 
     @set_levelup_alerts.command(name="dm")
     async def set_levelup_dm(self, ctx: commands.Context, *, message: str = None):
@@ -2790,6 +2799,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         - `{displayname}`: The user's display name
         - `{level}`: The level the user just reached
         - `{server}`: The server the user is in
+
+        **If using dmrole or msgrole**
+        - `{role}`: The role the user just recieved
         """
         if not message:
             if self.data[ctx.guild.id]["lvlup_dm"]:
