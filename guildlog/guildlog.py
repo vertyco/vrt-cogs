@@ -12,7 +12,7 @@ class GuildLog(commands.Cog):
     Log when the bot joins or leaves a guild
     """
 
-    __author__ = "Vertyco"
+    __author__ = "vertyco"
     __version__ = "0.1.2"
 
     def format_help_for_context(self, ctx):
@@ -212,9 +212,7 @@ class GuildLog(commands.Cog):
         Color value must be an integer
         """
         try:
-            embed = discord.Embed(
-                description="Your join messages will now use this color", color=color
-            )
+            embed = discord.Embed(description="Your join messages will now use this color", color=color)
             await ctx.send(embed=embed)
         except Exception as e:
             return await ctx.send(f"Failed to set embed color:\n{box(str(e))}")
@@ -253,9 +251,7 @@ class GuildLog(commands.Cog):
         Color value must be an integer
         """
         try:
-            embed = discord.Embed(
-                description="Your leave messages will now use this color", color=color
-            )
+            embed = discord.Embed(description="Your leave messages will now use this color", color=color)
             await ctx.send(embed=embed)
         except Exception as e:
             return await ctx.send(f"Failed to set embed color:\n{box(str(e))}")

@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!
     """
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "3.12.2"
 
     def format_help_for_context(self, ctx):

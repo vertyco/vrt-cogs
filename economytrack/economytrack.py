@@ -30,7 +30,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
     Also track you server's member count!
     """
 
-    __author__ = "Vertyco"
+    __author__ = "vertyco"
     __version__ = "0.5.5"
 
     def format_help_for_context(self, ctx):

@@ -16,7 +16,7 @@ class EmojiTracker(commands.Cog):
     It will also only count one reaction per emoji for each user on a message so user's can't spam react/unreact
     """
 
-    __author__ = "Vertyco"
+    __author__ = "vertyco"
     __version__ = "0.1.0"
 
     def format_help_for_context(self, ctx):
@@ -110,9 +110,7 @@ class EmojiTracker(commands.Cog):
             blacklist += f"{guild_id}"
         if not blacklist:
             return await ctx.send("No guild ID's have been added to the blacklist")
-        embed = discord.Embed(
-            title="Emoji Tracker Blacklist", description=f"```py\b{blacklist}\n```"
-        )
+        embed = discord.Embed(title="Emoji Tracker Blacklist", description=f"```py\b{blacklist}\n```")
         await ctx.send(embed=embed)
 
     @commands.command(name="resetreacts")

@@ -17,7 +17,7 @@ class NoBot(commands.Cog):
     message, this cog will delete them.
     """
 
-    __author__ = "Vertyco"
+    __author__ = "vertyco"
     __version__ = "1.2.0"
 
     def format_help_for_context(self, ctx):
@@ -98,9 +98,7 @@ class NoBot(commands.Cog):
         filters = ""
         for filt in config["content"]:
             filters += f"{filt}\n"
-        embed = discord.Embed(
-            description="**NoBot Setting Overview**", color=discord.Color.random()
-        )
+        embed = discord.Embed(description="**NoBot Setting Overview**", color=discord.Color.random())
         if botlist:
             embed.add_field(name="Bots", value=botlist, inline=False)
         if filters:
@@ -119,9 +117,7 @@ class NoBot(commands.Cog):
                 count += 1
             if not strlist:
                 return await ctx.send("There are no filters set")
-            msg = await ctx.send(
-                f"Type the number of the filter you want to delete\n" f"{strlist}"
-            )
+            msg = await ctx.send(f"Type the number of the filter you want to delete\n" f"{strlist}")
 
             def check(message: discord.Message):
                 return message.author == ctx.author and message.channel == ctx.channel
@@ -129,9 +125,7 @@ class NoBot(commands.Cog):
             try:
                 reply = await self.bot.wait_for("message", timeout=60, check=check)
             except asyncio.TimeoutError:
-                return await msg.edit(
-                    embed=discord.Embed(description="You took too long :yawning_face:")
-                )
+                return await msg.edit(embed=discord.Embed(description="You took too long :yawning_face:"))
 
             if reply.content.lower() == "cancel":
                 return await msg.edit(embed=discord.Embed(description="Selection canceled."))
