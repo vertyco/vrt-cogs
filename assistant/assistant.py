@@ -53,7 +53,7 @@ class Assistant(
     - **[p]clearconvo**: reset your conversation with the assistant in the channel
     """
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "6.0.11"
 
     def format_help_for_context(self, ctx):

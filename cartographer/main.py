@@ -40,7 +40,7 @@ class Cartographer(commands.Cog):
     - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.
     """
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "0.1.3"
 
     def __init__(self, bot: Red):

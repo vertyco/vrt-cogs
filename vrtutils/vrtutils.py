@@ -15,7 +15,7 @@ class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
     A collection of utility commands for getting info about various things.
     """
 
-    __author__ = "Vertyco"
+    __author__ = "vertyco"
     __version__ = "2.1.6"
 
     def format_help_for_context(self, ctx: commands.Context):

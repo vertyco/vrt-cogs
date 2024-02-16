@@ -13,7 +13,7 @@ class BankBackup(commands.Cog):
     Backup bank balances for all members of a guild
     """
 
-    __author__ = "Vertyco"
+    __author__ = "vertyco"
     __version__ = "0.0.2"
 
     def format_help_for_context(self, ctx):

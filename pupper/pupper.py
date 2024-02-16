@@ -15,7 +15,7 @@ log = logging.getLogger("red.vrt.pupper")
 class Pupper(commands.Cog):
     """Pet the doggo!"""
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
@@ -105,9 +105,7 @@ class Pupper(commands.Cog):
 
             space = "\N{EN SPACE}"
             toggle = "Active" if guild_data["toggle"] else "Inactive"
-            delete_after = (
-                "No deletion" if not guild_data["delete_after"] else guild_data["delete_after"]
-            )
+            delete_after = "No deletion" if not guild_data["delete_after"] else guild_data["delete_after"]
 
             msg = f"[Channels]:       {humanize_list(channel_names)}\n"
             msg += f"[Cooldown]:       {guild_data['cooldown']} seconds\n"
@@ -236,9 +234,7 @@ class Pupper(commands.Cog):
     async def addall(self, ctx):
         """Add all valid channels for the guild that the bot can speak in."""
         bot_text_channels = [
-            c
-            for c in ctx.guild.text_channels
-            if c.permissions_for(ctx.guild.me).send_messages is True
+            c for c in ctx.guild.text_channels if c.permissions_for(ctx.guild.me).send_messages is True
         ]
         channel_list = await self.config.guild(ctx.guild).channel()
         channels_appended = []
@@ -256,13 +252,9 @@ class Pupper(commands.Cog):
         second_msg = ""
         await self.config.guild(ctx.guild).channel.set(channel_list)
         if len(channels_appended) > 0:
-            first_msg = (
-                f"{humanize_list(channels_appended)} added to the valid petting channels.\n"
-            )
+            first_msg = f"{humanize_list(channels_appended)} added to the valid petting channels.\n"
         if len(channels_in_list) > 0:
-            second_msg = (
-                f"{humanize_list(channels_in_list)}: already in the list of petting channels."
-            )
+            second_msg = f"{humanize_list(channels_in_list)}: already in the list of petting channels."
         txt = f"{first_msg}\n{second_msg}"
         for p in pagify(txt, page_length=2000):
             await ctx.send(p)
@@ -346,14 +338,10 @@ class Pupper(commands.Cog):
             def check(r, u):
                 if u.bot:
                     return False
-                return r.message.id == borf_msg.id and any(
-                    emoji in str(r.emoji) for emoji in emojis
-                )
+                return r.message.id == borf_msg.id and any(emoji in str(r.emoji) for emoji in emojis)
 
             try:
-                reaction, user = await self.bot.wait_for(
-                    "reaction_add", check=check, timeout=300.0
-                )
+                reaction, user = await self.bot.wait_for("reaction_add", check=check, timeout=300.0)
             except asyncio.TimeoutError:
                 return await borf_msg.delete()
 

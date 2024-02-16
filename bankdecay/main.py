@@ -34,7 +34,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     User activity is tracked via messages and reactions.
     """
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "0.3.11"
 
     def __init__(self, bot: Red):

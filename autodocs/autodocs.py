@@ -28,7 +28,7 @@ class AutoDocs(commands.Cog):
     Easily create documentation for any cog in Markdown format.
     """
 
-    __author__ = "Vertyco"
+    __author__ = "vertyco"
     __version__ = "0.7.0"
 
     def format_help_for_context(self, ctx):
