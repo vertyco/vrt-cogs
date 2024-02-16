@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-26 15:33-0400\n"
-"PO-Revision-Date: 2023-10-26 20:37\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-02-08 23:50\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -40,55 +40,59 @@ msgstr "{}\n"
 msgid "No data to delete"
 msgstr "Aucune donnée à supprimer"
 
-#: autodocs.py:56
+#: autodocs.py:58
 msgid "name"
 msgstr "nom"
 
-#: autodocs.py:56
+#: autodocs.py:58
 msgid "text"
 msgstr "Le texte"
 
-#: autodocs.py:59
+#: autodocs.py:61
 msgid "Help"
 msgstr "Aider"
 
-#: autodocs.py:66
+#: autodocs.py:68
 msgid "{} cog description"
 msgstr "{} Description de la Cog"
 
-#: autodocs.py:116
+#: autodocs.py:120
 msgid "Create docs for a cog"
 msgstr "Créer des documents pour un cog"
 
-#: autodocs.py:118
+#: autodocs.py:122
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr "Le nom du rouage pour lequel vous souhaitez faire des documents (sensible à la casse)"
 
-#: autodocs.py:119
+#: autodocs.py:123
 msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr "Remplacez toutes les occurrences de [p] par le préfixe du bot"
 
-#: autodocs.py:120
+#: autodocs.py:124
 msgid "Replace all occurrences of [botname] with the bots name"
 msgstr "Remplacez toutes les occurrences de [botname] par le nom du bot"
 
-#: autodocs.py:121
+#: autodocs.py:125
 msgid "Include extra info like converters and their docstrings"
 msgstr "Inclure des informations supplémentaires telles que des convertisseurs et leurs docstrings"
 
-#: autodocs.py:122
+#: autodocs.py:126
 msgid "Include hidden commands"
 msgstr "Inclure les commandes cachées"
 
-#: autodocs.py:123
+#: autodocs.py:127
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
 msgstr "Masquer les commandes ci-dessus le niveau de privilège spécifié (utilisateur, mod, admin, guildowner, botowner)"
 
-#: autodocs.py:124
+#: autodocs.py:128
 msgid "Include a csv with each command isolated per row"
 msgstr "Inclure un CSV avec chaque commande isolée par ligne"
 
-#: autodocs.py:139
+#: autodocs.py:129
+msgid "Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"
+msgstr ""
+
+#: autodocs.py:145
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
@@ -118,133 +122,133 @@ msgstr "\n"
 "        **Note** Si `all` est spécifié pour cog_name, tous les cogs non essentiels actuellement chargés auront des documents générés pour\n"
 "        eux et envoyés dans un fichier zip "
 
-#: autodocs.py:159
+#: autodocs.py:166
 msgid "AllCogDocs"
 msgstr "Allcogdocs"
 
-#: autodocs.py:199
+#: autodocs.py:208
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr "Voici les documents pour tous les engrenages actuellement chargés !"
 
-#: autodocs.py:203
+#: autodocs.py:212
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr "Je n'ai pas pu trouver ce rouage, peut-être qu'il n'est pas chargé ?"
 
-#: autodocs.py:225
+#: autodocs.py:236
 msgid "Here are your docs for {}!"
 msgstr "Voici vos documents pour {}!"
 
-#: autodocs.py:298
+#: autodocs.py:309
 #, docstring
 msgid "Registers a command with Assistant enabling it to access to command docs"
 msgstr ""
 
-#: converters.py:65
+#: converters.py:64
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
 msgstr "Un seul mot, s'il n'utilise pas de slash et plusieurs mots sont nécessaires, utilisez des guillemets, par exemple \"Hello world\"."
 
-#: converters.py:66
+#: converters.py:65
 msgid "A number without decimal places."
 msgstr "Un nombre sans décimales."
 
-#: converters.py:67
+#: converters.py:66
 msgid "A number with or without decimal places."
 msgstr "Un nombre avec ou sans décimales."
 
-#: converters.py:68
+#: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
 msgstr "Peut être 1, 0, vrai, faux, t, f"
 
-#: formatter.py:41
+#: formatter.py:40
 #, docstring
 msgid "Formats documentation for a single command"
 msgstr "Documentation des formats pour une seule commande"
 
-#: formatter.py:102
+#: formatter.py:101
 msgid "per"
 msgstr "par"
 
-#: formatter.py:103
+#: formatter.py:102
 msgid "seconds"
 msgstr "secondes"
 
-#: formatter.py:104
+#: formatter.py:103
 msgid "second"
 msgstr "deuxième"
 
-#: formatter.py:114
+#: formatter.py:112
 msgid "Slash"
 msgstr "Sabrer"
 
-#: formatter.py:115
+#: formatter.py:113
 msgid "Command"
 msgstr "Commande"
 
-#: formatter.py:119
+#: formatter.py:117
 msgid "Hybrid"
 msgstr "Hybride"
 
-#: formatter.py:127
+#: formatter.py:125
 msgid "Usage"
 msgstr "Utilisation"
 
-#: formatter.py:128
+#: formatter.py:126
 msgid "Checks"
 msgstr "Chèques"
 
-#: formatter.py:140
+#: formatter.py:138
 msgid "Required"
 msgstr "Requis"
 
-#: formatter.py:144
+#: formatter.py:142
 msgid "Optional"
 msgstr "Facultatif"
 
-#: formatter.py:156
+#: formatter.py:154
 msgid "Server Only"
 msgstr "Serveur uniquement"
 
-#: formatter.py:187
+#: formatter.py:188
 msgid "Restricted to"
 msgstr "Limité à"
 
-#: formatter.py:191
+#: formatter.py:192
 msgid "Aliases"
 msgstr "Alias"
 
-#: formatter.py:194
+#: formatter.py:195
 msgid "Cooldown"
 msgstr "Refroidir"
 
-#: formatter.py:215
+#: formatter.py:216
 msgid "Could not get docstring or class for {} converter"
 msgstr "Impossible d'obtenir un docstring ou une classe pour {} convertisseur"
 
-#: formatter.py:219 formatter.py:279
+#: formatter.py:220 formatter.py:280
 msgid "Could not get docstring for {} converter"
 msgstr "Impossible d'obtenir la docstring pour le convertisseur {}"
 
-#: formatter.py:223
+#: formatter.py:224
 msgid "Could not get class for {} converter"
 msgstr "Impossible d'obtenir la classe pour le convertisseur {}"
 
-#: formatter.py:232
+#: formatter.py:233
 msgid "Autocomplete"
 msgstr "Saisie automatique"
 
-#: formatter.py:236
+#: formatter.py:237
 msgid "Default"
 msgstr "Défaut"
 
-#: formatter.py:241
+#: formatter.py:242
 msgid "Choices"
 msgstr "Les choix"
 
-#: formatter.py:271
+#: formatter.py:272
 msgid "Could not find {} for the {} argument of the {} command"
 msgstr "Impossible de trouver {} pour l'argument {} de la commande {}"
 
-#: formatter.py:306
+#: formatter.py:307
 msgid "Extended Arg Info\n"
 msgstr "Informations ARG prolongées\n"
 

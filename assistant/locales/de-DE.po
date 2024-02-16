@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-11-07 16:20-0500\n"
-"PO-Revision-Date: 2023-11-07 22:52\n"
+"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"PO-Revision-Date: 2024-02-08 23:51\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -25,7 +25,7 @@ msgstr "OpenAI-Schlüssel festlegen"
 msgid "Enter your OpenAI Key below"
 msgstr "Geben Sie Ihren OpenAI-Schlüssel unten ein"
 
-#: views.py:56 views.py:141 views.py:469
+#: views.py:56 views.py:142 views.py:462
 msgid "This isn't your menu!"
 msgstr "Das ist nicht Ihre Speisekarte!"
 
@@ -36,10 +36,6 @@ msgstr "Name des Eintrags"
 #: views.py:85
 msgid "Training context"
 msgstr "Kontext des Trainings"
-
-#: views.py:102
-msgid "Search for an embedding"
-msgstr "Suche nach einer Einbettung"
 
 #: views.py:104
 msgid "Search Query"
@@ -55,94 +51,98 @@ msgstr "Die Einbettung `{}` konnte nicht verarbeitet werden.\n"
 "{}\n"
 "```"
 
-#: views.py:196
+#: views.py:194
 msgid "An embedding with the name `{}` already exists!"
 msgstr "Eine Einbettung mit dem Namen `{}` existiert bereits!"
 
-#: views.py:202
+#: views.py:199
 msgid "Your embedding labeled `{}` has been processed!"
 msgstr "Ihre Einbettung mit der Bezeichnung `{}` wurde verarbeitet!"
 
-#: views.py:215
+#: views.py:211
 msgid "No embeddings to inspect!"
 msgstr "Keine Einbettungen zur Überprüfung vorhanden!"
 
-#: views.py:238
+#: views.py:232
 msgid "No embeddings to edit!"
 msgstr "Keine Einbettungen zum Bearbeiten vorhanden!"
 
-#: views.py:250
+#: views.py:243
 msgid "Failed to edit that embedding, please try again later"
 msgstr "Diese Einbettung konnte nicht bearbeitet werden, bitte versuchen Sie es später erneut"
 
-#: views.py:260
+#: views.py:253
 msgid "Your embedding has been modified!"
 msgstr "Ihre Einbettung wurde geändert!"
 
-#: views.py:301
+#: views.py:294
 msgid "Add an embedding"
 msgstr "Eine Einbettung hinzufügen\n"
 "Eine Einbettung hinzufügen"
 
-#: views.py:308
+#: views.py:300
 msgid "Your embedding is processing and will appear when ready!"
 msgstr "Ihre Einbettung wird verarbeitet und erscheint, sobald sie bereit ist!"
 
-#: views.py:328
+#: views.py:316
 msgid "No embeddings to delete!"
 msgstr "Keine Einbettungen zum Löschen!\n"
 "Keine Einbettungen zum Löschen!"
 
-#: views.py:332
+#: views.py:318
 msgid "Deleted `{}` embedding."
 msgstr "Gelöschte `{}`-Einbettung."
 
-#: views.py:360
+#: views.py:344
 msgid "No embeddings to search!"
 msgstr "Keine Einbettungen zum Suchen!"
 
-#: views.py:376
+#: views.py:345
+msgid "Search for an embedding"
+msgstr "Suche nach einer Einbettung"
+
+#: views.py:370
 msgid "Search result: **{}**"
 msgstr "Suchergebnis: **{}**"
 
-#: views.py:407
+#: views.py:400
 msgid "Function Edit"
 msgstr "Funktion Editieren"
 
-#: views.py:413
+#: views.py:406
 msgid "JSON Schema"
 msgstr "JSON-Schema"
 
-#: views.py:420
+#: views.py:413
 msgid "Code"
 msgstr "Code"
 
-#: views.py:584
+#: views.py:570
 msgid "No code to inspect!"
 msgstr "Kein Code zu überprüfen!\n"
 "Kein Code zum Überprüfen!"
 
-#: views.py:603
+#: views.py:594
 msgid "Here are your custom functions"
 msgstr "Hier sind Ihre maßgeschneiderten Funktionen"
 
-#: views.py:608
+#: views.py:599
 msgid "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 msgstr "Antworten Sie bitte auf diese Nachricht mit dem JSON-Schema für Ihre Funktion.\n"
 "- [Beispielfunktionen](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 
-#: views.py:629 views.py:711
+#: views.py:620 views.py:695
 msgid "SchemaError\n"
 "{}"
 msgstr "SchemaFehler\n"
 "{}"
 
-#: views.py:631 views.py:714
+#: views.py:622 views.py:697
 msgid "Empty schema!"
 msgstr "Leeres Schema!"
 
-#: views.py:635 views.py:717
+#: views.py:625 views.py:700
 msgid "Invalid schema!\n"
 "**Missing**\n"
 "{}"
@@ -150,60 +150,64 @@ msgstr "Ungültiger Schema!\n"
 "**Fehlt**\n"
 "{}"
 
-#: views.py:640
+#: views.py:629
 msgid "Reply to this message with the custom code"
 msgstr "Antworten Sie auf diese Nachricht mit dem benutzerdefinierten Code"
 
-#: views.py:655 views.py:723
+#: views.py:644 views.py:706
 msgid "Invalid function"
 msgstr "Ungültige Funktion"
 
-#: views.py:659
+#: views.py:648
 msgid "`{}` has been overwritten!"
 msgstr "`{}` wurde überschrieben!"
 
-#: views.py:661
+#: views.py:650
 msgid "`{}` has been created!"
 msgstr "`{}` wurde erstellt!"
 
-#: views.py:672
+#: views.py:661
 msgid "No code to edit!"
 msgstr "Kein Code zu bearbeiten!\n"
 "Kein Code zum Bearbeiten!"
 
-#: views.py:681 views.py:751
+#: views.py:669 views.py:729
 msgid "Could not find function!"
 msgstr "Die Funktion wurde nicht gefunden!"
 
-#: views.py:684
+#: views.py:671
 msgid "This function is managed by the `{}` cog and cannot be edited"
 msgstr "Diese Funktion wird durch das `{}`-Zahnrad verwaltet und kann nicht bearbeitet werden"
 
-#: views.py:690
+#: views.py:677
 msgid "The json schema for this function is too long, you'll need to re-upload it to modify"
 msgstr "Das JSON-Schema für diese Funktion ist zu lang. Sie müssen es erneut hochladen, um es zu ändern"
 
-#: views.py:697
+#: views.py:682
 msgid "The code for this function is too long, you'll need to re-upload it to modify"
 msgstr "Der Code für diese Funktion ist zu lang. Sie müssen ihn neu hochladen, um ihn zu ändern"
 
-#: views.py:732
+#: views.py:714
 msgid "`{}` function updated!"
 msgstr "Die Funktion `{}` wurde aktualisiert!"
 
-#: views.py:743
+#: views.py:722
 msgid "No code to delete!"
 msgstr "Kein Code zu löschen!"
 
-#: views.py:754
+#: views.py:731
 msgid "This function is managed by the `{}` cog and cannot be deleted"
 msgstr "Diese Funktion wird durch das `{}`-Ritzel verwaltet und kann nicht gelöscht werden"
 
-#: views.py:762
+#: views.py:738
 msgid "`{}` has been deleted!"
 msgstr "`{}` wurde gelöscht!"
 
-#: views.py:770
+#: views.py:745
 msgid "No code to toggle!"
 msgstr "Kein Code zum Umschalten!"
+
+#: views.py:758
+msgid "Search for a function"
+msgstr ""
 

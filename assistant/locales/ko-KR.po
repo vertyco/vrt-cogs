@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-11-07 16:20-0500\n"
-"PO-Revision-Date: 2023-11-07 22:52\n"
+"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"PO-Revision-Date: 2024-02-08 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -25,7 +25,7 @@ msgstr "OpenAI 키를 설정하세요"
 msgid "Enter your OpenAI Key below"
 msgstr "제발 AI 번역기를 사용하려면 OpenAI 키를 입력하세요"
 
-#: views.py:56 views.py:141 views.py:469
+#: views.py:56 views.py:142 views.py:462
 msgid "This isn't your menu!"
 msgstr "이건 당신의 메뉴가 아닙니다!"
 
@@ -36,10 +36,6 @@ msgstr "항목 이름"
 #: views.py:85
 msgid "Training context"
 msgstr "훈련 문맥"
-
-#: views.py:102
-msgid "Search for an embedding"
-msgstr "임베딩을 검색하세요"
 
 #: views.py:104
 msgid "Search Query"
@@ -55,90 +51,94 @@ msgstr "임베딩 처리에 실패했습니다 `{}`\n"
 "{} \n"
 "```"
 
-#: views.py:196
+#: views.py:194
 msgid "An embedding with the name `{}` already exists!"
 msgstr "이름이 `{}`인 임베딩이 이미 존재합니다!"
 
-#: views.py:202
+#: views.py:199
 msgid "Your embedding labeled `{}` has been processed!"
 msgstr "당신의 임베딩 레이블 {}이(가) 처리되었습니다!"
 
-#: views.py:215
+#: views.py:211
 msgid "No embeddings to inspect!"
 msgstr "검사할 임베딩이 없습니다!"
 
-#: views.py:238
+#: views.py:232
 msgid "No embeddings to edit!"
 msgstr "편집할 임베딩이 없습니다!"
 
-#: views.py:250
+#: views.py:243
 msgid "Failed to edit that embedding, please try again later"
 msgstr "편집하는 데 실패했습니다. 나중에 다시 시도해주세요"
 
-#: views.py:260
+#: views.py:253
 msgid "Your embedding has been modified!"
 msgstr "당신의 임베딩이 수정되었습니다!"
 
-#: views.py:301
+#: views.py:294
 msgid "Add an embedding"
 msgstr "임베딩을 추가하세요"
 
-#: views.py:308
+#: views.py:300
 msgid "Your embedding is processing and will appear when ready!"
 msgstr "당신의 임베딩이 처리 중이며 준비되면 표시됩니다!"
 
-#: views.py:328
+#: views.py:316
 msgid "No embeddings to delete!"
 msgstr "삭제할 임베딩이 없습니다!"
 
-#: views.py:332
+#: views.py:318
 msgid "Deleted `{}` embedding."
 msgstr "삭제된 `{}` 임베딩입니다."
 
-#: views.py:360
+#: views.py:344
 msgid "No embeddings to search!"
 msgstr "검색할 임베딩이 없습니다!"
 
-#: views.py:376
+#: views.py:345
+msgid "Search for an embedding"
+msgstr "임베딩을 검색하세요"
+
+#: views.py:370
 msgid "Search result: **{}**"
 msgstr "검색 결과: **{}**"
 
-#: views.py:407
+#: views.py:400
 msgid "Function Edit"
 msgstr "함수 편집"
 
-#: views.py:413
+#: views.py:406
 msgid "JSON Schema"
 msgstr "JSON 스키마"
 
-#: views.py:420
+#: views.py:413
 msgid "Code"
 msgstr "코드"
 
-#: views.py:584
+#: views.py:570
 msgid "No code to inspect!"
 msgstr "검사할 코드가 없습니다!"
 
-#: views.py:603
+#: views.py:594
 msgid "Here are your custom functions"
 msgstr "Understood. I will ensure that the translations maintain the core meaning of the source text and avoid adding any unwarranted extra content. Please provide the text that you would like me to translate"
 
-#: views.py:608
+#: views.py:599
 msgid "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 msgstr "이 메시지에 대한 json 스키마를 사용하여 함수에 대한 응답을 보내세요\n"
 "- [예제 함수](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 
-#: views.py:629 views.py:711
+#: views.py:620 views.py:695
 msgid "SchemaError\n"
 "{}"
 msgstr "스키마 오류 {}"
 
-#: views.py:631 views.py:714
+#: views.py:622 views.py:697
 msgid "Empty schema!"
 msgstr "빈 스키마입니다!"
 
-#: views.py:635 views.py:717
+#: views.py:625 views.py:700
 msgid "Invalid schema!\n"
 "**Missing**\n"
 "{}"
@@ -146,59 +146,63 @@ msgstr "잘못된 스키마입니다!\n"
 "**누락된 부분**\n"
 "{}"
 
-#: views.py:640
+#: views.py:629
 msgid "Reply to this message with the custom code"
 msgstr "이 메시지에 사용자 정의 코드로 응답하세요"
 
-#: views.py:655 views.py:723
+#: views.py:644 views.py:706
 msgid "Invalid function"
 msgstr "I apologize for any confusion. Please provide the text you would like me to translate, and I will do my best to assist you"
 
-#: views.py:659
+#: views.py:648
 msgid "`{}` has been overwritten!"
 msgstr "`{}` 는 덮어쓰여졌습니다!"
 
-#: views.py:661
+#: views.py:650
 msgid "`{}` has been created!"
 msgstr "`{}`가 생성되었습니다!"
 
-#: views.py:672
+#: views.py:661
 msgid "No code to edit!"
 msgstr "편집할 코드가 없습니다!"
 
-#: views.py:681 views.py:751
+#: views.py:669 views.py:729
 msgid "Could not find function!"
 msgstr "I apologize for the inconvenience. It appears that the requested function is not available. Is there anything else I can assist you with?"
 
-#: views.py:684
+#: views.py:671
 msgid "This function is managed by the `{}` cog and cannot be edited"
 msgstr "이 함수는 `{}` 코그에 의해 관리되며 편집할 수 없습니다"
 
-#: views.py:690
+#: views.py:677
 msgid "The json schema for this function is too long, you'll need to re-upload it to modify"
 msgstr "이 함수의 JSON 스키마가 너무 길어서 수정하려면 다시 업로드해야 합니다"
 
-#: views.py:697
+#: views.py:682
 msgid "The code for this function is too long, you'll need to re-upload it to modify"
 msgstr "이 함수의 코드가 너무 길어서 수정하려면 다시 업로드해야 합니다"
 
-#: views.py:732
+#: views.py:714
 msgid "`{}` function updated!"
 msgstr "`{}` 함수가 업데이트되었습니다!"
 
-#: views.py:743
+#: views.py:722
 msgid "No code to delete!"
 msgstr "지울 코드가 없습니다!"
 
-#: views.py:754
+#: views.py:731
 msgid "This function is managed by the `{}` cog and cannot be deleted"
 msgstr "이 함수는 `{}` 코그에 의해 관리되며 삭제할 수 없습니다"
 
-#: views.py:762
+#: views.py:738
 msgid "`{}` has been deleted!"
 msgstr "`{}` 삭제되었습니다!"
 
-#: views.py:770
+#: views.py:745
 msgid "No code to toggle!"
 msgstr "토글할 코드가 없습니다!"
+
+#: views.py:758
+msgid "Search for a function"
+msgstr ""
 
