@@ -8,14 +8,13 @@ import re
 import sys
 from datetime import datetime
 from io import BytesIO
-from time import monotonic, perf_counter
+from time import perf_counter
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 import discord
 import plotly.graph_objects as go
 from aiohttp import ClientSession, ClientTimeout
 from discord.ext import tasks
-from perftracker import get_stats, perf
 from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
@@ -82,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.2"
+    __version__ = "3.12.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -302,7 +301,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             return
         await self.message_handler(message)
 
-    @perf()
     async def initialize(self):
         self.ignored_guilds = await self.config.ignored_guilds()
         self.cache_seconds = await self.config.cache_seconds()
@@ -414,7 +412,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 cleaned.append("updated profile emoji url")
         return cleaned, data
 
-    @perf(max_entries=1000)
     async def save_cache(self, target_guild: discord.Guild = None):
         if not target_guild:
             await self.config.ignored_guilds.set(self.ignored_guilds)
@@ -491,7 +488,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.level_up(guild, user_id, maybe_new_level, background, message, channel_obj)
 
     # User has leveled up, send message and check if any roles are associated with it
-    @perf(max_entries=1000)
+
     async def level_up(
         self,
         guild: discord.Guild,
@@ -665,7 +662,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if not levelroles:
             return
 
-        leveltime = monotonic()
         if roles_to_add:
             try:
                 await member.add_roles(*roles_to_add, reason=_("Leveled Up!"))
@@ -678,10 +674,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             except discord.Forbidden:
                 log.warning(f"Lacking permissions to remove roles from {member.name} in {member.guild.name}")
 
-        t = int((monotonic() - leveltime) * 1000)
-        get_stats().add("levelup.level_assignment", t)
-
-    @perf(max_entries=1000)
     async def message_handler(self, message: discord.Message):
         now = datetime.now()
         guild = message.guild
@@ -869,7 +861,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     async def voice_checker(self):
         await self.voice_check()
 
-    @perf(max_entries=1000)
     async def voice_check(self):
         vtasks = []
         for guild in self.bot.guilds:
@@ -901,7 +892,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         await self.bot.wait_until_red_ready()
         await asyncio.sleep(60)
 
-    @perf(max_entries=1000)
     async def check_weekly(self):
         for gid, data in self.data.items():
             w = data["weekly"]
@@ -933,7 +923,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                     continue
                 await self.reset_weekly_stats(guild)
 
-    @perf(max_entries=1000)
     async def reset_weekly_stats(self, guild: discord.Guild, ctx: commands.Context = None):
         """Announce and reset the weekly leaderboard"""
         w = self.data[guild.id]["weekly"].copy()
@@ -1375,26 +1364,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             txt = _("Users with animated profiles will render as a gif")
 
         em.add_field(name=_("GIF Rendering ") + render, value=txt, inline=False)
-
-        stats = get_stats()
-        results = []
-        for key in stats.function_times:
-            split = key.split(".")
-            module, func_name = split[0], split[-1]
-            if module != "levelup":
-                continue
-            cpm = stats.cpm(key)
-            avg = stats.avg_time(key)
-            results.append((func_name, round(cpm), round(avg, 1)))
-
-        sorted_stats = sorted(results, key=lambda x: x[2], reverse=True)
-        txt = ""
-        for func_name, cpm, avg in sorted_stats:
-            txt += _("- {}: {}ms, {}cpm\n").format(func_name, avg, cpm)
-
-        em.add_field(
-            name=_("Performance Stats (Avg exe time | Calls per minute)"), value=box(txt, lang="json"), inline=False
-        )
 
         await ctx.send(embed=em)
 
@@ -2633,7 +2602,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             y.append(xp)
         return txt, x, y
 
-    @perf(max_entries=1000)
     def plot_levels(self, x: list, y: list) -> Optional[bytes]:
         try:
             fig = go.Figure()

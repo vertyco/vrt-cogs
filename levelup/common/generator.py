@@ -9,7 +9,6 @@ from typing import List, Union
 
 import colorgram
 import requests
-from perftracker import perf
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, UnidentifiedImageError
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
@@ -59,7 +58,6 @@ class Generator(MixinMeta, ABC):
         for i in delete:
             i.unlink(missing_ok=True)
 
-    @perf(max_entries=1000)
     def generate_profile(
         self,
         bg_image: str = None,
@@ -539,7 +537,6 @@ class Generator(MixinMeta, ABC):
 
         return final
 
-    @perf(max_entries=1000)
     def generate_slim_profile(
         self,
         bg_image: str = None,
@@ -841,7 +838,6 @@ class Generator(MixinMeta, ABC):
         final = Image.alpha_composite(pre, blank)
         return final
 
-    @perf(max_entries=1000)
     def generate_levelup(
         self,
         bg_image: str = None,
@@ -948,7 +944,6 @@ class Generator(MixinMeta, ABC):
         final = final.resize(card_size, Image.Resampling.LANCZOS)
         return final
 
-    @perf(max_entries=1000)
     def get_all_fonts(self) -> Image.Image:
         fonts = [i for i in os.listdir(self.fonts)]
         count = len(fonts)
@@ -963,7 +958,6 @@ class Generator(MixinMeta, ABC):
             draw.text((5, index * (fontsize + 15)), fontname, color, font=font, stroke_width=1, stroke_fill=(0, 0, 0))
         return img
 
-    @perf(max_entries=1000)
     def get_all_backgrounds(self):
         available: List[Path] = list(self.saved_bgs.iterdir()) + list(self.backgrounds.iterdir())
         imgs = []
@@ -1030,23 +1024,20 @@ class Generator(MixinMeta, ABC):
         return final
 
     @staticmethod
-    @perf(max_entries=1000)
-    def concat_img_v(im1: Image, im2: Image) -> Image:
+    def concat_img_v(im1: Image, im2: Image) -> Image.Image:
         new = Image.new("RGBA", (im1.width, im1.height + im2.height))
         new.paste(im1, (0, 0))
         new.paste(im2, (0, im1.height))
         return new
 
     @staticmethod
-    @perf(max_entries=1000)
-    def concat_img_h(im1: Image, im2: Image) -> Image:
+    def concat_img_h(im1: Image, im2: Image) -> Image.Image:
         new = Image.new("RGBA", (im1.width + im2.width, im1.height))
         new.paste(im1, (0, 0))
         new.paste(im2, (im1.width, 0))
         return new
 
     @staticmethod
-    @perf(max_entries=1000)
     def get_image_content_from_url(url: str) -> Union[bytes, None]:
         if url is None:
             return None
@@ -1063,7 +1054,6 @@ class Generator(MixinMeta, ABC):
             return None
 
     @staticmethod
-    @perf(max_entries=1000)
     def get_img_color(img: Union[Image.Image, str, bytes, BytesIO]) -> tuple:
         try:
             colors = colorgram.extract(img, 1)
@@ -1073,7 +1063,6 @@ class Generator(MixinMeta, ABC):
             return 0, 0, 0
 
     @staticmethod
-    @perf(max_entries=1000)
     def get_img_colors(img: Union[Image.Image, str, bytes, BytesIO], amount: int) -> list:
         try:
             colors = colorgram.extract(img, amount)
@@ -1111,14 +1100,12 @@ class Generator(MixinMeta, ABC):
         return r, g, b
 
     @staticmethod
-    @perf(max_entries=1000)
     def get_sample_section(image: Image, box: tuple) -> Image:
         # x1, y1, x2, y2
         return image.crop((box[0], box[1], box[2], box[3]))
 
     @staticmethod
-    @perf(max_entries=1000)
-    def force_aspect_ratio(image: Image.Image, aspect_ratio: tuple = ASPECT_RATIO) -> Image:
+    def force_aspect_ratio(image: Image.Image, aspect_ratio: tuple = ASPECT_RATIO) -> Image.Image:
         x, y = aspect_ratio
         w, h = image.size
 
@@ -1141,8 +1128,7 @@ class Generator(MixinMeta, ABC):
         cropped = image.crop(box)
         return cropped
 
-    @perf(max_entries=1000)
-    def get_random_background(self) -> Image:
+    def get_random_background(self) -> Image.Image:
         available = list(self.backgrounds.iterdir()) + list(self.saved_bgs.iterdir())
         random.shuffle(available)
         for path in available:
@@ -1166,7 +1152,6 @@ class Generator(MixinMeta, ABC):
             return "unicode"
 
     @staticmethod
-    @perf(max_entries=1000)
     def get_avg_duration(image: Image) -> Union[int, None]:
         """Get average duration sequence of gif frames"""
         if not getattr(image, "is_animated"):
@@ -1180,7 +1165,6 @@ class Generator(MixinMeta, ABC):
         return int(sum(times) / len(times))
 
     @staticmethod
-    @perf(max_entries=1000)
     def get_durations(image: Image) -> Union[tuple, None]:
         if not image.is_animated:
             return None
