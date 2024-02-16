@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-26 15:33-0400\n"
-"PO-Revision-Date: 2023-10-26 20:37\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-02-08 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -40,55 +40,59 @@ msgstr "{}\n"
 msgid "No data to delete"
 msgstr "삭제할 데이터가 없습니다"
 
-#: autodocs.py:56
+#: autodocs.py:58
 msgid "name"
 msgstr "이름"
 
-#: autodocs.py:56
+#: autodocs.py:58
 msgid "text"
 msgstr "텍스트"
 
-#: autodocs.py:59
+#: autodocs.py:61
 msgid "Help"
 msgstr "도움말"
 
-#: autodocs.py:66
+#: autodocs.py:68
 msgid "{} cog description"
 msgstr "{} 코그 설명"
 
-#: autodocs.py:116
+#: autodocs.py:120
 msgid "Create docs for a cog"
 msgstr "톱니바퀴 코그에 대한 문서를 작성하세요"
 
-#: autodocs.py:118
+#: autodocs.py:122
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr "문서를 만들려는 코그의 이름(대소문자 구분)"
 
-#: autodocs.py:119
+#: autodocs.py:123
 msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr "모든 \"[p]\"를 봇의 접두사로 대체합니다"
 
-#: autodocs.py:120
+#: autodocs.py:124
 msgid "Replace all occurrences of [botname] with the bots name"
 msgstr "봇 이름을 [botname]으로 대체합니다"
 
-#: autodocs.py:121
+#: autodocs.py:125
 msgid "Include extra info like converters and their docstrings"
 msgstr "변환기 및 해당 문서 문자열과 같은 추가 정보를 포함하세요"
 
-#: autodocs.py:122
+#: autodocs.py:126
 msgid "Include hidden commands"
 msgstr "숨겨진 명령어 포함 여부를 확인하십시오"
 
-#: autodocs.py:123
+#: autodocs.py:127
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
 msgstr "지정된 권한 수준(사용자, 모드, 관리자, 길드 소유자, 봇 소유자) 이상의 명령을 숨깁니다"
 
-#: autodocs.py:124
+#: autodocs.py:128
 msgid "Include a csv with each command isolated per row"
 msgstr "각 명령이 행별로 분리된 CSV를 포함하세요"
 
-#: autodocs.py:139
+#: autodocs.py:129
+msgid "Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"
+msgstr ""
+
+#: autodocs.py:145
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
@@ -117,133 +121,133 @@ msgstr "톱니바퀴에 대한 마크다운 문서 페이지를 만들어 Discor
 "**참고** cog_name에 `all`이 지정되면, 현재 로드된 모든 비핵심 코그에 대한 문서가 생성되어\n"
 "zip 파일로 전송됩니다        "
 
-#: autodocs.py:159
+#: autodocs.py:166
 msgid "AllCogDocs"
 msgstr "AllCogDocs"
 
-#: autodocs.py:199
+#: autodocs.py:208
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr "현재로드된 모든 코그에 대한 문서가 여기에 있습니다!"
 
-#: autodocs.py:203
+#: autodocs.py:212
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr "톱니바퀴를 찾을 수 없습니다. 로드되지 않은 것일까요?"
 
-#: autodocs.py:225
+#: autodocs.py:236
 msgid "Here are your docs for {}!"
 msgstr "여기 {}에 대한 문서가 있습니다!"
 
-#: autodocs.py:298
+#: autodocs.py:309
 #, docstring
 msgid "Registers a command with Assistant enabling it to access to command docs"
 msgstr ""
 
-#: converters.py:65
+#: converters.py:64
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
 msgstr "슬래시를 사용하지 않고 여러 단어가 필요한 경우, 따옴표를 사용하여 입력합니다. 예: \"Hello world\"."
 
-#: converters.py:66
+#: converters.py:65
 msgid "A number without decimal places."
 msgstr "소수 자릿수가 없는 숫자입니다."
 
-#: converters.py:67
+#: converters.py:66
 msgid "A number with or without decimal places."
 msgstr "소수점 이하 자릿수가 있는지 여부에 상관없이 숫자입니다."
 
-#: converters.py:68
+#: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
 msgstr "1, 0, 참, 거짓, t, f일 수 있습니다"
 
-#: formatter.py:41
+#: formatter.py:40
 #, docstring
 msgid "Formats documentation for a single command"
 msgstr "단일 명령에 대한 문서 형식을 지정합니다"
 
-#: formatter.py:102
+#: formatter.py:101
 msgid "per"
 msgstr "당"
 
-#: formatter.py:103
+#: formatter.py:102
 msgid "seconds"
 msgstr "초"
 
-#: formatter.py:104
+#: formatter.py:103
 msgid "second"
 msgstr "두 번째"
 
-#: formatter.py:114
+#: formatter.py:112
 msgid "Slash"
 msgstr "슬래시"
 
-#: formatter.py:115
+#: formatter.py:113
 msgid "Command"
 msgstr "명령어"
 
-#: formatter.py:119
+#: formatter.py:117
 msgid "Hybrid"
 msgstr "하이브리드"
 
-#: formatter.py:127
+#: formatter.py:125
 msgid "Usage"
 msgstr "사용법"
 
-#: formatter.py:128
+#: formatter.py:126
 msgid "Checks"
 msgstr "수표"
 
-#: formatter.py:140
+#: formatter.py:138
 msgid "Required"
 msgstr "필수"
 
-#: formatter.py:144
+#: formatter.py:142
 msgid "Optional"
 msgstr "선택 사항"
 
-#: formatter.py:156
+#: formatter.py:154
 msgid "Server Only"
 msgstr "서버 전용"
 
-#: formatter.py:187
+#: formatter.py:188
 msgid "Restricted to"
 msgstr "다음 대상으로 제한됩니다"
 
-#: formatter.py:191
+#: formatter.py:192
 msgid "Aliases"
 msgstr "별칭"
 
-#: formatter.py:194
+#: formatter.py:195
 msgid "Cooldown"
 msgstr "재사용 대기시간"
 
-#: formatter.py:215
+#: formatter.py:216
 msgid "Could not get docstring or class for {} converter"
 msgstr "{converter} 변환기에 대한 문서 문자열 또는 클래스를 가져올 수 없습니다"
 
-#: formatter.py:219 formatter.py:279
+#: formatter.py:220 formatter.py:280
 msgid "Could not get docstring for {} converter"
 msgstr "{} 변환기에 대한 문서 문자열을 가져올 수 없습니다"
 
-#: formatter.py:223
+#: formatter.py:224
 msgid "Could not get class for {} converter"
 msgstr "변환기 {converter}에 대한 클래스를 가져올 수 없습니다"
 
-#: formatter.py:232
+#: formatter.py:233
 msgid "Autocomplete"
 msgstr "자동 완성"
 
-#: formatter.py:236
+#: formatter.py:237
 msgid "Default"
 msgstr "기본값"
 
-#: formatter.py:241
+#: formatter.py:242
 msgid "Choices"
 msgstr "선택 사항"
 
-#: formatter.py:271
+#: formatter.py:272
 msgid "Could not find {} for the {} argument of the {} command"
 msgstr "{} 명령의 {} 인수에 대한 {}을 찾을 수 없습니다"
 
-#: formatter.py:306
+#: formatter.py:307
 msgid "Extended Arg Info\n"
 msgstr "확장된 인수 정보\n"
 

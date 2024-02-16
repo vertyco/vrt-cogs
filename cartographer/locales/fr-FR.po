@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-16 17:37-0400\n"
-"PO-Revision-Date: 2023-10-17 14:05\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-02-08 23:50\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -111,6 +111,10 @@ msgstr "La restauration du serveur est terminée !"
 #, docstring
 msgid "View current global settings"
 msgstr "Afficher les paramètres globaux actuels"
+
+#: main.py:185 main.py:186
+msgid "None Set"
+msgstr ""
 
 #: main.py:187
 msgid "### Global Settings\n"
